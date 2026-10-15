@@ -11,13 +11,18 @@ streaming conversation with the orchestrator, with approvals and follow-ups;
 context and costs. Dark technical style of `references/`. One owner, one
 Windows 11 machine.
 
+It opens on a **startup screen** with two mandatory questions, the agent CLI
+and the project directory, validated before the dashboard opens; that directory
+becomes the agent's working directory (brief, amendment 4).
+
 It **drives each CLI through its supported interfaces**, not by re-implementing
 its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
 **Status: before implementation.** There is no code yet. `plan.md` runs four
-plans in order (research, architecture, reliability, proposal); nothing is
+plans in order (research, architecture, reliability, proposal), then plan 5,
+the MVP; nothing is
 built or installed before the owner approves the proposal.
 
 ## Layout
@@ -71,6 +76,14 @@ not on the PATH, and tmux only runs under WSL on this machine.
   byte, thousands of lines without freezing) and system clipboard copy and
   paste, including mouse selection from any panel, work the same with every
   agent CLI (brief, amendment 3).
+- **The chosen project is the only working directory.** The agent CLI runs in
+  the directory chosen at startup, under its own native permissions and
+  sandboxing, which the application never weakens. One agent CLI per session,
+  no switching during a session.
+- **MVP scope is fixed** by amendment 4: build none of the features it leaves
+  out (recent projects, favourites, project browser, worktrees, editor
+  integration, model configuration, cross-provider collaboration, provider
+  switching, session profiles, orchestration settings).
 - **Until the proposal (plan 4) is approved:** no code, no dependency
   installed, no file written outside `doc\` and `plan.md`.
 - **The project is proprietary (all rights reserved, see `LICENSE`).** Copy
@@ -113,6 +126,9 @@ Until plan 2 sets the code conventions:
   criteria with exact expected values. Afterwards, check each one and report as
   the [evaluation guide](doc/evaluation.md) shows, listing what could not be
   verified.
+- **First make it work. Then make it beautiful. Then expand its
+  capabilities.** Never trade a function for a visual detail; build one agent
+  CLI end to end before the others.
 - **Cheapest check first.** Before proposing a redesign, run the probe that
   could settle the question. Give one recommendation rather than a survey.
 - **Change what fails, not what works.** Do not rework working code

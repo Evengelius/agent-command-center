@@ -50,6 +50,12 @@ work is done only when every criterion passes. What only the owner can judge
 | Large input | a 10,000-line paste stays editable, each keystroke handled within a time budget set in plan 2 |
 | Clipboard and selection | copy and paste per terminal and OS listed in a matrix (Windows Terminal, PowerShell, WSL2...): each cell tested, or marked not verified |
 | Provider-independent input | the same input tests pass with each agent CLI's adapter |
+| Provider detection | for each agent CLI, installed gives its version, missing gives the startup error message (a test with the CLI absent from the PATH) |
+| Path validation | table tests: Windows path, `~`, WSL path, relative path, trailing separator, non-existent, a file instead of a directory, no access; each accepted or refused with its message |
+| Working directory | the started CLI's working directory equals the chosen project path, read from the process or the CLI's own output |
+| Startup gate | the dashboard cannot open before both answers are validated |
+| MVP scope | none of the features amendment 4 leaves out exists in the code or the screens |
+| MVP acceptance | plan 5 ends with amendment 4's acceptance criteria, each checked with each agent CLI, or listed under not verified |
 
 A check that cannot fail proves nothing. When you write a new check, run it once
 on a damaged input and make sure it fails.

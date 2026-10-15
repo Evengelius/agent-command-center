@@ -7,6 +7,7 @@ point at it. Two references, with different roles:
 | --- | --- | --- |
 | `reference-screenshot.png` (1200x1500), `reference-video.mp4` (the same screen, animated, 3.4 MB) | the **style**: colors, frames, diagrams, animation | [What the screen shows](#what-the-screen-shows) |
 | `reference-layout-mockup.png` (768x646), from amendment 2 of the brief | the **layout**: four zones, with the conversation | [Layout mock-up](#layout-mock-up) |
+| `01-startup-configuration.png` (960x721), `02-agent-command-center.png` (960x325), from amendment 4 | the **screen sequence**: startup, then dashboard | [Screen sequence](#screen-sequence) |
 
 **It is a visual reference, not a product.** The reference looks like a
 promotional mock-up ("CLAUDE CODE ULTRACODE TIP"). Its model names, flags
@@ -117,3 +118,69 @@ What it fixes, matching zones A to D of amendment 2:
 Its palette fits the first reference: dark background, thin rounded frames,
 pale violet panel titles, green for done, amber for in progress, grey for
 waiting, and a violet and an amber bar for the two quotas.
+
+## Screen sequence
+
+From amendment 4: the application opens on a startup screen (image 1), then
+moves to the dashboard (image 2), as one coherent application. Both images are
+design mock-ups; image 1 says so itself ("Interactive design mockup - does not
+launch a CLI or access your project").
+
+### Image 1: startup configuration
+
+```text
++---------------------------------------------------------------------+
+| [>_] AGENT COMMAND CENTER                               New session |
++---------------------------------------------------------------------+
+| Configure your workspace                                            |
+| Select an AI agent and the project you want to work on.             |
+|                                                                     |
+| 1. AI Agent *                                                       |
+|    (o) Claude Code                                                  |
+|    ( ) OpenAI Codex                                                 |
+|    ( ) Google Gemini CLI                                            |
+|---------------------------------------------------------------------|
+| 2. Project Directory *                                              |
+|    ( ~/projects/agent-command-center                          )     |
+|    [folder] Browse directories, recent projects, or enter a path    |
+|---------------------------------------------------------------------|
+| Optional session settings                                       v   |
+| (            Preview configuration ->                         )     |
++---------------------------------------------------------------------+
+```
+
+A single centred column: a title bar, a heading in violet with one line of
+help, two numbered questions each marked required with a red asterisk, radio
+buttons for the agent CLI, a rounded text field for the path, thin separators,
+and one wide light button.
+
+### Image 2: dashboard, empty state
+
+```text
++---------------------------------------------------------------------+
+| [>_] AGENT CONTROL CENTER                                    * LIVE |
++---------------------------------------------------------------------+
+| [folder] agent-command-center   [branch] main          Claude Code  |
+| ~/projects/agent-command-center                                     |
++---------------------------------+-----------------------------------+
+| ORCHESTRATOR                    | CONVERSATION                      |
+| o Waiting for instructions      | Ready to work on this project.    |
+|                                 | > Ask your agent anything...      |
++---------------------------------+-----------------------------------+
+```
+
+A project bar under the title (project name, path, and the agent CLI on the
+right), then zones A and B side by side, as they look before the first
+prompt. Zones C and D are not in the image: they come from the layout mock-up.
+
+### Where the images and amendment 4's text differ
+
+The text is the specification; the images give the look.
+
+| In the image | The text says | So |
+| --- | --- | --- |
+| "Browse directories, recent projects, or enter a path" | manual entry only; no browser, no recent projects in the MVP | a text field with the current directory prefilled; the hint becomes a short help line |
+| "Optional session settings" | exactly two mandatory questions; no advanced configuration | not in the MVP |
+| "Preview configuration" | proceed once both answers are validated | the button starts the session, after validation |
+| "AGENT CONTROL CENTER" (image 2) | "AGENT COMMAND CENTER - LIVE" | the project's name, "AGENT COMMAND CENTER" |
+| git branch "main" in the project bar | provider, project name and path | the branch is shown when the project is a git repository, for display only (no git management) |

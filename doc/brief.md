@@ -303,3 +303,245 @@ Investigate terminal limitations, including mouse capture, tmux copy mode, clipb
 **Important:** This functionality must be provider-independent and work with Claude Code, Codex, Gemini CLI, and future supported agents.
 
 Treat clipboard support and reliable multiline editing as essential MVP features, not optional enhancements.
+
+## Amendment 4, 2026-10-15: project-aware startup and screen flow (MVP)
+
+The owner's requirement, word for word, with two reference images:
+`references/01-startup-configuration.png` (image 1) and
+`references/02-agent-command-center.png` (image 2). It adds a startup screen
+(choose the agent CLI, choose the project directory) before the dashboard,
+makes the chosen directory the agent's working directory, and fixes the MVP:
+its scope, what it leaves out, six priorities and the acceptance criteria.
+
+Where the images show more than this text allows (a project browser and recent
+projects, optional session settings, a git branch), the text wins: see the
+reference design.
+
+---
+# Additional Requirement — Project-Aware Startup & Screen Flow (MVP)
+
+I want to extend the existing Agent Command Center requirements with a mandatory startup configuration.
+
+**I have attached two reference images. These images illustrate the intended screen order, layout, and user experience. Please inspect both images carefully before updating the architecture.**
+
+The application must follow this sequence:
+
+**Image 1 → Startup Configuration**
+
+**Image 2 → Main Agent Command Center Dashboard**
+
+The screenshots are visual references, not functional implementations. Reproduce their general structure and visual hierarchy while respecting the existing architecture and requirements.
+
+## 1. Image 1 — Startup Configuration
+
+When the application launches, the FIRST screen must allow me to configure my working session.
+
+Ask exactly two mandatory questions.
+
+### Question 1 — Select AI Agent
+
+Provide these choices:
+
+- Claude Code
+- OpenAI Codex
+- Google Gemini CLI
+
+The selected agent will be responsible for the coding session.
+
+Requirements:
+- Detect whether the selected CLI is installed.
+- Display a clear error if it is unavailable.
+- Use a modular provider integration architecture.
+- Do not hardcode the application around Claude Code.
+- Preserve native provider functionality wherever possible.
+
+### Question 2 — Select Project Directory
+
+Ask which local project I want to work on.
+
+Example:
+
+`C:\Users\Developer\Projects\my-app`
+
+or
+
+`~/projects/my-app`
+
+Requirements:
+- Support manual path entry.
+- Support Windows, Linux, macOS, and WSL paths where applicable.
+- Expand and validate paths appropriately.
+- Ensure the selected directory exists and is accessible.
+- Use that directory as the agent's working directory.
+- Prefill the current directory when launching from an existing project.
+
+Do not implement an advanced project browser yet.
+
+### Startup Behavior
+
+Only after both required fields have been validated should the application proceed to the main dashboard.
+
+The startup UI should follow the first reference image: clean, compact, keyboard-friendly, and consistent with the dark terminal aesthetic.
+
+## 2. Image 2 — Main Dashboard
+
+After startup configuration is complete, transition to the second screen.
+
+This is the main Agent Command Center, where all actual work happens.
+
+Use the second reference image to guide the layout, positioning, styling, and visual hierarchy.
+
+The dashboard must retain the previously specified four functional areas:
+
+**A. Left — Orchestrator**
+
+- Workflow stages.
+- Execution progress.
+- Hierarchical agent tree.
+- Current task status.
+- Observed agent activity.
+
+**B. Upper Right — Interactive AI Conversation**
+
+- Real conversation with the selected AI provider.
+- User prompt input.
+- Streaming AI responses.
+- Multiline text editing and long-text pasting.
+- Clipboard copy/paste support.
+- Scrollable history.
+- Native approval/permission interactions where supported.
+
+The conversation must remain the primary interaction surface.
+
+**C. Lower Right — Live Subagents**
+
+- Active and completed agents.
+- Tasks being executed.
+- Current observable activity.
+- Execution logs and results.
+- Status changes as work progresses.
+
+**D. Bottom — Usage & Telemetry**
+
+- Available 5-hour and 7-day quota information.
+- Context-window consumption.
+- Token usage.
+- Active agent count.
+- Available model information.
+
+Use actual provider data whenever available.
+
+If a provider does not expose a particular metric, display "N/A" rather than fabricated values.
+
+Do not force all providers to expose identical telemetry.
+
+## 3. Project Awareness
+
+The main dashboard must display:
+
+- Selected AI provider.
+- Project name.
+- Project path.
+
+Example:
+
+AGENT COMMAND CENTER — LIVE
+
+Provider: Codex
+
+Project: my-app
+
+Path: C:\Users\Developer\Projects\my-app
+
+All file operations must use the selected project context and respect the chosen provider's native permissions and sandboxing.
+
+The agent should be able to inspect files, modify code with appropriate permissions, run supported tools, and communicate results in the interactive conversation.
+
+## 4. Expected User Experience
+
+The application should work as follows:
+
+1. I launch `agent-command-center`.
+2. The startup configuration screen appears (Image 1).
+3. I select Claude Code, Codex, or Gemini CLI.
+4. I enter my project directory.
+5. The application validates both selections.
+6. The main dashboard appears (Image 2).
+7. I enter a task in the conversation panel.
+8. The selected AI agent works on my project.
+9. The orchestrator and live-agent panels update when genuine execution events are available.
+10. I continue communicating with the AI in the same interface.
+
+The transition between these two screens should feel like one coherent terminal application.
+
+## 5. MVP Scope — Important
+
+My priority is to get the essential application working correctly.
+
+Do not introduce unnecessary complexity.
+
+For this phase, do NOT implement:
+
+- Recent project history.
+- Project favorites.
+- Advanced project browsers.
+- Git worktree management.
+- Automatic VS Code integration.
+- Advanced model configuration.
+- Cross-provider agent collaboration.
+- Provider switching during an active session.
+- Complex session profiles.
+- Advanced orchestration configuration.
+
+These are future improvements.
+
+Focus on a functional startup flow, project-aware AI execution, interactive conversation, and genuine monitoring.
+
+## 6. Implementation Priorities
+
+Build incrementally.
+
+**Priority 1:** Startup configuration works and validates the provider and project path.
+
+**Priority 2:** The selected provider launches correctly in the selected project.
+
+**Priority 3:** Interactive conversation works end-to-end, including streaming, multiline input, and permission handling.
+
+**Priority 4:** The orchestrator and agent panels display real available execution information.
+
+**Priority 5:** The telemetry panel displays real available metrics.
+
+**Priority 6:** Refine the visual presentation to closely match the attached screenshots.
+
+Implement and test one provider end-to-end first, then integrate and validate the other two.
+
+Do not trade away functionality to reproduce visual details.
+
+## 7. Acceptance Criteria
+
+The MVP is complete when:
+
+- I can launch Agent Command Center from a terminal.
+- I can select any of the three supported AI providers.
+- I can select and validate my project path.
+- The selected provider operates in the correct directory.
+- I can send real prompts and receive streamed responses.
+- The provider can inspect and modify project files with appropriate approvals.
+- Multiline input, long pastes, and copying work reliably.
+- The dashboard reflects actual available agent activity.
+- Telemetry is accurate or explicitly marked unavailable.
+- Both screens follow the layout and sequence shown in the attached reference images.
+
+## 8. Next Step
+
+Update the existing architecture and MVP implementation plan with this requirement.
+
+Use the two images as the visual specification for the startup-to-dashboard flow.
+
+Explain any technical limitations that could affect interaction with Claude Code, Codex, or Gemini CLI.
+
+**Do not start implementing yet. Present the revised plan and wait for my approval.**
+
+The core principle remains:
+
+**First make it work. Then make it beautiful. Then expand its capabilities.**
