@@ -39,6 +39,12 @@ work is done only when every criterion passes. What only the owner can judge
 | Agent CLI configuration untouched | every file under `~/.claude`, `~/.codex` and `~/.gemini` that the work could touch, and the project settings, have the same hash before and after |
 | No credential read | no credential file (`auth.json`, `oauth_creds.json`, `.credentials.json`, any token or key) opened, in research notes or in code |
 | Each agent CLI optional | with one CLI's data absent, the views show it as not installed and the others keep working |
+| Conversation is real | every message in the conversation state traces to an event from the CLI's session (a recorded stream replayed in a test); none is built from status messages |
+| Event mapping | each conceptual event of amendment 2 maps to a documented source, with the docs URL, or is marked unavailable with its fallback |
+| Real values or "N/A" | each telemetry field with its source absent renders "N/A", never 0 or a guess; API-equivalent cost never shown as subscription usage |
+| Rendering without models | the rendering and state packages make no model or network call (dependency check, or a test with the network unavailable) |
+| Mock mode labelled | in mock mode every screen shows that it is mock data; mock events go through the same pipeline as real ones |
+| Approval and cancellation | an approval request reaches the screen and the answer reaches the CLI; a cancellation leaves the session resumable (a recorded session in a test) |
 
 A check that cannot fail proves nothing. When you write a new check, run it once
 on a damaged input and make sure it fails.

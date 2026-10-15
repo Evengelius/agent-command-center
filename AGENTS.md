@@ -2,15 +2,19 @@
 
 ## What this project is
 
-A personal terminal dashboard, a "command center", for multi-agent coding
-workflows run by agent CLIs: **Claude Code, OpenAI Codex CLI and Google Gemini
-CLI**. It shows the orchestrator and workflow tree, live subagent activity, and
-the real subscription quota, token and context usage of each agent, in the dark
-technical style of `references/`. One owner, one Windows 11 machine.
+A personal, interactive terminal workspace, a "mission control", for
+multi-agent coding with agent CLIs: **Claude Code first, then OpenAI Codex CLI
+and Google Gemini CLI**. In one persistent screen of four zones (layout in the
+reference design): **A** the orchestrator and its workflow tree; **B** a real,
+streaming conversation with the orchestrator, with approvals and follow-ups;
+**C** the live subagents, each inspectable; **D** the real quota, tokens,
+context and costs. Dark technical style of `references/`. One owner, one
+Windows 11 machine.
 
-It **observes** the agent CLIs; it is not an orchestration framework and does
-not rebuild any CLI's workflow engine. The goal is a beautiful, functional,
-personal terminal experience.
+It **drives each CLI through its supported interfaces**, not by re-implementing
+its terminal protocol, and is not an orchestration framework: the CLI does the
+work, the application converses with it, shows it, and relays approvals. The
+goal is a beautiful, continuously updating mission control, not a log viewer.
 
 **Status: before implementation.** There is no code yet. `plan.md` runs four
 plans in order (research, architecture, reliability, proposal); nothing is
@@ -22,10 +26,10 @@ built or installed before the owner approves the proposal.
 AGENTS.md                      this brief; CLAUDE.md and GEMINI.md only include it
 plan.md                        the active plan and the ones after it
 doc\brief.md                   the owner's request, word for word, and its amendments
-doc\reference-design.md        what the reference screen shows and what to keep
+doc\reference-design.md        the references: style (screen, video) and layout (mock-up)
 doc\evaluation.md              how every change is checked and reported
 doc\research\                  plan 1's findings, one file per reference
-references\                    the reference screenshot and video; never edit
+references\                    the reference screenshot, video and layout mock-up; never edit
 ```
 
 Guides, to read before working on what each covers:
@@ -54,6 +58,14 @@ not on the PATH, and tmux only runs under WSL on this machine.
   exposes them, not from its secrets.
 - **Prefer documented interfaces.** Anything undocumented is labelled so
   wherever it is used, and the dashboard keeps working without it.
+- **The conversation is real.** Every message in zone B comes from the CLI's
+  session; never simulate one or build it from status messages. Observed
+  events, inferred statuses and AI messages are shown distinctly.
+- **The interface renders state.** It never calls a model to draw or update
+  the screen; events update the state, the state is rendered.
+- **Real values or "N/A".** A value no supported source gives is shown as
+  "N/A", never invented; API-equivalent costs are kept apart from
+  subscription usage.
 - **Until the proposal (plan 4) is approved:** no code, no dependency
   installed, no file written outside `doc\` and `plan.md`.
 - **The project is proprietary (all rights reserved, see `LICENSE`).** Copy
