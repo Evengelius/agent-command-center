@@ -56,8 +56,10 @@ not on the PATH, and tmux only runs under WSL on this machine.
   wherever it is used, and the dashboard keeps working without it.
 - **Until the proposal (plan 4) is approved:** no code, no dependency
   installed, no file written outside `doc\` and `plan.md`.
-- **Licenses:** copy or fork code only when its license allows it, and record
-  the source, commit and license next to what was taken.
+- **The project is proprietary (all rights reserved, see `LICENSE`).** Copy
+  third-party code only under a permissive license (MIT, BSD, Apache-2.0),
+  keeping its notice, and record the source, commit and license next to what
+  was taken. Never copy GPL, AGPL or unlicensed code; those can only be studied.
 
 ## Environment
 
