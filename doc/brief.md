@@ -272,3 +272,34 @@ Provide:
 Incorporate this into the existing proposal, explain any architectural changes, and wait for my approval before implementation.
 
 **The ultimate goal is a fully interactive Claude Code experience with a beautiful, continuously updating multi-agent mission-control interface — not merely a log viewer.**
+
+## Amendment 3, 2026-10-15: full clipboard and multiline input
+
+The owner's additional requirement, word for word. It applies to the
+conversation input of zone B (amendment 2) and to every panel text can be
+selected from, for every agent CLI.
+
+---
+
+## Additional Requirement â€” Full Clipboard & Multiline Input Support
+
+The interactive conversation must support a proper, full-featured terminal text editor, not a basic single-line input field.
+
+Requirements:
+
+- Support multiline typing and pasting of very long prompts, code snippets, logs, and documents.
+- Support standard system clipboard copy/paste.
+- Allow mouse-based text selection and copying from conversations, agent logs, code blocks, and other panels.
+- Support keyboard text selection, cursor movement, editing, and deletion.
+- Use bracketed paste handling so multiline pastes never accidentally submit messages.
+- Provide a scrollable input area that handles thousands of lines without freezing the TUI.
+- Implement configurable Enter-to-send and newline shortcuts.
+- Optionally allow editing a prompt in an external editor via $EDITOR.
+- Preserve pasted content, whitespace, indentation, and line breaks.
+- Ensure clipboard operations work correctly across Windows Terminal, PowerShell, WSL2, Linux, and macOS wherever supported.
+
+Investigate terminal limitations, including mouse capture, tmux copy mode, clipboard integration, and OS-specific shortcuts.
+
+**Important:** This functionality must be provider-independent and work with Claude Code, Codex, Gemini CLI, and future supported agents.
+
+Treat clipboard support and reliable multiline editing as essential MVP features, not optional enhancements.

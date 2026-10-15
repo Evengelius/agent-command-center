@@ -45,6 +45,11 @@ work is done only when every criterion passes. What only the owner can judge
 | Rendering without models | the rendering and state packages make no model or network call (dependency check, or a test with the network unavailable) |
 | Mock mode labelled | in mock mode every screen shows that it is mock data; mock events go through the same pipeline as real ones |
 | Approval and cancellation | an approval request reaches the screen and the answer reaches the CLI; a cancellation leaves the session resumable (a recorded session in a test) |
+| Paste preserved | a bracketed paste of fixtures (code with tabs and spaces, CRLF and LF text, Unicode, trailing whitespace) reaches the CLI byte for byte |
+| Paste never submits | a multiline paste ending with a newline leaves the message unsent; only the configured send key sends |
+| Large input | a 10,000-line paste stays editable, each keystroke handled within a time budget set in plan 2 |
+| Clipboard and selection | copy and paste per terminal and OS listed in a matrix (Windows Terminal, PowerShell, WSL2...): each cell tested, or marked not verified |
+| Provider-independent input | the same input tests pass with each agent CLI's adapter |
 
 A check that cannot fail proves nothing. When you write a new check, run it once
 on a damaged input and make sure it fails.

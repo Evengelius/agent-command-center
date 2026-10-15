@@ -1,6 +1,6 @@
 # Current Plan
 
-Four plans from `doc/brief.md` and its two amendments, run one at a time and in
+Four plans from `doc/brief.md` and its three amendments, run one at a time and in
 order. Each ends with the evaluation summary of `doc/evaluation.md` and waits
 for the owner's approval before the next starts. Until plan 4 is approved: no
 code, no dependency installed, no file written outside `doc/` and this plan.
@@ -44,11 +44,19 @@ credential files.
   model, context, tokens, API-equivalent cost, agent count and concurrency
   limit, duration, errors and retries), documented or not, with its source;
   what is simply unavailable (shown as "N/A").
+- `doc/research/terminal-input.md` (amendment 3): what each candidate UI library
+  offers for a multiline editor (selection, cursor movement, very long input,
+  bracketed paste); clipboard access per terminal and OS (Windows Terminal,
+  PowerShell, WSL2, Linux, macOS; OSC 52 and native clipboards); mouse capture
+  versus the terminal's own text selection; tmux copy mode; `$EDITOR`; the
+  shortcuts each OS and terminal already takes. Each with its source and its
+  limits.
 - `doc/research/summary.md`: fork versus build from scratch, with the reasons.
 
-Checks: the 10 files exist with their sections; every claim has a source; every
+Checks: the 11 files exist with their sections; every claim has a source; every
 license is an SPDX id read at a recorded commit; every reference, every agent
-CLI and all 9 questions are covered; no credential file read; nothing outside
+CLI, all 9 questions and every item of amendment 3 are covered; no credential
+file read; nothing outside
 `doc/` changed (`git status`).
 
 ## Plan 2 - Architecture
@@ -78,7 +86,10 @@ unless plan 1 found better; each CLI's own orchestration reused, not rebuilt.
   collapsing, full-screen inspection; animations; colors and symbols mapped to
   the references; every state (loading, streaming, waiting for approval,
   cancelled, no data, error, CLI not installed); how AI messages, observed
-  events and inferred labels look different.
+  events and inferred labels look different; the input editor of amendment 3
+  (multiline editing and selection, paste, clipboard and mouse copy from every
+  panel, configurable Enter-to-send and newline keys, `$EDITOR`), with what
+  works where across terminals and OSes.
 
 Checks: every item of the brief and of amendment 2 placed in a section; every
 choice traced to a plan 1 finding; every conceptual event mapped or marked
@@ -94,7 +105,9 @@ protocol.
   configuration stays untouched; JEV optional; the mock-data mode (mock events
   through the same pipeline, never shown as real); the test plan (event
   normalisation and telemetry parsing per CLI, conversation and agent state
-  transitions: each state and transition listed).
+  transitions: each state and transition listed; input: pastes preserved byte
+  for byte, a multiline paste never submitting, thousands of lines without
+  freezing, the same behaviour for every agent CLI).
 
 Checks: each brief item of phase 3 answered; each source from plan 1 has a
 fallback; the state machines list every state and transition, and fit all
@@ -106,9 +119,10 @@ three CLIs; mock mode can never be mistaken for a live session.
   amendment 2 (revised layout, interaction-flow diagram, event and state
   architecture, integration strategy, reusable components, limitations and
   risks, updated MVP plan), summarised from plans 1-3 with links, explaining
-  what amendment 2 changed in the architecture. The MVP roadmap says in which
-  order the agent CLIs and the zones are delivered, and becomes the next plans
-  in this file, once approved.
+  what amendments 2 and 3 changed in the architecture. The MVP roadmap says in
+  which order the agent CLIs and the zones are delivered, includes the input
+  editor and clipboard as essential MVP features (amendment 3), and becomes the
+  next plans in this file, once approved.
 
 Checks: every item present; each links to its detailed document; the roadmap
 in ordered steps, each with its own checks. Then present it and wait for the

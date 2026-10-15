@@ -66,6 +66,11 @@ not on the PATH, and tmux only runs under WSL on this machine.
 - **Real values or "N/A".** A value no supported source gives is shown as
   "N/A", never invented; API-equivalent costs are kept apart from
   subscription usage.
+- **Input and clipboard are MVP-essential and provider-independent.** A full
+  multiline editor (bracketed paste that never submits, content kept byte for
+  byte, thousands of lines without freezing) and system clipboard copy and
+  paste, including mouse selection from any panel, work the same with every
+  agent CLI (brief, amendment 3).
 - **Until the proposal (plan 4) is approved:** no code, no dependency
   installed, no file written outside `doc\` and `plan.md`.
 - **The project is proprietary (all rights reserved, see `LICENSE`).** Copy
