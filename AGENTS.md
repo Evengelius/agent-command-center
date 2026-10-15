@@ -20,10 +20,9 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: before implementation.** There is no code yet. `plan.md` runs four
-plans in order (research, architecture, reliability, proposal), then plan 5,
-the MVP; nothing is
-built or installed before the owner approves the proposal.
+**Status: before implementation.** There is no code yet. `plan.md` runs three
+plans in order (research; architecture and reliability; proposal), then plan 4,
+the MVP; nothing is built or installed before the owner approves the proposal.
 
 ## Layout
 
@@ -84,8 +83,11 @@ not on the PATH, and tmux only runs under WSL on this machine.
   out (recent projects, favourites, project browser, worktrees, editor
   integration, model configuration, cross-provider collaboration, provider
   switching, session profiles, orchestration settings).
-- **Until the proposal (plan 4) is approved:** no code, no dependency
-  installed, no file written outside `doc\` and `plan.md`.
+- **Until the proposal (plan 3) is approved:** no code, no dependency
+  installed, no file written outside `doc\` and `plan.md`. The one exception is
+  plan 1's probes of the installed agent CLIs, run only with the owner's
+  approval, in a temporary folder outside the repository, with no
+  configuration changed; they use the owner's quota.
 - **The project is proprietary (all rights reserved, see `LICENSE`).** Copy
   third-party code only under a permissive license (MIT, BSD, Apache-2.0),
   keeping its notice, and record the source, commit and license next to what

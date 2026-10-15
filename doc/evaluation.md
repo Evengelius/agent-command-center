@@ -28,6 +28,7 @@ work is done only when every criterion passes. What only the owner can judge
 | A license | the SPDX identifier read from the repository's license file, at that commit |
 | A dependency | its name and version, read from `go.mod`, `package.json` or the lock file |
 | A documented interface | the documentation page and section that defines it; "undocumented" when there is none |
+| A probe (plan 1) | approved by the owner first; run in a temporary folder outside the repository; its command, CLI version and raw output recorded in `doc/research/probes/`, with credentials and personal data removed; no CLI configuration changed (hashes before and after) |
 | A document | the sections the plan requires, each present; every brief item covered, with where |
 | Working copy | `git status` lists only the intended files |
 | Build | `go build ./...` exit 0, no warning |
@@ -55,7 +56,7 @@ work is done only when every criterion passes. What only the owner can judge
 | Working directory | the started CLI's working directory equals the chosen project path, read from the process or the CLI's own output |
 | Startup gate | the dashboard cannot open before both answers are validated |
 | MVP scope | none of the features amendment 4 leaves out exists in the code or the screens |
-| MVP acceptance | plan 5 ends with amendment 4's acceptance criteria, each checked with each agent CLI, or listed under not verified |
+| MVP acceptance | plan 4 ends with amendment 4's acceptance criteria, each checked with each agent CLI, or listed under not verified |
 
 A check that cannot fail proves nothing. When you write a new check, run it once
 on a damaged input and make sure it fails.
