@@ -1,0 +1,10 @@
+# Build output
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+coverage.*
+
+# Local, per-machine Claude Code settings
+.claude/settings.local.json
