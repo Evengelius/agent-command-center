@@ -1,21 +1,21 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
 ╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────────────────────╮
-│ claude-haiku-5-5 · orchestrat… ││   the files in the current directory, write their names into a new file named      │
-│ turn 1 · completed             ││   found.txt with the Write tool, and report the names. Then tell me in one line    │
-│                                ││   what it found.                                                                   │
-│ AGENTS  observed from events   ││   ▸ Agent                                                                     mock │
-│ ✓ Turn 1                       ││ AGENT  claude-haiku-5-5                                                            │
-│   └─ ✓ subagent  general-purp… ││   I've launched the subagent in the background to list the directory and write     │
-│                                ││   `found.txt`. I'll report its result when it finishes.                            │
-│                                ││ ! APPROVAL Bash                                                                    │
+│ claude-haiku-5-5 · orchestrat… ││   what it found.                                                                   │
+│ turn 1 · completed             ││   ▸ Agent                                                                     mock │
+│                                ││ AGENT  claude-haiku-5-5                                                            │
+│ AGENTS  observed from events   ││   I've launched the subagent in the background to list the directory and write     │
+│ ✓ Turn 1                       ││   `found.txt`. I'll report its result when it finishes.                            │
+│   └─ ✓ subagent  general-purp… ││ ! APPROVAL Bash                                                                    │
 │                                ││ ! APPROVAL Write                                                                   │
-│                                ││   ∴ The subagent found two files in the directory, `alpha.txt` and `beta.md`, and  │
+│                                ││ AGENT  claude-haiku-5-5                                                            │
+│                                ││   The subagent found two files in the directory, `alpha.txt` and `beta.md`, and    │
 │                                ││   wrote them into `<probe-root>\probe-work\p3b\found.txt`.                         │
 │                                ││                                                                                    │
 │                                ││   Found 2 files: alpha.txt and beta.md.                                            │
+│                                ││   ∴ thinking                                                                       │
 │                                ││ ────────────────────────────────────────────────────────────────────────────────── │
-│                                ││ > █                                                                                │
+│                                ││ >  Ask Mock data anything…                                                         │
 │                                ││                                                                                    │
 │                                ││                                                                                    │
 │                                ││   turn started by the CLI                                   1 line · Ctrl+G editor │

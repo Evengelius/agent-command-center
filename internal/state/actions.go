@@ -212,7 +212,7 @@ func (s *State) interrupt() []Command {
 		return nil
 	}
 	if s.Turn.Phase != Running && s.Turn.Phase != WaitingApproval {
-		s.Turn.Notice = "nothing to interrupt"
+		s.Turn.Notice = "nothing to interrupt · Ctrl+Q quits"
 		return nil
 	}
 	var cmds []Command

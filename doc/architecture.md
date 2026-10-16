@@ -47,8 +47,9 @@ license where it is used (AGENTS.md; TI 11 item 2).
 ## Where it runs
 
 - **The MVP runs as a native Windows program** on the owner's Windows 11
-  machine, in Windows Terminal or the VS Code terminal, with both agent CLIs
-  installed natively. Both CLIs were driven this way (INT 9; P1 to P7). This
+  machine, in Windows Terminal (conhost works too), with both agent CLIs
+  installed natively; the VS Code terminal is out of scope (brief,
+  amendment 6). Both CLIs were driven this way (INT 9; P1 to P7). This
   settles plan 1's open point "where the dashboard runs" (INT "Open points
   for plan 2") and selects the Windows column of the path table (INT paths).
 - The code stays portable (Go, no Windows-only API outside the clipboard and
@@ -359,7 +360,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-14 | Codex threads given model "N/A" until a per-thread source appears | events-and-state.md |
 | ASM-15 | No message is sent while a turn runs; the draft waits (Codex `turn/steer` and Claude Code's queue are not verified) | events-and-state.md, Turn machine |
 | ASM-16 | The 10 s an interrupt has to end the turn before "force stop" is offered (the 5 s shutdown steps are the Agent SDK's, CC-4; ASM-5 extends them to Codex) | events-and-state.md, Turn machine |
-| ASM-17 | The Markdown renderer: Glamour v2 with Chroma v2, or our own if its cost on streamed messages is too high (not studied in plan 1; a dependency needing approval) | ui-design.md, Markdown |
+| ASM-17 | The Markdown renderer: our own, no new dependency (the owner's decision of 2026-10-16, plan 4 step 3, after Glamour v2 measured p95 590 ms re-rendering a streamed 2,000-line message); Markdown styling and syntax highlighting come in the final stage | ui-design.md, Markdown |
 | ASM-18 | Animation rates: spinners and the moving connector dot at 10 frames per second, only while something runs | ui-design.md, Animations |
 | ASM-19 | Each CLI process runs in a Windows job object that ends it when the dashboard's process ends, so no CLI is orphaned | reliability.md, Separated parts |
 | ASM-20 | The event reader accepts lines up to 64 MiB; a longer line is recorded as an error with its size and skipped | reliability.md, Concurrent output |

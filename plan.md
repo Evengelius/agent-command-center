@@ -179,7 +179,143 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
   (listing the owner's skills and commands), now shown as unrecognised;
   a `get_context_usage` failure is not reported (step 7); Ctrl+Q during a
   turn (step 3); `CmdDraftAccepted` deletes the draft at step 4.
-- Steps 3 to 8: outstanding.
+- Step 3 (interactive conversation with streaming): **done** (started and
+  finished 2026-10-16; criteria 1 to 8 PASS; criterion 9 measured, PASS
+  except Shift+Enter in both terminals and three conhost input cells, FAIL
+  and documented below). Criteria, each yes/no (proposal step 3):
+  1. Test 5: for pastes with LF, CRLF, lone CR, tabs, trailing spaces,
+     combining marks, emoji, wide characters and C0 controls, the stored text
+     equals the input with each CRLF and lone CR turned into one LF and
+     nothing else changed, and the `message.content` decoded from the bytes
+     written to a fake Claude Code's stdin equals the stored text.
+  2. A paste ending in a newline sends nothing (0 writes); Enter afterwards
+     writes exactly 1 message; after `PasteStartMsg` with no end, Enter writes
+     0 and the editor shows "pasting…".
+  3. Test 6, measured: keystroke-to-frame 95th percentile with a 10,000-line
+     buffer at most 16 ms; 50,000-line paste-to-frame at most 100 ms. Either
+     figure over its target is a FAIL, reported with its value.
+  4. Streaming: golden frames of P2's replay at successive deltas show the
+     answer growing; a follow-up is written to the same session (same session
+     id); after an interrupt the session is Ready, the turn Idle and the
+     draft typed during the turn unchanged.
+  5. Every conversation entry, after replaying every fixture and mock file,
+     carries the `Seq` of an applied CLI event of a kind allowed for its
+     role; a planted entry without one makes the test fail.
+  6. Test 12: OSC 52 and its tmux wrapping equal the expected bytes; the
+     native path writes through a fake; a mouse selection copies a wrapped
+     line as one line, without borders, symbols or origin labels, and a code
+     block exactly, tabs included.
+  7. Markdown (ASM-17): a 2,000-line message streamed one delta per frame,
+     measured with Glamour v2 against 16 ms per frame; if it misses, our own
+     renderer for the CLIs' subset, measured against the same target, no new
+     dependency.
+  8. The app's input tests give identical results with the Claude Code,
+     Codex and mock adapters attached.
+  9. Listed for the owner, not verified by the agent: Windows Terminal, VS
+     Code terminal and conhost for paste, Shift+Enter and copy. The owner
+     then asked for it automated wherever possible (keyboard, multiline
+     paste, clipboard, mouse selection, F12, scrolling, rendering), every
+     check maximised as well as at the default size, and dropped the VS
+     Code terminal (brief, amendment 6).
+  Regressions: `go build`, `go vet`, `gofmt -l .` clean; `go test ./...`
+  all PASS, test 7 included.
+  Progress (2026-10-16):
+  - Done: the input editor drawn in B (`internal/render/editor.go`: tabs at
+    4 columns, controls as `^X`, C1 and invalid bytes as `<XX>`, hard wrap,
+    cursor, selection, "pasting…", "N lines · Ctrl+G editor"); copy keys,
+    toasts, `$EDITOR` round trip (`internal/app/editing.go`); the thinking
+    flag no longer greys a real answer (stream frame 06 and the three
+    dashboard frames regenerated, diffs reviewed).
+  - Criterion 1 PASS: `TestInputByteForByte`, ten cases, through the real
+    Claude Code adapter on an in-memory process; each stdin line equals the
+    expected JSON byte for byte (a mutation, HTML escaping on, makes it fail).
+  - Criterion 2 PASS: `TestPasteNeverSubmits`.
+  - Criterion 3 PASS, measured by `TestKeystrokeToFrame` and
+    `TestPasteToFrame` (Update plus View): keystroke p50 2.0 ms, p95 4.0 ms,
+    max 10.2 ms, 800 keys, 10,000-line draft; 50,000-line paste (3.35 MB)
+    p50 2.5 ms, max 3.3 ms over 10 runs.
+  - Criteria 4 and 5 PASS (`TestStreamingP2`, the trace test).
+  - Criterion 6 PASS: OSC 52, tmux wrap, SSH and the native path through
+    a fake (`TestCopyKeys`, `TestCopyCutAndInterrupt`); mouse selection
+    (`TestMouseSelection`): a wrapped line copies as one line, a code block
+    exactly with its tab, a drag across borders, labels and into C copies
+    exactly the answer plus "Bash", nothing else; double and triple click;
+    the highlight leaves the plain frame unchanged. Also
+    `TestCtrlCAfterMouseSelection` (Ctrl+C copies, then interrupts),
+    `TestEditorMouse`, `TestMouseFocusAndCapture` (a plain click selects
+    nothing; F12), `TestConversationScroll` (wheel, PgUp/PgDn, "↓ N new",
+    long pastes folded to "… N more lines").
+  - Criterion 7: Glamour v2 re-rendering the whole message missed (p95
+    590 ms; 3.5 ms with a per-block cache). The owner chose our own
+    renderer, no new dependency, with Markdown styling and highlighting in
+    the final stage (2026-10-16; ASM-17 updated). PASS for the renderer as
+    built (plain wrapped text, every byte kept), `TestStreamToFrame`, 2,000
+    lines at one line per delta through Update and View: p95 5.5, 4.4 and
+    5.0 ms over three runs (p50 1.0 to 2.7 ms, max 16.5 to 23.9 ms). It
+    first measured p95 58.8 ms; a per-line wrap cache, rows drawn only when
+    shown and rows sharing their styles (1,456 to 80 bytes a row) brought
+    it under. The Markdown subset is re-measured when it is added.
+  - Criterion 8 PASS with the Claude Code adapter, a scripted session under
+    the `codex` id and the mock adapter; the Codex adapter's own session is
+    step 5, so its stdin bytes are not verified yet.
+  - Done in B: scrolling and follow mode with "↓ N new", long pastes
+    folded, Ctrl+C with nothing to interrupt saying "Ctrl+Q quits".
+  - Regressions PASS: `go build ./...`, `go vet ./...`, `gofmt -l .`
+    empty, `go test ./...` all ok (internal/app 130 s); golden frames
+    unchanged by the renderer work.
+  - Criterion 9, measured 2026-10-16 in Windows Terminal 1.23.20211.0 and
+    conhost (Windows 11 10.0.26200.8246), the mock replay in each, maximised
+    from launch and at the default size: 4 runs, 40 to 41 checks each. A
+    harness outside the repository sends real keyboard and mouse input
+    (SendInput), sets and reads the system clipboard, and reads the screen
+    through UI Automation; no CLI, no quota. Results, the same at both sizes:
+    - Windows Terminal: 39 of 41 PASS maximised (156x44), 38 of 40 at
+      120x30. Paste (Ctrl+V and right-click) never submits and is kept byte
+      for byte, CRLF as LF: tabs, trailing spaces, wide characters, emoji,
+      and a 2,000-line paste of 94,908 characters (on screen 2.9 to 6.1 s
+      after Ctrl+V: WT's input throughput, not a frame cost); typed text
+      exact; Ctrl+J newline; Tab, Backspace, Left; Enter sends; mouse
+      triple-click, double-click and a drag over a wrapped message copy
+      exactly; F12 hands selection to WT and back; Ctrl+O and OSC 52 reach
+      the clipboard; wheel and PgUp/PgDn scroll B and return; every frame
+      closed by its borders after replay, paste, resize (compact layout at
+      86 columns) and maximising; Ctrl+Q quits. **FAIL: Shift+Enter
+      arrives as Enter and sends the message** (K2, K5).
+    - conhost: 36 of 41 PASS maximised (213x52), 35 of 40 at 120x40. As WT
+      (F12 hands selection to QuickEdit), except **FAIL**: Shift+Enter
+      sends (K2, K5); a typed emoji arrives twice (K1; O2, which copies
+      typed text through OSC 52, fails for the same reason: the OSC 52
+      path itself delivered); conhost's own right-click paste loses the
+      emoji and the final newline (P9; Ctrl+V keeps them).
+    - Cause of every FAIL, from `TEA_TRACE` and the console input queue:
+      Bubble Tea's Windows input reader (ultraviolet
+      `terminal_reader_windows.go`) turns console key records into VT
+      bytes without Shift on Enter, decodes a surrogate pair on both key
+      down and key up, and writes NUL for a Char-0 key down; conhost's
+      paste sends non-keyboard characters as Alt+numpad records. Fixing it
+      means patching a dependency: proposed to the owner, not applied.
+      Ctrl+J is the newline key meanwhile, and the hint line names it.
+    - Harness defects found and fixed on the way, none in the app: a
+      PowerShell variable clash (`$k` and `$K` are one variable) sent keys
+      as VK 0; a drag moved the cursor with SetCursorPos, which gives WT no
+      pointer moves, so its own selection never started (now SendInput
+      moves); checks looked for lines that B folds.
+    - App defects the runs found, fixed with a deterministic test each:
+      zone C broken by an agent's multi-line summary at 156 columns
+      (`TestFrameInvariants`, widths 80 to 240); Ctrl+O copying a
+      thinking-only entry (`TestCopyLastAnswer`); F12 in conhost leaving no
+      selection, as Bubble Tea clears QuickEdit (`TestTerminalSelects`,
+      `input.TerminalSelects`, and a refusal is shown); a raw Ctrl+V whose
+      clipboard read fails now says "paste failed: …" instead of doing
+      nothing (`TestRawPasteFailure`).
+    - Not verified: Shift-drag selection in WT while the app captures the
+      mouse; a NUL in a paste (the Windows clipboard ends its text at the
+      first NUL, so no terminal can deliver one; the editor keeps NUL,
+      `TestInputByteForByte`).
+  - Left for later steps, not criteria of this one: Enter expanding folded
+    items; scrolling in A and C; copying failure-card text; the Codex
+    adapter's own stdin bytes (step 5).
+- Steps 4 to 8: outstanding.
 
 The owner's decisions at plan 3's approval (2026-10-16):
 - Proposal and roadmap approved; follow its order and the MVP scope.

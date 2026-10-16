@@ -40,8 +40,22 @@ type UI struct {
 	// Dashboard.
 	Focus    string // "A", "B", "C" or "D"
 	Draft    string // the editor's text
+	Editor   EditorView
 	Selected string // the agent selected in zone C
 	Spinner  int    // the spinner's frame
+	Toast    string // replaces the key hints for a moment (ui-design.md, Clipboard)
+
+	// Mouse selection and scrolling (ui-design.md, Selection and copy; Zone B,
+	// Follow mode).
+	Sel      Selection // the mouse selection, outside the editor
+	ConvTop  int       // the first conversation row shown while held
+	ConvHold bool      // scrolled up: the view stays where it is
+	ConvSeen int       // the entries there were when the view was held
+	MouseOff bool      // mouse capture off: the terminal selects
+
+	// Wrap keeps the conversation's line breaks between frames; nil wraps
+	// every line each frame, with the same result.
+	Wrap *WrapCache
 }
 
 // Colours and symbols (ui-design.md, Colours and symbols).
@@ -84,26 +98,7 @@ func modelStyle(model string) lipgloss.Style {
 
 // Frame draws the whole screen: exactly ui.Height lines, none wider than
 // ui.Width.
-func Frame(s *state.State, ui UI) string {
-	var ls []line
-	switch {
-	case ui.Width < MinWidth || ui.Height < MinHeight:
-		ls = tooSmall(s, ui)
-	case s.Screen == state.ScreenDashboard:
-		ls = dashboard(s, ui)
-	default:
-		ls = startup(s, ui)
-	}
-	out := make([]string, 0, ui.Height)
-	for i := 0; i < ui.Height; i++ {
-		var l line
-		if i < len(ls) {
-			l = ls[i]
-		}
-		out = append(out, l.fit(ui.Width).String())
-	}
-	return strings.Join(out, "\n")
-}
+func Frame(s *state.State, ui UI) string { return Draw(s, ui).String() }
 
 func tooSmall(s *state.State, ui UI) []line {
 	ls := []line{

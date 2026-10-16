@@ -2,13 +2,13 @@
  ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
  A ✓ Turn 1 › ✓ general-purpose                        (from events)   F6: tree
 ╭─ B · CONVERSATION ───────────────────────────────────────────────────────────╮
-│ ! APPROVAL Write                                                             │
-│   ∴ The subagent found two files in the directory, `alpha.txt` and           │
-│   `beta.md`, and wrote them into `<probe-root>\probe-work\p3b\found.txt`.    │
+│   The subagent found two files in the directory, `alpha.txt` and `beta.md`,  │
+│   and wrote them into `<probe-root>\probe-work\p3b\found.txt`.               │
 │                                                                              │
 │   Found 2 files: alpha.txt and beta.md.                                      │
+│   ∴ thinking                                                                 │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│ > █                                                                          │
+│ >  Ask Mock data anything…                                                   │
 │                                                                              │
 │                                                                              │
 │   turn started by the CLI                             1 line · Ctrl+G editor │

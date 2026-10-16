@@ -78,8 +78,8 @@ five parts, threads, provider interface, both adapters, startup).
   `Capabilities`; adapters for Claude Code, Codex and the mock provider
   ([architecture.md, Provider interface](architecture.md#provider-interface)).
   Adding a CLI later is an adapter, not a rework; no third adapter is built.
-- **Native Windows program** in Windows Terminal or the VS Code terminal; the
-  code stays portable, Linux and macOS not verified
+- **Native Windows program** in Windows Terminal (and conhost); the VS Code
+  terminal is out of scope (brief, amendment 6); the code stays portable, Linux and macOS not verified
   ([architecture.md, Where it runs](architecture.md#where-it-runs)).
 
 ## 3. Detailed terminal UI design
@@ -257,8 +257,8 @@ The input editor and the clipboard are essential here, not polish (AM3).
 8. Same input tests with the Claude Code, Codex and mock adapters attached:
    identical results.
 9. Not verified by the agent: the terminal matrix cells (Windows Terminal,
-   VS Code terminal, conhost) for paste, Shift+Enter and copy, listed for the
-   owner's manual check.
+   conhost) for paste, Shift+Enter and copy, listed for the owner's manual
+   check. The VS Code terminal was dropped by amendment 6 (2026-10-16).
 
 ### Step 4: permissions and session continuity (owner priority 4)
 
@@ -378,7 +378,7 @@ Brief phase 4, item 6. Detail: [reliability.md](reliability.md) and its
 | Terminal differences (Shift+Enter, OSC 52, conhost) | a key or copy path missing | Ctrl+J and native clipboard work everywhere; the matrix lists the rest |
 | Quota sources are partial (Claude Code on transitions only, **U** windows) | stale or missing values | shown with age and †, "N/A" past reset (TEL) |
 
-Compatibility: native Windows 11 in Windows Terminal or the VS Code terminal,
+Compatibility: native Windows 11 in Windows Terminal or conhost (amendment 6),
 Claude Code 2.1.300 and Codex 0.145.0 as probed; other versions run the
 fixture tests first. Linux, macOS and CLIs inside WSL driven from Windows are
 not verified ([architecture.md, Where it runs](architecture.md#where-it-runs)).

@@ -26,11 +26,12 @@ func main() {
 	// (Claude Code) and 5 (Codex), and until then Start reports it.
 	host := provider.SystemHost()
 	m := app.New(app.Options{
-		Config:    cfg,
-		Providers: []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host}},
-		Now:       time.Now,
-		Clipboard: input.System{},
-		MockSpeed: 1,
+		Config:          cfg,
+		Providers:       []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host}},
+		Now:             time.Now,
+		Clipboard:       input.System{},
+		TerminalSelects: input.TerminalSelects,
+		MockSpeed:       1,
 	})
 	_, err = tea.NewProgram(m).Run()
 	m.Shutdown()

@@ -773,7 +773,7 @@ var invalids = []machineCase{
 	{"Turn", "an interrupt while `Idle` or `Submitted`-without-events is a no-op with a notice", func(b *bench) {
 		b.ready().do(Interrupt{})
 		b.eq("idle", b.kinds(), "")
-		b.eq("notice", b.s.Turn.Notice, "nothing to interrupt")
+		b.eq("notice", b.s.Turn.Notice, "nothing to interrupt · Ctrl+Q quits")
 		c := newBench(b.t).submitted()
 		c.do(Interrupt{})
 		c.eq("submitted", c.kinds(), "")

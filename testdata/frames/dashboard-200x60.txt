@@ -9,11 +9,11 @@
 │   └─ ✓ subagent  general-purpose         ││   I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it finishes.                     │
 │                                          ││ ! APPROVAL Bash                                                                                                                                          │
 │                                          ││ ! APPROVAL Write                                                                                                                                         │
-│                                          ││   ∴ The subagent found two files in the directory, `alpha.txt` and `beta.md`, and wrote them into `<probe-root>\probe-work\p3b\found.txt`.               │
+│                                          ││ AGENT  claude-haiku-5-5                                                                                                                                  │
+│                                          ││   The subagent found two files in the directory, `alpha.txt` and `beta.md`, and wrote them into `<probe-root>\probe-work\p3b\found.txt`.                 │
 │                                          ││                                                                                                                                                          │
 │                                          ││   Found 2 files: alpha.txt and beta.md.                                                                                                                  │
-│                                          ││                                                                                                                                                          │
-│                                          ││                                                                                                                                                          │
+│                                          ││   ∴ thinking                                                                                                                                             │
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
@@ -24,7 +24,7 @@
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
 │                                          ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
-│                                          ││ > █                                                                                                                                                      │
+│                                          ││ >  Ask Mock data anything…                                                                                                                               │
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │

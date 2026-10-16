@@ -504,14 +504,18 @@ AI text is Markdown (AM2 B4): headings, emphasis, lists, quotes, links
 shown as text with their URL, tables, and fenced code blocks with a language
 label and syntax highlighting.
 
-- **Renderer**: Glamour v2 with Chroma v2 (both MIT), the pair a reference
-  project uses with Bubble Tea v2 ([agent-dashboard.md](research/agent-dashboard.md),
-  dependencies); or a smaller renderer of our own if Glamour's cost on long
-  streamed messages is too high. The choice and its cost were not studied in
-  plan 1 (ASM-17); either needs the owner's approval as a dependency.
-- **Streaming**: only the open entry (the message receiving deltas) is
-  re-rendered, at most once per frame; earlier entries are rendered once
-  and cached by width. An unclosed code fence renders as code up to the
+- **Renderer**: our own, with no new dependency (ASM-17; the owner's
+  decision of 2026-10-16). Plan 4 step 3 measured Glamour v2 re-rendering a
+  streamed 2,000-line message at p95 590 ms per frame, and 3.5 ms with a
+  per-block cache. The MVP draws AI text as plain wrapped text that keeps
+  every byte; Markdown styling and syntax highlighting come in the final
+  stage, inside `internal/render` (`content.go`), measured against the same
+  16 ms target.
+- **Streaming**: each source line's wrap is cached by text and widths
+  (`WrapCache`, kept for one frame after its last use), and rows are drawn
+  only when shown, so a frame costs the visible rows plus one cached lookup
+  per line. Measured by `TestStreamToFrame`, a 2,000-line answer at one line
+  per delta: p95 4.4 to 5.5 ms over three runs. An unclosed code fence renders as code up to the
   cursor `▌`, so text does not jump between "plain" and "code" as the fence
   closes.
 - **Code blocks** keep every character, including tabs (shown at 4
@@ -739,8 +743,7 @@ The input in B has the focus by default (AM4 D4; AM2 U10); Esc always
 returns to it. Bindings are lists, configurable in the application's own
 configuration, never a CLI's (TI 4.3; ASM-7, ASM-9). The defaults avoid the
 keys Windows Terminal takes (TI 9). F1 or `?` (outside the editor) shows
-this table as an overlay; whether VS Code's terminal passes F1 through is
-Not verified (TI 9).
+this table as an overlay.
 
 **Anywhere**
 
@@ -892,12 +895,16 @@ item 4):
 
 Mouse selection in any panel, with clean text (AM3 M3; TI 6.3):
 
-- A press is hit-tested with Lip Gloss's `Compositor.Hit` to pick **one**
-  panel; the selection stays in it and maps to that panel's content model
-  (logical lines without borders, padding or labels). A drag leaving the
-  panel is clamped; at its edges the panel auto-scrolls.
-- Double-click selects a word, triple-click a line; Shift+click and
-  Shift+arrows extend.
+- A press is hit-tested against the drawn frame to pick **one** panel:
+  every span carries a reference to the content it shows (panel, entry,
+  logical line, byte offset), or marks itself decoration. The selection
+  stays in that panel and maps to its content (logical lines without
+  borders, padding or labels). A drag leaving the panel is clamped; zone B
+  scrolls when the pointer leaves it upward or downward. (Lip Gloss's
+  `Compositor.Hit` was not needed.)
+- A plain click focuses the panel and selects nothing; double-click selects
+  a word, triple-click a line; Shift+click extends. In the editor the mouse
+  sets the editor's own selection, and Shift+arrows extend it.
 - Copy on release by default (configurable; ASM-22), or Ctrl+Shift+C, or Ctrl+C
   while a selection exists. Without a selection, Ctrl+C keeps its interrupt
   meaning (WT passes Ctrl+C through when WT itself has no selection, TI
@@ -906,26 +913,33 @@ Mouse selection in any panel, with clean text (AM3 M3; TI 6.3):
   exact text; a wrapped line copies as one line; origin labels and
   symbols are not copied.
 - **Native escape**: F12 turns mouse capture off; the hint line then says
-  "mouse capture off: Shift-drag selects (whole screen, borders included)".
+  "mouse capture off: the terminal selects (whole screen, borders
+  included) · F12 back on".
+- MVP limits (plan 4 step 3): failure cards and the session-state lines in
+  B are decoration and are not copied; only B scrolls.
   When capture is on, the key overlay names the terminal's bypass key
   (Shift in WT).
 
 ## What works where
 
-From TI 10, for this design. "Check" is the manual check in plan 4.
+From TI 10, for this design; the Windows Terminal and conhost columns are
+measured (plan 4, step 3, criterion 9: real keyboard, mouse and clipboard
+input, maximised and at the default size, 2026-10-16). The VS Code terminal
+is out of scope (brief, amendment 6).
 
-| Need | Windows Terminal (native) | VS Code terminal | conhost | WSL2 in WT | tmux in WSL | Linux, macOS |
-| - | - | - | - | - | - | - |
-| Paste never submits | yes | yes (check) | VT mode only (check) | yes | yes (check) | yes |
-| Byte-for-byte paste | CR→LF; controls stripped by WT; `trimPaste` effect Not verified | Not verified; may drop characters on large pastes | Not verified | as WT | Not verified | yes, terminal-dependent |
-| Newline key | Ctrl+J; Shift+Enter Not verified through ConPTY | Ctrl+J; Shift+Enter needs a keybinding | Ctrl+J | Ctrl+J; Shift+Enter Not verified | Ctrl+J; Shift+Enter with extended-keys | Ctrl+J; Shift+Enter in most (not VTE) |
-| Copy | native + OSC 52 | native | native; OSC 52 build-dependent | `clip.exe` or PowerShell + OSC 52 | OSC 52 passthrough + tmux buffer | native tools, then OSC 52 |
-| Paste | Ctrl+V bracketed | Ctrl+V | VT mode | Ctrl+V bracketed | bracketed through tmux | bracketed |
-| Mouse selection in a panel | yes | yes | Not verified (QuickEdit) | yes | yes | yes |
-| Native escape | Shift-drag, F12 | Shift-drag, F12 | Not verified | Shift-drag, F12 | outer Shift-drag | Shift (Option on iTerm2, Fn on Terminal.app) |
-| `$EDITOR` | `code --wait`; Notepad Not verified | same | same | `nvim` | same | `$EDITOR` |
+| Need | Windows Terminal (native) | conhost | WSL2 in WT | tmux in WSL | Linux, macOS |
+| - | - | - | - | - | - |
+| Paste never submits | yes (measured, 2,000-line paste included) | yes (measured; Ctrl+V and right-click) | yes | yes (check) | yes |
+| Byte-for-byte paste | yes, CRLF→LF: tabs, trailing spaces, wide, emoji, 94,908 chars (measured) | Ctrl+V yes (measured); its own right-click paste loses non-keyboard characters (emoji) and a final newline | as WT | Not verified | yes, terminal-dependent |
+| Newline key | Ctrl+J; Shift+Enter arrives as Enter (measured) | Ctrl+J; Shift+Enter arrives as Enter (measured) | Ctrl+J; Shift+Enter Not verified | Ctrl+J; Shift+Enter with extended-keys | Ctrl+J; Shift+Enter in most (not VTE) |
+| Typed text | exact, emoji included (measured) | a typed emoji arrives twice (measured; Bubble Tea's Windows input reader) | as WT | Not verified | yes |
+| Copy | native + OSC 52 (measured) | native + OSC 52 (measured) | `clip.exe` or PowerShell + OSC 52 | OSC 52 passthrough + tmux buffer | native tools, then OSC 52 |
+| Paste | Ctrl+V bracketed | Ctrl+V, right-click | Ctrl+V bracketed | bracketed through tmux | bracketed |
+| Mouse selection in a panel | yes (measured) | yes (measured) | yes | yes | yes |
+| Native escape | F12, then the terminal's own drag and Ctrl+C (measured); Shift-drag Not verified | F12, then QuickEdit drag and Enter (measured) | Shift-drag, F12 | outer Shift-drag | Shift (Option on iTerm2, Fn on Terminal.app) |
+| `$EDITOR` | `code --wait`; Notepad Not verified | same | `nvim` | same | `$EDITOR` |
 
-The MVP's target is the first column (AGENTS.md: one Windows 11 machine,
+The MVP's target is the first two columns (AGENTS.md: one Windows 11 machine,
 architecture.md, Where it runs); the others are designed for and checked by
 hand when available. Linux and macOS builds are Not verified.
 

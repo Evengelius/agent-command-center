@@ -67,6 +67,9 @@ type Options struct {
 	Providers []provider.Provider
 	Now       func() time.Time
 	Clipboard input.Clipboard
+	// Getenv reads the environment (TMUX, SSH_*, VISUAL, EDITOR); nil is
+	// os.Getenv.
+	Getenv func(string) string
 	// After delivers msg after d; nil uses a real timer. Tests return nil
 	// to switch timers off.
 	After func(d time.Duration, msg tea.Msg) tea.Cmd
@@ -79,6 +82,9 @@ type Options struct {
 	Home string
 	// DetectTimeout bounds each adapter's detection; 0 is DetectTimeout.
 	DetectTimeout time.Duration
+	// TerminalSelects gives mouse selection to the terminal or takes it
+	// back, on F12 (input.TerminalSelects); nil does nothing.
+	TerminalSelects func(on bool) error
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -115,6 +121,13 @@ type Model struct {
 	pending  []tea.Cmd // the launch's commands, for Init
 
 	spinning, clocking bool
+
+	pasting  bool // between a paste's start and end markers
+	toastGen int  // the toast on screen; an older timer leaves it
+
+	screen *render.Screen // the last frame drawn: what the mouse points at
+	drag   drag
+	click  clicks
 }
 
 // Messages.
@@ -132,6 +145,7 @@ type (
 		closed bool
 	}
 	pasteMsg   struct{ text string }
+	toastMsg   struct{ text string }
 	spinMsg    struct{}
 	clockMsg   struct{}
 	leaveMsg   struct{}
@@ -160,9 +174,12 @@ func New(opt Options) *Model {
 	if opt.Home == "" {
 		opt.Home, _ = os.UserHomeDir()
 	}
+	if opt.Getenv == nil {
+		opt.Getenv = os.Getenv
+	}
 	m := &Model{opt: opt, s: state.New(), detected: map[string]provider.Detection{}}
 	m.env = input.PathEnv{Windows: filepath.Separator == '\\', Home: opt.Home, Cwd: opt.Cwd}
-	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider}
+	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache()}
 	project := opt.Project
 	if project == "" {
 		project = opt.Cwd
@@ -190,8 +207,12 @@ func (m *Model) Init() tea.Cmd {
 
 // View draws the frame.
 func (m *Model) View() tea.View {
-	v := tea.NewView(render.Frame(m.s, m.ui))
+	m.screen = render.Draw(m.s, m.ui)
+	v := tea.NewView(m.screen.String())
 	v.AltScreen = true
+	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff {
+		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
+	}
 	v.WindowTitle = "Agent Command Center"
 	return v
 }
@@ -225,12 +246,31 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !msg.closed {
 			cmds = append(cmds, listen(m.sess))
 		}
+	case tea.PasteStartMsg:
+		m.pasting = true
+	case tea.PasteEndMsg:
+		m.pasting = false
 	case tea.PasteMsg:
 		m.paste(msg.Content)
 	case pasteMsg:
 		m.paste(msg.text)
 	case tea.KeyPressMsg:
 		cmds = append(cmds, m.key(msg)...)
+	case tea.MouseMsg:
+		cmds = append(cmds, m.mouse(msg)...)
+	case copiedMsg:
+		cmds = append(cmds, m.toast(msg.toast)...)
+		if msg.seq != "" {
+			cmds = append(cmds, tea.Raw(msg.seq))
+		}
+	case toastMsg:
+		cmds = append(cmds, m.toast(msg.text)...)
+	case toastDoneMsg:
+		if msg.gen == m.toastGen {
+			m.ui.Toast = ""
+		}
+	case editedMsg:
+		cmds = append(cmds, m.edited(msg)...)
 	case spinMsg:
 		m.spinning = false
 		m.ui.Spinner++
@@ -251,6 +291,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // syncUI copies what the renderer needs from the editors.
 func (m *Model) syncUI() {
 	m.ui.Draft = m.edit.Text()
+	m.ui.Editor = m.editorView()
 	m.ui.Path = m.path.Text()
 	r := input.ResolvePath(m.path.Text(), m.env)
 	m.ui.Resolved, m.ui.PathProblem, m.ui.PathWarning = r.Path, r.Problem, r.Warning
@@ -539,7 +580,7 @@ func (m *Model) paste(text string) {
 	case m.s.Screen == state.ScreenStartup && m.ui.Field == 1:
 		m.path.Insert(input.CleanPath(text))
 	case m.s.Screen == state.ScreenDashboard && m.ui.Focus == "B":
-		m.edit.Insert(text) // byte for byte; a paste never submits
+		m.edit.Paste(text) // line breaks as LF, nothing else changed; never submits
 	}
 }
 

@@ -1,0 +1,241 @@
+package app
+
+import (
+	"time"
+
+	tea "charm.land/bubbletea/v2"
+
+	"github.com/Evengelius/agent-command-center/internal/input"
+	"github.com/Evengelius/agent-command-center/internal/render"
+	"github.com/Evengelius/agent-command-center/internal/state"
+)
+
+// Mouse timing and steps (ui-design.md, Selection and copy; Scrolling).
+const (
+	multiClick = 400 * time.Millisecond // a second press within it, on the same cell, is a double click
+	wheelRows  = 3
+)
+
+// drag is a mouse selection in progress: the panel it started in and the
+// unit (character, word or line) it started on.
+type drag struct {
+	on     bool
+	panel  byte
+	a0, a1 render.Pos
+	x, y   int  // the cell pressed
+	moved  bool // the pointer left that cell: a plain click selects nothing
+}
+
+// clicks counts presses on one cell for double and triple clicks.
+type clicks struct {
+	at   time.Time
+	x, y int
+	n    int
+}
+
+// mouse handles a mouse message on the dashboard.
+func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
+	if m.s.Screen != state.ScreenDashboard || m.screen == nil {
+		return nil
+	}
+	mo := msg.Mouse()
+	switch msg.(type) {
+	case tea.MouseClickMsg:
+		if mo.Button == tea.MouseLeft {
+			m.press(mo)
+		}
+	case tea.MouseMotionMsg:
+		if m.drag.on {
+			m.drag.moved = m.drag.moved || mo.X != m.drag.x || mo.Y != m.drag.y
+			m.extend(mo)
+		}
+	case tea.MouseReleaseMsg:
+		if m.drag.on {
+			m.drag.moved = m.drag.moved || mo.X != m.drag.x || mo.Y != m.drag.y
+			m.extend(mo)
+			m.drag.on = false
+			return m.copySelection()
+		}
+	case tea.MouseWheelMsg:
+		if p := m.screen.PanelAt(mo.X, mo.Y); p == 'B' || p == 'E' {
+			switch mo.Button {
+			case tea.MouseWheelUp:
+				m.scroll(-wheelRows)
+			case tea.MouseWheelDown:
+				m.scroll(wheelRows)
+			}
+		}
+	}
+	return nil
+}
+
+// press focuses the panel under the pointer and starts a selection there:
+// a character, a word on a double click, a line on a triple click; Shift
+// extends the current one.
+func (m *Model) press(mo tea.Mouse) {
+	p := m.screen.PanelAt(mo.X, mo.Y)
+	if p == 0 {
+		return
+	}
+	switch p {
+	case 'P':
+		m.ui.Focus = "C"
+	case 'E':
+		m.ui.Focus = "B"
+	default:
+		m.ui.Focus = string(p)
+	}
+	if mo.Mod&tea.ModShift != 0 && m.drag.panel == p {
+		m.drag.on, m.drag.moved = true, true
+		m.extend(mo)
+		return
+	}
+	now := m.opt.Now()
+	if m.click.n > 0 && now.Sub(m.click.at) <= multiClick && mo.X == m.click.x && mo.Y == m.click.y {
+		m.click.n = m.click.n%3 + 1
+	} else {
+		m.click.n = 1
+	}
+	m.click.at, m.click.x, m.click.y = now, mo.X, mo.Y
+
+	start, end, ok := m.screen.HitIn(p, mo.X, mo.Y, false)
+	if !ok {
+		m.ui.Sel = render.Selection{}
+		return
+	}
+	switch m.click.n {
+	case 1:
+		end = start
+	case 2:
+		a, b := input.WordBounds(m.lineText(start), start.Off)
+		start.Off, end.Off = a, b
+	case 3:
+		start.Off, end.Off = 0, len(m.lineText(start))
+	}
+	m.drag = drag{on: true, panel: p, a0: start, a1: end, x: mo.X, y: mo.Y, moved: m.click.n > 1}
+	m.setSelection(start, end, true)
+}
+
+// extend moves the selection's free end to the pointer, clamped to the
+// drag's panel; zone B scrolls when the pointer leaves it upward or
+// downward.
+func (m *Model) extend(mo tea.Mouse) {
+	if !m.drag.moved {
+		return // still on the pressed cell: the caret or the word stays
+	}
+	p := m.drag.panel
+	if p == 'B' {
+		if c := m.screen.Conv; mo.Y < c.Y {
+			m.scroll(-1)
+		} else if mo.Y >= c.Y+c.Room {
+			m.scroll(1)
+		}
+	}
+	_, end, ok := m.screen.HitIn(p, mo.X, mo.Y, true)
+	if !ok {
+		return
+	}
+	if !end.Before(m.drag.a0) {
+		m.setSelection(m.drag.a0, maxPos(end, m.drag.a1), true)
+		return
+	}
+	if start, _, ok := m.screen.HitIn(p, mo.X, mo.Y, false); ok && start.Before(m.drag.a0) {
+		m.setSelection(start, m.drag.a1, false)
+	}
+}
+
+func maxPos(a, b render.Pos) render.Pos {
+	if a.Before(b) {
+		return b
+	}
+	return a
+}
+
+// setSelection selects from..to in the drag's panel: the editor's own
+// selection in the editor (its cursor at the free end), the mouse selection
+// elsewhere.
+func (m *Model) setSelection(from, to render.Pos, forward bool) {
+	if m.drag.panel != 'E' {
+		m.ui.Sel = render.Selection{From: from, To: to}
+		m.edit.ClearSelection()
+		return
+	}
+	m.ui.Sel = render.Selection{}
+	a, b := m.edit.Offset(from.Line, from.Off), m.edit.Offset(to.Line, to.Off)
+	if forward {
+		m.edit.Select(a, b)
+	} else {
+		m.edit.Select(b, a)
+	}
+}
+
+// lineText is the logical line p is on.
+func (m *Model) lineText(p render.Pos) string {
+	if p.Panel == 'E' {
+		if ls := m.edit.LineRange(p.Line, 1); len(ls) == 1 {
+			return ls[0]
+		}
+		return ""
+	}
+	return m.screen.LineText(m.s, p)
+}
+
+// copySelection copies the mouse selection, or the editor's after a drag in
+// it (ui-design.md, Selection and copy: copy on release).
+func (m *Model) copySelection() []tea.Cmd {
+	if !m.ui.Sel.Empty() {
+		return m.copy(m.screen.Text(m.s, m.ui.Sel))
+	}
+	if m.drag.panel == 'E' && m.edit.HasSelection() {
+		return m.copy(m.edit.SelectedText())
+	}
+	return nil
+}
+
+// scroll moves the conversation d rows; scrolling up holds the view, and
+// reaching the bottom follows again (ui-design.md, Zone B, Follow mode).
+func (m *Model) scroll(d int) {
+	if m.screen == nil {
+		return
+	}
+	c := m.screen.Conv
+	bottom := max(c.Rows-c.Room, 0)
+	top := c.Top
+	if m.ui.ConvHold {
+		top = min(max(m.ui.ConvTop, 0), bottom)
+	}
+	top = max(top+d, 0)
+	if top >= bottom {
+		m.follow()
+		return
+	}
+	if !m.ui.ConvHold {
+		m.ui.ConvHold, m.ui.ConvSeen = true, len(m.s.Conversation)
+	}
+	m.ui.ConvTop = top
+	m.screen.Conv.Top = top // a second step before the next frame starts here
+}
+
+// follow puts the conversation back at its end.
+func (m *Model) follow() {
+	m.ui.ConvHold, m.ui.ConvTop = false, 0
+	if m.screen != nil {
+		m.screen.Conv.Top = max(m.screen.Conv.Rows-m.screen.Conv.Room, 0)
+	}
+}
+
+// page is a screenful of the conversation, less one row of context.
+func (m *Model) page() int {
+	if m.screen == nil {
+		return 1
+	}
+	return max(m.screen.Conv.Room-1, 1)
+}
+
+// pageStep is a page down, or up.
+func (m *Model) pageStep(down bool) int {
+	if down {
+		return m.page()
+	}
+	return -m.page()
+}

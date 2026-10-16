@@ -1,22 +1,91 @@
 package render
 
 import (
+	"fmt"
 	"strings"
 
 	"charm.land/lipgloss/v2"
 )
 
 // span is a run of plain text in one style. Widths are measured on the plain
-// text, so a line is cut and padded before any escape code is added.
+// text, so a line is cut and padded before any escape code is added. Its ref
+// says what content it shows, for mouse selection and copy (ui-design.md,
+// Selection and copy).
 type span struct {
 	text string
 	st   lipgloss.Style
+	ref  ref
 }
+
+// ref ties a span to a panel's content model: a panel's item (zone B's
+// entry, another panel's body row), a logical line in it and the byte offset
+// the span starts at. Decoration (borders, labels, symbols, padding) belongs
+// to a panel but is never copied.
+type ref struct {
+	panel byte // 0 outside every panel
+	kind  byte
+	item  int
+	line  int
+	off   int
+	n     int // refAtom: the source bytes the drawn unit stands for
+}
+
+// Ref kinds. refText spans show their source bytes as they are; a refAtom
+// span is one drawn unit (a tab's spaces, a control's ^X) for n source bytes.
+const (
+	refNone byte = iota
+	refDeco
+	refText
+	refAtom
+)
 
 // line is one screen line under construction.
 type line []span
 
-func sp(text string, st lipgloss.Style) span { return span{text, st} }
+func sp(text string, st lipgloss.Style) span { return span{text: visible(text), st: st} }
+
+// deco is a span never copied: a symbol, a label, a frame piece.
+func deco(text string, st lipgloss.Style) span {
+	return span{text: visible(text), st: st, ref: ref{kind: refDeco}}
+}
+
+// visible keeps a control character out of a drawn line: written as is, a
+// newline or an escape from a CLI's text would break the frame. A tab
+// becomes a space, other C0 controls and DEL ^X, C1 controls <XX>, as the
+// editor shows them (ui-design.md, Input editor). Content spans are built
+// by cellSpans, which draws controls as atoms.
+func visible(s string) string {
+	clean := true
+	for i := 0; i < len(s); i++ {
+		if b := s[i]; b < 0x20 || b == 0x7f || b == 0xc2 && i+1 < len(s) && s[i+1] >= 0x80 && s[i+1] <= 0x9f {
+			clean = false
+			break
+		}
+	}
+	if clean {
+		return s
+	}
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r == '\t':
+			b.WriteByte(' ')
+		case r < 0x20:
+			b.WriteByte('^')
+			b.WriteRune(r + '@')
+		case r == 0x7f:
+			b.WriteString("^?")
+		case r >= 0x80 && r <= 0x9f:
+			fmt.Fprintf(&b, "<%02X>", r)
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// decoLine is a line of one decoration span.
+func decoLine(text string, st lipgloss.Style) line { return line{deco(text, st)} }
 
 // plain is a line of one span.
 func plain(text string, st lipgloss.Style) line { return line{sp(text, st)} }
@@ -54,22 +123,38 @@ func (l line) fit(w int) line {
 		if left <= 0 {
 			break
 		}
-		t := cut(s.text, left)
-		out = append(out, sp(t, s.st))
-		left -= textWidth(t)
+		if s.ref.kind == refAtom && textWidth(s.text) > left {
+			break // a drawn unit is never split
+		}
+		c := s
+		c.text = cut(s.text, left)
+		out = append(out, c)
+		left -= textWidth(c.text)
 	}
 	st := lipgloss.NewStyle()
 	if len(out) > 0 {
 		st = out[len(out)-1].st
 	}
-	return append(out, sp("…", st)).pad(w)
+	return append(out, deco("…", st)).pad(w)
 }
 
 func (l line) pad(w int) line {
 	if n := w - l.width(); n > 0 {
-		return append(l, sp(strings.Repeat(" ", n), lipgloss.NewStyle()))
+		return append(l, deco(strings.Repeat(" ", n), lipgloss.NewStyle()))
 	}
 	return l
+}
+
+// in puts every span of the lines without a panel into panel p.
+func in(p byte, ls []line) []line {
+	for _, l := range ls {
+		for i := range l {
+			if l[i].ref.panel == 0 {
+				l[i].ref.panel = p
+			}
+		}
+	}
+	return ls
 }
 
 // spread puts right at the right edge of a w-wide line after left, cutting
@@ -157,12 +242,34 @@ func wrap(text string, w int) []string {
 	return out
 }
 
-// box draws a rounded frame w wide and h high around body, with a title on
-// the left of the top edge and an optional label on its right.
-func box(title, right line, body []line, w, h int, border lipgloss.Style) []line {
+// box draws panel p: a rounded frame w wide and h high around body, with a
+// title on the left of the top edge and an optional label on its right. In
+// every panel but B, a body span not marked otherwise is content, keyed by
+// its row; zone B keys its own content and the rest of it is decoration.
+func box(p byte, title, right line, body []line, w, h int, border lipgloss.Style) []line {
 	if h < 2 || w < 5 { // the smallest top edge is "╭─  ╮"
-		return blank(w, h)
+		return in(p, blank(w, h))
 	}
+	out := frameBox(title, right, body, w, h, border)
+	for i, l := range out {
+		off := 0
+		for k := range l {
+			r := &l[k].ref
+			if r.kind != refNone {
+				continue
+			}
+			if p != 'B' && i > 0 && i < len(out)-1 && k > 0 && k < len(l)-1 {
+				*r = ref{kind: refText, item: i - 1, off: off}
+				off += len(l[k].text)
+				continue
+			}
+			r.kind = refDeco
+		}
+	}
+	return in(p, out)
+}
+
+func frameBox(title, right line, body []line, w, h int, border lipgloss.Style) []line {
 	inner := w - 4
 	top := line{sp("╭─ ", border)}
 	top = append(top, title...)

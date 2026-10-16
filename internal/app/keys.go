@@ -6,6 +6,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/Evengelius/agent-command-center/internal/input"
+	"github.com/Evengelius/agent-command-center/internal/render"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -80,8 +81,39 @@ func (m *Model) focusMessage() {
 
 func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 	switch k.String() {
-	case "ctrl+c":
-		return m.do(state.Interrupt{})
+	case "ctrl+c", "ctrl+shift+c":
+		// Copy the selection if there is one, the mouse's first; else Ctrl+C
+		// interrupts (ui-design.md, Selection and copy).
+		if !m.ui.Sel.Empty() && m.screen != nil {
+			text := m.screen.Text(m.s, m.ui.Sel)
+			m.ui.Sel = render.Selection{} // as in WT: the next Ctrl+C interrupts
+			return m.copy(text)
+		}
+		if m.ui.Focus == "B" && m.edit.HasSelection() {
+			return m.copy(m.edit.SelectedText())
+		}
+		if k.String() == "ctrl+c" {
+			return m.do(state.Interrupt{})
+		}
+		return nil
+	case "f12":
+		m.ui.MouseOff = !m.ui.MouseOff
+		m.drag.on = false
+		if sel := m.opt.TerminalSelects; sel != nil {
+			off := m.ui.MouseOff
+			return []tea.Cmd{func() tea.Msg {
+				if err := sel(off); err != nil {
+					return toastMsg{"terminal selection unavailable: " + err.Error()}
+				}
+				return nil
+			}}
+		}
+		return nil
+	case "shift+pgup", "shift+pgdown":
+		m.scroll(m.pageStep(k.String() == "shift+pgdown"))
+		return nil
+	case "ctrl+o":
+		return m.copy(lastAnswer(m.s))
 	case "ctrl+r":
 		return m.do(state.Resume{})
 	case "esc":
@@ -90,6 +122,14 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 			m.closeSession()
 			m.focusMessage()
 			return cmds
+		}
+		if !m.ui.Sel.Empty() {
+			m.ui.Sel = render.Selection{} // Esc clears a selection first
+			return nil
+		}
+		if m.ui.Focus == "B" && m.edit.HasSelection() {
+			m.edit.ClearSelection()
+			return nil
 		}
 		m.ui.Focus = "B"
 		return nil
@@ -104,21 +144,19 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 	switch m.ui.Focus {
 	case "B":
 		switch k.String() {
-		case "enter":
-			if strings.TrimSpace(m.edit.Text()) == "" {
-				return nil
-			}
-			return m.do(state.Send{Text: m.edit.Text()})
-		case "ctrl+j":
-			m.edit.Newline()
+		case "pgup", "pgdown":
+			m.scroll(m.pageStep(k.String() == "pgdown"))
 			return nil
 		}
-		return m.editKey(&m.edit, k, false)
+		return m.editorKey(k)
 	case "C":
 		switch k.String() {
 		case "up", "down":
 			m.ui.Selected = step(m.s.Order, m.ui.Selected, k.String() == "down")
 		}
+	}
+	if k.String() == "end" {
+		m.follow() // End resumes follow mode; in B, End is the editor's
 	}
 	return nil
 }
@@ -158,7 +196,7 @@ func (m *Model) editKey(e *input.Editor, k tea.KeyPressMsg, oneLine bool) []tea.
 		return []tea.Cmd{func() tea.Msg {
 			text, err := cb.Read()
 			if err != nil {
-				return nil
+				return toastMsg{"paste failed: " + err.Error()}
 			}
 			return pasteMsg{text}
 		}}

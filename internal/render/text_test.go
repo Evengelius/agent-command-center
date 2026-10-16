@@ -14,7 +14,7 @@ func TestBoxEdges(t *testing.T) {
 	st := lipgloss.NewStyle()
 	for w := 5; w <= 40; w++ {
 		for _, right := range []line{nil, plain("2 ACTIVE", st)} {
-			ls := box(plain("C · AGENTS", st), right, []line{plain(strings.Repeat("x", 50), st)}, w, 3, st)
+			ls := box('C', plain("C · AGENTS", st), right, []line{plain(strings.Repeat("x", 50), st)}, w, 3, st)
 			for i, l := range ls {
 				if l.width() != w {
 					t.Fatalf("w %d, right %v: row %d is %d wide: %q", w, right != nil, i, l.width(), l.String())

@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/fixture"
 	"github.com/Evengelius/agent-command-center/internal/provider/claude"
 	"github.com/Evengelius/agent-command-center/internal/provider/codex"
@@ -29,15 +30,20 @@ var recordings = []struct {
 	{"p7-codex-subagents.jsonl", codex.ProviderID, func() fixture.Mapper { return codex.NewMapper() }},
 }
 
-func replayState(t *testing.T, name, provider string, m fixture.Mapper) (*state.State, int) {
+func replayEvents(t *testing.T, name, provider string, m fixture.Mapper) []event.Event {
 	t.Helper()
 	recs, err := fixture.Read(filepath.Join("../../testdata/probes", name))
 	if err != nil {
 		t.Fatal(err)
 	}
+	return fixture.Flatten(fixture.Replay(provider, recs, m))
+}
+
+func replayState(t *testing.T, name, provider string, m fixture.Mapper) (*state.State, int) {
+	t.Helper()
 	s := state.New()
 	n := 0
-	for _, ev := range fixture.Flatten(fixture.Replay(provider, recs, m)) {
+	for _, ev := range replayEvents(t, name, provider, m) {
 		s.Apply(ev)
 		n++
 	}

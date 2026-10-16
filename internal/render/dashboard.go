@@ -23,7 +23,7 @@ const (
 )
 
 // dashboard draws the working screen at the layout the width selects.
-func dashboard(s *state.State, ui UI) []line {
+func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	w, h := ui.Width, ui.Height
 	wide := w >= wideWidth
 	var extra line
@@ -38,10 +38,11 @@ func dashboard(s *state.State, ui UI) []line {
 		ls = append(ls, zoneALine(s, w))
 		dh, ch := 3, 5
 		bh := h - len(ls) - ch - dh - 1
-		ls = append(ls, zoneB(s, ui, w, bh, 3)...)
+		sc.Conv.Y = len(ls) + 1
+		ls = append(ls, zoneB(s, ui, w, bh, 3, sc)...)
 		ls = append(ls, zoneC(s, ui, w, ch)...)
 		ls = append(ls, zoneD(s, ui, w, dh, 1)...)
-		return append(ls, keyHints(w, "Enter send · Ctrl+J newline · F6 zone · F2 approve · F1 keys"))
+		return append(ls, keyHints(w, ui, "Enter send · Ctrl+J newline · F6 zone · F2 approve · F1 keys"))
 	}
 
 	aw, dh, rows := zoneAStandard, 4, 2
@@ -51,7 +52,8 @@ func dashboard(s *state.State, ui UI) []line {
 	mid := h - len(ls) - dh - 1
 	bh := (mid*3 + 2) / 5
 	rw := w - aw
-	right := zoneB(s, ui, rw, bh, 3+2*boolInt(wide))
+	right := zoneB(s, ui, rw, bh, 3+2*boolInt(wide), sc)
+	sc.Conv.Y = len(ls) + 1
 	if wide {
 		right = append(right, beside(zoneC(s, ui, listWide, mid-bh), preview(s, ui, rw-listWide, mid-bh))...)
 	} else {
@@ -63,7 +65,7 @@ func dashboard(s *state.State, ui UI) []line {
 	if wide {
 		hints = "Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
 	}
-	return append(ls, keyHints(w, hints))
+	return append(ls, keyHints(w, ui, hints))
 }
 
 func boolInt(b bool) int {
@@ -73,7 +75,16 @@ func boolInt(b bool) int {
 	return 0
 }
 
-func keyHints(w int, text string) line { return plain(" "+text, stGrey).fit(w) }
+// keyHints is the bottom line; a toast takes its place for a moment.
+func keyHints(w int, ui UI, text string) line {
+	if ui.Toast != "" {
+		return plain(" "+ui.Toast, stProgress).fit(w)
+	}
+	if ui.MouseOff {
+		return plain(" mouse capture off: the terminal selects (whole screen, borders included) · F12 back on", stProgress).fit(w)
+	}
+	return plain(" "+text, stGrey).fit(w)
+}
 
 // badge is "● LIVE" while the session runs, else what it is.
 func badge(s *state.State) line {
@@ -131,33 +142,33 @@ func projectBar(s *state.State, ui UI) line {
 func agentSymbol(st state.AgentStatus) span {
 	switch st {
 	case state.AgentRunning, state.AgentAnnounced:
-		return sp("◉", stProgress)
+		return deco("◉", stProgress)
 	case state.AgentWaiting:
-		return sp("!", stAttention)
+		return deco("!", stAttention)
 	case state.AgentCompleted, state.AgentEnded:
-		return sp("✓", stDone)
+		return deco("✓", stDone)
 	case state.AgentFailed:
-		return sp("✗", stFailed)
+		return deco("✗", stFailed)
 	case state.AgentStopped:
-		return sp("○", stGrey)
+		return deco("○", stGrey)
 	}
-	return sp("○", stGrey)
+	return deco("○", stGrey)
 }
 
 func turnSymbol(s *state.State) span {
 	switch s.Turn.Phase {
 	case state.Running, state.Submitted, state.Interrupting:
-		return sp("◉", stProgress)
+		return deco("◉", stProgress)
 	case state.WaitingApproval:
-		return sp("!", stAttention)
+		return deco("!", stAttention)
 	}
 	switch s.Turn.Outcome {
 	case "failed":
-		return sp("✗", stFailed)
+		return deco("✗", stFailed)
 	case "interrupted":
-		return sp("○", stGrey)
+		return deco("○", stGrey)
 	}
-	return sp("✓", stDone)
+	return deco("✓", stDone)
 }
 
 // zoneALine is zone A at narrow width: the current path in one line.
@@ -199,12 +210,12 @@ func zoneA(s *state.State, ui UI, w, h int) []line {
 		body = append(body, plain("  ○ (agents appear as events arrive)", stGrey))
 	}
 	body = append(body, tree(s, keys, "  ")...)
-	hint := plain("↑↓ move ←→ fold Enter inspect", stGrey)
+	hint := decoLine("↑↓ move ←→ fold Enter inspect", stGrey)
 	for len(body) < h-3 {
 		body = append(body, line{})
 	}
 	body = append(body[:h-3], hint)
-	return box(zoneTitle("A · ORCHESTRATOR", ui.Focus == "A"), nil, body, w, h, borderFor(ui.Focus == "A"))
+	return box('A', zoneTitle("A · ORCHESTRATOR", ui.Focus == "A"), nil, body, w, h, borderFor(ui.Focus == "A"))
 }
 
 func turnWord(s *state.State) string {
@@ -239,10 +250,10 @@ func tree(s *state.State, keys []string, indent string) []line {
 		if i == len(keys)-1 {
 			branch, next = "└─ ", "   "
 		}
-		l := line{sp(indent+branch, stFrame), agentSymbol(a.Status), sp(" "+a.Kind+"  ", stGrey), sp(a.Label, stText)}
+		l := line{deco(indent+branch, stFrame), agentSymbol(a.Status), sp(" "+a.Kind+"  ", stGrey), sp(a.Label, stText)}
 		out = append(out, l)
 		if a.LastTool != "" && !a.Status.Final() {
-			out = append(out, line{sp(indent+next+"└─ ", stFrame), sp("▸ "+a.LastTool, stGrey)})
+			out = append(out, line{deco(indent+next+"└─ ", stFrame), deco("▸ ", stGrey), sp(a.LastTool, stGrey)})
 		}
 		out = append(out, tree(s, children(s, k), indent+next)...)
 	}
@@ -263,58 +274,115 @@ func borderFor(focused bool) lipgloss.Style {
 	return stFrame
 }
 
-// zoneB is the conversation, its notices and the editor.
-func zoneB(s *state.State, ui UI, w, h, editorRows int) []line {
+// zoneB is the conversation, its notices and the editor. The conversation
+// follows its end unless the owner scrolled up (ui-design.md, Zone B, Follow
+// mode); sc, when given, records what was shown for scrolling and the mouse.
+func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	inner := w - 4
 	var right line
 	if s.Turn.Phase == state.Running || s.Turn.Phase == state.Submitted {
 		right = plain("◉ Streaming", stProgress)
 	}
-	editor := editorLines(s, ui, inner, editorRows)
-	room := h - 2 - len(editor)
+	// The editor grows up to half of B, then scrolls (ui-design.md, Input
+	// editor, Size); its rule and status line count in that half.
+	editor := editorLines(s, ui, inner, editorRows, (h-2)/2-2)
+	room := max(h-2-len(editor), 0)
 	conv := conversation(s, ui, inner)
-	if len(conv) < room {
-		conv = append(conv, blank(0, room-len(conv))...)
+	bottom := max(len(conv)-room, 0)
+	top := bottom
+	if ui.ConvHold {
+		top = min(max(ui.ConvTop, 0), bottom)
 	}
-	body := append(tail(conv, room), editor...)
+	var shown []line // only the rows shown are drawn
+	for _, c := range conv[top:min(top+room, len(conv))] {
+		shown = append(shown, c.draw())
+	}
+	if len(shown) < room {
+		shown = append(shown, blank(0, room-len(shown))...)
+	}
+	if n := len(s.Conversation) - ui.ConvSeen; ui.ConvHold && n > 0 && room > 0 {
+		shown[room-1] = spread(nil, decoLine(fmt.Sprintf("↓ %d new", n), stProgress), inner)
+	}
+	if sc != nil {
+		sc.Conv = ConvView{Rows: len(conv), Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold}
+	}
+	body := append(shown, editor...)
 	focused := ui.Focus == "B" || ui.Focus == ""
-	return box(zoneTitle("B · CONVERSATION", focused), right, body, w, h, borderFor(focused))
+	return box('B', zoneTitle("B · CONVERSATION", focused), right, body, w, h, borderFor(focused))
 }
 
 // conversation is the orchestrator's record as lines, or the session's state
-// when there is nothing yet.
-func conversation(s *state.State, ui UI, w int) []line {
-	var out []line
+// when there is nothing yet. Content comes from entryLines; everything else
+// on these lines is decoration.
+func conversation(s *state.State, ui UI, w int) []crow {
+	var out []crow
+	wc := ui.Wrap
 	who := providerLabel(s)
-	for _, e := range s.Conversation {
+	for i, e := range s.Conversation {
 		switch e.Role {
 		case "user":
-			out = append(out, line{sp("YOU", stAttention.Bold(true)), sp("  "+clock(e.At), stGrey)})
-			out = append(out, indented(e.Text, w, stText)...)
+			out = drawn(out, line{deco("YOU", stAttention.Bold(true)), deco("  "+clock(e.At), stGrey)})
+			ls := entryLines(e)
+			if len(ls) > foldOver {
+				out = contentRows(out, wc, i, ls[:foldShow], w, stText)
+				out = drawn(out, decoLine(fmt.Sprintf("  … %s more lines", grouped(len(ls)-foldShow)), stGrey))
+				break
+			}
+			out = contentRows(out, wc, i, ls, w, stText)
 		case "assistant":
+			// Thinking marks a message that had a thinking block; its text is
+			// the answer. The thinking is folded under it, without a token
+			// count the state does not keep (ui-design.md, Markdown, Thinking).
+			if e.Text != "" || !e.Thinking {
+				head := line{deco(who, stTitle)}
+				if m := model(s); m != "" {
+					head = append(head, deco("  "+m, modelStyle(m)))
+				}
+				out = drawn(out, head)
+				out = contentRows(out, wc, i, entryLines(e), w, stText)
+				if e.Streaming {
+					if last := out[len(out)-1].draw(); last.width() < w {
+						out[len(out)-1] = crow{l: append(last, deco("▌", stText))}
+					} else {
+						out = drawn(out, decoLine("  ▌", stText))
+					}
+				}
+			}
 			if e.Thinking {
-				out = append(out, indented("∴ "+e.Text, w, stGrey)...)
-				continue
+				out = drawn(out, decoLine("  ∴ thinking", stGrey))
 			}
-			head := line{sp(who, stTitle)}
-			if m := model(s); m != "" {
-				head = append(head, sp("  "+m, modelStyle(m)))
-			}
-			out = append(out, head)
-			text := e.Text
-			if e.Streaming {
-				text += "▌"
-			}
-			out = append(out, indented(text, w, stText)...)
 		case "tool":
-			out = append(out, spread(plain("  ▸ "+firstLine(e.Text), stGrey), plain(originLabel(e.Origin), stGrey), w))
+			l := append(line{deco("  ▸ ", stGrey)}, oneRow(i, e, stGrey)...)
+			out = drawn(out, spread(l, decoLine(originLabel(e.Origin), stGrey), w))
 		case "approval":
-			out = append(out, plain("! APPROVAL "+firstLine(e.Text), stAttention))
+			out = drawn(out, append(line{deco("! APPROVAL ", stAttention)}, oneRow(i, e, stAttention)...))
 		default:
-			out = append(out, indented("· "+e.Text, w, stProgress)...)
+			p := &rowStyle{lead0: deco("  · ", stProgress), lead: deco("  ", stProgress), at: ref{panel: 'B', item: i}, st: stProgress}
+			for j, l := range entryLines(e) {
+				out = sourceRows(out, wc, p, j, l, w-4, w-2)
+			}
 		}
 	}
-	return append(out, sessionState(s, ui, w)...)
+	return drawn(out, sessionState(s, ui, w)...)
+}
+
+// oneRow is a tool or approval entry's first line on one row, marked when
+// more lines follow.
+func oneRow(i int, e state.Entry, st lipgloss.Style) line {
+	l := wrapSource(entryLines(e)[0], 1<<30, 1<<30, ref{panel: 'B', item: i}, st)[0]
+	if strings.IndexByte(e.Text, '\n') >= 0 {
+		l = append(l, deco(" …", st))
+	}
+	return l
+}
+
+// grouped writes n with thousands separators: 9,995.
+func grouped(n int) string {
+	s := fmt.Sprint(n)
+	for i := len(s) - 3; i > 0; i -= 3 {
+		s = s[:i] + "," + s[i:]
+	}
+	return s
 }
 
 // sessionState is what zone B shows about the session itself.
@@ -399,38 +467,6 @@ func clock(t time.Time) string {
 	return t.Local().Format("15:04")
 }
 
-// editorLines is the editor at B's bottom edge: a rule, the draft, a status.
-func editorLines(s *state.State, ui UI, w, rows int) []line {
-	out := []line{rule(w)}
-	lines := strings.Split(ui.Draft, "\n")
-	shown := lines
-	if len(shown) > rows {
-		shown = shown[len(shown)-rows:]
-	}
-	for i := 0; i < rows; i++ {
-		prefix := "  "
-		if i == 0 {
-			prefix = "> "
-		}
-		var l line
-		if i < len(shown) {
-			l = line{sp(prefix, stTitle), sp(shown[i], stText)}
-			if i == len(shown)-1 && (ui.Focus == "B" || ui.Focus == "") {
-				l = append(l, sp("█", stTitle))
-			}
-		} else if i == 0 {
-			l = line{sp(prefix, stTitle), sp(placeholder(s), stGrey)}
-		}
-		out = append(out, l)
-	}
-	n := len(lines)
-	count := fmt.Sprintf("%d line", n)
-	if n != 1 {
-		count += "s"
-	}
-	return append(out, spread(plain("  "+editorStatus(s), stGrey), plain(count+" · Ctrl+G editor", stGrey), w))
-}
-
 func placeholder(s *state.State) string {
 	if s.Session.Phase == state.Ready {
 		return "Ask " + s.Context.ProviderName + " anything…"
@@ -495,13 +531,13 @@ func zoneC(s *state.State, ui UI, w, h int) []line {
 		for len(body) < h-3 {
 			body = append(body, line{})
 		}
-		body = append(body[:h-3], plain("↑↓ select · Enter inspect · z zoom · F6 next zone", stGrey))
+		body = append(body[:h-3], decoLine("↑↓ select · Enter inspect · z zoom · F6 next zone", stGrey))
 	}
 	title := "C · LIVE AGENTS"
 	if w < standardWidth {
 		title = "C · AGENTS"
 	}
-	return box(zoneTitle(title, ui.Focus == "C"), right, body, w, h, borderFor(ui.Focus == "C"))
+	return box('C', zoneTitle(title, ui.Focus == "C"), right, body, w, h, borderFor(ui.Focus == "C"))
 }
 
 func agentRow(a *state.Agent, ui UI, w int) line {
@@ -520,14 +556,14 @@ func agentRow(a *state.Agent, ui UI, w int) line {
 	case !a.Status.Final() && a.LastTool != "":
 		activity = a.LastTool
 	case a.Status.Final() && a.Summary != "":
-		activity += " · " + a.Summary
+		activity += " · " + firstLine(a.Summary)
 	}
 	tok := "tok N/A"
 	if a.Tokens.Present {
 		tok = count(a.Tokens.V) + " tok"
 	}
 	right := plain(fmt.Sprintf("  %7s  %10s", elapsed(a.StartedAt, a.EndedAt, ui.Now), tok), stGrey)
-	left := line{sp(sel, stTitle), agentSymbol(a.Status), sp(" "+padTo(a.Label, 14), stText), sp(padTo(m, 12), modelStyle(m)), sp(activity, stGrey)}
+	left := line{deco(sel, stTitle), agentSymbol(a.Status), sp(" "+padTo(a.Label, 14), stText), sp(padTo(m, 12), modelStyle(m)), sp(activity, stGrey)}
 	return spread(left, right, w)
 }
 
@@ -540,7 +576,7 @@ func preview(s *state.State, ui UI, w, h int) []line {
 		}
 	}
 	if a == nil {
-		return box(plain("PREVIEW", stBold), nil, []line{plain("select an agent to preview its activity", stGrey)}, w, h, stFrame)
+		return box('P', plain("PREVIEW", stBold), nil, []line{plain("select an agent to preview its activity", stGrey)}, w, h, stFrame)
 	}
 	var body []line
 	for _, e := range a.Messages {
@@ -557,12 +593,12 @@ func preview(s *state.State, ui UI, w, h int) []line {
 	for len(body) < h-3 {
 		body = append(body, line{})
 	}
-	body = append(body, plain("Enter full screen · [ ] previous / next agent", stGrey))
+	body = append(body, decoLine("Enter full screen · [ ] previous / next agent", stGrey))
 	right := plain("model N/A (not reported)", stGrey)
 	if a.Model.Present {
 		right = plain(a.Model.Text, modelStyle(a.Model.Text))
 	}
-	return box(line{sp(a.Label+" · ", stBold), sp("LIVE", stDone)}, right, body, w, h, stFrame)
+	return box('P', line{sp(a.Label+" · ", stBold), sp("LIVE", stDone)}, right, body, w, h, stFrame)
 }
 
 func clockSec(t time.Time) string {
@@ -600,7 +636,7 @@ func zoneD(s *state.State, ui UI, w, h, rows int) []line {
 	if rows == 1 {
 		title = "D"
 	}
-	return box(zoneTitle(title, ui.Focus == "D"), plain("† undocumented field", stGrey), body, w, h, borderFor(ui.Focus == "D"))
+	return box('D', zoneTitle(title, ui.Focus == "D"), plain("† undocumented field", stGrey), body, w, h, borderFor(ui.Focus == "D"))
 }
 
 // shown is a value in its short and long forms.
@@ -648,7 +684,7 @@ func (q quotaShown) bar(n int) line {
 	case q.v.V >= 70:
 		st = stProgress
 	}
-	return line{sp(strings.Repeat("▰", full), st), sp(strings.Repeat("▱", n-full), stFrame)}
+	return line{deco(strings.Repeat("▰", full), st), deco(strings.Repeat("▱", n-full), stFrame)}
 }
 
 func (q quotaShown) pct() string {

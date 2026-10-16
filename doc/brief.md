@@ -570,3 +570,16 @@ Do not remove shared components required by Claude Code or Codex, and do not mod
 Keep the architecture extensible for future providers, but do not implement Gemini or Antigravity support.
 
 These removals are authorized as part of normal, safe development. No additional approval is required unless an operation risks data loss or affects unrelated work.
+
+## Amendment 6, 2026-10-16: no VS Code terminal
+
+The owner's decision, word for word. It narrows the terminals the application
+supports to Windows Terminal and conhost: the VS Code terminal is out of scope,
+with no adaptation, option or test for it, and plan 4 step 3's terminal matrix
+drops its column.
+
+---
+
+Drop the vscode terminal implementation fully, because on vscode i could just use claude normally through vscode extention, it's useless
+
+I don't want it

@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                                         ● LIVE
+ (project bar: the test's temporary directory)
+╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────── ◉ Streaming ─╮
+│ claude-haiku-5-5 · orchestrat… ││ YOU  02:00                                                                         │
+│ turn 2 · running               ││   Create a file named hello.txt in the current directory containing the single     │
+│                                ││   word hello. Use the Write tool, then reply with the word done.                   │
+│ AGENTS  observed from events   ││   ▸ Write                                                                 observed │
+│ ◉ Turn 2                       ││ ! APPROVAL Write                                                                   │
+│   ○ (agents appear as events … ││ CLAUDE  claude-haiku-5-5                                                           │
+│                                ││   done                                                                             │
+│                                ││ YOU  02:00                                                                         │
+│                                ││   Reply with the single word: again                                                │
+│                                ││ CLAUDE  claude-haiku-5-5                                                           │
+│                                ││   again▌                                                                           │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││ ────────────────────────────────────────────────────────────────────────────────── │
+│                                ││ >  Ask Claude Code anything…                                                       │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││   turn running: the draft waits · Ctrl+C interrupt          1 line · Ctrl+G editor │
+│                                │╰────────────────────────────────────────────────────────────────────────────────────╯
+│                                │╭─ C · AGENTS ─────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+│                                ││ no agents yet: they appear as the CLI starts them                                  │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│ ↑↓ move ←→ fold Enter inspect  ││ ↑↓ select · Enter inspect · z zoom · F6 next zone                                  │
+╰────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
+╭─ D · QUOTA & TELEMETRY ─────────────────────────────────────────────────────────────────────── † undocumented field ─╮
+│ 5h ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 25%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 46%†  resets Sat 08:00   model claude-haik… │
+│ context 2%† of 1M   tokens 59.9k (derived)   cost $0.00 API-equiv. estimate   agents 0 active / limit N/A (not repo… │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit
