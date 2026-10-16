@@ -287,11 +287,60 @@ var transitions = []machineCase{
 		b.ready().do(Quit{})
 		b.eq("session", b.s.Session.Phase, Closing)
 		b.eq("commands", b.kinds(), "close")
+		b.eq("nothing asked", b.s.QuitAsked, false)
+	}},
+	{"Session", "`Ready` | owner quits while a turn or an agent runs", func(b *bench) {
+		b.running().do(Quit{})
+		b.eq("asks", b.kinds(), "")
+		b.eq("asked", b.s.QuitAsked, true)
+		b.eq("session", b.s.Session.Phase, Ready)
+		b.eq("what stops", b.s.Running(), "the running turn")
+		b.do(Stay{})
+		b.eq("stays", b.s.QuitAsked, false)
+		b.eq("turn", b.s.Turn.Phase, Running)
+		b.do(Quit{})
+		b.eq("asks again", b.kinds(), "")
+		b.ev(event.AgentStarted, "", event.Agent{Key: "t1", Type: "subagent"})
+		b.eq("with an agent", b.s.Running(), "the running turn and 1 agent still running")
+		b.do(Quit{})
+		b.eq("quits", b.kinds(), "interrupt,close")
+		b.eq("closing", b.s.Session.Phase, Closing)
+		b.eq("asked no more", b.s.QuitAsked, false)
+
+		c := newBench(b.t).running()
+		c.ev(event.AgentStarted, "", event.Agent{Key: "bg1", Type: "subagent", Backgrounded: true})
+		c.ev(event.AgentStarted, "", event.Agent{Key: "bg2", Type: "subagent", Backgrounded: true})
+		c.turnEnd("", "completed")
+		c.do(Quit{})
+		c.eq("agents only", c.kinds(), "")
+		c.eq("what stops", c.s.Running(), "2 agents still running")
+		c.do(Quit{})
+		c.eq("no turn to interrupt", c.kinds(), "close")
 	}},
 	{"Session", "`Closing` | process exited", func(b *bench) {
 		b.ready().do(Quit{})
 		b.exit(0)
 		b.eq("session", b.s.Session.Phase, Closed)
+	}},
+	{"Session", "`Closing` | process exited with a message still `Submitted`", func(b *bench) {
+		b.ready().do(Send{Text: "hi"})
+		b.do(Quit{})
+		b.do(Quit{})
+		b.exit(0)
+		b.eq("commands", b.kinds(), "restore-draft,exit")
+		b.eq("message back", b.cmds[0].Text, "hi")
+		b.eq("session", b.s.Session.Phase, Closed)
+		b.eq("turn", b.s.Turn.Phase, Idle)
+
+		// Taken before the exit: accepted, nothing goes back.
+		c := newBench(b.t).ready()
+		c.do(Send{Text: "hi"})
+		c.do(Quit{})
+		c.do(Quit{})
+		c.ev(event.TurnStarted, "", nil)
+		c.eq("accepted", c.kinds(), "draft-accepted")
+		c.exit(0)
+		c.eq("commands", c.kinds(), "exit")
 	}},
 	{"Session", "`Closing` | 5 s, then 5 s more, elapsed", func(b *bench) {
 		b.ready().do(Quit{})
@@ -384,6 +433,17 @@ var transitions = []machineCase{
 		b.turnEnd("", "failed")
 		b.eq("turn", b.s.Turn.Phase, Idle)
 		b.eq("outcome", b.s.Turn.Outcome, "interrupted")
+
+		c := newBench(b.t).running()
+		c.do(Interrupt{})
+		c.turnEnd("", "interrupted")
+		c.eq("reported interrupted", c.s.Turn.Outcome, "interrupted")
+	}},
+	{"Turn", "`Interrupting` | turn end reported as completed", func(b *bench) {
+		b.running().do(Interrupt{})
+		b.turnEnd("", "completed")
+		b.eq("turn", b.s.Turn.Phase, Idle)
+		b.eq("outcome", b.s.Turn.Outcome, "completed")
 	}},
 	{"Turn", "`Interrupting` | no turn end within 10 s", func(b *bench) {
 		b.running().do(Interrupt{})
@@ -399,6 +459,34 @@ var transitions = []machineCase{
 		b.eq("outcome", b.s.Turn.Outcome, "interrupted")
 		b.eq("session", b.s.Session.Phase, Closing)
 		b.eq("commands", b.kinds(), "close")
+	}},
+	{"Turn", "`Submitted`, `Running`, `WaitingApproval` | owner quits, confirmed", func(b *bench) {
+		b.running().ask("", "a1", "tu1")
+		b.ask("t1", "a2", "tu2")
+		b.eq("waiting", b.s.Turn.Phase, WaitingApproval)
+		b.do(Quit{})
+		b.do(Quit{})
+		b.eq("order", b.kinds(), "answer,answer,interrupt,close")
+		b.eq("orchestrator's", b.cmds[0].ID+" "+b.cmds[0].Decision, "a1 cancel")
+		b.eq("the agent's", b.cmds[1].ID+" "+b.cmds[1].Decision, "a2 cancel")
+		b.eq("answering", b.s.Approvals["a2"].Status, Answering)
+		b.eq("turn", b.s.Turn.Phase, Interrupting)
+		b.eq("session", b.s.Session.Phase, Closing)
+
+		c := newBench(b.t).running()
+		c.do(Quit{})
+		c.do(Quit{})
+		c.eq("running", c.kinds(), "interrupt,close")
+		c.eq("turn", c.s.Turn.Phase, Interrupting)
+
+		d := newBench(b.t).ready()
+		d.do(Send{Text: "hi"})
+		d.do(Quit{})
+		d.eq("asks", d.kinds(), "")
+		d.do(Quit{})
+		d.eq("submitted", d.kinds(), "interrupt,close")
+		d.eq("turn stays", d.s.Turn.Phase, Submitted)
+		d.eq("draft kept", d.s.Turn.Draft, "hi")
 	}},
 	{"Turn", "`WaitingApproval` | turn end reported", func(b *bench) {
 		b.running().ask("", "a1", "")
@@ -562,6 +650,7 @@ var transitions = []machineCase{
 		c := newBench(b.t).running()
 		c.ev(event.AgentStarted, "", event.Agent{Key: "t1", Type: "subagent"})
 		c.do(Quit{})
+		c.do(Quit{}) // the first asks: a turn and an agent run
 		c.exit(0)
 		c.eq("closed", c.agent("t1").Status, AgentEnded)
 	}},

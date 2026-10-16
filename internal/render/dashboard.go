@@ -481,6 +481,12 @@ func placeholder(s *state.State) string {
 
 func editorStatus(s *state.State) string {
 	switch {
+	case s.QuitAsked:
+		// From the state now: a turn that ended since is no longer named.
+		if w := s.Running(); w != "" {
+			return "quit? " + w + " will be stopped · Ctrl+Q again to quit · Esc to stay"
+		}
+		return "quit? nothing runs now · Ctrl+Q again to quit · Esc to stay"
 	case s.Turn.Notice != "":
 		return s.Turn.Notice
 	case s.Session.Notice != "":

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -131,7 +133,7 @@ type inputRig struct {
 
 func claudeRig(t *testing.T) inputRig {
 	f := &fakeClaude{}
-	cli := installedClaude{&claude.Provider{Spawner: f}}
+	cli := installedClaude{&claude.Provider{Spawner: f, Now: func() time.Time { return testNow }}}
 	h := newHarness(t, Options{Providers: []provider.Provider{cli}, Cwd: t.TempDir()})
 	h.settle()
 	h.m.ui.Choice = claude.ProviderID
@@ -255,28 +257,30 @@ var pasteCases = []struct{ name, in, want string }{
 func TestInputByteForByte(t *testing.T) {
 	for name, rig := range rigs() {
 		t.Run(name, func(t *testing.T) {
-			r := rig(t)
-			for i, c := range pasteCases {
-				r.h.send(tea.PasteMsg{Content: c.in})
-				if got := r.h.m.edit.Text(); got != c.want {
-					t.Errorf("%s: stored %q, want %q", c.name, got, c.want)
+			synctest.Test(t, func(t *testing.T) {
+				r := rig(t)
+				for i, c := range pasteCases {
+					r.h.send(tea.PasteMsg{Content: c.in})
+					if got := r.h.m.edit.Text(); got != c.want {
+						t.Errorf("%s: stored %q, want %q", c.name, got, c.want)
+					}
+					r.h.send(key(tea.KeyEnter, 0))
+					r.end()
+					sent := r.sent()
+					if len(sent) != i+1 {
+						t.Fatalf("%s: %d messages sent, want %d (notice %q)", c.name, len(sent), i+1, r.h.m.State().Turn.Notice)
+					}
+					if sent[i] != c.want {
+						t.Errorf("%s: sent %q, want %q", c.name, sent[i], c.want)
+					}
+					if r.raw != nil {
+						r.raw(t, i, c.want)
+					}
+					if d := r.h.m.edit.Text(); d != "" {
+						t.Errorf("%s: draft %q left after sending", c.name, d)
+					}
 				}
-				r.h.send(key(tea.KeyEnter, 0))
-				r.end()
-				sent := r.sent()
-				if len(sent) != i+1 {
-					t.Fatalf("%s: %d messages sent, want %d (notice %q)", c.name, len(sent), i+1, r.h.m.State().Turn.Notice)
-				}
-				if sent[i] != c.want {
-					t.Errorf("%s: sent %q, want %q", c.name, sent[i], c.want)
-				}
-				if r.raw != nil {
-					r.raw(t, i, c.want)
-				}
-				if d := r.h.m.edit.Text(); d != "" {
-					t.Errorf("%s: draft %q left after sending", c.name, d)
-				}
-			}
+			})
 		})
 	}
 }
@@ -287,38 +291,40 @@ func TestInputByteForByte(t *testing.T) {
 func TestPasteNeverSubmits(t *testing.T) {
 	for name, rig := range rigs() {
 		t.Run(name, func(t *testing.T) {
-			r := rig(t)
-			r.h.send(tea.PasteMsg{Content: "first line\nsecond line\n"})
-			if n := len(r.sent()); n != 0 {
-				t.Fatalf("a paste ending in a newline wrote %d messages, want 0", n)
-			}
-			r.h.send(key(tea.KeyEnter, 0))
-			r.end()
-			if sent := r.sent(); len(sent) != 1 || sent[0] != "first line\nsecond line\n" {
-				t.Fatalf("after Enter: sent %q, want the paste once", sent)
-			}
+			synctest.Test(t, func(t *testing.T) {
+				r := rig(t)
+				r.h.send(tea.PasteMsg{Content: "first line\nsecond line\n"})
+				if n := len(r.sent()); n != 0 {
+					t.Fatalf("a paste ending in a newline wrote %d messages, want 0", n)
+				}
+				r.h.send(key(tea.KeyEnter, 0))
+				r.end()
+				if sent := r.sent(); len(sent) != 1 || sent[0] != "first line\nsecond line\n" {
+					t.Fatalf("after Enter: sent %q, want the paste once", sent)
+				}
 
-			r.h.send(tea.PasteStartMsg{})
-			r.h.send(tea.PasteMsg{Content: "partial"})
-			r.h.send(key(tea.KeyEnter, 0))
-			if n := len(r.sent()); n != 1 {
-				t.Errorf("Enter during a paste: %d messages in all, want 1", n)
-			}
-			if f := plainText(r.h.m.View().Content); !strings.Contains(f, "pasting…") {
-				t.Errorf("no \"pasting…\" while the paste is open:\n%s", f)
-			}
-			if got := r.h.m.edit.Text(); got != "partial\n" {
-				t.Errorf("draft %q during the paste, want %q", got, "partial\n")
-			}
-			r.h.send(tea.PasteEndMsg{})
-			if f := plainText(r.h.m.View().Content); strings.Contains(f, "pasting…") {
-				t.Error("\"pasting…\" still shown after the paste ended")
-			}
-			r.h.send(key(tea.KeyEnter, 0))
-			r.end()
-			if sent := r.sent(); len(sent) != 2 || sent[1] != "partial\n" {
-				t.Errorf("after the paste ended, Enter sent %q, want a second message %q", sent, "partial\n")
-			}
+				r.h.send(tea.PasteStartMsg{})
+				r.h.send(tea.PasteMsg{Content: "partial"})
+				r.h.send(key(tea.KeyEnter, 0))
+				if n := len(r.sent()); n != 1 {
+					t.Errorf("Enter during a paste: %d messages in all, want 1", n)
+				}
+				if f := plainText(r.h.m.View().Content); !strings.Contains(f, "pasting…") {
+					t.Errorf("no \"pasting…\" while the paste is open:\n%s", f)
+				}
+				if got := r.h.m.edit.Text(); got != "partial\n" {
+					t.Errorf("draft %q during the paste, want %q", got, "partial\n")
+				}
+				r.h.send(tea.PasteEndMsg{})
+				if f := plainText(r.h.m.View().Content); strings.Contains(f, "pasting…") {
+					t.Error("\"pasting…\" still shown after the paste ended")
+				}
+				r.h.send(key(tea.KeyEnter, 0))
+				r.end()
+				if sent := r.sent(); len(sent) != 2 || sent[1] != "partial\n" {
+					t.Errorf("after the paste ended, Enter sent %q, want a second message %q", sent, "partial\n")
+				}
+			})
 		})
 	}
 }

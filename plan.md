@@ -321,8 +321,13 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
     items; scrolling in A and C; copying failure-card text; the Codex
     adapter's own stdin bytes (step 5).
 - Step 4, permissions and session continuity: **deterministic checks 1
-  to 5 done** (2026-10-16); check 6 (L2) proposed, waiting for the owner's
-  approval. Checks, yes or no, deterministic unless marked live:
+  to 5 done** (2026-10-16). Check 6 (L2): the first and second runs failed
+  at turn 2. The first was a test defect; the second was an app defect,
+  found and fixed since (a streaming answer marked finished). The third run
+  passed turns 1 to 3, the crash and the resume, and failed two of the
+  test's own checks (resume argument order, quit timing): test defects,
+  fixed on fixtures. **The fourth run passed every check** (2026-10-16):
+  step 4 is done. Checks, yes or no, deterministic unless marked live:
   1. Approvals (`TestApprovalCards`): P2's request is a card in B and P3b's
      on its subagent's row and in B labelled with it; `a` or `d` writes one
      `control_response` (fake CLI's stdin), a second key writes nothing; an
@@ -348,8 +353,12 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
      ends the run with exit code 2, the draft file written, the fake CLI
      seeing end of input, and the session id and `claude --resume <id>`
      printed.
-  6. L2, live: proposed to the owner with its scope; not run without
-     approval.
+  6. L2, live (`internal/app/live_test.go`, `-tags live`): approved by the
+     owner on 2026-10-16. Scope: Claude Code with `--model haiku` in an
+     empty folder outside the repository, three short turns, each capped
+     at 2 minutes; any failure stops the run, with no retry without the
+     owner. The test drives the real dashboard model with the owner's
+     keys: F2, `a`, Ctrl+C, an outside `taskkill /F`, Ctrl+R and Ctrl+Q.
 
   Results (2026-10-16): `go build`, `go vet`, `gofmt -l .` clean;
   `go test ./... -count=1` passes. The fake CLI is the test binary's
@@ -400,10 +409,360 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
   - Golden frames rewritten and reviewed. A resolved approval is now one
     line ("✓ orchestrator · Write <path> allowed by you"), and zone B's
     header shows "Interrupting…".
+  6. **FAIL**, first run (2026-10-16 19:37, Claude Code 2.1.301, which
+     auto-updated from 2.1.300; 25 s; about $0.01 API-equivalent). Stopped
+     at turn 2 and not retried.
+     - Turn 1 PASS. The Write request for `allow.txt` in the folder became
+       a card. F2 then `a` allowed it, `allow.txt` holds "ok", and the
+       answer was "done".
+     - Turn 2 not checked, because of a test defect. The harness's `send`
+       waits for 300 ms without a message, and a streamed answer never
+       pauses that long, so all 300 lines streamed inside the Enter
+       keypress. The test now delivers Enter and Ctrl+C without waiting.
+     - Test defect, found before it could fail: Claude Code reports the
+       session id with the first turn, not at Ready, so the resume check
+       would have used an empty id. The test now reads the id after turn 1.
+     - App defect, a real one: a resolved approval whose path is long lost
+       its outcome off the end of the line. At 160 columns, "allowed by
+       you" did not show. The reviewed golden frames had it too ("all…",
+       "02:0…").
+       - Fixed: the target now gets the room left once the outcome or
+         clock fits. A path is shortened from the left and keeps its file
+         name; a command is cut on the right.
+       - `elide` no longer prints "……" when the cut meets the hidden user
+         folder.
+       - `TestApprovalLineKeepsOutcome` covers 5 statuses and widths 60
+         to 200. It fails 97 times on the old code and passes now. Eight
+         golden frames were rewritten and reviewed; the only change is
+         this line.
+     - Not run: interruption, kill and crash card, Ctrl+R resume, memory
+       after resume, and quit.
+     - Configuration after the run: every configuration file is identical,
+       and `~\.claude.json` is "changed, not classified" (exit 2,
+       NOT-VERIFIED), as in L1. The folder holds only `allow.txt`. No L2
+       process is left running.
+     - A second run, with the same scope and test, needs the owner's
+       agreement.
+  6. **FAIL**, second run (approved 2026-10-16; run at 19:50, Claude Code
+     2.1.301, Haiku 5.5 `claude-haiku-5-5`; 19 s; about $0.01
+     API-equivalent). Stopped at turn 2 and not retried. Same scope; no
+     configuration change by the run or by me.
+     - Turn 1 PASS. Session `14a9a3d2-7829-40f8-bd7d-3a2d0385ae9f`; F2
+       then `a` allowed the Write in the folder; `allow.txt` holds "ok";
+       the answer was "done"; the frame shows "allowed by you".
+     - Turn 2 FAIL: "no streamed text before the turn ended". The turn
+       completed with all 300 lines and no Ctrl+C was sent. The test
+       waited for the last conversation entry to be an answer, streaming,
+       with more than 20 characters, and never saw that state between two
+       batches of events. The final entry also carried a thinking block
+       (`∴ thinking`).
+     - Cause not settled: the test logged nothing on the stream. The P3
+       and P3b recordings (Claude Code 2.1.300) show text deltas about
+       20 ms apart, so the stream itself paces. Two hypotheses remain: the
+       deltas reached the dashboard in a few large batches, or each delta
+       made an entry of its own (a message id missing). The second would be
+       an app defect: the answer would show as fragments.
+     - Test changes since, for a third run (none weakens a criterion):
+       - Ctrl+C fires at the first streamed text of the turn's answer,
+         wherever its entry stands, still only while the turn runs.
+       - The test counts the turn's event batches and deltas, logs when
+         the text deltas came, and with `ACC_LIVE_RECORD` keeps the CLI's
+         stdout and read timings outside the project (since replaced:
+         the recorder keeps the stream's shape only, see below).
+       - New check: each answer of turn 2 has one entry with a message id
+         (catches the fragments hypothesis).
+       - `lastAssistant` reads an answer that had a thinking block: turn 3
+         would otherwise miss the code word if Haiku thought first.
+     - Not run: interruption, kill and crash card, Ctrl+R resume, memory
+       after resume, and quit.
+     - Configuration after the run: identical to before for every file,
+       `~\.claude.json` "changed, not classified" (exit 2, NOT-VERIFIED)
+       as in L1 and the first run. The folder holds only `allow.txt`. No
+       `claude.exe` with `--model haiku` is left; the three running predate
+       the run.
+     - A third run needs the owner's approval.
+  - Before the third L2 run (approved 2026-10-16, on condition that the
+    test logic is first checked on deterministic fixtures and that any
+    defect found is reported before the run):
+    - Cause of the second run's failure, settled from P2 without quota:
+      an **app defect**. Claude Code sends one `assistant` line per
+      content block, each with the message's id. P2's last turn sends its
+      thinking block's line before its text deltas, and the reducer's
+      `completed` marked the entry finished at that line. The 300 lines
+      then streamed into an entry the dashboard showed as finished: no
+      streaming cursor, so the test's trigger never held. The same rule let
+      a later block's line replace the text already streamed: a thinking
+      line wiped it, and a second text block's line dropped the first.
+    - Fixed in `internal/state/reduce.go`. A text or thinking delta marks
+      its entry streaming again. A block's line keeps the text streamed:
+      an empty line, or one the text already holds, changes nothing. A line
+      that extends the text replaces it, and one that contradicts it still
+      wins, with its note. Codex's whole message still ends the streaming.
+      `doc/events-and-state.md`, `conversation.message.completed`, says
+      so.
+    - `TestAnswerStreamsAcrossBlockLines` (state) fails in 4 of 5 cases
+      on the old code and passes now. Golden frame `stream-p2-05` now
+      shows P2's "1" with its streaming cursor; the old frame had recorded
+      the defect. It was reviewed, and it is the only frame change.
+    - The live test's turn 2 is now `interruptMidStream`, in
+      `internal/app/livecheck_test.go`, without the live tag. It sends the
+      prompt and presses Ctrl+C at the first streamed text, and the frame
+      must show the streaming cursor at that moment. It then requires:
+      - the turn idle within 10 s, outcome "interrupted", session Ready;
+      - **the CLI's own result** "interrupted" (`error_during_execution`
+        after the interrupt). The dashboard calls any end after Ctrl+C
+        interrupted (events-and-state.md, Turn), so its outcome alone
+        would not prove Ctrl+C stopped the turn;
+      - one entry per message id;
+      - one answer with text, which begins with every byte streamed.
+    - `TestInterruptMidStream` plays P2's interrupted turn through the
+      real adapter. It has the thinking block, then a text delta every
+      20 ms (P3, P3b), up to 300, and ends as P2 does once the interrupt is
+      written. Five runs in a row:
+      - paced: **PASS**; Ctrl+C after the first delta, idle 20 ms later;
+      - burst, the whole answer at once: the check **fails**, as it must;
+      - not interrupted, the turn ends "success": the check **fails** on
+        the CLI's result.
+      With the reducer fix undone, the paced case fails with the second
+      run's own message: "no streamed text before the turn ended
+      ("completed")", after 300 deltas.
+    - `TestFragmentChecks`: deltas without an id, two entries with one
+      id, two messages, and an answer that lost its text all fail the
+      fragment checks; one answer passes.
+    - The recorder no longer keeps the CLI's stdout. `ACC_LIVE_RECORD`
+      now receives `reads-N.txt` (time and size of each read) and
+      `lines-N.tsv` (per line: time, size, type, subtype, event, block,
+      delta type, text size, message number). It holds no text, id or
+      path. `TestShapeReader` on P2 checks every byte passes through, one
+      row per line, and only numbers and lower-case protocol names.
+    - `go build`, `go vet` (with and without `-tags live`) and `gofmt -l .`
+      are clean; `go test ./... -count=1` passes.
+  6. **FAIL**, third run (approved 2026-10-16; run at 20:21, Claude Code
+     2.1.301, `claude-haiku-5-5`, 20.9 s; `ACC_LIVE_RECORD` set):
+     - Turn 1: PASS. Write approval allowed with F2 and `a`; `allow.txt`
+       holds "ok"; answer "done".
+     - Turn 2: PASS. The thinking block's `assistant` line came before
+       the first text delta, the case the fix covers. Ctrl+C at the first
+       text delta (3 bytes), with the cursor on screen; the turn was idle
+       21 ms later. The CLI's result was `error_during_execution` after the
+       interrupt, so the outcome was interrupted and the session Ready. One
+       entry per message, one coherent answer.
+     - Crash: PASS. `taskkill /F`, exit code 1, the crash card with
+       Ctrl+R.
+     - Resume: the session resumed with the same id, but the test's check
+       **failed**. It wanted `--resume <id>` after `--model haiku`;
+       the adapter puts it before, as it documents (`Provider.Args` come
+       after the session's own flags). Test defect.
+     - Turn 3 after the resume: PASS, "LANTERN-73".
+     - Quit: **FAIL**, "Ctrl+Q did not quit". The frame showed CLOSING.
+       Ctrl+Q closes Claude Code's input and quits once it has ended
+       ("close the CLI, restore the terminal"). Claude Code ended with code
+       0 about 1.8 s after its input closed; the test looked 300 ms after
+       the key. Test defect.
+     - Configuration: NOT-VERIFIED, as before: `~\.claude.json` changed,
+       not classified (contents not inspected); every other file
+       identical; 1 new session file. The project folder holds only
+       `allow.txt`; no Haiku `claude.exe` left (the three running were
+       there before the run).
+     - The recording: `lines-1.tsv`, `lines-2.tsv`, `reads-1.txt`,
+       `reads-2.txt`, in the session's scratch folder. They hold only
+       digits and lower-case protocol names; no text, id or path.
+  - After the third run (2026-10-16), without quota:
+    - `resumeArgv` builds the expected resume arguments: the first
+      spawn's, with `--resume <id>` before the adapter's extra ones.
+      `quitWithin` waits for the quit up to `CloseTimeout` (5 s), the
+      close step before any kill. Check 6 never fixed a quit time; the
+      test's comment "quits at once" did, against the design.
+    - `TestResumeAndQuitChecks` runs the run's last steps on the fake
+      CLI: `--model haiku`, a crash, Ctrl+R, and a CLI that ends 1.8 s
+      after its input closes. The old checks fail on it, as they failed
+      live: `--resume` is before the extra arguments, and once settled
+      the session is Closing, not quit. The new ones pass: Closed, quit
+      within 2 s, exit code 0, no kill.
+    - The owner's added requirement: a turn the CLI completed is never
+      shown interrupted. The reducer forced "interrupted" on any turn end
+      after Ctrl+C. It now keeps "completed"; any other end after Ctrl+C
+      stays "interrupted" (events-and-state.md, Turn: new row). The
+      mappers already report the CLI's own result. Tests:
+      - `TestStateMachines`, new row "turn end reported as completed":
+        it fails with the old rule ("got interrupted, want completed").
+      - `TestInterruptMidStream`: in "burst" and "not interrupted",
+        Claude Code completes the turn after Ctrl+C, and the dashboard
+        must now show "completed". Both fail with the old rule.
+    - `go build`, `go vet` (with and without `-tags live`), `gofmt -l .`
+      clean. `go test ./... -count=1`: 4 of 6 runs pass. In 2 runs,
+      `TestDraftKeystrokes` measured p95 18.8 ms and 17.0 ms against its
+      16 ms target, with every package testing in parallel. It passes
+      alone, 5 of 5 (p95 8.1 to 10.3 ms), and with `-p 1`, 2 of 2. The
+      test times typing in the editor and touches none of today's
+      changes. The target stays; this is open.
+    - Investigation of that failure (2026-10-16, no code changed). It is
+      not an app regression:
+      - Alone, the working tree and HEAD 078e7db time the same: p50 4.2
+        to 4.7 ms, p95 7.5 to 9.9 ms (HEAD 8.4 to 8.6 ms).
+      - The CPU profile puts about 91% in View and 5% in Update. View
+        costs about 4 ms at 1k, 10k or 50k draft lines. GOGC=off and
+        disabling the saves change nothing.
+      - The suite's schedule changed. At HEAD, `internal/app` took 191 s
+        and this test ran after every other package had finished. With
+        the synctest bubbles it takes 23 to 34 s, and the test now
+        overlaps internal/licenses (its nested `go test` on
+        third_party/ultraviolet) and internal/provider/claude.
+      - The machine: an i7-1265U (2 performance, 8 efficiency cores) on
+        battery, near base clock. Over six back-to-back suites,
+        everything slowed (`internal/app` 23.7 to 34.9 s) and this p95
+        rose from 9.5 to 17.8 ms. In that state `go test ./internal/app`
+        alone failed 2 of 3.
+      - The earlier 4.8 ms p95 was a different machine state.
+      - Afterwards, `go test ./... -count=1` passed 6 of 6, p95 7.6 to
+        11.5 ms. The failure can come back under sustained load.
+      - The suggested measurement change (up to three passes, every one
+        logged, failing only if all miss 16 ms) is not applied: it
+        changes a criterion and waits for the owner.
+      - The owner's decision (2026-10-16): option 2. The test and its 16 ms
+        target stay unchanged. When the full suite misses the target, the
+        keystroke tests are rerun once, alone, under controlled conditions,
+        and both results are kept. A miss in that run is investigated
+        (evaluation.md, Keystroke timing).
+  - Before the fourth run (approved 2026-10-16, with the 5 s quit check
+    accepted and a clean end of the app and its CLI to verify):
+    - The live quit step now checks, before the shutdown could kill
+      anything: the session is Closed, its exit code is 0, and Claude
+      Code's process has ended with 0 within 2 s of the quit.
+      `TestResumeAndQuitChecks` checks the same exit code in the state.
+      With the fake CLI exiting 1 instead, it fails ("exit code 1 (true)
+      in the state; want 0").
+    - `TestResumeAndQuitChecks` and `TestInterruptMidStream` pass.
+      `go build`, `go vet` (with and without `-tags live`) and
+      `gofmt -l .` are clean. `go test ./... -count=1` passes, exit 0
+      (`TestDraftKeystrokes` p95 10.8 ms, `TestKeystrokeToFrame` 3.5 ms).
+  7. **PASS**, fourth run (run at 21:28, Claude Code 2.1.301,
+     `claude-haiku-5-5`, 36.6 s; `ACC_LIVE_RECORD` set):
+     - Turn 1: PASS. Write approval allowed with F2 and `a`; `allow.txt`
+       holds "ok"; answer "done".
+     - Turn 2: PASS. "interrupted" 65 ms after Ctrl+C, the session Ready;
+       23 bytes streamed as one answer (6 thinking deltas, 2 text deltas).
+     - Crash: PASS. `taskkill /F`, exit code 1, the crash card.
+     - Resume: PASS. Ctrl+R spawned a second process with the expected
+       arguments; the same session id.
+     - Turn 3 after the resume: PASS, "LANTERN-73".
+     - Quit: PASS. The app quit 1.911 s after Ctrl+Q with the session
+       Closed. Claude Code (pid 23924) had exited with 0 before the
+       shutdown.
+     - Clean end, checked in the OS afterwards: no process with pid 23924
+       or 25948 (the killed one), and none whose parent is either. The only
+       `claude.exe` running were the two there before the run (28268,
+       24256).
+     - Configuration: NOT-VERIFIED, the accepted limit: `~\.claude.json`
+       changed, not classified (contents not inspected); every other file
+       identical; 1 new session file. The project folder holds only
+       `allow.txt`.
+     - The recording (`lines-1.tsv`, `lines-2.tsv`, `reads-1.txt`,
+       `reads-2.txt`) holds only digits and lower-case protocol names.
   - Deferred, not criteria of this step:
     - Enter showing an approval's full diff.
     - Codex's `s` (accept for the session), at step 5.
     - A deny message specific to a question (CC-10 q3).
+- Fixes before L2 and step 5 (the owner's request, 2026-10-16), committed
+  with step 4.
+  1. Shift+Enter in Windows Terminal: **PASS**.
+     - The app asks for win32-input-mode (`CSI ?9001h`) in Init and turns
+       it off in `Run` after the program ends, a panic included. On other
+       systems it does neither.
+     - The enhanced protocols were checked first.
+       - Without them, WT 1.23.20211 (the installed version) sends
+         Shift+Enter as a plain CR (measured at step 3).
+       - The Kitty keyboard protocol through ConPTY needs WT 1.25
+         (reliability.md, Terminals and input), so it could not be tested
+         here.
+       - win32-input-mode is WT's own protocol, and Bubble Tea and
+         ultraviolet already decode it.
+     - Recorded from WT 1.23 with `TEA_TRACE`, ultraviolet's decoder had
+       two faults in that mode: it recased letters from the modifiers, and
+       it dropped emoji sent with vk 255.
+     - Both are fixed in a patched copy, `third_party/ultraviolet` (MIT),
+       used through a `replace` in `go.mod`. No new module was added.
+       `PATCHES.md` records the source, the change and the evidence.
+       Upstream's tests pass on a scratch copy, apart from the deleted
+       function's own subtest. That subtest's four cases now live in the
+       copy's `patch_test.go` (`TestPatchedWin32Input`), with Caps
+       Lock+Shift and an emoji sent with vk 255 and with vk 0. It passes 7
+       of 7 on the copy and fails exactly 3 on the unpatched files.
+       `internal/licenses` runs it, because `go test ./...` skips a nested
+       module; breaking patch 2 makes that check fail.
+     - `internal/licenses` now fails if a replaced module has no
+       `PATCHES.md` or is not named in THIRD_PARTY.md. Both planted faults
+       fail it.
+     - Tests:
+       - `TestWin32InputMode`: one request, and one reset after a quit
+         and after a panic. Planted faults fail it.
+       - `TestWin32InputKeys`: the real program on the recorded WT bytes
+         gives "Z🙂éZz\né", Enter sends and Ctrl+Q exits. Unpatched, it
+         gives "zéZZ\né".
+     - Real WT, with the harness's keyboard, mouse and clipboard input:
+       maximised, 43 of 43 checks PASS; at the default size, 42 of 42.
+       This includes K2 (Shift+Enter inserts a newline), K5 (no newline key
+       submits), K6 (Enter sends), K1 and O2 (emoji kept), K4 (case kept),
+       and Q2 (the next program in the console reads plain `x\rz\r` after
+       Ctrl+Q).
+     - The keys were synthesised with SendInput, which WT receives as it
+       does a keyboard. Physical key presses were not tested.
+     - The hint line still names Ctrl+J, which works everywhere.
+  2. Ctrl+Q during a turn: **PASS**.
+     - While a turn or an agent runs, Ctrl+Q asks to confirm: a second
+       Ctrl+Q quits and Esc stays.
+     - Confirmed, the quit cancels each pending approval and interrupts the
+       turn before stdin is closed, in that order, through the serial
+       writer.
+     - A message sent but not yet accepted goes back to the editor and the
+       stored draft.
+     - Tests: `TestQuitDuringTurn`, `TestQuitBeforeAccepted`,
+       `TestQuitIdle`, and the machines-test rows. The state table in
+       events-and-state.md is updated.
+  3. brief.md line 284: `â€”` is now `—`, and nothing else changed (the
+     diff is one line). No `â€` is left.
+  4. `system/commands_changed`: **PASS**. It lists the session's slash
+     commands and skills (P3 and P3b). It is now classified as a
+     `status.changed` with no status, because no MVP zone lists commands; it
+     is no longer `unrecognised`.
+     - Tests: a mapper test, and the replayed mock file. The doc tables are
+       updated.
+  5. Race detector: **PASS**, 0 data races.
+     - The owner approved option (a), a portable MinGW-w64 under the user
+       profile. It is WinLibs GCC 16.2.0 with MinGW-w64 14.0.0 UCRT r2,
+       from the GitHub release `16.2.0posix-14.0.0-ucrt-r2` of
+       brechtsanders/winlibs_mingw, unzipped to
+       `%LOCALAPPDATA%\Programs\winlibs-gcc-16.2.0-ucrt-r2`. There is no
+       installer, no administrator right and no PATH change; the race
+       session alone sets `PATH` and `CGO_ENABLED=1`.
+     - Checksum: SHA-256 `d5dbafc4…5276a` matches both the author's
+       `.sha256` file and GitHub's own asset digest, and the SHA-512 matches
+       too. The zip is not signed.
+     - Compatibility: Go's race detector on Windows needs mingw-w64
+       runtime 8 or later, with `libsynchronization.a` (go.dev race
+       detector article; golang.org/issue/61916). `gcc
+       -print-file-name=libsynchronization.a` resolves it.
+     - A planted race in a scratch program is reported ("WARNING: DATA
+       RACE", FAIL), so the detector works.
+     - `go test -race ./... -count=1`, run twice: every package passes,
+       with 0 races; `internal/app` takes 102 s. The patched ultraviolet
+       copy passes under `-race` too.
+     - Timing targets are not judged under `-race`, which slows code
+       several times over. In a `-race` build, `raceBuild` (build-tagged
+       `race_on_test.go` and `race_off_test.go`) makes `overTarget` log
+       the timing instead of failing; a normal build still fails it, as a
+       planted 1 µs target shows. Logged under `-race`: keystroke p95
+       69 ms (continuity) and 36 ms (perf), against the 16 ms target.
+  6. Slow tests: **PASS**. `internal/app` took about 190 s and now takes
+     20 to 32 s, with no test removed or weakened.
+     - Cause: the harness waited 300 ms of real time after every message
+       (`settle`).
+     - Fix: the tests run in `testing/synctest` bubbles, where that wait
+       ends as soon as every goroutine is blocked.
+     - The tests that time real work (perf, `TestDraftKeystrokes`) still
+       run on the real clock.
+  - Checks: `go build ./...`, `go vet ./...` and `gofmt -l .` are clean, and
+    `go test ./... -count=1` passes.
 - Steps 5 to 8: outstanding.
 
 The owner's decisions at plan 3's approval (2026-10-16):

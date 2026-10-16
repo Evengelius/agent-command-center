@@ -281,7 +281,7 @@ selected from, for every agent CLI.
 
 ---
 
-## Additional Requirement â€” Full Clipboard & Multiline Input Support
+## Additional Requirement — Full Clipboard & Multiline Input Support
 
 The interactive conversation must support a proper, full-featured terminal text editor, not a basic single-line input field.
 

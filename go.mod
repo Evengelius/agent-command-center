@@ -30,3 +30,7 @@ require (
 	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
 	golang.org/x/sync v0.22.0 // indirect
 )
+
+// Two decoder fixes for Windows Terminal's win32-input-mode
+// (third_party/ultraviolet/PATCHES.md).
+replace github.com/charmbracelet/ultraviolet => ./third_party/ultraviolet

@@ -9,7 +9,21 @@ cache. `internal/licenses` checks this table against both commands and the
 licence files, so a module added, removed, upgraded or rebuilt without a row
 here fails the tests.
 
-No third-party source code is copied into this repository.
+## Patched copies
+
+One module is built from a patched copy kept in this repository, by a
+`replace` in `go.mod`; its table row keeps the upstream version it was copied
+from, and the licence is read from the copy's own licence file:
+
+- `github.com/charmbracelet/ultraviolet` is replaced by
+  `./third_party/ultraviolet`: two decoder fixes for Windows Terminal's
+  win32-input-mode (letter case and emoji), described with their source,
+  licence and checks in `third_party/ultraviolet/PATCHES.md`.
+
+`internal/licenses` fails if a replaced module has no `PATCHES.md` or is not
+named here. No other third-party source code is copied into this repository.
+
+## Modules
 
 | Module | Version | Direct | Built | Licence |
 | - | - | - | - | - |

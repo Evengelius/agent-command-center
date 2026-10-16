@@ -14,6 +14,17 @@ import (
 )
 
 // Test 6's targets (proposal step 3, item 3): over target is a FAIL.
+// overTarget fails the test for a missed timing target, except under -race:
+// the work still runs there, for the race detector, and the time is logged.
+func overTarget(t *testing.T, format string, args ...any) {
+	t.Helper()
+	if raceBuild {
+		t.Logf("not judged under -race: "+format, args...)
+		return
+	}
+	t.Errorf(format, args...)
+}
+
 const (
 	keystrokeTarget = 16 * time.Millisecond  // 95th percentile, 10,000-line draft
 	pasteTarget     = 100 * time.Millisecond // 50,000-line paste, to the frame
@@ -67,7 +78,7 @@ func TestKeystrokeToFrame(t *testing.T) {
 	p50, p95, worst := percentile(ds, 0.50), percentile(ds, 0.95), percentile(ds, 1)
 	t.Logf("keystroke-to-frame, 10,000-line draft, %d keys: p50 %v, p95 %v, max %v (target p95 ≤ %v)", len(ds), p50, p95, worst, keystrokeTarget)
 	if p95 > keystrokeTarget {
-		t.Errorf("p95 %v over the %v target", p95, keystrokeTarget)
+		overTarget(t, "p95 %v over the %v target", p95, keystrokeTarget)
 	}
 }
 
@@ -89,7 +100,7 @@ func TestPasteToFrame(t *testing.T) {
 	p50, worst := percentile(ds, 0.50), percentile(ds, 1)
 	t.Logf("paste-to-frame, 50,000 lines (%d bytes), %d runs: p50 %v, max %v (target ≤ %v)", len(text), len(ds), p50, worst, pasteTarget)
 	if worst > pasteTarget {
-		t.Errorf("max %v over the %v target", worst, pasteTarget)
+		overTarget(t, "max %v over the %v target", worst, pasteTarget)
 	}
 }
 
@@ -149,6 +160,6 @@ func TestStreamToFrame(t *testing.T) {
 	p50, p95, worst := percentile(ds, 0.50), percentile(ds, 0.95), percentile(ds, 1)
 	t.Logf("delta-to-frame, %d-line answer, one line per delta: p50 %v, p95 %v, max %v (target p95 ≤ %v)", lines, p50, p95, worst, streamTarget)
 	if p95 > streamTarget {
-		t.Errorf("p95 %v over the %v target", p95, streamTarget)
+		overTarget(t, "p95 %v over the %v target", p95, streamTarget)
 	}
 }

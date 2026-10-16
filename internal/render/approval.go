@@ -22,34 +22,44 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int) []line {
 	if ap == nil {
 		return []line{append(line{deco("! APPROVAL ", stAttention)}, oneRow(i, e, stAttention)...)}
 	}
-	target, body := approvalDetail(ap)
-	head := func(mark string, st lipgloss.Style) line {
+	target, path, body := approvalDetail(ap)
+	// The target gets the room left once the outcome or the clock fits, so a
+	// long path never hides how the request was answered: a path loses its
+	// left end, a command its right end.
+	head := func(mark string, st lipgloss.Style, tail span) line {
 		l := line{deco(mark, st), deco(approvalWho(s, ap)+" · ", stGrey)}
 		l = append(l, oneRow(i, e, st)...)
-		if target != "" {
+		room := w - l.width() - line{tail}.width() - 2
+		switch {
+		case target == "" || room < 1:
+		case path:
+			l = append(l, deco("  "+elide(target, room), stText))
+		case textWidth(target) > room:
+			l = append(l, deco("  "+cut(target, room-1)+"…", stText))
+		default:
 			l = append(l, deco("  "+target, stText))
 		}
-		return l
+		return append(l, tail)
 	}
 	switch ap.Status {
 	case state.Allowed:
-		return []line{append(head("✓ ", stDone), deco("  allowed by you "+clockSec(ap.AnsweredAt), stDone))}
+		return []line{head("✓ ", stDone, deco("  allowed by you "+clockSec(ap.AnsweredAt), stDone))}
 	case state.Denied:
 		if ap.Problem != "" {
 			return []line{
-				append(head("✗ ", stFailed), deco("  denied automatically: request not readable", stFailed)),
+				head("✗ ", stFailed, deco("  denied automatically: request not readable", stFailed)),
 				decoLine("  "+cut(ap.Problem, max(w-2, 1)), stGrey),
 			}
 		}
-		return []line{append(head("✗ ", stFailed), deco("  denied by you "+clockSec(ap.AnsweredAt), stFailed))}
+		return []line{head("✗ ", stFailed, deco("  denied by you "+clockSec(ap.AnsweredAt), stFailed))}
 	case state.Expired:
-		return []line{append(head("· ", stGrey), deco("  expired, not answered", stGrey))}
+		return []line{head("· ", stGrey, deco("  expired, not answered", stGrey))}
 	}
 	label := "! APPROVAL "
 	if ap.Question {
 		label = "? QUESTION "
 	}
-	out := []line{append(head(label, stAttention.Bold(true)), deco("  "+clock(ap.RequestedAt), stGrey))}
+	out := []line{head(label, stAttention.Bold(true), deco("  "+clock(ap.RequestedAt), stGrey))}
 	if ap.Summary != "" && ap.Summary != target {
 		out = append(out, indentedDeco(ap.Summary, w, stText)...)
 	}
@@ -86,28 +96,33 @@ func approvalWho(s *state.State, ap *state.Approval) string {
 }
 
 // approvalDetail reads the tool's target (a path, a command's first line)
-// and the lines a card shows from the request's input; an input it cannot
-// read shows as it came.
-func approvalDetail(ap *state.Approval) (target string, body []string) {
+// and the lines a card shows from the request's input; path says the target
+// is a file path. An input it cannot read shows as it came.
+func approvalDetail(ap *state.Approval) (target string, path bool, body []string) {
 	var in map[string]any
 	if len(ap.Input) == 0 || json.Unmarshal(ap.Input, &in) != nil {
 		if len(ap.Input) > 0 && string(ap.Input) != "null" {
 			body = strings.Split(string(ap.Input), "\n")
 		}
-		return "", body
+		return "", false, body
 	}
 	str := func(k string) string { v, _ := in[k].(string); return v }
-	for _, k := range []string{"file_path", "notebook_path", "path", "url", "pattern"} {
+	for _, k := range []string{"file_path", "notebook_path", "path"} {
 		if v := str(k); v != "" {
-			target = hideUser(v)
+			target, path = hideUser(v), true
 			break
+		}
+	}
+	for _, k := range []string{"url", "pattern"} {
+		if v := str(k); v != "" && target == "" {
+			target = v
 		}
 	}
 	switch {
 	case str("command") != "":
 		cmd := strings.Split(str("command"), "\n")
 		if target == "" && len(cmd) == 1 {
-			return cmd[0], nil
+			return cmd[0], false, nil
 		}
 		for _, l := range cmd {
 			body = append(body, "$ "+l)
@@ -132,7 +147,7 @@ func approvalDetail(ap *state.Approval) (target string, body []string) {
 			}
 		}
 	}
-	return target, body
+	return target, path, body
 }
 
 // indentedDeco is indented, wrapped decoration.

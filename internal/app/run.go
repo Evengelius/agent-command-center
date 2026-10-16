@@ -14,6 +14,16 @@ const (
 	ExitPanic = 2
 )
 
+// win32-input-mode (ui-design.md, Shift+Enter): asked for by Init, reset by
+// Run once the terminal is back.
+const (
+	win32InputOn  = "\x1b[?9001h"
+	win32InputOff = "\x1b[?9001l"
+)
+
+// resetTerminal writes a reset to the console; tests replace it.
+var resetTerminal = consoleReset
+
 // Run runs the program to its end, then writes the draft, closes the
 // session and says how to resume it. Bubble Tea recovers a panic in Update,
 // in View or in a command, restores the terminal and returns
@@ -22,6 +32,9 @@ const (
 // what to print once the terminal is back.
 func Run(m *Model, opts ...tea.ProgramOption) (code int, out []string) {
 	_, err := tea.NewProgram(m, opts...).Run()
+	if win32Input {
+		resetTerminal(win32InputOff) // after a panic too
+	}
 	if derr := m.flushDraft(); derr != nil {
 		out = append(out, "the draft could not be saved: "+derr.Error())
 	}

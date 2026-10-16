@@ -751,7 +751,7 @@ this table as an overlay.
 | - | - | - |
 | Enter | send the draft (in the editor) | TI 4.3 |
 | Ctrl+J | newline (works in every terminal) | TI 4.1, 4.3 |
-| Shift+Enter | newline, when the terminal disambiguates it | TI 4.3 |
+| Shift+Enter | newline; in Windows Terminal through win32-input-mode (below) | TI 4.3 |
 | Alt+Enter | newline, except on WT (fullscreen) | TI 4.3, 9 |
 | `\` then Enter | newline (Claude Code's convention) | TI 4.2 |
 | Ctrl+C | copy the selection if there is one; else interrupt the running turn; else show "Ctrl+Q quits" | TI 6.3 item 4; ASM-9 |
@@ -767,6 +767,18 @@ this table as an overlay.
 | F1, `?` | key overlay | ASM-9 |
 | Ctrl+R | after a crash only: resume the same CLI session in a new process ([reliability.md, Resumption](reliability.md#resumption)) | ASM-9 |
 | Ctrl+Q | quit; asks to confirm while a turn or an agent runs | ASM-9 |
+
+**Shift+Enter in Windows Terminal.** In VT input mode the console reports
+Shift+Enter as a plain carriage return, the same as Enter (measured, plan 4,
+step 3). The dashboard therefore asks for win32-input-mode (`CSI ?9001h`) when
+it starts and turns it off when it ends, a panic included (`internal/app/run.go`);
+each key then arrives with its modifiers. Two decoder faults of ultraviolet
+in that mode (letter case recomputed from the modifiers; emoji
+halves with virtual key 255 dropped) are fixed in a patched copy,
+`third_party/ultraviolet/PATCHES.md`. Measured in Windows Terminal 1.23,
+maximised and at the default size, 2026-10-16: Shift+Enter inserts a newline,
+Enter sends, typed text and emoji are kept exactly, and the next program in
+the console reads plain VT input after Ctrl+Q.
 
 **A focused panel** (A, C, D, inspection)
 
@@ -931,7 +943,7 @@ out of scope (brief, amendments 6 and 7).
 | - | - | - | - | - |
 | Paste never submits | yes (measured, 2,000-line paste included) | yes | yes (check) | yes |
 | Byte-for-byte paste | yes, CRLF→LF: tabs, trailing spaces, wide, emoji, 94,908 chars (measured) | as WT | Not verified | yes, terminal-dependent |
-| Newline key | Ctrl+J; Shift+Enter arrives as Enter (measured) | Ctrl+J; Shift+Enter Not verified | Ctrl+J; Shift+Enter with extended-keys | Ctrl+J; Shift+Enter in most (not VTE) |
+| Newline key | Ctrl+J and Shift+Enter, through win32-input-mode (measured) | Ctrl+J; Shift+Enter Not verified | Ctrl+J; Shift+Enter with extended-keys | Ctrl+J; Shift+Enter in most (not VTE) |
 | Typed text | exact, emoji included (measured) | as WT | Not verified | yes |
 | Copy | native + OSC 52 (measured) | `clip.exe` or PowerShell + OSC 52 | OSC 52 passthrough + tmux buffer | native tools, then OSC 52 |
 | Paste | Ctrl+V bracketed | Ctrl+V bracketed | bracketed through tmux | bracketed |

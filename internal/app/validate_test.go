@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -148,108 +149,116 @@ func (p hangCLI) Start(context.Context, provider.SessionContext) (provider.Sessi
 // project is validated, with its branch, before anything starts.
 func TestStartupGate(t *testing.T) {
 	t.Run("neither CLI: Start disabled", func(t *testing.T) {
-		h := newHarness(t, Options{Providers: []provider.Provider{
-			fakeCLI{provider.Detection{ID: "claude-code", Name: "Claude Code", Problem: "claude not found on PATH"}},
-			fakeCLI{provider.Detection{ID: "codex", Name: "OpenAI Codex", Problem: "codex not found on PATH"}},
-		}, Cwd: t.TempDir()})
-		h.settle()
-		h.send(key(tea.KeyEnter, 0))
-		s := h.m.State()
-		if s.Startup.Phase != state.Asking || s.Screen != state.ScreenStartup {
-			t.Fatalf("phase %q screen %q", s.Startup.Phase, s.Screen)
-		}
-		h.send(tea.WindowSizeMsg{Width: 120, Height: 40})
-		// Whitespace collapsed: a message is found whole across its wrap.
-		text := strings.Join(strings.Fields(plainText(h.m.View().Content)), " ")
-		for _, want := range []string{
-			"✗ No supported agent CLI found. Install Claude Code or Codex CLI, then restart.",
-			"not installed: claude not found on PATH",
-			"not installed: codex not found on PATH",
-		} {
-			if !strings.Contains(text, want) {
-				t.Errorf("frame lacks %q", want)
+		synctest.Test(t, func(t *testing.T) {
+			h := newHarness(t, Options{Providers: []provider.Provider{
+				fakeCLI{provider.Detection{ID: "claude-code", Name: "Claude Code", Problem: "claude not found on PATH"}},
+				fakeCLI{provider.Detection{ID: "codex", Name: "OpenAI Codex", Problem: "codex not found on PATH"}},
+			}, Cwd: t.TempDir()})
+			h.settle()
+			h.send(key(tea.KeyEnter, 0))
+			s := h.m.State()
+			if s.Startup.Phase != state.Asking || s.Screen != state.ScreenStartup {
+				t.Fatalf("phase %q screen %q", s.Startup.Phase, s.Screen)
 			}
-		}
-		if strings.Contains(text, "✗ not installed") {
-			t.Error("the field message repeats the no-CLI message")
-		}
+			h.send(tea.WindowSizeMsg{Width: 120, Height: 40})
+			// Whitespace collapsed: a message is found whole across its wrap.
+			text := strings.Join(strings.Fields(plainText(h.m.View().Content)), " ")
+			for _, want := range []string{
+				"✗ No supported agent CLI found. Install Claude Code or Codex CLI, then restart.",
+				"not installed: claude not found on PATH",
+				"not installed: codex not found on PATH",
+			} {
+				if !strings.Contains(text, want) {
+					t.Errorf("frame lacks %q", want)
+				}
+			}
+			if strings.Contains(text, "✗ not installed") {
+				t.Error("the field message repeats the no-CLI message")
+			}
+		})
 	})
 
 	t.Run("detection timeout", func(t *testing.T) {
-		stop := make(chan struct{})
-		defer close(stop)
-		h := newHarness(t, Options{
-			Providers: []provider.Provider{
-				hangCLI{"claude-code", "Claude Code", stop},
-				fakeCLI{provider.Detection{ID: "codex", Name: "OpenAI Codex", Installed: true, Version: "0.145.0", Path: `C:\Tools\codex.exe`}},
-			},
-			Cwd:           t.TempDir(),
-			DetectTimeout: 200 * time.Millisecond,
-		})
-		h.settle()
-		s := h.m.State()
-		if s.Startup.Phase != state.Asking {
-			t.Fatalf("phase %q", s.Startup.Phase)
-		}
-		var got string
-		for _, c := range s.Startup.CLIs {
-			if c.ID == "claude-code" {
-				got = c.Problem
+		synctest.Test(t, func(t *testing.T) {
+			stop := make(chan struct{})
+			defer close(stop)
+			h := newHarness(t, Options{
+				Providers: []provider.Provider{
+					hangCLI{"claude-code", "Claude Code", stop},
+					fakeCLI{provider.Detection{ID: "codex", Name: "OpenAI Codex", Installed: true, Version: "0.145.0", Path: `C:\Tools\codex.exe`}},
+				},
+				Cwd:           t.TempDir(),
+				DetectTimeout: 200 * time.Millisecond,
+			})
+			h.settle()
+			s := h.m.State()
+			if s.Startup.Phase != state.Asking {
+				t.Fatalf("phase %q", s.Startup.Phase)
 			}
-		}
-		if got != "detection timed out after 0.2 s" {
-			t.Errorf("problem %q", got)
-		}
-		if strings.Join(s.Startup.Installed, ",") != "codex" || h.m.ui.Choice != "codex" {
-			t.Errorf("installed %v, choice %q", s.Startup.Installed, h.m.ui.Choice)
-		}
+			var got string
+			for _, c := range s.Startup.CLIs {
+				if c.ID == "claude-code" {
+					got = c.Problem
+				}
+			}
+			if got != "detection timed out after 0.2 s" {
+				t.Errorf("problem %q", got)
+			}
+			if strings.Join(s.Startup.Installed, ",") != "codex" || h.m.ui.Choice != "codex" {
+				t.Errorf("installed %v, choice %q", s.Startup.Installed, h.m.ui.Choice)
+			}
+		})
 	})
 
 	t.Run("--provider and --project only prefill", func(t *testing.T) {
-		dir := t.TempDir()
-		installed := func(id, name string) provider.Provider {
-			return fakeCLI{provider.Detection{ID: id, Name: name, Installed: true, Version: "1.0.0", Path: `C:\Tools\x.exe`}}
-		}
-		h := newHarness(t, Options{Config: Config{Provider: "codex", Project: dir},
-			Providers: []provider.Provider{installed("claude-code", "Claude Code"), installed("codex", "OpenAI Codex")}})
-		h.settle()
-		s := h.m.State()
-		if s.Startup.Phase != state.Asking || s.Screen != state.ScreenStartup || h.m.ui.Choice != "codex" || h.m.path.Text() != dir {
-			t.Errorf("phase %q screen %q choice %q path %q", s.Startup.Phase, s.Screen, h.m.ui.Choice, h.m.path.Text())
-		}
-		// A --provider not installed falls back to the first installed CLI.
-		g := newHarness(t, Options{Config: Config{Provider: "codex"}, Cwd: dir,
-			Providers: []provider.Provider{installed("claude-code", "Claude Code"),
-				fakeCLI{provider.Detection{ID: "codex", Name: "OpenAI Codex", Problem: "codex not found on PATH"}}}})
-		g.settle()
-		if g.m.ui.Choice != "claude-code" || g.m.State().Startup.Phase != state.Asking {
-			t.Errorf("choice %q phase %q", g.m.ui.Choice, g.m.State().Startup.Phase)
-		}
+		synctest.Test(t, func(t *testing.T) {
+			dir := t.TempDir()
+			installed := func(id, name string) provider.Provider {
+				return fakeCLI{provider.Detection{ID: id, Name: name, Installed: true, Version: "1.0.0", Path: `C:\Tools\x.exe`}}
+			}
+			h := newHarness(t, Options{Config: Config{Provider: "codex", Project: dir},
+				Providers: []provider.Provider{installed("claude-code", "Claude Code"), installed("codex", "OpenAI Codex")}})
+			h.settle()
+			s := h.m.State()
+			if s.Startup.Phase != state.Asking || s.Screen != state.ScreenStartup || h.m.ui.Choice != "codex" || h.m.path.Text() != dir {
+				t.Errorf("phase %q screen %q choice %q path %q", s.Startup.Phase, s.Screen, h.m.ui.Choice, h.m.path.Text())
+			}
+			// A --provider not installed falls back to the first installed CLI.
+			g := newHarness(t, Options{Config: Config{Provider: "codex"}, Cwd: dir,
+				Providers: []provider.Provider{installed("claude-code", "Claude Code"),
+					fakeCLI{provider.Detection{ID: "codex", Name: "OpenAI Codex", Problem: "codex not found on PATH"}}}})
+			g.settle()
+			if g.m.ui.Choice != "claude-code" || g.m.State().Startup.Phase != state.Asking {
+				t.Errorf("choice %q phase %q", g.m.ui.Choice, g.m.State().Startup.Phase)
+			}
+		})
 	})
 
 	t.Run("project refused, then accepted with its branch", func(t *testing.T) {
-		root := t.TempDir()
-		repo := filepath.Join(root, "repo")
-		write(t, filepath.Join(repo, ".git", "HEAD"), "ref: refs/heads/main\n")
-		h := newHarness(t, Options{Providers: []provider.Provider{
-			fakeCLI{provider.Detection{ID: "claude-code", Name: "Claude Code", Installed: true, Version: "2.1.300", Path: `C:\Tools\claude.exe`}},
-		}, Cwd: root})
-		h.settle()
-		h.m.path.SetText("missing")
-		h.send(key(tea.KeyEnter, 0))
-		s := h.m.State()
-		if want := "Does not exist: " + filepath.Join(root, "missing"); s.Startup.Phase != state.Asking || s.Startup.Field != "project" || s.Startup.Message != want {
-			t.Fatalf("phase %q field %q message %q, want %q", s.Startup.Phase, s.Startup.Field, s.Startup.Message, want)
-		}
-		h.m.path.SetText("repo")
-		h.send(key(tea.KeyEnter, 0))
-		s = h.m.State()
-		if s.Context.Project != repo || s.Context.Branch != "main" || s.Context.Provider != "claude-code" {
-			t.Fatalf("context %+v", s.Context)
-		}
-		// The fake CLI refuses to start: the session never ran.
-		if s.Startup.Phase != state.StartFailed {
-			t.Errorf("phase %q, want %q", s.Startup.Phase, state.StartFailed)
-		}
+		synctest.Test(t, func(t *testing.T) {
+			root := t.TempDir()
+			repo := filepath.Join(root, "repo")
+			write(t, filepath.Join(repo, ".git", "HEAD"), "ref: refs/heads/main\n")
+			h := newHarness(t, Options{Providers: []provider.Provider{
+				fakeCLI{provider.Detection{ID: "claude-code", Name: "Claude Code", Installed: true, Version: "2.1.300", Path: `C:\Tools\claude.exe`}},
+			}, Cwd: root})
+			h.settle()
+			h.m.path.SetText("missing")
+			h.send(key(tea.KeyEnter, 0))
+			s := h.m.State()
+			if want := "Does not exist: " + filepath.Join(root, "missing"); s.Startup.Phase != state.Asking || s.Startup.Field != "project" || s.Startup.Message != want {
+				t.Fatalf("phase %q field %q message %q, want %q", s.Startup.Phase, s.Startup.Field, s.Startup.Message, want)
+			}
+			h.m.path.SetText("repo")
+			h.send(key(tea.KeyEnter, 0))
+			s = h.m.State()
+			if s.Context.Project != repo || s.Context.Branch != "main" || s.Context.Provider != "claude-code" {
+				t.Fatalf("context %+v", s.Context)
+			}
+			// The fake CLI refuses to start: the session never ran.
+			if s.Startup.Phase != state.StartFailed {
+				t.Errorf("phase %q, want %q", s.Startup.Phase, state.StartFailed)
+			}
+		})
 	})
 }

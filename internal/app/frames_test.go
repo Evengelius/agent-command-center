@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/synctest"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -46,25 +47,27 @@ func TestFrameInvariants(t *testing.T) {
 	for _, file := range files {
 		for _, w := range []int{80, 96, 100, 120, 140, 156, 160, 180, 200, 240} {
 			t.Run(fmt.Sprintf("%s-%d", filepath.Base(file), w), func(t *testing.T) {
-				h := newHarness(t, Options{
-					Config:    Config{Mock: file},
-					Providers: []provider.Provider{spawnTrap{t}},
-					Cwd:       t.TempDir(),
+				synctest.Test(t, func(t *testing.T) {
+					h := newHarness(t, Options{
+						Config:    Config{Mock: file},
+						Providers: []provider.Provider{spawnTrap{t}},
+						Cwd:       t.TempDir(),
+					})
+					hgt, frames := 40, 0
+					h.deliver(tea.WindowSizeMsg{Width: w, Height: hgt})
+					h.check = func(frame string) {
+						frames++
+						checkFrame(t, frame, w, hgt)
+					}
+					h.settle()
+					if frames == 0 {
+						t.Fatal("no frame drawn during the replay")
+					}
+					for _, hgt := range []int{24, 40, 60} {
+						h.check = func(frame string) { checkFrame(t, frame, w, hgt) }
+						h.send(tea.WindowSizeMsg{Width: w, Height: hgt})
+					}
 				})
-				hgt, frames := 40, 0
-				h.deliver(tea.WindowSizeMsg{Width: w, Height: hgt})
-				h.check = func(frame string) {
-					frames++
-					checkFrame(t, frame, w, hgt)
-				}
-				h.settle()
-				if frames == 0 {
-					t.Fatal("no frame drawn during the replay")
-				}
-				for _, hgt := range []int{24, 40, 60} {
-					h.check = func(frame string) { checkFrame(t, frame, w, hgt) }
-					h.send(tea.WindowSizeMsg{Width: w, Height: hgt})
-				}
 			})
 		}
 	}

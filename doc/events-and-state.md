@@ -60,7 +60,7 @@ types are mapped to `unrecognised` and never dropped (INT shape).
 | Event | Claude Code | Codex |
 | - | - | - |
 | `conversation.message.delta` | `stream_event` with `content_block_delta` (`text_delta`, `thinking_delta`) and `parent_tool_use_id: null`. **P**: P1; P2 (25 `content_block_delta` lines: 3 `text_delta`, 1 `thinking_delta`, 1 `signature_delta`, 20 `input_json_delta` for tool input). Subagent text: **unavailable as deltas** (0 of 230 `stream_event` lines had a parent id, CC-10 q15); fallback: the whole forwarded message as one `completed` event | `item/agentMessage/delta` (`itemId`, `delta`), `item/reasoning/*Delta`, per `threadId`. **P**: P6b lines 22-33; P7 (51 deltas, parent and children) |
-| `conversation.message.completed` | `assistant` message (`message.id`, `content`, `model`, `usage`), main thread when `parent_tool_use_id` is null, else attributed to the subagent's `agent_id` (with `--forward-subagent-text`). **P**: P1, P2, P3b | `item/completed` with `type:"agentMessage"` (`text`). **P**: P6b, P7 |
+| `conversation.message.completed` | `assistant` message (`message.id`, `content`, `model`, `usage`), main thread when `parent_tool_use_id` is null, else attributed to the subagent's `agent_id` (with `--forward-subagent-text`). One line **per content block**, all with the message's id, while the message goes on streaming: P2's last turn sends its thinking block's line before its text deltas. The entry keeps streaming until `message_stop`, and no block's line takes away text another block streamed (the second L2 run, 2026-10-16). **P**: P1, P2, P3b | `item/completed` with `type:"agentMessage"` (`text`). **P**: P6b, P7 |
 | `tool.started` | an `assistant` content block `tool_use` (`id`, `name`, `input`), carrying `agent_id` for subagents. **P**: P2 (Write), P3b (subagent Bash) | `item/started` of type `commandExecution`, `fileChange`, `mcpToolCall`, `webSearch`, `dynamicToolCall`. **P**: P6b, P7 (21 `item/started`) |
 | `tool.completed` | a `user` message `tool_result` block (`tool_use_id`, `is_error`, content). **P**: P2, P3b. A tool still open when the turn's `result` arrives ends `interrupted` (inferred) | `item/completed` of the same types (`status`, `exitCode`, `aggregatedOutput`, `durationMs`). **P**: P6b line 56 (`durationMs`), P7 (23 `item/completed`) |
 | `workflow.stage.changed` | **unavailable**: the `Workflow` tool's phases have no documented stream form and were not probed under `-p` (CC-5; CC-10 q7). Fallback: the stage tree is **derived** from the turn and its task events ([Agent tree](#agent-tree)), labelled inferred; a `local_workflow` task appears as one node with its status (**D**: `task_started.task_type`, CC-5) | `turn/plan/updated` (`plan[{step, status}]`) and `item/started` of type `plan`. **D** only: no plan update occurred in P6b or P7 (codex-cli.md, section 6). Fallback: the same derived tree |
@@ -79,8 +79,8 @@ types are mapped to `unrecognised` and never dropped (INT shape).
 | `diff.updated` | **derived** from `tool_use.input` of `Edit` (`old_string`, `new_string`) and `Write` (`content`), labelled derived. **P**: P2 (Write input) | `fileChange.changes[{path, kind, diff}]` and `turn/diff/updated` (the turn's unified diff). **P**: P6b, P7 (5 `turn/diff/updated`) |
 | `retry` | `system/api_retry` (main loop), `tool_progress.subagent_retry` (subagents). **D**, not observed | `error` with `willRetry:true`. **D**, not observed (CX-10 q9) |
 | `error` | `result.is_error`, `assistant.error`, `system/permission_denied`, a failed `tool_result`. **P**: P2 (`error_during_execution` after interrupt, not counted as an error) | `error` with `willRetry:false`, `turn/completed failed` with `codexErrorInfo`. **P**: P5, P6 lines 23-24 |
-| `status.changed` | `system/status` (`compacting`, `permissionMode`) **P** P1; `system/compact_boundary` **D** | `thread/status/changed` **P** P7 (10); `mcpServer/startupStatus/updated` **P** P7 (12) |
-| `unrecognised` | any other `type`/`subtype`, kept with its raw line. In P3b: `commands_changed` | any other method or item type |
+| `status.changed` | `system/status` (`compacting`, `permissionMode`) **P** P1; `system/compact_boundary` **D**; `system/commands_changed` **P** P3b, logged with no status (no MVP zone lists commands) | `thread/status/changed` **P** P7 (10); `mcpServer/startupStatus/updated` **P** P7 (12) |
+| `unrecognised` | any other `type`/`subtype`, kept with its raw line | any other method or item type |
 
 Every row's fallback, and what the screen shows while the fallback applies,
 is in [reliability.md, Fallbacks for every source](reliability.md#fallbacks-for-every-source).
@@ -204,8 +204,10 @@ States: `Spawning`, `Handshaking`, `Ready`, `Closing`, `Closed`, `Crashed`.
 | `Handshaking` | `initialize` response (Claude Code: `system/init` comes only after the first user message, P2 lines 5 and 7); `initialize`, `thread/start` responses (Codex) | `Ready` | **P** P2 | **P** P6, P6b |
 | `Handshaking` | 60 s timeout, error response, `cwd` mismatch | `Crashed` | dash (CC-4 timeout) | dash (ASM-21) |
 | `Ready` | `session.started` with a `cwd` other than the project (Claude Code reports it with the first turn) | `Crashed`, the process closed | dash | dash |
-| `Ready` | owner quits | `Closing` | dash | dash |
+| `Ready` | owner quits | `Closing`: pending approvals answered `cancel`, the turn interrupted, then stdin closed, in that order | dash | dash |
+| `Ready` | owner quits while a turn or an agent runs | stays `Ready`, asks to confirm (ui-design.md, Keys): a second Ctrl+Q quits, Esc stays | dash | dash |
 | `Closing` | process exited | `Closed` | **P** P2 (exit after stdin closed) | **D** |
+| `Closing` | process exited with a message still `Submitted` | `Closed`; the message goes back to the editor and the stored draft (ASM-23) | dash | dash |
 | `Closing` | 5 s, then 5 s more, elapsed | forced kill, then `Closed` | dash (CC-10 q13 open) | dash (CX-10 q8 open) |
 | `Ready`, `Handshaking` | process exited unexpectedly or stdout EOF | `Crashed` | dash | dash |
 
@@ -232,8 +234,10 @@ then `Idle` with the last outcome `completed`, `failed` or `interrupted`.
 | `WaitingApproval` | every pending approval answered | `Running` | **P** P2, P3b | **P** P6b |
 | `Running`, `WaitingApproval` | owner interrupts | `Interrupting` | **P** `interrupt` during text (P2); during a tool or a pending approval **D** (CC-10 q4) | **P** `turn/interrupt` during text (P6b); with children **D** (CX-10 q3) |
 | `Interrupting` | turn end reported | `Idle`, outcome `interrupted` | **P** `result error_during_execution` (P2) | **P** `turn/completed interrupted` (P6b) |
+| `Interrupting` | turn end reported as completed | `Idle`, outcome `completed`: the turn ended before the interrupt reached it, and is never shown as interrupted (owner, 2026-10-16) | **D** `result success` | **D** `turn/completed completed` |
 | `Interrupting` | no turn end within 10 s | stays, offers "force stop" (closes the session) | dash | dash |
 | `Interrupting` | owner forces stop | `Idle`, outcome `interrupted`; session `Closing` | dash | dash |
+| `Submitted`, `Running`, `WaitingApproval` | owner quits, confirmed | `Running` and `WaitingApproval` go `Interrupting`; `Submitted` stays until its first event; the session `Closing` | dash | dash |
 | `WaitingApproval` | turn end reported | `Idle` with that outcome; its pending approvals `Expired` | **D** `result` | **D** `turn/completed`, then `serverRequest/resolved` |
 | `Idle` | approval from a background agent | stays `Idle`; the agent goes `WaitingApproval` and the approval is queued | **D** (background agents outlive the turn, P3) | **D** (a child's own turn) |
 | `Idle` | the CLI starts a turn itself: `message_start` or `turn/started` with no message sent, session `Ready` | `Running`, marked "started by the CLI"; no draft is accepted | **P** after a background agent's `task_notification` (P3 lines 80-98, P3b; found in plan 4) | **D** not observed |

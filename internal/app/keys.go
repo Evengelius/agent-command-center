@@ -19,6 +19,9 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	if k.String() == "ctrl+q" {
 		return m.do(state.Quit{})
 	}
+	if m.s.QuitAsked && k.String() == "esc" {
+		return m.do(state.Stay{})
+	}
 	if m.s.Screen == state.ScreenStartup {
 		return m.startupKey(k)
 	}

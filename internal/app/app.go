@@ -105,7 +105,7 @@ var supported = []struct{ id, name string }{
 }
 
 // updateHook runs first in every Update; nil outside TestPanic, which drives
-// a session with it and injects a panic.
+// a session with it and injects a panic, and TestWin32InputMode.
 var updateHook func(m *Model, msg tea.Msg) []tea.Cmd
 
 // Model is the Bubble Tea model.
@@ -212,6 +212,9 @@ func (m *Model) State() *state.State { return m.s }
 // Init starts the application: detection, or the mock replay.
 func (m *Model) Init() tea.Cmd {
 	cmds := append(m.pending, m.timers()...)
+	if win32Input {
+		cmds = append(cmds, tea.Raw(win32InputOn))
+	}
 	m.pending = nil
 	return tea.Batch(cmds...)
 }
@@ -574,18 +577,24 @@ func listen(sess provider.Session) tea.Cmd {
 	}
 }
 
-// close asks the session to close; the reducer's timers escalate.
+// close asks the session to close; the reducer's timers escalate. The close
+// waits behind the writes queued before it, so the answers and the
+// interrupt of a confirmed quit reach the CLI before its input closes.
 func (m *Model) close() tea.Cmd {
 	sess := m.sess
 	if sess == nil {
 		return nil // started() closes a session that arrives while closing
 	}
-	return func() tea.Msg {
+	run := func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), CloseTimeout)
 		defer cancel()
 		_ = sess.Close(ctx) // its session.ended, or the close timeout, follows
 		return nil
 	}
+	if m.writes != nil && len(m.writes) == cap(m.writes) {
+		return run // the CLI reads nothing: closing comes before the order
+	}
+	return m.write(run, nil)
 }
 
 // Shutdown closes a session still open when the program ends another way

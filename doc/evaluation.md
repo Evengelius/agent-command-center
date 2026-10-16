@@ -61,6 +61,31 @@ work is done only when every criterion passes. What only the owner can judge
 A check that cannot fail proves nothing. When you write a new check, run it once
 on a damaged input and make sure it fails.
 
+## Keystroke timing
+
+The keystroke tests (`TestKeystrokeToFrame`, `TestDraftKeystrokes` in
+`internal/app`) time real work on the real clock against a fixed target:
+keystroke to frame, p95 ≤ 16 ms (`keystrokeTarget`). The target never changes
+to make a run pass. Under `go test ./...` they share the CPU with every other
+package and can miss it from load alone (plan 4, step 4: 2 of 6 suites on
+2026-10-16, with no change in the app's per-key cost). When the full suite
+misses the target (owner, 2026-10-16):
+
+1. **Keep the full-suite result as it is:** a FAIL with its p50, p95 and max,
+   in the evaluation summary and in `plan.md`.
+2. **Rerun the keystroke tests once, alone, under controlled conditions:** the
+   laptop on mains power, no other `go` build or test and no other heavy
+   process running:
+   `go test ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes)$' -count=1 -v`
+   Record its p50, p95 and max next to the full-suite result, with the
+   conditions.
+3. **If the isolated run meets the target,** the keystroke criterion passes on
+   that run. Both results stay recorded; the full-suite miss is listed as load,
+   not hidden.
+4. **If the isolated run misses the target,** it is a FAIL: do not rerun until
+   it passes. Investigate the cause (a CPU profile, the same test on the last
+   commit) and report it as the loop above says.
+
 ## Summary format
 
 ```text

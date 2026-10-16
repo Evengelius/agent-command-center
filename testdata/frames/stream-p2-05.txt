@@ -2,7 +2,7 @@
  (project bar: the test's temporary directory)
 ╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ───────────────────────────────────────────────── Interrupting… ─╮
 │ claude-haiku-5-5 · orchestrat… ││   ▸ Write                                                                 observed │
-│ turn 3 · interrupting          ││ ✓ orchestrator · Write  <probe-root>\probe-work\p2\hello.txt  allowed by you 02:0… │
+│ turn 3 · interrupting          ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
 │                                ││ CLAUDE  claude-haiku-5-5                                                           │
 │ AGENTS  observed from events   ││   done                                                                             │
 │ ◉ Turn 3                       ││ YOU  02:00                                                                         │
@@ -12,7 +12,7 @@
 │                                ││ YOU  02:00                                                                         │
 │                                ││   Count from 1 to 300, one number per line, nothing else.                          │
 │                                ││ CLAUDE  claude-haiku-5-5                                                           │
-│                                ││   1                                                                                │
+│                                ││   1▌                                                                               │
 │                                ││   ∴ thinking                                                                       │
 │                                ││ ────────────────────────────────────────────────────────────────────────────────── │
 │                                ││ > a draft                                                                          │

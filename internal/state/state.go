@@ -294,6 +294,7 @@ type State struct {
 	Unrecognised     int
 	UnrecognisedLast []string
 	Notes            []string // anomalies logged by the reducer (invalid transitions)
+	QuitAsked        bool     // Ctrl+Q asked to confirm; a second one quits, Esc stays
 }
 
 // New returns the state before launch.

@@ -6,6 +6,7 @@ package claude
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -175,6 +176,16 @@ func (m *Mapper) system(l line, raw []byte) []event.Event {
 		return []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, event.Status{Status: "compacted"})}
 	case "api_retry":
 		return []event.Event{m.ev(event.Retry, event.Observed, "", raw, event.Problem{Message: "API retry", WillRetry: true})}
+	case "commands_changed":
+		// The slash commands and skills the session offers (claude-code.md,
+		// section 6, "Secondary"; P3 and P3b). No MVP zone lists them
+		// (amendment 4), so it is known and logged with no status: nothing
+		// on screen changes, and it is not counted as unrecognised.
+		var s struct {
+			Commands []json.RawMessage `json:"commands"`
+		}
+		_ = json.Unmarshal(raw, &s)
+		return []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, event.Status{Detail: fmt.Sprintf("%d commands available", len(s.Commands))})}
 	case "permission_denied":
 		return []event.Event{m.ev(event.Error, event.Observed, "", raw, event.Problem{Message: "permission denied"})}
 	case "thinking_tokens":

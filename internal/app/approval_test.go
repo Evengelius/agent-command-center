@@ -11,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -157,7 +159,14 @@ func (p *wireProc) Release()              {}
 // wireRig opens the dashboard on the real Claude Code adapter over w.
 func wireRig(t *testing.T, w *wireClaude, opt Options) *harness {
 	t.Helper()
-	opt.Providers = []provider.Provider{installedClaude{&claude.Provider{Spawner: w}}}
+	return wireRigArgs(t, w, opt, nil)
+}
+
+// wireRigArgs is wireRig with the adapter's extra arguments (the live gate
+// passes --model haiku).
+func wireRigArgs(t *testing.T, w *wireClaude, opt Options, args []string) *harness {
+	t.Helper()
+	opt.Providers = []provider.Provider{installedClaude{&claude.Provider{Spawner: w, Args: args, Now: func() time.Time { return testNow }}}}
 	if opt.Cwd == "" {
 		opt.Cwd = t.TempDir()
 	}
@@ -262,142 +271,150 @@ func noPersistentAnswer(t *testing.T, frame string) {
 // with one key each.
 func TestApprovalCards(t *testing.T) {
 	t.Run("P2 allow", func(t *testing.T) {
-		recs := probe(t, "p2-claude-conversation.jsonl")
-		const id = "5438db7f-8078-47e9-bfda-767bbf738c1a"
-		w := &wireClaude{}
-		h := wireRig(t, w, Options{})
-		h.check = func(f string) { noPersistentAnswer(t, f) }
-		text, at := firstUser(t, recs)
-		h.send(tea.PasteMsg{Content: text})
-		h.send(key(tea.KeyEnter, 0))
-		replay(t, h, w.last(), recs, at+1, 36)
+		synctest.Test(t, func(t *testing.T) {
+			recs := probe(t, "p2-claude-conversation.jsonl")
+			const id = "5438db7f-8078-47e9-bfda-767bbf738c1a"
+			w := &wireClaude{}
+			h := wireRig(t, w, Options{})
+			h.check = func(f string) { noPersistentAnswer(t, f) }
+			text, at := firstUser(t, recs)
+			h.send(tea.PasteMsg{Content: text})
+			h.send(key(tea.KeyEnter, 0))
+			replay(t, h, w.last(), recs, at+1, 36)
 
-		s := h.m.State()
-		if ap := s.Approvals[id]; ap == nil || ap.Status != state.Pending || s.Turn.Phase != state.WaitingApproval {
-			t.Fatalf("approval %+v, turn %q; want pending, waiting", s.Approvals[id], s.Turn.Phase)
-		}
-		f := frameText(h)
-		for _, want := range []string{"! APPROVAL orchestrator · Write", "hello.txt", "│ hello", "F2 to answer", "! Waiting for approval"} {
-			if !strings.Contains(f, want) {
-				t.Errorf("pending card lacks %q:\n%s", want, f)
+			s := h.m.State()
+			if ap := s.Approvals[id]; ap == nil || ap.Status != state.Pending || s.Turn.Phase != state.WaitingApproval {
+				t.Fatalf("approval %+v, turn %q; want pending, waiting", s.Approvals[id], s.Turn.Phase)
 			}
-		}
-		h.send(typed('a')) // not focused: typed into the editor, nothing answered
-		if n := len(answersFor(w, id)); n != 0 || h.m.edit.Text() != "a" {
-			t.Fatalf("a without focus: %d answers, editor %q", n, h.m.edit.Text())
-		}
-		h.m.edit.Clear()
-		h.send(key(tea.KeyF2, 0))
-		if f := frameText(h); !strings.Contains(f, "▸ a allow once · d deny · c cancel the turn · Esc later") {
-			t.Errorf("focused card lacks its keys:\n%s", f)
-		}
-		h.send(typed('a'))
-		h.send(typed('a'))
-		h.send(typed('d'))
-		got := answersFor(w, id)
-		if len(got) != 1 || got[0]["behavior"] != "allow" {
-			t.Fatalf("answers %v; want one allow", got)
-		}
-		if in, _ := json.Marshal(got[0]["updatedInput"]); !strings.Contains(string(in), "hello.txt") {
-			t.Errorf("allow without the request's input: %s", in)
-		}
-		if ap := h.m.State().Approvals[id]; ap.Status != state.Allowed {
-			t.Errorf("approval %q after allow", ap.Status)
-		}
-		if f := frameText(h); !strings.Contains(f, "✓ orchestrator · Write") || !strings.Contains(f, "allowed by you") {
-			t.Errorf("answered card:\n%s", f)
-		}
-		if h.m.edit.Text() != "ad" {
-			t.Errorf("keys after the answer: editor %q, want them typed", h.m.edit.Text())
-		}
+			f := frameText(h)
+			for _, want := range []string{"! APPROVAL orchestrator · Write", "hello.txt", "│ hello", "F2 to answer", "! Waiting for approval"} {
+				if !strings.Contains(f, want) {
+					t.Errorf("pending card lacks %q:\n%s", want, f)
+				}
+			}
+			h.send(typed('a')) // not focused: typed into the editor, nothing answered
+			if n := len(answersFor(w, id)); n != 0 || h.m.edit.Text() != "a" {
+				t.Fatalf("a without focus: %d answers, editor %q", n, h.m.edit.Text())
+			}
+			h.m.edit.Clear()
+			h.send(key(tea.KeyF2, 0))
+			if f := frameText(h); !strings.Contains(f, "▸ a allow once · d deny · c cancel the turn · Esc later") {
+				t.Errorf("focused card lacks its keys:\n%s", f)
+			}
+			h.send(typed('a'))
+			h.send(typed('a'))
+			h.send(typed('d'))
+			got := answersFor(w, id)
+			if len(got) != 1 || got[0]["behavior"] != "allow" {
+				t.Fatalf("answers %v; want one allow", got)
+			}
+			if in, _ := json.Marshal(got[0]["updatedInput"]); !strings.Contains(string(in), "hello.txt") {
+				t.Errorf("allow without the request's input: %s", in)
+			}
+			if ap := h.m.State().Approvals[id]; ap.Status != state.Allowed {
+				t.Errorf("approval %q after allow", ap.Status)
+			}
+			if f := frameText(h); !strings.Contains(f, "✓ orchestrator · Write") || !strings.Contains(f, "allowed by you") {
+				t.Errorf("answered card:\n%s", f)
+			}
+			if h.m.edit.Text() != "ad" {
+				t.Errorf("keys after the answer: editor %q, want them typed", h.m.edit.Text())
+			}
+		})
 	})
 
 	t.Run("P3b subagent deny", func(t *testing.T) {
-		recs := probe(t, "p3b-claude-subagent-approval.jsonl")
-		const id = "42fb272e-1586-4ff9-b7b2-74a74825c280"
-		w := &wireClaude{}
-		h := wireRig(t, w, Options{})
-		h.check = func(f string) { noPersistentAnswer(t, f) }
-		text, at := firstUser(t, recs)
-		h.send(tea.PasteMsg{Content: text})
-		h.send(key(tea.KeyEnter, 0))
-		replay(t, h, w.last(), recs, at+1, 101) // line 94's Bash is allowed on the way
+		synctest.Test(t, func(t *testing.T) {
+			recs := probe(t, "p3b-claude-subagent-approval.jsonl")
+			const id = "42fb272e-1586-4ff9-b7b2-74a74825c280"
+			w := &wireClaude{}
+			h := wireRig(t, w, Options{})
+			h.check = func(f string) { noPersistentAnswer(t, f) }
+			text, at := firstUser(t, recs)
+			h.send(tea.PasteMsg{Content: text})
+			h.send(key(tea.KeyEnter, 0))
+			replay(t, h, w.last(), recs, at+1, 101) // line 94's Bash is allowed on the way
 
-		s := h.m.State()
-		ap := s.Approvals[id]
-		if ap == nil || ap.Status != state.Pending || ap.Agent != "a9dcbbc8d63adf34c" {
-			t.Fatalf("approval %+v; want pending for agent a9dcbbc8d63adf34c", ap)
-		}
-		who := approvalLabel(s, ap)
-		f := frameText(h)
-		for _, want := range []string{"! APPROVAL " + who + " · Write", "found.txt", "waiting: approval"} {
-			if !strings.Contains(f, want) {
-				t.Errorf("subagent card lacks %q:\n%s", want, f)
+			s := h.m.State()
+			ap := s.Approvals[id]
+			if ap == nil || ap.Status != state.Pending || ap.Agent != "a9dcbbc8d63adf34c" {
+				t.Fatalf("approval %+v; want pending for agent a9dcbbc8d63adf34c", ap)
 			}
-		}
-		h.send(key(tea.KeyF2, 0))
-		h.send(typed('d'))
-		h.send(typed('d'))
-		got := answersFor(w, id)
-		if len(got) != 1 || got[0]["behavior"] != "deny" || got[0]["message"] != claude.DenyMessage {
-			t.Fatalf("answers %v; want one deny", got)
-		}
-		if f := frameText(h); !strings.Contains(f, "✗ "+who+" · Write") || !strings.Contains(f, "denied by you") {
-			t.Errorf("denied card:\n%s", f)
-		}
+			who := approvalLabel(s, ap)
+			f := frameText(h)
+			for _, want := range []string{"! APPROVAL " + who + " · Write", "found.txt", "waiting: approval"} {
+				if !strings.Contains(f, want) {
+					t.Errorf("subagent card lacks %q:\n%s", want, f)
+				}
+			}
+			h.send(key(tea.KeyF2, 0))
+			h.send(typed('d'))
+			h.send(typed('d'))
+			got := answersFor(w, id)
+			if len(got) != 1 || got[0]["behavior"] != "deny" || got[0]["message"] != claude.DenyMessage {
+				t.Fatalf("answers %v; want one deny", got)
+			}
+			if f := frameText(h); !strings.Contains(f, "✗ "+who+" · Write") || !strings.Contains(f, "denied by you") {
+				t.Errorf("denied card:\n%s", f)
+			}
+		})
 	})
 
 	t.Run("unreadable request", func(t *testing.T) {
-		w := &wireClaude{}
-		h := wireRig(t, w, Options{})
-		h.send(tea.PasteMsg{Content: "go"})
-		h.send(key(tea.KeyEnter, 0))
-		p := w.last()
-		p.emit(`{"type":"system","subtype":"init","cwd":`+quote(h.m.State().Context.Project)+`,"session_id":"s-un","model":"claude-haiku-5-5","permissionMode":"default"}`,
-			`{"type":"control_request","request_id":"r-bad","request":{"subtype":"can_use_tool","tool_name":"Write","input":{"file_path":"x.txt"},"agent_id":7}}`)
-		h.settle()
-		got := answersFor(w, "r-bad")
-		if len(got) != 1 || got[0]["behavior"] != "deny" {
-			t.Fatalf("answers %v; want one deny", got)
-		}
-		f := frameText(h)
-		if !strings.Contains(f, "denied automatically: request not readable") {
-			t.Errorf("unreadable request:\n%s", f)
-		}
-		h.send(key(tea.KeyF2, 0))
-		h.send(typed('a'))
-		if n := len(answersFor(w, "r-bad")); n != 1 {
-			t.Errorf("%d answers after F2 a; want the one deny", n)
-		}
+		synctest.Test(t, func(t *testing.T) {
+			w := &wireClaude{}
+			h := wireRig(t, w, Options{})
+			h.send(tea.PasteMsg{Content: "go"})
+			h.send(key(tea.KeyEnter, 0))
+			p := w.last()
+			p.emit(`{"type":"system","subtype":"init","cwd":`+quote(h.m.State().Context.Project)+`,"session_id":"s-un","model":"claude-haiku-5-5","permissionMode":"default"}`,
+				`{"type":"control_request","request_id":"r-bad","request":{"subtype":"can_use_tool","tool_name":"Write","input":{"file_path":"x.txt"},"agent_id":7}}`)
+			h.settle()
+			got := answersFor(w, "r-bad")
+			if len(got) != 1 || got[0]["behavior"] != "deny" {
+				t.Fatalf("answers %v; want one deny", got)
+			}
+			f := frameText(h)
+			if !strings.Contains(f, "denied automatically: request not readable") {
+				t.Errorf("unreadable request:\n%s", f)
+			}
+			h.send(key(tea.KeyF2, 0))
+			h.send(typed('a'))
+			if n := len(answersFor(w, "r-bad")); n != 1 {
+				t.Errorf("%d answers after F2 a; want the one deny", n)
+			}
+		})
 	})
 
 	t.Run("expired", func(t *testing.T) {
-		w := &wireClaude{}
-		h := wireRig(t, w, Options{})
-		h.send(tea.PasteMsg{Content: "go"})
-		h.send(key(tea.KeyEnter, 0))
-		p := w.last()
-		p.emit(`{"type":"system","subtype":"init","cwd":`+quote(h.m.State().Context.Project)+`,"session_id":"s-ex","model":"claude-haiku-5-5","permissionMode":"default"}`,
-			`{"type":"control_request","request_id":"r-ex","request":{"subtype":"can_use_tool","tool_name":"Bash","input":{"command":"ls"}}}`)
-		h.settle()
-		if ap := h.m.State().Approvals["r-ex"]; ap == nil || ap.Status != state.Pending {
-			t.Fatalf("approval %+v, want pending", ap)
-		}
-		p.emit(`{"type":"result","subtype":"success","is_error":false,"duration_ms":1,"result":"ok","session_id":"s-ex"}`)
-		h.settle()
-		if ap := h.m.State().Approvals["r-ex"]; ap.Status != state.Expired {
-			t.Errorf("approval %q after the turn ended, want Expired", ap.Status)
-		}
-		if f := frameText(h); !strings.Contains(f, "expired, not answered") {
-			t.Errorf("expired card:\n%s", f)
-		}
-		h.send(key(tea.KeyF2, 0))
-		if h.m.ui.Card != "" || h.m.ui.Toast != "no approval waiting" {
-			t.Errorf("F2 with none pending: card %q, toast %q", h.m.ui.Card, h.m.ui.Toast)
-		}
-		if n := len(w.written("control_response")); n != 0 {
-			t.Errorf("%d answers written for an expired request", n)
-		}
+		synctest.Test(t, func(t *testing.T) {
+			w := &wireClaude{}
+			h := wireRig(t, w, Options{})
+			h.send(tea.PasteMsg{Content: "go"})
+			h.send(key(tea.KeyEnter, 0))
+			p := w.last()
+			p.emit(`{"type":"system","subtype":"init","cwd":`+quote(h.m.State().Context.Project)+`,"session_id":"s-ex","model":"claude-haiku-5-5","permissionMode":"default"}`,
+				`{"type":"control_request","request_id":"r-ex","request":{"subtype":"can_use_tool","tool_name":"Bash","input":{"command":"ls"}}}`)
+			h.settle()
+			if ap := h.m.State().Approvals["r-ex"]; ap == nil || ap.Status != state.Pending {
+				t.Fatalf("approval %+v, want pending", ap)
+			}
+			p.emit(`{"type":"result","subtype":"success","is_error":false,"duration_ms":1,"result":"ok","session_id":"s-ex"}`)
+			h.settle()
+			if ap := h.m.State().Approvals["r-ex"]; ap.Status != state.Expired {
+				t.Errorf("approval %q after the turn ended, want Expired", ap.Status)
+			}
+			if f := frameText(h); !strings.Contains(f, "expired, not answered") {
+				t.Errorf("expired card:\n%s", f)
+			}
+			h.send(key(tea.KeyF2, 0))
+			if h.m.ui.Card != "" || h.m.ui.Toast != "no approval waiting" {
+				t.Errorf("F2 with none pending: card %q, toast %q", h.m.ui.Card, h.m.ui.Toast)
+			}
+			if n := len(w.written("control_response")); n != 0 {
+				t.Errorf("%d answers written for an expired request", n)
+			}
+		})
 	})
 }
 
@@ -414,50 +431,52 @@ func quote(s string) string { b, _ := json.Marshal(s); return string(b) }
 // TestApprovalCancel is step 4, check 2: c on a card writes the deny, then
 // the interrupt, in that order, and the session goes on in the same process.
 func TestApprovalCancel(t *testing.T) {
-	recs := probe(t, "p2-claude-conversation.jsonl")
-	const id = "5438db7f-8078-47e9-bfda-767bbf738c1a"
-	w := &wireClaude{}
-	h := wireRig(t, w, Options{})
-	text, at := firstUser(t, recs)
-	h.send(tea.PasteMsg{Content: text})
-	h.send(key(tea.KeyEnter, 0))
-	p := w.last()
-	replay(t, h, p, recs, at+1, 36)
-	h.send(key(tea.KeyF2, 0))
-	h.send(typed('c'))
+	synctest.Test(t, func(t *testing.T) {
+		recs := probe(t, "p2-claude-conversation.jsonl")
+		const id = "5438db7f-8078-47e9-bfda-767bbf738c1a"
+		w := &wireClaude{}
+		h := wireRig(t, w, Options{})
+		text, at := firstUser(t, recs)
+		h.send(tea.PasteMsg{Content: text})
+		h.send(key(tea.KeyEnter, 0))
+		p := w.last()
+		replay(t, h, p, recs, at+1, 36)
+		h.send(key(tea.KeyF2, 0))
+		h.send(typed('c'))
 
-	var order []string
-	for _, l := range w.written("control_response", "control_request/interrupt") {
-		switch {
-		case strings.Contains(l, `"control_response"`) && strings.Contains(l, id) && strings.Contains(l, `"deny"`):
-			order = append(order, "deny")
-		case strings.Contains(l, `"interrupt"`):
-			order = append(order, "interrupt")
-		default:
-			order = append(order, l)
+		var order []string
+		for _, l := range w.written("control_response", "control_request/interrupt") {
+			switch {
+			case strings.Contains(l, `"control_response"`) && strings.Contains(l, id) && strings.Contains(l, `"deny"`):
+				order = append(order, "deny")
+			case strings.Contains(l, `"interrupt"`):
+				order = append(order, "interrupt")
+			default:
+				order = append(order, l)
+			}
 		}
-	}
-	if !reflect.DeepEqual(order, []string{"deny", "interrupt"}) {
-		t.Fatalf("stdin %q; want the deny, then the interrupt", order)
-	}
-	if s := h.m.State(); s.Turn.Phase != state.Interrupting {
-		t.Errorf("turn %q after c, want Interrupting", s.Turn.Phase)
-	}
-	// Claude Code ends the interrupted turn.
-	p.emit(`{"type":"result","subtype":"error_during_execution","is_error":true,"duration_ms":1,"session_id":"00ef0150-56f0-4033-8467-bd6e93e296bb"}`)
-	h.settle()
-	s := h.m.State()
-	if s.Session.Phase != state.Ready || s.Turn.Phase != state.Idle || s.Approvals[id].Status != state.Denied {
-		t.Fatalf("session %q, turn %q, approval %q; want Ready, Idle, Denied", s.Session.Phase, s.Turn.Phase, s.Approvals[id].Status)
-	}
-	h.send(tea.PasteMsg{Content: "next"})
-	h.send(key(tea.KeyEnter, 0))
-	if us := w.written("user"); len(us) != 2 || !strings.Contains(us[1], `"next"`) {
-		t.Errorf("user lines %q; want the next message written", us)
-	}
-	if n := len(w.spawns()); n != 1 {
-		t.Errorf("%d spawns; want the same process", n)
-	}
+		if !reflect.DeepEqual(order, []string{"deny", "interrupt"}) {
+			t.Fatalf("stdin %q; want the deny, then the interrupt", order)
+		}
+		if s := h.m.State(); s.Turn.Phase != state.Interrupting {
+			t.Errorf("turn %q after c, want Interrupting", s.Turn.Phase)
+		}
+		// Claude Code ends the interrupted turn.
+		p.emit(`{"type":"result","subtype":"error_during_execution","is_error":true,"duration_ms":1,"session_id":"00ef0150-56f0-4033-8467-bd6e93e296bb"}`)
+		h.settle()
+		s := h.m.State()
+		if s.Session.Phase != state.Ready || s.Turn.Phase != state.Idle || s.Approvals[id].Status != state.Denied {
+			t.Fatalf("session %q, turn %q, approval %q; want Ready, Idle, Denied", s.Session.Phase, s.Turn.Phase, s.Approvals[id].Status)
+		}
+		h.send(tea.PasteMsg{Content: "next"})
+		h.send(key(tea.KeyEnter, 0))
+		if us := w.written("user"); len(us) != 2 || !strings.Contains(us[1], `"next"`) {
+			t.Errorf("user lines %q; want the next message written", us)
+		}
+		if n := len(w.spawns()); n != 1 {
+			t.Errorf("%d spawns; want the same process", n)
+		}
+	})
 }
 
 // wireStdin is the process's stdin; it refuses writes while refuse is set.

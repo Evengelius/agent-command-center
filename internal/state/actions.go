@@ -1,6 +1,7 @@
 package state
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
@@ -24,6 +25,7 @@ type (
 	HandshakeTimeout struct{}
 	Back             struct{}
 	Quit             struct{}
+	Stay             struct{} // Esc while Ctrl+Q asks to confirm: the session goes on
 	Resume           struct{} // start the crashed session's CLI session again in a new process
 	Send             struct{ Text string }
 	WriteFailed      struct{ Message string }
@@ -46,6 +48,7 @@ func (SpawnFailed) action()      {}
 func (HandshakeTimeout) action() {}
 func (Back) action()             {}
 func (Quit) action()             {}
+func (Stay) action()             {}
 func (Resume) action()           {}
 func (Send) action()             {}
 func (WriteFailed) action()      {}
@@ -121,6 +124,8 @@ func (s *State) Do(a Action) []Command {
 		}
 	case Quit:
 		return s.quit()
+	case Stay:
+		s.QuitAsked = false
 	case Resume:
 		if s.Session.Phase != Crashed || s.Session.ID == "" || s.Startup.Phase == StartFailed || s.Context.Mock {
 			s.doNote("nothing to resume")
@@ -185,15 +190,78 @@ func (s *State) quit() []Command {
 		s.Startup.Phase = Exited
 		return []Command{{Kind: CmdExit}}
 	}
+	if s.Running() != "" && !s.QuitAsked {
+		// ui-design.md, Keys: Ctrl+Q asks to confirm while a turn or an
+		// agent runs (reliability.md, Interruption and cancellation).
+		s.QuitAsked = true // the editor status asks (render)
+		return nil
+	}
+	s.QuitAsked = false
 	s.Startup.Phase = Exited
 	switch s.Session.Phase {
-	case Spawning, Handshaking, Ready:
+	case Ready:
+		s.Session.Phase = Closing
+		return append(s.stopWork(), Command{Kind: CmdClose})
+	case Spawning, Handshaking:
 		s.Session.Phase = Closing
 		return []Command{{Kind: CmdClose}}
 	case Closing:
 		return []Command{{Kind: CmdKill}}
 	}
 	return []Command{{Kind: CmdExit}}
+}
+
+// Running says what quitting would stop: the turn and the agents still
+// running; "" when nothing runs.
+func (s *State) Running() string {
+	if s.Session.Phase != Ready {
+		return ""
+	}
+	n := 0
+	for _, k := range s.Order {
+		if !s.Agents[k].Status.Final() {
+			n++
+		}
+	}
+	agents := ""
+	switch {
+	case n == 1:
+		agents = "1 agent still running"
+	case n > 1:
+		agents = fmt.Sprintf("%d agents still running", n)
+	}
+	switch {
+	case s.Turn.Phase != Idle && agents != "":
+		return "the running turn and " + agents
+	case s.Turn.Phase != Idle:
+		return "the running turn"
+	}
+	return agents
+}
+
+// stopWork is the confirmed quit of a ready session: every pending approval
+// is cancelled and the turn interrupted before the CLI's input is closed,
+// so nothing the owner did not approve runs while it shuts down
+// (reliability.md, Interruption and cancellation). The commands come in
+// the order they must be written. A message not yet accepted stays
+// Submitted: if the CLI ends before taking it, it goes back to the editor
+// and the stored draft.
+func (s *State) stopWork() []Command {
+	var cmds []Command
+	for _, id := range s.Queue {
+		if ap := s.Approvals[id]; ap.Status == Pending {
+			ap.Status = Answering
+			cmds = append(cmds, Command{Kind: CmdAnswer, ID: id, Decision: "cancel"})
+		}
+	}
+	switch s.Turn.Phase {
+	case Running, WaitingApproval:
+		s.Turn.Phase = Interrupting
+		cmds = append(cmds, Command{Kind: CmdInterrupt})
+	case Submitted:
+		cmds = append(cmds, Command{Kind: CmdInterrupt})
+	}
+	return cmds
 }
 
 func (s *State) send(a Send) []Command {

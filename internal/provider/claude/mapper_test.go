@@ -2,6 +2,7 @@ package claude
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
@@ -139,13 +140,21 @@ func TestP3bSubagentApproval(t *testing.T) {
 		t.Errorf("approvals %d (%d from the subagent), want 2 (2)", n, fromAgent)
 	}
 	unknown := map[string]int{}
+	var commands []event.Status
 	for _, e := range all {
 		if e.Kind == event.Unrecognised {
 			unknown[e.Payload.(event.Unknown).Type]++
 		}
+		if e.Kind == event.StatusChanged && strings.Contains(e.Raw, `"subtype":"commands_changed"`) {
+			commands = append(commands, e.Payload.(event.Status))
+		}
 	}
-	if unknown["system/commands_changed"] != 1 {
-		t.Errorf("unrecognised %v, want system/commands_changed once", unknown)
+	if len(unknown) != 0 {
+		t.Errorf("unrecognised %v, want none", unknown)
+	}
+	// commands_changed is known and changes no status.
+	if len(commands) != 1 || commands[0].Status != "" || !strings.HasSuffix(commands[0].Detail, " commands available") || commands[0].Detail == "0 commands available" {
+		t.Errorf("commands_changed mapped to %+v; want one status.changed with no status and its command count", commands)
 	}
 	if n := count(all, event.AgentSet); n != 2 {
 		t.Errorf("agent.set %d, want 2", n)

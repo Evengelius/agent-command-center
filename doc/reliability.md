@@ -459,8 +459,8 @@ owner's quota and needs approval under [evaluation.md](evaluation.md);
 
 | Limitation | Settles it |
 | - | - |
-| WT 1.25 Kitty keyboard protocol through ConPTY (Shift+Enter) | manual in WT; Ctrl+J works meanwhile |
-| WT honouring a win32-input-mode (9001) request from the application | manual |
+| WT 1.25 Kitty keyboard protocol through ConPTY | not needed: Shift+Enter works through win32-input-mode |
+| WT honouring a win32-input-mode (9001) request from the application | settled 2026-10-16: honoured by WT 1.23, measured ([ui-design.md, Focus and keys](ui-design.md#focus-and-keys)) |
 | `trimPaste` and its effect on byte-for-byte paste | manual: paste trailing spaces and tabs in WT |
 | tmux: the effective `extended-keys` default; re-wrapping outer pastes | manual under WSL |
 | OSC 52 size limits beyond kitty and WT; block selection per terminal | manual where available |
@@ -501,8 +501,8 @@ those marked live.
    adapter's `map(line)` is run over every line, and golden files fix the
    expected events. Checks include, from the recordings: P2 gives 25
    `content_block_delta` lines (3 of them `text_delta`) and an interrupt ending `error_during_execution`; P3b gives the
-   subagent's approval with its `agent_id` and one `unrecognised`
-   (`commands_changed`); P7 gives 11 rate-limit pushes, 10
+   subagent's approval with its `agent_id` and no `unrecognised`
+   (`commands_changed` is classified); P7 gives 11 rate-limit pushes, 10
    `thread/status/changed`, two children routed by `threadId`, and a
    child's approval. Every line maps to at least one event: none is dropped.
    Synthetic fixtures, labelled synthetic, cover what no probe produced

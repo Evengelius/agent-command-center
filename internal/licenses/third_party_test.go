@@ -22,6 +22,7 @@ var permissive = map[string]bool{"MIT": true, "BSD-2-Clause": true, "BSD-3-Claus
 type module struct {
 	Path, Version, Dir string
 	Main, Indirect     bool
+	Replace            *struct{ Path string }
 }
 
 func goCmd(t *testing.T, args ...string) []byte {
@@ -121,6 +122,11 @@ func TestThirdPartyTable(t *testing.T) {
 		built[p] = true
 	}
 	rows := table(t)
+	b, err := os.ReadFile(filepath.Join(root, "THIRD_PARTY.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := string(b)
 	mods := modules(t)
 	for _, m := range mods {
 		r, ok := rows[m.Path]
@@ -150,6 +156,24 @@ func TestThirdPartyTable(t *testing.T) {
 				t.Fatal(err)
 			}
 			m.Dir = d.Dir
+		}
+		if m.Replace != nil {
+			// A copy kept in the repository (THIRD_PARTY.md, Patched copies):
+			// its changes are recorded beside it and the table names it.
+			if _, err := os.Stat(filepath.Join(m.Dir, "PATCHES.md")); err != nil {
+				t.Errorf("%s: replaced by %s without a PATCHES.md", m.Path, m.Replace.Path)
+			}
+			if !strings.Contains(doc, "`"+m.Replace.Path+"`") {
+				t.Errorf("THIRD_PARTY.md: %s is replaced by %s, which it does not name", m.Path, m.Replace.Path)
+			}
+			// The copy is a module of its own, which go test ./... skips:
+			// its tests of the patches (PATCHES.md, Checks) run here.
+			cmd := exec.Command("go", "test", "-count=1", ".")
+			cmd.Dir = m.Dir
+			cmd.Env = append(os.Environ(), "GOPROXY=off", "GOFLAGS=-mod=readonly")
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Errorf("%s: the patched copy's tests fail: %v\n%s", m.Replace.Path, err, out)
+			}
 		}
 		found := licenceOf(t, m.Dir)
 		if !contains(found, r.licence) {

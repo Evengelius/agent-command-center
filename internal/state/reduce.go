@@ -200,11 +200,18 @@ func (s *State) ended(ev event.Event, p event.Ended) []Command {
 	s.Session.ExitCode, s.Session.HasExitCode = p.Code, p.HasCode
 	if s.Session.Phase == Closing {
 		s.Session.Phase = Closed
+		var cmds []Command
+		if s.Turn.Phase == Submitted && s.Turn.Draft != "" {
+			// Closed before the CLI took the message: it goes back to the
+			// editor, so the draft saved on the way out keeps it (ASM-23).
+			cmds = append(cmds, Command{Kind: CmdRestoreDraft, Text: s.Turn.Draft})
+			s.Turn.Draft = ""
+		}
 		s.endAll(ev)
 		if s.Startup.Phase == Exited {
-			return []Command{{Kind: CmdExit}}
+			cmds = append(cmds, Command{Kind: CmdExit})
 		}
-		return nil
+		return cmds
 	}
 	return s.crash(ev, "the CLI exited unexpectedly", false)
 }
@@ -299,6 +306,7 @@ func (s *State) delta(ev event.Event, p event.Delta) {
 		*list = append(*list, Entry{Seq: ev.Seq, Role: "assistant", Agent: ev.Agent, MessageID: p.MessageID, Origin: ev.Origin, Streaming: true, At: ev.At})
 		e = &(*list)[len(*list)-1]
 	}
+	e.Streaming = true // a block's completed line may have come before this one's deltas
 	if p.Block == "thinking" {
 		e.Thinking = true
 		return
@@ -316,10 +324,21 @@ func (s *State) completed(ev event.Event, p event.Completed) {
 		*list = append(*list, Entry{Seq: ev.Seq, Role: "assistant", Agent: ev.Agent, MessageID: p.MessageID, Text: p.Text, Origin: ev.Origin, Thinking: p.Thinking, At: ev.At})
 		return
 	}
-	if e.Text != p.Text && e.Text != "" {
+	// Claude Code sends one completed line per content block, with the
+	// message's id (testdata/probes/p2-claude-conversation.jsonl: the thinking
+	// block's line, then the text's): a line never takes away text another
+	// block streamed. Codex sends the whole message once.
+	e.Thinking = e.Thinking || p.Thinking
+	switch {
+	case p.Text == "": // a thinking or tool block's line: the text stays
+	case e.Text == "" || strings.HasPrefix(p.Text, e.Text):
+		e.Text = p.Text
+	case strings.Contains(e.Text, p.Text): // one block of a message already streamed
+	default:
 		s.note(ev, "streamed text differs from the completed message; the completed message wins")
+		e.Text = p.Text
 	}
-	e.Text, e.Streaming, e.Thinking = p.Text, false, e.Thinking || p.Thinking
+	e.Streaming = false
 }
 
 func (s *State) tool(ev event.Event, p event.Tool) []Command {
@@ -632,8 +651,10 @@ func (s *State) turnEnd(ev event.Event, p event.TurnEnd) []Command {
 		s.note(ev, "unexpected turn end")
 		return nil
 	}
+	// A turn the CLI completed stays completed, Ctrl+C or not: the interrupt
+	// came after its end (events-and-state.md, Turn).
 	outcome := p.Outcome
-	if s.Turn.Phase == Interrupting {
+	if s.Turn.Phase == Interrupting && outcome != "completed" {
 		outcome = "interrupted"
 	}
 	s.Turn.Phase, s.Turn.Outcome, s.Turn.ForceStopOffered = Idle, outcome, false

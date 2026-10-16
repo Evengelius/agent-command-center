@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"testing/synctest"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -35,49 +36,57 @@ var sizes = [][2]int{{80, 24}, {120, 40}, {200, 60}, {79, 24}}
 // three reference sizes and too small at 79x24, each frame exactly the
 // terminal's height and no line wider than it.
 func TestGoldenFrames(t *testing.T) {
-	startup := newHarness(t, Options{
-		Providers: []provider.Provider{
-			fakeCLI{provider.Detection{ID: "claude-code", Name: "Claude Code", Installed: true, Version: "2.1.300", Path: `C:\Tools\claude.exe`}},
-			fakeCLI{provider.Detection{ID: "codex", Name: "OpenAI Codex", Problem: "not found on the PATH"}},
-		},
-		Cwd: `C:\work\demo-project`,
-	})
-	startup.settle()
-	if s := startup.m.State(); s.Screen != state.ScreenStartup || s.Startup.Phase != state.Asking {
-		t.Fatalf("startup: screen %q, phase %q", s.Screen, s.Startup.Phase)
+	startup := func(t *testing.T) *harness {
+		h := newHarness(t, Options{
+			Providers: []provider.Provider{
+				fakeCLI{provider.Detection{ID: "claude-code", Name: "Claude Code", Installed: true, Version: "2.1.300", Path: `C:\Tools\claude.exe`}},
+				fakeCLI{provider.Detection{ID: "codex", Name: "OpenAI Codex", Problem: "not found on the PATH"}},
+			},
+			Cwd: `C:\work\demo-project`,
+		})
+		h.settle()
+		if s := h.m.State(); s.Screen != state.ScreenStartup || s.Startup.Phase != state.Asking {
+			t.Fatalf("startup: screen %q, phase %q", s.Screen, s.Startup.Phase)
+		}
+		return h
 	}
-
-	dash := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")}})
-	dash.settle()
-	if s := dash.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 154 {
-		t.Fatalf("dashboard: screen %q, %d events, want 154", s.Screen, len(s.Log))
+	dash := func(t *testing.T) *harness {
+		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")}})
+		h.settle()
+		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 154 {
+			t.Fatalf("dashboard: screen %q, %d events, want 154", s.Screen, len(s.Log))
+		}
+		return h
 	}
 
 	for _, sc := range []struct {
 		name string
-		h    *harness
+		rig  func(*testing.T) *harness
 	}{{"startup", startup}, {"dashboard", dash}} {
 		for _, size := range sizes {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)
 			t.Run(name, func(t *testing.T) {
-				sc.h.send(tea.WindowSizeMsg{Width: w, Height: hgt})
-				frame := sc.h.m.View().Content
-				lines := strings.Split(frame, "\n")
-				if len(lines) != hgt {
-					t.Errorf("%d lines, want %d", len(lines), hgt)
-				}
-				for i, l := range lines {
-					if n := lipgloss.Width(l); n > w {
-						t.Errorf("line %d is %d columns wide, terminal %d: %q", i+1, n, w, plainText(l))
+				synctest.Test(t, func(t *testing.T) {
+					h := sc.rig(t)
+					h.send(tea.WindowSizeMsg{Width: w, Height: hgt})
+					frame := h.m.View().Content
+					lines := strings.Split(frame, "\n")
+					if len(lines) != hgt {
+						t.Errorf("%d lines, want %d", len(lines), hgt)
 					}
-				}
-				text := plainText(frame)
-				small := strings.Contains(text, "Terminal too small")
-				if small != (w < render.MinWidth || hgt < render.MinHeight) {
-					t.Errorf("too-small message shown %v at %dx%d", small, w, hgt)
-				}
-				golden(t, name, text)
+					for i, l := range lines {
+						if n := lipgloss.Width(l); n > w {
+							t.Errorf("line %d is %d columns wide, terminal %d: %q", i+1, n, w, plainText(l))
+						}
+					}
+					text := plainText(frame)
+					small := strings.Contains(text, "Terminal too small")
+					if small != (w < render.MinWidth || hgt < render.MinHeight) {
+						t.Errorf("too-small message shown %v at %dx%d", small, w, hgt)
+					}
+					golden(t, name, text)
+				})
 			})
 		}
 	}
@@ -151,33 +160,35 @@ func TestStartupMessageFrames(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			h := newHarness(t, Options{Providers: c.provs, Cwd: `C:\work\demo-project`, Home: `C:\Users\dev`})
-			h.settle()
-			if c.typed != "" {
-				h.m.path.SetText(c.typed)
-			}
-			h.send(tea.WindowSizeMsg{Width: 80, Height: 24})
-			if c.enter {
-				h.send(key(tea.KeyEnter, 0))
-			}
-			frame := h.m.View().Content
-			lines := strings.Split(frame, "\n")
-			if len(lines) != 24 {
-				t.Errorf("%d lines, want 24", len(lines))
-			}
-			for i, l := range lines {
-				if n := lipgloss.Width(l); n > 80 {
-					t.Errorf("line %d is %d columns wide", i+1, n)
+			synctest.Test(t, func(t *testing.T) {
+				h := newHarness(t, Options{Providers: c.provs, Cwd: `C:\work\demo-project`, Home: `C:\Users\dev`})
+				h.settle()
+				if c.typed != "" {
+					h.m.path.SetText(c.typed)
 				}
-			}
-			text := plainText(frame)
-			if flat := strings.Join(strings.Fields(text), " "); !strings.Contains(flat, c.want) {
-				t.Errorf("frame lacks %q", c.want)
-			}
-			if strings.Contains(text, "…\n") {
-				t.Error("a line is cut")
-			}
-			golden(t, "startup-msg-"+c.name, text)
+				h.send(tea.WindowSizeMsg{Width: 80, Height: 24})
+				if c.enter {
+					h.send(key(tea.KeyEnter, 0))
+				}
+				frame := h.m.View().Content
+				lines := strings.Split(frame, "\n")
+				if len(lines) != 24 {
+					t.Errorf("%d lines, want 24", len(lines))
+				}
+				for i, l := range lines {
+					if n := lipgloss.Width(l); n > 80 {
+						t.Errorf("line %d is %d columns wide", i+1, n)
+					}
+				}
+				text := plainText(frame)
+				if flat := strings.Join(strings.Fields(text), " "); !strings.Contains(flat, c.want) {
+					t.Errorf("frame lacks %q", c.want)
+				}
+				if strings.Contains(text, "…\n") {
+					t.Error("a line is cut")
+				}
+				golden(t, "startup-msg-"+c.name, text)
+			})
 		})
 	}
 }

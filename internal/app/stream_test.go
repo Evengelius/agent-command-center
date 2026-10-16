@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -47,6 +48,7 @@ func (p *scriptCLI) starts() int {
 
 type scriptSession struct {
 	events     chan event.Event
+	close      sync.Once
 	mu         sync.Mutex
 	sent       []string
 	answers    []string
@@ -76,7 +78,10 @@ func (s *scriptSession) Interrupt() error {
 }
 func (s *scriptSession) Refresh() error                      { return nil }
 func (s *scriptSession) Capabilities() provider.Capabilities { return provider.Capabilities{} }
-func (s *scriptSession) Close(context.Context) error         { return nil }
+func (s *scriptSession) Close(context.Context) error {
+	s.close.Do(func() { close(s.events) }) // as a real session ends its events
+	return nil
+}
 
 func (s *scriptSession) calls() (sent, answers []string, interrupts int) {
 	s.mu.Lock()
@@ -106,110 +111,112 @@ func startScript(t *testing.T, id string) (*harness, *scriptCLI) {
 // follow-up goes to the same session, and the interrupt leaves the session
 // ready, the turn idle and the draft intact.
 func TestStreamingP2(t *testing.T) {
-	recs, err := fixture.Read(filepath.Join("..", "..", "testdata", "probes", "p2-claude-conversation.jsonl"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	per := fixture.Replay(claude.ProviderID, recs, claude.NewMapper())
-	h, cli := startScript(t, claude.ProviderID)
-	sess := cli.sess
-	const sessionID = "00ef0150-56f0-4033-8467-bd6e93e296bb"
-	const draft = "a draft\n\tkept as typed"
+	synctest.Test(t, func(t *testing.T) {
+		recs, err := fixture.Read(filepath.Join("..", "..", "testdata", "probes", "p2-claude-conversation.jsonl"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		per := fixture.Replay(claude.ProviderID, recs, claude.NewMapper())
+		h, cli := startScript(t, claude.ProviderID)
+		sess := cli.sess
+		const sessionID = "00ef0150-56f0-4033-8467-bd6e93e296bb"
+		const draft = "a draft\n\tkept as typed"
 
-	frame, prompts, deltas := 0, 0, 0
-	for i, r := range recs {
-		var msg struct {
-			Type    string `json:"type"`
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-			Request struct {
-				Subtype string `json:"subtype"`
-			} `json:"request"`
+		frame, prompts, deltas := 0, 0, 0
+		for i, r := range recs {
+			var msg struct {
+				Type    string `json:"type"`
+				Message struct {
+					Content string `json:"content"`
+				} `json:"message"`
+				Request struct {
+					Subtype string `json:"subtype"`
+				} `json:"request"`
+			}
+			_ = json.Unmarshal(r.Msg, &msg)
+			if r.Dir == "in" {
+				h.settle() // the owner acts on what the screen shows
+			}
+			s := h.m.State()
+			switch {
+			case r.Dir == "exit":
+				// Stop before the process exit: the session must still be usable.
+			case r.Dir == "in" && msg.Type == "user":
+				// The owner writes it; the session echoes what was written.
+				h.send(tea.PasteMsg{Content: msg.Message.Content})
+				h.send(key(tea.KeyEnter, 0))
+				sent, _, _ := sess.calls()
+				prompts++
+				if len(sent) != prompts || sent[prompts-1] != msg.Message.Content {
+					t.Fatalf("record %d: writes %q, want %d ending with %q", i, sent, prompts, msg.Message.Content)
+				}
+				if h.m.edit.Text() != "" {
+					t.Errorf("record %d: editor %q after sending", i, h.m.edit.Text())
+				}
+				if prompts > 1 && (s.Session.ID != sessionID || cli.starts() != 1) {
+					t.Errorf("follow-up %d: session %q, %d starts; want %s, 1", prompts, s.Session.ID, cli.starts(), sessionID)
+				}
+			case r.Dir == "in" && msg.Type == "control_response":
+				if len(s.Queue) != 1 {
+					t.Fatalf("record %d: %d approvals pending, want 1", i, len(s.Queue))
+				}
+				id := s.Queue[0]
+				h.send(actionMsg{state.Answer{ID: id, Decision: "allow"}}) // the approval keys are step 4
+				if _, answers, _ := sess.calls(); len(answers) != 1 || answers[0] != id+" allow" {
+					t.Fatalf("record %d: answers %q; session %q, approval %+v, notice %q, notes %q, errors %+v", i, answers, s.Session.Phase, s.Approvals[id].Status, s.Turn.Notice, s.Notes, s.Errors)
+				}
+			case r.Dir == "in" && msg.Request.Subtype == "interrupt":
+				h.send(tea.PasteMsg{Content: draft}) // typed while the turn runs
+				if s.Turn.Phase != state.Running {
+					t.Fatalf("record %d: turn %q before the interrupt", i, s.Turn.Phase)
+				}
+				h.send(key('c', tea.ModCtrl))
+				if _, _, n := sess.calls(); n != 1 {
+					t.Fatalf("record %d: %d interrupts written", i, n)
+				}
+			}
+			if r.Dir == "exit" {
+				break
+			}
+			snap := false
+			for _, ev := range per[i] {
+				if st, ok := ev.Payload.(event.Started); ok {
+					// The probe ran in its own directory; a live run reports the
+					// chosen one (a mismatch crashes the session, internal/state/reduce.go).
+					st.Cwd = h.m.State().Context.Project
+					ev.Payload = st
+				}
+				sess.events <- ev
+				text := ev.Kind == event.MessageDelta && ev.Payload.(event.Delta).Block == "text"
+				if text || ev.Kind == event.TurnCompleted {
+					snap = true
+				}
+				if text {
+					deltas++
+				}
+			}
+			if snap {
+				h.settle()
+				frame++
+				golden(t, fmt.Sprintf("stream-p2-%02d", frame), fixedProject(plainText(h.m.View().Content)))
+			}
 		}
-		_ = json.Unmarshal(r.Msg, &msg)
-		if r.Dir == "in" {
-			h.settle() // the owner acts on what the screen shows
-		}
+		h.settle()
 		s := h.m.State()
-		switch {
-		case r.Dir == "exit":
-			// Stop before the process exit: the session must still be usable.
-		case r.Dir == "in" && msg.Type == "user":
-			// The owner writes it; the session echoes what was written.
-			h.send(tea.PasteMsg{Content: msg.Message.Content})
-			h.send(key(tea.KeyEnter, 0))
-			sent, _, _ := sess.calls()
-			prompts++
-			if len(sent) != prompts || sent[prompts-1] != msg.Message.Content {
-				t.Fatalf("record %d: writes %q, want %d ending with %q", i, sent, prompts, msg.Message.Content)
-			}
-			if h.m.edit.Text() != "" {
-				t.Errorf("record %d: editor %q after sending", i, h.m.edit.Text())
-			}
-			if prompts > 1 && (s.Session.ID != sessionID || cli.starts() != 1) {
-				t.Errorf("follow-up %d: session %q, %d starts; want %s, 1", prompts, s.Session.ID, cli.starts(), sessionID)
-			}
-		case r.Dir == "in" && msg.Type == "control_response":
-			if len(s.Queue) != 1 {
-				t.Fatalf("record %d: %d approvals pending, want 1", i, len(s.Queue))
-			}
-			id := s.Queue[0]
-			h.send(actionMsg{state.Answer{ID: id, Decision: "allow"}}) // the approval keys are step 4
-			if _, answers, _ := sess.calls(); len(answers) != 1 || answers[0] != id+" allow" {
-				t.Fatalf("record %d: answers %q; session %q, approval %+v, notice %q, notes %q, errors %+v", i, answers, s.Session.Phase, s.Approvals[id].Status, s.Turn.Notice, s.Notes, s.Errors)
-			}
-		case r.Dir == "in" && msg.Request.Subtype == "interrupt":
-			h.send(tea.PasteMsg{Content: draft}) // typed while the turn runs
-			if s.Turn.Phase != state.Running {
-				t.Fatalf("record %d: turn %q before the interrupt", i, s.Turn.Phase)
-			}
-			h.send(key('c', tea.ModCtrl))
-			if _, _, n := sess.calls(); n != 1 {
-				t.Fatalf("record %d: %d interrupts written", i, n)
-			}
+		if prompts != 3 || deltas == 0 {
+			t.Errorf("%d prompts, %d deltas; want 3 prompts and some deltas", prompts, deltas)
 		}
-		if r.Dir == "exit" {
-			break
+		if s.Session.Phase != state.Ready || s.Turn.Phase != state.Idle || s.Turn.Outcome != "interrupted" {
+			t.Errorf("after the interrupt: session %q, turn %q (%q); want ready, idle, interrupted", s.Session.Phase, s.Turn.Phase, s.Turn.Outcome)
 		}
-		snap := false
-		for _, ev := range per[i] {
-			if st, ok := ev.Payload.(event.Started); ok {
-				// The probe ran in its own directory; a live run reports the
-				// chosen one (a mismatch crashes the session, internal/state/reduce.go).
-				st.Cwd = h.m.State().Context.Project
-				ev.Payload = st
-			}
-			sess.events <- ev
-			text := ev.Kind == event.MessageDelta && ev.Payload.(event.Delta).Block == "text"
-			if text || ev.Kind == event.TurnCompleted {
-				snap = true
-			}
-			if text {
-				deltas++
-			}
+		if s.Session.ID != sessionID || cli.starts() != 1 {
+			t.Errorf("session %q after %d starts", s.Session.ID, cli.starts())
 		}
-		if snap {
-			h.settle()
-			frame++
-			golden(t, fmt.Sprintf("stream-p2-%02d", frame), fixedProject(plainText(h.m.View().Content)))
+		if h.m.edit.Text() != draft || h.m.ui.Draft != draft {
+			t.Errorf("draft %q (shown %q), want %q", h.m.edit.Text(), h.m.ui.Draft, draft)
 		}
-	}
-	h.settle()
-	s := h.m.State()
-	if prompts != 3 || deltas == 0 {
-		t.Errorf("%d prompts, %d deltas; want 3 prompts and some deltas", prompts, deltas)
-	}
-	if s.Session.Phase != state.Ready || s.Turn.Phase != state.Idle || s.Turn.Outcome != "interrupted" {
-		t.Errorf("after the interrupt: session %q, turn %q (%q); want ready, idle, interrupted", s.Session.Phase, s.Turn.Phase, s.Turn.Outcome)
-	}
-	if s.Session.ID != sessionID || cli.starts() != 1 {
-		t.Errorf("session %q after %d starts", s.Session.ID, cli.starts())
-	}
-	if h.m.edit.Text() != draft || h.m.ui.Draft != draft {
-		t.Errorf("draft %q (shown %q), want %q", h.m.edit.Text(), h.m.ui.Draft, draft)
-	}
-	t.Logf("%d records, %d deltas, %d frames", len(recs), deltas, frame)
+		t.Logf("%d records, %d deltas, %d frames", len(recs), deltas, frame)
+	})
 }
 
 // fixedProject replaces the project bar, which shows the test's random

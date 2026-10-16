@@ -138,8 +138,8 @@ func elide(p string, w int) string {
 		return "…"
 	}
 	rs := []rune(p)
-	for len(rs) > 0 && textWidth(string(rs))+1 > w {
-		rs = rs[1:]
+	for len(rs) > 0 && (textWidth(string(rs))+1 > w || rs[0] == '…') {
+		rs = rs[1:] // never "……" where the cut meets the hidden user folder
 	}
 	return "…" + string(rs)
 }
