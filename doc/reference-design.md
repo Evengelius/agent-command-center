@@ -54,7 +54,7 @@ visualization of agents**. Concretely, the elements to carry over:
 
 | Element | In the reference | Why it matters |
 | --- | --- | --- |
-| One color per model or role | legend row, frame colors, log names | read the screen at a glance; with several agent CLIs (Claude Code, Codex, Gemini), each CLI and model needs its own color |
+| One color per model or role | legend row, frame colors, log names | read the screen at a glance; with several agent CLIs (Claude Code, Codex), each CLI and model needs its own color |
 | Box-drawing frames with titles | every panel | the technical look |
 | Phase boxes on a connector tree | scan / edit / verify | the workflow as a diagram |
 | Progress bars with percentages | each phase box | live progress |
@@ -138,7 +138,6 @@ launch a CLI or access your project").
 | 1. AI Agent *                                                       |
 |    (o) Claude Code                                                  |
 |    ( ) OpenAI Codex                                                 |
-|    ( ) Google Gemini CLI                                            |
 |---------------------------------------------------------------------|
 | 2. Project Directory *                                              |
 |    ( ~/projects/agent-command-center                          )     |
@@ -152,7 +151,8 @@ launch a CLI or access your project").
 A single centred column: a title bar, a heading in violet with one line of
 help, two numbered questions each marked required with a red asterisk, radio
 buttons for the agent CLI, a rounded text field for the path, thin separators,
-and one wide light button.
+and one wide light button. The image lists a third agent, Google Gemini CLI;
+amendment 5 removes it, so the list has two: Claude Code and OpenAI Codex.
 
 ### Image 2: dashboard, empty state
 

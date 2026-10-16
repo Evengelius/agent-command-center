@@ -545,3 +545,28 @@ Explain any technical limitations that could affect interaction with Claude Code
 The core principle remains:
 
 **First make it work. Then make it beautiful. Then expand its capabilities.**
+
+## Amendment 5, 2026-10-15: Claude Code and Codex only
+
+The owner's decision, word for word. It narrows amendments 1 to 4: the
+supported agent CLIs are Claude Code and OpenAI Codex CLI. Wherever the text
+above names Google Gemini CLI (amendment 1, the startup screen's list in
+amendment 4, the provider-independence lines of amendment 3), read "Claude Code
+and Codex CLI, and future providers". The provider interface stays open to
+another agent CLI later; none other is built.
+
+---
+
+**Gemini CLI and Google Antigravity are completely removed from the current MVP scope.**
+
+The only supported providers are Claude Code and OpenAI Codex.
+
+Inspect and safely remove all existing Gemini/Antigravity-specific implementations, adapters, dependencies, provider selection options, tests, and obsolete documentation.
+
+Review `GEMINI.md` and remove it if it is no longer needed, preserving any relevant shared project instructions.
+
+Do not remove shared components required by Claude Code or Codex, and do not modify personal or global provider configurations.
+
+Keep the architecture extensible for future providers, but do not implement Gemini or Antigravity support.
+
+These removals are authorized as part of normal, safe development. No additional approval is required unless an operation risks data loss or affects unrelated work.

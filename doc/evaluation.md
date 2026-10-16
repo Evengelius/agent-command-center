@@ -86,7 +86,7 @@ Instruction: "Inspect jedarden/ccdash."
 4. Language, UI library and every direct dependency with its version, from go.mod
 5. Each data source it reads (files, endpoints, hooks), with file:line where it reads it
 6. Each source marked documented (with the docs URL) or undocumented
-7. Agent CLIs it supports (Claude Code, Codex CLI, Gemini CLI), and how
+7. Agent CLIs it supports (Claude Code, Codex CLI, others), and how
 8. Reusable parts listed, each with its license consequence
 9. No claim without a source
 Not verified: whether it runs on this machine (nothing is installed in plan 1)
@@ -104,8 +104,8 @@ Instruction: "Parse token usage from Codex CLI session files."
 3. go test ./... exit 0, n tests; the truncated-line test expects an error, not a panic
 4. The parser never writes: no file under ~/.codex changes (hashes before/after);
    auth.json never opened
-5. With no Codex data at all, the views show Codex as not installed; Claude Code
-   and Gemini CLI views unchanged
+5. With no Codex data at all, the views show Codex as not installed; the Claude
+   Code views unchanged
 6. go vet ./... exit 0; gofmt -l . empty; go build ./... exit 0
 Not verified: real values against the vendor's usage page (needs the owner's account)
 ```
