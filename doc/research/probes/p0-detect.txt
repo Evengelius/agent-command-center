@@ -1,0 +1,7 @@
+== where
+<HOME>\.local\bin\claude.exe
+<HOME>\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe
+Information�: impossible de trouver "gemini".
+== versions
+2.1.300 (Claude Code)
+codex-cli 0.145.0
