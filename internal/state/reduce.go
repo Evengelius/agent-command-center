@@ -40,9 +40,12 @@ func turnOpens(ev event.Event) bool {
 	return ok && ev.Kind == event.MessageMarker && m.Name == "message_start"
 }
 
+// turnActivity is an event that only a turn the CLI took sends, which
+// accepts the sent message ("Submitted" until the first event, reliability.md).
+// A turn end counts: a turn can end with nothing streamed before its result.
 func turnActivity(k event.Kind) bool {
 	switch k {
-	case event.TurnStarted, event.MessageDelta, event.MessageMarker, event.MessageCompleted, event.ToolStarted:
+	case event.TurnStarted, event.MessageDelta, event.MessageMarker, event.MessageCompleted, event.ToolStarted, event.TurnCompleted:
 		return true
 	}
 	return false
@@ -217,14 +220,21 @@ func (s *State) crash(ev event.Event, reason string, close bool) []Command {
 	if s.Startup.Phase == Starting {
 		s.Startup.Phase, s.Startup.Failure = StartFailed, reason
 	}
+	var cmds []Command
+	if s.Turn.Phase == Submitted && s.Turn.Draft != "" {
+		// Not accepted before the crash: the message goes back to the editor,
+		// as after a failed write (ASM-23).
+		cmds = append(cmds, Command{Kind: CmdRestoreDraft, Text: s.Turn.Draft})
+		s.Turn.Draft = ""
+	}
 	if s.Turn.Phase != Idle {
 		s.Turn.Phase, s.Turn.Outcome = Idle, "failed"
 	}
 	s.endAll(ev)
 	if close {
-		return []Command{{Kind: CmdClose}}
+		cmds = append(cmds, Command{Kind: CmdClose})
 	}
-	return nil
+	return cmds
 }
 
 // endAll ends what cannot outlive the session: agents, approvals, tools.

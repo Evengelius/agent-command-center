@@ -1,8 +1,8 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
-╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────────────────────╮
+╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ───────────────────────────────────────────────── Interrupting… ─╮
 │ claude-haiku-5-5 · orchestrat… ││   ▸ Write                                                                 observed │
-│ turn 3 · interrupting          ││ ! APPROVAL Write                                                                   │
+│ turn 3 · interrupting          ││ ✓ orchestrator · Write  <probe-root>\probe-work\p2\hello.txt  allowed by you 02:0… │
 │                                ││ CLAUDE  claude-haiku-5-5                                                           │
 │ AGENTS  observed from events   ││   done                                                                             │
 │ ◉ Turn 3                       ││ YOU  02:00                                                                         │

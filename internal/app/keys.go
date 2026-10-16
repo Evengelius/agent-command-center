@@ -80,6 +80,11 @@ func (m *Model) focusMessage() {
 }
 
 func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
+	if m.ui.Card != "" {
+		if cmds, done := m.cardKey(k); done {
+			return cmds
+		}
+	}
 	switch k.String() {
 	case "ctrl+c", "ctrl+shift+c":
 		// Copy the selection if there is one, the mouse's first; else Ctrl+C
@@ -97,17 +102,10 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 		}
 		return nil
 	case "f12":
+		// Capture off: Windows Terminal selects on its own (ui-design.md,
+		// Selection and copy).
 		m.ui.MouseOff = !m.ui.MouseOff
 		m.drag.on = false
-		if sel := m.opt.TerminalSelects; sel != nil {
-			off := m.ui.MouseOff
-			return []tea.Cmd{func() tea.Msg {
-				if err := sel(off); err != nil {
-					return toastMsg{"terminal selection unavailable: " + err.Error()}
-				}
-				return nil
-			}}
-		}
 		return nil
 	case "shift+pgup", "shift+pgdown":
 		m.scroll(m.pageStep(k.String() == "shift+pgdown"))
@@ -116,6 +114,8 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 		return m.copy(lastAnswer(m.s))
 	case "ctrl+r":
 		return m.do(state.Resume{})
+	case "f2":
+		return m.focusCard("", true)
 	case "esc":
 		if m.s.Startup.Phase == state.StartFailed {
 			cmds := m.do(state.Back{})
@@ -168,6 +168,7 @@ func (m *Model) closeSession() {
 		m.cancel()
 	}
 	m.sess, m.cancel = nil, nil
+	m.draft = nil // the stored draft stays on disk for the next start
 	m.edit.Clear()
 }
 
@@ -231,4 +232,82 @@ func step(list []string, cur string, forward bool) string {
 		}
 	}
 	return list[0]
+}
+
+// cardKey handles a key while an approval card has the focus (ui-design.md,
+// Approvals). Only a focused card takes a, d and c, and the focus stays on
+// the card until its answer is final, so a second press never answers
+// another card. Letters typed meanwhile go nowhere; done is false for the
+// keys that keep their usual meaning (Ctrl+Q, F6, ...).
+func (m *Model) cardKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
+	ap := m.s.Approvals[m.ui.Card]
+	switch k.String() {
+	case "a":
+		return m.do(state.Answer{ID: ap.ID, Decision: m.decision(true)}), true
+	case "d":
+		return m.do(state.Answer{ID: ap.ID, Decision: m.decision(false)}), true
+	case "c":
+		return m.do(state.CancelTurn{ID: ap.ID}), true
+	case "esc":
+		m.ui.Card = "" // later: back to the input, still pending
+		m.ui.Focus = "B"
+		return nil, true
+	case "up", "down":
+		return m.focusCard(ap.ID, k.String() == "down"), true
+	}
+	return nil, k.Text != "" && k.Mod&(tea.ModCtrl|tea.ModAlt) == 0
+}
+
+// decision is the CLI's word for allow once or deny (ui-design.md,
+// Approvals). Allow for the session (s) is never offered for Claude Code
+// (CC-4); Codex offers it from step 5, when the request says it may.
+func (m *Model) decision(allow bool) string {
+	switch {
+	case m.s.Context.Provider == "codex" && allow:
+		return "accept"
+	case m.s.Context.Provider == "codex":
+		return "decline"
+	case allow:
+		return "allow"
+	}
+	return "deny"
+}
+
+// focusCard gives the focus to a pending approval card: the oldest with
+// from "", else the next or previous pending one after from. With none
+// pending, the focus stays where it is and a toast says so.
+func (m *Model) focusCard(from string, forward bool) []tea.Cmd {
+	var pending []string
+	for _, id := range m.s.Queue {
+		if m.s.Approvals[id].Status == state.Pending {
+			pending = append(pending, id)
+		}
+	}
+	if len(pending) == 0 {
+		if from == "" {
+			return m.toast("no approval waiting")
+		}
+		return nil
+	}
+	id := pending[0]
+	if from != "" {
+		id = step(pending, from, forward)
+		if !contains(pending, from) {
+			id = pending[0]
+		}
+	}
+	m.ui.Card, m.ui.Focus = id, "B"
+	m.follow() // the pending cards are the conversation's latest rows
+	return nil
+}
+
+// settleCard returns the focus to the input once the focused card's answer
+// is final, or its approval is gone (a resumed session).
+func (m *Model) settleCard() {
+	if m.ui.Card == "" {
+		return
+	}
+	if ap := m.s.Approvals[m.ui.Card]; ap == nil || ap.Status.Final() {
+		m.ui.Card = ""
+	}
 }

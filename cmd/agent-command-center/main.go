@@ -7,8 +7,6 @@ import (
 	"os"
 	"time"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/Evengelius/agent-command-center/internal/app"
 	"github.com/Evengelius/agent-command-center/internal/input"
 	"github.com/Evengelius/agent-command-center/internal/provider"
@@ -20,23 +18,22 @@ func main() {
 	cfg, err := app.ParseArgs(os.Args[1:])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "agent-command-center:", err)
-		os.Exit(2)
+		os.Exit(app.ExitError)
 	}
 	// Both adapters detect their CLI; their sessions arrive in steps 2
 	// (Claude Code) and 5 (Codex), and until then Start reports it.
 	host := provider.SystemHost()
 	m := app.New(app.Options{
-		Config:          cfg,
-		Providers:       []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host}},
-		Now:             time.Now,
-		Clipboard:       input.System{},
-		TerminalSelects: input.TerminalSelects,
-		MockSpeed:       1,
+		Config:    cfg,
+		Providers: []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host}},
+		Now:       time.Now,
+		Clipboard: input.System{},
+		MockSpeed: 1,
+		Drafts:    &input.Drafts{},
 	})
-	_, err = tea.NewProgram(m).Run()
-	m.Shutdown()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "agent-command-center:", err)
-		os.Exit(1)
+	code, out := app.Run(m)
+	for _, l := range out {
+		fmt.Fprintln(os.Stderr, l)
 	}
+	os.Exit(code)
 }

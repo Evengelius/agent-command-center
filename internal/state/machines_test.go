@@ -336,6 +336,12 @@ var transitions = []machineCase{
 		d := newBench(b.t).submitted()
 		d.ev(event.TurnStarted, "child", nil)
 		d.eq("a child's event does not start the turn", d.s.Turn.Phase, Submitted)
+
+		e := newBench(b.t).submitted()
+		e.ev(event.TurnCompleted, "", event.TurnEnd{Outcome: "completed"})
+		e.eq("a result with nothing streamed before it", e.s.Turn.Phase, Idle)
+		e.eq("commands", e.kinds(), "draft-accepted,refresh")
+		e.eq("draft", e.s.Turn.Draft, "")
 	}},
 	{"Turn", "`Submitted` | write to stdin fails", func(b *bench) {
 		b.ready().do(Send{Text: "hi"})

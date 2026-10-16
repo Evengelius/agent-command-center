@@ -79,10 +79,10 @@ type Session struct {
 	stdin io.WriteCloser
 	step  time.Duration
 
-	mu     sync.Mutex        // the mapper and the order of events
-	m      *Mapper           //
-	inputs map[string][]byte // pending approval id -> tool input
-	reqs   int               // control requests sent
+	mu     sync.Mutex            // the mapper and the order of events
+	m      *Mapper               //
+	inputs map[string]pendingReq // pending approval id -> its request
+	reqs   int                   // control requests sent
 
 	wmu      sync.Mutex // one write at a time
 	inClosed atomic.Bool
@@ -111,7 +111,7 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext, env []
 	if now == nil {
 		now = time.Now
 	}
-	s := &Session{p: pr, stdin: pr.Stdin(), step: step, m: NewMapper(), inputs: map[string][]byte{},
+	s := &Session{p: pr, stdin: pr.Stdin(), step: step, m: NewMapper(), inputs: map[string]pendingReq{},
 		q: newQueue(now), exited: make(chan struct{})}
 	s.q.push(event.Event{Provider: ProviderID, Kind: event.SessionSpawned, Origin: event.Observed,
 		Payload: event.Spawned{Argv: append([]string{sc.Executable}, argv...), Dir: sc.ProjectPath}})
@@ -169,7 +169,15 @@ func (s *Session) read(r io.Reader) {
 	}
 }
 
-// track keeps each pending approval's input, which an allow echoes back.
+// pendingReq is a pending approval: its input, which an allow echoes back,
+// and whether the request could not be read, which only a deny answers
+// (INT 4 fallback).
+type pendingReq struct {
+	input      []byte
+	unreadable bool
+}
+
+// track keeps each pending approval's request until it is answered.
 func (s *Session) track(ev event.Event) {
 	a, ok := ev.Payload.(event.Approval)
 	if !ok {
@@ -177,8 +185,8 @@ func (s *Session) track(ev event.Event) {
 	}
 	switch ev.Kind {
 	case event.ApprovalRequest, event.Question:
-		if a.Problem == "" {
-			s.inputs[a.ID] = a.Input
+		if a.ID != "" {
+			s.inputs[a.ID] = pendingReq{input: a.Input, unreadable: a.Problem != ""}
 		}
 	case event.ApprovalResolved:
 		delete(s.inputs, a.ID)
@@ -319,11 +327,15 @@ const DenyMessage = "The user denied this in Agent Command Center."
 // unchanged, anything else denies.
 func (s *Session) Answer(id, decision string) error {
 	s.mu.Lock()
-	input, ok := s.inputs[id]
+	req, ok := s.inputs[id]
 	s.mu.Unlock()
 	if !ok {
 		return fmt.Errorf("no pending request %q", id)
 	}
+	if decision == "allow" && req.unreadable {
+		return fmt.Errorf("request %q was not readable: only a deny answers it", id)
+	}
+	input := req.input
 	resp := map[string]any{"behavior": "deny", "message": DenyMessage}
 	if decision == "allow" {
 		if len(bytes.TrimSpace(input)) == 0 || string(input) == "null" {

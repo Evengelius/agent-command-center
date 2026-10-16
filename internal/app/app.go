@@ -80,11 +80,10 @@ type Options struct {
 	Cwd string
 	// Home expands ~; "" reads the user's home directory.
 	Home string
+	// Drafts keeps the draft on disk; nil keeps it in memory only.
+	Drafts *input.Drafts
 	// DetectTimeout bounds each adapter's detection; 0 is DetectTimeout.
 	DetectTimeout time.Duration
-	// TerminalSelects gives mouse selection to the terminal or takes it
-	// back, on F12 (input.TerminalSelects); nil does nothing.
-	TerminalSelects func(on bool) error
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -105,6 +104,10 @@ var supported = []struct{ id, name string }{
 	{"codex", "OpenAI Codex"},
 }
 
+// updateHook runs first in every Update; nil outside TestPanic, which drives
+// a session with it and injects a panic.
+var updateHook func(m *Model, msg tea.Msg) []tea.Cmd
+
 // Model is the Bubble Tea model.
 type Model struct {
 	opt  Options
@@ -118,7 +121,15 @@ type Model struct {
 	sess     provider.Session
 	cancel   context.CancelFunc // ends the session's context: the forced kill
 	once     sync.Once
-	pending  []tea.Cmd // the launch's commands, for Init
+	pending  []tea.Cmd     // the launch's commands, for Init
+	writes   chan writeJob // the session's writes, in order (writer.go)
+
+	// The stored draft (draft.go): nil when drafts are off.
+	draft      *draftStore
+	draftReady bool   // read: saves may start
+	draftTimer bool   // a save is due
+	draftSaved string // the text last saved or read
+	draftGen   int
 
 	spinning, clocking bool
 
@@ -221,6 +232,9 @@ func (m *Model) View() tea.View {
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.ui.Now = m.opt.Now()
 	var cmds []tea.Cmd
+	if updateHook != nil {
+		cmds = updateHook(m, msg)
+	}
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.ui.Width, m.ui.Height = msg.Width, msg.Height
@@ -277,6 +291,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case clockMsg:
 		m.clocking = false
 		cmds = append(cmds, m.do(state.Tick{At: m.ui.Now})...)
+	case draftLoadedMsg:
+		cmds = append(cmds, m.draftLoaded(msg)...)
+	case draftSaveMsg:
+		cmds = append(cmds, m.draftDue()...)
+	case draftFailedMsg:
+		cmds = append(cmds, m.toast("draft not saved: "+msg.err.Error())...)
 	case leaveMsg:
 		return m, tea.Quit
 	case refreshMsg:
@@ -285,11 +305,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	m.syncUI()
 	cmds = append(cmds, m.timers()...)
+	cmds = append(cmds, m.draftChanged()...)
 	return m, tea.Batch(cmds...)
 }
 
 // syncUI copies what the renderer needs from the editors.
 func (m *Model) syncUI() {
+	m.settleCard()
 	m.ui.Draft = m.edit.Text()
 	m.ui.Editor = m.editorView()
 	m.ui.Path = m.path.Text()
@@ -354,11 +376,14 @@ func (m *Model) command(c state.Command) tea.Cmd {
 	case state.CmdValidate:
 		return m.validate()
 	case state.CmdStartSession:
+		if c.ID == "" {
+			return tea.Batch(m.start(""), m.loadDraft())
+		}
 		return m.start(c.ID)
 	case state.CmdWrite:
 		m.edit.Clear()
 		sess, text := m.sess, c.Text
-		return func() tea.Msg {
+		return tea.Batch(m.draftSent(text), m.write(func() tea.Msg {
 			if sess == nil {
 				return actionMsg{state.WriteFailed{Message: "no session"}}
 			}
@@ -366,10 +391,10 @@ func (m *Model) command(c state.Command) tea.Cmd {
 				return actionMsg{state.WriteFailed{Message: err.Error()}}
 			}
 			return nil
-		}
+		}, actionMsg{state.WriteFailed{Message: "too many writes waiting"}}))
 	case state.CmdAnswer:
 		sess, id, d := m.sess, c.ID, c.Decision
-		return func() tea.Msg {
+		return m.write(func() tea.Msg {
 			if sess == nil {
 				return actionMsg{state.AnswerFailed{ID: id, Message: "no session"}}
 			}
@@ -377,15 +402,15 @@ func (m *Model) command(c state.Command) tea.Cmd {
 				return actionMsg{state.AnswerFailed{ID: id, Message: err.Error()}}
 			}
 			return nil
-		}
+		}, actionMsg{state.AnswerFailed{ID: id, Message: "too many writes waiting"}})
 	case state.CmdInterrupt:
 		sess := m.sess
-		return tea.Batch(func() tea.Msg {
+		return tea.Batch(m.write(func() tea.Msg {
 			if sess != nil {
 				_ = sess.Interrupt() // no turn end within the timeout offers force stop
 			}
 			return nil
-		}, m.opt.After(InterruptTimeout, actionMsg{state.InterruptTimeout{}}))
+		}, nil), m.opt.After(InterruptTimeout, actionMsg{state.InterruptTimeout{}}))
 	case state.CmdRefresh:
 		sess := m.sess
 		return func() tea.Msg {
@@ -404,9 +429,13 @@ func (m *Model) command(c state.Command) tea.Cmd {
 			return m.opt.After(KillGrace, leaveMsg{})
 		}
 	case state.CmdDraftAccepted:
-		// Step 4 deletes the stored draft here (proposal step 4, item 4).
+		return m.draftAccepted()
 	case state.CmdRestoreDraft:
-		m.edit.SetText(c.Text)
+		if typed := m.edit.Text(); typed != "" {
+			m.edit.SetText(c.Text + "\n" + typed) // typed since the send: both kept
+		} else {
+			m.edit.SetText(c.Text)
+		}
 	case state.CmdExit:
 		return tea.Quit
 	}

@@ -280,8 +280,13 @@ func borderFor(focused bool) lipgloss.Style {
 func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	inner := w - 4
 	var right line
-	if s.Turn.Phase == state.Running || s.Turn.Phase == state.Submitted {
+	switch s.Turn.Phase {
+	case state.Running, state.Submitted:
 		right = plain("◉ Streaming", stProgress)
+	case state.WaitingApproval:
+		right = plain("! Waiting for approval", stAttention)
+	case state.Interrupting:
+		right = plain("Interrupting…", stProgress)
 	}
 	// The editor grows up to half of B, then scrolls (ui-design.md, Input
 	// editor, Size); its rule and status line count in that half.
@@ -355,7 +360,7 @@ func conversation(s *state.State, ui UI, w int) []crow {
 			l := append(line{deco("  ▸ ", stGrey)}, oneRow(i, e, stGrey)...)
 			out = drawn(out, spread(l, decoLine(originLabel(e.Origin), stGrey), w))
 		case "approval":
-			out = drawn(out, append(line{deco("! APPROVAL ", stAttention)}, oneRow(i, e, stAttention)...))
+			out = drawn(out, approvalCard(s, ui, i, e, w)...)
 		default:
 			p := &rowStyle{lead0: deco("  · ", stProgress), lead: deco("  ", stProgress), at: ref{panel: 'B', item: i}, st: stProgress}
 			for j, l := range entryLines(e) {

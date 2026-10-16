@@ -7,8 +7,8 @@
 │ AGENTS  observed from events             ││   ▸ Agent                                                                                                                                           mock │
 │ ✓ Turn 1                                 ││ AGENT  claude-haiku-5-5                                                                                                                                  │
 │   └─ ✓ subagent  general-purpose         ││   I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it finishes.                     │
-│                                          ││ ! APPROVAL Bash                                                                                                                                          │
-│                                          ││ ! APPROVAL Write                                                                                                                                         │
+│                                          ││ ✓ general-purpose · Bash  ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'  allowed by you 11:30:00                                                    │
+│                                          ││ ✓ general-purpose · Write  <probe-root>\probe-work\p3b\found.txt  allowed by you 11:30:00                                                                │
 │                                          ││ AGENT  claude-haiku-5-5                                                                                                                                  │
 │                                          ││   The subagent found two files in the directory, `alpha.txt` and `beta.md`, and wrote them into `<probe-root>\probe-work\p3b\found.txt`.                 │
 │                                          ││                                                                                                                                                          │

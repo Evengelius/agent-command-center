@@ -47,9 +47,9 @@ license where it is used (AGENTS.md; TI 11 item 2).
 ## Where it runs
 
 - **The MVP runs as a native Windows program** on the owner's Windows 11
-  machine, in Windows Terminal (conhost works too), with both agent CLIs
-  installed natively; the VS Code terminal is out of scope (brief,
-  amendment 6). Both CLIs were driven this way (INT 9; P1 to P7). This
+  machine, in Windows Terminal, with both agent CLIs installed natively;
+  the VS Code terminal and conhost are out of scope (brief, amendments 6
+  and 7). Both CLIs were driven this way (INT 9; P1 to P7). This
   settles plan 1's open point "where the dashboard runs" (INT "Open points
   for plan 2") and selects the Windows column of the path table (INT paths).
 - The code stays portable (Go, no Windows-only API outside the clipboard and

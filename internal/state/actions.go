@@ -32,6 +32,7 @@ type (
 	ForceStop        struct{}
 	Answer           struct{ ID, Decision string }
 	AnswerFailed     struct{ ID, Message string }
+	CancelTurn       struct{ ID string } // c on an approval card: cancel it, then interrupt the turn
 	CloseTimeout     struct{}
 	Tick             struct{ At time.Time }
 )
@@ -53,6 +54,7 @@ func (InterruptTimeout) action() {}
 func (ForceStop) action()        {}
 func (Answer) action()           {}
 func (AnswerFailed) action()     {}
+func (CancelTurn) action()       {}
 func (CloseTimeout) action()     {}
 func (Tick) action()             {}
 
@@ -150,6 +152,8 @@ func (s *State) Do(a Action) []Command {
 		}
 	case Answer:
 		return s.answer(a)
+	case CancelTurn:
+		return s.cancelTurn(a)
 	case AnswerFailed:
 		if ap := s.Approvals[a.ID]; ap != nil && ap.Status == Answering {
 			ap.Status = Expired
@@ -265,4 +269,22 @@ func contains(list []string, v string) bool {
 		}
 	}
 	return false
+}
+
+// cancelTurn is c on an approval card: the card is cancelled (Claude Code
+// writes a deny), then the turn is interrupted, which cancels the
+// orchestrator's other pending approvals first (ui-design.md, Approvals).
+// The commands come in the order they must be written.
+func (s *State) cancelTurn(a CancelTurn) []Command {
+	ap := s.Approvals[a.ID]
+	if ap == nil || ap.Status != Pending {
+		s.doNote("cancel ignored: " + a.ID + " is not pending")
+		return nil
+	}
+	if s.Session.Phase != Ready || (s.Turn.Phase != Running && s.Turn.Phase != WaitingApproval) {
+		return s.interrupt() // says why nothing is interrupted
+	}
+	ap.Status = Answering
+	cmds := []Command{{Kind: CmdAnswer, ID: a.ID, Decision: "cancel"}}
+	return append(cmds, s.interrupt()...)
 }

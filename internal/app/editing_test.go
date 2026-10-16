@@ -2,7 +2,6 @@ package app
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -347,39 +346,6 @@ func TestEditorDisplay(t *testing.T) {
 	}
 	if h.m.edit.Text() != "a\tb\x01c\x7fd\u0085e\n"+long {
 		t.Error("drawing changed the draft")
-	}
-}
-
-// TestTerminalSelects is F12 in conhost: capture off hands mouse selection to
-// the console (QuickEdit), capture back on takes it back, and a console that
-// refuses says so. Found in conhost, plan 4, step 3, criterion 9.
-func TestTerminalSelects(t *testing.T) {
-	r, _ := copyRig(t, nil)
-	h := r.h
-	var calls []bool
-	var fail error
-	var mu sync.Mutex
-	h.m.opt.TerminalSelects = func(on bool) error {
-		mu.Lock()
-		defer mu.Unlock()
-		calls = append(calls, on)
-		return fail
-	}
-	press(t, h, key(tea.KeyF12, 0))
-	if f := plainText(h.m.View().Content); !strings.Contains(f, "mouse capture off") {
-		t.Errorf("no capture-off hint:\n%s", f)
-	}
-	press(t, h, key(tea.KeyF12, 0))
-	mu.Lock()
-	got := fmt.Sprint(calls)
-	fail = errors.New("not a console")
-	mu.Unlock()
-	if got != "[true false]" {
-		t.Errorf("TerminalSelects calls %s, want [true false]", got)
-	}
-	press(t, h, key(tea.KeyF12, 0))
-	if f := plainText(h.m.View().Content); !strings.Contains(f, "terminal selection unavailable: not a console") {
-		t.Errorf("a refused QuickEdit is not shown:\n%s", f)
 	}
 }
 

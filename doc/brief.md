@@ -583,3 +583,17 @@ drops its column.
 Drop the vscode terminal implementation fully, because on vscode i could just use claude normally through vscode extention, it's useless
 
 I don't want it
+
+## Amendment 7, 2026-10-16: no conhost
+
+The owner's decision, word for word, after seeing the application in conhost
+and in Windows Terminal side by side. It narrows the terminals the
+application supports to Windows Terminal alone: conhost (the Windows Console
+Host window) is out of scope, with no adaptation, option or test for it, and
+plan 4 step 3's terminal matrix drops its column. Windows Terminal still uses
+conhost's ConPTY layer underneath; that layer is part of Windows Terminal,
+not a target of its own.
+
+---
+
+Ok, then let's get rid of conhost fully, this is too old.

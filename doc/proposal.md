@@ -78,8 +78,8 @@ five parts, threads, provider interface, both adapters, startup).
   `Capabilities`; adapters for Claude Code, Codex and the mock provider
   ([architecture.md, Provider interface](architecture.md#provider-interface)).
   Adding a CLI later is an adapter, not a rework; no third adapter is built.
-- **Native Windows program** in Windows Terminal (and conhost); the VS Code
-  terminal is out of scope (brief, amendment 6); the code stays portable, Linux and macOS not verified
+- **Native Windows program** in Windows Terminal; the VS Code terminal and
+  conhost are out of scope (brief, amendments 6 and 7); the code stays portable, Linux and macOS not verified
   ([architecture.md, Where it runs](architecture.md#where-it-runs)).
 
 ## 3. Detailed terminal UI design
@@ -256,9 +256,10 @@ The input editor and the clipboard are essential here, not polish (AM3).
    for the subset the CLIs emit, with no new dependency.
 8. Same input tests with the Claude Code, Codex and mock adapters attached:
    identical results.
-9. Not verified by the agent: the terminal matrix cells (Windows Terminal,
-   conhost) for paste, Shift+Enter and copy, listed for the owner's manual
-   check. The VS Code terminal was dropped by amendment 6 (2026-10-16).
+9. Not verified by the agent: the terminal matrix cells (Windows Terminal)
+   for paste, Shift+Enter and copy, listed for the owner's manual check. The
+   VS Code terminal was dropped by amendment 6 and conhost by amendment 7
+   (both 2026-10-16).
 
 ### Step 4: permissions and session continuity (owner priority 4)
 
@@ -375,10 +376,10 @@ Brief phase 4, item 6. Detail: [reliability.md](reliability.md) and its
 | Streamed Markdown re-rendering is slow (ASM-17) | B lags on long answers | step 3 benchmark; own renderer as fallback |
 | A crash of the CLI or of the dashboard | lost draft or session | the CLI keeps its own session files; the dashboard keeps the draft (ASM-23); Ctrl+R resume; job object, so no orphan |
 | Mixed-state files change by themselves | the configuration check cannot classify the change | reported "changed, not classified", never PASS (section [Changes to plan 2's design](#changes-to-plan-2s-design)) |
-| Terminal differences (Shift+Enter, OSC 52, conhost) | a key or copy path missing | Ctrl+J and native clipboard work everywhere; the matrix lists the rest |
+| Terminal differences (Shift+Enter, OSC 52) | a key or copy path missing | Ctrl+J and native clipboard work everywhere; the matrix lists the rest |
 | Quota sources are partial (Claude Code on transitions only, **U** windows) | stale or missing values | shown with age and †, "N/A" past reset (TEL) |
 
-Compatibility: native Windows 11 in Windows Terminal or conhost (amendment 6),
+Compatibility: native Windows 11 in Windows Terminal (amendments 6 and 7),
 Claude Code 2.1.300 and Codex 0.145.0 as probed; other versions run the
 fixture tests first. Linux, macOS and CLIs inside WSL driven from Windows are
 not verified ([architecture.md, Where it runs](architecture.md#where-it-runs)).

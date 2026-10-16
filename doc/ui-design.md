@@ -922,24 +922,24 @@ Mouse selection in any panel, with clean text (AM3 M3; TI 6.3):
 
 ## What works where
 
-From TI 10, for this design; the Windows Terminal and conhost columns are
-measured (plan 4, step 3, criterion 9: real keyboard, mouse and clipboard
-input, maximised and at the default size, 2026-10-16). The VS Code terminal
-is out of scope (brief, amendment 6).
+From TI 10, for this design; the Windows Terminal column is measured (plan
+4, step 3, criterion 9: real keyboard, mouse and clipboard input, maximised
+and at the default size, 2026-10-16). The VS Code terminal and conhost are
+out of scope (brief, amendments 6 and 7).
 
-| Need | Windows Terminal (native) | conhost | WSL2 in WT | tmux in WSL | Linux, macOS |
-| - | - | - | - | - | - |
-| Paste never submits | yes (measured, 2,000-line paste included) | yes (measured; Ctrl+V and right-click) | yes | yes (check) | yes |
-| Byte-for-byte paste | yes, CRLF→LF: tabs, trailing spaces, wide, emoji, 94,908 chars (measured) | Ctrl+V yes (measured); its own right-click paste loses non-keyboard characters (emoji) and a final newline | as WT | Not verified | yes, terminal-dependent |
-| Newline key | Ctrl+J; Shift+Enter arrives as Enter (measured) | Ctrl+J; Shift+Enter arrives as Enter (measured) | Ctrl+J; Shift+Enter Not verified | Ctrl+J; Shift+Enter with extended-keys | Ctrl+J; Shift+Enter in most (not VTE) |
-| Typed text | exact, emoji included (measured) | a typed emoji arrives twice (measured; Bubble Tea's Windows input reader) | as WT | Not verified | yes |
-| Copy | native + OSC 52 (measured) | native + OSC 52 (measured) | `clip.exe` or PowerShell + OSC 52 | OSC 52 passthrough + tmux buffer | native tools, then OSC 52 |
-| Paste | Ctrl+V bracketed | Ctrl+V, right-click | Ctrl+V bracketed | bracketed through tmux | bracketed |
-| Mouse selection in a panel | yes (measured) | yes (measured) | yes | yes | yes |
-| Native escape | F12, then the terminal's own drag and Ctrl+C (measured); Shift-drag Not verified | F12, then QuickEdit drag and Enter (measured) | Shift-drag, F12 | outer Shift-drag | Shift (Option on iTerm2, Fn on Terminal.app) |
-| `$EDITOR` | `code --wait`; Notepad Not verified | same | `nvim` | same | `$EDITOR` |
+| Need | Windows Terminal (native) | WSL2 in WT | tmux in WSL | Linux, macOS |
+| - | - | - | - | - |
+| Paste never submits | yes (measured, 2,000-line paste included) | yes | yes (check) | yes |
+| Byte-for-byte paste | yes, CRLF→LF: tabs, trailing spaces, wide, emoji, 94,908 chars (measured) | as WT | Not verified | yes, terminal-dependent |
+| Newline key | Ctrl+J; Shift+Enter arrives as Enter (measured) | Ctrl+J; Shift+Enter Not verified | Ctrl+J; Shift+Enter with extended-keys | Ctrl+J; Shift+Enter in most (not VTE) |
+| Typed text | exact, emoji included (measured) | as WT | Not verified | yes |
+| Copy | native + OSC 52 (measured) | `clip.exe` or PowerShell + OSC 52 | OSC 52 passthrough + tmux buffer | native tools, then OSC 52 |
+| Paste | Ctrl+V bracketed | Ctrl+V bracketed | bracketed through tmux | bracketed |
+| Mouse selection in a panel | yes (measured) | yes | yes | yes |
+| Native escape | F12, then the terminal's own drag and Ctrl+C (measured); Shift-drag Not verified | Shift-drag, F12 | outer Shift-drag | Shift (Option on iTerm2, Fn on Terminal.app) |
+| `$EDITOR` | `code --wait`; Notepad Not verified | `nvim` | same | `$EDITOR` |
 
-The MVP's target is the first two columns (AGENTS.md: one Windows 11 machine,
+The MVP's target is the first column (AGENTS.md: one Windows 11 machine,
 architecture.md, Where it runs); the others are designed for and checked by
 hand when available. Linux and macOS builds are Not verified.
 

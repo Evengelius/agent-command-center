@@ -312,10 +312,99 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
       mouse; a NUL in a paste (the Windows clipboard ends its text at the
       first NUL, so no terminal can deliver one; the editor keeps NUL,
       `TestInputByteForByte`).
+    - Later the same day the owner dropped conhost (brief, amendment 7):
+      the conhost results above stay as measured, a record only. Its one
+      adaptation, F12 handing selection to QuickEdit
+      (`input.TerminalSelects`, `TestTerminalSelects`), was removed; F12
+      still turns capture off for WT (`TestMouseFocusAndCapture`).
   - Left for later steps, not criteria of this one: Enter expanding folded
     items; scrolling in A and C; copying failure-card text; the Codex
     adapter's own stdin bytes (step 5).
-- Steps 4 to 8: outstanding.
+- Step 4, permissions and session continuity: **deterministic checks 1
+  to 5 done** (2026-10-16); check 6 (L2) proposed, waiting for the owner's
+  approval. Checks, yes or no, deterministic unless marked live:
+  1. Approvals (`TestApprovalCards`): P2's request is a card in B and P3b's
+     on its subagent's row and in B labelled with it; `a` or `d` writes one
+     `control_response` (fake CLI's stdin), a second key writes nothing; an
+     unreadable request reads "denied automatically: request not readable"
+     with one deny written; a pending card reads "expired, not answered"
+     after the turn ends; no frame contains "always", "don't ask again" or
+     an `s` key for Claude Code.
+  2. `c` (`TestApprovalCancel`): stdin holds the deny line, then the
+     interrupt line, in that order; the session is Ready; the next message
+     is written to the same process.
+  3. Crash (`TestCrashAndResume`): a fake CLI exits 3 with stderr after
+     Ready; the card shows "exit code 3" and the stderr tail; the record
+     and the draft are byte-identical before and after; Ctrl+R's argv is
+     the first spawn's plus `--resume <id>`; a crash before Ready shows
+     StartFailed and Ctrl+R spawns nothing.
+  4. Drafts (`TestDraft*`): a draft saved, the model dropped without
+     shutdown, a new model in the same project opens with it byte for
+     byte; an accepted send deletes the file, a failed send keeps it; the
+     file is in `%LOCALAPPDATA%\agent-command-center\drafts`, named by the
+     SHA-256 of the project path; keystroke p95 under 16 ms with a
+     50,000-line draft and saves running.
+  5. Panic (`TestPanic`, a child process): a panic injected in the reducer
+     ends the run with exit code 2, the draft file written, the fake CLI
+     seeing end of input, and the session id and `claude --resume <id>`
+     printed.
+  6. L2, live: proposed to the owner with its scope; not run without
+     approval.
+
+  Results (2026-10-16): `go build`, `go vet`, `gofmt -l .` clean;
+  `go test ./... -count=1` passes. The fake CLI is the test binary's
+  `wireClaude`, which reads what the app writes to its stdin.
+  1. PASS. P2's Write card in B; P3b's Bash card on agent
+     a9dcbbc8d63adf34c's row ("waiting: approval") and in B. `F2` then
+     `a a d` writes exactly one allow, which echoes `updatedInput`. A key
+     without focus types into the editor. An `agent_id` sent as a number
+     makes the request unreadable: one deny is written with
+     `claude.DenyMessage`. After a result, the card reads "expired, not
+     answered" and nothing is written. No frame offers "always" or `s`.
+  2. PASS. The deny line comes before the interrupt line on stdin, through
+     the one serial writer. The session goes from Interrupting to Ready
+     with the approval Denied, and the next message reaches the same
+     process (1 spawn).
+  3. PASS. Exit 3 with stderr after Ready. The card shows "exit code 3",
+     the stderr tail and "Ctrl+R resume"; the conversation and the draft
+     are unchanged. Ctrl+R's argv is the first spawn's plus
+     `--resume <id>`, and the session is Ready again. When the crash comes
+     before Ready, the session is StartFailed, there is no Ctrl+R hint and
+     nothing spawns.
+  4. PASS. `TestDraftRestored`, `TestDraftAcceptedDeletes`,
+     `TestDraftFailedSendKeeps`, `TestDraftPath` and `TestDrafts` (input).
+     The draft text contains tabs, trailing spaces, CJK, an emoji, a
+     combining mark, ESC and NUL, and is restored byte for byte. Between
+     the send and its acceptance, the file holds the sent message; typing
+     does not replace it. The file is deleted at acceptance. Files are
+     named by SHA-256, case-insensitively on Windows; no temporary file
+     is left. `TestDraftKeystrokes`: a 50,000-line draft, 800 keys 3 ms
+     apart, real 500 ms save timer: p50 2.5 ms, p95 4.8 ms, max 8.7 ms,
+     11 saves (target 16 ms).
+  5. PASS. `TestPanic`: the child process exits with code 2 and prints
+     "stopped on an internal error", followed by "session s-panic · resume
+     it in <project> with: claude --resume s-panic". The draft file equals
+     the typed draft, and the fake CLI saw end of input. The panic is
+     injected at the start of `Update`, where the reducer runs, through a
+     test-only hook; it takes the same recovery path. A planted fault (no
+     flush in `Run`) fails the test.
+  - Defects found and fixed, each with a test that fails without its fix:
+    - The adapter refused to deny an unreadable request ("no pending
+      request"); it now tracks the request and accepts only a deny.
+    - A result arriving while Submitted, with nothing streamed before it,
+      did not accept the message. The sent text stayed as the stored
+      draft and would have come back as a duplicate. A turn end now
+      counts as the turn's first event (machines test, `Submitted` row).
+    - A usage error exited with 2, the same code as a panic; it now exits
+      with 1.
+  - Golden frames rewritten and reviewed. A resolved approval is now one
+    line ("✓ orchestrator · Write <path> allowed by you"), and zone B's
+    header shows "Interrupting…".
+  - Deferred, not criteria of this step:
+    - Enter showing an approval's full diff.
+    - Codex's `s` (accept for the session), at step 5.
+    - A deny message specific to a question (CC-10 q3).
+- Steps 5 to 8: outstanding.
 
 The owner's decisions at plan 3's approval (2026-10-16):
 - Proposal and roadmap approved; follow its order and the MVP scope.

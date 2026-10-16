@@ -462,7 +462,6 @@ owner's quota and needs approval under [evaluation.md](evaluation.md);
 | WT 1.25 Kitty keyboard protocol through ConPTY (Shift+Enter) | manual in WT; Ctrl+J works meanwhile |
 | WT honouring a win32-input-mode (9001) request from the application | manual |
 | `trimPaste` and its effect on byte-for-byte paste | manual: paste trailing spaces and tabs in WT |
-| conhost: bracketed paste, OSC 52, the QuickEdit mouse bypass, by Windows build | manual in conhost |
 | tmux: the effective `extended-keys` default; re-wrapping outer pastes | manual under WSL |
 | OSC 52 size limits beyond kitty and WT; block selection per terminal | manual where available |
 | Which console reader path Bubble Tea v2 takes on Windows | read the code at the version pinned in plan 4, then manual |

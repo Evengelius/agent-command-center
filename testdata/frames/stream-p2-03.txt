@@ -5,7 +5,7 @@
 │ turn 2 · running               ││   Create a file named hello.txt in the current directory containing the single     │
 │                                ││   word hello. Use the Write tool, then reply with the word done.                   │
 │ AGENTS  observed from events   ││   ▸ Write                                                                 observed │
-│ ◉ Turn 2                       ││ ! APPROVAL Write                                                                   │
+│ ◉ Turn 2                       ││ ✓ orchestrator · Write  <probe-root>\probe-work\p2\hello.txt  allowed by you 02:0… │
 │   ○ (agents appear as events … ││ CLAUDE  claude-haiku-5-5                                                           │
 │                                ││   done                                                                             │
 │                                ││ YOU  02:00                                                                         │
