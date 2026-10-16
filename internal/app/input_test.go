@@ -182,8 +182,8 @@ func claudeRig(t *testing.T) inputRig {
 	}
 }
 
-// scriptRig drives a scripted session under the given adapter id: the
-// Codex adapter's own session is plan 4, step 5.
+// scriptRig drives a scripted session under the given adapter id, for UI
+// tests that emit arbitrary events; the real adapters have their own rigs.
 func scriptRig(t *testing.T, id string) inputRig {
 	h, cli := startScript(t, id)
 	ev := func(k event.Kind, p any) {
@@ -230,9 +230,9 @@ func mockRig(t *testing.T) inputRig {
 
 func rigs() map[string]func(*testing.T) inputRig {
 	return map[string]func(*testing.T) inputRig{
-		"claude-code":      claudeRig,
-		"codex (scripted)": func(t *testing.T) inputRig { return scriptRig(t, "codex") },
-		"mock":             mockRig,
+		"claude-code": claudeRig,
+		"codex":       codexRig,
+		"mock":        mockRig,
 	}
 }
 

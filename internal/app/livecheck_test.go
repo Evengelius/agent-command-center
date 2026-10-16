@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -596,4 +597,48 @@ func TestResumeAndQuitChecks(t *testing.T) {
 			t.Errorf("the CLI ended with %d, want 0: its input closed, no kill", code)
 		}
 	})
+}
+
+// insideCodex reports whether a file-change approval names only paths in the
+// project. Codex's request carries no path: the card's summary is the paths
+// of the fileChange item, or the request's reason when it gives one, which
+// is then not trusted as inside.
+func insideCodex(dir string, ap *state.Approval) bool {
+	if ap.Tool != "fileChange" || ap.Summary == "" || ap.Summary == ap.Tool {
+		return false
+	}
+	for _, p := range strings.Split(ap.Summary, ", ") {
+		if !filepath.IsAbs(p) {
+			p = filepath.Join(dir, p)
+		}
+		rel, err := filepath.Rel(strings.ToLower(filepath.Clean(dir)), strings.ToLower(filepath.Clean(p)))
+		if err != nil || filepath.IsAbs(rel) || strings.HasPrefix(rel, "..") {
+			return false
+		}
+	}
+	return true
+}
+
+// TestInsideCodex: L4 accepts a file change only when every path its card
+// names is in the project; a reason instead of paths is never trusted.
+func TestInsideCodex(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "proj")
+	for _, c := range []struct {
+		tool, summary string
+		want          bool
+	}{
+		{"fileChange", filepath.Join(dir, "allow.txt"), true},
+		{"fileChange", "allow.txt", true},
+		{"fileChange", filepath.Join(strings.ToUpper(dir), "a.txt") + ", " + filepath.Join(dir, "sub", "b.txt"), true},
+		{"fileChange", filepath.Join(dir, "a.txt") + ", " + filepath.Join(dir, "..", "b.txt"), false},
+		{"fileChange", filepath.Join(dir+"x", "a.txt"), false},
+		{"fileChange", filepath.Join("..", "a.txt"), false},
+		{"fileChange", "fileChange", false},
+		{"fileChange", "", false},
+		{"commandExecution", filepath.Join(dir, "a.txt"), false},
+	} {
+		if got := insideCodex(dir, &state.Approval{Tool: c.tool, Summary: c.summary}); got != c.want {
+			t.Errorf("insideCodex(%s %q) = %v, want %v", c.tool, c.summary, got, c.want)
+		}
+	}
 }

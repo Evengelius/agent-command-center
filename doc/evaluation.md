@@ -63,28 +63,53 @@ on a damaged input and make sure it fails.
 
 ## Keystroke timing
 
-The keystroke tests (`TestKeystrokeToFrame`, `TestDraftKeystrokes` in
-`internal/app`) time real work on the real clock against a fixed target:
-keystroke to frame, p95 ≤ 16 ms (`keystrokeTarget`). The target never changes
-to make a run pass. Under `go test ./...` they share the CPU with every other
-package and can miss it from load alone (plan 4, step 4: 2 of 6 suites on
-2026-10-16, with no change in the app's per-key cost). When the full suite
-misses the target (owner, 2026-10-16):
+A keystroke is checked twice: a deterministic guard in every test run, and a
+timing step on the real clock run on its own (owner, 2026-10-16). Timed under
+`go test ./...`, the keystroke tests shared the CPU with every other package
+and missed the target from load alone (plan 4, step 4: 2 of 6 suites; step 5,
+check 8), with no change in the app's per-key cost. This replaces the earlier
+procedure of the same day, which reran them alone after a full-suite miss; the
+results it produced stay recorded in `plan.md`.
 
-1. **Keep the full-suite result as it is:** a FAIL with its p50, p95 and max,
-   in the evaluation summary and in `plan.md`.
-2. **Rerun the keystroke tests once, alone, under controlled conditions:** the
-   laptop on mains power, no other `go` build or test and no other heavy
-   process running:
-   `go test ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes)$' -count=1 -v`
-   Record its p50, p95 and max next to the full-suite result, with the
-   conditions.
-3. **If the isolated run meets the target,** the keystroke criterion passes on
-   that run. Both results stay recorded; the full-suite miss is listed as load,
-   not hidden.
-4. **If the isolated run misses the target,** it is a FAIL: do not rerun until
-   it passes. Investigate the cause (a CPU profile, the same test on the last
-   commit) and report it as the loop above says.
+**The guard, in `go test ./...`.** `TestKeystrokeAllocs` (`internal/app`)
+types, moves, deletes and selects in a 10,000-line draft, at its top and at its
+bottom. It fails when a keystroke, from `Update` to the frame's string, takes
+more than `keystrokeAllocs` (1,200) allocations on average, or when the editor
+draws from more than four screen heights of the draft. Allocations do not
+depend on the machine's load, so the guard gives the same answer every run;
+drawing the whole draft, the whole screen afresh, or the editor one span per
+cell breaks it (each checked by mutation). `TestFrameReuse` checks that a
+frame built from the one before it equals the frame drawn afresh, escape codes
+included.
+
+**The timing step, on its own.** The timed tests carry the `timing` build tag,
+so `go test ./...` never runs them. They run as a separate step, under the
+owner's normal working conditions (owner, 2026-10-16), since the target is
+about real use:
+
+```text
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost)$' -count=1 -v
+```
+
+- Allowed: the owner's usual applications open and idle (VS Code, browsers,
+  RanorexStudio).
+- Required: the laptop on mains power, and no other heavy job at the same time:
+  no other `go` build or test, no Ranorex test execution, no install, virus
+  scan or large copy.
+- Recorded with each run, not a gate: the power state, the CPU load just
+  before the run, and the applications open.
+
+- `TestKeystrokeToFrame` (10,000-line draft) and `TestDraftKeystrokes`
+  (50,000 lines, saved while typing) each send 50 untimed warm-up keys, then
+  time every key to its frame on the wall clock, the garbage collector on.
+- The target is p95 ≤ 16 ms (`keystrokeTarget`); it never changes to make a
+  run pass. p50, p95 and the maximum are recorded in `plan.md` with the
+  conditions.
+- `TestKeystrokeCost` judges nothing: it reports a key's mean time, bytes and
+  allocations, the before and after of a change to the drawing.
+- A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
+  profile, the same test on the last commit) and report it as the loop above
+  says.
 
 ## Summary format
 

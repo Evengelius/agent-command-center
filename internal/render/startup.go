@@ -23,7 +23,7 @@ func startup(s *state.State, ui UI) []line {
 	sub := func(l line) line { return in(append(line{sp("   ", stText)}, l...)) }
 	// note is a message under a field, wrapped whole, never cut: a failure
 	// must be readable at 80 columns.
-	note := func(mark, text string, st lipgloss.Style) []line {
+	note := func(mark, text string, st *lipgloss.Style) []line {
 		var out []line
 		for i, t := range wrap(text, cw-3-textWidth(mark)) {
 			if i > 0 {

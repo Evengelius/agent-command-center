@@ -91,6 +91,8 @@ go build ./...                                 build everything
 go vet ./...                                   static checks
 gofmt -l .                                     must print nothing
 go test ./...                                  every deterministic test; no CLI, no quota
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost)$' -count=1 -v
+                                               the keystroke timing step, run alone (doc\evaluation.md)
 go test ./internal/app -run TestGoldenFrames -update     rewrite golden frames; review the diff
 go test ./internal/provider/mock -run TestMockFiles -update  rewrite testdata\mock from the probes
 go run ./cmd/agent-command-center --mock testdata/mock/claude-subagent-approval.jsonl

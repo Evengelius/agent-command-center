@@ -36,7 +36,7 @@ const (
 // keeps the bytes it shows (at, with the offset): tabs and control
 // characters are drawn as in the editor and copied as they are, and a
 // wrapped line copies as one line.
-func wrapSource(src string, first, rest int, at ref, st lipgloss.Style) []line {
+func wrapSource(src string, first, rest int, at ref, st *lipgloss.Style) []line {
 	rs := wrapRanges(src, first, rest)
 	out := make([]line, 0, len(rs))
 	for _, r := range rs {
@@ -109,7 +109,7 @@ func wrapRanges(src string, first, rest int) []rowRange {
 }
 
 // rowLine draws one wrapped row of src.
-func rowLine(src string, r rowRange, at ref, st lipgloss.Style) line {
+func rowLine(src string, r rowRange, at ref, st *lipgloss.Style) line {
 	if r.from == r.to {
 		a := at
 		a.kind, a.off = refText, r.from
@@ -164,7 +164,7 @@ func (c *WrapCache) sweep() {
 
 // cellSpans turns drawn cells into spans: runs shown as their bytes become
 // one text span, and each tab or control character an atom.
-func cellSpans(src string, cs []cell, at ref, st lipgloss.Style) line {
+func cellSpans(src string, cs []cell, at ref, st *lipgloss.Style) line {
 	var l line
 	start := -1 // the first byte of the current run
 	flush := func(end int) {
@@ -215,7 +215,7 @@ type crow struct {
 type rowStyle struct {
 	lead0, lead span
 	at          ref
-	st          lipgloss.Style
+	st          *lipgloss.Style
 }
 
 func (c crow) draw() line {
@@ -250,7 +250,7 @@ func sourceRows(out []crow, wc *WrapCache, p *rowStyle, j int, src string, first
 
 // contentRows adds entry i's lines, each wrapped to w cells after an indent
 // of two.
-func contentRows(out []crow, wc *WrapCache, i int, lines []string, w int, st lipgloss.Style) []crow {
+func contentRows(out []crow, wc *WrapCache, i int, lines []string, w int, st *lipgloss.Style) []crow {
 	lead := deco("  ", st)
 	p := &rowStyle{lead0: lead, lead: lead, at: ref{panel: 'B', item: i}, st: st}
 	for j, l := range lines {

@@ -17,6 +17,7 @@ import (
 	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/proc"
 	"github.com/Evengelius/agent-command-center/internal/provider"
+	"github.com/Evengelius/agent-command-center/internal/provider/pipe"
 )
 
 // MaxLine bounds one stdout line; a longer one is skipped with an error event
@@ -87,7 +88,7 @@ type Session struct {
 	wmu      sync.Mutex // one write at a time
 	inClosed atomic.Bool
 
-	q       *queue
+	q       *pipe.Queue
 	exited  chan struct{}
 	closing atomic.Bool
 	once    sync.Once
@@ -112,10 +113,10 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext, env []
 		now = time.Now
 	}
 	s := &Session{p: pr, stdin: pr.Stdin(), step: step, m: NewMapper(), inputs: map[string]pendingReq{},
-		q: newQueue(now), exited: make(chan struct{})}
-	s.q.push(event.Event{Provider: ProviderID, Kind: event.SessionSpawned, Origin: event.Observed,
+		q: pipe.NewQueue(now), exited: make(chan struct{})}
+	s.q.Push(event.Event{Provider: ProviderID, Kind: event.SessionSpawned, Origin: event.Observed,
 		Payload: event.Spawned{Argv: append([]string{sc.Executable}, argv...), Dir: sc.ProjectPath}})
-	go s.q.forward()
+	go s.q.Forward()
 
 	out, errs := make(chan struct{}), make(chan struct{})
 	go func() { defer close(out); s.read(pr.Stdout()) }()
@@ -138,7 +139,7 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext, env []
 func (s *Session) push(ev event.Event) {
 	ev.Provider = ProviderID
 	s.mu.Lock()
-	s.q.push(ev)
+	s.q.Push(ev)
 	s.mu.Unlock()
 }
 
@@ -146,7 +147,7 @@ func (s *Session) push(ev event.Event) {
 func (s *Session) read(r io.Reader) {
 	br := bufio.NewReaderSize(r, 64<<10)
 	for {
-		l, size, over, err := readLine(br, MaxLine)
+		l, size, over, err := pipe.ReadLine(br, MaxLine)
 		switch {
 		case over:
 			s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{
@@ -156,7 +157,7 @@ func (s *Session) read(r io.Reader) {
 			evs := s.m.Out(l)
 			for _, ev := range evs {
 				s.track(ev)
-				s.q.push(ev)
+				s.q.Push(ev)
 			}
 			s.mu.Unlock()
 		}
@@ -196,7 +197,7 @@ func (s *Session) track(ev event.Event) {
 func (s *Session) readStderr(r io.Reader) {
 	br := bufio.NewReaderSize(r, 4<<10)
 	for {
-		l, size, over, err := readLine(br, maxStderrLine)
+		l, size, over, err := pipe.ReadLine(br, maxStderrLine)
 		if over {
 			l = []byte(fmt.Sprintf("(a stderr line of %d bytes, not kept)", size))
 		}
@@ -206,26 +207,6 @@ func (s *Session) readStderr(r io.Reader) {
 		if err != nil {
 			return
 		}
-	}
-}
-
-// readLine reads one line without its end of line. A line longer than limit
-// is read to its end and dropped: over is true and size is its length.
-func readLine(br *bufio.Reader, limit int) (l []byte, size int, over bool, err error) {
-	for {
-		var chunk []byte
-		chunk, err = br.ReadSlice('\n')
-		size += len(chunk)
-		if !over {
-			l = append(l, chunk...)
-			if len(bytes.TrimRight(l, "\r\n")) > limit {
-				over, l = true, nil
-			}
-		}
-		if errors.Is(err, bufio.ErrBufferFull) {
-			continue
-		}
-		return bytes.TrimRight(l, "\r\n"), size, over, err
 	}
 }
 
@@ -262,11 +243,11 @@ func (s *Session) wait(out, errs <-chan struct{}) {
 		end.Reason = "Claude Code exited with code " + strconv.Itoa(code)
 	}
 	s.push(event.Event{Kind: event.SessionEnded, Origin: event.Observed, Payload: end})
-	s.q.close()
+	s.q.Close()
 }
 
 // Events are the session's events; the channel closes after session.ended.
-func (s *Session) Events() <-chan event.Event { return s.q.out }
+func (s *Session) Events() <-chan event.Event { return s.q.Out() }
 
 // write sends one line. Its events are mapped before the write, so a reply
 // can never be mapped first, and released only once the line is written.
@@ -287,10 +268,10 @@ func (s *Session) write(msg any) error {
 	for _, ev := range evs {
 		s.track(ev)
 	}
-	held := s.q.hold(evs)
+	held := s.q.Hold(evs)
 	s.mu.Unlock()
 	_, err := s.stdin.Write(b.Bytes())
-	s.q.release(held, err == nil)
+	s.q.Release(held, err == nil)
 	if err != nil {
 		return fmt.Errorf("not delivered to Claude Code: %w", err)
 	}
@@ -396,99 +377,5 @@ func (s *Session) waitExit() bool {
 		return true
 	case <-t.C:
 		return false
-	}
-}
-
-// queue is unbounded, so the readers never wait for the screen, and keeps
-// the order events were mapped in. A written line's events are held until
-// the write ends: released if it succeeded, dropped if not. Seq is set when
-// an event leaves, so a dropped one leaves no gap.
-type queue struct {
-	mu     sync.Mutex
-	cond   *sync.Cond
-	items  []*item
-	closed bool
-	now    func() time.Time
-	out    chan event.Event
-	seq    uint64
-}
-
-type item struct {
-	ev   event.Event
-	held bool
-	drop bool
-}
-
-func newQueue(now func() time.Time) *queue {
-	q := &queue{now: now, out: make(chan event.Event, 256)}
-	q.cond = sync.NewCond(&q.mu)
-	return q
-}
-
-func (q *queue) push(ev event.Event) {
-	q.mu.Lock()
-	if q.closed { // after session.ended
-		q.mu.Unlock()
-		return
-	}
-	ev.At = q.now()
-	q.items = append(q.items, &item{ev: ev})
-	q.mu.Unlock()
-	q.cond.Signal()
-}
-
-func (q *queue) hold(evs []event.Event) []*item {
-	q.mu.Lock()
-	defer q.mu.Unlock()
-	held := make([]*item, len(evs))
-	for i, ev := range evs {
-		ev.At = q.now()
-		held[i] = &item{ev: ev, held: true}
-		if !q.closed {
-			q.items = append(q.items, held[i])
-		}
-	}
-	return held
-}
-
-func (q *queue) release(held []*item, keep bool) {
-	q.mu.Lock()
-	for _, it := range held {
-		it.held, it.drop = false, !keep
-	}
-	q.mu.Unlock()
-	q.cond.Signal()
-}
-
-func (q *queue) close() {
-	q.mu.Lock()
-	q.closed = true
-	q.mu.Unlock()
-	q.cond.Signal()
-}
-
-// forward sends the events in order and closes the channel after the last.
-func (q *queue) forward() {
-	for {
-		q.mu.Lock()
-		for !(len(q.items) > 0 && !q.items[0].held) && !(q.closed && len(q.items) == 0) {
-			q.cond.Wait()
-		}
-		if len(q.items) == 0 {
-			q.mu.Unlock()
-			close(q.out)
-			return
-		}
-		it := q.items[0]
-		q.items[0] = nil
-		q.items = q.items[1:]
-		if it.drop {
-			q.mu.Unlock()
-			continue
-		}
-		q.seq++
-		it.ev.Seq = q.seq
-		q.mu.Unlock()
-		q.out <- it.ev
 	}
 }

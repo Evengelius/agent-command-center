@@ -5,8 +5,10 @@ import (
 	"errors"
 	"path/filepath"
 	"regexp"
+	"sync"
 	"time"
 
+	"github.com/Evengelius/agent-command-center/internal/proc"
 	"github.com/Evengelius/agent-command-center/internal/provider"
 )
 
@@ -22,7 +24,15 @@ var versionRe = regexp.MustCompile(`([0-9]+\.[0-9]+\.[0-9]+)`)
 
 // Provider is the Codex adapter (architecture.md, Codex adapter).
 type Provider struct {
-	Host provider.Host
+	Host    provider.Host
+	Spawner proc.Spawner // proc.Exec when nil
+	// Args are added after app-server.
+	Args      []string
+	CloseStep time.Duration    // CloseStep when 0
+	Now       func() time.Time // time.Now when nil
+
+	mu    sync.Mutex
+	model string // the fallback model, kept for a resume after a crash
 }
 
 func (p *Provider) ID() string          { return ProviderID }
@@ -63,7 +73,34 @@ func (p *Provider) Detect(ctx context.Context) (d provider.Detection) {
 	return d
 }
 
-// Start arrives with the adapter's session in step 5.
-func (p *Provider) Start(context.Context, provider.SessionContext) (provider.Session, error) {
-	return nil, errors.New("the Codex session is not built yet (plan 4, step 5)")
+// Start launches `codex app-server` in the project directory and sends
+// initialize; initialized and thread/start (or thread/resume) follow its
+// response, and session.ready the thread's. The process belongs to a job
+// object, so it never outlives the dashboard (ASM-19), and cancelling ctx
+// kills its whole tree.
+func (p *Provider) Start(ctx context.Context, sc provider.SessionContext) (provider.Session, error) {
+	if sc.Executable == "" {
+		return nil, errors.New("no Codex executable")
+	}
+	if sc.ProjectPath == "" {
+		return nil, errors.New("no project directory")
+	}
+	s, err := p.start(ctx, sc)
+	if err != nil {
+		return nil, err // not a typed nil
+	}
+	return s, nil
+}
+
+// fallbackModel is the model a refusal fell back to in this run, "" before.
+func (p *Provider) fallbackModel() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.model
+}
+
+func (p *Provider) setFallbackModel(m string) {
+	p.mu.Lock()
+	p.model = m
+	p.mu.Unlock()
 }

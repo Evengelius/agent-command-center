@@ -3,6 +3,7 @@ package render
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"charm.land/lipgloss/v2"
 )
@@ -13,7 +14,7 @@ import (
 // Selection and copy).
 type span struct {
 	text string
-	st   lipgloss.Style
+	st   *lipgloss.Style
 	ref  ref
 }
 
@@ -42,10 +43,10 @@ const (
 // line is one screen line under construction.
 type line []span
 
-func sp(text string, st lipgloss.Style) span { return span{text: visible(text), st: st} }
+func sp(text string, st *lipgloss.Style) span { return span{text: visible(text), st: st} }
 
 // deco is a span never copied: a symbol, a label, a frame piece.
-func deco(text string, st lipgloss.Style) span {
+func deco(text string, st *lipgloss.Style) span {
 	return span{text: visible(text), st: st, ref: ref{kind: refDeco}}
 }
 
@@ -85,10 +86,10 @@ func visible(s string) string {
 }
 
 // decoLine is a line of one decoration span.
-func decoLine(text string, st lipgloss.Style) line { return line{deco(text, st)} }
+func decoLine(text string, st *lipgloss.Style) line { return line{deco(text, st)} }
 
 // plain is a line of one span.
-func plain(text string, st lipgloss.Style) line { return line{sp(text, st)} }
+func plain(text string, st *lipgloss.Style) line { return line{sp(text, st)} }
 
 func (l line) width() int {
 	w := 0
@@ -101,7 +102,11 @@ func (l line) width() int {
 func (l line) String() string {
 	var b strings.Builder
 	for _, s := range l {
-		if s.text != "" {
+		switch {
+		case s.text == "":
+		case s.st == nil:
+			b.WriteString(s.text)
+		default:
 			b.WriteString(s.st.Render(s.text))
 		}
 	}
@@ -131,7 +136,7 @@ func (l line) fit(w int) line {
 		out = append(out, c)
 		left -= textWidth(c.text)
 	}
-	st := lipgloss.NewStyle()
+	st := stNone
 	if len(out) > 0 {
 		st = out[len(out)-1].st
 	}
@@ -140,7 +145,7 @@ func (l line) fit(w int) line {
 
 func (l line) pad(w int) line {
 	if n := w - l.width(); n > 0 {
-		return append(l, deco(strings.Repeat(" ", n), lipgloss.NewStyle()))
+		return append(l, deco(strings.Repeat(" ", n), stNone))
 	}
 	return l
 }
@@ -183,8 +188,22 @@ func runeWidth(r rune) int {
 		}
 		return 1
 	}
-	return lipgloss.Width(string(r))
+	widths.Lock()
+	defer widths.Unlock()
+	w, ok := widths.m[r]
+	if !ok {
+		w = lipgloss.Width(string(r))
+		widths.m[r] = w
+	}
+	return w
 }
+
+// widths holds the width of each rune past U+02FF met so far: measuring one
+// builds a string, and every frame measures its borders and content again.
+var widths = struct {
+	sync.Mutex
+	m map[rune]int
+}{m: map[rune]int{}}
 
 // cut returns the longest prefix of s at most w cells wide.
 func cut(s string, w int) string {
@@ -246,7 +265,7 @@ func wrap(text string, w int) []string {
 // title on the left of the top edge and an optional label on its right. In
 // every panel but B, a body span not marked otherwise is content, keyed by
 // its row; zone B keys its own content and the rest of it is decoration.
-func box(p byte, title, right line, body []line, w, h int, border lipgloss.Style) []line {
+func box(p byte, title, right line, body []line, w, h int, border *lipgloss.Style) []line {
 	if h < 2 || w < 5 { // the smallest top edge is "╭─  ╮"
 		return in(p, blank(w, h))
 	}
@@ -269,7 +288,7 @@ func box(p byte, title, right line, body []line, w, h int, border lipgloss.Style
 	return in(p, out)
 }
 
-func frameBox(title, right line, body []line, w, h int, border lipgloss.Style) []line {
+func frameBox(title, right line, body []line, w, h int, border *lipgloss.Style) []line {
 	inner := w - 4
 	top := line{sp("╭─ ", border)}
 	top = append(top, title...)

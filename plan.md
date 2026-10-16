@@ -763,7 +763,270 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
        run on the real clock.
   - Checks: `go build ./...`, `go vet ./...` and `gofmt -l .` are clean, and
     `go test ./... -count=1` passes.
-- Steps 5 to 8: outstanding.
+- Step 5, Codex integration: **done** (2026-10-16): checks 1 to 7 PASS,
+  check 8 PASS under the keystroke fix's procedure, check 9 (L3 and L4) PASS
+  on its last runs, results below. Checks,
+  yes or no, deterministic unless marked live. The fake app-server is the
+  test binary replaying P6, P6b and P7 (each recorded request waits for the
+  adapter's request of the same method, response ids follow the adapter's);
+  no check starts Codex or uses quota.
+  1. Fixtures through steps 0 to 4's checks, on the real adapter and process
+     plumbing: P6b's file-change approval reaches the screen as a card and
+     `a` writes exactly `{"id":0,"result":{"decision":"accept"}}` once; P7's
+     approval, requested by a child thread, is labelled with that thread's
+     agent and answered with id 0; P6b's second turn, interrupted, writes
+     `turn/interrupt` with the thread id and the running turn's id and ends
+     the turn `interrupted` with the session Ready. P5 is `codex exec`
+     output, which the MVP does not read: its lines stay covered by test 1
+     only.
+  2. Requests: `thread/start` params are exactly
+     `{"sandbox":"read-only","approvalPolicy":"on-request"}`, plus `model`
+     only after a refusal, and never `cwd` (architecture.md: cwd with a
+     write-capable sandbox writes `trust_level` into config.toml). A test
+     drives every request the adapter can write (initialize, initialized,
+     thread/start, thread/resume, model/list, turn/start, turn/interrupt,
+     account/rateLimits/read, the four answers, a JSON-RPC error) and finds
+     no `workspace-write`, `danger-full-access`, `cwd`, `config/`,
+     `skills/config/write`, `marketplace/`, `plugin/`,
+     `externalAgentConfig/`, `windowsSandbox/` or execpolicy method; a
+     planted `cwd` fails it.
+  3. Model refusal (P6): the error is in the errors list with the text as
+     received ("The 'gpt-6-sol' model is not supported when using Codex
+     with a ChatGPT account."), then `model/list` is written, then
+     `thread/start` with `"model":"gpt-5.6-sol"` (the `isDefault` entry of
+     `p6-codex-model-list.json`); B shows a notice naming both models; the
+     next `turn/start` names the new thread. A second refusal starts no
+     second fallback.
+  4. Answers: `a`, `d` and `c` write `accept`, `decline` and `cancel` (then
+     `turn/interrupt`), echoing the request's id as sent; `allow`, `deny`
+     and an unknown id are refused without a write. An unknown server
+     request gets a JSON-RPC error (-32601) with its id and is counted as
+     unrecognised. Allow for the session (`s`) is not offered: no recorded
+     request carries `availableDecisions`.
+  5. Continuity: with a resume id the adapter writes `thread/resume
+     {threadId, sandbox, approvalPolicy}` and no `thread/start`; in the app,
+     Ctrl+R after a crash spawns `codex app-server` again and resumes the
+     crashed thread.
+  6. Process: Claude Code's process tests pass on the Codex adapter: exit
+     mid-turn gives a crash with the code, an over-long line is skipped,
+     the close escalation ends a CLI that ignores stdin (between CloseStep
+     and 11 s) and the forced kill leaves no process.
+  7. The input tests (step 3, item 8) run on the real Codex adapter instead
+     of the scripted session.
+  8. Checks: `go build ./...`, `go vet ./...`, `go vet -tags live ./...`,
+     `gofmt -l .` clean; `go test ./... -count=1` passes; keystroke timing
+     as evaluation.md says.
+  9. L3 and L4 (live): **not started; each needs the owner's approval** of
+     its scope, model, expected usage and stopping conditions.
+  - Results, 2026-10-16 (offline; checks 1 to 7 PASS, 8 FAIL on keystroke
+    timing only, 9 not started):
+    1. PASS: `TestHandshakeApprovalInterrupt`, `TestChildApproval` (codex
+       package); `TestCodexApprovalCards`, `TestCodexChildApproval`,
+       `TestCodexInterrupt` (app), on P6b's and P7's exact lines.
+    2. PASS: `TestForbiddenCheck` (a planted `cwd` and each forbidden method
+       or value fails it), `TestNoForbiddenMethodInSource`, and every session
+       test runs `forbidden` on each line written.
+    3. PASS: `TestModelFallback` (P6 then P6b: the error as received,
+       `model/list`, `thread/start` with `gpt-5.6-sol`, the notice),
+       `TestNoSecondFallback`. Limitation: the message refused with the old
+       model is not resent; the owner sends it again.
+    4. PASS: `TestAnswersEchoTheID` (string ids, decline, cancel),
+       `TestUnknownServerRequest` (-32601, one unrecognised),
+       `TestUnreadableRequest`; the app's a, d, c write accept, decline,
+       cancel then `turn/interrupt`; no frame offers `s`. Fixed on the way:
+       the reducer auto-answered an unreadable Codex request `deny`, a word
+       Codex does not accept; it now answers `decline`
+       (`machines_test.go`).
+    5. PASS: `TestResume` (`thread/resume` with the pinned model, no
+       `thread/start`); `TestCodexCrashAndResume` (two identical
+       `app-server` spawns, the third line written is `thread/resume` for
+       the crashed thread, the draft kept).
+    6. PASS: `TestExitMidTurn` (code 3), `TestLongLine`,
+       `TestCloseEscalation`, `TestForcedKill`, `TestNoHandshake`,
+       `TestRefusedThreadStart`. The line queue and reader shared with
+       Claude Code moved to `internal/provider/pipe`.
+    7. PASS: `TestInputByteForByte` and `TestPasteNeverSubmits` run with
+       the `codex` rig (`codexRig`, every message a `turn/start` line).
+    8. FAIL on keystroke timing only. `go build`, `go vet`,
+       `go vet -tags live` and `gofmt -l .` are clean, and every package
+       except `internal/app` passes. In `internal/app` only the keystroke
+       tests fail:
+       - Full suite, run 1: `TestDraftKeystrokes` p50 12.94 ms, p95
+         32.55 ms, max 224.86 ms.
+       - Isolated rerun (evaluation.md, Keystroke timing, step 2), on mains
+         power (battery at 6%, charging); RanorexStudio, Firefox and
+         VS Code were open, CPU load 44% on 12 logical CPUs:
+         - `TestDraftKeystrokes`: p50 11.66 ms, p95 22.59 ms, max
+           144.18 ms;
+         - `TestKeystrokeToFrame`: p50 8.23 ms, p95 17.70 ms, max
+           50.32 ms.
+         FAIL.
+       - Investigation (step 4): the same isolated run on the last commit
+         6d3e548, in a temporary worktree, fails the same way:
+         - `TestDraftKeystrokes`: p95 34.50 ms;
+         - `TestKeystrokeToFrame`: p95 21.65 ms, max 302.67 ms.
+         Step 5 changes no code on the keystroke path; only a comment in
+         `keys.go` changed. The miss follows the machine's load, not this
+         step.
+       The criterion stays FAIL until an isolated run on a quiet machine
+       meets 16 ms; it is not rerun meanwhile.
+    9. Not started. The tests are written and only vetted:
+       `internal/provider/codex/live_test.go` (`TestLiveGate`, L3) and
+       `internal/app/live_codex_test.go` (`TestLiveDashboardCodex`, L4). L4's
+       approval guard `insideCodex` is checked offline by `TestInsideCodex`.
+  - Keystroke fix, approved by the owner on 2026-10-16, after check 8:
+    headroom in the drawing, the timing moved to its own step, and a
+    deterministic guard in `go test ./...` (evaluation.md, Keystroke timing,
+    rewritten).
+    - Changes:
+      - The editor builds only the rows it shows and draws a run of plain
+        cells as one span (`render/editor.go`).
+      - Spans hold a shared `*lipgloss.Style`.
+      - `Screen.StringAfter` reuses each line drawn the same as in the frame
+        before; `View` uses it.
+      - Rune widths past U+02FF are memoised.
+      - `TestKeystrokeToFrame` and `TestDraftKeystrokes` moved to
+        `keystroke_test.go` under the `timing` tag, with 50 untimed warm-up
+        keys; the 10,000-line test now types real text (`typed('x')`; it
+        inserted nothing before).
+      - `TestPasteToFrame` and `TestStreamToFrame` stay in the suite.
+    - Results, 2026-10-16:
+      1. PASS: `TestGoldenFrames` passes without `-update` (8 frames,
+         `testdata/frames` unchanged).
+         - `TestEditorRowsMatchReference` holds the new editor to the old
+           per-cell drawing, row by row, on 3,000 random cases; two planted
+           faults fail it.
+         - The frames with their escape codes are byte-identical before and
+           after the style change (19 frames: every size, edits, wraps,
+           controls, a selection).
+         - `TestFrameReuse` checks reused frames equal fresh ones.
+      2. PASS: per-key cost, `TestKeystrokeCost`, before and after:
+
+         | Draft | Time | Bytes | Allocations |
+         |---|---|---|---|
+         | 10,000 lines | 1.57 ms → 0.22 ms | 3.78 MB → 0.40 MB | 8,462 → 822 |
+         | 50,000 lines | 1.74 ms → 0.52 ms | 4.79 MB → 1.40 MB | 8,461 → 823 |
+
+      3. PASS: the timing step under the conditions of evaluation.md
+         (Keystroke timing, as the owner set them on 2026-10-16): on mains
+         power, with no other heavy job running. CPU load was 24% on 12
+         logical CPUs just before the run. RanorexStudio, Firefox and VS Code
+         were open and idle.
+         - `TestKeystrokeToFrame`: p50 0 s, p95 1.11 ms, max 2.01 ms. The p50
+           of 0 s is below the clock's resolution on Windows.
+         - `TestDraftKeystrokes`: p50 0.62 ms, p95 2.26 ms, max 4.88 ms, 8
+           saves.
+         - Target: p95 ≤ 16 ms.
+
+         Stress check, run once at the owner's request: the same step while
+         `go test ./... -count=1` ran in parallel. This is the load under which
+         the old tests missed, with p95 up to 32.55 ms. Conditions: mains
+         power; CPU load 43% just before the run; VS Code, Firefox and Edge
+         open. The timing step took 15.6 s, and the slowest package of the
+         full suite took 11.1 s, so the two overlapped for most of the run.
+         The full suite also passed (exit 0).
+         - `TestKeystrokeToFrame`: p50 0.53 ms, p95 1.07 ms, max 4.03 ms.
+         - `TestDraftKeystrokes`: p50 1.19 ms, p95 3.92 ms, max 7.87 ms, 9
+           saves.
+         - `TestKeystrokeCost`: 0.26 ms, 0.40 MB and 822 allocations per key
+           in the 10,000-line draft; 0.52 ms, 1.41 MB and 823 allocations in
+           the 50,000-line draft.
+         - PASS against the same target.
+      4. PASS: `TestKeystrokeAllocs` is in `go test ./...`: at most 1,200
+         allocations per key, and the editor's window at most 4 screen
+         heights; measured 822 at the top of the draft and 593 at the bottom.
+         Five planted faults fail it:
+
+         | Planted fault | Result |
+         |---|---|
+         | No frame reuse | 2,014 allocations per key |
+         | Per-cell editor spans | 2,951 |
+         | No width memo | 3,376 |
+         | The whole draft given to the renderer | a window of 10,002 lines |
+         | That, with every row of the window built | 20,802 allocations and the 10,002-line window |
+
+      5. PASS: `go build ./...`, `go vet ./...`, `go vet -tags live ./...`,
+         `go vet -tags timing ./...` and `gofmt -l .` are clean;
+         `go test ./... -count=1` passes in every package.
+      6. PASS: evaluation.md, Keystroke timing, rewritten; the timing command
+         added to AGENTS.md, Commands. The owner then adapted the conditions
+         (2026-10-16). Usual idle applications may stay open. Mains power is
+         required, with no concurrent heavy job. Power, CPU load and open
+         applications are recorded with each run, not used as a gate.
+    - Check 8 above stays FAIL as recorded. Under the new procedure, its
+      keystroke part passes on this run (results 3 and 4).
+  - Check 9, live L3 and L4, approved by the owner on 2026-10-16 ("Commit
+    step 5 after L3 and L4"): L3 with `gpt-5.6-luna` (`ACC_LIVE_MODEL`), L4
+    with Codex's default model. Each run in an empty folder under
+    `%LOCALAPPDATA%\Temp`, with `confcheck` before and after; Codex 0.145.0.
+    - L3, run 1 (`acc-l3-225635`): FAIL, a test defect. `start()` stopped at
+      `session.ready` and read the thread and cwd before `session.started`,
+      which the same response line gives next (`codex/mapper.go`,
+      `threadStart`): "thread "", cwd """. No turn ran. Configuration PASS;
+      the folder stayed empty. Fixed: `start()` waits for `session.started`.
+    - L3, run 2 (`acc-l3b-225755`): **PASS** in 55.69 s. Thread
+      `01a14681-e33f-7370-b4ad-8d2805b56264`, model `gpt-5.6-luna`, cwd the
+      folder; handshake 481 ms.
+      - Accept: the fileChange approval accepted, `accept.txt` holds "ok",
+        17 text deltas. A second request in the same turn, a
+        commandExecution, was declined by the test's rule ("exec command
+        rejected by user").
+      - Decline: completed, `decline.txt` absent, the answer 1.057 s after
+        the decline.
+      - Cancel: interrupted 8 ms after the answer.
+      - Interrupt: interrupted 9 ms after `turn/interrupt`, 46 text deltas.
+      - Close: exit 0, 3.768 s after stdin closed; 6 processes checked gone.
+      - Resume: handshake 483 ms; the code word "ORCHID-41" recalled.
+      - Kill: exit code 1, 24 ms after the kill; 9 processes checked gone.
+      - 20 lines written, none forbidden.
+      - Configuration PASS, 1 new session file; the folder holds only
+        `accept.txt`.
+    - L4, run 1 (`acc-l4-225916`): FAIL at turn 1 in 7.54 s. Codex's default
+      model `gpt-6-sol` was refused ("The 'gpt-6-sol' model is not supported
+      when using Codex with a ChatGPT account.", as in P6), and the test
+      failed on the failed turn before the adapter's fallback had started
+      its new thread. A test defect: the test did not follow the fallback of
+      check 3. Configuration PASS; the folder stayed empty.
+    - L4, run 2 (`acc-l4b-230252`): FAIL at turn 1 in 25.17 s, a test
+      defect. The fallback worked live: the refusal, `model/list`, a new
+      thread `01a14686-7d84-7363-8133-79a64b562ae6` on `gpt-5.6-sol`, the
+      notice in B, and the message sent again. Its fileChange approval was
+      accepted and `allow.txt` written; the model then asked for a
+      commandExecution to remove the trailing newline, and the test's rule
+      stopped the run on any second request. Fixed: as L3 does, a request
+      other than the first inside the folder is declined with F2, d and the
+      turn goes on; the prompt says a trailing newline is fine. Only one
+      request is ever accepted. Configuration PASS; the folder holds only
+      `allow.txt`.
+    - L4, run 3 (`acc-l4c-230410`): **PASS** in 26.29 s.
+      - Ready on `gpt-6-sol`, thread `01a14687-a46f-7cb3-a8a8-939324ecafa9`;
+        turn 1 refused, the fallback thread
+        `01a14687-ac6b-7192-88a9-ff013cd0f84e` on `gpt-5.6-sol`, the
+        message sent again.
+      - Turn 1: the fileChange accepted with F2, a; `allow.txt` holds "ok";
+        answer "done"; no request declined; "allowed by you" in the frame.
+      - Turn 2: interrupted 9 ms after Ctrl+C, one answer entry.
+      - Crash (taskkill): exit code 1 shown; Ctrl+R resumed the fallback
+        thread; turn 3 answered the code word "LANTERN-73".
+      - Ctrl+Q: Closed 3.031 s after, `app-server` exited 0.
+      - Configuration PASS, 2 new session files; the folder holds only
+        `allow.txt`.
+    - Findings:
+      - Check 4's note is wrong for live Codex: L3's commandExecution request
+        carried `availableDecisions`
+        `["accept", {"acceptWithExecpolicyAmendment": …}, "cancel"]`. The
+        adapter still offers only a, d and c. `acceptWithExecpolicyAmendment`
+        must never be offered: it changes Codex's exec policy.
+      - `thread/goal/cleared` is a notification the mapper does not
+        recognise; it is counted as unrecognised (L3, L4).
+      - Codex's websocket to `chatgpt.com/backend-api/codex/responses` got
+        a proxy 407 (stderr); the turns worked regardless (L3).
+      - A failed turn's error text reaches only the errors list, which D
+        shows as a count ("errors 3" at L4's end); B shows the refusal only
+        through the fallback notice. ui-design.md's "Enter on D lists the
+        last errors" is not built yet and no step of the proposal names it.
+        For the owner's decision.
+- Steps 6 to 8: outstanding.
 
 The owner's decisions at plan 3's approval (2026-10-16):
 - Proposal and roadmap approved; follow its order and the MVP scope.

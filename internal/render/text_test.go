@@ -3,15 +3,13 @@ package render
 import (
 	"strings"
 	"testing"
-
-	"charm.land/lipgloss/v2"
 )
 
 // TestBoxEdges checks every row of a box is exactly w wide and the top edge
 // keeps its corner, with and without a right label, down to the label not
 // fitting.
 func TestBoxEdges(t *testing.T) {
-	st := lipgloss.NewStyle()
+	st := stNone
 	for w := 5; w <= 40; w++ {
 		for _, right := range []line{nil, plain("2 ACTIVE", st)} {
 			ls := box('C', plain("C · AGENTS", st), right, []line{plain(strings.Repeat("x", 50), st)}, w, 3, st)

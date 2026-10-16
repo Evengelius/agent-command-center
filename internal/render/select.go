@@ -1,6 +1,7 @@
 package render
 
 import (
+	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -47,6 +48,7 @@ type ConvView struct {
 // the spans' references, not the drawing (ui-design.md, Selection and copy).
 type Screen struct {
 	lines []line
+	rows  []string          // the lines as the terminal shows them, once drawn
 	src   map[srcKey]string // the text of the panels other than B and E, by row
 	Conv  ConvView
 }
@@ -87,15 +89,22 @@ func Draw(s *state.State, ui UI) *Screen {
 }
 
 // String is the frame as the terminal shows it.
-func (sc *Screen) String() string {
-	var b strings.Builder
+func (sc *Screen) String() string { return sc.StringAfter(nil) }
+
+// StringAfter is String, taking from prev, the frame drawn before, each line
+// drawn the same: a keystroke restyles the editor's rows, not the whole
+// screen (ui-design.md, Budget). Spans hold their style by pointer, so equal
+// spans render to the same text and a reused line is never stale.
+func (sc *Screen) StringAfter(prev *Screen) string {
+	sc.rows = make([]string, len(sc.lines))
 	for i, l := range sc.lines {
-		if i > 0 {
-			b.WriteByte('\n')
+		if prev != nil && i < len(prev.rows) && slices.Equal(l, prev.lines[i]) {
+			sc.rows[i] = prev.rows[i]
+		} else {
+			sc.rows[i] = l.String()
 		}
-		b.WriteString(l.String())
 	}
-	return b.String()
+	return strings.Join(sc.rows, "\n")
 }
 
 // highlight restyles the part of l that sel covers, splitting text spans at

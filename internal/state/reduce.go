@@ -543,12 +543,17 @@ func (s *State) requested(ev event.Event, p event.Approval) []Command {
 	s.Queue = append(s.Queue, id)
 	s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "approval", Agent: ev.Agent, MessageID: id, Text: p.Tool, Origin: ev.Origin, At: ev.At})
 	if p.Problem != "" {
-		// An unreadable request is denied, never allowed (INT 4 fallback).
-		a.Status, a.Answer, a.AnsweredAt = Denied, "deny", ev.At
+		// An unreadable request is denied, never allowed (INT 4 fallback),
+		// in the CLI's word: Codex declines (reliability.md, Approvals).
+		deny := "deny"
+		if s.Context.Provider == "codex" {
+			deny = "decline"
+		}
+		a.Status, a.Answer, a.AnsweredAt = Denied, deny, ev.At
 		if p.ID == "" {
 			return nil
 		}
-		return []Command{{Kind: CmdAnswer, ID: p.ID, Decision: "deny"}}
+		return []Command{{Kind: CmdAnswer, ID: p.ID, Decision: deny}}
 	}
 	if ev.Agent != "" {
 		ag := s.ensureAgent(ev.Agent, ev)

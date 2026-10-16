@@ -267,7 +267,7 @@ func zoneTitle(t string, focused bool) line {
 	return plain(t, stBold)
 }
 
-func borderFor(focused bool) lipgloss.Style {
+func borderFor(focused bool) *lipgloss.Style {
 	if focused {
 		return stTitle
 	}
@@ -326,7 +326,7 @@ func conversation(s *state.State, ui UI, w int) []crow {
 	for i, e := range s.Conversation {
 		switch e.Role {
 		case "user":
-			out = drawn(out, line{deco("YOU", stAttention.Bold(true)), deco("  "+clock(e.At), stGrey)})
+			out = drawn(out, line{deco("YOU", stAttentionBold), deco("  "+clock(e.At), stGrey)})
 			ls := entryLines(e)
 			if len(ls) > foldOver {
 				out = contentRows(out, wc, i, ls[:foldShow], w, stText)
@@ -373,7 +373,7 @@ func conversation(s *state.State, ui UI, w int) []crow {
 
 // oneRow is a tool or approval entry's first line on one row, marked when
 // more lines follow.
-func oneRow(i int, e state.Entry, st lipgloss.Style) line {
+func oneRow(i int, e state.Entry, st *lipgloss.Style) line {
 	l := wrapSource(entryLines(e)[0], 1<<30, 1<<30, ref{panel: 'B', item: i}, st)[0]
 	if strings.IndexByte(e.Text, '\n') >= 0 {
 		l = append(l, deco(" …", st))
@@ -416,7 +416,7 @@ func sessionState(s *state.State, ui UI, w int) []line {
 }
 
 func failureCard(s *state.State, w int, title, keys string) []line {
-	out := []line{plain("✗ "+title, stFailed.Bold(true))}
+	out := []line{plain("✗ "+title, stFailedBold)}
 	if s.Session.Reason != "" {
 		out = append(out, indented(s.Session.Reason, w, stFailed)...)
 	}
@@ -432,7 +432,7 @@ func failureCard(s *state.State, w int, title, keys string) []line {
 	return append(out, plain(keys, stGrey))
 }
 
-func indented(text string, w int, st lipgloss.Style) []line {
+func indented(text string, w int, st *lipgloss.Style) []line {
 	var out []line
 	for _, l := range wrap(text, w-2) {
 		out = append(out, plain("  "+l, st))

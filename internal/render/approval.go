@@ -26,7 +26,7 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int) []line {
 	// The target gets the room left once the outcome or the clock fits, so a
 	// long path never hides how the request was answered: a path loses its
 	// left end, a command its right end.
-	head := func(mark string, st lipgloss.Style, tail span) line {
+	head := func(mark string, st *lipgloss.Style, tail span) line {
 		l := line{deco(mark, st), deco(approvalWho(s, ap)+" · ", stGrey)}
 		l = append(l, oneRow(i, e, st)...)
 		room := w - l.width() - line{tail}.width() - 2
@@ -59,7 +59,7 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int) []line {
 	if ap.Question {
 		label = "? QUESTION "
 	}
-	out := []line{head(label, stAttention.Bold(true), deco("  "+clock(ap.RequestedAt), stGrey))}
+	out := []line{head(label, stAttentionBold, deco("  "+clock(ap.RequestedAt), stGrey))}
 	if ap.Summary != "" && ap.Summary != target {
 		out = append(out, indentedDeco(ap.Summary, w, stText)...)
 	}
@@ -151,7 +151,7 @@ func approvalDetail(ap *state.Approval) (target string, path bool, body []string
 }
 
 // indentedDeco is indented, wrapped decoration.
-func indentedDeco(text string, w int, st lipgloss.Style) []line {
+func indentedDeco(text string, w int, st *lipgloss.Style) []line {
 	var out []line
 	for _, l := range wrap(text, w-2) {
 		out = append(out, decoLine("  "+l, st))

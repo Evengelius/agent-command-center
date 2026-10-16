@@ -24,9 +24,9 @@ type EditorView struct {
 }
 
 var (
-	stCursor   = lipgloss.NewStyle().Foreground(lipgloss.Color("#111827")).Background(cTitle)
-	stSelected = lipgloss.NewStyle().Foreground(cText).Background(lipgloss.Color("#4C4F6B"))
-	stControl  = lipgloss.NewStyle().Foreground(cAttention)
+	stCursor   = style(lipgloss.NewStyle().Foreground(lipgloss.Color("#111827")).Background(cTitle))
+	stSelected = style(lipgloss.NewStyle().Foreground(cText).Background(lipgloss.Color("#4C4F6B")))
+	stControl  = style(lipgloss.NewStyle().Foreground(cAttention))
 )
 
 // TabWidth is the cells a tab takes on screen; the text keeps the tab
@@ -48,33 +48,54 @@ type cell struct {
 func cells(s string) []cell {
 	out := make([]cell, 0, len(s))
 	for i, r := range s {
-		n := utf8.RuneLen(r)
-		switch {
-		case r == '\t':
-			out = append(out, cell{"    ", TabWidth, i, 1, false})
-		case r < 0x20:
-			out = append(out, cell{"^" + string(rune(r+'@')), 2, i, 1, true})
-		case r == 0x7f:
-			out = append(out, cell{"^?", 2, i, 1, true})
-		case r >= 0x80 && r < 0xa0: // C1 controls
-			out = append(out, cell{fmt.Sprintf("<%02X>", r), 4, i, n, true})
-		case r == utf8.RuneError:
-			_, n := utf8.DecodeRuneInString(s[i:])
-			if n == 1 {
-				out = append(out, cell{fmt.Sprintf("<%02X>", s[i]), 4, i, 1, true})
-				continue
-			}
-			out = append(out, cell{string(r), 1, i, n, false})
-		default:
-			out = append(out, cell{s[i : i+n], runeWidth(r), i, n, false}) // its bytes: no allocation
-		}
+		out = append(out, cellAt(s, i, r))
 	}
 	return out
+}
+
+// cellAt is the drawn unit of rune r at byte i of s.
+func cellAt(s string, i int, r rune) cell {
+	n := utf8.RuneLen(r)
+	switch {
+	case r == '\t':
+		return cell{"    ", TabWidth, i, 1, false}
+	case r < 0x20:
+		return cell{"^" + string(rune(r+'@')), 2, i, 1, true}
+	case r == 0x7f:
+		return cell{"^?", 2, i, 1, true}
+	case r >= 0x80 && r < 0xa0: // C1 controls
+		return cell{fmt.Sprintf("<%02X>", r), 4, i, n, true}
+	case r == utf8.RuneError:
+		if _, n := utf8.DecodeRuneInString(s[i:]); n == 1 {
+			return cell{fmt.Sprintf("<%02X>", s[i]), 4, i, 1, true}
+		}
+		return cell{string(r), 1, i, n, false}
+	}
+	return cell{s[i : i+n], runeWidth(r), i, n, false} // its bytes: no allocation
+}
+
+// cellWidth is the width of cellAt(s, i, r), without building its text.
+func cellWidth(s string, i int, r rune) int {
+	switch {
+	case r == '\t':
+		return TabWidth
+	case r < 0x20 || r == 0x7f:
+		return 2
+	case r >= 0x80 && r < 0xa0:
+		return 4
+	case r == utf8.RuneError:
+		if _, n := utf8.DecodeRuneInString(s[i:]); n == 1 {
+			return 4
+		}
+		return 1
+	}
+	return runeWidth(r)
 }
 
 // editorRow is one screen row of the editor: a piece of a logical line.
 type editorRow struct {
 	line  int
+	text  string // the logical line
 	cells []cell
 	end   bool // the logical line's last row
 }
@@ -83,16 +104,31 @@ type editorRow struct {
 func rowsOf(n int, text string, w int) []editorRow {
 	cs := cells(text)
 	var out []editorRow
-	cur, cw := []cell{}, 0
-	for _, c := range cs {
-		if cw+c.w > w && len(cur) > 0 {
-			out = append(out, editorRow{line: n, cells: cur})
-			cur, cw = []cell{}, 0
+	from, cw := 0, 0
+	for i, c := range cs {
+		if cw+c.w > w && i > from {
+			out = append(out, editorRow{line: n, text: text, cells: cs[from:i:i]})
+			from, cw = i, 0
 		}
-		cur, cw = append(cur, c), cw+c.w
+		cw += c.w
 	}
-	out = append(out, editorRow{line: n, cells: cur, end: true})
+	out = append(out, editorRow{line: n, text: text, cells: cs[from:], end: true})
 	return out
+}
+
+// rowCount is len(rowsOf(n, text, w)), without building the rows: the
+// editor wraps every line of its window to place the cursor, but draws only
+// the rows it shows.
+func rowCount(text string, w int) int {
+	rows, cw, k := 1, 0, 0
+	for i, r := range text {
+		cw2 := cellWidth(text, i, r)
+		if cw+cw2 > w && k > 0 {
+			rows, cw, k = rows+1, 0, 0
+		}
+		cw, k = cw+cw2, k+1
+	}
+	return rows
 }
 
 func (v EditorView) selected(line, off int) bool {
@@ -109,29 +145,7 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 		maxRows = minRows
 	}
 	text := max(w-2-1, 1) // the prefix, and room for the cursor at a row's end
-	var rows []editorRow
-	cursor := 0
-	for i, l := range v.Lines {
-		n := v.First + i
-		wrapped := rowsOf(n, l, text)
-		if n == v.Line {
-			// The cursor's row: the last one starting at or before it.
-			cursor = len(rows)
-			for k, r := range wrapped {
-				if k > 0 && r.cells[0].off <= v.Col {
-					cursor = len(rows) + k
-				}
-			}
-		}
-		rows = append(rows, wrapped...)
-	}
-	n := len(rows)
-	if v.Total > len(v.Lines) {
-		n = maxRows // more lines than the window holds: the editor is at its largest
-	}
-	show := min(max(n, minRows), maxRows)
-	// Keep the last rows in view, unless the cursor is above them.
-	start := min(max(len(rows)-show, 0), cursor)
+	rows, show := shownRows(v, text, minRows, maxRows)
 	focused := ui.Focus == "B" || ui.Focus == ""
 	empty := v.Total <= 1 && (len(v.Lines) == 0 || v.Lines[0] == "")
 
@@ -142,15 +156,15 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 			prefix = "> "
 		}
 		l := line{sp(prefix, stTitle)}
-		switch k := start + i; {
+		switch {
 		case i == 0 && empty:
 			l = append(l, span{ref: ref{panel: 'E', kind: refText}})
 			if focused {
 				l = append(l, deco(" ", stCursor))
 			}
 			l = append(l, deco(placeholder(s), stGrey))
-		case k < len(rows):
-			l = append(l, drawRow(v, rows[k], focused)...)
+		case i < len(rows):
+			l = append(l, drawRow(v, rows[i], focused)...)
 		}
 		out = append(out, l)
 	}
@@ -169,6 +183,47 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 	return in('E', out)
 }
 
+// shownRows is the editor rows shown, each at most text cells wide: show
+// of them, rows holding those of the window from the first shown on. Every
+// line of the window is wrapped to place the cursor; only the rows shown are
+// built (ui-design.md, Budget).
+func shownRows(v EditorView, text, minRows, maxRows int) (rows []editorRow, show int) {
+	counts := make([]int, len(v.Lines))
+	total, cursor := 0, 0
+	for i, l := range v.Lines {
+		n := v.First + i
+		if n == v.Line {
+			// The cursor's row: the last one starting at or before it.
+			wrapped := rowsOf(n, l, text)
+			cursor = total
+			for k, r := range wrapped {
+				if k > 0 && r.cells[0].off <= v.Col {
+					cursor = total + k
+				}
+			}
+			counts[i] = len(wrapped)
+		} else {
+			counts[i] = rowCount(l, text)
+		}
+		total += counts[i]
+	}
+	n := total
+	if v.Total > len(v.Lines) {
+		n = maxRows // more lines than the window holds: the editor is at its largest
+	}
+	show = min(max(n, minRows), maxRows)
+	// Keep the last rows in view, unless the cursor is above them.
+	start := min(max(total-show, 0), cursor)
+	for i, at := 0, 0; i < len(v.Lines) && at < start+show; i++ {
+		if at+counts[i] > start {
+			wrapped := rowsOf(v.First+i, v.Lines[i], text)
+			rows = append(rows, wrapped[max(start-at, 0):]...)
+		}
+		at += counts[i]
+	}
+	return rows, show
+}
+
 // drawRow draws one row with the selection and the cursor.
 func drawRow(v EditorView, r editorRow, focused bool) line {
 	l := line{{ref: ref{panel: 'E', kind: refText, line: r.line}}} // an empty line still takes a click
@@ -176,21 +231,39 @@ func drawRow(v EditorView, r editorRow, focused bool) line {
 		l = nil
 	}
 	cursorShown := false
+	// A run of plain cells in one style is one span of the line's bytes, as
+	// the conversation's text is: hit-testing splits it again by rune
+	// (Screen.units), and the frame has a span per run, not per character.
+	const (
+		plainText = iota
+		cursor
+		selected
+		control
+	)
+	run := -1 // the style of the last span when it is a plain run, else -1
 	for _, c := range r.cells {
-		st := stText
+		st, kind := stText, plainText
 		switch {
 		case focused && r.line == v.Line && c.off == v.Col:
-			st, cursorShown = stCursor, true
+			st, kind, cursorShown = stCursor, cursor, true
 		case v.selected(r.line, c.off):
-			st = stSelected
+			st, kind = stSelected, selected
 		case c.ctrl:
-			st = stControl
+			st, kind = stControl, control
 		}
 		at := ref{panel: 'E', kind: refText, line: r.line, off: c.off}
 		if c.ctrl || c.text == "    " && c.n == 1 {
 			at.kind, at.n = refAtom, c.n
+			l = append(l, span{text: c.text, st: st, ref: at})
+			run = -1
+			continue
+		}
+		if last := len(l) - 1; run == kind && l[last].ref.off+len(l[last].text) == c.off {
+			l[last].text = r.text[l[last].ref.off : c.off+c.n]
+			continue
 		}
 		l = append(l, span{text: c.text, st: st, ref: at})
+		run = kind
 	}
 	if focused && r.end && r.line == v.Line && !cursorShown {
 		l = append(l, deco(" ", stCursor))

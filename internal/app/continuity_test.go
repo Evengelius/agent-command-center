@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 	"testing/synctest"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -234,61 +233,5 @@ func TestDraftPath(t *testing.T) {
 	}
 	if q, _ := (input.Drafts{}).Path(`c:\work\some project`); q != p {
 		t.Errorf("the same project in another case: %s", q)
-	}
-}
-
-// TestDraftKeystrokes is step 4, check 4: typing in a 50,000-line draft
-// while it is saved stays under test 6's keystroke target.
-func TestDraftKeystrokes(t *testing.T) {
-	d := input.Drafts{Dir: t.TempDir()}
-	w := &wireClaude{}
-	h := wireRig(t, w, Options{Drafts: &d})
-	project := h.m.State().Context.Project
-	// Saves at their real pace; the other timers stay off.
-	h.m.opt.After = func(dur time.Duration, msg tea.Msg) tea.Cmd {
-		if _, ok := msg.(draftSaveMsg); !ok {
-			return nil
-		}
-		return func() tea.Msg { time.Sleep(dur); return msg }
-	}
-	h.send(tea.PasteMsg{Content: draftLines(50_000)})
-	h.send(key(tea.KeyHome, tea.ModCtrl))
-	keys := []tea.KeyPressMsg{
-		typed('x'), key(tea.KeyRight, 0), key(tea.KeyDown, 0), key(tea.KeyBackspace, 0),
-		key('j', tea.ModCtrl), key(tea.KeyUp, 0), key(tea.KeyRight, tea.ModCtrl), key(tea.KeyDown, tea.ModShift),
-	}
-	gen := h.m.draftGen
-	var ds []time.Duration
-	for i := 0; i < 800; i++ {
-		start := time.Now()
-		_, cmd := h.m.Update(keys[i%len(keys)])
-		_ = h.m.View()
-		ds = append(ds, time.Since(start))
-		h.exec(cmd)
-		for drained := false; !drained; {
-			select {
-			case msg := <-h.msgs:
-				h.deliver(msg)
-			default:
-				drained = true
-			}
-		}
-		time.Sleep(3 * time.Millisecond) // a fast typist's pace, so saves run between keys
-	}
-	for deadline := time.Now().Add(5 * time.Second); h.m.draftTimer && time.Now().Before(deadline); {
-		h.settle() // the last save is due
-	}
-	h.settle()
-	saves := h.m.draftGen - gen
-	p50, p95, worst := percentile(ds, 0.50), percentile(ds, 0.95), percentile(ds, 1)
-	t.Logf("keystroke-to-frame, 50,000-line draft, %d keys, %d saves: p50 %v, p95 %v, max %v (target p95 ≤ %v)", len(ds), saves, p50, p95, worst, keystrokeTarget)
-	if p95 > keystrokeTarget {
-		overTarget(t, "p95 %v over the %v target", p95, keystrokeTarget)
-	}
-	if saves < 2 {
-		t.Errorf("%d saves while typing; want the saves running", saves)
-	}
-	if got := draftFile(t, d, project); string(got) != h.m.edit.Text() {
-		t.Errorf("stored draft (%d bytes) differs from the editor (%d bytes)", len(got), len(h.m.edit.Text()))
 	}
 }

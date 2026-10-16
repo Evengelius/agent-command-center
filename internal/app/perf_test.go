@@ -53,35 +53,6 @@ func percentile(ds []time.Duration, p float64) time.Duration {
 	return s[min(int(p*float64(len(s))), len(s)-1)]
 }
 
-// TestKeystrokeToFrame is test 6, first measure: typing, moving and deleting
-// in a 10,000-line draft, each key timed to its frame.
-func TestKeystrokeToFrame(t *testing.T) {
-	r, _ := copyRig(t, nil)
-	h := r.h
-	h.send(tea.PasteMsg{Content: draftLines(10_000)})
-	if n := h.m.edit.Lines(); n < 10_000 {
-		t.Fatalf("%d lines in the draft", n)
-	}
-	h.send(key(tea.KeyHome, tea.ModCtrl)) // the cursor at the top: the worst place to edit
-	keys := []tea.KeyPressMsg{
-		key('x', 0), key(tea.KeyRight, 0), key(tea.KeyDown, 0), key(tea.KeyBackspace, 0),
-		key('j', tea.ModCtrl), key(tea.KeyUp, 0), key(tea.KeyRight, tea.ModCtrl), key(tea.KeyDown, tea.ModShift),
-	}
-	var ds []time.Duration
-	for i := 0; i < 400; i++ {
-		ds = append(ds, frameTime(h, keys[i%len(keys)]))
-	}
-	h.send(key(tea.KeyEnd, tea.ModCtrl)) // and at the bottom
-	for i := 0; i < 400; i++ {
-		ds = append(ds, frameTime(h, keys[i%len(keys)]))
-	}
-	p50, p95, worst := percentile(ds, 0.50), percentile(ds, 0.95), percentile(ds, 1)
-	t.Logf("keystroke-to-frame, 10,000-line draft, %d keys: p50 %v, p95 %v, max %v (target p95 ≤ %v)", len(ds), p50, p95, worst, keystrokeTarget)
-	if p95 > keystrokeTarget {
-		overTarget(t, "p95 %v over the %v target", p95, keystrokeTarget)
-	}
-}
-
 // TestPasteToFrame is test 6, second measure: a 50,000-line paste into an
 // empty draft, timed to its frame, ten times.
 func TestPasteToFrame(t *testing.T) {

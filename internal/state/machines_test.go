@@ -936,6 +936,10 @@ var invalids = []machineCase{
 		}
 		b.ev(event.ApprovalRequest, "", event.Approval{ID: "a3", Problem: "unreadable"})
 		b.eq("unparseable", b.cmds[0].Decision, "deny")
+		b.s.Context.Provider = "codex"
+		b.ev(event.ApprovalRequest, "", event.Approval{ID: "a4", Problem: "unreadable"})
+		b.eq("unparseable, Codex", b.cmds[0].Decision, "decline")
+		b.eq("answer, Codex", b.s.Approvals["a4"].Answer, "decline")
 	}},
 	{"Approval", "\"Allow and remember\" options that persist a rule", func(b *bench) {
 		b.running().ask("", "a1", "")

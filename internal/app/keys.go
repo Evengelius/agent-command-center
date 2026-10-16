@@ -263,7 +263,9 @@ func (m *Model) cardKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 
 // decision is the CLI's word for allow once or deny (ui-design.md,
 // Approvals). Allow for the session (s) is never offered for Claude Code
-// (CC-4); Codex offers it from step 5, when the request says it may.
+// (CC-4), nor for Codex: the adapter does not read availableDecisions, so
+// acceptForSession is never known to be allowed (plan 4, step 5, check 4;
+// L3 saw it offer acceptWithExecpolicyAmendment, never to be offered).
 func (m *Model) decision(allow bool) string {
 	switch {
 	case m.s.Context.Provider == "codex" && allow:

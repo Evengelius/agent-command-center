@@ -48,3 +48,20 @@ func TestFixturesMatchRecordings(t *testing.T) {
 		}
 	}
 }
+
+// The model list Codex returned in P6 answers model/list in the step 5 fake
+// app-server; it too is a byte-identical copy.
+func TestModelListMatchesRecording(t *testing.T) {
+	const name = "p6-codex-model-list.json"
+	a, err := os.ReadFile(filepath.Join("../../testdata/probes", name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join("../../doc/research/probes", name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sha256.Sum256(a) != sha256.Sum256(b) {
+		t.Errorf("%s: SHA-256 differs from the original recording", name)
+	}
+}

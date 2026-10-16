@@ -108,6 +108,12 @@ func (m *Mapper) In(raw []byte) []event.Event {
 			} `json:"input"`
 		}
 		_ = json.Unmarshal(r.Params, &p)
+		switch r.Method {
+		case "thread/start": // a new main thread: its thread/started names it
+			m.main = ""
+		case "thread/resume":
+			m.main, m.session = p.ThreadID, p.ThreadID
+		}
 		agent := m.agentOf(p.ThreadID)
 		var out []event.Event
 		switch r.Method {
@@ -125,7 +131,11 @@ func (m *Mapper) In(raw []byte) []event.Event {
 		return append(out, m.ev(event.Sent, event.Observed, agent, p.TurnID, "", raw, event.Write{What: r.Method, RequestID: id}))
 	case r.hasID():
 		id := idString(r.ID)
-		req := m.server[id]
+		req, ok := m.server[id]
+		if !ok && len(r.Error) > 0 && string(r.Error) != "null" {
+			// The error the dashboard returns for a request it does not handle.
+			return []event.Event{m.ev(event.Sent, event.Observed, "", "", "", raw, event.Write{What: "error reply", RequestID: id})}
+		}
 		delete(m.server, id)
 		a := event.Approval{ID: id, Tool: req.tool, ToolID: req.item}
 		if len(r.Error) > 0 && string(r.Error) != "null" {

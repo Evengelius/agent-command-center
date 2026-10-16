@@ -221,8 +221,9 @@ func (m *Model) Init() tea.Cmd {
 
 // View draws the frame.
 func (m *Model) View() tea.View {
+	prev := m.screen
 	m.screen = render.Draw(m.s, m.ui)
-	v := tea.NewView(m.screen.String())
+	v := tea.NewView(m.screen.StringAfter(prev))
 	v.AltScreen = true
 	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal

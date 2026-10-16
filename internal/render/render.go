@@ -70,28 +70,43 @@ var (
 	cFailed    = lipgloss.Color("#F87171")
 	cGrey      = lipgloss.Color("#6B7280")
 
-	stFrame     = lipgloss.NewStyle().Foreground(cFrame)
-	stTitle     = lipgloss.NewStyle().Foreground(cTitle).Bold(true)
-	stText      = lipgloss.NewStyle().Foreground(cText)
-	stDone      = lipgloss.NewStyle().Foreground(cDone)
-	stProgress  = lipgloss.NewStyle().Foreground(cProgress)
-	stAttention = lipgloss.NewStyle().Foreground(cAttention)
-	stFailed    = lipgloss.NewStyle().Foreground(cFailed)
-	stGrey      = lipgloss.NewStyle().Foreground(cGrey)
-	stBold      = lipgloss.NewStyle().Foreground(cText).Bold(true)
-	stButton    = lipgloss.NewStyle().Foreground(lipgloss.Color("#111827")).Background(cTitle).Bold(true)
+	stFrame     = style(lipgloss.NewStyle().Foreground(cFrame))
+	stTitle     = style(lipgloss.NewStyle().Foreground(cTitle).Bold(true))
+	stText      = style(lipgloss.NewStyle().Foreground(cText))
+	stDone      = style(lipgloss.NewStyle().Foreground(cDone))
+	stProgress  = style(lipgloss.NewStyle().Foreground(cProgress))
+	stAttention = style(lipgloss.NewStyle().Foreground(cAttention))
+	stFailed    = style(lipgloss.NewStyle().Foreground(cFailed))
+	stGrey      = style(lipgloss.NewStyle().Foreground(cGrey))
+	stBold      = style(lipgloss.NewStyle().Foreground(cText).Bold(true))
+	stButton    = style(lipgloss.NewStyle().Foreground(lipgloss.Color("#111827")).Background(cTitle).Bold(true))
+
+	stAttentionBold = style(stAttention.Bold(true))
+	stFailedBold    = style(stFailed.Bold(true))
+	stNone          = style(lipgloss.NewStyle())
 
 	modelColours = [][2]string{{"opus", "#A78BFA"}, {"sonnet", "#FB923C"}, {"haiku", "#60A5FA"}, {"gpt", "#2DD4BF"}}
+	modelStyles  = func() (out []*lipgloss.Style) {
+		for _, kc := range modelColours {
+			out = append(out, style(lipgloss.NewStyle().Foreground(lipgloss.Color(kc[1]))))
+		}
+		return out
+	}()
 
 	spinner = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 )
 
+// style is a shared style. Spans hold a pointer to one, never a copy: a
+// lipgloss.Style is hundreds of bytes, and spans equal by value let a frame
+// reuse the rows a keystroke did not change (Screen.StringAfter).
+func style(s lipgloss.Style) *lipgloss.Style { return &s }
+
 // modelStyle colours a model name by its family.
-func modelStyle(model string) lipgloss.Style {
+func modelStyle(model string) *lipgloss.Style {
 	m := strings.ToLower(model)
-	for _, kc := range modelColours {
+	for i, kc := range modelColours {
 		if strings.Contains(m, kc[0]) {
-			return lipgloss.NewStyle().Foreground(lipgloss.Color(kc[1]))
+			return modelStyles[i]
 		}
 	}
 	return stText
