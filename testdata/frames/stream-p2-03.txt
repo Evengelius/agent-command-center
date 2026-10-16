@@ -2,13 +2,13 @@
  (project bar: the test's temporary directory)
 ╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────── ◉ Streaming ─╮
 │ claude-haiku-5-5 · orchestrat… ││ YOU  02:00                                                                         │
-│ turn 2 · running               ││   Create a file named hello.txt in the current directory containing the single     │
+│ turn 2 · running 9h 29m        ││   Create a file named hello.txt in the current directory containing the single     │
 │                                ││   word hello. Use the Write tool, then reply with the word done.                   │
-│ AGENTS  observed from events   ││   ▸ Write                                                                 observed │
-│ ◉ Turn 2                       ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
-│   ○ (agents appear as events … ││ CLAUDE  claude-haiku-5-5                                                           │
-│                                ││   done                                                                             │
-│                                ││ YOU  02:00                                                                         │
+│ STAGES  inferred from activity ││   ▸ Write                                                                 observed │
+│ TURN 1  ✓ completed · 4s       ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
+│ TURN 2  ◉ running · 9h 29m     ││ CLAUDE  claude-haiku-5-5                                                           │
+│   Reply with the single word:… ││   done                                                                             │
+│   └─ ○ (more as events arrive) ││ YOU  02:00                                                                         │
 │                                ││   Reply with the single word: again                                                │
 │                                ││ CLAUDE  claude-haiku-5-5                                                           │
 │                                ││   again▌                                                                           │

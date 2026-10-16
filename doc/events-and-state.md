@@ -317,6 +317,22 @@ States: `Started`, `Running`, `Completed`, `Failed`, `Denied`,
 Invalid: a completion for an unknown tool id creates the call in its final
 state, inferred; a second completion is logged and ignored.
 
+### Stage machine
+
+States: `Open`, `Closed` (with the turn's outcome). Zone A's stages are
+inferred from the turn machine, one per turn, a turn the CLI started
+included; a plan, when reported, is observed (plan 4, step 6).
+
+| From | Trigger | To | Claude Code | Codex |
+| - | - | - | - | - |
+| (none), `Closed` | the turn leaves `Idle` | a new stage, `Open` | **P** P2, P3b | **P** P6b, P7 |
+| `Open` | the turn returns to `Idle` | `Closed`, with the turn's outcome | **P** P2 | **P** P6b |
+| `Open` | `turn/plan/updated` | `Open`, its plan replaced | n/a | **D** v2 schema `TurnPlanUpdatedNotification`, not recorded |
+| `Open`, `Closed` | a tool or agent appears | it joins the last stage | **P** P3b | **P** P7 |
+
+Invalid: a plan outside any turn is logged and ignored; a child thread's
+plan is noted in its agent's history, not drawn.
+
 ## Concurrent output
 
 One stdout stream per CLI carries every agent; the reducer routes by agent

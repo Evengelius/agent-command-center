@@ -58,11 +58,43 @@ func TestGoldenFrames(t *testing.T) {
 		}
 		return h
 	}
+	codexDash := func(t *testing.T) *harness {
+		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "codex-subagents.jsonl")}})
+		h.settle()
+		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 176 {
+			t.Fatalf("codex dashboard: screen %q, %d events, want 176", s.Screen, len(s.Log))
+		}
+		return h
+	}
+	// The inspection: the Claude mock's subagent, on its Tools tab.
+	inspected := func(t *testing.T) *harness {
+		h := dash(t)
+		h.send(key(tea.KeyF6, 0)) // zone C
+		h.send(key(tea.KeyEnter, 0))
+		h.send(typed('2'))
+		if h.m.ui.Inspect == "" || h.m.ui.Tab != 1 {
+			t.Fatalf("inspect %q, tab %d", h.m.ui.Inspect, h.m.ui.Tab)
+		}
+		return h
+	}
+
+	// Zone A focused, its cursor on the first child: at 80 columns the tree
+	// takes the place of zones B and C.
+	tree := func(t *testing.T) *harness {
+		h := codexDash(t)
+		for _, k := range []tea.KeyPressMsg{key(tea.KeyF6, 0), key(tea.KeyF6, 0), key(tea.KeyUp, 0), key(tea.KeyUp, 0), key(tea.KeyUp, 0), key(tea.KeyUp, 0)} {
+			h.send(k)
+		}
+		if h.m.ui.Focus != "A" || !strings.HasPrefix(h.m.ui.ACursor, "a:") {
+			t.Fatalf("focus %q cursor %q", h.m.ui.Focus, h.m.ui.ACursor)
+		}
+		return h
+	}
 
 	for _, sc := range []struct {
 		name string
 		rig  func(*testing.T) *harness
-	}{{"startup", startup}, {"dashboard", dash}} {
+	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}} {
 		for _, size := range sizes {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)

@@ -38,6 +38,11 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		ls = append(ls, zoneALine(s, w))
 		dh, ch := 3, 5
 		bh := h - len(ls) - ch - dh - 1
+		if ui.Focus == "A" { // the tree takes B's and C's place until F6 leaves it
+			ls = append(ls, zoneA(s, ui, w, bh+ch)...)
+			ls = append(ls, zoneD(s, ui, w, dh, 1)...)
+			return append(ls, keyHints(w, ui, "↑↓ move · ←→ fold · Enter inspect · F6 zone · Esc back to the input"))
+		}
 		sc.Conv.Y = len(ls) + 1
 		ls = append(ls, zoneB(s, ui, w, bh, 3, sc)...)
 		ls = append(ls, zoneC(s, ui, w, ch)...)
@@ -171,22 +176,26 @@ func turnSymbol(s *state.State) span {
 	return deco("✓", stDone)
 }
 
-// zoneALine is zone A at narrow width: the current path in one line.
+// zoneALine is zone A at narrow width: the current stage and its agents in
+// one line; F6 opens the tree.
 func zoneALine(s *state.State, w int) line {
 	l := line{sp(" A ", stTitle)}
-	if s.Turn.Count == 0 && len(s.Order) == 0 {
+	if n := len(s.Stages); n == 0 {
 		l = append(l, sp("no turn yet", stGrey))
 	} else {
-		l = append(l, turnSymbol(s), sp(fmt.Sprintf(" Turn %d", s.Turn.Count), stText))
-		for _, k := range s.Order {
-			a := s.Agents[k]
-			l = append(l, sp(" › ", stGrey), agentSymbol(a.Status), sp(" "+a.Label, stText))
+		st := &s.Stages[n-1]
+		sym, _ := stageStatus(s, st)
+		l = append(l, sym, sp(fmt.Sprintf(" Turn %d", st.N), stText))
+		for _, it := range stageItems(s, st.N) {
+			if a := it.agent; a != nil {
+				l = append(l, sp(" › ", stGrey), agentSymbol(a.Status), sp(" "+a.Label, stText))
+			}
 		}
 	}
-	return spread(l, plain("   (from events)   F6: tree ", stGrey), w)
+	return spread(l, plain("   (inferred)   F6: tree ", stGrey), w)
 }
 
-// zoneA is the orchestrator and its tree.
+// zoneA is the orchestrator and its stage tree (ui-design.md, Zone A).
 func zoneA(s *state.State, ui UI, w, h int) []line {
 	var body []line
 	m := model(s)
@@ -195,26 +204,37 @@ func zoneA(s *state.State, ui UI, w, h int) []line {
 	} else {
 		body = append(body, line{sp(m, modelStyle(m)), sp(" · orchestrator", stGrey)})
 	}
+	n := len(s.Stages)
 	switch {
-	case s.Turn.Count == 0 && !s.Turn.ByCLI:
+	case n == 0:
 		body = append(body, plain("no turn yet", stGrey))
+	case s.Stages[n-1].Open:
+		body = append(body, plain(fmt.Sprintf("turn %d · %s %s", n, turnWord(s), elapsed(s.Stages[n-1].StartedAt, time.Time{}, ui.Now)), stText))
 	default:
-		body = append(body, plain(fmt.Sprintf("turn %d · %s", s.Turn.Count, turnWord(s)), stText))
+		_, word := stageStatus(s, &s.Stages[n-1])
+		body = append(body, plain(fmt.Sprintf("turn %d · %s", n, word), stText))
 	}
-	body = append(body, line{}, line{sp("AGENTS  ", stBold), sp("observed from events", stGrey)})
-	if s.Turn.Count > 0 || s.Turn.ByCLI {
-		body = append(body, line{turnSymbol(s), sp(fmt.Sprintf(" Turn %d", s.Turn.Count), stText)})
+	body = append(body, line{})
+	if n > 0 && len(s.Stages[n-1].Plan) > 0 {
+		body = append(body, line{sp("PLAN  ", stBold), sp("observed (turn/plan/updated)", stGrey)})
+	} else {
+		body = append(body, line{sp("STAGES  ", stBold), sp("inferred from activity", stGrey)})
 	}
-	keys := children(s, "")
-	if len(keys) == 0 {
-		body = append(body, plain("  ○ (agents appear as events arrive)", stGrey))
+	rows := treeRows(s, ui, w-4)
+	if len(rows) == 0 {
+		rows = []treeRow{{l: plain("○ (stages appear as turns run)", stGrey)}}
 	}
-	body = append(body, tree(s, keys, "  ")...)
-	hint := decoLine("↑↓ move ←→ fold Enter inspect", stGrey)
+	room := max(h-3-len(body), 0)
+	for _, r := range treeWindow(rows, ui.ACursor, room) {
+		if ui.Focus == "A" && r.node.ID != "" && r.node.ID == ui.ACursor {
+			r.l = cursorLine(r.l.fit(w-4), w-4)
+		}
+		body = append(body, r.l)
+	}
 	for len(body) < h-3 {
 		body = append(body, line{})
 	}
-	body = append(body[:h-3], hint)
+	body = append(body[:max(h-3, 0)], decoLine("↑↓ move ←→ fold Enter inspect", stGrey))
 	return box('A', zoneTitle("A · ORCHESTRATOR", ui.Focus == "A"), nil, body, w, h, borderFor(ui.Focus == "A"))
 }
 
@@ -238,24 +258,6 @@ func children(s *state.State, parent string) []string {
 		if a := s.Agents[k]; a != nil && a.Parent == parent {
 			out = append(out, k)
 		}
-	}
-	return out
-}
-
-func tree(s *state.State, keys []string, indent string) []line {
-	var out []line
-	for i, k := range keys {
-		a := s.Agents[k]
-		branch, next := "├─ ", "│  "
-		if i == len(keys)-1 {
-			branch, next = "└─ ", "   "
-		}
-		l := line{deco(indent+branch, stFrame), agentSymbol(a.Status), sp(" "+a.Kind+"  ", stGrey), sp(a.Label, stText)}
-		out = append(out, l)
-		if a.LastTool != "" && !a.Status.Final() {
-			out = append(out, line{deco(indent+next+"└─ ", stFrame), deco("▸ ", stGrey), sp(a.LastTool, stGrey)})
-		}
-		out = append(out, tree(s, children(s, k), indent+next)...)
 	}
 	return out
 }
@@ -503,39 +505,88 @@ func editorStatus(s *state.State) string {
 	return "turn running: the draft waits · Ctrl+C interrupt"
 }
 
-// agentsByActivity are the agents, active first, then most recent.
+// agentsByActivity are the agents in zone C's order (ui-design.md, Zone C;
+// ASM-22): waiting for an approval, then running, then ended; most recent
+// first within each group.
 func agentsByActivity(s *state.State) []*state.Agent {
-	var out []*state.Agent
+	out := make([]*state.Agent, 0, len(s.Order))
 	for _, k := range s.Order {
-		out = append(out, s.Agents[k])
+		if a := s.Agents[k]; a != nil {
+			out = append(out, a)
+		}
+	}
+	rank := func(a *state.Agent) int {
+		switch {
+		case a.Status == state.AgentWaiting:
+			return 0
+		case !a.Status.Final():
+			return 1
+		}
+		return 2
+	}
+	recent := func(a *state.Agent) time.Time {
+		if a.Status.Final() && !a.EndedAt.IsZero() {
+			return a.EndedAt
+		}
+		return a.StartedAt
 	}
 	sort.SliceStable(out, func(i, j int) bool {
-		fi, fj := out[i].Status.Final(), out[j].Status.Final()
-		if fi != fj {
-			return !fi
+		a, b := out[i], out[j]
+		if ra, rb := rank(a), rank(b); ra != rb {
+			return ra < rb
 		}
-		return out[i].StartedAt.After(out[j].StartedAt)
+		if ta, tb := recent(a), recent(b); !ta.Equal(tb) {
+			return ta.After(tb)
+		}
+		return a.Seq > b.Seq
 	})
 	return out
+}
+
+// AgentOrder is zone C's order of agent keys: what ↑ ↓ in C and [ ] in
+// inspection move through.
+func AgentOrder(s *state.State) []string {
+	var out []string
+	for _, a := range agentsByActivity(s) {
+		out = append(out, a.Key)
+	}
+	return out
+}
+
+// activeAgents counts the agents running or waiting for an approval, and
+// those ended; an agent only announced is neither.
+func activeAgents(s *state.State) (active, done int) {
+	for _, a := range s.Agents {
+		switch {
+		case a.Status == state.AgentRunning || a.Status == state.AgentWaiting:
+			active++
+		case a.Status.Final():
+			done++
+		}
+	}
+	return active, done
 }
 
 // zoneC is the live agents list.
 func zoneC(s *state.State, ui UI, w, h int) []line {
 	agents := agentsByActivity(s)
-	active, done := 0, 0
-	for _, a := range agents {
-		if a.Status.Final() {
-			done++
-		} else {
-			active++
-		}
-	}
+	active, done := activeAgents(s)
 	right := plain(fmt.Sprintf("%d ACTIVE · %d DONE", active, done), stText)
 	var body []line
 	if len(agents) == 0 {
 		body = append(body, plain("no agents yet: they appear as the CLI starts them", stGrey))
 	}
-	for _, a := range agents {
+	room := h - 2
+	if room >= 4 {
+		room--
+	}
+	from := 0 // the selected agent stays in view
+	for i, a := range agents {
+		if a.Key == ui.Selected && i >= room {
+			from = i - room + 1
+		}
+	}
+	for _, a := range agents[from:] {
 		body = append(body, agentRow(a, ui, w-4))
 	}
 	if h-2 >= 4 {
@@ -766,12 +817,7 @@ func costText(s *state.State) shown {
 }
 
 func agentCount(s *state.State) string {
-	n := 0
-	for _, a := range s.Agents {
-		if !a.Status.Final() {
-			n++
-		}
-	}
+	n, _ := activeAgents(s)
 	return fmt.Sprintf("%d active / limit N/A (not reported)", n)
 }
 

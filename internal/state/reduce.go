@@ -18,16 +18,57 @@ func (s *State) Apply(ev event.Event) []Command {
 	if ev.Agent != "" && s.Ambient[ev.Agent] {
 		return nil
 	}
+	var cmds []Command
 	if ev.Agent == "" && s.Turn.Phase == Submitted && turnActivity(ev.Kind) {
-		return append(s.toRunning(), s.apply(ev)...)
-	}
-	if ev.Agent == "" && s.Turn.Phase == Idle && s.Session.Phase == Ready && turnOpens(ev) {
+		cmds = s.toRunning()
+	} else if ev.Agent == "" && s.Turn.Phase == Idle && s.Session.Phase == Ready && turnOpens(ev) {
 		// Claude Code starts a turn by itself when a background agent's
 		// task_notification arrives (P3 lines 80-98): no message was sent.
 		s.Turn.Phase, s.Turn.Outcome, s.Turn.ByCLI = Running, "", true
 		s.Turn.Notice = "turn started by the CLI"
 	}
-	return s.apply(ev)
+	s.syncStage(ev.At)
+	cmds = append(cmds, s.apply(ev)...)
+	s.syncStage(ev.At)
+	return cmds
+}
+
+// syncStage opens a stage when a turn starts and closes it with the turn's
+// outcome when it ends: zone A's stages are inferred from the turn machine
+// (events-and-state.md, Agent tree). at is zero for an action; the stage
+// takes its start from the first event after.
+func (s *State) syncStage(at time.Time) {
+	n := len(s.Stages)
+	open := n > 0 && s.Stages[n-1].Open
+	switch {
+	case s.Turn.Phase != Idle && !open:
+		s.Stages = append(s.Stages, Stage{N: n + 1, ByCLI: s.Turn.ByCLI, Open: true, StartedAt: at, Prompt: s.prompt()})
+	case s.Turn.Phase == Idle && open:
+		st := &s.Stages[n-1]
+		st.Open, st.Outcome, st.EndedAt = false, s.Turn.Outcome, at
+	case open && s.Stages[n-1].StartedAt.IsZero():
+		s.Stages[n-1].StartedAt = at
+	}
+}
+
+// prompt is the message that opens a turn: the draft being sent, or in a
+// replay the user entry the event just added; "" for a turn the CLI opens.
+func (s *State) prompt() string {
+	switch n := len(s.Conversation); {
+	case s.Turn.ByCLI:
+		return ""
+	case s.Turn.Draft != "":
+		return s.Turn.Draft
+	case n > 0 && s.Conversation[n-1].Role == "user" && s.Conversation[n-1].Agent == "":
+		return s.Conversation[n-1].Text
+	}
+	return ""
+}
+
+// stage is the stage a new tool or agent belongs to: the last one, open or
+// not, since a background agent outlives its turn; 0 before any turn.
+func (s *State) stage() int {
+	return len(s.Stages)
 }
 
 // turnOpens is an event that only the start of a turn sends; deltas and
@@ -115,6 +156,20 @@ func (s *State) apply(ev event.Event) []Command {
 		return s.turnEnd(ev, p)
 	case event.Diff:
 		s.Diffs[p.Path] = p.Text
+		return nil
+	case event.Plan:
+		// The turn's plan as a whole, replaced on each update; a child
+		// thread's plan is noted on it, not drawn (plan 4, step 6, check 3).
+		if ev.Agent != "" {
+			a := s.ensureAgent(ev.Agent, ev)
+			a.History = append(a.History, "plan updated")
+			return nil
+		}
+		if n := len(s.Stages); n > 0 {
+			s.Stages[n-1].Plan = p.Steps
+		} else {
+			s.note(ev, "plan outside a turn")
+		}
 		return nil
 	case event.Problem:
 		if ev.Kind == event.Error && s.Session.Phase == Handshaking {
@@ -353,7 +408,7 @@ func (s *State) tool(ev event.Event, p event.Tool) []Command {
 			s.note(ev, "tool started twice: "+id)
 			return nil
 		}
-		s.Tools[id] = &ToolCall{ID: id, Agent: ev.Agent, Name: p.Name, Input: p.Input, Status: ToolStarted, Origin: ev.Origin, StartedAt: ev.At}
+		s.Tools[id] = &ToolCall{ID: id, Agent: ev.Agent, Name: p.Name, Input: p.Input, Status: ToolStarted, Origin: ev.Origin, StartedAt: ev.At, Stage: s.stage(), Seq: ev.Seq}
 		if ev.Agent == "" {
 			s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "tool", MessageID: id, Text: p.Name, Origin: ev.Origin, At: ev.At})
 		} else {
@@ -380,7 +435,7 @@ func (s *State) tool(ev event.Event, p event.Tool) []Command {
 			final = ToolFailed
 		}
 		if t == nil {
-			s.Tools[id] = &ToolCall{ID: id, Agent: ev.Agent, Name: p.Name, Status: final, Origin: event.Inferred, Output: p.Output, EndedAt: ev.At}
+			s.Tools[id] = &ToolCall{ID: id, Agent: ev.Agent, Name: p.Name, Status: final, Origin: event.Inferred, Output: p.Output, EndedAt: ev.At, Stage: s.stage(), Seq: ev.Seq}
 			return nil
 		}
 		if t.Status.Final() {
@@ -397,7 +452,7 @@ func (s *State) ensureAgent(key string, ev event.Event) *Agent {
 	if a := s.Agents[key]; a != nil {
 		return a
 	}
-	a := &Agent{Key: key, Label: "unannounced agent", Status: AgentRunning, StatusOrigin: event.Inferred, StartedAt: ev.At, Runs: 1}
+	a := &Agent{Key: key, Label: "unannounced agent", Status: AgentRunning, StatusOrigin: event.Inferred, StartedAt: ev.At, Runs: 1, Stage: s.stage(), Seq: ev.Seq}
 	s.Agents[key] = a
 	s.Order = append(s.Order, key)
 	return a
@@ -423,7 +478,7 @@ func (s *State) agent(ev event.Event, p event.Agent) []Command {
 	switch ev.Kind {
 	case event.AgentStarted:
 		if !known {
-			a = &Agent{Key: key, StartedAt: ev.At}
+			a = &Agent{Key: key, StartedAt: ev.At, Stage: s.stage(), Seq: ev.Seq}
 			s.Agents[key] = a
 			s.Order = append(s.Order, key)
 		} else if !a.Status.Final() && a.StatusOrigin != event.Inferred {
@@ -455,7 +510,7 @@ func (s *State) agent(ev event.Event, p event.Agent) []Command {
 			}
 		}
 		if !known {
-			a = &Agent{Key: key, Label: "unannounced agent", Runs: 1}
+			a = &Agent{Key: key, Label: "unannounced agent", Runs: 1, Stage: s.stage(), Seq: ev.Seq}
 			s.Agents[key] = a
 			s.Order = append(s.Order, key)
 			s.update(a, p)

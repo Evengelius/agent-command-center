@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ codex-subagents.jsonl                                      Mock data 0.145.0
+ A ✓ Turn 1 › ✓ /root/list_files › ✓ /root/create_found   (inferred)   F6: tree
+╭─ A · ORCHESTRATOR ───────────────────────────────────────────────────────────╮
+│ gpt-5.6-sol · orchestrator                                                   │
+│ turn 1 · completed                                                           │
+│                                                                              │
+│ STAGES  inferred from activity                                               │
+│ TURN 1  ✓ completed · 0s                                                     │
+│   Spawn two subagents in parallel. The first lists the files in the current… │
+│   ├─ ✓ child  /root/list_files                                          mock │
+│   ├─ ✓ child  /root/create_found                                        mock │
+│   ├─ ✓ collabAgent:wait                                                 mock │
+│   └─ ✓ collabAgent:wait                                                 mock │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│ ↑↓ move ←→ fold Enter inspect                                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
+│ 5h ▱▱▱▱▱▱▱▱▱▱ 1%   7d ▱▱▱▱▱▱▱▱▱▱ 1%   ctx N/A   tok 184.3k   $ N/A   errors… │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑↓ move · ←→ fold · Enter inspect · F6 zone · Esc back to the input

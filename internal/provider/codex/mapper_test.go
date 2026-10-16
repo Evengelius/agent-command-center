@@ -2,6 +2,7 @@ package codex
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -146,6 +147,29 @@ func TestP7ChildAgents(t *testing.T) {
 		if e.Kind == event.ApprovalResolved && e.Agent == "" {
 			t.Errorf("approval answer %+v lost its agent", e.Payload)
 		}
+		// The orchestrator spawned both children: they hang at the top of the
+		// tree, "" and never the main thread's id (plan 4, step 6, check 7).
+		if a, ok := e.Payload.(event.Agent); ok && a.Parent != "" {
+			t.Errorf("%v of %q has parent %q, want the orchestrator", e.Kind, a.Key, a.Parent)
+		}
+	}
+}
+
+// A turn/plan/updated maps to a stage change with its steps, observed;
+// schema only, not recorded (v2 schema TurnPlanUpdatedNotification).
+func TestPlanUpdated(t *testing.T) {
+	m := NewMapper()
+	evs := m.Out([]byte(`{"method":"turn/plan/updated","params":{"threadId":"t","turnId":"u","explanation":"two steps","plan":[{"step":"list","status":"completed"},{"step":"write","status":"inProgress"}]}}`))
+	if len(evs) != 1 || evs[0].Kind != event.StageChanged || evs[0].Origin != event.Observed {
+		t.Fatalf("events %+v, want one observed stage change", evs)
+	}
+	p, ok := evs[0].Payload.(event.Plan)
+	want := []event.PlanStep{{Step: "list", Status: "completed"}, {Step: "write", Status: "inProgress"}}
+	if !ok || p.Explanation != "two steps" || !slices.Equal(p.Steps, want) {
+		t.Errorf("plan %+v, want %v", evs[0].Payload, want)
+	}
+	if evs := m.Out([]byte(`{"method":"turn/plan/updated","params":{"plan":"x"}}`)); len(evs) != 1 || evs[0].Kind == event.StageChanged {
+		t.Errorf("an unreadable plan gives %+v, want one unrecognised event", evs)
 	}
 }
 

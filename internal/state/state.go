@@ -207,6 +207,8 @@ type Agent struct {
 	Runs         int
 	Retries      int
 	Error        string
+	Stage        int    // the last stage when it appeared, 1-based; 0 before any turn
+	Seq          uint64 // the event that created it, for ordering in zone A
 }
 
 // Approval is one approval or question.
@@ -239,6 +241,22 @@ type ToolCall struct {
 	History   []string
 	StartedAt time.Time
 	EndedAt   time.Time
+	Stage     int    // the last stage when it appeared, 1-based; 0 before any turn
+	Seq       uint64 // the event that created it
+}
+
+// Stage is one user turn as zone A shows it: an inferred stage whose
+// children are the turn's tools and agents, or, with a Codex plan, the
+// plan's steps, observed (events-and-state.md, Agent tree).
+type Stage struct {
+	N         int  // 1-based, in order; a turn the CLI opened counts too
+	ByCLI     bool // the CLI opened it (a background agent's report)
+	Open      bool
+	Outcome   string // completed, failed or interrupted once closed
+	StartedAt time.Time
+	EndedAt   time.Time
+	Plan      []event.PlanStep // the last turn/plan/updated of the turn, observed
+	Prompt    string           // the owner's message that opened it; "" when the CLI opened it
 }
 
 // Value is one telemetry value. Present false renders "N/A" with Reason.
@@ -279,6 +297,7 @@ type State struct {
 	Context          Context
 	Session          SessionState
 	Turn             TurnState
+	Stages           []Stage // one per turn, in order
 	Conversation     []Entry
 	Agents           map[string]*Agent
 	Order            []string // agents in the order they appeared

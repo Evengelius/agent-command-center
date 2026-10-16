@@ -1,0 +1,60 @@
+ >_ AGENT COMMAND CENTER                                                                                                                                                    ◆ MOCK — not a live session
+ ◀ back (Esc)   general-purpose · model N/A · ✓ completed 0s · 21.5k tok                                                                                                                  [ ] prev/next
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Messages │ Tools │ Diff │ Raw events
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ 11:30:00  ✓ Bash  ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'  completed · 0s                                                                                                              mock
+           → alpha.txt
+             beta.md
+           ✓ approval Bash · allowed by you 11:30:00                                                                                                                                               mock
+ 11:30:00  ✓ Write  <probe-root>\probe-work\p3b\found.txt  completed · 0s                                                                                                                          mock
+           alpha.txt
+           beta.md
+           → File created successfully at: <probe-root>\probe-work\p3b\found.txt (file state is current in your context — no need to Read it back)
+           ✓ approval Write · allowed by you 11:30:00                                                                                                                                              mock
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ ←→ 1-4 tab · ↑↓ PgUp PgDn scroll · End follow · [ ] agent · Esc back

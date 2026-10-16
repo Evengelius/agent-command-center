@@ -210,6 +210,22 @@ type Diff struct {
 	Text string
 }
 
+// Plan is the payload of StageChanged: a Codex `turn/plan/updated`, the
+// turn's plan as a whole (replace, not merge). Schema only, not recorded:
+// v2 schema `TurnPlanUpdatedNotification`; no probe saw one (codex-cli.md,
+// section 6).
+type Plan struct {
+	Explanation string
+	Steps       []PlanStep
+}
+
+// PlanStep is one step of a Plan; Status is pending, inProgress or
+// completed, as reported.
+type PlanStep struct {
+	Step   string
+	Status string
+}
+
 // Problem is the payload of Error and Retry.
 type Problem struct {
 	Message   string

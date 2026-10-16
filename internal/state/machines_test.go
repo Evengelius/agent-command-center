@@ -549,6 +549,11 @@ var transitions = []machineCase{
 		b.eq("label", b.agent("t1").Label, "Explore")
 		b.ev(event.AgentStarted, "", event.Agent{Key: "th1", Type: "thread"})
 		b.eq("Codex", b.agent("th1").Status, AgentAnnounced)
+		// A Codex child hangs under the thread that spawned it, "" for the
+		// orchestrator (P7).
+		b.ev(event.AgentStarted, "th1", event.Agent{Key: "th2", Type: "thread", Parent: "th1"})
+		b.eq("top level", b.agent("th1").Parent, "")
+		b.eq("nested", b.agent("th2").Parent, "th1")
 	}},
 	{"Agent", "(none) | event with an unknown key", func(b *bench) {
 		b.running().ev(event.ToolStarted, "x", event.Tool{ToolID: "tu1", Name: "Read"})
@@ -765,6 +770,63 @@ var transitions = []machineCase{
 		b.ev(event.AgentCompleted, "", event.Agent{Key: "t1"})
 		b.eq("agent ends", b.s.Tools["tu2"].Status, ToolUnfinished)
 	}},
+
+	// Stage machine
+	{"Stage", "(none), `Closed` | the turn leaves `Idle`", func(b *bench) {
+		b.ready().do(Send{Text: "hi"})
+		b.eq("stages after send", len(b.s.Stages), 1)
+		b.eq("open", b.s.Stages[0].Open, true)
+		b.eq("number", b.s.Stages[0].N, 1)
+		b.ev(event.TurnStarted, "", nil)
+		b.eq("start from the first event", b.s.Stages[0].StartedAt.IsZero(), false)
+		b.turnEnd("", "completed")
+		// Claude Code opens a turn itself for a background agent's report.
+		b.ev(event.TurnStarted, "", nil)
+		b.eq("stages", len(b.s.Stages), 2)
+		b.eq("by the CLI", b.s.Stages[1].ByCLI, true)
+		b.eq("number", b.s.Stages[1].N, 2)
+	}},
+	{"Stage", "`Open` | the turn returns to `Idle`", func(b *bench) {
+		b.running().turnEnd("", "interrupted")
+		st := b.s.Stages[0]
+		b.eq("open", st.Open, false)
+		b.eq("outcome", st.Outcome, "interrupted")
+		b.eq("ended", st.EndedAt.IsZero(), false)
+		b.do(Send{Text: "again"})
+		b.do(WriteFailed{Message: "pipe closed"})
+		b.eq("stages", len(b.s.Stages), 2)
+		b.eq("write failed", b.s.Stages[1].Outcome, "failed")
+		b.eq("closed", b.s.Stages[1].Open, false)
+	}},
+	{"Stage", "`Open` | `turn/plan/updated`", func(b *bench) {
+		b.running().ev(event.StageChanged, "", event.Plan{Steps: []event.PlanStep{{Step: "a", Status: "inProgress"}, {Step: "b", Status: "pending"}}})
+		b.ev(event.StageChanged, "", event.Plan{Steps: []event.PlanStep{{Step: "a", Status: "completed"}}})
+		p := b.s.Stages[0].Plan
+		b.eq("replaced, not merged", len(p), 1)
+		b.eq("step", p[0], event.PlanStep{Step: "a", Status: "completed"})
+	}},
+	{"Stage", "`Open`, `Closed` | a tool or agent appears", func(b *bench) {
+		b.ready()
+		b.ev(event.ToolStarted, "", event.Tool{ToolID: "tu0", Name: "Read"})
+		b.eq("before any turn", b.s.Tools["tu0"].Stage, 0)
+		b.do(Send{Text: "hi"})
+		b.ev(event.TurnStarted, "", nil)
+		b.ev(event.ToolStarted, "", event.Tool{ToolID: "tu1", Name: "Agent"})
+		b.ev(event.AgentStarted, "", event.Agent{Key: "t1", Type: "subagent", Backgrounded: true})
+		b.eq("tool", b.s.Tools["tu1"].Stage, 1)
+		b.eq("tool seq", b.s.Tools["tu1"].Seq, b.seq-1)
+		b.eq("agent", b.agent("t1").Stage, 1)
+		b.eq("agent seq", b.agent("t1").Seq, b.seq)
+		b.turnEnd("", "completed")
+		// A background agent outlives its turn: what it does stays there.
+		b.ev(event.ToolStarted, "t1", event.Tool{ToolID: "tu2", Name: "Bash"})
+		b.ev(event.AgentProgress, "", event.Agent{Key: "t2"})
+		b.eq("tool after the turn", b.s.Tools["tu2"].Stage, 1)
+		b.eq("agent after the turn", b.agent("t2").Stage, 1)
+		b.do(Send{Text: "next"})
+		b.ev(event.ToolCompleted, "", event.Tool{ToolID: "tu3", Name: "Read"})
+		b.eq("unknown tool completed", b.s.Tools["tu3"].Stage, 2)
+	}},
 }
 
 var invalids = []machineCase{
@@ -962,6 +1024,17 @@ var invalids = []machineCase{
 		b.eq("output", t.Output, "first")
 		b.eq("history", strings.Join(t.History, "|"), "second completion ignored")
 	}},
+	{"Stage", "a plan outside any turn is logged and ignored", func(b *bench) {
+		b.ready().ev(event.StageChanged, "", event.Plan{Steps: []event.PlanStep{{Step: "a"}}})
+		b.eq("stages", len(b.s.Stages), 0)
+		b.eq("noted", b.noted("plan outside a turn"), true)
+	}},
+	{"Stage", "a child thread's plan is noted in its agent's history, not drawn", func(b *bench) {
+		b.running().ev(event.AgentStarted, "", event.Agent{Key: "th1", Type: "thread"})
+		b.ev(event.StageChanged, "th1", event.Plan{Steps: []event.PlanStep{{Step: "a"}}})
+		b.eq("stage plan", len(b.s.Stages[0].Plan), 0)
+		b.eq("history", strings.Join(b.agent("th1").History, "|"), "plan updated")
+	}},
 }
 
 // docMachines parses the State machines section: per machine, its table rows
@@ -1028,7 +1101,7 @@ func splitClauses(p string) []string {
 
 func TestStateMachines(t *testing.T) {
 	rows, clauses := docMachines(t)
-	machines := []string{"Startup", "Session", "Turn", "Agent", "Approval", "Tool call"}
+	machines := []string{"Startup", "Session", "Turn", "Agent", "Approval", "Tool call", "Stage"}
 	if len(rows) != len(machines) {
 		t.Fatalf("doc has machines %v, want %v", keys(rows), machines)
 	}

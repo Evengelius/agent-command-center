@@ -46,6 +46,15 @@ type UI struct {
 	Spinner  int    // the spinner's frame
 	Toast    string // replaces the key hints for a moment (ui-design.md, Clipboard)
 
+	// Zone A's tree and agent inspection (ui-design.md, Zone A; Agent
+	// inspection).
+	ACursor     string          // the node under zone A's cursor (Node.ID); "" none
+	Fold        map[string]bool // the owner's folds by node; a node not in it has its default
+	Inspect     string          // the agent inspected full screen; "" none
+	Tab         int             // the inspection's tab: 0 Messages, 1 Tools, 2 Diff, 3 Raw events
+	InspectTop  int             // the first inspection row shown while held
+	InspectHold bool            // scrolled up: the inspection stays where it is
+
 	// Mouse selection and scrolling (ui-design.md, Selection and copy; Zone B,
 	// Follow mode).
 	Sel      Selection // the mouse selection, outside the editor

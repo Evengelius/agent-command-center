@@ -407,6 +407,8 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 		return []event.Event{m.tokenUsage(p.TokenUse, agent, p.TurnID, raw)}
 	case "account/rateLimits/updated":
 		return []event.Event{m.rateLimits(p.Limits, "account/rateLimits/updated", raw)}
+	case "turn/plan/updated":
+		return []event.Event{m.plan(r.Params, agent, p.TurnID, raw)}
 	case "turn/diff/updated":
 		return []event.Event{m.ev(event.DiffUpdated, event.Observed, agent, p.TurnID, "", raw, event.Diff{Text: p.Diff})}
 	case "serverRequest/resolved":
@@ -463,7 +465,7 @@ func (m *Mapper) threadStarted(raw json.RawMessage, line []byte) []event.Event {
 	if t.ID == m.main {
 		return []event.Event{m.status("", line, "thread started", t.Cwd)}
 	}
-	a := event.Agent{Key: t.ID, Parent: first(t.ParentThreadID, m.main), Label: first(t.AgentNickname, t.AgentRole), Type: "thread", Status: "running"}
+	a := event.Agent{Key: t.ID, Parent: m.agentOf(first(t.ParentThreadID, m.main)), Label: first(t.AgentNickname, t.AgentRole), Type: "thread", Status: "running"}
 	return []event.Event{m.ev(event.AgentStarted, event.Observed, t.ID, "", "", line, a)}
 }
 
@@ -493,7 +495,7 @@ func (m *Mapper) turnCompleted(raw json.RawMessage, agent, turnID string, line [
 	out := []event.Event{m.ev(event.TurnCompleted, event.Observed, agent, first(t.ID, turnID), "", line, end)}
 	if agent != "" {
 		// A child thread's turn is the work its parent handed it.
-		a := event.Agent{Key: agent, Parent: m.main, Type: "thread", Status: end.Outcome}
+		a := event.Agent{Key: agent, Type: "thread", Status: end.Outcome}
 		k := event.AgentCompleted
 		if end.Outcome != "completed" {
 			k = event.AgentFailed
@@ -554,18 +556,20 @@ func (m *Mapper) item(started bool, raw json.RawMessage, agent, turn string, lin
 		}
 		return []event.Event{m.ev(event.MessageCompleted, event.AI, agent, turn, it.ID, line, event.Completed{MessageID: it.ID, Text: it.Text})}
 	case "subAgentActivity":
-		return m.subAgent(it, turn, line)
+		return m.subAgent(it, agent, turn, line)
 	case "commandExecution", "fileChange", "mcpToolCall", "dynamicToolCall", "webSearch", "imageView", "imageGeneration", "sleep", "collabAgentToolCall":
 		return m.tool(started, it, raw, agent, turn, line)
 	}
 	return []event.Event{m.unknown(line, "item/"+it.Type, "")}
 }
 
-func (m *Mapper) subAgent(it item, turn string, line []byte) []event.Event {
+// subAgent maps a child's activity; the child hangs under the thread that
+// emitted it, "" for the orchestrator's (events-and-state.md, Agent tree).
+func (m *Mapper) subAgent(it item, parent, turn string, line []byte) []event.Event {
 	if it.AgentThreadID == "" {
 		return []event.Event{m.unknown(line, "item/subAgentActivity", "activity without agentThreadId")}
 	}
-	a := event.Agent{Key: it.AgentThreadID, Parent: m.main, Label: it.AgentPath, Type: "thread", Status: it.Kind}
+	a := event.Agent{Key: it.AgentThreadID, Parent: parent, Label: it.AgentPath, Type: "thread", Status: it.Kind}
 	k := event.AgentProgress
 	switch it.Kind {
 	case "started":
@@ -621,7 +625,7 @@ func (m *Mapper) tool(started bool, it item, raw json.RawMessage, agent, turn st
 		sortStrings(keys)
 		for _, k := range keys {
 			s := it.AgentsStates[k]
-			a := event.Agent{Key: k, Parent: m.main, Type: "thread", Status: s.Status}
+			a := event.Agent{Key: k, Parent: agent, Type: "thread", Status: s.Status}
 			if s.Message != nil {
 				a.Summary = *s.Message
 			}
@@ -705,4 +709,29 @@ func (m *Mapper) rateLimits(raw json.RawMessage, source string, line []byte) eve
 		ms = append(ms, event.Metric{Name: "plan", Text: l.PlanType, Documented: true, Source: source})
 	}
 	return m.ev(event.Telemetry, event.Observed, "", "", "", line, event.Metrics{Items: ms})
+}
+
+// plan maps `turn/plan/updated`: the turn's whole plan, observed. Schema
+// only, not recorded: built from the v2 schema's TurnPlanUpdatedNotification
+// (p0-codex-app-server-schema-v2.json); no probe saw one (codex-cli.md,
+// section 6).
+func (m *Mapper) plan(params json.RawMessage, agent, turn string, line []byte) event.Event {
+	var p struct {
+		Explanation *string `json:"explanation"`
+		Plan        []struct {
+			Step   string `json:"step"`
+			Status string `json:"status"`
+		} `json:"plan"`
+	}
+	if err := json.Unmarshal(params, &p); err != nil {
+		return m.unknown(line, "turn/plan/updated", "plan not readable: "+err.Error())
+	}
+	var out event.Plan
+	if p.Explanation != nil {
+		out.Explanation = *p.Explanation
+	}
+	for _, s := range p.Plan {
+		out.Steps = append(out.Steps, event.PlanStep{Step: s.Step, Status: s.Status})
+	}
+	return m.ev(event.StageChanged, event.Observed, agent, turn, "", line, out)
 }

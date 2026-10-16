@@ -57,7 +57,14 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			return m.copySelection()
 		}
 	case tea.MouseWheelMsg:
-		if p := m.screen.PanelAt(mo.X, mo.Y); p == 'B' || p == 'E' {
+		if p := m.screen.PanelAt(mo.X, mo.Y); p == 'I' {
+			switch mo.Button {
+			case tea.MouseWheelUp:
+				m.inspectScroll(-wheelRows)
+			case tea.MouseWheelDown:
+				m.inspectScroll(wheelRows)
+			}
+		} else if p == 'B' || p == 'E' {
 			switch mo.Button {
 			case tea.MouseWheelUp:
 				m.scroll(-wheelRows)
@@ -82,6 +89,9 @@ func (m *Model) press(mo tea.Mouse) {
 		m.ui.Focus = "C"
 	case 'E':
 		m.ui.Focus = "B"
+	case 'I':
+		// The inspection covers the dashboard: the focus stays the one Esc
+		// returns to.
 	default:
 		m.ui.Focus = string(p)
 	}

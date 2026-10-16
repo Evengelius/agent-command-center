@@ -47,10 +47,11 @@ type ConvView struct {
 // position maps to content and a selection to its text. Hit-testing uses
 // the spans' references, not the drawing (ui-design.md, Selection and copy).
 type Screen struct {
-	lines []line
-	rows  []string          // the lines as the terminal shows them, once drawn
-	src   map[srcKey]string // the text of the panels other than B and E, by row
-	Conv  ConvView
+	lines   []line
+	rows    []string          // the lines as the terminal shows them, once drawn
+	src     map[srcKey]string // the text of the panels other than B and E, by row
+	Conv    ConvView
+	Inspect ConvView // what the inspection showed of its tab, for scrolling
 }
 
 type srcKey struct {
@@ -66,6 +67,8 @@ func Draw(s *state.State, ui UI) *Screen {
 	switch {
 	case ui.Width < MinWidth || ui.Height < MinHeight:
 		ls = tooSmall(s, ui)
+	case s.Screen == state.ScreenDashboard && ui.Inspect != "" && s.Agents[ui.Inspect] != nil:
+		ls = inspect(s, ui, s.Agents[ui.Inspect], sc)
 	case s.Screen == state.ScreenDashboard:
 		ls = dashboard(s, ui, sc)
 	default:

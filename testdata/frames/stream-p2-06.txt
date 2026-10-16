@@ -4,11 +4,11 @@
 │ claude-haiku-5-5 · orchestrat… ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
 │ turn 3 · interrupted           ││ CLAUDE  claude-haiku-5-5                                                           │
 │                                ││   done                                                                             │
-│ AGENTS  observed from events   ││ YOU  02:00                                                                         │
-│ ○ Turn 3                       ││   Reply with the single word: again                                                │
-│   ○ (agents appear as events … ││ CLAUDE  claude-haiku-5-5                                                           │
-│                                ││   again                                                                            │
-│                                ││ YOU  02:00                                                                         │
+│ STAGES  inferred from activity ││ YOU  02:00                                                                         │
+│ TURN 1  ✓ completed · 4s       ││   Reply with the single word: again                                                │
+│ TURN 2  ✓ completed · 1s       ││ CLAUDE  claude-haiku-5-5                                                           │
+│ TURN 3  ○ interrupted · 1s     ││   again                                                                            │
+│   Count from 1 to 300, one nu… ││ YOU  02:00                                                                         │
 │                                ││   Count from 1 to 300, one number per line, nothing else.                          │
 │                                ││ CLAUDE  claude-haiku-5-5                                                           │
 │                                ││   1                                                                                │

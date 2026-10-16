@@ -1025,8 +1025,122 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
         shows as a count ("errors 3" at L4's end); B shows the refusal only
         through the fallback notice. ui-design.md's "Enter on D lists the
         last errors" is not built yet and no step of the proposal names it.
-        For the owner's decision.
-- Steps 6 to 8: outstanding.
+        Owner's decision (2026-10-16): build it at step 7, below.
+- Step 6, genuine agent activity: **done, 8 of 8 PASS under the amended
+  criterion 1** (the owner's amendment of 2026-10-17; the FAIL against the
+  original wording is kept below). Criteria, written
+  2026-10-16 before the work, from proposal.md step 6, ui-design.md (Zone A,
+  Zone C, Agent inspection) and events-and-state.md (Agent tree):
+  1. Stages per turn: replaying P2 gives 3 stages (TURN 1 and 2 completed,
+     TURN 3 interrupted) with P2's Write under the turn it ran in; P3b gives
+     1 stage with the orchestrator's Agent tool and the subagent
+     `general-purpose` under it; P7 gives 1 stage with both children
+     `/root/list_files` and `/root/create_found` directly under it (today
+     P7's children hang under the main thread's id, which no node has, so
+     zone A shows none of them: a defect this step fixes in the mapper,
+     Parent "" for the orchestrator's thread).
+     Amended by the owner on 2026-10-17, the original wording kept above:
+     "P3b gives 2 stages: turn 1 with the orchestrator's Agent tool and the
+     subagent `general-purpose` under it, turn 2 opened by Claude Code
+     itself, with no prompt, for the subagent's report". Reason: the
+     criterion was written before P3b's second turn was looked at; the
+     recording holds that turn, and the stage model shows it as the CLI's.
+     No other criterion changed.
+  2. Zone A renders "STAGES inferred from activity" for all three; each
+     node shows its origin (stage "inferred", agent status as its machine
+     says, tools "observed"); previous turns fold to one line "TURN n
+     <symbol> <outcome> · <duration>"; "○ (more as events arrive)" shows
+     while a turn runs and not after; ↑↓ move a cursor over the visible
+     nodes, ←→ fold and unfold a turn, the cursor's node stays visible.
+  3. Codex `turn/plan/updated` (schema only, not recorded: v2 schema
+     `TurnPlanUpdatedNotification`): a line built from the schema maps to a
+     stage event; zone A then heads "PLAN observed (turn/plan/updated)" with
+     the steps and their statuses. Labelled "schema only, not recorded" in
+     the code.
+  4. Zone C: P3b's background subagent goes Running, WaitingApproval
+     (twice), Running and Completed during the replay; P7's two children
+     start and end Completed; rows ordered waiting, running, ended, most
+     recent first (table test over all three groups); the counts give
+     Running and WaitingApproval as active.
+  5. Agent inspection: Enter on an agent in A or C opens it full screen with
+     the header (back, label, model or "model N/A", status and elapsed,
+     tokens, "[ ] prev/next") and tabs Messages, Tools, Diff, Raw events
+     (←→ or 1 to 4). Each tab holds that agent's own events only: inspecting
+     P7's `/root/list_files` shows none of `/root/create_found`'s tool ids,
+     messages, approval or diff, and the reverse; P3b's subagent shows its
+     two approvals and its Bash and Write; its Write shows in Diff as
+     "derived"; P7's fileChange diff shows as "observed". `[` and `]` go to
+     the previous and next agent; Esc returns to the dashboard with the same
+     focus.
+  6. Golden frames: the dashboard with each CLI's mock (Claude Code
+     `claude-subagent-approval.jsonl`, Codex `codex-subagents.jsonl`) and
+     the inspection view, at 80x24, 120x40 and 200x60; every frame exactly
+     the terminal's height, no line wider; the diffs reviewed.
+  7. The agent machine's table tests pass for both CLIs, with the rows this
+     step adds (turn of an agent and a tool; parent of a Codex child).
+  8. `go build ./...`, `go vet ./...` (also `-tags live` and `-tags
+     timing`) exit 0; `gofmt -l .` prints nothing; `go test ./...` exit 0;
+     the keystroke guard (`TestKeystrokeAllocs`) passes unchanged.
+  Not verified by these checks: the look (the owner's visual review).
+  - Results, 2026-10-16:
+    1. FAIL against the original wording (kept); PASS under the amendment
+       of 2026-10-17. P2 gives 3 stages (completed, completed,
+       interrupted) with its Write under turn 1; P7 gives 1 stage with both
+       children under it; both are as specified (`TestStagesP2`,
+       `TestStagesP7`). P3b gives **2** stages, not 1: turn 1 holds the
+       Agent tool and the subagent (stage 1, Parent ""), and Claude Code then
+       opens turn 2 itself, with no prompt, for the agent's report
+       (`ByCLI`). `TestStagesP3b` asserts what the recording holds. Cause:
+       the criterion was written before P3b's second turn was looked at.
+       Proposed amendment: "P3b gives 2 stages: turn 1 with the Agent tool
+       and the subagent, turn 2 opened by the CLI for the report".
+    2. PASS. `TestTreeP3b`: STAGES heading, turn 1 folded to one line by
+       default, unfolded s:1, the tool, the agent, s:2; "observed" twice; no
+       "more" after the turn. `TestTreeP7Running`: "○ (more as events
+       arrive)" mid-turn only. `TestTreeKeys`: ↑ from no cursor goes to the
+       last node, ↑↓ move, ← folds to 1 node, → unfolds to 5, Enter on a
+       tool gives the zone B toast. `TestTreeWindowKeepsCursor`: the
+       cursor's node stays in the window.
+    3. PASS. `TestTreeP7Running` applies a `turn/plan/updated` line built
+       from the schema (labelled "schema only, not recorded" in the
+       mapper): heading "PLAN observed (turn/plan/updated)" with its steps.
+       `TestPlanUpdated` (codex mapper): a stage event with its steps,
+       observed; an unreadable plan is counted unrecognised.
+    4. PASS. `TestStagesP3b`: Running, WaitingApproval, Running,
+       WaitingApproval, Running, Completed, final origin observed.
+       `TestStagesP7`: both children end Completed. `TestAgentOrder`: 6
+       rows over waiting, running and ended, most recent first; active =
+       Running + WaitingApproval.
+    5. PASS. `TestInspectP7`: Tools, Diff, Raw and Messages of each child
+       hold none of the other's (both ways); the fileChange diff "observed".
+       `TestInspectP3b`: 2 approvals, Bash and Write once each, the Write
+       "derived" in Diff, no Agent tool. `TestInspectKeysFromC`: Enter
+       opens it with its header and tabs; ←→ and 1 to 4; `]` `[`; a stray
+       letter dropped; Esc back to zone C. `TestTreeKeys`: Enter from A,
+       Esc back to A with the cursor kept. `TestInspectScroll`: ↑ holds,
+       "↓ 1 more", Home, the wheel, End follows; zone B not held.
+    6. PASS. `TestGoldenFrames`: new `dashboard-codex-*`, `inspect-*` and
+       `tree-*` at 80x24, 120x40, 200x60 (and 79x24 too small); `dashboard-*`
+       and `stream-p2-01..06` regenerated (zone A now STAGES and TURN rows).
+       Heights exact, no line wider; diffs reviewed. The stream-p2 frames
+       show "running 9h 29m": the recording's times against the tests'
+       fixed clock, deterministic. Mock mode labels origins "mock".
+    7. PASS. `TestStateMachines` with the new rows (the turn of an agent and
+       a tool; the parent of a Codex child).
+    8. PASS. `go build ./...` 0; `go vet ./...` 0, also `-tags live` and
+       `-tags timing`; `gofmt -l .` empty; `go test ./... -count=1` all ok;
+       `TestKeystrokeAllocs` PASS unchanged (ctrl+home 820, ctrl+end 591,
+       bound 1200). Timing step PASS: 10k lines p95 1.1 ms, 50k lines p95
+       2.5 ms (target 16 ms).
+    - Not verified: the look; live rendering in Windows Terminal; the zone A
+      cursor's highlight (plain-text frames carry no background).
+- Step 8: outstanding.
+  - Step 7, added by the owner on 2026-10-16 (ui-design.md, States: Error;
+    Zone D: Errors), checked with each CLI:
+    1. A failed turn shows in B "✗ turn failed:" in red with the first line
+       of its error, as received (L4's refusal is the case to replay).
+    2. Enter on D lists the last errors (`state.Errors`, at most
+       `MaxErrors`): time, agent or session, the full message; Esc returns.
 
 The owner's decisions at plan 3's approval (2026-10-16):
 - Proposal and roadmap approved; follow its order and the MVP scope.

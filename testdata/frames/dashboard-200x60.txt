@@ -2,12 +2,12 @@
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                                                Mock data 2.1.300
 ╭─ A · ORCHESTRATOR ───────────────────────╮╭─ B · CONVERSATION ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ claude-haiku-5-5 · orchestrator          ││ YOU  11:30                                                                                                                                               │
-│ turn 1 · completed                       ││   Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into a new file   │
+│ turn 2 · completed                       ││   Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into a new file   │
 │                                          ││   named found.txt with the Write tool, and report the names. Then tell me in one line what it found.                                                     │
-│ AGENTS  observed from events             ││   ▸ Agent                                                                                                                                           mock │
-│ ✓ Turn 1                                 ││ AGENT  claude-haiku-5-5                                                                                                                                  │
-│   └─ ✓ subagent  general-purpose         ││   I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it finishes.                     │
-│                                          ││ ✓ general-purpose · Bash  ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'  allowed by you 11:30:00                                                    │
+│ STAGES  inferred from activity           ││   ▸ Agent                                                                                                                                           mock │
+│ TURN 1  ✓ completed · 0s                 ││ AGENT  claude-haiku-5-5                                                                                                                                  │
+│ TURN 2  ✓ completed · 0s                 ││   I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it finishes.                     │
+│   started by the CLI                     ││ ✓ general-purpose · Bash  ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'  allowed by you 11:30:00                                                    │
 │                                          ││ ✓ general-purpose · Write  <probe-root>\probe-work\p3b\found.txt  allowed by you 11:30:00                                                                │
 │                                          ││ AGENT  claude-haiku-5-5                                                                                                                                  │
 │                                          ││   The subagent found two files in the directory, `alpha.txt` and `beta.md`, and wrote them into `<probe-root>\probe-work\p3b\found.txt`.                 │

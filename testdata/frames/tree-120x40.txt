@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ codex-subagents.jsonl   ..\..\testdata\mock\codex-subagents.jsonl                                  Mock data 0.145.0
+╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────────────────────╮
+│ gpt-5.6-sol · orchestrator     ││ YOU  11:30                                                                         │
+│ turn 1 · completed             ││   Spawn two subagents in parallel. The first lists the files in the current        │
+│                                ││   directory. The second creates a file named found.txt in the current directory    │
+│ STAGES  inferred from activity ││   containing the single word found. Wait for both, then reply with the single word │
+│ TURN 1  ✓ completed · 0s       ││   done.                                                                            │
+│   Spawn two subagents in para… ││   ▸ collabAgent:wait                                                          mock │
+│   ├─ ✓ child  /root/list… mock ││ ✓ /root/create_found · fileChange  allowed by you 11:30:00                         │
+│   ├─ ✓ child  /root/crea… mock ││   ▸ collabAgent:wait                                                          mock │
+│   ├─ ✓ collabAgent:wait   mock ││ AGENT  gpt-5.6-sol                                                                 │
+│   └─ ✓ collabAgent:wait   mock ││   done                                                                             │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││ ────────────────────────────────────────────────────────────────────────────────── │
+│                                ││ > Ask Mock data anything…                                                          │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││   Enter send · Ctrl+J newline                               1 line · Ctrl+G editor │
+│                                │╰────────────────────────────────────────────────────────────────────────────────────╯
+│                                │╭─ C · AGENTS ─────────────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
+│                                ││  ✓ /root/create_found model N/A   completed                         0s   77.3k tok │
+│                                ││  ✓ /root/list_files model N/A   completed                           0s   30.5k tok │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│ ↑↓ move ←→ fold Enter inspect  ││ ↑↓ select · Enter inspect · z zoom · F6 next zone                                  │
+╰────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
+╭─ D · QUOTA & TELEMETRY ─────────────────────────────────────────────────────────────────────── † undocumented field ─╮
+│ 5h ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1%  resets Fri 02:43   7d ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1%  resets Thu 10:30   model gpt-5.6-sol      │
+│ context N/A (not reported yet)   tokens 184.3k (derived)   cost N/A (not reported yet)   agents 0 active / limit N/… │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit

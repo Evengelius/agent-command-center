@@ -4,10 +4,10 @@
 │ claude-haiku-5-5 · orchestrat… ││ YOU  02:00                                                                         │
 │ turn 1 · completed             ││   Create a file named hello.txt in the current directory containing the single     │
 │                                ││   word hello. Use the Write tool, then reply with the word done.                   │
-│ AGENTS  observed from events   ││   ▸ Write                                                                 observed │
-│ ✓ Turn 1                       ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
-│   ○ (agents appear as events … ││ CLAUDE  claude-haiku-5-5                                                           │
-│                                ││   done                                                                             │
+│ STAGES  inferred from activity ││   ▸ Write                                                                 observed │
+│ TURN 1  ✓ completed · 4s       ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
+│   Create a file named hello.t… ││ CLAUDE  claude-haiku-5-5                                                           │
+│   └─ ✓ Write  <probe… observed ││   done                                                                             │
 │                                ││                                                                                    │
 │                                ││                                                                                    │
 │                                ││                                                                                    │

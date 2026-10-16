@@ -2,14 +2,14 @@
  (project bar: the test's temporary directory)
 ╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ───────────────────────────────────────────────── Interrupting… ─╮
 │ claude-haiku-5-5 · orchestrat… ││   ▸ Write                                                                 observed │
-│ turn 3 · interrupting          ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
+│ turn 3 · interrupting 9h 29m   ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
 │                                ││ CLAUDE  claude-haiku-5-5                                                           │
-│ AGENTS  observed from events   ││   done                                                                             │
-│ ◉ Turn 3                       ││ YOU  02:00                                                                         │
-│   ○ (agents appear as events … ││   Reply with the single word: again                                                │
-│                                ││ CLAUDE  claude-haiku-5-5                                                           │
-│                                ││   again                                                                            │
-│                                ││ YOU  02:00                                                                         │
+│ STAGES  inferred from activity ││   done                                                                             │
+│ TURN 1  ✓ completed · 4s       ││ YOU  02:00                                                                         │
+│ TURN 2  ✓ completed · 1s       ││   Reply with the single word: again                                                │
+│ TURN 3  ◉ interrupting · 9h 2… ││ CLAUDE  claude-haiku-5-5                                                           │
+│   Count from 1 to 300, one nu… ││   again                                                                            │
+│   └─ ○ (more as events arrive) ││ YOU  02:00                                                                         │
 │                                ││   Count from 1 to 300, one number per line, nothing else.                          │
 │                                ││ CLAUDE  claude-haiku-5-5                                                           │
 │                                ││   1▌                                                                               │

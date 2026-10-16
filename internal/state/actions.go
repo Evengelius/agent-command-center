@@ -66,6 +66,7 @@ const MockProvider = "mock"
 
 // Do applies one action and returns the commands it calls for.
 func (s *State) Do(a Action) []Command {
+	defer s.syncStage(time.Time{}) // an action can start or end a turn
 	switch a := a.(type) {
 	case Launch:
 		if a.Mock == "" {
