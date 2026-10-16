@@ -1,0 +1,186 @@
+package claude
+
+import (
+	"path/filepath"
+	"testing"
+
+	"github.com/Evengelius/agent-command-center/internal/event"
+	"github.com/Evengelius/agent-command-center/internal/fixture"
+)
+
+func replay(t *testing.T, name string) ([]fixture.Record, [][]event.Event) {
+	t.Helper()
+	recs, err := fixture.Read(filepath.Join("../../../testdata/probes", name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return recs, fixture.Replay(ProviderID, recs, NewMapper())
+}
+
+func count(evs []event.Event, k event.Kind) int {
+	n := 0
+	for _, e := range evs {
+		if e.Kind == k {
+			n++
+		}
+	}
+	return n
+}
+
+// Every line of every Claude recording maps to at least one event, and no
+// line is unreadable (proposal step 0, item 6: 0 lines dropped).
+func TestEveryLineMaps(t *testing.T) {
+	for _, name := range []string{"p1-claude-stream.jsonl", "p2-claude-conversation.jsonl", "p3-claude-subagent.jsonl", "p3b-claude-subagent-approval.jsonl", "p4-claude-resume.jsonl"} {
+		recs, per := replay(t, name)
+		for i, evs := range per {
+			if len(evs) == 0 {
+				t.Errorf("%s line %d: no event", name, i+1)
+			}
+			for _, e := range evs {
+				if e.Kind == event.Error {
+					if p, ok := e.Payload.(event.Problem); ok && len(p.Message) > 10 && p.Message[:10] == "unreadable" {
+						t.Errorf("%s line %d: %s", name, i+1, p.Message)
+					}
+				}
+			}
+		}
+		if len(per) != len(recs) {
+			t.Errorf("%s: %d results for %d lines", name, len(per), len(recs))
+		}
+	}
+}
+
+func TestP2Conversation(t *testing.T) {
+	_, per := replay(t, "p2-claude-conversation.jsonl")
+	all := fixture.Flatten(per)
+	deltas, text, thinking, input, sig := 0, 0, 0, 0, 0
+	for _, e := range all {
+		if e.Kind != event.MessageDelta {
+			continue
+		}
+		deltas++
+		if e.Origin != event.AI {
+			t.Errorf("delta origin %q, want ai", e.Origin)
+		}
+		switch e.Payload.(event.Delta).Block {
+		case "text":
+			text++
+		case "thinking":
+			thinking++
+		case "tool_input":
+			input++
+		case "signature":
+			sig++
+		}
+	}
+	if deltas != 25 || text != 3 || thinking != 1 || input != 20 || sig != 1 {
+		t.Errorf("deltas %d (text %d, thinking %d, tool_input %d, signature %d), want 25 (3, 1, 20, 1)", deltas, text, thinking, input, sig)
+	}
+	if n := count(all, event.SessionReady); n != 1 {
+		t.Errorf("session.ready %d, want 1", n)
+	}
+	if n := count(all, event.SessionSpawned); n != 1 {
+		t.Errorf("session.spawned %d, want 1", n)
+	}
+	var outcomes []string
+	var ctx, window float64
+	for _, e := range all {
+		switch p := e.Payload.(type) {
+		case event.TurnEnd:
+			outcomes = append(outcomes, p.Outcome)
+		case event.Metrics:
+			for _, m := range p.Items {
+				if m.Source == "get_context_usage" && m.Name == "context.used" {
+					ctx = m.Value
+				}
+				if m.Source == "get_context_usage" && m.Name == "context.window" {
+					window = m.Value
+				}
+			}
+		}
+	}
+	if len(outcomes) != 3 || outcomes[0] != "completed" || outcomes[1] != "completed" || outcomes[2] != "interrupted" {
+		t.Errorf("turn outcomes %v, want [completed completed interrupted]", outcomes)
+	}
+	if ctx != 21275 || window != 1000000 {
+		t.Errorf("context %v of %v, want 21275 of 1000000", ctx, window)
+	}
+	if n := count(all, event.ApprovalRequest); n != 1 {
+		t.Errorf("approvals %d, want 1", n)
+	}
+	if n := count(all, event.ApprovalResolved); n != 1 {
+		t.Errorf("approval answers %d, want 1", n)
+	}
+	if n := count(all, event.UserMessage); n != 3 {
+		t.Errorf("user messages %d, want 3", n)
+	}
+	last := all[len(all)-1]
+	if last.Kind != event.SessionEnded || !last.Payload.(event.Ended).HasCode || last.Payload.(event.Ended).Code != 1 {
+		t.Errorf("last event %v %+v, want session.ended code 1", last.Kind, last.Payload)
+	}
+}
+
+func TestP3bSubagentApproval(t *testing.T) {
+	_, per := replay(t, "p3b-claude-subagent-approval.jsonl")
+	all := fixture.Flatten(per)
+	var fromAgent int
+	for _, e := range all {
+		if e.Kind == event.ApprovalRequest {
+			a := e.Payload.(event.Approval)
+			if a.ID == "" || a.Tool == "" || a.Problem != "" {
+				t.Errorf("approval %+v incomplete", a)
+			}
+			if e.Agent != "" {
+				fromAgent++
+			}
+		}
+	}
+	if n := count(all, event.ApprovalRequest); n != 2 || fromAgent != 2 {
+		t.Errorf("approvals %d (%d from the subagent), want 2 (2)", n, fromAgent)
+	}
+	unknown := map[string]int{}
+	for _, e := range all {
+		if e.Kind == event.Unrecognised {
+			unknown[e.Payload.(event.Unknown).Type]++
+		}
+	}
+	if unknown["system/commands_changed"] != 1 {
+		t.Errorf("unrecognised %v, want system/commands_changed once", unknown)
+	}
+	if n := count(all, event.AgentSet); n != 2 {
+		t.Errorf("agent.set %d, want 2", n)
+	}
+	if n := count(all, event.AgentStarted); n < 1 {
+		t.Errorf("agent.started %d, want at least 1", n)
+	}
+}
+
+func TestP1Cost(t *testing.T) {
+	_, per := replay(t, "p1-claude-stream.jsonl")
+	var cost float64
+	found := false
+	for _, e := range fixture.Flatten(per) {
+		if p, ok := e.Payload.(event.Metrics); ok {
+			for _, m := range p.Items {
+				if m.Name == "cost.usd" {
+					cost, found = m.Value, true
+				}
+			}
+		}
+	}
+	if !found || cost != 0.00249374 {
+		t.Errorf("cost %v (found %v), want 0.00249374", cost, found)
+	}
+}
+
+func TestMalformedApprovalHasProblem(t *testing.T) {
+	m := NewMapper()
+	evs := m.Out([]byte(`{"type":"control_request","request_id":"r1","request":{"subtype":"can_use_tool"}}`))
+	if len(evs) != 1 || evs[0].Kind != event.ApprovalRequest || evs[0].Payload.(event.Approval).Problem == "" {
+		t.Errorf("got %+v, want an approval request with a problem", evs)
+	}
+	evs = m.Out([]byte(`not json`))
+	if len(evs) != 1 || evs[0].Kind != event.Error {
+		t.Errorf("got %+v, want one error", evs)
+	}
+}

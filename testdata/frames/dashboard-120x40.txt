@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
+╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────────────────────╮
+│ claude-haiku-5-5 · orchestrat… ││   the files in the current directory, write their names into a new file named      │
+│ turn 1 · completed             ││   found.txt with the Write tool, and report the names. Then tell me in one line    │
+│                                ││   what it found.                                                                   │
+│ AGENTS  observed from events   ││   ▸ Agent                                                                     mock │
+│ ✓ Turn 1                       ││ AGENT  claude-haiku-5-5                                                            │
+│   └─ ✓ subagent  general-purp… ││   I've launched the subagent in the background to list the directory and write     │
+│                                ││   `found.txt`. I'll report its result when it finishes.                            │
+│                                ││ ! APPROVAL Bash                                                                    │
+│                                ││ ! APPROVAL Write                                                                   │
+│                                ││   ∴ The subagent found two files in the directory, `alpha.txt` and `beta.md`, and  │
+│                                ││   wrote them into `<probe-root>\probe-work\p3b\found.txt`.                         │
+│                                ││                                                                                    │
+│                                ││   Found 2 files: alpha.txt and beta.md.                                            │
+│                                ││ ────────────────────────────────────────────────────────────────────────────────── │
+│                                ││ > █                                                                                │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││   turn started by the CLI                                   1 line · Ctrl+G editor │
+│                                │╰────────────────────────────────────────────────────────────────────────────────────╯
+│                                │╭─ C · AGENTS ─────────────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│                                ││  ✓ general-purpose model N/A   completed · Files written to …       0s   21.5k tok │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│ ↑↓ move ←→ fold Enter inspect  ││ ↑↓ select · Enter inspect · z zoom · F6 next zone                                  │
+╰────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
+╭─ D · QUOTA & TELEMETRY ─────────────────────────────────────────────────────────────────────── † undocumented field ─╮
+│ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00   model claude-haik… │
+│ context 2%† of 1M   tokens 217.3k (derived)   cost $0.01 API-equiv. estimate   agents 0 active / limit N/A (not rep… │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit

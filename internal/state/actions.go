@@ -1,0 +1,268 @@
+package state
+
+import (
+	"time"
+
+	"github.com/Evengelius/agent-command-center/internal/event"
+)
+
+// Action is something the owner or the application did: a key, a button, a
+// command's result, a timer. Events come from the CLI; actions from here.
+type Action interface{ action() }
+
+// The actions.
+type (
+	Launch        struct{ Mock string } // Mock: the --mock file, "" for a normal start
+	DetectionDone struct {
+		Installed []string
+		CLIs      []CLI // what detection found, for the startup screen
+	}
+	Confirm          struct{ Provider, Project string }
+	ValidationFailed struct{ Field, Message string }
+	ValidationOK     struct{ Provider, ProviderName, Project, Branch string } // Project as validated
+	SpawnFailed      struct{ Message string }
+	HandshakeTimeout struct{}
+	Back             struct{}
+	Quit             struct{}
+	Resume           struct{} // start the crashed session's CLI session again in a new process
+	Send             struct{ Text string }
+	WriteFailed      struct{ Message string }
+	Interrupt        struct{}
+	InterruptTimeout struct{}
+	ForceStop        struct{}
+	Answer           struct{ ID, Decision string }
+	AnswerFailed     struct{ ID, Message string }
+	CloseTimeout     struct{}
+	Tick             struct{ At time.Time }
+)
+
+func (Launch) action()           {}
+func (DetectionDone) action()    {}
+func (Confirm) action()          {}
+func (ValidationFailed) action() {}
+func (ValidationOK) action()     {}
+func (SpawnFailed) action()      {}
+func (HandshakeTimeout) action() {}
+func (Back) action()             {}
+func (Quit) action()             {}
+func (Resume) action()           {}
+func (Send) action()             {}
+func (WriteFailed) action()      {}
+func (Interrupt) action()        {}
+func (InterruptTimeout) action() {}
+func (ForceStop) action()        {}
+func (Answer) action()           {}
+func (AnswerFailed) action()     {}
+func (CloseTimeout) action()     {}
+func (Tick) action()             {}
+
+// MockProvider is the provider id of mock mode.
+const MockProvider = "mock"
+
+// Do applies one action and returns the commands it calls for.
+func (s *State) Do(a Action) []Command {
+	switch a := a.(type) {
+	case Launch:
+		if a.Mock == "" {
+			s.Startup.Phase = Detecting
+			return nil
+		}
+		s.Context = Context{Provider: MockProvider, ProviderName: "Mock data", Project: a.Mock, Mock: true}
+		return s.start()
+	case DetectionDone:
+		if s.Startup.Phase == Detecting {
+			s.Startup.Phase, s.Startup.Installed, s.Startup.CLIs = Asking, a.Installed, a.CLIs
+		}
+	case Confirm:
+		if s.Startup.Phase != Asking {
+			s.doNote("confirm ignored while " + string(s.Startup.Phase))
+			return nil
+		}
+		s.Startup.Provider, s.Startup.Project = a.Provider, a.Project
+		if !contains(s.Startup.Installed, a.Provider) {
+			s.Startup.Field, s.Startup.Message = "provider", "not installed"
+			return nil
+		}
+		s.Startup.Phase, s.Startup.Field, s.Startup.Message = Validating, "", ""
+		return []Command{{Kind: CmdValidate}}
+	case ValidationFailed:
+		if s.Startup.Phase == Validating {
+			s.Startup.Phase, s.Startup.Field, s.Startup.Message = Asking, a.Field, a.Message
+		}
+	case ValidationOK:
+		if s.Startup.Phase != Validating {
+			return nil
+		}
+		s.Context = Context{Provider: a.Provider, ProviderName: a.ProviderName, Project: a.Project, Branch: a.Branch}
+		return s.start()
+	case SpawnFailed:
+		if s.Session.Phase == Spawning {
+			s.Session.Reason = a.Message
+			return s.crash(event.Event{}, "the CLI could not start: "+a.Message, false)
+		}
+	case HandshakeTimeout:
+		if s.Session.Phase == Handshaking {
+			return s.crash(event.Event{}, "no handshake within 60 s", true)
+		}
+	case Back:
+		if s.Context.Mock {
+			// A mock run has no startup screen: going back would open a
+			// path to a live session (reliability.md, Mock mode).
+			s.doNote("back ignored: a mock run ends with Ctrl+Q")
+			return nil
+		}
+		if s.Startup.Phase == StartFailed {
+			startup := s.Startup
+			*s = *New()
+			s.Startup = startup
+			s.Startup.Phase, s.Startup.Failure = Asking, ""
+		}
+	case Quit:
+		return s.quit()
+	case Resume:
+		if s.Session.Phase != Crashed || s.Session.ID == "" || s.Startup.Phase == StartFailed || s.Context.Mock {
+			s.doNote("nothing to resume")
+			return nil
+		}
+		id := s.Session.ID
+		s.Session = SessionState{Phase: Spawning, ID: id}
+		return []Command{{Kind: CmdStartSession, ID: id}}
+	case Send:
+		return s.send(a)
+	case WriteFailed:
+		if s.Turn.Phase == Submitted {
+			s.Turn.Phase, s.Turn.Outcome, s.Turn.Notice = Idle, "failed", "the message could not be sent: "+a.Message
+			return []Command{{Kind: CmdRestoreDraft, Text: s.Turn.Draft}}
+		}
+	case Interrupt:
+		return s.interrupt()
+	case InterruptTimeout:
+		if s.Turn.Phase == Interrupting {
+			s.Turn.ForceStopOffered, s.Turn.Notice = true, "no turn end after the interrupt: force stop closes the session"
+		}
+	case ForceStop:
+		if s.Turn.Phase == Interrupting {
+			s.Turn.Phase, s.Turn.Outcome, s.Turn.ForceStopOffered = Idle, "interrupted", false
+			if s.Session.Phase == Ready {
+				s.Session.Phase = Closing
+			}
+			return []Command{{Kind: CmdClose}}
+		}
+	case Answer:
+		return s.answer(a)
+	case AnswerFailed:
+		if ap := s.Approvals[a.ID]; ap != nil && ap.Status == Answering {
+			ap.Status = Expired
+			return s.crash(event.Event{}, "the answer could not be written: "+a.Message, true)
+		}
+	case CloseTimeout:
+		if s.Session.Phase == Closing {
+			return []Command{{Kind: CmdKill}}
+		}
+	case Tick:
+		for k, v := range s.Metrics {
+			if v.Present && !v.ResetsAt.IsZero() && !a.At.Before(v.ResetsAt) {
+				s.Metrics[k] = Value{Unit: v.Unit, Source: v.Source, Documented: v.Documented, Reason: "window reset; waiting for the next update"}
+			}
+		}
+	}
+	return nil
+}
+
+func (s *State) start() []Command {
+	s.Startup.Phase, s.Screen = Starting, ScreenDashboard
+	s.Session = SessionState{Phase: Spawning}
+	return []Command{{Kind: CmdStartSession}}
+}
+
+func (s *State) quit() []Command {
+	switch s.Startup.Phase {
+	case Detecting, Asking, Validating, StartFailed, "":
+		s.Startup.Phase = Exited
+		return []Command{{Kind: CmdExit}}
+	}
+	s.Startup.Phase = Exited
+	switch s.Session.Phase {
+	case Spawning, Handshaking, Ready:
+		s.Session.Phase = Closing
+		return []Command{{Kind: CmdClose}}
+	case Closing:
+		return []Command{{Kind: CmdKill}}
+	}
+	return []Command{{Kind: CmdExit}}
+}
+
+func (s *State) send(a Send) []Command {
+	s.Turn.Draft = a.Text
+	if s.Session.Phase != Ready {
+		s.Turn.Notice = "not sent: the session is " + string(s.Session.Phase) + "; the draft is kept"
+		return nil
+	}
+	if s.Turn.Phase != Idle {
+		s.Turn.Notice = "turn running: wait, or interrupt"
+		return nil
+	}
+	s.Turn.Phase, s.Turn.Count, s.Turn.Outcome, s.Turn.Notice, s.Turn.ByCLI = Submitted, s.Turn.Count+1, "", "", false
+	return []Command{{Kind: CmdWrite, Text: a.Text}}
+}
+
+func (s *State) interrupt() []Command {
+	if s.Session.Phase != Ready {
+		s.Turn.Notice = "no interrupt: the session is " + string(s.Session.Phase)
+		return nil
+	}
+	if s.Turn.Phase != Running && s.Turn.Phase != WaitingApproval {
+		s.Turn.Notice = "nothing to interrupt"
+		return nil
+	}
+	var cmds []Command
+	// Cancelling the turn first denies the orchestrator's pending approvals.
+	for _, id := range s.Queue {
+		if ap := s.Approvals[id]; ap.Agent == "" && ap.Status == Pending {
+			ap.Status = Answering
+			cmds = append(cmds, Command{Kind: CmdAnswer, ID: id, Decision: "cancel"})
+		}
+	}
+	s.Turn.Phase, s.Turn.Notice = Interrupting, ""
+	return append(cmds, Command{Kind: CmdInterrupt})
+}
+
+func (s *State) answer(a Answer) []Command {
+	ap := s.Approvals[a.ID]
+	if ap == nil {
+		s.Errors = appendBounded(s.Errors, ErrorEntry{Message: "answer for an unknown approval: " + a.ID}, MaxErrors)
+		return nil
+	}
+	if !contains(answers, a.Decision) {
+		// Answers that persist a rule (permission_suggestions, execpolicy or
+		// network amendments) are never offered (events-and-state.md, Approval machine).
+		s.doNote("answer refused: " + a.Decision)
+		return nil
+	}
+	if ap.Status != Pending {
+		s.doNote("second answer ignored: " + a.ID)
+		return nil
+	}
+	if s.Session.Phase != Ready {
+		s.Turn.Notice = "not answered: the session is " + string(s.Session.Phase)
+		return nil
+	}
+	ap.Status = Answering
+	return []Command{{Kind: CmdAnswer, ID: a.ID, Decision: a.Decision}}
+}
+
+// answers are the decisions the owner can give; none persists a rule.
+var answers = []string{"allow", "deny", "accept", "acceptForSession", "decline", "cancel"}
+
+func (s *State) doNote(msg string) {
+	s.Notes = appendBounded(s.Notes, "action: "+msg, MaxErrors)
+}
+
+func contains(list []string, v string) bool {
+	for _, x := range list {
+		if x == v {
+			return true
+		}
+	}
+	return false
+}

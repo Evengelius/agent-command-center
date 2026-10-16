@@ -1,0 +1,553 @@
+// Package app is the glue (doc/architecture.md, The five parts): it turns keys
+// and provider events into actions and events for the reducer, carries out
+// the commands the reducer returns, and hands the state to the renderer. It
+// holds no dashboard state of its own beyond the interface's (focus, the
+// text being edited).
+package app
+
+import (
+	"context"
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"sync"
+	"time"
+
+	tea "charm.land/bubbletea/v2"
+
+	"github.com/Evengelius/agent-command-center/internal/event"
+	"github.com/Evengelius/agent-command-center/internal/input"
+	"github.com/Evengelius/agent-command-center/internal/provider"
+	"github.com/Evengelius/agent-command-center/internal/provider/mock"
+	"github.com/Evengelius/agent-command-center/internal/render"
+	"github.com/Evengelius/agent-command-center/internal/state"
+)
+
+// Config is the command line.
+type Config struct {
+	Mock     string // a mock file; runs alone
+	Provider string // prefills the agent CLI answer
+	Project  string // prefills the project answer
+}
+
+// ParseArgs reads the command line (architecture.md, How it starts). --mock
+// runs alone, and --provider accepts only the two supported CLIs: the mock
+// provider is reachable through --mock alone (reliability.md, Mock mode).
+func ParseArgs(args []string) (Config, error) {
+	var c Config
+	fs := flag.NewFlagSet("agent-command-center", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	fs.StringVar(&c.Mock, "mock", "", "replay a mock file of normalised events")
+	fs.StringVar(&c.Provider, "provider", "", "prefill the agent CLI: claude-code or codex")
+	fs.StringVar(&c.Project, "project", "", "prefill the project directory")
+	if err := fs.Parse(args); err != nil {
+		return Config{}, fmt.Errorf("%w\nusage: agent-command-center [--mock <file>] [--provider claude-code|codex] [--project <path>]", err)
+	}
+	if fs.NArg() > 0 {
+		return Config{}, fmt.Errorf("unexpected argument %q", fs.Arg(0))
+	}
+	if c.Mock != "" && (c.Provider != "" || c.Project != "") {
+		return Config{}, errors.New("--mock runs alone: it cannot be combined with --provider or --project")
+	}
+	if c.Provider != "" && c.Provider != "claude-code" && c.Provider != "codex" {
+		return Config{}, fmt.Errorf("--provider %q: use claude-code or codex", c.Provider)
+	}
+	return c, nil
+}
+
+// Options are what the application runs with. Tests replace the clock, the
+// timers and the clipboard.
+type Options struct {
+	Config
+	// Providers are the agent CLI adapters, in the startup screen's order.
+	// A supported CLI without an adapter is shown as not usable.
+	Providers []provider.Provider
+	Now       func() time.Time
+	Clipboard input.Clipboard
+	// After delivers msg after d; nil uses a real timer. Tests return nil
+	// to switch timers off.
+	After func(d time.Duration, msg tea.Msg) tea.Cmd
+	// MockSpeed is the replay pace: 1 as recorded, 0 all at once.
+	MockSpeed float64
+	// Cwd is the project field's default and the base of a relative path;
+	// "" reads the current directory.
+	Cwd string
+	// Home expands ~; "" reads the user's home directory.
+	Home string
+	// DetectTimeout bounds each adapter's detection; 0 is DetectTimeout.
+	DetectTimeout time.Duration
+}
+
+// Timeouts (events-and-state.md, timers).
+const (
+	DetectTimeout    = 10 * time.Second
+	HandshakeTimeout = 60 * time.Second
+	InterruptTimeout = 10 * time.Second
+	CloseTimeout     = 5 * time.Second
+	KillGrace        = 5 * time.Second // after the forced kill, leave anyway
+	spinnerEvery     = 100 * time.Millisecond
+	clockEvery       = time.Second
+	maxDrain         = 512 // events applied per screen update
+)
+
+// supported are the agent CLIs the startup screen lists.
+var supported = []struct{ id, name string }{
+	{"claude-code", "Claude Code"},
+	{"codex", "OpenAI Codex"},
+}
+
+// Model is the Bubble Tea model.
+type Model struct {
+	opt  Options
+	s    *state.State
+	ui   render.UI
+	edit input.Editor // zone B's input
+	path input.Editor // the startup screen's project field
+	env  input.PathEnv
+
+	detected map[string]provider.Detection
+	sess     provider.Session
+	cancel   context.CancelFunc // ends the session's context: the forced kill
+	once     sync.Once
+	pending  []tea.Cmd // the launch's commands, for Init
+
+	spinning, clocking bool
+}
+
+// Messages.
+type (
+	actionMsg   struct{ a state.Action }
+	detectedMsg struct{ found []provider.Detection }
+	startedMsg  struct {
+		sess   provider.Session
+		cancel context.CancelFunc
+		err    error
+	}
+	eventsMsg struct {
+		sess   provider.Session
+		evs    []event.Event
+		closed bool
+	}
+	pasteMsg   struct{ text string }
+	spinMsg    struct{}
+	clockMsg   struct{}
+	leaveMsg   struct{}
+	refreshMsg struct{ err error }
+)
+
+// New builds the model.
+func New(opt Options) *Model {
+	if opt.Now == nil {
+		opt.Now = time.Now
+	}
+	if opt.Mock != "" {
+		opt.Providers = nil // a mock run never reaches a CLI adapter
+	}
+	if opt.After == nil {
+		opt.After = func(d time.Duration, msg tea.Msg) tea.Cmd {
+			return tea.Tick(d, func(time.Time) tea.Msg { return msg })
+		}
+	}
+	if opt.DetectTimeout == 0 {
+		opt.DetectTimeout = DetectTimeout
+	}
+	if opt.Cwd == "" {
+		opt.Cwd, _ = os.Getwd()
+	}
+	if opt.Home == "" {
+		opt.Home, _ = os.UserHomeDir()
+	}
+	m := &Model{opt: opt, s: state.New(), detected: map[string]provider.Detection{}}
+	m.env = input.PathEnv{Windows: filepath.Separator == '\\', Home: opt.Home, Cwd: opt.Cwd}
+	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider}
+	project := opt.Project
+	if project == "" {
+		project = opt.Cwd
+	}
+	m.path.SetText(project)
+	// Launch now, not in Init's command: the first frame is drawn before any
+	// message, and a mock run must show its badge from that frame on.
+	m.pending = m.do(state.Launch{Mock: opt.Mock})
+	if opt.Mock == "" {
+		m.pending = append(m.pending, m.detect())
+	}
+	m.syncUI()
+	return m
+}
+
+// State is the current state, for tests.
+func (m *Model) State() *state.State { return m.s }
+
+// Init starts the application: detection, or the mock replay.
+func (m *Model) Init() tea.Cmd {
+	cmds := append(m.pending, m.timers()...)
+	m.pending = nil
+	return tea.Batch(cmds...)
+}
+
+// View draws the frame.
+func (m *Model) View() tea.View {
+	v := tea.NewView(render.Frame(m.s, m.ui))
+	v.AltScreen = true
+	v.WindowTitle = "Agent Command Center"
+	return v
+}
+
+// Update handles one message.
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	m.ui.Now = m.opt.Now()
+	var cmds []tea.Cmd
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.ui.Width, m.ui.Height = msg.Width, msg.Height
+	case actionMsg:
+		cmds = append(cmds, m.do(msg.a)...)
+		if _, ok := msg.a.(state.ValidationFailed); ok {
+			m.focusMessage()
+		}
+	case detectedMsg:
+		cmds = append(cmds, m.detectionDone(msg.found)...)
+	case startedMsg:
+		cmds = append(cmds, m.started(msg)...)
+	case eventsMsg:
+		if msg.sess != m.sess {
+			break // a previous session's leftovers
+		}
+		for _, ev := range msg.evs {
+			cmds = append(cmds, m.run(m.s.Apply(ev))...)
+			if ev.Kind == event.SessionSpawned {
+				cmds = append(cmds, m.opt.After(HandshakeTimeout, actionMsg{state.HandshakeTimeout{}}))
+			}
+		}
+		if !msg.closed {
+			cmds = append(cmds, listen(m.sess))
+		}
+	case tea.PasteMsg:
+		m.paste(msg.Content)
+	case pasteMsg:
+		m.paste(msg.text)
+	case tea.KeyPressMsg:
+		cmds = append(cmds, m.key(msg)...)
+	case spinMsg:
+		m.spinning = false
+		m.ui.Spinner++
+	case clockMsg:
+		m.clocking = false
+		cmds = append(cmds, m.do(state.Tick{At: m.ui.Now})...)
+	case leaveMsg:
+		return m, tea.Quit
+	case refreshMsg:
+		// Refresh reads telemetry after a turn; a failed read leaves the
+		// values as they are, each with its own age (no zero, no guess).
+	}
+	m.syncUI()
+	cmds = append(cmds, m.timers()...)
+	return m, tea.Batch(cmds...)
+}
+
+// syncUI copies what the renderer needs from the editors.
+func (m *Model) syncUI() {
+	m.ui.Draft = m.edit.Text()
+	m.ui.Path = m.path.Text()
+	r := input.ResolvePath(m.path.Text(), m.env)
+	m.ui.Resolved, m.ui.PathProblem, m.ui.PathWarning = r.Path, r.Problem, r.Warning
+	m.ui.Branch = ""
+	if c := m.s.Context; c.Project != "" && c.Project == r.Path {
+		m.ui.Branch = c.Branch // read on validation, for the path validated
+	}
+}
+
+// animating reports whether a spinner is on screen.
+func (m *Model) animating() bool {
+	switch m.s.Startup.Phase {
+	case "", state.Detecting, state.Validating:
+		return m.s.Screen == state.ScreenStartup
+	}
+	switch m.s.Session.Phase {
+	case state.Spawning, state.Handshaking, state.Closing:
+		return true
+	}
+	switch m.s.Turn.Phase {
+	case state.Submitted, state.Running, state.Interrupting:
+		return true
+	}
+	return false
+}
+
+// timers schedules the spinner while something animates and the clock while
+// the dashboard shows elapsed times; an idle startup screen schedules nothing.
+func (m *Model) timers() []tea.Cmd {
+	var cmds []tea.Cmd
+	if !m.spinning && m.animating() {
+		if c := m.opt.After(spinnerEvery, spinMsg{}); c != nil {
+			m.spinning = true
+			cmds = append(cmds, c)
+		}
+	}
+	if !m.clocking && m.s.Screen == state.ScreenDashboard && m.s.Session.Phase != state.Closed {
+		if c := m.opt.After(clockEvery, clockMsg{}); c != nil {
+			m.clocking = true
+			cmds = append(cmds, c)
+		}
+	}
+	return cmds
+}
+
+// do applies an action and carries out its commands.
+func (m *Model) do(a state.Action) []tea.Cmd { return m.run(m.s.Do(a)) }
+
+// run carries out the reducer's commands.
+func (m *Model) run(cs []state.Command) []tea.Cmd {
+	var cmds []tea.Cmd
+	for _, c := range cs {
+		cmds = append(cmds, m.command(c))
+	}
+	return cmds
+}
+
+func (m *Model) command(c state.Command) tea.Cmd {
+	switch c.Kind {
+	case state.CmdValidate:
+		return m.validate()
+	case state.CmdStartSession:
+		return m.start(c.ID)
+	case state.CmdWrite:
+		m.edit.Clear()
+		sess, text := m.sess, c.Text
+		return func() tea.Msg {
+			if sess == nil {
+				return actionMsg{state.WriteFailed{Message: "no session"}}
+			}
+			if err := sess.Send(text); err != nil {
+				return actionMsg{state.WriteFailed{Message: err.Error()}}
+			}
+			return nil
+		}
+	case state.CmdAnswer:
+		sess, id, d := m.sess, c.ID, c.Decision
+		return func() tea.Msg {
+			if sess == nil {
+				return actionMsg{state.AnswerFailed{ID: id, Message: "no session"}}
+			}
+			if err := sess.Answer(id, d); err != nil {
+				return actionMsg{state.AnswerFailed{ID: id, Message: err.Error()}}
+			}
+			return nil
+		}
+	case state.CmdInterrupt:
+		sess := m.sess
+		return tea.Batch(func() tea.Msg {
+			if sess != nil {
+				_ = sess.Interrupt() // no turn end within the timeout offers force stop
+			}
+			return nil
+		}, m.opt.After(InterruptTimeout, actionMsg{state.InterruptTimeout{}}))
+	case state.CmdRefresh:
+		sess := m.sess
+		return func() tea.Msg {
+			if sess == nil {
+				return nil
+			}
+			return refreshMsg{sess.Refresh()}
+		}
+	case state.CmdClose:
+		return tea.Batch(m.close(), m.opt.After(CloseTimeout, actionMsg{state.CloseTimeout{}}))
+	case state.CmdKill:
+		if m.cancel != nil {
+			m.cancel()
+		}
+		if m.s.Startup.Phase == state.Exited {
+			return m.opt.After(KillGrace, leaveMsg{})
+		}
+	case state.CmdDraftAccepted:
+		// Step 4 deletes the stored draft here (proposal step 4, item 4).
+	case state.CmdRestoreDraft:
+		m.edit.SetText(c.Text)
+	case state.CmdExit:
+		return tea.Quit
+	}
+	return nil
+}
+
+// detect runs every adapter's detection in parallel, each bounded.
+func (m *Model) detect() tea.Cmd {
+	provs, limit := m.opt.Providers, m.opt.DetectTimeout
+	return func() tea.Msg {
+		found := make([]provider.Detection, len(provs))
+		var wg sync.WaitGroup
+		for i, p := range provs {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				ctx, cancel := context.WithTimeout(context.Background(), limit)
+				defer cancel()
+				done := make(chan provider.Detection, 1)
+				go func() { done <- p.Detect(ctx) }()
+				select {
+				case d := <-done:
+					found[i] = d
+				case <-ctx.Done():
+					found[i] = provider.Detection{ID: p.ID(), Name: p.DisplayName(), Problem: fmt.Sprintf("detection timed out after %g s", limit.Seconds())}
+				}
+			}()
+		}
+		wg.Wait()
+		return detectedMsg{found}
+	}
+}
+
+func (m *Model) detectionDone(found []provider.Detection) []tea.Cmd {
+	byID := map[string]provider.Detection{}
+	for _, d := range found {
+		byID[d.ID] = d
+	}
+	var clis []state.CLI
+	var installed []string
+	for _, c := range supported {
+		d, ok := byID[c.id]
+		if !ok {
+			clis = append(clis, state.CLI{ID: c.id, Name: c.name, Problem: "adapter not built yet"})
+			continue
+		}
+		m.detected[c.id] = d
+		clis = append(clis, state.CLI{ID: c.id, Name: c.name, Version: d.Version, Path: d.Path, Installed: d.Installed, Problem: d.Problem})
+		if d.Installed {
+			installed = append(installed, c.id)
+		}
+	}
+	if !contains(installed, m.ui.Choice) {
+		m.ui.Choice = ""
+		if len(installed) > 0 {
+			m.ui.Choice = installed[0]
+		}
+	}
+	return m.do(state.DetectionDone{Installed: installed, CLIs: clis})
+}
+
+// start starts the session; resume is a CLI session id to resume.
+func (m *Model) start(resume string) tea.Cmd {
+	var p provider.Provider
+	sc := provider.SessionContext{StartedAt: m.opt.Now(), ResumeID: resume}
+	if m.s.Context.Mock {
+		evs, err := mock.Load(m.opt.Mock)
+		if err != nil {
+			return func() tea.Msg { return actionMsg{state.SpawnFailed{Message: err.Error()}} }
+		}
+		p = &mock.Provider{Events: evs, Speed: m.opt.MockSpeed, Now: m.opt.Now}
+		sc.Provider, sc.Name, sc.Mock = mock.ProviderID, p.DisplayName(), true
+	} else {
+		for _, q := range m.opt.Providers {
+			if q.ID() == m.s.Context.Provider {
+				p = q
+			}
+		}
+		d := m.detected[m.s.Context.Provider]
+		sc.Provider, sc.Name, sc.Version, sc.Executable = d.ID, d.Name, d.Version, d.Path
+		sc.ProjectPath, sc.ProjectName = m.s.Context.Project, filepath.Base(m.s.Context.Project)
+	}
+	if p == nil {
+		return func() tea.Msg { return actionMsg{state.SpawnFailed{Message: "no adapter for " + m.s.Context.Provider}} }
+	}
+	return func() tea.Msg {
+		ctx, cancel := context.WithCancel(context.Background())
+		sess, err := p.Start(ctx, sc)
+		if err != nil {
+			cancel()
+		}
+		return startedMsg{sess, cancel, err}
+	}
+}
+
+func (m *Model) started(msg startedMsg) []tea.Cmd {
+	if msg.err != nil {
+		return m.do(state.SpawnFailed{Message: msg.err.Error()})
+	}
+	if m.sess != nil && m.cancel != nil {
+		m.cancel() // a resumed session replaces the crashed one
+	}
+	m.sess, m.cancel = msg.sess, msg.cancel
+	cmds := []tea.Cmd{listen(m.sess)}
+	if m.s.Session.Phase == state.Closing {
+		cmds = append(cmds, m.close()) // the owner quit while it started
+	}
+	return cmds
+}
+
+// listen waits for the next event, then takes whatever else is already
+// waiting, so a burst is one screen update.
+func listen(sess provider.Session) tea.Cmd {
+	if sess == nil {
+		return nil
+	}
+	ch := sess.Events()
+	return func() tea.Msg {
+		ev, ok := <-ch
+		if !ok {
+			return eventsMsg{sess: sess, closed: true}
+		}
+		evs := []event.Event{ev}
+		for len(evs) < maxDrain {
+			select {
+			case ev, ok := <-ch:
+				if !ok {
+					return eventsMsg{sess, evs, true}
+				}
+				evs = append(evs, ev)
+			default:
+				return eventsMsg{sess, evs, false}
+			}
+		}
+		return eventsMsg{sess, evs, false}
+	}
+}
+
+// close asks the session to close; the reducer's timers escalate.
+func (m *Model) close() tea.Cmd {
+	sess := m.sess
+	if sess == nil {
+		return nil // started() closes a session that arrives while closing
+	}
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), CloseTimeout)
+		defer cancel()
+		_ = sess.Close(ctx) // its session.ended, or the close timeout, follows
+		return nil
+	}
+}
+
+// Shutdown closes a session still open when the program ends another way
+// than the reducer's exit (an error, a signal). Safe to call twice.
+func (m *Model) Shutdown() {
+	m.once.Do(func() {
+		if m.sess == nil {
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), CloseTimeout)
+		defer cancel()
+		_ = m.sess.Close(ctx)
+		if m.cancel != nil {
+			m.cancel()
+		}
+	})
+}
+
+func (m *Model) paste(text string) {
+	switch {
+	case m.s.Screen == state.ScreenStartup && m.ui.Field == 1:
+		m.path.Insert(input.CleanPath(text))
+	case m.s.Screen == state.ScreenDashboard && m.ui.Focus == "B":
+		m.edit.Insert(text) // byte for byte; a paste never submits
+	}
+}
+
+func contains(list []string, v string) bool {
+	for _, x := range list {
+		if x == v {
+			return true
+		}
+	}
+	return false
+}

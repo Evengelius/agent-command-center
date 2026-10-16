@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                                            New session
+────────────────────────────────────────────────────────────────────────────────
+
+    Configure your workspace
+    Select an agent CLI and the project to work on.
+
+    1. Agent CLI *
+       (•) Claude Code     2.1.300   C:\Users\…\.local\bin\claude.exe
+       ( ) OpenAI Codex    not installed: codex not found on PATH
+    ────────────────────────────────────────────────────────────────────────
+    2. Project directory *
+       ╭────────────────────────────────────────────────────────────────╮
+       │ C:\Users\dev\projets\agent-comand-center█                      │
+       ╰────────────────────────────────────────────────────────────────╯
+       ✗ Does not exist: C:\Users\…\projets\agent-comand-center
+       Type a full path; ~ and /mnt/c/… are expanded. Default: current dir.
+    ────────────────────────────────────────────────────────────────────────
+                  ╭──────────────────────────────────────────╮
+                  │             Start session  →             │
+                  ╰──────────────────────────────────────────╯
+
+
+
+ ↑↓ agent · Tab next field · Enter start · Ctrl+Q quit
