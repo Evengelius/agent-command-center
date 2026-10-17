@@ -413,6 +413,13 @@ func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) [
 		out = append(out, crow{fn: func() line {
 			return append(line{deco("✗ turn failed: ", stFailedBold)}, oneRow(i, e, stFailed)...).fit(w)
 		}})
+	case "dashboard":
+		// The dashboard's own note, grey, never the CLI's (AGENTS.md: shown
+		// distinctly); every row under the first's text.
+		p := &rowStyle{lead0: deco("  · ", stGrey), lead: deco("    ", stGrey), at: ref{panel: 'B', item: i}, st: stGrey}
+		for j, l := range entryLines(e) {
+			out = sourceRows(out, wc, p, j, l, w-4, w-4)
+		}
 	default:
 		p := &rowStyle{lead0: deco("  · ", stProgress), lead: deco("  ", stProgress), at: ref{panel: 'B', item: i}, st: stProgress}
 		for j, l := range entryLines(e) {

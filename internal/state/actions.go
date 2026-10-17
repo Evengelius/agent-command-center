@@ -2,6 +2,7 @@ package state
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
@@ -275,6 +276,15 @@ func (s *State) send(a Send) []Command {
 		s.Turn.Notice = "turn running: wait, or interrupt"
 		return nil
 	}
+	if cmd := slashCommand(a.Text); cmd != "" && s.CLI() == "codex" && a.Text != s.Turn.SlashHeld {
+		// Codex runs its slash commands in its own terminal only: through
+		// app-server the text would reach the model as a message (L5). It is
+		// held back once, with a note of the dashboard's; the draft stays.
+		s.Turn.SlashHeld = a.Text
+		s.Conversation = append(s.Conversation, Entry{Seq: s.lastSeq(), Role: "dashboard", Text: slashNote(cmd)})
+		return nil
+	}
+	s.Turn.SlashHeld = ""
 	s.Turn.Phase, s.Turn.Count, s.Turn.Outcome, s.Turn.Notice, s.Turn.ByCLI = Submitted, s.Turn.Count+1, "", "", false
 	return []Command{{Kind: CmdWrite, Text: a.Text}}
 }
@@ -356,4 +366,40 @@ func (s *State) cancelTurn(a CancelTurn) []Command {
 	ap.Status = Answering
 	cmds := []Command{{Kind: CmdAnswer, ID: a.ID, Decision: "cancel"}}
 	return append(cmds, s.interrupt()...)
+}
+
+// slashCommand is the command a message starts with, as Codex's terminal
+// reads one ("/status", "/model"), or "".
+func slashCommand(text string) string {
+	w := strings.TrimSpace(text)
+	if i := strings.IndexAny(w, " \t\r\n"); i >= 0 {
+		w = w[:i]
+	}
+	if len(w) < 2 || w[0] != '/' || w[1] < 'a' || w[1] > 'z' {
+		return ""
+	}
+	for _, c := range w[2:] {
+		if (c < 'a' || c > 'z') && c != '-' {
+			return ""
+		}
+	}
+	return w
+}
+
+// slashNote is the dashboard's note for a held slash command.
+func slashNote(cmd string) string {
+	n := cmd + " is a command of Codex's own terminal; it does not work here, so nothing was sent."
+	if cmd == "/status" {
+		n += " Zone D shows the 5h and weekly limits."
+	}
+	return n + "\nPress Enter again to send it to the model as a message."
+}
+
+// lastSeq is the last event's sequence number, for an entry the dashboard
+// adds between events.
+func (s *State) lastSeq() uint64 {
+	if n := len(s.Log); n > 0 {
+		return s.Log[n-1].Seq
+	}
+	return 0
 }

@@ -444,3 +444,36 @@ func TestCodexCrashAndResume(t *testing.T) {
 		}
 	})
 }
+
+// L5: "/status" typed for Codex is held back once with the dashboard's note,
+// the draft kept and no YOU entry; Enter again sends it as a message.
+func TestCodexSlashCommandNote(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		w := &wireCodex{thread: "th-slash", auto: true}
+		h := codexWire(t, w, Options{})
+		h.send(tea.PasteMsg{Content: "/status"})
+		h.send(key(tea.KeyEnter, 0))
+		if n := len(w.method("turn/start")); n != 0 {
+			t.Fatalf("%d turn/start written, want none", n)
+		}
+		if got := h.m.edit.Text(); got != "/status" {
+			t.Errorf("editor %q, want the draft kept", got)
+		}
+		f := frameText(h)
+		for _, want := range []string{"· /status is a command of Codex's own terminal", "    Press Enter again to send it to the model as a message."} {
+			if !strings.Contains(f, want) {
+				t.Errorf("frame lacks %q:\n%s", want, f)
+			}
+		}
+		if strings.Contains(f, "YOU") {
+			t.Errorf("a YOU entry for a message not sent:\n%s", f)
+		}
+		h.send(key(tea.KeyEnter, 0))
+		if ls := w.method("turn/start"); len(ls) != 1 || !strings.Contains(ls[0], `"text":"/status"`) {
+			t.Fatalf("turn/start %q, want /status sent once", ls)
+		}
+		if got := h.m.edit.Text(); got != "" {
+			t.Errorf("editor %q after sending, want empty", got)
+		}
+	})
+}

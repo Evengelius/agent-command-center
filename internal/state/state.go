@@ -168,12 +168,13 @@ type TurnState struct {
 	Draft            string // the message written and not yet accepted
 	ForceStopOffered bool
 	Notice           string
+	SlashHeld        string // a Codex slash command held back once: the same text again is sent
 }
 
 // Entry is one item of a conversation record.
 type Entry struct {
 	Seq       uint64
-	Role      string // user, assistant, tool, notice, approval, error
+	Role      string // user, assistant, tool, notice, approval, error, dashboard
 	Agent     string
 	MessageID string
 	Text      string

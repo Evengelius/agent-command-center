@@ -491,6 +491,18 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   - approval cards ([Approvals](#approvals));
   - dashboard notices in grey italics, marked "dashboard": "interrupted by
     you", "turn failed: …", "send refused: session not ready".
+  - **Slash commands on Codex**: Codex runs `/status`, `/model` and the rest
+    in its own terminal only; through `app-server` the text would reach the
+    model as a message (plan 4, L5). A message whose first word is a slash
+    command (`/` then lowercase letters and `-`; a path such as `/tmp/x`
+    has a second `/` and is not one) is held back once, with a grey note
+    of the dashboard's (role `dashboard`, every row under the text):
+    "· /status is a command of Codex's own terminal; it does not work
+    here, so nothing was sent. Zone D shows the 5h and weekly limits." and
+    "Press Enter again to send it to the model as a message.". The draft
+    stays; the same text sent again goes to the model, another text is
+    checked anew. Claude Code runs its slash commands through the stream,
+    so nothing is held there.
 - **Long pasted messages**: a sent message over 20 lines shows its first 5 (ASM-22)
   and "… 9,995 more lines · Enter expand" (the CLIs fold large pastes the
   same way, TI 3.4); the record keeps the full text.
