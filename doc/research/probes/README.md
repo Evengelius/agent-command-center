@@ -9,6 +9,8 @@ emit. They become test fixtures in plan 4.
   P7, on 2026-10-16, is P6b with another prompt, under the same rule.
   P7b, on 2026-10-17, is P7 again on Codex CLI 0.163.0, under the same rule,
   after L5 showed a stuck "/root" agent on that version.
+  P7c, on 2026-10-17, is P7b's driver with another prompt, on the owner's
+  approval of plan 7's quota (plan 7, item 4).
 - **Where:** a throwaway folder outside the repository (the session
   scratchpad under `%TEMP%`, written `<probe-root>` in the recordings), one
   fresh subfolder per probe.
@@ -53,6 +55,7 @@ one event per line.
 | P6b | P6 with `"model": "gpt-5.6-sol"` in `thread/start` | `p6b-codex-app-server.jsonl` | `hello.txt` written after a file-change approval; second turn interrupted; exit 0 |
 | P7 | the same driver with a fourth argument, a prompt: one turn, "Spawn two subagents in parallel. The first lists the files in the current directory. The second creates a file named found.txt ... Wait for both, then reply with the single word done."; the driver ignores child-thread notifications for its own turn logic | `p7-codex-subagents.jsonl` | two subagents ran in parallel; the second's file change was approved; `found.txt` written; parent replied; exit 0 after 30 s |
 | P7b | P7 on Codex CLI 0.163.0 with model `gpt-6-sol` (2026-10-17, about 11:35 local time) | `p7b-codex-subagents.jsonl` | the same outcome in 25 s; new in 0.163.0: each child's `subAgentActivity` `kind:"interacted"` toward the orchestrator (`agentPath` `/root`), a `kind:"completed"` on the parent for each child, 28 `item/commandExecution/outputDelta`, one `account/updated`, an `accountId` in the rate limits (redacted by the sanitizer) |
+| P7c | the P7 driver on Codex CLI 0.163.0 (2026-10-17, about 22:20 local time), prompt: "Spawn exactly one subagent. When you call the spawn tool, set its model argument to a smaller model than yours that the tool accepts, and set its reasoning effort argument to low. The subagent lists the files in the current directory and reports how many there are. Wait for it, then reply with the single word done." | `p7c-codex-spawn-model.jsonl` | parent on `gpt-6-sol`; the child `/root/count_files` announced by `subAgentActivity` `kind:"started"` with `model:"gpt-6-luna"`, `reasoningEffort:"low"`; still no `collabAgentToolCall` `spawnAgent` item, only `wait` (model and reasoningEffort null); the `kind:"completed"` carries null for both; "done", exit 0 after 15 s; 89,410 tokens across the two threads (60,288 cached input) |
 
 Quota used: 7 short Claude Haiku turns and 2 subagent runs (P1 to P4, P3b; the
 results report a total of about USD 0.03 API-equivalent); 3 short Codex turns
@@ -191,6 +194,10 @@ identical.
 
 P7b (2026-10-17, 11:35 local time, `confcheck` with `-cli-ran`): the 24
 files before and after were identical (configuration: PASS).
+
+P7c (2026-10-17, 22:22 local time, `confcheck` with `-cli-ran`): the 24
+files before and after were identical (configuration: PASS); no process the
+driver started was left.
 
 Not checked: the files the CLIs write by design for each session (Claude
 transcripts under `~/.claude/projects`, Codex rollouts under

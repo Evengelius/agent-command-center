@@ -610,7 +610,11 @@ The live subagents (AM2 C1-C11; AM4 D3).
   counts derived from the agent machines (`Running` and `WaitingApproval`
   are active).
 - **One row per agent**: status symbol, label (Claude Code's description or
-  `agent_id`; Codex `agentPath`), the agent's own model in its colour
+  `agent_id`; Codex `agentPath`; a column as wide as the longest label
+  and a space, at least 14 cells, so every model starts at the same cell;
+  never so wide that the task keeps fewer than 12 cells, a longer label
+  ending in "…", whole in the preview and the inspection; plan 7, item 1),
+  the agent's own model in its colour
   (Claude Code: its forwarded messages' `message.model`, shown without the
   "claude-" prefix to fit the column, in full in the preview and the
   inspection; Codex: `subAgentActivity.model`, from Codex CLI 0.163.0, else the
@@ -631,7 +635,9 @@ The live subagents (AM2 C1-C11; AM4 D3).
 - **Preview** (wide only): the selected agent's last events, timestamped,
   each with its origin label; its header shows the model with its source,
   "(reported)" or "(requested)", and the effort when there is one, "·
-  effort high (reported)" (plan 6, items 5 and 6); it follows the selection, and the wheel
+  effort high (reported)" (plan 6, items 5 and 6); where the whole header
+  does not fit, it drops the effort, then the source, keeping the model
+  whole, and only then nothing (plan 7, item 2); it follows the selection, and the wheel
   scrolls it.
 - **Keys** when focused: ↑ ↓ select, Enter inspects, z zooms; PgUp, PgDn,
   Home and End scroll the list, the selection kept.

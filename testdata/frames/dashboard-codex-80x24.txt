@@ -15,7 +15,7 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
 │  ✓ /root/create_found model N/A   completed                   0s   77.3k tok │
-│  ✓ /root/list_files model N/A   completed                     0s   30.5k tok │
+│  ✓ /root/list_files   model N/A   completed                   0s   30.5k tok │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮

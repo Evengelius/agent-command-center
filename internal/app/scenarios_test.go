@@ -30,7 +30,7 @@ func TestSyntheticScenarios(t *testing.T) {
 		// exit code (item 1); the requested model, and N/A without one (item
 		// 4), marked "*" with its footnote (item 5), with its effort (item 6).
 		{"codex-plan6-limits.jsonl",
-			[]string{"✗ commandExecution · exit 1 · fatal: No configured push destination.", "/root/list_files gpt-6-mini* low completed", "/root/create_found model N/A       completed", "* requested model · 0 ACTIVE · 2 DONE", "errors 0"},
+			[]string{"✗ commandExecution · exit 1 · fatal: No configured push destination.", "/root/list_files  gpt-6-mini* low completed", "/root/create_fou… model N/A       completed", "* requested model · 0 ACTIVE · 2 DONE", "errors 0"},
 			[]string{"commandExecution · On branch main", "commandExecution · exit 1 · On branch", "model N/A*"}},
 	} {
 		t.Run(c.file, func(t *testing.T) {

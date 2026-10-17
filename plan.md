@@ -20,8 +20,13 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
-**Plan 6, plan 5's known limits, approved by the owner on 2026-10-17; no
-plan 7 is defined yet** (the
+**Plan 7, the open list after plan 6, approved by the owner on 2026-10-17;
+no plan 8 is defined yet** (the owner's request of 2026-10-17,
+[Plan 7](#plan-7---the-open-list-after-plan-6) at the end). Every item done;
+the evaluation summary, 7 of 7 PASS, is in
+[`doc/plan7-evaluation.md`](doc/plan7-evaluation.md).
+
+**Plan 6, plan 5's known limits, approved by the owner on 2026-10-17** (the
 owner's request of 2026-10-17, [Plan 6](#plan-6---plan-5s-known-limits) at
 the end). Every item done; the evaluation summary, 6 of 6 PASS, is in
 [`doc/plan6-evaluation.md`](doc/plan6-evaluation.md), with the simulated run
@@ -46,6 +51,169 @@ on 2026-10-16 (15 of 15 PASS; the independent verifier did not re-run after
 the final fixes, [`doc/plan2-evaluation.md`](doc/plan2-evaluation.md)).
 Plan 1 accepted on 2026-10-16, with criteria 8 and 9 kept as FAIL and accepted
 as documented exceptions ([`doc/research/plan1-evaluation.md`](doc/research/plan1-evaluation.md)).
+
+Plan 7 progress (update as each item finishes; read this first after a
+context compaction). Items and rules: [Plan 7](#plan-7---the-open-list-after-plan-6).
+Baseline: 0814d67, 229 top-level tests in 14 packages, 0 FAIL.
+
+Four entries of the open list were already closed by plan 5's follow-up
+([`doc/plan5-evaluation.md`](doc/plan5-evaluation.md), After the commit) and
+are not redone: a selection from a conversation entry into a failure card
+(F1), a NUL in a paste (F2), 256 and 16 colours (L10, L11), and Codex's
+built-in thread limit read in its source (V1 6, V2 3; the backend is never
+reported).
+
+- Item 1 (long agent labels in zone C): **done** (2026-10-17). Criteria:
+  1. In zone C, every agent row's model starts at the same cell, for labels
+     of 1 to 40 cells, at 120 and 200 columns (and in the 160-column
+     layout beside the preview); a test through the frame.
+  2. The label column is the longest label plus one space, never narrower
+     than today's 14 cells, and never so wide that the activity keeps fewer
+     than 12 cells; a label longer than the column ends in "…"; the preview
+     and the inspection show it whole.
+  3. Rows whose labels fit in 13 cells are unchanged (the Claude golden
+     frames unchanged); the Codex golden frames at 120 and 200 change only
+     in C's rows, reviewed.
+  4. A mutant (the column back to 14) fails the test; full check.
+
+  Results: 1 PASS, 2 PASS, 3 PASS, 4 PASS. `agentCols.label` in
+  `zoneC`, `fitLabel` (`internal/render/dashboard.go`);
+  `TestAgentLabelColumn` (labels of 1, 13, 18 and 40 cells at 120, 160
+  and 200 columns: one model cell per frame, a running agent's activity
+  keeps 11 cells and "…", the 40-cell label cut with "…" and whole in the
+  inspection; a 13-cell label keeps the 14-cell column). Golden frames: 5
+  changed, `dashboard-codex-*` and `tree-*` at 80, 120 and 200, only
+  "/root/list_files" moving two cells to line up with "/root/create_found";
+  the Claude frames unchanged. `TestSyntheticScenarios`' plan 6 strings
+  follow: at 200 columns beside the preview, with the effort column, C
+  leaves 16 cells for the label, so "/root/create_fou…" (the preview's
+  header beside it shows it whole). Mutants: the column held at 14, and
+  no 12-cell floor for the activity; both killed.
+- Item 2 (the preview's header between 160 and 200 columns): **done** (2026-10-17).
+  Criteria:
+  1. The preview's right-hand header takes the first that fits: model,
+     source and effort; model and source; the model alone; nothing. The
+     model is never cut.
+  2. Tested at every screen width from 160 to 220 with a requested model
+     and effort, a reported one, and none: the model shows wherever the
+     model alone fits beside the label; "model N/A (not reported)" falls
+     back the same way.
+  3. Widths where the whole header fits are unchanged (golden frames at
+     200 unchanged unless they cut today); a mutant (no fallback) fails the
+     test; full check.
+
+  Results: 1 PASS, 2 PASS, 3 PASS. `previewRight`
+  (`internal/render/dashboard.go`); `TestPreviewHeaderFallback` reads
+  the preview's top edge at every width from 160 to 220 for a requested
+  model and effort, a reported pair and none: the form drawn is one of the
+  four, and the next longer one does not fit in the cells it takes; every
+  form is reached. Golden frames unchanged. Mutants: the old all-or-nothing
+  header, and the shortest form first; both killed.
+- Item 3 (the error line of a failed Codex command): **done** (2026-10-17),
+  PASS: nothing to build; the limit and its source were already in
+  `doc/ui-design.md` (zone B, failed call rows) and are carried into
+  this plan's evaluation.
+  Criterion: closed as a limit of Codex's interface, recorded in
+  [`doc/ui-design.md`](doc/ui-design.md) (zone B, plan 6, item 1) and in
+  this plan's evaluation with its source (0.163.0 generated schema,
+  `commandExecution.aggregatedOutput`); no code change.
+- Item 4 (a spawn request carrying a model or an effort, recorded):
+  **done** (2026-10-17). Criteria:
+  1. Probe P7c: one turn through `codex app-server` with the repository's
+     driver (`doc/research/probes/drivers/codex-driver.mjs`), in an empty
+     folder outside the repository, asking the orchestrator to spawn one
+     subagent with a model and the reasoning effort "low"; the
+     configuration check before and after PASS; no process left.
+  2. If the recording's `spawnAgent` item carries a non-null `model` or
+     `reasoningEffort`: it is sanitized into `testdata/probes/` and a
+     mapper test from it shows the requested values with the source
+     "spawn request", and the agent's own report winning. If both are
+     null: recorded as observed, and the schema-built fixture stays.
+
+  Results: 1 PASS, 2 PASS (the second branch, with a finding). P7c ran at
+  22:22 on Codex 0.163.0, exit 0 after 15 s, 89,410 tokens across the two
+  threads; `confcheck -cli-ran` PASS (24 files identical); the only codex
+  processes left are VS Code's. Codex sent **no `spawnAgent` item at all**,
+  only two `wait` items (model and reasoningEffort null). The values that
+  were asked for arrive on the child's `subAgentActivity` `kind:"started"`
+  (`gpt-6-luna`, `low`; the parent is on `gpt-6-sol`), which the mapper
+  already reads as the agent's own report. Recorded, sanitized, as
+  `p7c-codex-spawn-model.jsonl` in `doc/research/probes` and
+  `testdata/probes` (no user, host or account id left; no CR, no BOM);
+  `TestFixturesMatchRecordings` (12 recordings), `TestSubagentModel`
+  ("gpt-6-luna") and `TestAgentEffort` ("low") gain it, as do the
+  app-server replays; the schema-built spawn fixture stays. Recorded in
+  the probes README, `doc/research/codex-cli.md` (open question 3) and
+  `doc/reliability.md`.
+- Item 5 (plan 6's items in a live session; the owner's quota, approved on
+  2026-10-17): **done** (2026-10-17). Criteria, each run in Windows Terminal
+  maximised and at the default size, in a temporary project outside the
+  repository, with the configuration check before and after, approvals
+  allowed with F2 then `a`:
+  1. Codex 0.163.0, one turn: the orchestrator runs `git push` in the
+     folder (it fails) and spawns two subagents. B shows
+     `✗ commandExecution · exit N · <last non-blank line>` with the exit
+     code Codex reported.
+  2. C shows both agents, their models and efforts aligned; the preview
+     (font shrunk to 160 columns or more) shows the model; the inspection
+     shows the model and the effort, each with its source.
+  3. "↓ N new" appears beside the marked row when B is held while the
+     turn streams; NOT VERIFIED, not FAIL, if the turn ends before the
+     harness can hold B.
+  4. Claude Code 2.1.301, one turn on Haiku: one subagent and a failing
+     Bash command. B shows the failed command's row with its error; the
+     inspection shows "effort N/A (not reported)"; C has no effort column.
+  5. After each run: Ctrl+Q closes the window, no CLI process it started
+     remains, the configuration check PASS.
+
+  Results: 1 PASS, 2 PASS, 3 PASS (on a follow-up turn, amended below),
+  4 PASS, 5 PASS; for each CLI, 21 harness checks PASS in their final runs
+  (start, turn, badge, both sizes, quit), the exit code compared by hand
+  and the configuration check, at 156 columns maximised and 120 by 30,
+  with the built
+  application (`acc-p7.exe`, the working tree at 22:27) driven by a
+  scratchpad harness (`p7live.ps1`: SendInput keys and wheel, UI Automation
+  text, screenshots).
+  - Codex 0.163.0 (gpt-6-sol), project `acc-p7codex-222900`: turn 1 done in
+    31.5 s, "0 ACTIVE · 2 DONE", no approval asked. B:
+    `✗ commandExecution · exit 1 ·     git push <groupname>` at both sizes,
+    the last line of git's hint with its indentation; the same command run
+    by hand as Codex ran it (`powershell.exe -Command 'git push'`) in the
+    folder exits 1 and ends with the same line. C:
+    "/root/git_status gpt-6-sol   high" and "/root/list_files gpt-6-sol
+    high", the model at cell 22 in both rows at both sizes. Preview at 170
+    columns: "/root/git_status · LIVE ─ gpt-6-sol (reported)", the same for
+    list_files. Inspection: "gpt-6-sol (reported) · … · effort high
+    (reported)" for both, at both sizes. Turn 2, a 40-line follow-up while B
+    was held: "↓ 1 new" beside "36. Step 36 done." after 2 s, gone once B
+    followed. Ctrl+Q 0.21 s, CLI processes 31120 and 26504 gone;
+    `confcheck -cli-ran` PASS (every file identical).
+  - Claude Code 2.1.301 (`ANTHROPIC_MODEL` and `CLAUDE_CODE_SUBAGENT_MODEL`
+    haiku), project `acc-p7claude-223541`: one approval (Bash `git push`)
+    allowed with F2 then `a`; turn 1 done in 26.4 s, "0 ACTIVE · 1 DONE".
+    B: `✗ Bash · Exit code 128`, the first line of the error as designed
+    (`doc/ui-design.md`, Error); `git push` run by hand in Git Bash in the
+    folder exits 128. C: "general-purpose haiku-5-5   completed …", no
+    effort column. Preview at 170 columns: "general-purpose · LIVE ──────
+    claude-haiku-5-5", the source dropped for the long label as item 2
+    designs it. Inspection: "claude-haiku-5-5 (reported) · … · effort N/A
+    (not reported)" at both sizes. Turn 2: "↓ 1 new" beside "40. Step 40
+    done." after 1 s, gone once B followed. Ctrl+Q 1.12 s, CLI processes
+    30744 and 20236 gone; `confcheck -cli-ran` PASS (`~/.claude.json`:
+    three state keys changed, the sensitive ones not compared).
+
+  Criterion amended: 3 was checked on a second turn in the same session
+  (a 40-line follow-up), not on the first: in the first Codex run the
+  whole answer arrived at once before B overflowed, so the harness could
+  not hold B while it streamed (15 holds, no badge). Harness errors before
+  the passing runs, none in the application: the agent-row pattern missed
+  C's padding cell (0 rows read); B followed the 40-line answer so the
+  failed row was off screen (`FindInB` added: scroll up until it shows);
+  an F6 left after Esc moved the focus to A, so Enter at 120 columns
+  opened no inspection; the model pattern did not know the short
+  "haiku-5-5" form C draws; the preview check required the model's
+  source, which the criterion does not; and one edit put a non-ASCII
+  character in the script, which Windows PowerShell 5.1 misread.
 
 Plan 6 progress (update as each item finishes; read this first after a
 context compaction). Items and rules: [Plan 6](#plan-6---plan-5s-known-limits).
@@ -3185,6 +3353,39 @@ timing`, gofmt, `go test ./...`), and its result recorded as it finishes.
 
 Rules: as plan 5's. Windows 11 and Windows Terminal only; no live CLI turn,
 so no quota, unless the owner approves one; no new dependency.
+
+Done when every item has passed its criteria or is recorded with why it could
+not be done, the full check passes, and the evaluation summary is reported to
+the owner.
+
+## Plan 7 - The open list after plan 6
+
+The owner's request (2026-10-17), after plan 6's approval, on the list of
+what was still open: "Ok then clean the list, except for the ones we said
+that are excluded and not necessary / And for item 9 : I allow you to use
+my quota also / i let you run it sequentially step by step, once finish come
+to me with the resume and ready to commit".
+
+1. Long agent labels push zone C's model and effort columns out of line.
+2. Between 160 and about 200 columns, the preview drops its whole
+   right-hand header, the model included.
+3. The error line of a failed Codex command cannot be singled out.
+4. No recording has a spawn request carrying a model or an effort.
+5. Plan 6's items in a live session, on both CLIs.
+
+Excluded by the owner: Codex's `acceptForSession` offer (not pursued); the
+live API-key, no-five-hour-window and refusal cases (already simulated);
+Linux and macOS (a later view); amendment 4's excluded features.
+
+Each item gets its yes/no criteria in the progress list before work starts,
+regression tests, the full check (build, vet with `-tags live` and `-tags
+timing`, gofmt, `go test ./...`), and its result recorded as it finishes.
+
+Rules: as plan 6's, except that items 4 and 5 use the owner's quota,
+approved on 2026-10-17: each run in a temporary project outside the
+repository, with the configuration check before and after. Windows 11 and
+Windows Terminal only; no new dependency. No commit until the owner
+approves.
 
 Done when every item has passed its criteria or is recorded with why it could
 not be done, the full check passes, and the evaluation summary is reported to

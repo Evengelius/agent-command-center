@@ -460,7 +460,10 @@ Still open:
 3. **Subagents:** settled by P7 (section 5), except whether
    `turn/interrupt` on the parent stops the children, and whether
    `collabAgentToolCall` `spawnAgent` ever appears (another backend or
-   version).
+   version). P7c (0.163.0, the orchestrator asked to pass a model and an
+   effort): no `spawnAgent` item; the child's `subAgentActivity`
+   `kind:"started"` carries the model and effort asked for (`gpt-6-luna`,
+   `low`) [P:p7c-codex-spawn-model.jsonl].
 4. **Resume across processes:** a new app-server process, `thread/resume`
    on P6b's thread: returned `turns`, replayed `thread/tokenUsage/updated`.
 5. **`turn/steer`** mid-turn and a second `turn/start` while one is running

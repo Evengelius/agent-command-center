@@ -41,7 +41,7 @@ func countRaw(evs []event.Event, k event.Kind, method string) int {
 	return n
 }
 
-var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl"}
+var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl", "p7c-codex-spawn-model.jsonl"}
 
 // Every line of every app-server recording maps to at least one event, and no
 // line is unreadable or unrecognised.
@@ -420,6 +420,11 @@ func TestSubagentModel(t *testing.T) {
 			"01a14937-2992-7d51-8e12-7ff3613a8069": "gpt-6-sol", // /root/list_files
 			"01a14937-2f86-7543-9d91-e0a0e52125cc": "gpt-6-sol", // /root/create_found
 		}},
+		// P7c (plan 7, item 4): asked for a smaller model, Codex 0.163.0
+		// sends no spawnAgent item; subAgentActivity carries the model.
+		{"p7c-codex-spawn-model.jsonl", map[string]string{
+			"01a14b87-c26f-7a73-aebb-233a7dd48103": "gpt-6-luna", // /root/count_files
+		}},
 	} {
 		_, per := replay(t, c.file)
 		got := map[string]string{}
@@ -624,6 +629,9 @@ func TestAgentEffort(t *testing.T) {
 		{"p7b-codex-subagents.jsonl", map[string]string{
 			"01a14937-2992-7d51-8e12-7ff3613a8069": "high", // /root/list_files
 			"01a14937-2f86-7543-9d91-e0a0e52125cc": "high", // /root/create_found
+		}},
+		{"p7c-codex-spawn-model.jsonl", map[string]string{
+			"01a14b87-c26f-7a73-aebb-233a7dd48103": "low", // /root/count_files
 		}},
 	} {
 		_, per := replay(t, c.file)

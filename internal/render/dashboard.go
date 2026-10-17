@@ -753,13 +753,17 @@ func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	agents := agentsByActivity(s)
 	active, done := activeAgents(s)
 	right := plain(fmt.Sprintf("%d ACTIVE · %d DONE", active, done), stText)
-	var cols agentCols // over every agent, so the columns hold while scrolling
+	cols := agentCols{label: 14} // over every agent, so the columns hold while scrolling
 	for _, a := range agents {
+		cols.label = max(cols.label, textWidth(a.Label)+1)
 		if a.Effort.Present {
 			cols.effort = max(cols.effort, textWidth(a.Effort.Text)+1)
 		}
 		cols.requested = cols.requested || requested(a.Model)
 	}
+	// The label column never leaves the activity under 12 cells: "▸✓ ",
+	// the model's 12, the effort's, and the right part's 21 (plan 7, item 1).
+	cols.label = min(cols.label, max(14, w-4-3-12-cols.effort-21-12))
 	if cols.requested { // the footnote, as D's "†"
 		right = append(line{sp("* requested model · ", stGrey)}, right...)
 	}
@@ -802,10 +806,13 @@ func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	return box('C', zoneTitle(title, ui.Focus == "C"), right, body, w, h, borderFor(ui.Focus == "C"))
 }
 
-// agentCols are the optional parts of zone C's rows, drawn when any agent
-// has a value for them (plan 6, items 5 and 6): the effort column's width,
-// 0 for none, and the "*" footnote of a requested model.
+// agentCols are zone C's columns over every agent: the label's width, the
+// longest label and a space, at least 14 (plan 7, item 1), and the optional
+// parts drawn when any agent has a value for them (plan 6, items 5 and 6):
+// the effort column's width, 0 for none, and the "*" footnote of a requested
+// model.
 type agentCols struct {
+	label     int
 	effort    int
 	requested bool
 }
@@ -847,7 +854,7 @@ func agentRow(a *state.Agent, ui UI, w int, cols agentCols) line {
 		tok = count(a.Tokens.V) + " tok"
 	}
 	right := plain(fmt.Sprintf("  %7s  %10s", elapsed(a.StartedAt, a.EndedAt, ui.Now), tok), stGrey)
-	left := line{deco(sel, stTitle), agentSymbol(a.Status), sp(" "+padTo(a.Label, 14), stText), sp(m, modelStyle(m))}
+	left := line{deco(sel, stTitle), agentSymbol(a.Status), sp(" "+padTo(fitLabel(a.Label, cols.label-1), cols.label), stText), sp(m, modelStyle(m))}
 	mark := ""
 	if requested(a.Model) {
 		mark = "*"
@@ -858,6 +865,15 @@ func agentRow(a *state.Agent, ui UI, w int, cols agentCols) line {
 	}
 	left = append(left, sp(activity, stGrey))
 	return spread(left, right, w)
+}
+
+// fitLabel cuts a label longer than w cells with "…"; the preview and the
+// inspection show it whole (plan 7, item 1).
+func fitLabel(s string, w int) string {
+	if textWidth(s) <= w {
+		return s
+	}
+	return cut(s, w-1) + "…"
 }
 
 // preview is the selected agent's last events, at wide width.
@@ -894,14 +910,30 @@ func preview(s *state.State, ui UI, w, h int, sc *Screen) []line {
 		hint = heldHint(top, sc.Preview.Rows-top-room, "scroll to the end follows")
 	}
 	body = append(body, hint)
-	right := plain("model N/A (not reported)", stGrey)
+	title := line{sp(a.Label+" · ", stBold), sp("LIVE", stDone)}
+	return box('P', title, previewRight(a, w-9-title.width()), body, w, h, stFrame)
+}
+
+// previewRight is the preview's right-hand header in room cells: the first
+// that fits of the model, its source and the effort; the model and its
+// source; the model alone; nothing. The model is never cut (plan 7, item 2).
+func previewRight(a *state.Agent, room int) line {
+	model := plain("model N/A", stGrey)
+	src := " (not reported)"
 	if a.Model.Present {
-		right = line{sp(a.Model.Text, modelStyle(a.Model.Text)), sp(" "+source(a.Model), stGrey)}
+		model, src = line{sp(a.Model.Text, modelStyle(a.Model.Text))}, " "+source(a.Model)
 	}
+	withSrc := append(append(line{}, model...), sp(src, stGrey))
+	full := withSrc
 	if a.Effort.Present {
-		right = append(right, sp(" · effort "+a.Effort.Text+" "+source(a.Effort), stGrey))
+		full = append(append(line{}, withSrc...), sp(" · effort "+a.Effort.Text+" "+source(a.Effort), stGrey))
 	}
-	return box('P', line{sp(a.Label+" · ", stBold), sp("LIVE", stDone)}, right, body, w, h, stFrame)
+	for _, r := range []line{full, withSrc, model} {
+		if r.width() <= room {
+			return r
+		}
+	}
+	return nil
 }
 
 func clockSec(t time.Time) string {
