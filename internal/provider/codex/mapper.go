@@ -409,6 +409,10 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 		return []event.Event{m.ev(event.MessageDelta, event.AI, agent, p.TurnID, p.ItemID, raw, event.Delta{MessageID: p.ItemID, Block: "text", Text: p.Delta})}
 	case "item/reasoning/summaryTextDelta", "item/reasoning/textDelta":
 		return []event.Event{m.ev(event.MessageDelta, event.AI, agent, p.TurnID, p.ItemID, raw, event.Delta{MessageID: p.ItemID, Block: "thinking", Text: p.Delta})}
+	case "item/commandExecution/outputDelta":
+		// First seen in P7b (Codex 0.163.0): a running command's output
+		// (events-and-state.md, Tool lifecycle).
+		return []event.Event{m.ev(event.ToolProgress, event.Observed, agent, p.TurnID, p.ItemID, raw, event.Tool{ToolID: p.ItemID, Output: p.Delta})}
 	case "thread/tokenUsage/updated":
 		return []event.Event{m.tokenUsage(p.TokenUse, agent, p.TurnID, raw)}
 	case "account/rateLimits/updated":
@@ -449,6 +453,9 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 		return []event.Event{m.status("", raw, "remote control "+s.Status, "")}
 	case "skills/changed":
 		return []event.Event{m.status("", raw, "skills changed", "")}
+	case "account/updated":
+		// First seen in P7b (Codex 0.163.0): the sign-in mode and plan.
+		return []event.Event{m.status("", raw, "account updated", "")}
 	}
 	return []event.Event{m.unknown(raw, r.Method, "")}
 }
@@ -579,11 +586,20 @@ func (m *Mapper) subAgent(it item, parent, turn string, line []byte) []event.Eve
 	if it.AgentThreadID == "" {
 		return []event.Event{m.unknown(line, "item/subAgentActivity", "activity without agentThreadId")}
 	}
+	if it.AgentThreadID == m.main {
+		// Codex 0.163.0: a child reporting to the orchestrator emits
+		// "interacted" toward "/root" in its own thread (P7b). The
+		// orchestrator is not an agent of zone C.
+		return []event.Event{m.status(parent, line, it.Kind+" "+first(it.AgentPath, "orchestrator"), "")}
+	}
 	a := event.Agent{Key: it.AgentThreadID, Parent: parent, Label: it.AgentPath, Type: "thread", Status: it.Kind}
 	k := event.AgentProgress
 	switch it.Kind {
 	case "started":
 		k, a.Status = event.AgentStarted, "running"
+	case "completed":
+		// Codex 0.163.0 also marks a child's end on the parent (P7b).
+		k = event.AgentCompleted
 	case "interrupted":
 		k = event.AgentFailed
 	}

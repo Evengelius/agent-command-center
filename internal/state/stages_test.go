@@ -99,25 +99,33 @@ func TestStagesP3b(t *testing.T) {
 	}
 }
 
-// P7: one turn, both children directly under the orchestrator, each ending
-// completed.
+// P7 (Codex 0.145.0) and P7b (0.163.0): one turn, both children directly
+// under the orchestrator, each ending completed. P7b's children report to
+// "/root", the orchestrator, which must not become an agent (L5).
 func TestStagesP7(t *testing.T) {
-	s, _ := replayState(t, "p7-codex-subagents.jsonl", codex.ProviderID, codex.NewMapper())
-	if got := outcomes(s); got != "completed" {
-		t.Fatalf("stages %q, want completed", got)
-	}
-	if !strings.HasPrefix(s.Stages[0].Prompt, "Spawn two subagents") {
-		t.Errorf("stage prompt %q", s.Stages[0].Prompt)
-	}
-	labels := map[string]bool{}
-	for _, k := range s.Order {
-		a := s.Agents[k]
-		labels[a.Label] = true
-		if a.Parent != "" || a.Stage != 1 || a.Status != state.AgentCompleted {
-			t.Errorf("child %s %q: parent %q, stage %d, status %q", k, a.Label, a.Parent, a.Stage, a.Status)
+	for _, name := range []string{"p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl"} {
+		s, _ := replayState(t, name, codex.ProviderID, codex.NewMapper())
+		if got := outcomes(s); got != "completed" {
+			t.Fatalf("%s: stages %q, want completed", name, got)
 		}
-	}
-	if len(s.Order) != 2 || !labels["/root/list_files"] || !labels["/root/create_found"] {
-		t.Errorf("children %v, want /root/list_files and /root/create_found", labels)
+		if !strings.HasPrefix(s.Stages[0].Prompt, "Spawn two subagents") {
+			t.Errorf("%s: stage prompt %q", name, s.Stages[0].Prompt)
+		}
+		labels := map[string]bool{}
+		for _, k := range s.Order {
+			a := s.Agents[k]
+			labels[a.Label] = true
+			if a.Parent != "" || a.Stage != 1 || a.Status != state.AgentCompleted {
+				t.Errorf("%s: child %s %q: parent %q, stage %d, status %q", name, k, a.Label, a.Parent, a.Stage, a.Status)
+			}
+			for _, h := range a.History {
+				if h == "progress after end" {
+					t.Errorf("%s: child %q: progress after end", name, a.Label)
+				}
+			}
+		}
+		if len(s.Order) != 2 || !labels["/root/list_files"] || !labels["/root/create_found"] {
+			t.Errorf("%s: children %v, want /root/list_files and /root/create_found", name, labels)
+		}
 	}
 }

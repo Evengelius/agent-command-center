@@ -7,6 +7,8 @@ emit. They become test fixtures in plan 4.
   followed: P3b without a separate approval (the owner then set the rule that
   safe re-runs proceed and are reported), and P5b and P6b under that rule.
   P7, on 2026-10-16, is P6b with another prompt, under the same rule.
+  P7b, on 2026-10-17, is P7 again on Codex CLI 0.163.0, under the same rule,
+  after L5 showed a stuck "/root" agent on that version.
 - **Where:** a throwaway folder outside the repository (the session
   scratchpad under `%TEMP%`, written `<probe-root>` in the recordings), one
   fresh subfolder per probe.
@@ -50,6 +52,7 @@ one event per line.
 | P6m | `model/list` over `codex app-server` (no model call) | `p6-codex-model-list.json` | `gpt-5.6-sol` (default), `gpt-5.6-terra`, `gpt-5.6-luna` |
 | P6b | P6 with `"model": "gpt-5.6-sol"` in `thread/start` | `p6b-codex-app-server.jsonl` | `hello.txt` written after a file-change approval; second turn interrupted; exit 0 |
 | P7 | the same driver with a fourth argument, a prompt: one turn, "Spawn two subagents in parallel. The first lists the files in the current directory. The second creates a file named found.txt ... Wait for both, then reply with the single word done."; the driver ignores child-thread notifications for its own turn logic | `p7-codex-subagents.jsonl` | two subagents ran in parallel; the second's file change was approved; `found.txt` written; parent replied; exit 0 after 30 s |
+| P7b | P7 on Codex CLI 0.163.0 with model `gpt-6-sol` (2026-10-17, about 11:35 local time) | `p7b-codex-subagents.jsonl` | the same outcome in 25 s; new in 0.163.0: each child's `subAgentActivity` `kind:"interacted"` toward the orchestrator (`agentPath` `/root`), a `kind:"completed"` on the parent for each child, 28 `item/commandExecution/outputDelta`, one `account/updated`, an `accountId` in the rate limits (redacted by the sanitizer) |
 
 Quota used: 7 short Claude Haiku turns and 2 subagent runs (P1 to P4, P3b; the
 results report a total of about USD 0.03 API-equivalent); 3 short Codex turns
@@ -185,6 +188,9 @@ credentials, auth, oauth, token or secret.
 
 P7 (2026-10-16, about 00:06 local time): the 22 hashes before and after were
 identical.
+
+P7b (2026-10-17, 11:35 local time, `confcheck` with `-cli-ran`): the 24
+files before and after were identical (configuration: PASS).
 
 Not checked: the files the CLIs write by design for each session (Claude
 transcripts under `~/.claude/projects`, Codex rollouts under

@@ -8,7 +8,7 @@ const { PROBE_USER: U, PROBE_HOST: H, PROBE_ORG: G } = process.env;
 if (!U || !H || !G) throw new Error("set PROBE_USER, PROBE_HOST and PROBE_ORG");
 const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const SEP = "(?:\\\\+|/)+";
-const REDACT_KEYS = new Set(["email", "organization", "installationId", "serverName"]);
+const REDACT_KEYS = new Set(["email", "organization", "installationId", "serverName", "accountId"]);
 
 const rules = [
   [new RegExp(`C:${SEP}Users${SEP}${esc(U)}${SEP}AppData${SEP}Local${SEP}Temp${SEP}claude${SEP}c--javadev-projets-agent-command-center${SEP}[0-9a-f-]{36}${SEP}scratchpad`, "gi"), "<probe-root>"],

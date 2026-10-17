@@ -145,7 +145,8 @@ age a value.
 - The root is the orchestrator (the main session or thread). Each agent
   node hangs under its parent: Claude Code `parent_task_id`, else the
   orchestrator (P3b: `spawn_depth: 1`); Codex the thread that emitted the
-  `subAgentActivity` (P7), with `agentPath` as its label.
+  `subAgentActivity` (P7), with `agentPath` as its label. An activity toward
+  the orchestrator's own thread (`/root`, P7b) is not an agent.
 - **Stages** (zone A's workflow tree): with a reported plan (Codex
   `turn/plan/updated`), the stages are its steps with their status
   (`observed`). Otherwise each user turn is a stage, and its agents and
@@ -308,7 +309,7 @@ States: `Started`, `Running`, `Completed`, `Failed`, `Denied`,
 | From | Trigger | To | Claude Code | Codex |
 | - | - | - | - | - |
 | (none) | `tool.started` | `Started` | **P** `tool_use` (P2) | **P** `item/started` (P6b) |
-| `Started` | output or progress | `Running` | **D** `tool_progress` heartbeats | **D** `item/commandExecution/outputDelta` (none in P6b or P7) |
+| `Started` | output or progress | `Running` | **D** `tool_progress` heartbeats | **P** `item/commandExecution/outputDelta` (P7b; none in P6b or P7) |
 | `Started`, `Running` | `tool.completed` without error | `Completed` | **P** `tool_result` (P2) | **P** `item/completed` (P6b) |
 | `Started`, `Running` | `tool.completed` with an error | `Failed` | **D** `is_error` | **D** `status:"failed"` |
 | `Started` | its approval denied | `Denied` | **D** | **D** |

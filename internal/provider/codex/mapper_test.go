@@ -40,7 +40,7 @@ func countRaw(evs []event.Event, k event.Kind, method string) int {
 	return n
 }
 
-var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl"}
+var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl"}
 
 // Every line of every app-server recording maps to at least one event, and no
 // line is unreadable or unrecognised.
@@ -109,6 +109,37 @@ func TestP7Counts(t *testing.T) {
 	}
 	if n := count(all, event.ApprovalRequest); n != 1 {
 		t.Errorf("approvals %d, want 1", n)
+	}
+}
+
+// P7b (Codex 0.163.0): 28 command output chunks become tool progress, and the
+// children's "interacted" toward "/root" never names the orchestrator as an
+// agent; the two "completed" activities end the two children.
+func TestP7bCounts(t *testing.T) {
+	_, per := replay(t, "p7b-codex-subagents.jsonl")
+	all := fixture.Flatten(per)
+	if n := countRaw(all, event.ToolProgress, "item/commandExecution/outputDelta"); n != 28 {
+		t.Errorf("tool progress %d, want 28", n)
+	}
+	var main string
+	for _, e := range all {
+		if e.Kind == event.SessionStarted {
+			main = e.Payload.(event.Started).SessionID
+		}
+	}
+	for _, e := range all {
+		if a, ok := e.Payload.(event.Agent); ok && (a.Key == main || a.Label == "/root") {
+			t.Errorf("%v names the orchestrator as agent %q (%q)", e.Kind, a.Key, a.Label)
+		}
+	}
+	n := 0
+	for _, e := range all {
+		if e.Kind == event.AgentCompleted && strings.Contains(e.Raw, `"type":"subAgentActivity"`) && strings.Contains(e.Raw, `"kind":"completed"`) {
+			n++
+		}
+	}
+	if n != 4 {
+		t.Errorf("completions from subAgentActivity %d, want 4 (started and completed items of 2 children)", n)
 	}
 }
 

@@ -298,6 +298,20 @@ Observed in P7 (two subagents in parallel, [P:p7-codex-subagents.jsonl]):
 - Not observed: `turn/interrupt` on the parent while children run (section
   10, question 3).
 
+Observed in P7b (P7 again on Codex CLI 0.163.0, [P:p7b-codex-subagents.jsonl]):
+- **A child reports to the orchestrator with `subAgentActivity`
+  `kind:"interacted"`** in its own thread, whose `agentThreadId` is the
+  orchestrator's thread and `agentPath` is `/root`. Read as an agent, it made
+  a "/root" node that never ended (L5, 2026-10-17); it is now a status of the
+  child.
+- **A child's end is also marked on the parent**: `subAgentActivity`
+  `kind:"completed"` (`agentPath` the child's), after the child's
+  `turn/completed`.
+- **`item/commandExecution/outputDelta`** streams command output (28 chunks),
+  and `account/updated` carries `authMode` and `planType`.
+- The `started` activity now carries the child's `model` and
+  `reasoningEffort`; the dashboard does not read them yet.
+
 ## 6. Observation points
 
 | Point | Format / location | Documented | Notes and source |

@@ -28,6 +28,7 @@ var recordings = []struct {
 	{"p6-codex-app-server.jsonl", codex.ProviderID, func() fixture.Mapper { return codex.NewMapper() }},
 	{"p6b-codex-app-server.jsonl", codex.ProviderID, func() fixture.Mapper { return codex.NewMapper() }},
 	{"p7-codex-subagents.jsonl", codex.ProviderID, func() fixture.Mapper { return codex.NewMapper() }},
+	{"p7b-codex-subagents.jsonl", codex.ProviderID, func() fixture.Mapper { return codex.NewMapper() }},
 }
 
 func replayEvents(t *testing.T, name, provider string, m fixture.Mapper) []event.Event {

@@ -21,6 +21,7 @@ func TestFixturesMatchRecordings(t *testing.T) {
 		"p6-codex-app-server.jsonl":          37,
 		"p6b-codex-app-server.jsonl":         94,
 		"p7-codex-subagents.jsonl":           173,
+		"p7b-codex-subagents.jsonl":          215,
 	}
 	copies, _ := filepath.Glob("../../testdata/probes/*.jsonl")
 	if len(copies) != len(want) {
