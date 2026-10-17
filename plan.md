@@ -20,13 +20,14 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
-**Plan 6, plan 5's known limits, done, committed at the owner's request** (the
+**Plan 6, plan 5's known limits, approved by the owner on 2026-10-17; no
+plan 7 is defined yet** (the
 owner's request of 2026-10-17, [Plan 6](#plan-6---plan-5s-known-limits) at
 the end). Every item done; the evaluation summary, 6 of 6 PASS, is in
 [`doc/plan6-evaluation.md`](doc/plan6-evaluation.md), with the simulated run
 the owner asked for (42 of 42 PASS, both sizes), then items 5 and 6 the
 owner added after it (8 of 8 criteria PASS, one amended; the simulated run
-extended, 53 of 53 PASS, both sizes).
+extended, 53 of 53 PASS, both sizes), committed as df273fe.
 
 **Plan 5, post-MVP improvements, approved by the owner on 2026-10-17** (the
 owner's request of 2026-10-17, [Plan 5](#plan-5---post-mvp-improvements) at
