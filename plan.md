@@ -20,8 +20,99 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
+**Plan 11, a live approval offering the allow for the session, done and
+awaiting the owner's approval**
+(the owner's request of 2026-10-18,
+[Plan 11](#plan-11---a-live-approval-offering-the-allow-for-the-session) at
+the end). Its one item is closed as not verifiable, by the owner's choice;
+the evaluation summary is in
+[`doc/plan11-evaluation.md`](doc/plan11-evaluation.md).
+
+Plan 11 progress (update as each item finishes; read this first after a
+context compaction). Items and rules:
+[Plan 11](#plan-11---a-live-approval-offering-the-allow-for-the-session).
+Baseline: 621609e, 235 top-level tests in 14 packages, 0 FAIL.
+
+- Setup (2026-10-18, by the owner, in an administrator PowerShell):
+  `codex sandbox setup --elevated --current-user` printed "Windows
+  elevated sandbox setup completed for <user> at
+  <HOME>\.codex." (user name and home redacted as in the probe
+  recordings). Checked against a configuration snapshot
+  taken just before: of the 24 files, only `~/.codex/config.toml` changed,
+  `[windows] sandbox` from "unelevated" to "elevated" (line 18); one
+  firewall rule added, `codex_sandbox_offline_block_inbound`; the accounts
+  CodexSandboxOffline and CodexSandboxOnline and five Codex firewall rules
+  were already there before it. A new snapshot is the baseline for the
+  runs. Undo: set the line back to "unelevated" (`codex sandbox
+  uninstall` removes the legacy sandbox's accounts and rules, more than
+  this setup added).
+- Item 1 (a live approval whose list holds `acceptForSession`): closed as
+  not verifiable (2026-10-18, the owner's choice, findings below).
+  Criteria, plan 9's item 3 made concrete:
+  1. Probe P11n (P9n again, the elevated sandbox, the dashboard's
+     handshake, `-c features.network_proxy=true -c
+     sandbox_mode="workspace-write" -c
+     sandbox_workspace_write.network_access=true`, a temporary folder
+     outside the repository, answering `acceptForSession`, the same
+     `curl.exe` command to example.com run twice): the first network
+     approval's `availableDecisions` holds `acceptForSession`; the
+     second command asks no approval; the configuration check before and
+     after PASS.
+  2. The recording, sanitized, enters `testdata/probes/` and
+     `doc/research/probes/`; `TestFixturesMatchRecordings` counts it; a
+     test replays it: the approval's offered decisions hold the allow for
+     the session, and the card offers "s allow for the session".
+  3. Live, in the dashboard, Windows Terminal maximised and at the default
+     size: the card offers "s allow for the session", `s` answers it, the
+     wrapper's log holds `acceptForSession` as the reply, the card reads
+     "allowed for the session by you", and the second command asks no
+     approval; configuration check PASS; no process left after Ctrl+Q.
+  If Codex cannot raise a network approval on this machine (the proxy, a
+  policy): recorded as not verifiable with the new evidence, not as PASS.
+
+  Findings so far (2026-10-18, Codex 0.163.0):
+  - P11n, with the overrides above: the first `curl.exe` was refused by
+    Codex's managed proxy, "Network access to "example.com" was blocked:
+    domain is not on the allowlist for the current sandbox mode", with no
+    network approval. Codex then asked an ordinary escalation,
+    `item/commandExecution/requestApproval` with no
+    `networkApprovalContext`, reason "Allow the requested curl command to
+    reach example.com outside the sandbox?", `availableDecisions`
+    `["accept", {"acceptWithExecpolicyAmendment": ...}, "cancel"]`: no
+    `acceptForSession`. The probe answered `acceptForSession` anyway and
+    Codex took it: the second run asked nothing. Both runs printed "000"
+    (the corporate proxy), final reply "000 000". Criterion 1 not met.
+  - P11n-b, without `network_access`: both runs failed in under 200 ms
+    with "000" and no approval of any kind: the elevated sandbox blocks
+    the network itself, the managed proxy is never consulted.
+  - Why (source of rust-v0.163.0, read as data): the domain approval that
+    offers "allow for the session" comes from the managed proxy's policy
+    decider. `core/src/session/session.rs` builds that decider only when
+    `config_layer_stack.requirements_toml().network` is set, and
+    `core/src/config/network_proxy_spec.rs` `start_proxy` installs it only
+    then (`enable_network_approval_flow`); otherwise an allowlist miss is
+    a deny. `requirements.toml` is the admin-enforced layer
+    (`config/src/loader/mod.rs`): on Windows
+    `%ProgramData%\OpenAI\Codex\requirements.toml`, or an enterprise cloud
+    bundle; no `-c` override reaches it. The file does not exist on this
+    machine.
+  - Configuration check after both probes, against the post-elevation
+    snapshot: PASS (24 files identical, 5 new session files, CLI ran).
+  - Raising the approval needs a machine-wide
+    `C:\ProgramData\OpenAI\Codex\requirements.toml` with a `[network]`
+    table (an administrator write, enforced on every Codex session on the
+    machine until removed); outside this plan's per-process rule, so it was
+    proposed, not applied. The owner chose on 2026-10-18 to close the item
+    as not verifiable with this evidence and not to pursue it; criteria 2
+    and 3 were not attempted (nothing to record or show).
+  - Recordings: `doc/research/probes/p11n-codex-network-elevated.jsonl`
+    (53 lines) and `p11n-b-codex-network-offline.jsonl` (39 lines),
+    sanitized, in that folder only (no test replays them), rows P11n and
+    P11n-b of its README; the finding in `doc/research/codex-cli.md`, open
+    question 4.
+
 **Plan 10, a spawned Codex agent's label and the timing step, approved by
-the owner on 2026-10-18; no plan 11 is defined yet**
+the owner on 2026-10-18**
 (the owner's request of 2026-10-18,
 [Plan 10](#plan-10---a-spawned-codex-agents-label-and-the-timing-step) at
 the end). Both items verified; the evaluation summary is in
@@ -3765,3 +3856,24 @@ commit until the owner approves.
 
 Done when both items have passed their criteria, the full check passes, and
 the evaluation summary is reported to the owner.
+
+## Plan 11 - A live approval offering the allow for the session
+
+The owner's request (2026-10-18), after plan 10's approval: plan 9's item 3,
+recorded as not verifiable because a network approval needs Codex's
+elevated Windows sandbox, which the owner then set up ("If I elevate it,
+you could simulate it I guess?", then the setup command, run by the owner).
+
+1. A live approval whose list includes `acceptForSession`, answered from
+   the dashboard.
+
+Rules: as plan 9's; the owner's Codex quota, each run in a temporary
+project outside the repository, with the configuration check before and
+after against the snapshot taken after the setup. Per-process `-c`
+overrides only; no other configuration file or system setting changed
+without the owner's approval. Windows 11 and Windows Terminal only; no new
+dependency. No commit until the owner approves.
+
+Done when the item has passed its criteria or is recorded with why it
+could not be done, the full check passes, and the evaluation summary is
+reported to the owner.

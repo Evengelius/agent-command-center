@@ -424,6 +424,20 @@ All from app-server unless stated. "N/A" means no supported source.
    local sandbox accounts, firewall rules and ACLs and writes
    `windows.sandbox = "elevated"` to `config.toml`
    (`cli/src/sandbox_setup.rs` 86-124), declined by the owner (plan 9).
+   With the elevated sandbox set up by the owner (plan 11), still none:
+   P11n refused the domain in Codex's managed proxy, "domain is not on the
+   allowlist for the current sandbox mode", then asked an ordinary
+   escalation with `["accept", {"acceptWithExecpolicyAmendment": ...},
+   "cancel"]` [P:p11n-codex-network-elevated.jsonl]; without network access
+   the sandbox blocks the network with no approval at all
+   [P:p11n-b-codex-network-offline.jsonl]. The allowlist-miss decider that
+   raises a network approval is built only when the admin-enforced
+   `requirements.toml` has a `[network]` table (openai/codex rust-v0.163.0,
+   `core/src/session/session.rs`, `managed_network_requirements_configured`;
+   `core/src/config/network_proxy_spec.rs`, `start_proxy`); on Windows that
+   file is `%ProgramData%\OpenAI\Codex\requirements.toml`
+   (`config/src/loader/mod.rs`), out of reach of `-c`. The owner closed the
+   item as not verifiable on 2026-10-18 rather than write that file.
    Native sandbox stays in charge; the dashboard never weakens it.
 5. **Persistence, cancellation, resume?** Codex persists every thread
    (rollout path in `thread.path`); `turn/interrupt` ends a turn as
