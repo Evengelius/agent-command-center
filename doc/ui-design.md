@@ -610,7 +610,10 @@ The live subagents (AM2 C1-C11; AM4 D3).
   counts derived from the agent machines (`Running` and `WaitingApproval`
   are active).
 - **One row per agent**: status symbol, label (Claude Code's description or
-  `agent_id`; Codex `agentPath`; a column as wide as the longest label
+  `agent_id`; Codex `agentPath`; else, for a Codex agent its spawn request
+  alone names, "task: " and the first line of the request's `prompt`, cut
+  at 24 characters with "…", replaced by the agent's own label when one
+  comes, the whole prompt in the inspection; plan 10, item 1; a column as wide as the longest label
   and a space, at least 14 cells, so every model starts at the same cell;
   never so wide that the task keeps fewer than 12 cells, a longer label
   ending in "…", whole in the preview and the inspection; plan 7, item 1),

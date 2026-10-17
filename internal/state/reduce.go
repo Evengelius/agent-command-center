@@ -508,9 +508,9 @@ func (s *State) agent(ev event.Event, p event.Agent) []Command {
 		}
 		if a.Status.Final() {
 			// The model of a message that ended late, or a spawn request's
-			// model and effort with its parent (plan 6, items 4 and 6): no
-			// progress.
-			if p == (event.Agent{Key: p.Key, Parent: p.Parent, Model: p.Model, Effort: p.Effort, ModelRequested: p.ModelRequested}) {
+			// model, effort and label with its parent (plan 6, items 4 and 6;
+			// plan 10, item 1): no progress.
+			if p == (event.Agent{Key: p.Key, Parent: p.Parent, Label: p.Label, Description: p.Description, Model: p.Model, Effort: p.Effort, ModelRequested: p.ModelRequested}) {
 				s.update(a, p)
 				return nil
 			}
@@ -554,10 +554,17 @@ func (s *State) finishAgent(a *Agent, st AgentStatus, ev event.Event) {
 }
 
 func (s *State) update(a *Agent, p event.Agent) {
-	if p.Label != "" {
-		a.Label = p.Label
+	// A spawn request's label and description fill only an agent with none
+	// of its own, whose own label then replaces them, in either order (plan
+	// 10, item 1).
+	if p.Label != "" && p.ModelRequested {
+		if a.Label == "" || a.Label == "unannounced agent" || a.LabelRequested {
+			a.Label, a.LabelRequested = p.Label, true
+		}
+	} else if p.Label != "" {
+		a.Label, a.LabelRequested = p.Label, false
 	}
-	if p.Description != "" {
+	if p.Description != "" && (!p.ModelRequested || a.Description == "") {
 		a.Description = p.Description
 	}
 	if p.Parent != "" {

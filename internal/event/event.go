@@ -169,7 +169,9 @@ type Agent struct {
 	Effort string `json:",omitempty"`
 	// ModelRequested marks Model and Effort as the ones a spawn call asked
 	// for, not the agent's own report: each fills only an empty value (plan
-	// 6, items 4 and 6).
+	// 6, items 4 and 6). It marks Label and Description the same way: a
+	// spawn request's label fills only an agent without its own (plan 10,
+	// item 1).
 	ModelRequested bool `json:",omitempty"`
 }
 

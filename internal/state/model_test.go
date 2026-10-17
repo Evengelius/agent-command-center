@@ -118,3 +118,49 @@ func TestRequestedEffort(t *testing.T) {
 		t.Errorf("own after the end: %+v", e)
 	}
 }
+
+// TestRequestedLabel is plan 10, item 1, criterion 2: a spawn request's label
+// replaces "unannounced agent" and a previous spawn label, never the agent's
+// own, which replaces it, in either order; its description fills only an
+// empty one; an ended agent still takes it, as it takes a requested model.
+func TestRequestedLabel(t *testing.T) {
+	req := func(k, l, d string) event.Agent {
+		return event.Agent{Key: k, Label: l, Description: d, Model: "gpt-5.6-luna", ModelRequested: true}
+	}
+	type got struct {
+		Label, Description string
+		Requested          bool
+	}
+	check := func(b *bench, k, what string, want got) {
+		t.Helper()
+		a := b.s.Agents[k]
+		if g := (got{a.Label, a.Description, a.LabelRequested}); g != want {
+			t.Errorf("%s: %+v, want %+v", what, g, want)
+		}
+	}
+	b := newBench(t)
+	b.ev(event.AgentProgress, "k1", req("k1", "task: Count", "Count the files.")) // the agent's first event (P9a)
+	check(b, "k1", "unannounced, then requested", got{"task: Count", "Count the files.", true})
+	b.ev(event.AgentProgress, "k1", req("k1", "task: List", "List them.")) // a later request replaces a requested label
+	check(b, "k1", "requested twice", got{"task: List", "Count the files.", true})
+	b.ev(event.AgentStarted, "k1", event.Agent{Key: "k1", Type: "thread", Label: "/root/count"}) // its own replaces it
+	check(b, "k1", "own after requested", got{"/root/count", "Count the files.", false})
+	b.ev(event.AgentProgress, "k1", req("k1", "task: Again", "Again.")) // a request never replaces its own
+	check(b, "k1", "requested after own", got{"/root/count", "Count the files.", false})
+
+	b.ev(event.ToolStarted, "k2", event.Tool{ToolID: "tu2", Name: "Read"}) // unannounced first
+	check(b, "k2", "unannounced", got{"unannounced agent", "", false})
+	b.ev(event.AgentProgress, "k2", req("k2", "task: Read", "Read a file."))
+	check(b, "k2", "requested over unannounced", got{"task: Read", "Read a file.", true})
+
+	b.ev(event.AgentStarted, "k3", event.Agent{Key: "k3", Type: "subagent", Label: "Explore", Description: "Find the tests"})
+	b.ev(event.AgentProgress, "k3", req("k3", "task: Other", "Other."))
+	check(b, "k3", "own first", got{"Explore", "Find the tests", false})
+
+	b.ev(event.AgentCompleted, "k4", event.Agent{Key: "k4", Status: "completed"}) // ended, unannounced
+	b.ev(event.AgentProgress, "k4", req("k4", "task: Late", "Late."))
+	check(b, "k4", "requested after the end", got{"task: Late", "Late.", true})
+	if a := b.s.Agents["k4"]; len(a.History) != 0 || !a.Model.Present {
+		t.Errorf("k4: history %q, model %+v", a.History, a.Model)
+	}
+}

@@ -211,6 +211,9 @@ type Agent struct {
 	Error        string
 	Stage        int    // the last stage when it appeared, 1-based; 0 before any turn
 	Seq          uint64 // the event that created it, for ordering in zone A
+	// LabelRequested marks Label as a spawn request's, which the agent's own
+	// label replaces (plan 10, item 1).
+	LabelRequested bool
 }
 
 // Approval is one approval or question.

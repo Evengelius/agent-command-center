@@ -559,6 +559,7 @@ type item struct {
 	AgentPath         string          `json:"agentPath"`
 	Model             string          `json:"model"`           // subAgentActivity, Codex 0.163.0 (P7b); absent before
 	ReasoningEffort   string          `json:"reasoningEffort"` // beside model (P7b; plan 6, item 6)
+	Prompt            string          `json:"prompt"`          // a spawnAgent call's task (P9a; plan 10, item 1)
 	SenderThreadID    string          `json:"senderThreadId"`
 	ReceiverThreadIDs []string        `json:"receiverThreadIds"`
 	AgentsStates      map[string]struct {
@@ -669,10 +670,16 @@ func (m *Mapper) tool(started bool, it item, raw json.RawMessage, agent, turn st
 		// The states of the agents the call concerns, in a stable order.
 		// A spawn request's model and effort, for each agent it created (plan
 		// 6, items 4 and 6; the schema's `model`, "Model requested for the
-		// spawned agent", and `reasoningEffort` beside it).
-		if it.Tool == "spawnAgent" && (it.Model != "" || it.ReasoningEffort != "") {
+		// spawned agent", and `reasoningEffort` beside it), and the label and
+		// description its prompt gives an agent Codex names nowhere else
+		// (multi-agent v1, P9a; plan 10, item 1).
+		label := spawnLabel(it.Prompt)
+		if it.Tool == "spawnAgent" && (it.Model != "" || it.ReasoningEffort != "" || label != "") {
 			for _, id := range it.ReceiverThreadIDs {
 				a := event.Agent{Key: id, Parent: agent, Model: it.Model, Effort: it.ReasoningEffort, ModelRequested: true}
+				if label != "" {
+					a.Label, a.Description = label, strings.TrimSpace(it.Prompt)
+				}
 				out = append(out, m.ev(event.AgentProgress, event.Observed, id, turn, it.ID, line, a))
 			}
 		}
@@ -698,6 +705,21 @@ func (m *Mapper) tool(started bool, it item, raw json.RawMessage, agent, turn st
 		}
 	}
 	return out
+}
+
+// spawnLabel is the label a spawn request's prompt gives its agent: "task: "
+// and the prompt's first non-blank line, cut at 24 characters with "…"; ""
+// for a blank prompt (plan 10, item 1).
+func spawnLabel(prompt string) string {
+	for _, l := range strings.Split(prompt, "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			if r := []rune(l); len(r) > 24 {
+				l = strings.TrimRight(string(r[:24]), " ") + "…"
+			}
+			return "task: " + l
+		}
+	}
+	return ""
 }
 
 func sortStrings(s []string) {

@@ -20,8 +20,104 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
+**Plan 10, a spawned Codex agent's label and the timing step, done and
+awaiting the owner's approval**
+(the owner's request of 2026-10-18,
+[Plan 10](#plan-10---a-spawned-codex-agents-label-and-the-timing-step) at
+the end). Both items verified; the evaluation summary is in
+[`doc/plan10-evaluation.md`](doc/plan10-evaluation.md).
+
+Plan 10 progress (update as each item finishes; read this first after a
+context compaction). Items and rules:
+[Plan 10](#plan-10---a-spawned-codex-agents-label-and-the-timing-step).
+Baseline: 8dea129, 232 top-level tests in 14 packages, 0 FAIL.
+
+- Item 1 (a spawned Codex agent's label): done. Design: a
+  `spawnAgent` call's `prompt` gives each of its `receiverThreadIds` the
+  label "task: " and the prompt's first non-blank line, cut at 24 cells with
+  "…", and the whole prompt as its description, source "spawn request" like
+  its model; the label fills only an agent with no label of its own
+  ("unannounced agent", or a previous spawn label): Codex's own label
+  (`subAgentActivity.agentPath`, `thread/started`'s nickname or role) wins
+  in either order. Criteria:
+  1. Mapper: P9a's completed `spawnAgent` gives the child
+     `01a14bd7-1754-76f2-b210-de4cf274f58b` one `AgentProgress` with label
+     `task: Count the files in the …`, description `Count the files in the
+     current directory and reply with the number only.`, model
+     `gpt-5.6-luna`, effort `low`, requested, parent the orchestrator; a
+     `spawnAgent` with a prompt and no model or effort still gives the label;
+     a blank prompt gives none.
+  2. State: a spawn label replaces "unannounced agent" and a previous spawn
+     label; it never replaces Codex's own label, which replaces it, in either
+     order; the description fills only an empty one; on a finished agent the
+     spawn event still applies, as its model does.
+  3. The dashboard, P9a replayed (a new recorded mock file,
+     `codex-spawn-request.jsonl`), at 120 and 200 columns: C's row shows
+     `task: Count the files in the …` with `gpt-5.6-luna*` and `low`; no
+     "unannounced agent" anywhere; the inspection's first line ends with the
+     whole prompt; P7's and plan 6's simulated runs keep their labels
+     (`/root/list_files`, `/root/create_fou…`).
+  4. Mutants on the new rule (label not emitted; own label overwritten by a
+     spawn label; spawn label refused over "unannounced agent") each killed.
+  5. Documents: doc/ui-design.md (Zone C label), doc/events-and-state.md
+     (Agent tree), doc/research/codex-cli.md where the spawn item is
+     described.
+
+  Amended, before the checks were scored (recorded, not rewritten above):
+  "24 cells" is 24 characters (runes; P9a's prompt is ASCII, so the two
+  agree), and the cut label is `task: Count the files in the c…`, not
+  `…the …`: 24 characters of "Count the files in the current..." end on
+  the "c" of "current", and the trailing-space trim applies only when the
+  cut ends on a space. In criterion 3, C's row shows the label as zone C's
+  label column cuts it (plan 7, item 1), different at each size.
+
+  Evidence: 1. `TestSpawnRequestRecorded` (P9a: `label="task: Count the
+  files in the c…" description="Count the files in the current directory
+  and reply with the number only."`, model gpt-5.6-luna, effort low,
+  requested, parent ""), `TestSpawnLabel` (9 prompts: cut, whole at 24,
+  cut before a space, first non-blank line, blank and empty give "", and a
+  blank prompt with no model or effort emits nothing), `TestAgentEffort`
+  (a prompt-only spawn gives exactly one event, label "task: go"). 2.
+  `TestRequestedLabel` (7 steps: a request fills, a second replaces, the
+  own label replaces it, a later request keeps the own label, a request
+  replaces "unannounced agent", an own label first is kept, a completed
+  unannounced agent takes the label, description and model with an empty
+  history). 3. `TestSpawnRequestLabel` on the new mock
+  `codex-spawn-request.jsonl` (recorded from P9a by `TestMockFiles
+  -update`): 120x40 row `✓ task: Count the files in the… gpt-5.6-luna*
+  low completed`, 200x60 row `✓ task: Count the … gpt-5.6-luna* low
+  completed` (the preview beside it narrows C), no "unannounced agent";
+  the inspection header `◀ back (Esc)   task: Count the files in the c… ·
+  gpt-5.6-luna (requested)`, its first line `started by orchestrator ·
+  Count the files in the current directory and reply with the number
+  only.`; `TestSyntheticScenarios` keeps `/root/list_files` and
+  `/root/create_fou…` (codex-plan6-limits.jsonl regenerated: 3 lines, its
+  two spawn events gain their labels and descriptions). 4. Three mutants,
+  each killed, mapper.go and reduce.go restored byte for byte (cmp): label
+  not emitted (`TestAgentEffort`, `TestSpawnRequestRecorded`,
+  `TestMockFiles`); the spawn label over the agent's own
+  (`TestRequestedLabel`, `TestSyntheticScenarios`); the spawn label
+  refused over "unannounced agent" (`TestRequestedLabel`,
+  `TestSpawnRequestLabel`). 5. The three documents updated.
+- Item 2 (the keystroke timing step): done. Criteria: the four timing
+  tests, run alone as `AGENTS.md` gives them, PASS with every p95 under
+  16 ms, the figures recorded. Evidence (2026-10-18, after item 1's
+  changes): `TestKeystrokeToFrame` 10,000-line draft p95 1.011 ms (max
+  1.836 ms); `TestDraftKeystrokes` 50,000-line draft with 8 saves p95
+  2.313 ms (max 8.222 ms); `TestKeystrokeCost` 227.9 µs per key at 10,000
+  lines, 493.7 µs at 50,000; `TestLongSession` 26,209 events over 2 h of
+  session time, frames p95 3.48 ms in the first tenth and 3.44 ms in the
+  last, delta-to-frame at 200x60 p95 3.000 ms, heap 6.9 MiB. All 4 PASS
+  (plan 8: 1.06, 2.48 and 3.14 ms).
+- Full check: build, vet (also `-tags live`, `-tags timing`), gofmt, `go
+  test ./... -count=1`, 0 FAIL; go.mod and go.sum unchanged; no CR or BOM.
+  Done: all exit 0, gofmt prints nothing, 235 top-level tests PASS in 14
+  packages (232 plus `TestSpawnLabel`, `TestRequestedLabel`,
+  `TestSpawnRequestLabel`), 0 FAIL; go.mod and go.sum unchanged; the
+  changed files have no CR and no BOM.
+
 **Plan 9, plan 8's items left not verified, approved by the owner on
-2026-10-18; no plan 10 is defined yet** (the owner's request of 2026-10-17,
+2026-10-18** (the owner's request of 2026-10-17,
 [Plan 9](#plan-9---plan-8s-items-left-not-verified) at the end). Items 1
 and 2 verified, item 3 recorded as not verifiable; the evaluation summary
 is in [`doc/plan9-evaluation.md`](doc/plan9-evaluation.md), committed as
@@ -3650,3 +3746,21 @@ approves.
 Done when every item has passed its criteria or is recorded with why it
 could not be done, the full check passes, and the evaluation summary is
 reported to the owner.
+
+## Plan 10 - A spawned Codex agent's label and the timing step
+
+The owner's request (2026-10-18), after plan 9's approval, on two of the
+points left open: "let's do these 2".
+
+1. A Codex agent spawned on the multi-agent v1 backend (P9a) gets no name
+   from Codex, only its thread id and the task it was given, so zone C
+   labels it "unannounced agent". Label it with the start of its task,
+   marked as coming from the spawn request.
+2. The keystroke timing step, not run in plan 9.
+
+Rules: as plan 9's; no live run and no quota (the recording P9a is the
+evidence). Windows 11 and Windows Terminal only; no new dependency. No
+commit until the owner approves.
+
+Done when both items have passed their criteria, the full check passes, and
+the evaluation summary is reported to the owner.

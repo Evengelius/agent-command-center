@@ -642,17 +642,20 @@ func TestSpawnRequestModel(t *testing.T) {
 // multi-agent v1) recorded a spawnAgent item carrying the requested model
 // and effort. The completed item names the spawned thread; the started one
 // names none, so it gives nothing. No subAgentActivity reports the child's
-// own values. The caller is the orchestrator, whose key is "".
+// own values. The caller is the orchestrator, whose key is "". Plan 10,
+// item 1, criterion 1: the same event gives the child its prompt's label
+// and the whole prompt as its description, Codex naming it nowhere else.
 func TestSpawnRequestRecorded(t *testing.T) {
 	const main, child = "", "01a14bd7-1754-76f2-b210-de4cf274f58b"
 	_, per := replay(t, "p9a-codex-spawn-request.jsonl")
 	var got []string
 	for _, e := range fixture.Flatten(per) {
 		if p, ok := e.Payload.(event.Agent); ok && (p.Model != "" || p.Effort != "") {
-			got = append(got, fmt.Sprintf("%s %s parent=%q %s %s requested=%v", e.Kind, p.Key, p.Parent, p.Model, p.Effort, p.ModelRequested))
+			got = append(got, fmt.Sprintf("%s %s parent=%q %s %s requested=%v label=%q description=%q", e.Kind, p.Key, p.Parent, p.Model, p.Effort, p.ModelRequested, p.Label, p.Description))
 		}
 	}
-	want := []string{fmt.Sprintf("%s %s parent=%q gpt-5.6-luna low requested=true", event.AgentProgress, child, main)}
+	want := []string{fmt.Sprintf("%s %s parent=%q gpt-5.6-luna low requested=true label=%q description=%q", event.AgentProgress, child, main,
+		"task: Count the files in the c…", "Count the files in the current directory and reply with the number only.")}
 	if fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Errorf("model and effort events:\n got %q\nwant %q", got, want)
 	}
@@ -663,7 +666,8 @@ func TestSpawnRequestRecorded(t *testing.T) {
 // (P7b; 0.145.0 reports none, P7), and a spawnAgent call's reasoningEffort,
 // "Reasoning effort requested for the spawned agent, when applicable" (the
 // generated schema; no recording carries one), is sent as requested, with
-// or without a model; null sends nothing.
+// or without a model; null sends none, the prompt's label alone (plan 10,
+// item 1).
 func TestAgentEffort(t *testing.T) {
 	for _, c := range []struct {
 		file string
@@ -708,10 +712,40 @@ func TestAgentEffort(t *testing.T) {
 			}
 		}
 		switch {
-		case c.effort == "" && len(got) != 0:
+		case c.effort == "" && (len(got) != 1 || got[0].Model != "" || got[0].Effort != "" || got[0].Label != "task: go"):
 			t.Errorf("%s: %+v", c.fields, got)
 		case c.effort != "" && (len(got) != 1 || got[0].Key != "th1" || got[0].Model != c.model || got[0].Effort != c.effort):
 			t.Errorf("%s: %+v", c.fields, got)
+		}
+	}
+}
+
+// TestSpawnLabel is plan 10, item 1, criterion 1: a spawn request's label is
+// "task: " and its prompt's first non-blank line, cut at 24 characters with
+// "…"; a blank prompt gives none, and so does a label-only request without
+// receivers.
+func TestSpawnLabel(t *testing.T) {
+	for _, c := range []struct{ prompt, want string }{
+		{"go", "task: go"},
+		{"Count the files in the current directory.", "task: Count the files in the c…"},
+		{"Create found.txt cont", "task: Create found.txt cont"},
+		{"Twenty-four characters!!", "task: Twenty-four characters!!"},
+		{"Twenty-four characters!!!", "task: Twenty-four characters!!…"},
+		{"Cut before a space here x", "task: Cut before a space here…"},
+		{"\n  \n  Second line first\nthird", "task: Second line first"},
+		{"   \n\t", ""},
+		{"", ""},
+	} {
+		if got := spawnLabel(c.prompt); got != c.want {
+			t.Errorf("spawnLabel(%q) = %q, want %q", c.prompt, got, c.want)
+		}
+	}
+	for _, prompt := range []string{"", "  "} {
+		evs := NewMapper().Out([]byte(`{"method":"item/completed","params":{"threadId":"th0","turnId":"u1","item":{"type":"collabAgentToolCall","id":"c1","tool":"spawnAgent","model":null,"reasoningEffort":null,"status":"completed","senderThreadId":"th0","receiverThreadIds":["th1"],"prompt":"` + prompt + `","agentsStates":{}}}}`))
+		for _, e := range evs {
+			if p, ok := e.Payload.(event.Agent); ok && p.ModelRequested {
+				t.Errorf("prompt %q: %+v", prompt, p)
+			}
 		}
 	}
 }

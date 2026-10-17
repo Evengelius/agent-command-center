@@ -159,7 +159,13 @@ age a value.
 - `ambient: true` tasks are ignored in counts and the tree (CC-5).
 - An event carrying an unknown agent key creates a node with status
   `inferred` and label "unannounced agent"; an event lacking any key is
-  attached to the orchestrator and marked "unattributed" (INT 7).
+  attached to the orchestrator and marked "unattributed" (INT 7). A Codex
+  `spawnAgent` call with a `prompt` labels its child "task: " and the
+  prompt's first line, cut at 24 characters, and gives it the whole prompt
+  as its description, with the spawn request as origin, as the requested
+  model: the label fills only an agent with none, "unannounced agent" or a
+  previous spawn label, and the agent's own label replaces it, in either
+  order (plan 10, item 1).
 
 ## State machines
 

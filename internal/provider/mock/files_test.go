@@ -29,6 +29,7 @@ var mockFiles = []struct {
 }{
 	{"claude-subagent-approval.jsonl", "p3b-claude-subagent-approval.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, nil},
 	{"codex-subagents.jsonl", "p7-codex-subagents.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, nil},
+	{"codex-spawn-request.jsonl", "p9a-codex-spawn-request.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, nil}, // plan 10, item 1
 	// Synthetic: cases no probe has, each a real recording with only the
 	// lines of its case edited to the documented shape (plan 4, step 7).
 	{"claude-api-key-context-refused.jsonl", "p2-claude-conversation.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, claudeAPIKeyContextRefused},

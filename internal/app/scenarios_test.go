@@ -3,6 +3,7 @@ package app
 import (
 	"strings"
 	"testing"
+	"testing/synctest"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -59,4 +60,35 @@ func TestSyntheticScenarios(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Plan 10, item 1, criterion 3: P9a replayed, the agent Codex names nowhere
+// is shown with its spawn request's task, never as "unannounced agent", and
+// its inspection gives the whole prompt.
+func TestSpawnRequestLabel(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		h := mockDash(t, "codex-spawn-request.jsonl")
+		for _, c := range []struct {
+			w, h int
+			row  string
+		}{
+			{120, 40, "✓ task: Count the files in the… gpt-5.6-luna* low completed"},
+			{200, 60, "✓ task: Count the … gpt-5.6-luna* low completed"},
+		} {
+			h.send(tea.WindowSizeMsg{Width: c.w, Height: c.h})
+			f := h.frame()
+			if !strings.Contains(f, c.row) || strings.Contains(f, "unannounced agent") {
+				t.Errorf("%dx%d: want %q and no \"unannounced agent\":\n%s", c.w, c.h, c.row, f)
+			}
+		}
+		h.send(key(tea.KeyF6, 0))
+		h.send(key(tea.KeyDown, 0))
+		h.send(key(tea.KeyEnter, 0))
+		f := h.frame()
+		for _, s := range []string{"◀ back (Esc)   task: Count the files in the c… · gpt-5.6-luna (requested)", "started by orchestrator · Count the files in the current directory and reply with the number only."} {
+			if !strings.Contains(f, s) {
+				t.Errorf("inspection %q: %q missing from:\n%s", h.m.ui.Inspect, s, f)
+			}
+		}
+	})
 }

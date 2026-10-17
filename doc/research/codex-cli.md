@@ -497,7 +497,9 @@ Still open:
    `gpt-5.6-luna`): one `collabAgentToolCall` `spawnAgent`, started with
    empty `receiverThreadIds`, completed with the child's thread id, both
    with `model:"gpt-5.6-luna"`, `reasoningEffort:"low"`; no
-   `subAgentActivity` [P:p9a-codex-spawn-request.jsonl].
+   `subAgentActivity` [P:p9a-codex-spawn-request.jsonl]. The call's
+   `prompt` is then the only text that names the child; the dashboard
+   labels the child with it (plan 10, item 1).
 4. **Resume across processes:** a new app-server process, `thread/resume`
    on P6b's thread: returned `turns`, replayed `thread/tokenUsage/updated`.
 5. **`turn/steer`** mid-turn and a second `turn/start` while one is running
