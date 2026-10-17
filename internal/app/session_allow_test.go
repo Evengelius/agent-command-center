@@ -13,10 +13,19 @@ import (
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
-// offering is P6b with its request listing decisions as L3's did (Codex
-// 0.145.0), plus acceptForSession and decline: no recording lists them, so
-// the list is synthetic.
-func offering(t *testing.T, recs []fixture.Record) []fixture.Record {
+// Decision lists for P6b's file-change request, which as recorded (Codex
+// 0.163.0) carries none: L3's (Codex 0.145.0; 0.163.0's command requests
+// list the same, P8), which omits acceptForSession, and the same plus
+// acceptForSession and decline; no recording lists that, so it is synthetic.
+var (
+	listL3 = []any{"accept",
+		map[string]any{"acceptWithExecpolicyAmendment": map[string]any{"execpolicy_amendment": []string{"go", "vet"}}}, "cancel"}
+	listSession = []any{"accept", "acceptForSession",
+		map[string]any{"acceptWithExecpolicyAmendment": map[string]any{"execpolicy_amendment": []string{"go", "vet"}}}, "decline", "cancel"}
+)
+
+// offering is P6b with its request listing the given decisions.
+func offering(t *testing.T, recs []fixture.Record, list []any) []fixture.Record {
 	t.Helper()
 	out := append([]fixture.Record(nil), recs...)
 	r := &out[36]
@@ -25,43 +34,44 @@ func offering(t *testing.T, recs []fixture.Record) []fixture.Record {
 	if json.Unmarshal(r.Msg, &msg) != nil || json.Unmarshal(msg["params"], &params) != nil || !strings.Contains(string(msg["method"]), "requestApproval") {
 		t.Fatalf("p6b line 37 is not the request: %s", r.Msg)
 	}
-	params["availableDecisions"] = []any{"accept", "acceptForSession",
-		map[string]any{"acceptWithExecpolicyAmendment": map[string]any{"execpolicy_amendment": []string{"go", "vet"}}}, "decline", "cancel"}
+	params["availableDecisions"] = list
 	msg["params"], _ = json.Marshal(params)
 	r.Msg, _ = json.Marshal(msg)
 	return out
 }
 
-// TestCodexSessionAllow is plan 5, item 8, criteria 2, 4 and 5: s answers
-// acceptForSession, from the card or the full view, only when the request
-// lists it; the hint says so only then; the amendment is never offered.
+// TestCodexSessionAllow is plan 5, item 8, criteria 2, 4 and 5, and plan 8,
+// criterion 2: s answers acceptForSession, from the card or the full view,
+// when the request carries no list (0.163.0's file change) or lists it, never when its
+// list omits it; the hint says so only then; the amendment is never offered.
 func TestCodexSessionAllow(t *testing.T) {
 	const hint = "s allow for the session"
 	allowed := []string{`{"id":0,"result":{"decision":"acceptForSession"}}`}
 	for _, c := range []struct {
 		name    string
+		list    []any // nil: the request as recorded, without a list
 		offered bool
 		view    bool // answer from the full view
 		want    []string
 	}{
-		{"card", true, false, allowed},
-		{"full view", true, true, allowed},
-		{"not offered", false, false, nil},
-		{"not offered, full view", false, true, nil},
+		{"no list, card", nil, true, false, allowed},
+		{"no list, full view", nil, true, true, allowed},
+		{"listed, card", listSession, true, false, allowed},
+		{"listed, full view", listSession, true, true, allowed},
+		{"not listed", listL3, false, false, nil},
+		{"not listed, full view", listL3, false, true, nil},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				recs := probe(t, "p6b-codex-app-server.jsonl")
-				if c.offered {
-					recs = offering(t, recs)
+				if c.list != nil {
+					recs = offering(t, recs, c.list)
 				}
 				text, at := firstTurn(t, recs, 1)
 				w := &wireCodex{thread: p6bThread}
 				h := codexWire(t, w, Options{})
 				h.check = func(f string) {
-					if strings.Contains(strings.ToLower(f), "execpolicy") || strings.Contains(f, "acceptWith") {
-						t.Errorf("frame offers the amendment:\n%s", f)
-					}
+					noAmendment(t, f)
 					if !c.offered {
 						noSessionAnswer(t, f)
 					}

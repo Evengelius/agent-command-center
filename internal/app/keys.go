@@ -314,7 +314,7 @@ func (m *Model) cardKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	case "d":
 		return m.do(state.Answer{ID: ap.ID, Decision: m.decision(false)}), true
 	case "s":
-		if !ap.ForSession || ap.Question { // only a Codex request lists acceptForSession
+		if !ap.ForSession || ap.Question { // only a Codex request takes acceptForSession
 			return nil, true // not offered: nothing sent
 		}
 		return m.do(state.Answer{ID: ap.ID, Decision: "acceptForSession"}), true
@@ -335,9 +335,9 @@ func (m *Model) cardKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 
 // decision is the CLI's word for allow once or deny (ui-design.md,
 // Approvals). Allow for the session (s, in cardKey) is never offered for
-// Claude Code (CC-4), and for Codex only when the request lists
-// acceptForSession in availableDecisions (plan 5, item 8); the amendments
-// it may list are never offered.
+// Claude Code (CC-4), and for Codex unless the request's availableDecisions
+// omits acceptForSession (plan 5, item 8; plan 8); the amendments it may
+// list are never offered.
 func (m *Model) decision(allow bool) string {
 	switch {
 	case m.s.Context.Provider == "codex" && allow:

@@ -274,13 +274,25 @@ func firstTurn(t *testing.T, recs []fixture.Record, nth int) (string, int) {
 	return "", 0
 }
 
-// noSessionAnswer fails when a frame offers allow for the session: no
-// recorded Codex request carries availableDecisions (step 5, check 4; plan 5,
-// item 8).
+// noSessionAnswer fails when a frame offers allow for the session: for a
+// request whose availableDecisions omits it (step 5, check 4; plan 5, item
+// 8; plan 8).
 func noSessionAnswer(t *testing.T, frame string) {
 	t.Helper()
 	low := strings.ToLower(frame)
 	for _, bad := range []string{"always", "for the session", "s allow", "acceptforsession"} {
+		if strings.Contains(low, bad) {
+			t.Errorf("frame offers %q:\n%s", bad, frame)
+		}
+	}
+}
+
+// noAmendment fails when a frame offers an amendment decision, which would
+// persist a rule to Codex's configuration (codex-cli.md, question 4).
+func noAmendment(t *testing.T, frame string) {
+	t.Helper()
+	low := strings.ToLower(frame)
+	for _, bad := range []string{"always", "execpolicy", "acceptwith", "amendment"} {
 		if strings.Contains(low, bad) {
 			t.Errorf("frame offers %q:\n%s", bad, frame)
 		}
@@ -312,7 +324,7 @@ func TestCodexApprovalCards(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				w := &wireCodex{thread: p6bThread}
 				h := codexWire(t, w, Options{})
-				h.check = func(f string) { noSessionAnswer(t, f) }
+				h.check = func(f string) { noAmendment(t, f) }
 				h.send(tea.PasteMsg{Content: text})
 				h.send(key(tea.KeyEnter, 0))
 				codexPlay(t, h, w, recs, at+1, 37)
@@ -328,7 +340,7 @@ func TestCodexApprovalCards(t *testing.T) {
 				}
 				before := len(w.written(0))
 				h.send(key(tea.KeyF2, 0))
-				if f := frameText(h); !strings.Contains(f, "▸ a allow once · d deny · c cancel the turn · Enter full view · Esc later") {
+				if f := frameText(h); !strings.Contains(f, "▸ a allow once · s allow for the session · d deny · c cancel the turn · Enter full view · Esc later") {
 					t.Errorf("focused card lacks its keys:\n%s", f)
 				}
 				h.send(typed(c.key))

@@ -223,7 +223,7 @@ type Approval struct {
 	ToolID      string
 	Input       json.RawMessage
 	Question    bool
-	ForSession  bool // the request lists acceptForSession (Codex; plan 5, item 8)
+	ForSession  bool // the request takes acceptForSession (Codex; plan 5, item 8; plan 8)
 	Problem     string
 	Raw         string
 	Status      ApprovalStatus

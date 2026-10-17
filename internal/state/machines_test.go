@@ -682,7 +682,7 @@ var transitions = []machineCase{
 		b.do(Answer{ID: "a0", Decision: "acceptForSession"}) // not offered: refused (plan 5, item 8)
 		b.eq("not offered", b.kinds(), "")
 		b.eq("still pending", b.s.Approvals["a0"].Status, Pending)
-		b.ev(event.ApprovalRequest, "", event.Approval{ID: "a1", Tool: "commandExecution", Offered: []string{"accept", "acceptForSession", "decline", "cancel"}})
+		b.ev(event.ApprovalRequest, "", event.Approval{ID: "a1", Tool: "commandExecution", Offered: []string{"accept", "acceptForSession", "decline", "cancel"}, ForSession: true})
 		b.do(Answer{ID: "a1", Decision: "acceptForSession"})
 		b.eq("decision", b.cmds[0].Decision, "acceptForSession")
 		b.resolve("a1", "acceptForSession")

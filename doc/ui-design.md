@@ -721,7 +721,7 @@ the agent that asked, and marks that agent "!" in A and C.
   | Key | Answer | Claude Code | Codex |
   | - | - | - | - |
   | a | allow once | allow (**P**); not for a question (plan 5, item 10) | `accept` (**P**) |
-  | s | allow for the session | not offered (CC-4) | `acceptForSession` (**D**), offered only when the request's `availableDecisions` lists it (plan 5, item 8) |
+  | s | allow for the session | not offered (CC-4) | `acceptForSession` (**D**), offered unless the request's `availableDecisions` omits it; on Codex CLI 0.163.0, offered on file changes (no list), not on commands (their list omits it) (plan 5, item 8; plan 8) |
   | d | deny / decline | deny with a message (**D**) | `decline` (**D**) |
   | c | cancel the turn | deny, then interrupt | `cancel` (**D**) |
   | Enter | the whole diff, command or question, full screen; a, s, d, c answer there, Esc back to the card | Edit, MultiEdit, Write from the request | `fileChange` from its tool call's `changes[].diff` |
@@ -1139,7 +1139,7 @@ what is not built).
 
 | This design | The MVP | Why |
 | - | - | - |
-| Approval card: s allows for the session | Never for Claude Code; for Codex only when the request's `availableDecisions` lists `acceptForSession`, which no recording does and Codex CLI 0.163.0's generated schema omits | Claude Code: CC-4; Codex: plan 5, item 8 |
+| Approval card: s allows for the session | Never for Claude Code; for Codex unless the request's `availableDecisions` omits `acceptForSession`. Codex CLI 0.163.0 sends no list with a file-change request, so it is offered there; a command request lists accept, the amendment and cancel (probe P8), so it is not | Claude Code: CC-4; Codex: plan 5, item 8; plan 8 |
 | Tool lines in B carry a status symbol, and a failed one `✗` with its error | `✗` and the error for a failed or denied call; `▸` for the others, their status in A and the viewer | Only the calls that need a look are marked in B (plan 5, item 6) |
 | Thinking text folded under the message, "thinking · 312 tokens", unfoldable | "∴ thinking" marks a message that had a thinking block; nothing unfolds | The conversation record keeps that a thinking block arrived (`Entry.Thinking`), not its text (found in plan 5, item 4) |
 

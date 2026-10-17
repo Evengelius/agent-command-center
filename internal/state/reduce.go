@@ -624,7 +624,7 @@ func (s *State) requested(ev event.Event, p event.Approval) []Command {
 		id = "unreadable:" + itoa(ev.Seq)
 	}
 	a := &Approval{ID: id, Agent: ev.Agent, Tool: p.Tool, Display: p.Display, Summary: p.Summary, ToolID: p.ToolID,
-		Input: p.Input, Question: ev.Kind == event.Question, ForSession: contains(p.Offered, "acceptForSession"), Problem: p.Problem, Raw: ev.Raw, Status: Pending, RequestedAt: ev.At}
+		Input: p.Input, Question: ev.Kind == event.Question, ForSession: p.ForSession, Problem: p.Problem, Raw: ev.Raw, Status: Pending, RequestedAt: ev.At}
 	s.Approvals[id] = a
 	s.Queue = append(s.Queue, id)
 	s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "approval", Agent: ev.Agent, MessageID: id, Text: p.Tool, Origin: ev.Origin, At: ev.At})

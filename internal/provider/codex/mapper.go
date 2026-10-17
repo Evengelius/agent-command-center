@@ -7,6 +7,7 @@ package codex
 
 import (
 	"encoding/json"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -328,9 +329,9 @@ func (m *Mapper) serverRequest(r rpc, raw []byte) []event.Event {
 	id := idString(r.ID)
 	var p struct {
 		ids
-		Reason  *string           `json:"reason"`
-		Command string            `json:"command"`
-		Offered []json.RawMessage `json:"availableDecisions"` // app-server README; not in 0.163.0's generated schema
+		Reason  *string            `json:"reason"`
+		Command string             `json:"command"`
+		Offered *[]json.RawMessage `json:"availableDecisions"` // experimental field: sent, but not in 0.163.0's generated schema (P8)
 	}
 	err := json.Unmarshal(r.Params, &p)
 	a := event.Approval{ID: id, Tool: tool, ToolID: p.ItemID, Input: r.Params}
@@ -359,12 +360,19 @@ func (m *Mapper) serverRequest(r rpc, raw []byte) []event.Event {
 	if tool == "commandExecution" {
 		a.Display = p.Command
 	}
-	for _, d := range p.Offered {
-		var s string
-		if json.Unmarshal(d, &s) == nil { // the amendments are objects: never kept, never offered
-			a.Offered = append(a.Offered, s)
+	if p.Offered != nil {
+		for _, d := range *p.Offered {
+			var s string
+			if json.Unmarshal(d, &s) == nil { // the amendments are objects: never kept, never offered
+				a.Offered = append(a.Offered, s)
+			}
 		}
 	}
+	// Allow for the session: 0.163.0's generated schema documents
+	// acceptForSession for both requests; a file-change request comes
+	// without a list and takes it, a command request lists its decisions
+	// (P8: accept, the amendment, cancel), and the list decides (plan 8).
+	a.ForSession = a.Problem == "" && (p.Offered == nil || slices.Contains(a.Offered, "acceptForSession"))
 	agent := m.agentOf(p.ThreadID)
 	m.server[id] = serverReq{agent: agent, turn: p.TurnID, item: p.ItemID, tool: tool}
 	return []event.Event{m.ev(event.ApprovalRequest, event.Observed, agent, p.TurnID, p.ItemID, raw, a)}

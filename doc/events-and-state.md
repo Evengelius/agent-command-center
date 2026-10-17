@@ -289,7 +289,7 @@ States: `Pending`, `Answering`, `Allowed`, `Denied`, `Expired`.
 | - | - | - | - | - |
 | (none) | `approval.requested` | `Pending`, queued | **P** P2, P3b | **P** P6b, P7 |
 | `Pending` | owner allows (once) | `Answering` → `Allowed` | **P** allow with `updatedInput` (P2, P3b) | **P** `accept` (P6b) |
-| `Pending` | owner allows for the session | `Answering` → `Allowed` | n/a: Claude Code's session rule goes through `updatedPermissions`, not used (CC-4) | **D** `acceptForSession`, only when the request's `availableDecisions` lists it; otherwise refused with a note (plan 5, item 8) |
+| `Pending` | owner allows for the session | `Answering` → `Allowed` | n/a: Claude Code's session rule goes through `updatedPermissions`, not used (CC-4) | **D** `acceptForSession`, unless the request's `availableDecisions` omits it (Codex 0.163.0: a file change has no list, offered; a command lists accept, the amendment and cancel, not offered) or the request could not be read; otherwise refused with a note (plan 5, item 8; plan 8) |
 | `Pending` | owner denies | `Answering` → `Denied` | **D** deny with a message (documented, not probed) | **D** `decline` (CX-10 q1) |
 | `Pending` | owner cancels the turn | `Answering` → `Denied`, then the turn interrupts | dash: deny, then `interrupt` | **D** `cancel` (CX-10 q1) |
 | `Pending` | the request cannot be parsed | `Denied` automatically, shown with its raw line | dash (INT 4 fallback) | dash: `decline`, or a JSON-RPC error for an unknown method (P6b driver) |

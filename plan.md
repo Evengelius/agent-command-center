@@ -20,8 +20,14 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
-**Plan 7, the open list after plan 6, approved by the owner on 2026-10-17;
-no plan 8 is defined yet** (the owner's request of 2026-10-17,
+**Plan 8, Codex's allow for the session, done and awaiting the owner's
+approval** (the owner's request of 2026-10-17,
+[Plan 8](#plan-8---codexs-allow-for-the-session) at the end). Its one item
+done; the evaluation summary, 6 of 6 PASS, and its follow-up, 3 of 3, are in
+[`doc/plan8-evaluation.md`](doc/plan8-evaluation.md).
+
+**Plan 7, the open list after plan 6, approved by the owner on 2026-10-17**
+(the owner's request of 2026-10-17,
 [Plan 7](#plan-7---the-open-list-after-plan-6) at the end). Every item done;
 the evaluation summary, 7 of 7 PASS, is in
 [`doc/plan7-evaluation.md`](doc/plan7-evaluation.md).
@@ -52,7 +58,120 @@ the final fixes, [`doc/plan2-evaluation.md`](doc/plan2-evaluation.md)).
 Plan 1 accepted on 2026-10-16, with criteria 8 and 9 kept as FAIL and accepted
 as documented exceptions ([`doc/research/plan1-evaluation.md`](doc/research/plan1-evaluation.md)).
 
-Plan 7 progress (update as each item finishes; read this first after a
+Plan 8 progress (update as each item finishes; read this first after a
+context compaction). Item and rules: [Plan 8](#plan-8---codexs-allow-for-the-session).
+Baseline: bffe9a5, 231 top-level tests in 14 packages, 0 FAIL.
+
+- Item 1 (allow for the session on Codex 0.163.0): **done** (2026-10-17). Criteria:
+  1. The Codex mapper marks a command or file-change approval request as
+     offering the session answer when it carries no `availableDecisions`
+     (absent or null: 0.163.0's generated schema documents
+     `acceptForSession` for both and sends no list), or when its list holds
+     `acceptForSession`; not when the list omits it (L3's 0.145.0 list, an
+     empty list), nor when the request cannot be read. The amendments are
+     never kept or offered. A mapper test covers each case and the recorded
+     requests (P6b, P7, P7b).
+  2. In the app, on P6b's request as recorded: the focused card shows
+     "s allow for the session", `s` pressed twice writes exactly
+     `{"id":0,"result":{"decision":"acceptForSession"}}` once, and the
+     card reads "allowed for the session by you"; with L3's list, the hint
+     is absent and `s` writes nothing; a Claude Code card never offers
+     `s` (CC-4).
+  3. Mutants: the mapper requiring the list again, and offering it when the
+     list omits it; both fail a test.
+  4. Live, Codex 0.163.0, one session approved by the owner on 2026-10-17,
+     in a temporary project outside the repository, maximised and at 120
+     by 30: a turn that changes the same file twice; `s` on the first
+     file-change approval; the second change asks for no approval and is
+     on disk; the first card reads "allowed for the session by you";
+     Ctrl+Q leaves no process; the configuration check passes before and
+     after.
+  5. The documents that say `s` needs the list say what 0.163.0 does
+     (`doc/ui-design.md`, `doc/events-and-state.md`,
+     `doc/architecture.md`, `doc/research/codex-cli.md`,
+     `doc/reliability.md`) and the code comments with them.
+  6. Full check: build, vet (also `-tags live`, `-tags timing`), gofmt,
+     `go test ./...` with 231 or more top-level tests and 0 FAIL; no CR and
+     no BOM in the changed files; go.mod and go.sum unchanged.
+
+  Result: 6 of 6 PASS. The mapper keeps `availableDecisions` as a pointer,
+  so an absent or null list is told from an empty one, and sets
+  `event.Approval.ForSession` (`internal/provider/codex/mapper.go`); the
+  reducer copies it to `state.Approval.ForSession`, which the card and the
+  full view already read. `TestOfferedDecisions`: every recorded request of
+  P6b, P7 and P7b offers it with no list; L3's list, an empty list, a
+  file-change list without it and two unreadable requests do not; null, a
+  command and a file change without a list, and a list holding it do.
+  `TestCodexSessionAllow`, six cases: no list and listed, from the card and
+  the full view, write `{"id":0,"result":{"decision":"acceptForSession"}}`
+  once for two `s` and read "allowed for the session by you"; L3's list
+  shows no hint, writes nothing and leaves no refusal note; no frame names
+  an amendment (`noAmendment`). `TestCodexApprovalCards` now expects
+  "▸ a allow once · s allow for the session · d deny · c cancel the turn";
+  Claude Code's cards are unchanged (CC-4). The six mock files gain only
+  `"ForSession"` (`TestMockFiles -update`: true on the four Codex approval
+  requests); golden frames unchanged. Mutants, 3 killed, 0 survived: the
+  list required again (3 tests fail), offered whenever the request is
+  readable (2 tests fail), the unreadable request ignored (1 test fails).
+  Live (Codex 0.163.0, gpt-6-sol, sandbox readOnly, approvals on-request;
+  temporary project `acc-p8codex-231009`; 23:11 to 23:12): 15 of 15
+  harness checks PASS, then 3 of 3 on quit. One file-change approval in
+  the turn, its focused hint "▸ a allow once · s allow for the session ·
+  d deny"; `s` answered it, the card read "✓ orchestrator · fileChange
+  allowed for the session by you"; the second patch asked for nothing
+  (1 approval in the turn); `note.txt` held "one" and "two"; B showed two
+  "▸ fileChange" rows; the frame closed by its borders and the answered
+  card shown at 156 columns maximised and at 120 by 30; Ctrl+Q closed the
+  window in 0.21 s and left none of the 2 CLI processes it started; the
+  configuration check PASS (every configuration file identical, 1 new
+  session file). Full check: build and vet (also `-tags live`, `-tags
+  timing`) exit 0, gofmt empty, 231 top-level tests PASS in 14 packages,
+  0 FAIL; the 22 changed files have no CR and no BOM; go.mod and go.sum
+  unchanged. Evaluation: [`doc/plan8-evaluation.md`](doc/plan8-evaluation.md).
+
+  Follow-up (2026-10-17, the owner's request to verify the three items left
+  not verified): criterion 4 gains a command case, 4c, and criterion 1 the
+  recorded command request (both amended, the evaluation's Criteria
+  amended).
+  - 4c. Live, the same session approval: a turn running the same escalated
+    command twice; each command card shows "▸ a allow once · d deny · c
+    cancel the turn" without `s`, `s` leaves it pending, `a` answers it
+    ("allowed by you"); both commands on disk; the frame closed and an
+    answered card shown at both sizes; Ctrl+Q leaves no process; the
+    configuration check passes before and after.
+
+  Command run 1 (`acc-p8cmd-231916`, 23:19 to 23:20): 5 FAIL, kept on
+  record. It expected `s` on a command card, and the owner, not knowing
+  the run was scripted, pressed `a` on the first card. Both cards showed
+  no `s`; the reason is Codex's, not the dashboard's. Codex 0.163.0 sends
+  `availableDecisions` with a command request although its generated
+  schema omits the field: the field is experimental
+  (`#[experimental(...)]`, `app-server-protocol/src/protocol/v2/item.rs`,
+  openai/codex 0.145.0), and an ordinary command's default list is accept,
+  the execpolicy amendment when proposed, and cancel; only a network
+  approval adds `acceptForSession` (`default_available_decisions`,
+  `protocol/src/approvals.rs`). Probe P8 (raw app-server, the dashboard's
+  handshake, `acc-p8probe-232303`) recorded two command requests listing
+  `["accept",{"acceptWithExecpolicyAmendment":...},"cancel"]`; a file change
+  (P6b) carries none. So `s` is offered on file changes and not on
+  ordinary commands, as the mapper already decides; no code changed.
+  `TestOfferedDecisions` now holds P8's recorded request (offered: accept,
+  cancel; no session answer). Command run 2 (`acc-p8cmd2-232435`, 23:24 to
+  23:25, fully scripted): 15 of 15 harness checks PASS, 3 of 3 on quit; two
+  command approvals, neither offered `s`, `s` left each pending, `a`
+  answered each; `note.txt` "one", "one"; frame closed and answered card
+  shown at 156 columns and at 120 by 30; Ctrl+Q 0.21 s, 0 of 2 CLI
+  processes left. Configuration check PASS for run 1, P8 and run 2 (every
+  configuration file identical; session files counted only). Documents
+  corrected where they said 0.163.0 sends no list: `doc/research/codex-cli.md`
+  (question 4), `doc/events-and-state.md`, `doc/ui-design.md`, the mapper's
+  comments. Timing step run: keystroke-to-frame p95 1.06 ms (10,000 lines)
+  and 2.48 ms (50,000 lines), delta-to-frame p95 3.14 ms after a two-hour
+  session, all under 16 ms, 4 of 4 PASS. Full check again: build and vet
+  (also `-tags live`, `-tags timing`) exit 0, gofmt empty, 231 top-level
+  tests PASS in 14 packages, 0 FAIL.
+
+Plan 7 progress (closed; update as each item finishes; read this first after a
 context compaction). Items and rules: [Plan 7](#plan-7---the-open-list-after-plan-6).
 Baseline: 0814d67, 229 top-level tests in 14 packages, 0 FAIL.
 
@@ -3388,5 +3507,28 @@ Windows Terminal only; no new dependency. No commit until the owner
 approves.
 
 Done when every item has passed its criteria or is recorded with why it could
+not be done, the full check passes, and the evaluation summary is reported to
+the owner.
+
+## Plan 8 - Codex's allow for the session
+
+The owner's request (2026-10-17), after plan 7's approval, on Codex's
+`acceptForSession`, which plan 5, item 8 offered only when a request lists
+it and Codex 0.163.0 never lists: "Ah this is intesting, we need to
+implement it". The owner approved one short live Codex session for it the
+same day, then asked the same day for the items left not verified to be
+tested ("can we test it so it becoems verified?"): two command runs and one
+raw probe, under the same rules.
+
+1. Allow for the session (`s`) on Codex 0.163.0's command and file-change
+   approvals.
+
+Rules: as plan 7's, with the one live session above, in a temporary
+project outside the repository, with the configuration check before and
+after. Claude Code is unchanged (CC-4); the amendment decisions are never
+offered. Windows 11 and Windows Terminal only; no new dependency. No commit
+until the owner approves.
+
+Done when the item has passed its criteria or is recorded with why it could
 not be done, the full check passes, and the evaluation summary is reported to
 the owner.

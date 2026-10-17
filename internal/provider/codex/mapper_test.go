@@ -447,35 +447,58 @@ func TestSubagentModel(t *testing.T) {
 	}
 }
 
-// TestOfferedDecisions is plan 5, item 8, criterion 1: a request's
-// availableDecisions strings are kept, never its amendments (objects); no
-// recorded request lists any.
+// TestOfferedDecisions is plan 5, item 8, criterion 1, and plan 8,
+// criterion 1: a request's availableDecisions strings are kept, never its
+// amendments (objects); a readable command or file-change request takes an
+// allow for the session unless its list omits acceptForSession. No request
+// of P6b, P7 or P7b lists any (Codex 0.163.0), so each takes it; P8's
+// command request lists accept, the amendment and cancel, so it does not.
 func TestOfferedDecisions(t *testing.T) {
 	for _, name := range []string{"p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl"} {
 		_, per := replay(t, name)
+		n := 0
 		for _, e := range fixture.Flatten(per) {
-			if a, ok := e.Payload.(event.Approval); ok && e.Kind == event.ApprovalRequest && a.Offered != nil {
-				t.Errorf("%s: offered %q", name, a.Offered)
+			if a, ok := e.Payload.(event.Approval); ok && e.Kind == event.ApprovalRequest {
+				n++
+				if a.Offered != nil || !a.ForSession || a.Problem != "" {
+					t.Errorf("%s: %s offered %q, for session %v, problem %q", name, a.Tool, a.Offered, a.ForSession, a.Problem)
+				}
 			}
 		}
-	}
-	for _, c := range []struct {
-		list string
-		want []string
-	}{
-		// L3's request, Codex 0.145.0 (plan.md, plan 4, step 5 rerun).
-		{`["accept",{"acceptWithExecpolicyAmendment":{"execpolicy_amendment":["go","vet"]}},"cancel"]`, []string{"accept", "cancel"}},
-		{`["accept","acceptForSession",{"applyNetworkPolicyAmendment":{}},"decline","cancel"]`, []string{"accept", "acceptForSession", "decline", "cancel"}},
-		{`[]`, nil},
-		{`null`, nil},
-	} {
-		line := `{"id":3,"method":"item/commandExecution/requestApproval","params":{"threadId":"t","turnId":"u","itemId":"i","command":"go vet","availableDecisions":` + c.list + `}}`
-		evs := NewMapper().Out([]byte(line))
-		if len(evs) != 1 || evs[0].Kind != event.ApprovalRequest {
-			t.Fatalf("%s: %+v", c.list, evs)
+		if name == "p6b-codex-app-server.jsonl" && n == 0 {
+			t.Errorf("%s: no approval request", name)
 		}
-		if a := evs[0].Payload.(event.Approval); !slices.Equal(a.Offered, c.want) || a.Problem != "" {
-			t.Errorf("%s: offered %q, problem %q; want %q", c.list, a.Offered, a.Problem, c.want)
+	}
+	const cmd = `{"id":3,"method":"item/commandExecution/requestApproval","params":{"threadId":"t","turnId":"u","itemId":"i","command":"go vet"`
+	const file = `{"id":4,"method":"item/fileChange/requestApproval","params":{"threadId":"t","turnId":"u","itemId":"i"`
+	// Probe P8 (Codex 0.163.0, 2026-10-17, the dashboard's handshake): an
+	// escalated command request as recorded, its cwd replaced.
+	const p8 = `{"method":"item/commandExecution/requestApproval","id":0,"params":{"kind":"command","threadId":"01a14bbf-391e-74d0-8c2c-647c3c7a1f0f","turnId":"01a14bbf-3f49-7673-b86f-52293c852cc1","itemId":"exec-a7a62e76-1f25-4707-b8a8-ae09ebb799c8","startedAtMs":1792272190903,"environmentId":"local","reason":"plan 8 test","command":"\"C:\\\\windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\" -Command 'Add-Content -Path note.txt -Value one'","cwd":"<probe-work>","commandActions":[{"type":"unknown","command":"Add-Content -Path note.txt -Value one"}],"proposedExecpolicyAmendment":["Add-Content","-Path","note.txt","-Value","one"],"availableDecisions":["accept",{"acceptWithExecpolicyAmendment":{"execpolicy_amendment":["Add-Content","-Path","note.txt","-Value","one"]}},"cancel"]}}`
+	for _, c := range []struct {
+		line       string
+		want       []string
+		forSession bool
+		problem    bool
+	}{
+		{p8, []string{"accept", "cancel"}, false, false},
+		// L3's request, Codex 0.145.0 (plan.md, plan 4, step 5 rerun).
+		{cmd + `,"availableDecisions":["accept",{"acceptWithExecpolicyAmendment":{"execpolicy_amendment":["go","vet"]}},"cancel"]}}`, []string{"accept", "cancel"}, false, false},
+		{cmd + `,"availableDecisions":["accept","acceptForSession",{"applyNetworkPolicyAmendment":{}},"decline","cancel"]}}`, []string{"accept", "acceptForSession", "decline", "cancel"}, true, false},
+		{cmd + `,"availableDecisions":[]}}`, nil, false, false},
+		{cmd + `,"availableDecisions":null}}`, nil, true, false},
+		{cmd + `}}`, nil, true, false},
+		{file + `}}`, nil, true, false},
+		{file + `,"availableDecisions":["accept","decline","cancel"]}}`, []string{"accept", "decline", "cancel"}, false, false},
+		{`{"id":5,"method":"item/fileChange/requestApproval","params":{"threadId":"t","turnId":"u"}}`, nil, false, true},
+		{cmd + `,"availableDecisions":"accept"}}`, nil, false, true},
+	} {
+		evs := NewMapper().Out([]byte(c.line))
+		if len(evs) != 1 || evs[0].Kind != event.ApprovalRequest {
+			t.Fatalf("%s: %+v", c.line, evs)
+		}
+		a := evs[0].Payload.(event.Approval)
+		if !slices.Equal(a.Offered, c.want) || a.ForSession != c.forSession || (a.Problem != "") != c.problem {
+			t.Errorf("%s: offered %q, for session %v, problem %q; want %q, %v, problem %v", c.line, a.Offered, a.ForSession, a.Problem, c.want, c.forSession, c.problem)
 		}
 	}
 }

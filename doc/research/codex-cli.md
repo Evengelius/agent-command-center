@@ -400,6 +400,23 @@ All from app-server unless stated. "N/A" means no supported source.
    network amendments for commands; prefer `availableDecisions`)
    ([P:p6b] lines 36-40; [T] README:1526-1553). Do not offer the
    "amendment" decisions in the MVP: they persist rules to configuration.
+   Codex CLI 0.163.0's generated schema (`codex app-server
+   generate-json-schema`, read 2026-10-17) has no `availableDecisions` in
+   either request's params and documents `acceptForSession` for both:
+   for a command, "future prompts in the same session-scoped approval
+   cache should run without prompting"; for a file change, "future
+   changes to the same files should run without prompting". The field is
+   experimental (`#[experimental("item/commandExecution/requestApproval.availableDecisions")]`,
+   openai/codex 0.145.0, `app-server-protocol/src/protocol/v2/item.rs`),
+   hence absent from the schema, but sent: probe P8 (0.163.0, 2026-10-17,
+   dashboard handshake) recorded two escalated command requests, each with
+   `["accept", {"acceptWithExecpolicyAmendment": ...}, "cancel"]`, and a
+   file-change request carries none (P6b). Codex's own default for an
+   ordinary command is that list; only a network approval adds
+   `acceptForSession` (`protocol/src/approvals.rs`,
+   `default_available_decisions`, 0.145.0). The dashboard offers it
+   unless a request's list omits it (plan 8): on file changes, not on
+   ordinary commands.
    Native sandbox stays in charge; the dashboard never weakens it.
 5. **Persistence, cancellation, resume?** Codex persists every thread
    (rollout path in `thread.path`); `turn/interrupt` ends a turn as

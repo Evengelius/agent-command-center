@@ -180,15 +180,16 @@ type AgentKeys struct {
 
 // Approval is the payload of ApprovalRequest and ApprovalResolved.
 type Approval struct {
-	ID       string
-	Tool     string
-	Display  string
-	Summary  string
-	ToolID   string
-	Input    json.RawMessage
-	Decision string   // allow, deny (resolved only)
-	Problem  string   // why the request could not be read, when it could not
-	Offered  []string // the decisions the request lists (Codex availableDecisions, strings only); nil when it lists none
+	ID         string
+	Tool       string
+	Display    string
+	Summary    string
+	ToolID     string
+	Input      json.RawMessage
+	Decision   string   // allow, deny (resolved only)
+	Problem    string   // why the request could not be read, when it could not
+	Offered    []string // the decisions the request lists (Codex availableDecisions, strings only); nil when it lists none
+	ForSession bool     // the request takes an allow for the session (Codex acceptForSession; plan 8)
 }
 
 // Metric is one telemetry value. Documented is false for values from an

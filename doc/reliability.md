@@ -234,7 +234,8 @@ Approval machine):
 - **Nothing persists**: options that write a rule ("always allow",
   `permission_suggestions`, execpolicy or network amendments) are not
   offered ([Configuration untouched](#configuration-untouched)). Codex
-  `acceptForSession` lasts for the session only.
+  `acceptForSession` lasts for the session only; it is offered unless the
+  request's `availableDecisions` omits it (plan 8).
 - If writing the answer fails (the pipe closed), the session is `Crashed`
   and the approval `Expired`.
 
