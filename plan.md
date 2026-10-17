@@ -20,13 +20,13 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
-**Plan 5, post-MVP improvements, in progress** (the owner's request of
-2026-10-17, [Plan 5](#plan-5---post-mvp-improvements) at the end). Every
-item done; the evaluation summary, 17 of 17 PASS, is in
+**Plan 5, post-MVP improvements, approved by the owner on 2026-10-17** (the
+owner's request of 2026-10-17, [Plan 5](#plan-5---post-mvp-improvements) at
+the end). Every item done; the evaluation summary, 17 of 17 PASS, is in
 [`doc/plan5-evaluation.md`](doc/plan5-evaluation.md), with the live
 verification the owner ran before the commit (15 of 15 PASS), committed as
 d42531f; then six follow-up items, 6 of 6 PASS (same file, After the
-commit); awaiting the owner's approval.
+commit), committed as 897f640. No plan 6 is defined yet.
 
 **Plan 4, the MVP, approved by the owner on 2026-10-17** after a live demo on
 both CLIs (14 of 14 PASS, [`doc/plan4-evaluation.md`](doc/plan4-evaluation.md));
