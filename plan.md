@@ -20,7 +20,9 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
-Active: **Plan 4, the MVP, in progress (started 2026-10-16).** Plan 3
+**Plan 4, the MVP, approved by the owner on 2026-10-17** after a live demo on
+both CLIs (14 of 14 PASS, [`doc/plan4-evaluation.md`](doc/plan4-evaluation.md));
+all four plans are done. Plan 3
 approved by the owner on 2026-10-16 ([`doc/proposal.md`](doc/proposal.md);
 12 of 12 PASS on the main session's checks, no verifier run). Plan 2 approved
 on 2026-10-16 (15 of 15 PASS; the independent verifier did not re-run after
@@ -1381,7 +1383,7 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
     with a 50-line Markdown answer added, kept outside the repository):
     "I like it a lot". Approved. Committed as `9a27951`, not pushed.
 - Done, amendment 4's acceptance criteria (proposal.md, section 4, Done):
-  **done** (2026-10-17), awaiting the owner's approval. L2 and L4 ran
+  **done** (2026-10-17), approved with plan 4 on 2026-10-17. L2 and L4 ran
   at steps 4 and 5, before steps 6 to 8 changed zones A, B, C and D; they
   are re-run on the current build, within their approved scope (re-runs
   after a change, no new turn, no extra quota), with a check of what
@@ -1692,6 +1694,10 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
     was input from outside the harness); "time 50s session" at 44 rows;
     Shift-drag at both sizes; Ctrl+Q 0.21 s with none of 25944, 18736
     left; configuration PASS.
+  - **Live demo before approval** (2026-10-17, the owner driving, both CLIs,
+    four subagents each, all done in zone C; configuration PASS for Codex,
+    NOT-VERIFIED for `~\.claude.json` only for Claude Code):
+    [`doc/plan4-evaluation.md`](doc/plan4-evaluation.md#live-demo-before-approval-2026-10-17).
   - Later improvement, at the owner's request (not part of the MVP steps):
     show each subagent's model in zone C, where the CLI reports it; zone C
     shows "model N/A" for Codex children today.
