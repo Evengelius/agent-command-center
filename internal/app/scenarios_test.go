@@ -26,6 +26,12 @@ func TestSyntheticScenarios(t *testing.T) {
 		{"codex-no-5h-window.jsonl",
 			[]string{"5h N/A (plan has no 5-hour limit)", "7d ", "1%  resets", "plan plus", "errors 0"},
 			[]string{"5h ▱", "5h ▰"}},
+		// Plan 6's simulated run: the failed command's last line with its
+		// exit code (item 1); the requested model, and N/A without one (item
+		// 4), marked "*" with its footnote (item 5), with its effort (item 6).
+		{"codex-plan6-limits.jsonl",
+			[]string{"✗ commandExecution · exit 1 · fatal: No configured push destination.", "/root/list_files gpt-6-mini* low completed", "/root/create_found model N/A       completed", "* requested model · 0 ACTIVE · 2 DONE", "errors 0"},
+			[]string{"commandExecution · On branch main", "commandExecution · exit 1 · On branch", "model N/A*"}},
 	} {
 		t.Run(c.file, func(t *testing.T) {
 			h := mockDash(t, c.file)

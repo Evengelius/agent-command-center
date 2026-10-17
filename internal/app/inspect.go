@@ -383,9 +383,15 @@ func (m *Model) reveal(n int) {
 	if m.ui.ConvHold {
 		top = min(max(m.ui.ConvTop, 0), max(c.Rows-c.Room, 0))
 	}
+	// The "↓ N new" badge covers B's last row while the view is held with new
+	// entries: one row less to show the marked entry in (plan 6, item 2).
+	room := c.Room
+	if m.ui.ConvHold && len(m.s.Conversation) > m.ui.ConvSeen {
+		room = max(room-1, 1)
+	}
 	to := min(top, c.Starts[n-1])
-	if end := c.Starts[n]; end > to+c.Room {
-		to = end - c.Room
+	if end := c.Starts[n]; end > to+room {
+		to = end - room
 	}
 	if to != top {
 		m.scroll(to - top)

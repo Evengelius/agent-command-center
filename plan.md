@@ -20,13 +20,21 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
+**Plan 6, plan 5's known limits, done, committed at the owner's request** (the
+owner's request of 2026-10-17, [Plan 6](#plan-6---plan-5s-known-limits) at
+the end). Every item done; the evaluation summary, 6 of 6 PASS, is in
+[`doc/plan6-evaluation.md`](doc/plan6-evaluation.md), with the simulated run
+the owner asked for (42 of 42 PASS, both sizes), then items 5 and 6 the
+owner added after it (8 of 8 criteria PASS, one amended; the simulated run
+extended, 53 of 53 PASS, both sizes).
+
 **Plan 5, post-MVP improvements, approved by the owner on 2026-10-17** (the
 owner's request of 2026-10-17, [Plan 5](#plan-5---post-mvp-improvements) at
 the end). Every item done; the evaluation summary, 17 of 17 PASS, is in
 [`doc/plan5-evaluation.md`](doc/plan5-evaluation.md), with the live
 verification the owner ran before the commit (15 of 15 PASS), committed as
 d42531f; then six follow-up items, 6 of 6 PASS (same file, After the
-commit), committed as 897f640. No plan 6 is defined yet.
+commit), committed as 897f640.
 
 **Plan 4, the MVP, approved by the owner on 2026-10-17** after a live demo on
 both CLIs (14 of 14 PASS, [`doc/plan4-evaluation.md`](doc/plan4-evaluation.md));
@@ -37,6 +45,211 @@ on 2026-10-16 (15 of 15 PASS; the independent verifier did not re-run after
 the final fixes, [`doc/plan2-evaluation.md`](doc/plan2-evaluation.md)).
 Plan 1 accepted on 2026-10-16, with criteria 8 and 9 kept as FAIL and accepted
 as documented exceptions ([`doc/research/plan1-evaluation.md`](doc/research/plan1-evaluation.md)).
+
+Plan 6 progress (update as each item finishes; read this first after a
+context compaction). Items and rules: [Plan 6](#plan-6---plan-5s-known-limits).
+Baseline: 6813c0e, 221 top-level tests in 14 packages, 0 FAIL.
+
+- Item 1 (a failed Codex command's line in B): **done** (2026-10-17). Codex
+  0.163.0 sends one output, "aggregated from stdout and stderr" (its
+  generated schema, `commandExecution.aggregatedOutput`); no notification
+  of an agent's command separates the streams (`outputDelta` has none;
+  `command/exec`'s `stream` is for a client's own commands). So the error
+  line cannot be singled out; B shows the exit code, documented, and the
+  last non-blank line, where a failing command most often ends. Criteria:
+  1. A Codex `commandExecution` completed with a non-zero `exitCode` shows
+     in B as "✗ commandExecution · exit N · " and the last non-blank line
+     of its output; "✗ commandExecution · exit N" when the output is blank.
+  2. Every other failed call (Claude Code's; Codex's without an exit code)
+     shows as before: `TestToolFailureRow` passes unchanged.
+  3. The viewer (Enter) still shows the whole output; the exit code goes
+     from the event through the state, never parsed from the text.
+  4. ui-design.md says what B shows for a Codex command and why.
+  5. The full check passes; golden frames unchanged.
+
+  Result: 5 of 5 PASS. `TestCodexCommandExit` (last line, blank output,
+  no exit code, another tool, the whole output kept in the state);
+  `TestFailedCommand` asserts the mapper's exit codes; `TestToolFailureRow`
+  unchanged and passing. The exit code travels as `event.Tool.ExitCode`
+  and `HasExitCode` to `state.ToolCall`; the three Codex mock files gain
+  only those two fields (`TestMockFiles -update`). Partial by nature: the
+  error line itself cannot be told from stdout while Codex merges them.
+- Item 2 ("↓ N new" over the marked row): **done** (2026-10-17). Criteria:
+  1. While B is held with new entries, the badge takes only the right end
+     of B's last row; the row's start stays drawn, cut before the badge.
+  2. Moving the entry cursor while the badge shows never leaves the marked
+     row on B's last row (the reveal counts one row less).
+  3. A selection across that row copies its text, never "↓ N new".
+  4. Without the badge, nothing changes: golden frames unchanged.
+  5. ui-design.md, Zone B, Follow mode, says so; the full check passes.
+
+  Result: 5 of 5 PASS. `TestNewBadgeRow` drives the real program: the
+  badge row keeps its start, a drag across it copies "line …" without the
+  badge, and ↑ from the top leaves the marked row above the badge row.
+  `render.trimTail` cuts the row before the badge; `reveal` counts one row
+  less while the badge shows.
+- Item 3 (a string over several lines): **done** (2026-10-17). Criteria:
+  1. In a `go`, `js`, `javascript`, `jsx`, `mjs`, `ts`, `typescript` or
+     `tsx` fence, a backtick string left open runs on to its closing
+     backtick, every line in the string colour, the code after it as code.
+  2. In a `python` or `py` fence, `"""` and `'''` likewise.
+  3. Elsewhere a string still ends with its line (a shell backtick, a lone
+     `"`); a string left open ends with its fence, the next fence starts as
+     code; `/*` inside such a string is string, a backtick inside a block
+     comment is comment.
+  4. Styled and plain draw the same text (`TestMarkdownSameText`,
+     `TestInspectMarkdown`); `TestStreamToFrame` p95 within 16 ms.
+  5. ui-design.md: the Limits row removed, the Markdown section updated;
+     golden frames unchanged; the full check passes.
+
+  Result: 5 of 5 PASS. `TestMultiLineString` (Go, JS and TS backticks,
+  Python triple quotes, a shell backtick and a lone quote ending with the
+  line, a string left open ending with its fence, `/*` in a string and a
+  backtick in a comment); `TestBlockComment` now reads the open delimiter
+  (`.open == "*/"`); `TestMarkdownSameText` and `TestInspectMarkdown` PASS.
+  `TestStreamToFrame` p95 4.00, 4.03 and 4.21 ms (HEAD on the same
+  machine: 4.75, 3.04 and 3.51 ms), within 16 ms.
+- Item 4 (Codex's `collabAgentToolCall` model): **done** (2026-10-17). The
+  0.163.0 schema documents `model`, "Model requested for the spawned
+  agent, when applicable", with `receiverThreadIds` naming the new agent;
+  no recording carries it. Criteria:
+  1. A `spawnAgent` call with a `model` gives each agent of its
+     `receiverThreadIds` that model in zone C, its source named as the
+     spawn request where the source is shown.
+  2. A model the agent reports itself (`subAgentActivity`) always wins: a
+     requested one fills only an empty model, before or after it.
+  3. Without `model`, or for another collab tool, nothing changes.
+  4. The test fixture is built from the generated schema and labelled so
+     (no recording); ui-design.md and reliability.md's Codex Model row
+     updated; the full check passes.
+
+  Result: 4 of 4 PASS. `TestSpawnRequestModel` (fixture from the 0.163.0
+  generated schema, labelled so) and `TestRequestedModel`; `TestAgentModel`
+  unchanged. Found in review: the spawn event carried no parent, so an
+  agent first seen through it would sit under the orchestrator; the mapper
+  now sends the caller as `Parent` and the reducer's no-progress guard
+  allows it. Mutation checks: reverting either fix fails its test (2
+  killed). Not verified live: no recording carries `model`;
+  `reasoningEffort` is not used.
+
+Plan 6 full check (2026-10-17): `go build ./...`, `go vet ./...` (also
+`-tags live`, `-tags timing`) exit 0; `gofmt -l .` prints nothing; `go test
+./...` 226 top-level tests PASS in 14 packages (221 at 6813c0e, +5), 0 FAIL;
+golden frames unchanged; go.mod and go.sum unchanged; the changed files have
+no CR and no BOM.
+
+Plan 6 simulated run (2026-10-17, the owner's request after the evaluation):
+21 of 21 PASS maximised and 21 of 21 at the default size, main session, no
+CLI, no quota. A synthetic mock, `testdata/mock/codex-plan6-limits.jsonl`
+(`TestMockFiles`, `codexPlan6Limits`): P7 through the real mapper with the
+two documented `spawnAgent` calls put in (one with `model: gpt-6-mini`, one
+without), a Markdown answer with Go, Python, TS and shell fences, and a
+failed `git push` (exit 1, three output lines). `TestSyntheticScenarios`
+gains it. Replayed in Windows Terminal by `p6sim.ps1` (session scratchpad;
+keys, wheel and drag through SendInput, text through UI Automation, window
+screenshots): item 1 "✗ commandExecution · exit 1 · fatal: No configured
+push destination." in B, the viewer with all three lines; item 2 the badge
+beside "27. Checklist step 27 …", a drag copying the row without the badge,
+↑ marking the command above the badge row, the wheel at the bottom
+following again; item 3 all 14 code lines seen, the colours checked on the
+screenshots (strings green to their closing delimiter, comment markers
+inside them not comments, the shell backtick ending with its line); item 4
+"/root/list_files gpt-6-mini" in C and in its inspection header,
+"/root/create_found model N/A". Ctrl+Q left no process; the clipboard was
+restored. Harness errors fixed before the passing runs: End is the editor's
+key in B, the four fences do not fit one screen, the selected row of C is not
+in the screen text, the expected shell line was wrong; once at the default
+size the viewer was read 0.75 s after Enter and not yet shown, then shown in
+4 of 4 tries (468 ms polled). Mutation checks: B's first line instead of the
+last, and the spawn's model dropped, each fail (2 killed). Full check again:
+226 top-level tests PASS in 14 packages, 0 FAIL. Seen, not a defect: an
+agent model's source ("spawn request") is not drawn anywhere, as for every
+agent model; `reasoningEffort` is not shown.
+
+Items 5 and 6 (the owner's request of 2026-10-17 after the simulated run,
+"Add these to plan 6, implement it, before final committing everything"):
+
+- Item 5 (an agent model's source shown): **done** (2026-10-17). Criteria:
+  1. The inspection header shows the agent's model followed by its source,
+     "(requested)" for a spawn request's, "(reported)" for the agent's own;
+     "model N/A (not reported)" without one.
+  2. The preview header (160+ columns) shows the same model and source.
+  3. A zone C row marks a requested model with a grey "requested" after
+     its model; rows of a list with no requested model are unchanged; every
+     row fits at 120 and 200 columns.
+  4. Tests through the frame, one mutation check killed, ui-design.md
+     updated, the full check passes.
+
+  Criterion 3 amended during the work, before its result: the word
+  "requested" and a fixed effort column cut the activity to "a…" at 200
+  columns beside the preview. A requested model is now marked with a grey
+  "*" after it, and zone C's header carries the footnote "* requested
+  model" (zone D's "†" convention); the rest of the criterion stands.
+
+  Result: 4 of 4 PASS (criterion 3 as amended). `TestAgentSourceAndEffort`
+  at 120 and 200 columns: C's rows (the "*" and the effort in grey), the
+  header's footnote, the preview's "gpt-6-mini (requested) · effort low
+  (requested)", the inspection headers of a requested, a reported and an
+  unreported agent; a list with neither keeps its rows and no footnote.
+  The inspection header now puts the status before the effort and drops
+  "[ ] prev/next" when it does not fit (the footer keeps "[ ] agent"), so
+  the status stays on screen at 80 and 120 columns. Four golden frames
+  changed, reviewed: the preview's and the inspections' headers only.
+- Item 6 (the reasoning effort shown): **done** (2026-10-17). Criteria:
+  1. Codex: a child's `subAgentActivity.reasoningEffort` (recorded, P7b,
+     "high") is the agent's effort, source "reported"; a `spawnAgent`
+     call's `reasoningEffort` (0.163.0 generated schema, beside `model`)
+     fills only an empty effort, source "requested"; the agent's own always
+     wins, in either order; null or absent changes nothing.
+  2. Shown in zone C after the model, grey, when any listed agent has one
+     (the columns stay aligned); in the preview header beside the model; in
+     the inspection header always, "effort N/A (not reported)" without one
+     (Claude Code reports no effort per subagent).
+  3. An ended agent still takes a model-only or effort-only event (the
+     reducer's guard), and nothing else.
+  4. The mocks regenerated through the real mapper (the P7b-based ones gain
+     "high"); golden frames reviewed; ui-design.md and reliability.md
+     updated; one mutation check killed; the full check passes.
+
+  Result: 4 of 4 PASS. `TestAgentEffort`: P7 gives no effort; P7b gives
+  its two children "high", reported; a spawn with model and effort, with
+  effort only, and with both null. `TestRequestedEffort`: the agent's own
+  wins in either order, a model-only report keeps the requested effort;
+  after the end a late request is not progress, a mixed event is, and the
+  agent's own effort-only event is taken. Criterion 4's "the P7b-based
+  mocks gain high": no mock is built from P7b, so none changed; the
+  synthetic `codex-plan6-limits.jsonl` carries the spawn's "low";
+  `TestMockFiles` passes. Claude Code: "effort N/A (not reported)"
+  (reliability.md, Agent reasoning effort).
+
+  Mutation checks, items 5 and 6: the source always "(reported)"
+  (`TestAgentSourceAndEffort`), the `subAgentActivity` effort dropped
+  (`TestAgentEffort`), the guard ignoring the effort and a requested effort
+  overriding the agent's own (`TestRequestedEffort`) each fail: 4 killed, 0
+  survived. Full check: `go build`, `go vet` (also `-tags live`, `-tags
+  timing`) exit 0; `gofmt -l .` prints nothing; `go test ./...` 229
+  top-level tests PASS in 14 packages (226 + 3), 0 FAIL; go.mod and go.sum
+  unchanged.
+- The simulated run extended to items 5 and 6: **done** (2026-10-17), 27 of
+  27 PASS maximised and 26 of 26 at the default size (the preview check
+  runs maximised only), main session, no CLI, no quota. In C:
+  "/root/list_files gpt-6-mini* low", the header's "* requested model",
+  "/root/create_found model N/A" unmarked; the preview, at 208 columns:
+  "gpt-6-mini (requested) · effort low (requested)" and "model N/A (not
+  reported)"; the inspection headers: "/root/list_files · gpt-6-mini
+  (requested) · ✓ completed 6s · 30.5k tok · effort low (requested)" and
+  "/root/create_found · model N/A (not reported) · ✓ completed 13s · 77.3k
+  tok · effort N/A (not reported)". The screenshots show the model in its
+  colour, the "*", the effort and the sources grey. The first run's 20
+  checks (items 1 to 4, the window, the replay, Ctrl+Q) pass again in
+  both, and the overall result line passes. Harness errors before the passing run:
+  the maximised window here is 157 columns, under the preview's 160, then
+  at 170 the preview box drops its right-hand header and the first ↓ only
+  selected C's first row; the harness now shrinks the font (Ctrl+-, three
+  times, 208 columns), selects each row, and restores it (Ctrl+0). Seen,
+  not changed: between 160 and about 200 columns the preview box drops
+  its whole right-hand header, model included, as every box does when its
+  title does not fit; the inspection shows it at every width.
 
 Plan 5 progress (update as each item finishes; read this first after a
 context compaction). Items, order and rules: [Plan 5](#plan-5---post-mvp-improvements).
@@ -2943,6 +3156,34 @@ one. The limits accepted at plan 4 stay (`~\.claude.json` not classified; the
 Codex thread limit N/A, `config/read` may expose secrets), and amendment 4's
 excluded features, Gemini CLI, Antigravity, the VS Code terminal and conhost
 stay out.
+
+Done when every item has passed its criteria or is recorded with why it could
+not be done, the full check passes, and the evaluation summary is reported to
+the owner.
+
+## Plan 6 - Plan 5's known limits
+
+The owner's request (2026-10-17), after plan 5's approval, on the four known
+limits plan 5 recorded: "Can we fix these?"
+
+1. A failed Codex command's line in B, whose error can be its standard
+   output.
+2. "↓ N new" covering the marked row while B is held.
+3. A string over several lines highlighted on its first line only.
+4. Codex's `collabAgentToolCall` `model`, not used.
+
+Added by the owner on 2026-10-17, after the simulated run:
+
+5. An agent model's source (requested at spawn or reported by the agent),
+   drawn nowhere.
+6. The reasoning effort, not shown.
+
+Each item gets its yes/no criteria in the progress list before work starts,
+regression tests, the full check (build, vet with `-tags live` and `-tags
+timing`, gofmt, `go test ./...`), and its result recorded as it finishes.
+
+Rules: as plan 5's. Windows 11 and Windows Terminal only; no live CLI turn,
+so no quota, unless the owner approves one; no new dependency.
 
 Done when every item has passed its criteria or is recorded with why it could
 not be done, the full check passes, and the evaluation summary is reported to

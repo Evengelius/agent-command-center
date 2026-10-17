@@ -389,6 +389,10 @@ func TestFailedCommand(t *testing.T) {
 		for _, e := range fixture.Flatten(per) {
 			if p, ok := e.Payload.(event.Tool); ok && e.Kind == event.ToolCompleted && p.IsError {
 				got = append(got, p.ToolID+" "+p.Output)
+				// Plan 6, item 1: the exit code comes from the item, not the text.
+				if strings.HasPrefix(p.Name, "commandExecution") && !p.HasExitCode {
+					t.Errorf("%s: failed command %s carries no exit code", c.file, p.ToolID)
+				}
 			}
 		}
 		if len(got) != len(c.want) {
@@ -552,5 +556,110 @@ func TestConfigReadRefused(t *testing.T) {
 	}
 	if p := evs[0].Payload.(event.Problem); p.Message != "config/read refused by Codex: config unavailable" {
 		t.Errorf("message %q", p.Message)
+	}
+}
+
+// TestSpawnRequestModel is plan 6, item 4, criteria 1 and 3. The fixture is
+// built from Codex 0.163.0's generated schema (collabAgentToolCall: `model`,
+// "Model requested for the spawned agent, when applicable", and
+// `receiverThreadIds`), not from a recording: none carries a model there.
+func TestSpawnRequestModel(t *testing.T) {
+	line := func(tool, model string) []byte {
+		m := ""
+		if model != "" {
+			m = `"model":"` + model + `",`
+		}
+		return []byte(`{"method":"item/completed","params":{"threadId":"th0","turnId":"u1","item":{"type":"collabAgentToolCall","id":"c1","tool":"` + tool + `",` + m +
+			`"status":"completed","senderThreadId":"th0","receiverThreadIds":["th1","th2"],"prompt":"go","agentsStates":{"th1":{"status":"running","message":null}}}}}`)
+	}
+	requested := func(evs []event.Event) map[string]string {
+		got := map[string]string{}
+		for _, e := range evs {
+			if p, ok := e.Payload.(event.Agent); ok && p.Model != "" {
+				if !p.ModelRequested || e.Kind != event.AgentProgress {
+					t.Errorf("model %q on %s, requested %v", p.Model, e.Kind, p.ModelRequested)
+				}
+				got[p.Key] = p.Model
+			}
+		}
+		return got
+	}
+	mp := NewMapper()
+	mp.main = "thm" // th0, the caller, is a subagent: its spawns nest under it
+	evs := mp.Out(line("spawnAgent", "gpt-6-mini"))
+	got := requested(evs)
+	if len(got) != 2 || got["th1"] != "gpt-6-mini" || got["th2"] != "gpt-6-mini" {
+		t.Errorf("spawnAgent with a model: %v", got)
+	}
+	// Each request names the caller as parent, as agentsStates' events do.
+	parents := map[bool]map[string]bool{true: {}, false: {}}
+	for _, e := range evs {
+		if p, ok := e.Payload.(event.Agent); ok {
+			parents[p.ModelRequested][p.Parent] = true
+		}
+	}
+	if !parents[true]["th0"] || len(parents[true]) != 1 || fmt.Sprint(parents[true]) != fmt.Sprint(parents[false]) {
+		t.Errorf("parents: requested %v, states %v", parents[true], parents[false])
+	}
+	if got := requested(NewMapper().Out(line("spawnAgent", ""))); len(got) != 0 {
+		t.Errorf("spawnAgent without a model: %v", got)
+	}
+	if got := requested(NewMapper().Out(line("sendInput", "gpt-6-mini"))); len(got) != 0 {
+		t.Errorf("sendInput: %v", got)
+	}
+}
+
+// TestAgentEffort is plan 6, item 6, criterion 1: Codex 0.163.0's
+// subAgentActivity gives each child its reasoning effort beside its model
+// (P7b; 0.145.0 reports none, P7), and a spawnAgent call's reasoningEffort,
+// "Reasoning effort requested for the spawned agent, when applicable" (the
+// generated schema; no recording carries one), is sent as requested, with
+// or without a model; null sends nothing.
+func TestAgentEffort(t *testing.T) {
+	for _, c := range []struct {
+		file string
+		want map[string]string
+	}{
+		{"p7-codex-subagents.jsonl", map[string]string{}},
+		{"p7b-codex-subagents.jsonl", map[string]string{
+			"01a14937-2992-7d51-8e12-7ff3613a8069": "high", // /root/list_files
+			"01a14937-2f86-7543-9d91-e0a0e52125cc": "high", // /root/create_found
+		}},
+	} {
+		_, per := replay(t, c.file)
+		got := map[string]string{}
+		for _, e := range fixture.Flatten(per) {
+			if p, ok := e.Payload.(event.Agent); ok && p.Effort != "" {
+				if e.Kind != event.AgentStarted || p.ModelRequested {
+					t.Errorf("%s: effort %q on %s, requested %v", c.file, p.Effort, e.Kind, p.ModelRequested)
+				}
+				got[p.Key] = p.Effort
+			}
+		}
+		if fmt.Sprint(got) != fmt.Sprint(c.want) {
+			t.Errorf("%s: efforts %v, want %v", c.file, got, c.want)
+		}
+	}
+	spawn := func(fields string) []event.Event {
+		return NewMapper().Out([]byte(`{"method":"item/completed","params":{"threadId":"th0","turnId":"u1","item":{"type":"collabAgentToolCall","id":"c1","tool":"spawnAgent",` + fields +
+			`"status":"completed","senderThreadId":"th0","receiverThreadIds":["th1"],"prompt":"go","agentsStates":{}}}}`))
+	}
+	for _, c := range []struct{ fields, model, effort string }{
+		{`"model":"gpt-6-mini","reasoningEffort":"low",`, "gpt-6-mini", "low"},
+		{`"model":null,"reasoningEffort":"medium",`, "", "medium"},
+		{`"model":null,"reasoningEffort":null,`, "", ""},
+	} {
+		var got []event.Agent
+		for _, e := range spawn(c.fields) {
+			if p, ok := e.Payload.(event.Agent); ok && e.Kind == event.AgentProgress && p.ModelRequested {
+				got = append(got, p)
+			}
+		}
+		switch {
+		case c.effort == "" && len(got) != 0:
+			t.Errorf("%s: %+v", c.fields, got)
+		case c.effort != "" && (len(got) != 1 || got[0].Key != "th1" || got[0].Model != c.model || got[0].Effort != c.effort):
+			t.Errorf("%s: %+v", c.fields, got)
+		}
 	}
 }

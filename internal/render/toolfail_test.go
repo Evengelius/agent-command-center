@@ -125,3 +125,43 @@ func TestToolFailureRow(t *testing.T) {
 		t.Errorf("marked row styles ▸ %p, error %p, hint %p", styleOf(l, "▸"), styleOf(l, "exit status 1"), styleOf(l, "Enter full view"))
 	}
 }
+
+// TestCodexCommandExit is plan 6, item 1, criteria 1 to 3: a Codex command
+// that exited non-zero shows "✗ commandExecution · exit N · " and the last
+// non-blank line of its output, "exit N" alone when the output is blank; any
+// other failed call keeps its first non-blank line; the viewer's text is the
+// whole output.
+func TestCodexCommandExit(t *testing.T) {
+	build := func(out string, code int, has bool, name string) *state.State {
+		s := state.New()
+		s.Screen = state.ScreenDashboard
+		s.Context.Provider = "codex"
+		at := time.Date(2026, 10, 17, 9, 30, 5, 0, time.Local)
+		s.Apply(event.Event{Seq: 1, At: at, Kind: event.ToolStarted, Origin: event.Observed, Payload: event.Tool{ToolID: "c1", Name: name}})
+		s.Apply(event.Event{Seq: 2, At: at.Add(time.Second), Kind: event.ToolCompleted, Origin: event.Observed,
+			Payload: event.Tool{ToolID: "c1", Name: name, IsError: true, Output: out, ExitCode: code, HasExitCode: has}})
+		return s
+	}
+	frame := func(s *state.State) string {
+		sc := Draw(s, UI{Width: 120, Height: 40, Focus: "B"})
+		return texts(sc.lines)
+	}
+	if f := frame(build("first line\r\nreal error  \n\n", 2, true, "commandExecution")); !strings.Contains(f, "✗ commandExecution · exit 2 · real error") || strings.Contains(f, "first line") {
+		t.Errorf("last line: %q", f)
+	}
+	if f := frame(build(" \n\t\n", 3, true, "commandExecution")); !strings.Contains(f, "✗ commandExecution · exit 3") || strings.Contains(f, "exit 3 ·") {
+		t.Errorf("blank output: %q", f)
+	}
+	// Without an exit code, or for another tool, as before.
+	if f := frame(build("first line\nlast line", 0, false, "commandExecution")); !strings.Contains(f, "✗ commandExecution · first line") || strings.Contains(f, "exit") {
+		t.Errorf("no exit code: %q", f)
+	}
+	if f := frame(build("first line\nlast line", 2, true, "Bash")); !strings.Contains(f, "✗ Bash · first line") || strings.Contains(f, "exit") {
+		t.Errorf("other tool: %q", f)
+	}
+	// The whole output stays in the state the viewer reads.
+	s := build("first line\nlast line", 2, true, "commandExecution")
+	if s.Tools["c1"].Output != "first line\nlast line" || s.Tools["c1"].ExitCode != 2 {
+		t.Errorf("state %+v", s.Tools["c1"])
+	}
+}

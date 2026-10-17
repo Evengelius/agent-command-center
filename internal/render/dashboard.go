@@ -332,7 +332,9 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 		shown = append(shown, blank(0, room-len(shown))...)
 	}
 	if n := len(s.Conversation) - ui.ConvSeen; ui.ConvHold && n > 0 && room > 0 {
-		shown[room-1] = spread(nil, decoLine(fmt.Sprintf("↓ %d new", n), stProgress), inner)
+		// The badge takes the right end of the last row only; the row's start
+		// stays, cut before it (plan 6, item 2).
+		shown[room-1] = spread(trimTail(shown[room-1]), decoLine(fmt.Sprintf("↓ %d new", n), stProgress), inner)
 	}
 	if sc != nil {
 		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold, Starts: starts}
@@ -751,6 +753,16 @@ func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	agents := agentsByActivity(s)
 	active, done := activeAgents(s)
 	right := plain(fmt.Sprintf("%d ACTIVE · %d DONE", active, done), stText)
+	var cols agentCols // over every agent, so the columns hold while scrolling
+	for _, a := range agents {
+		if a.Effort.Present {
+			cols.effort = max(cols.effort, textWidth(a.Effort.Text)+1)
+		}
+		cols.requested = cols.requested || requested(a.Model)
+	}
+	if cols.requested { // the footnote, as D's "†"
+		right = append(line{sp("* requested model · ", stGrey)}, right...)
+	}
 	var body []line
 	if len(agents) == 0 {
 		body = append(body, plain("no agents yet: they appear as the CLI starts them", stGrey))
@@ -771,7 +783,7 @@ func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 		sc.List.IDs = append(sc.List.IDs, a.Key)
 	}
 	for _, a := range agents[from:min(from+max(room, 0), len(agents))] { // only the rows the box can show
-		body = append(body, agentRow(a, ui, w-4))
+		body = append(body, agentRow(a, ui, w-4, cols))
 	}
 	if h-2 >= 4 {
 		for len(body) < h-3 {
@@ -790,7 +802,27 @@ func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	return box('C', zoneTitle(title, ui.Focus == "C"), right, body, w, h, borderFor(ui.Focus == "C"))
 }
 
-func agentRow(a *state.Agent, ui UI, w int) line {
+// agentCols are the optional parts of zone C's rows, drawn when any agent
+// has a value for them (plan 6, items 5 and 6): the effort column's width,
+// 0 for none, and the "*" footnote of a requested model.
+type agentCols struct {
+	effort    int
+	requested bool
+}
+
+// requested tells a model or effort a spawn call asked for from the agent's
+// own report (plan 6, item 5).
+func requested(v state.Value) bool { return v.Present && v.Source == "spawn request" }
+
+// source names where an agent's model or effort came from (plan 6, item 5).
+func source(v state.Value) string {
+	if requested(v) {
+		return "(requested)"
+	}
+	return "(reported)"
+}
+
+func agentRow(a *state.Agent, ui UI, w int, cols agentCols) line {
 	sel := " "
 	if ui.Selected == a.Key {
 		sel = "▸"
@@ -815,7 +847,16 @@ func agentRow(a *state.Agent, ui UI, w int) line {
 		tok = count(a.Tokens.V) + " tok"
 	}
 	right := plain(fmt.Sprintf("  %7s  %10s", elapsed(a.StartedAt, a.EndedAt, ui.Now), tok), stGrey)
-	left := line{deco(sel, stTitle), agentSymbol(a.Status), sp(" "+padTo(a.Label, 14), stText), sp(padTo(m, 12), modelStyle(m)), sp(activity, stGrey)}
+	left := line{deco(sel, stTitle), agentSymbol(a.Status), sp(" "+padTo(a.Label, 14), stText), sp(m, modelStyle(m))}
+	mark := ""
+	if requested(a.Model) {
+		mark = "*"
+	}
+	left = append(left, sp(padTo(mark, 12-textWidth(m)), stGrey))
+	if cols.effort > 0 {
+		left = append(left, sp(padTo(a.Effort.Text, cols.effort), stGrey))
+	}
+	left = append(left, sp(activity, stGrey))
 	return spread(left, right, w)
 }
 
@@ -855,7 +896,10 @@ func preview(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	body = append(body, hint)
 	right := plain("model N/A (not reported)", stGrey)
 	if a.Model.Present {
-		right = plain(a.Model.Text, modelStyle(a.Model.Text))
+		right = line{sp(a.Model.Text, modelStyle(a.Model.Text)), sp(" "+source(a.Model), stGrey)}
+	}
+	if a.Effort.Present {
+		right = append(right, sp(" · effort "+a.Effort.Text+" "+source(a.Effort), stGrey))
 	}
 	return box('P', line{sp(a.Label+" · ", stBold), sp("LIVE", stDone)}, right, body, w, h, stFrame)
 }

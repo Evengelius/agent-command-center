@@ -490,6 +490,16 @@ events (events-and-state.md, Conversation record); nothing is simulated.
     line in red (plan 5, item 6), `✗ Grep · failed` when it wrote nothing,
     and a call denied at its approval `✗ Edit · denied`. The error is
     content: a selection copies the name and the error as two lines;
+    **a Codex command** (`commandExecution`) that exited non-zero reads
+    `✗ commandExecution · exit 2 · <last non-blank line>`, or
+    `✗ commandExecution · exit 2` when its output is blank (plan 6, item 1).
+    Why: Codex 0.163.0 sends one output, "aggregated from stdout and
+    stderr" (its generated schema, `commandExecution.aggregatedOutput`), and
+    no notification of an agent's command separates the streams, so the
+    error line cannot be singled out; the exit code comes from the item's
+    `exitCode`, never parsed from the text, and a failing command most often
+    ends with its error. Enter still shows the whole output; Claude Code's
+    failures and Codex's without an exit code keep the first-line rule;
   - agent lines `▸ Agent scan-routes started` (the agent's own text stays in
     C and in inspection: subagent text is not streamed by Claude Code,
     events-and-state.md, `conversation.message.delta`);
@@ -529,8 +539,11 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   wheel, copies with a selection, and Esc returns to B as it was, the
   cursor on the same entry.
 - **Follow mode**: new text keeps the view at the bottom; once the owner
-  scrolls up, follow stops and "↓ 12 new" shows at the bottom edge; End
-  resumes following.
+  scrolls up, follow stops and "↓ 12 new" shows at the bottom edge, at the
+  right end of B's last row only: the row's start stays drawn, cut before the
+  badge, and a selection across it copies its text, never the badge (plan 6,
+  item 2); the entry cursor reveals one row less while the badge shows, so
+  its marked row is never the badge's row. End resumes following.
 - **The input** is the bottom of B, separated by a rule: the
   [Input editor](#input-editor).
 
@@ -559,7 +572,13 @@ label and syntax highlighting.
   YAML, TOML, Ruby, PowerShell and the like, `--` in SQL, Lua and Haskell,
   `//` otherwise. Outside the `#` languages a `/*` comment runs on to its
   `*/` over the lines of its block, the code after `*/` highlighted again,
-  and one left open ends with its fence (plan 5, item 12). One keyword set
+  and one left open ends with its fence (plan 5, item 12). A string ends with
+  its line, except a backtick one in `go`, `js`, `javascript`, `jsx`, `mjs`,
+  `ts`, `typescript` and `tsx` fences and a `"""` or `'''` one in `python` and
+  `py` fences: it runs on, every line in the string colour, to its closing
+  delimiter, the code after it highlighted again; one left open ends with its
+  fence, and the next fence starts as code (plan 6, item 3). Inside such a
+  string `/*` is string, inside a block comment a backtick is comment. One keyword set
   serves every language, since a word wrongly coloured costs only a colour.
   Colours in [Colours and symbols](#colours-and-symbols).
 - **Streaming**: each source line's wrap is cached by text and widths
@@ -594,14 +613,25 @@ The live subagents (AM2 C1-C11; AM4 D3).
   `agent_id`; Codex `agentPath`), the agent's own model in its colour
   (Claude Code: its forwarded messages' `message.model`, shown without the
   "claude-" prefix to fit the column, in full in the preview and the
-  inspection; Codex: `subAgentActivity.model`, from Codex CLI 0.163.0) or
-  "model N/A" (older Codex children, ASM-14; plan 5, item 7), current task
+  inspection; Codex: `subAgentActivity.model`, from Codex CLI 0.163.0, else the
+  model its `spawnAgent` call requested, `collabAgentToolCall.model` for each
+  of its `receiverThreadIds`, source "spawn request": the agent's own report
+  always wins, in either order; plan 6, item 4, from the generated schema,
+  no recording carries it) or
+  "model N/A" (older Codex children, ASM-14; plan 5, item 7); a requested
+  model is followed by a grey "*", footnoted "* requested model" in the
+  header, as D's "†" (plan 6, item 5); then, when any listed agent has one,
+  its reasoning effort in grey, a column as wide as the longest (Codex
+  `subAgentActivity.reasoningEffort`, else the spawn request's, by the
+  model's rule; plan 6, item 6), current task
   (last tool and its target, or "waiting: approval Edit", or "completed · 3
   files read"), elapsed time, tokens. A retry shows "↻ 2" after the time
   (AM2 C7). Rows are ordered: waiting for approval, running, then ended,
   most recent first (ASM-22).
 - **Preview** (wide only): the selected agent's last events, timestamped,
-  each with its origin label; it follows the selection, and the wheel
+  each with its origin label; its header shows the model with its source,
+  "(reported)" or "(requested)", and the effort when there is one, "·
+  effort high (reported)" (plan 6, items 5 and 6); it follows the selection, and the wheel
   scrolls it.
 - **Keys** when focused: ↑ ↓ select, Enter inspects, z zooms; PgUp, PgDn,
   Home and End scroll the list, the selection kept.
@@ -641,7 +671,7 @@ Enter on an agent in A or C opens it full screen (AM2 C5, C6, C8, U7; B2.3):
 
 ```text
  >_ AGENT COMMAND CENTER                                                 ● LIVE
- ◀ back (Esc)   scan-routes · sonnet-5-5 · ◉ running 41s · 12.1k tok   [ ] prev/next
+ ◀ back (Esc)   scan-routes · claude-sonnet-5-5 (reported) · ◉ running 41s · 12.1k tok · effort N/A (not reported)
  ───────────────────────────────────────────────────────────────────────────────
   Messages │ Tools │ Diff │ Raw events
  ───────────────────────────────────────────────────────────────────────────────
@@ -660,6 +690,12 @@ Enter on an agent in A or C opens it full screen (AM2 C5, C6, C8, U7; B2.3):
   diffs derived from `Edit` and `Write` inputs and labelled "derived");
   **Raw events** (the agent's raw event lines, for diagnosis, unrecognised
   ones included).
+- **Header**: the label, the model in full with its source, "(reported)"
+  by the agent or "(requested)" by the spawn call, or "model N/A (not
+  reported)"; the status, time and tokens; then the reasoning effort with
+  its source, or "effort N/A (not reported)" (Claude Code reports none per
+  subagent); "[ ] prev/next" on the right when it fits, the footer keeping
+  "[ ] agent" (plan 6, items 5 and 6).
 - `[` and `]` move to the previous and next agent; Esc returns to the
   dashboard with the same focus as before (AM2 C9).
 - The view updates live: inspection is a rendering of the same state.
@@ -1099,7 +1135,6 @@ what is not built).
 | - | - | - |
 | Approval card: s allows for the session | Never for Claude Code; for Codex only when the request's `availableDecisions` lists `acceptForSession`, which no recording does and Codex CLI 0.163.0's generated schema omits | Claude Code: CC-4; Codex: plan 5, item 8 |
 | Tool lines in B carry a status symbol, and a failed one `✗` with its error | `✗` and the error for a failed or denied call; `▸` for the others, their status in A and the viewer | Only the calls that need a look are marked in B (plan 5, item 6) |
-| Syntax highlighting of a string over several lines (raw and template strings, Python's triple quotes) | Its first line only; the next lines show as code | A string ends with its line; only a block comment carries over ([Markdown](#markdown), plan 5, item 12) |
 | Thinking text folded under the message, "thinking · 312 tokens", unfoldable | "∴ thinking" marks a message that had a thinking block; nothing unfolds | The conversation record keeps that a thinking block arrived (`Entry.Thinking`), not its text (found in plan 5, item 4) |
 
 ## Assumptions used here

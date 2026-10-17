@@ -84,17 +84,27 @@ func content(p byte, item int, l line) line {
 }
 
 func inspectHeader(a *state.Agent, ui UI, w int) line {
-	m := "model N/A"
+	// The model and the effort with their source (plan 6, items 5 and 6).
+	m := line{deco("model N/A (not reported)", stGrey)}
 	if a.Model.Present {
-		m = a.Model.Text
+		m = line{deco(a.Model.Text, modelStyle(a.Model.Text)), deco(" "+source(a.Model), stGrey)}
+	}
+	e := "effort N/A (not reported)"
+	if a.Effort.Present {
+		e = "effort " + a.Effort.Text + " " + source(a.Effort)
 	}
 	tok := "tok N/A"
 	if a.Tokens.Present {
 		tok = count(a.Tokens.V) + " tok"
 	}
-	l := line{deco(" ◀ back (Esc)   ", stTitle), deco(a.Label, stBold), deco(" · ", stGrey), deco(m, modelStyle(m)), deco(" · ", stGrey),
-		agentSymbol(a.Status), deco(" "+statusWord(a.Status)+" "+elapsed(a.StartedAt, a.EndedAt, ui.Now), stText), deco(" · "+tok, stGrey)}
-	return spread(l, decoLine("  [ ] prev/next ", stGrey), w)
+	l := line{deco(" ◀ back (Esc)   ", stTitle), deco(a.Label, stBold), deco(" · ", stGrey)}
+	l = append(append(l, m...), deco(" · ", stGrey), agentSymbol(a.Status),
+		deco(" "+statusWord(a.Status)+" "+elapsed(a.StartedAt, a.EndedAt, ui.Now), stText), deco(" · "+tok+" · "+e, stGrey))
+	hint := decoLine("  [ ] prev/next ", stGrey)
+	if l.width()+hint.width() > w {
+		hint = nil // the footer keeps "[ ] agent"; the values come first
+	}
+	return spread(l, hint, w)
 }
 
 func statusWord(st state.AgentStatus) string {

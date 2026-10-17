@@ -224,8 +224,78 @@ func TestBlockComment(t *testing.T) {
 		}
 	}
 	for j, want := range map[int]bool{1: false, 2: true, 3: true, 4: false, 5: false, 6: false, 7: false, 8: false, 10: false, 14: false, 18: false} {
-		if ks[j].comment != want {
-			t.Errorf("line %d starts in a comment: %v, want %v", j, ks[j].comment, want)
+		if (ks[j].open == "*/") != want {
+			t.Errorf("line %d starts in a comment: %v, want %v", j, ks[j].open == "*/", want)
+		}
+	}
+}
+
+// TestMultiLineString is plan 6, item 3, criteria 1 to 3: a backtick string in
+// Go, JavaScript and TypeScript, and a triple-quoted one in Python, run over
+// the lines to their close; elsewhere a string ends with its line, one left
+// open ends with its fence, a /* in a string is string and a backtick in a
+// block comment is comment.
+func TestMultiLineString(t *testing.T) {
+	lines := []string{
+		"```go",                        // 0
+		"q := `select *",               // 1
+		"  from \"t\" // not one",      // 2
+		"  /* nor this` + x",           // 3
+		"```",                          // 4
+		"```tsx",                       // 5
+		"const a = `x ${y}",            // 6
+		"still \\` inside`; let n = 3", // 7
+		"```",                          // 8
+		"```python",                    // 9
+		`s = """doc`,                   // 10
+		"  more # text",                // 11
+		`""" ; k = 4`,                  // 12
+		`t = '''open`,                  // 13
+		"```",                          // 14
+		"```python",                    // 15
+		"n = 5",                        // 16
+		"```",                          // 17
+		"```sh",                        // 18
+		"echo `date",                   // 19
+		"x=1",                          // 20
+		"```",                          // 21
+		"```c",                         // 22
+		"/* a ` b",                     // 23
+		"c` */ d = 6;",                 // 24
+		`s = "/* in a string`,          // 25
+		"y = 7;",                       // 26
+		"```",                          // 27
+	}
+	ks := mdLines(lines)
+	style := func(j int, text string) *lipgloss.Style {
+		at := strings.Index(lines[j], text)
+		if at < 0 {
+			t.Fatalf("no %q on line %d", text, j)
+		}
+		for _, x := range mdRuns(lines[j], ks[j]) {
+			if x.to > at {
+				return x.st
+			}
+		}
+		return nil
+	}
+	for _, c := range []struct {
+		line int
+		text string
+		st   *lipgloss.Style
+	}{
+		{1, "select", stMdString}, {2, "from", stMdString}, {2, "// not one", stMdString}, {3, "/* nor this`", stMdString},
+		{3, "x", stMdCode}, {4, "```", stMdMark},
+		{6, "x ${y}", stMdString}, {7, "still", stMdString}, {7, "inside", stMdString}, {7, "let", stMdKeyword}, {7, "3", stMdNumber},
+		{10, "doc", stMdString}, {11, "more # text", stMdString}, {12, `"""`, stMdString}, {12, "k", stMdCode}, {12, "4", stMdNumber},
+		{13, "open", stMdString},
+		{16, "5", stMdNumber},                         // the next fence starts as code
+		{19, "date", stMdString}, {20, "x", stMdCode}, // a shell backtick ends with its line
+		{23, "a", stMdComment}, {24, "c", stMdComment}, {24, "d", stMdCode}, {24, "6", stMdNumber},
+		{25, "/* in", stMdString}, {26, "y", stMdCode},
+	} {
+		if got := style(c.line, c.text); got != c.st {
+			t.Errorf("line %d %q styled %v, want %v", c.line, c.text, got, c.st)
 		}
 	}
 }

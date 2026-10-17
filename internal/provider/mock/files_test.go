@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,6 +34,121 @@ var mockFiles = []struct {
 	{"claude-api-key-context-refused.jsonl", "p2-claude-conversation.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, claudeAPIKeyContextRefused},
 	{"codex-api-key.jsonl", "p7-codex-subagents.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexAPIKey},
 	{"codex-no-5h-window.jsonl", "p7-codex-subagents.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexNo5hWindow},
+	{"codex-plan6-limits.jsonl", "p7-codex-subagents.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexPlan6Limits},
+}
+
+// codexPlan6Limits is P7 with the lines plan 6's simulated run needs and no
+// recording has, each in the shape Codex 0.163.0's generated schema gives
+// (plan 6): each child's spawnAgent collabAgentToolCall, the first requesting
+// a model and an effort, the second neither (item 4); an early orchestrator
+// answer in Markdown whose code holds strings over several lines, long enough
+// to scroll zone B while later entries arrive (items 2 and 3); and a failed
+// orchestrator command whose aggregated output ends with its error after its
+// standard output (item 1).
+func codexPlan6Limits(t *testing.T, recs []fixture.Record) []fixture.Record {
+	const main, turn = "01a1419a-23c6-74f1-837d-b5da2cbe1495", "01a1419a-253e-7461-9514-7e3acbeebd84"
+	rec := func(ms int64, method string, it map[string]any) fixture.Record {
+		b, err := json.Marshal(map[string]any{"method": method, "params": map[string]any{"item": it, "threadId": main, "turnId": turn}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return fixture.Record{TMs: ms, Dir: "out", Msg: b}
+	}
+	spawn := func(id, status string, receivers []string, prompt string, model, effort any) map[string]any {
+		return map[string]any{"type": "collabAgentToolCall", "id": id, "tool": "spawnAgent", "status": status,
+			"senderThreadId": main, "receiverThreadIds": receivers, "prompt": prompt, "model": model,
+			"reasoningEffort": effort, "agentsStates": map[string]any{}}
+	}
+	children := []struct {
+		thread, call, prompt string
+		model, effort        any
+	}{
+		{"01a1419a-384f-7d13-bd22-b375637ac31b", "call_plan6_spawn_list", "List the files in the current directory.", "gpt-6-mini", "low"},
+		{"01a1419a-4212-7712-b732-30b9c9bd385c", "call_plan6_spawn_found", "Create found.txt containing the single word found.", nil, nil},
+	}
+	answer := strings.Join([]string{
+		"I'll check the plan 6 fixes before the two subagents start.",
+		"",
+		"## Strings over several lines",
+		"",
+		"```go",
+		"query := `SELECT name",
+		"  FROM \"agents\" -- not a comment",
+		"  WHERE id = 1 /* nor this */`",
+		"count := 3 // a comment again",
+		"```",
+		"",
+		"```python",
+		"doc = \"\"\"First line",
+		"  # not a comment",
+		"still the string\"\"\"",
+		"total = 42  # a comment",
+		"```",
+		"",
+		"```ts",
+		"const banner = `agent ${name}",
+		"  // still the string",
+		"done`;",
+		"let n = 7;",
+		"```",
+		"",
+		"```sh",
+		"echo `date",
+		"ls -la",
+		"```",
+		"",
+		"## Checklist",
+		"",
+	}, "\n")
+	for i := 1; i <= 30; i++ {
+		answer += fmt.Sprintf("%d. Checklist step %02d of the simulated run.\n", i, i)
+	}
+	answer = strings.TrimSuffix(answer, "\n")
+	command := map[string]any{"type": "commandExecution", "id": "exec-plan6-push",
+		"command": `"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'git status; git push'`,
+		"cwd":     `<probe-root>\probe-work\p7`, "processId": nil, "source": "agent", "status": "inProgress",
+		"commandActions":   []any{map[string]any{"type": "unknown", "command": "git status; git push"}},
+		"aggregatedOutput": nil, "exitCode": nil, "durationMs": nil}
+	done := func() map[string]any {
+		c := map[string]any{}
+		for k, v := range command {
+			c[k] = v
+		}
+		c["status"], c["exitCode"], c["durationMs"] = "failed", 1, 512
+		c["aggregatedOutput"] = "On branch main\r\nnothing to commit, working tree clean\r\nfatal: No configured push destination.\r\n"
+		return c
+	}
+	var out []fixture.Record
+	spawned, answered, failed := 0, 0, 0
+	for _, r := range recs {
+		msg := string(r.Msg)
+		switch {
+		case r.Dir == "out" && strings.Contains(msg, `"type":"subAgentActivity"`) && strings.Contains(msg, `"kind":"started"`):
+			for _, c := range children {
+				if strings.Contains(msg, `"agentThreadId":"`+c.thread+`"`) {
+					out = append(out, rec(r.TMs-1, "item/started", spawn(c.call, "inProgress", []string{}, c.prompt, c.model, c.effort)), r,
+						rec(r.TMs+1, "item/completed", spawn(c.call, "completed", []string{c.thread}, c.prompt, c.model, c.effort)))
+					spawned++
+				}
+			}
+			continue
+		case r.Dir == "out" && strings.Contains(msg, `"method":"item/completed"`) && strings.Contains(msg, `"type":"userMessage"`) && strings.Contains(msg, `"threadId":"`+main+`"`):
+			msgItem := func(text any) map[string]any {
+				return map[string]any{"type": "agentMessage", "id": "msg_plan6_markdown", "text": text, "phase": "commentary", "memoryCitation": nil}
+			}
+			out = append(out, r, rec(r.TMs+600, "item/started", msgItem("")), rec(r.TMs+900, "item/completed", msgItem(answer)))
+			answered++
+			continue
+		case r.Dir == "out" && strings.Contains(msg, `"method":"item/started"`) && strings.Contains(msg, `"phase":"final_answer"`) && strings.Contains(msg, `"threadId":"`+main+`"`):
+			out = append(out, rec(r.TMs-1000, "item/started", command), rec(r.TMs-500, "item/completed", done()))
+			failed++
+		}
+		out = append(out, r)
+	}
+	if spawned != 2 || answered != 1 || failed != 1 {
+		t.Fatalf("P7: %d spawns, %d answers, %d commands put in; want 2, 1, 1", spawned, answered, failed)
+	}
+	return out
 }
 
 // claudeAPIKeyContextRefused is P2 signed in with an API key, which refuses

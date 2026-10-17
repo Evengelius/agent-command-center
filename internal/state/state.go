@@ -192,6 +192,7 @@ type Agent struct {
 	Kind         string // subagent, workflow, thread
 	Description  string
 	Model        Value
+	Effort       Value // the reasoning effort (plan 6, item 6)
 	Status       AgentStatus
 	StatusOrigin event.Origin
 	Backgrounded bool
@@ -246,6 +247,10 @@ type ToolCall struct {
 	EndedAt   time.Time
 	Stage     int    // the last stage when it appeared, 1-based; 0 before any turn
 	Seq       uint64 // the event that created it
+
+	// ExitCode is a command's exit code from the event (plan 6, item 1).
+	ExitCode    int
+	HasExitCode bool
 }
 
 // Stage is one user turn as zone A shows it: an inferred stage whose

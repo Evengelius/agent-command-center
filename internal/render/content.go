@@ -1,6 +1,7 @@
 package render
 
 import (
+	"fmt"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -33,7 +34,10 @@ func entryLines(s *state.State, e state.Entry) []string {
 
 // toolError is what B shows of a failed call's error: the first non-blank
 // line of its output, as received; "" when the call did not fail or wrote
-// nothing.
+// nothing. A Codex command that exited non-zero shows "exit N" and the last
+// non-blank line of its output instead (plan 6, item 1): Codex sends one
+// output, stdout and stderr aggregated, so the error line cannot be singled
+// out and a failing command most often ends with it.
 func toolError(s *state.State, e state.Entry) string {
 	if s == nil {
 		return ""
@@ -41,6 +45,16 @@ func toolError(s *state.State, e state.Entry) string {
 	tc := s.Tools[e.MessageID]
 	if tc == nil || tc.Status != state.ToolFailed {
 		return ""
+	}
+	if tc.Name == "commandExecution" && tc.HasExitCode && tc.ExitCode != 0 {
+		out := fmt.Sprintf("exit %d", tc.ExitCode)
+		ls := strings.Split(tc.Output, "\n")
+		for i := len(ls) - 1; i >= 0; i-- {
+			if l := strings.TrimRight(ls[i], " \t\r"); strings.TrimSpace(l) != "" {
+				return out + " · " + l
+			}
+		}
+		return out
 	}
 	for l := range strings.SplitSeq(tc.Output, "\n") {
 		if l = strings.TrimRight(l, " \t\r"); strings.TrimSpace(l) != "" {

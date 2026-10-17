@@ -143,6 +143,10 @@ type Tool struct {
 	IsError bool
 	Status  string
 	Output  string
+	// ExitCode is a Codex command's exit code, as the CLI reports it (plan 6,
+	// item 1); HasExitCode is false when it gave none.
+	ExitCode    int  `json:",omitempty"`
+	HasExitCode bool `json:",omitempty"`
 }
 
 // Agent is the payload of the agent events.
@@ -160,6 +164,13 @@ type Agent struct {
 	LastTool     string
 	Summary      string
 	Model        string // the agent's own model as its CLI reports it; "" when not reported
+	// Effort is the agent's reasoning effort, as Model; "" when not
+	// reported (plan 6, item 6).
+	Effort string `json:",omitempty"`
+	// ModelRequested marks Model and Effort as the ones a spawn call asked
+	// for, not the agent's own report: each fills only an empty value (plan
+	// 6, items 4 and 6).
+	ModelRequested bool `json:",omitempty"`
 }
 
 // AgentKeys is the payload of AgentSet.

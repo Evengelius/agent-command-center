@@ -150,6 +150,7 @@ reset shown N/A.
 | Reset times | `resetsAt` | with the window |
 | Overage | `overageStatus` and related | "N/A (not reported)", shown apart from quota |
 | Model | `system/init`, per message | a subagent whose text is not forwarded: "model N/A" |
+| Agent reasoning effort | none: no event reports a subagent's effort | always "effort N/A (not reported)" in the inspection header (plan 6, item 6) |
 | Context | `get_context_usage` (undocumented at CLI level, marked †) or derived from usage | if the request fails or is refused: derived, labelled "derived"; before the first turn without a reply: "N/A (no turn yet)" |
 | Tokens | latest `result.modelUsage` | "N/A" before the first `result` |
 | API-equivalent cost | `result.total_cost_usd` | "N/A" before the first `result`; always labelled "API-equiv. estimate" |
@@ -176,7 +177,8 @@ reset shown N/A.
 | 5-hour, 7-day quota | `account/rateLimits/read` at startup, then pushes; windows by `windowDurationMins` | API key: "N/A (API key: ChatGPT sign-in needed)"; a plan with no 5-hour window: "N/A (plan has no 5-hour limit)"; a failed read: "N/A (read failed: <error>)" and the last pushed value with its age |
 | Reset times | `resetsAt` | with the window |
 | Plan and credits | `planType`, `credits` | API key: N/A. `rateLimitResetCredits` ids are never shown or logged |
-| Model | `thread/start`, `model/rerouted`; a child's `subAgentActivity.model` (Codex CLI 0.163.0, P7b) | older children: "model N/A" (ASM-14) |
+| Model | `thread/start`, `model/rerouted`; a child's `subAgentActivity.model` (Codex CLI 0.163.0, P7b), else the `model` of the `spawnAgent` call that created it, "Model requested for the spawned agent" (`collabAgentToolCall`, 0.163.0 generated schema, no recording; source "spawn request", plan 6, item 4), which the agent's own report always replaces | older children: "model N/A" (ASM-14) |
+| Agent reasoning effort | a child's `subAgentActivity.reasoningEffort` (Codex CLI 0.163.0, P7b, "high"), else the `reasoningEffort` of its `spawnAgent` call, "Reasoning effort requested for the spawned agent, when applicable" (generated schema, no recording; source "spawn request"), by the model's rule (plan 6, item 6) | older children: "effort N/A (not reported)" in the inspection header, nothing in C |
 | Context | `thread/tokenUsage/updated` per thread, raw value | before a thread's first model call: "N/A (no model call yet)" (CX-10 q7) |
 | Tokens | per-thread totals; session total derived | "N/A" before the first update |
 | API-equivalent cost | none | always "cost N/A (Codex reports none)" |

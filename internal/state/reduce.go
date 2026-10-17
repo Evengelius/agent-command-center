@@ -440,7 +440,7 @@ func (s *State) tool(ev event.Event, p event.Tool) []Command {
 			final = ToolFailed
 		}
 		if t == nil {
-			s.Tools[id] = &ToolCall{ID: id, Agent: ev.Agent, Name: p.Name, Status: final, Origin: event.Inferred, Output: p.Output, EndedAt: ev.At, Stage: s.stage(), Seq: ev.Seq}
+			s.Tools[id] = &ToolCall{ID: id, Agent: ev.Agent, Name: p.Name, Status: final, Origin: event.Inferred, Output: p.Output, ExitCode: p.ExitCode, HasExitCode: p.HasExitCode, EndedAt: ev.At, Stage: s.stage(), Seq: ev.Seq}
 			return nil
 		}
 		if t.Status.Final() {
@@ -448,6 +448,7 @@ func (s *State) tool(ev event.Event, p event.Tool) []Command {
 			return nil
 		}
 		t.Status, t.Output, t.EndedAt, t.Origin = final, p.Output, ev.At, ev.Origin
+		t.ExitCode, t.HasExitCode = p.ExitCode, p.HasExitCode
 	}
 	return nil
 }
@@ -506,7 +507,10 @@ func (s *State) agent(ev event.Event, p event.Agent) []Command {
 			a = s.ensureAgent(key, ev)
 		}
 		if a.Status.Final() {
-			if p == (event.Agent{Key: p.Key, Model: p.Model}) { // the model of a message that ended late: no progress
+			// The model of a message that ended late, or a spawn request's
+			// model and effort with its parent (plan 6, items 4 and 6): no
+			// progress.
+			if p == (event.Agent{Key: p.Key, Parent: p.Parent, Model: p.Model, Effort: p.Effort, ModelRequested: p.ModelRequested}) {
 				s.update(a, p)
 				return nil
 			}
@@ -574,8 +578,19 @@ func (s *State) update(a *Agent, p event.Agent) {
 	if p.Summary != "" {
 		a.Summary = p.Summary
 	}
-	if p.Model != "" { // only the agent's own, never the session's (plan 5, item 7)
+	// Only the agent's own model, never the session's (plan 5, item 7); a
+	// requested one (a spawn call's) fills only an empty model, so the agent's
+	// report wins in either order (plan 6, item 4).
+	if p.Model != "" && p.ModelRequested && !a.Model.Present {
+		a.Model = Value{Present: true, Text: p.Model, Origin: event.Observed, Documented: true, Source: "spawn request"}
+	} else if p.Model != "" && !p.ModelRequested {
 		a.Model = Value{Present: true, Text: p.Model, Origin: event.Observed, Documented: true, Source: "agent model"}
+	}
+	// The reasoning effort, by the same rule (plan 6, item 6).
+	if p.Effort != "" && p.ModelRequested && !a.Effort.Present {
+		a.Effort = Value{Present: true, Text: p.Effort, Origin: event.Observed, Documented: true, Source: "spawn request"}
+	} else if p.Effort != "" && !p.ModelRequested {
+		a.Effort = Value{Present: true, Text: p.Effort, Origin: event.Observed, Documented: true, Source: "agent effort"}
 	}
 }
 

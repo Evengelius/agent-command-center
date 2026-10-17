@@ -383,3 +383,18 @@ func tail(ls []line, n int) []line {
 	}
 	return ls
 }
+
+// trimTail is l without its trailing blank decoration (padding), so that cutting
+// it for something at its right end ends with "…" only where its text does
+// not fit (plan 6, item 2).
+func trimTail(l line) line {
+	out := append(line(nil), l...)
+	for len(out) > 0 {
+		last := out[len(out)-1]
+		if last.ref.kind != refDeco || strings.TrimRight(last.text, " ") != "" {
+			break
+		}
+		out = out[:len(out)-1]
+	}
+	return out
+}

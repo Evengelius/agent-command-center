@@ -549,7 +549,8 @@ type item struct {
 	Kind              string          `json:"kind"`
 	AgentThreadID     string          `json:"agentThreadId"`
 	AgentPath         string          `json:"agentPath"`
-	Model             string          `json:"model"` // subAgentActivity, Codex 0.163.0 (P7b); absent before
+	Model             string          `json:"model"`           // subAgentActivity, Codex 0.163.0 (P7b); absent before
+	ReasoningEffort   string          `json:"reasoningEffort"` // beside model (P7b; plan 6, item 6)
 	SenderThreadID    string          `json:"senderThreadId"`
 	ReceiverThreadIDs []string        `json:"receiverThreadIds"`
 	AgentsStates      map[string]struct {
@@ -603,7 +604,7 @@ func (m *Mapper) subAgent(it item, parent, turn string, line []byte) []event.Eve
 		// orchestrator is not an agent of zone C.
 		return []event.Event{m.status(parent, line, it.Kind+" "+first(it.AgentPath, "orchestrator"), "")}
 	}
-	a := event.Agent{Key: it.AgentThreadID, Parent: parent, Label: it.AgentPath, Type: "thread", Status: it.Kind, Model: it.Model}
+	a := event.Agent{Key: it.AgentThreadID, Parent: parent, Label: it.AgentPath, Type: "thread", Status: it.Kind, Model: it.Model, Effort: it.ReasoningEffort}
 	k := event.AgentProgress
 	switch it.Kind {
 	case "started":
@@ -639,6 +640,9 @@ func (m *Mapper) tool(started bool, it item, raw json.RawMessage, agent, turn st
 		t.Input = append(json.RawMessage(nil), raw...)
 		return []event.Event{m.ev(event.ToolStarted, event.Observed, agent, turn, it.ID, line, t)}
 	}
+	if it.ExitCode != nil {
+		t.ExitCode, t.HasExitCode = *it.ExitCode, true // plan 6, item 1
+	}
 	t.IsError = it.Status == "failed" || it.Status == "declined" || (it.ExitCode != nil && *it.ExitCode != 0)
 	switch {
 	case it.AggregatedOutput != nil:
@@ -655,6 +659,15 @@ func (m *Mapper) tool(started bool, it item, raw json.RawMessage, agent, turn st
 	out := []event.Event{m.ev(event.ToolCompleted, event.Observed, agent, turn, it.ID, line, t)}
 	if it.Type == "collabAgentToolCall" {
 		// The states of the agents the call concerns, in a stable order.
+		// A spawn request's model and effort, for each agent it created (plan
+		// 6, items 4 and 6; the schema's `model`, "Model requested for the
+		// spawned agent", and `reasoningEffort` beside it).
+		if it.Tool == "spawnAgent" && (it.Model != "" || it.ReasoningEffort != "") {
+			for _, id := range it.ReceiverThreadIDs {
+				a := event.Agent{Key: id, Parent: agent, Model: it.Model, Effort: it.ReasoningEffort, ModelRequested: true}
+				out = append(out, m.ev(event.AgentProgress, event.Observed, id, turn, it.ID, line, a))
+			}
+		}
 		keys := make([]string, 0, len(it.AgentsStates))
 		for k := range it.AgentsStates {
 			keys = append(keys, k)

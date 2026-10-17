@@ -30,21 +30,23 @@ const (
 	mdCode  // inside a fence; an unclosed fence runs to the end
 )
 
-// mdLine is a line's kind and, for code and fences, its language; comment
-// marks a code line that starts inside a block comment (plan 5, item 12).
+// mdLine is a line's kind and, for code and fences, its language; open is what
+// a code line starts inside, the delimiter that closes it: "*/" for a block
+// comment (plan 5, item 12), a backtick or three double or single quotes for
+// a string over several lines (plan 6, item 3); "" when it starts in none.
 type mdLine struct {
-	kind    mdKind
-	lang    string
-	comment bool
+	kind mdKind
+	lang string
+	open string
 }
 
-// mdLines classifies an entry's lines; fences, and block comments within a
-// fence, carry over from line to line.
+// mdLines classifies an entry's lines; fences, and block comments and
+// strings within a fence, carry over from line to line.
 func mdLines(lines []string) []mdLine {
 	out := make([]mdLine, len(lines))
 	var fence string // the open fence's marker, "" outside one
 	var lang string
-	comment := false // inside a block comment, in the open fence
+	open := "" // what the open fence's code is inside, as mdLine.open
 	for j, l := range lines {
 		t := strings.TrimLeft(l, " ")
 		indent := len(l) - len(t)
@@ -53,15 +55,15 @@ func mdLines(lines []string) []mdLine {
 				out[j], fence = mdLine{kind: mdFence, lang: lang}, ""
 				continue
 			}
-			out[j] = mdLine{mdCode, lang, comment}
+			out[j] = mdLine{mdCode, lang, open}
 			if lang != "" {
-				comment = codeRuns(nil, l, lang, comment)
+				open = codeRuns(nil, l, lang, open)
 			}
 			continue
 		}
 		if indent < 4 {
 			if m := fenceMarker(t); m != "" {
-				fence, comment = m, false
+				fence, open = m, ""
 				lang, _, _ = strings.Cut(strings.TrimSpace(t[len(m):]), " ")
 				out[j] = mdLine{kind: mdFence, lang: lang}
 				continue
@@ -195,7 +197,7 @@ func mdRuns(src string, k mdLine) []styleRun {
 		if k.lang == "" {
 			r.add(len(src), stMdCode)
 		} else {
-			codeRuns(&r, src, k.lang, k.comment)
+			codeRuns(&r, src, k.lang, k.open)
 		}
 	case mdQuote:
 		r.add(at+1, stMdMark)
@@ -288,25 +290,32 @@ func wordByte(src string, i int) bool {
 }
 
 // codeRuns styles a line of code in lang: keywords, strings, comments and
-// numbers. A string ends with its line; a block comment runs on to its */
-// (plan 5, item 12): in tells that the line starts inside one, and codeRuns
-// reports whether it ends inside one. A nil r only scans for that.
-func codeRuns(r *runs, src, lang string, in bool) bool {
+// numbers. A string ends with its line, except a backtick one in Go, JavaScript
+// and TypeScript and a triple-quoted one in Python; a block comment runs on to
+// its */ (plan 5, item 12). in is what the line starts inside (mdLine.open)
+// and codeRuns returns what it ends inside, "" for none (plan 6, item 3). A
+// nil r only scans for that.
+func codeRuns(r *runs, src, lang, in string) string {
 	hash, dash := hashComment[strings.ToLower(lang)], dashComment[strings.ToLower(lang)]
 	add := func(to int, st *lipgloss.Style) {
 		if r != nil {
 			r.add(to, st)
 		}
 	}
+	low := strings.ToLower(lang)
 	i := 0
-	if in {
-		j := strings.Index(src, "*/")
-		if j < 0 {
-			add(len(src), stMdComment)
-			return true
+	if in != "" {
+		st := stMdString
+		if in == "*/" {
+			st = stMdComment
 		}
-		i = j + 2
-		add(i, stMdComment)
+		j := closeAt(src, 0, in, in != "*/" && (in != "`" || low != "go"))
+		if j < 0 {
+			add(len(src), st)
+			return in
+		}
+		i = j
+		add(i, st)
 	}
 	for i < len(src) {
 		c := src[i]
@@ -315,15 +324,27 @@ func codeRuns(r *runs, src, lang string, in bool) bool {
 			dash && strings.HasPrefix(src[i:], "--"),
 			!hash && !dash && strings.HasPrefix(src[i:], "//"):
 			add(len(src), stMdComment)
-			return false
+			return ""
 		case !hash && strings.HasPrefix(src[i:], "/*"):
 			j := strings.Index(src[i+2:], "*/")
 			if j < 0 {
 				add(len(src), stMdComment)
-				return true
+				return "*/"
 			}
 			i += 2 + j + 2
 			add(i, stMdComment)
+		case multiTick[low] && c == '`', pyTriple[low] && (strings.HasPrefix(src[i:], `"""`) || strings.HasPrefix(src[i:], `'''`)):
+			d := src[i : i+1]
+			if c != '`' {
+				d = src[i : i+3]
+			}
+			j := closeAt(src, i+len(d), d, d != "`" || low != "go")
+			if j < 0 {
+				add(len(src), stMdString)
+				return d
+			}
+			add(j, stMdString)
+			i = j
 		case c == '"' || c == '\'' || c == '`':
 			j := i + 1
 			for j < len(src) && src[j] != c {
@@ -358,8 +379,30 @@ func codeRuns(r *runs, src, lang string, in bool) bool {
 			i++
 		}
 	}
-	return false
+	return ""
 }
+
+// closeAt is the offset just after the first delim in src from from, a
+// backslash escaping the byte after it when esc; -1 when there is none.
+func closeAt(src string, from int, delim string, esc bool) int {
+	for i := from; i < len(src); i++ {
+		if esc && src[i] == '\\' {
+			i++
+			continue
+		}
+		if strings.HasPrefix(src[i:], delim) {
+			return i + len(delim)
+		}
+	}
+	return -1
+}
+
+// Languages whose strings run over several lines (plan 6, item 3): backtick
+// ones, and Python's triple-quoted ones.
+var (
+	multiTick = set("go", "js", "javascript", "jsx", "mjs", "ts", "typescript", "tsx")
+	pyTriple  = set("python", "py")
+)
 
 // Languages whose line comments start with # or --; the others use //.
 var (
