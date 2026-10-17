@@ -1,13 +1,13 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
-╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────── ◉ Streaming ─╮
+╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────── ⠋ Streaming ─╮
 │ claude-haiku-5-5 · orchestrat… ││ YOU  02:00                                                                         │
 │ turn 1 · running 9h 29m        ││   Create a file named hello.txt in the current directory containing the single     │
 │                                ││   word hello. Use the Write tool, then reply with the word done.                   │
 │ STAGES  inferred from activity ││   ▸ Write                                                                 observed │
 │ TURN 1  ◉ running · 9h 29m     ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
 │   Create a file named hello.t… ││ CLAUDE  claude-haiku-5-5                                                           │
-│   ├─ ✓ Write  <probe… observed ││   done▌                                                                            │
+│   •─ ✓ Write  <probe… observed ││   done▌                                                                            │
 │   └─ ○ (more as events arrive) ││                                                                                    │
 │                                ││                                                                                    │
 │                                ││                                                                                    │
@@ -20,7 +20,7 @@
 │                                ││                                                                                    │
 │                                ││   turn running: the draft waits · Ctrl+C interrupt          1 line · Ctrl+G editor │
 │                                │╰────────────────────────────────────────────────────────────────────────────────────╯
-│                                │╭─ C · AGENTS ─────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+│                                │╭─ C · LIVE AGENTS ────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │                                ││ no agents yet: they appear as the CLI starts them                                  │
 │                                ││                                                                                    │
 │                                ││                                                                                    │
@@ -34,7 +34,7 @@
 │ ↑↓ move ←→ fold Enter inspect  ││ ↑↓ select · Enter inspect · z zoom · F6 next zone                                  │
 ╰────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────── quota updated 9h 29m ago · † undocumented field ─╮
-│ 5h ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 24%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 46%†  resets Sat 08:00   overage rejected … │
-│ context 2%† of 1M   tokens N/A (no result yet)   cost N/A (no result yet)   errors 0   agents 0 active / limit N/A … │
+│ 5h ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 24%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 46%†  resets Sat 08:00                      │
+│ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 2%† of 1M   +5 more                         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit

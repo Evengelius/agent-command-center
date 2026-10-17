@@ -40,7 +40,7 @@ func wrapSource(src string, first, rest int, at ref, st *lipgloss.Style) []line 
 	rs := wrapRanges(src, first, rest)
 	out := make([]line, 0, len(rs))
 	for _, r := range rs {
-		out = append(out, rowLine(src, r, at, st))
+		out = append(out, rowLine(src, r, at, st, nil))
 	}
 	return out
 }
@@ -108,8 +108,8 @@ func wrapRanges(src string, first, rest int) []rowRange {
 	return rows
 }
 
-// rowLine draws one wrapped row of src.
-func rowLine(src string, r rowRange, at ref, st *lipgloss.Style) line {
+// rowLine draws one wrapped row of src; runs, when not nil, style its bytes.
+func rowLine(src string, r rowRange, at ref, st *lipgloss.Style, runs []styleRun) line {
 	if r.from == r.to {
 		a := at
 		a.kind, a.off = refText, r.from
@@ -119,7 +119,7 @@ func rowLine(src string, r rowRange, at ref, st *lipgloss.Style) line {
 	for i := range cs {
 		cs[i].off += r.from
 	}
-	return cellSpans(src, cs, at, st)
+	return cellSpans(src, cs, at, st, runs)
 }
 
 // WrapCache keeps where source lines break, so a frame wraps only the lines
@@ -192,29 +192,40 @@ func (c *WrapCache) sweep() {
 }
 
 // cellSpans turns drawn cells into spans: runs shown as their bytes become
-// one text span, and each tab or control character an atom.
-func cellSpans(src string, cs []cell, at ref, st *lipgloss.Style) line {
+// one text span, and each tab or control character an atom. With runs, a
+// span also ends where the style changes.
+func cellSpans(src string, cs []cell, at ref, st *lipgloss.Style, runs []styleRun) line {
 	var l line
 	start := -1 // the first byte of the current run
+	cur, ri := st, 0
 	flush := func(end int) {
 		if start >= 0 {
 			r := at
 			r.kind, r.off = refText, start
-			l = append(l, span{text: src[start:end], st: st, ref: r})
+			l = append(l, span{text: src[start:end], st: cur, ref: r})
 			start = -1
 		}
 	}
 	for _, c := range cs {
+		cst := st
+		if runs != nil {
+			for ri < len(runs)-1 && runs[ri].to <= c.off {
+				ri++
+			}
+			cst = runs[ri].st
+		}
 		if !c.ctrl && src[c.off] != '\t' {
+			if start >= 0 && cst != cur {
+				flush(c.off)
+			}
 			if start < 0 {
-				start = c.off
+				start, cur = c.off, cst
 			}
 			continue
 		}
 		flush(c.off)
 		r := at
 		r.kind, r.off, r.n = refAtom, c.off, c.n
-		cst := st
 		if c.ctrl {
 			cst = stControl
 		}
@@ -246,6 +257,7 @@ type rowStyle struct {
 	lead0, lead span
 	at          ref
 	st          *lipgloss.Style
+	md          []mdLine // the lines' Markdown kinds; nil draws them plain
 }
 
 func (c crow) draw() line {
@@ -260,7 +272,11 @@ func (c crow) draw() line {
 		lead = c.p.lead0 // the entry's first row
 	}
 	at.line = c.line
-	return append(line{lead}, rowLine(c.src, c.r, at, c.p.st)...)
+	var rs []styleRun
+	if c.line < len(c.p.md) {
+		rs = mdRuns(c.src, c.p.md[c.line]) // the whole source line: a span may cross the wrap
+	}
+	return append(line{lead}, rowLine(c.src, c.r, at, c.p.st, rs)...)
 }
 
 // drawn adds rows already drawn.
@@ -282,10 +298,13 @@ func sourceRows(out []crow, wc *WrapCache, p *rowStyle, j int, src string, first
 }
 
 // contentRows adds entry i's lines, each wrapped to w cells after an indent
-// of two.
-func contentRows(out []crow, wc *WrapCache, i int, lines []string, w int, st *lipgloss.Style) []crow {
+// of two; markdown styles them as Markdown (ui-design.md, Markdown).
+func contentRows(out []crow, wc *WrapCache, i int, lines []string, w int, st *lipgloss.Style, markdown bool) []crow {
 	lead := deco("  ", st)
 	p := &rowStyle{lead0: lead, lead: lead, at: ref{panel: 'B', item: i}, st: st}
+	if markdown && markdownOn {
+		p.md = mdLines(lines)
+	}
 	for j, l := range lines {
 		out = sourceRows(out, wc, p, j, l, w-2, w-2)
 	}

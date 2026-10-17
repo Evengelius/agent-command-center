@@ -17,29 +17,11 @@ import (
 // reliability.md, Telemetry sources). A value is shown as received, or as
 // "N/A" with its reason: never 0 for a value no source gave.
 
-// zoneD is quota and telemetry, rows lines high.
+// zoneD is quota and telemetry, rows lines high. Each value is drawn whole
+// or not at all, and what does not fit is counted: Enter on D, or z, shows
+// the rest (step 8).
 func zoneD(s *state.State, ui UI, w, h, rows int) []line {
-	q5, q7 := quota(s, ui, "quota.5h", "5h", stTitle), quota(s, ui, "quota.7d", "7d", stProgress)
-	ctx := contextValue(s, ui)
-	tok := metric(s, ui, "tokens.session", tokens)
-	cost := costText(s, ui)
-	errs := fmt.Sprintf("errors %d", len(s.Errors))
-	var body []line
-	switch rows {
-	case 1:
-		body = []line{join(q5.short(5), q7.short(5), "ctx "+ctx.short, "tok "+tok.short, cost.short, errs)}
-	case 2:
-		body = []line{
-			join(q5.long(20), q7.long(20), extra(s, ui), "model "+orNA(model(s), naReason(s))),
-			join("context "+ctx.long, "tokens "+tok.long, "cost "+cost.long, errs, "agents "+agentCount(s), "time "+sessionTime(s, ui)),
-		}
-	default:
-		body = []line{
-			join(q5.long(30), q7.long(30), "plan "+metric(s, ui, "plan", text).long, extra(s, ui)),
-			join("model "+orNA(model(s), naReason(s)), "context "+ctx.long, "tokens "+tok.long, "cost "+cost.long, "last turn "+metric(s, ui, "duration.ms", seconds).long),
-			join("agents "+agentCount(s), "time "+sessionTime(s, ui), errs, retries(s), fmt.Sprintf("unrecognised events %d", s.Unrecognised)),
-		}
-	}
+	body := flow(dItems(s, ui, rows), w-4, rows)
 	title := "D · QUOTA & TELEMETRY"
 	if rows == 1 {
 		title = "D"
@@ -54,27 +36,111 @@ func zoneD(s *state.State, ui UI, w, h, rows int) []line {
 	return box('D', zoneTitle(title, ui.Focus == "D"), plain(right, stGrey), body, w, h, borderFor(ui.Focus == "D"))
 }
 
+// dItems are zone D's values in their order and groups (quota; the
+// session's use; its counters), in the form its height allows.
+func dItems(s *state.State, ui UI, rows int) [][]line {
+	q5, q7 := quota(s, ui, "quota.5h", "5h", stTitle), quota(s, ui, "quota.7d", "7d", stProgress)
+	ctx := contextValue(s, ui)
+	tok := metric(s, ui, "tokens.session", tokens)
+	cost := costText(s, ui)
+	errs := fmt.Sprintf("errors %d", len(s.Errors))
+	switch rows {
+	case 1:
+		return [][]line{items(q5.short(5), q7.short(5), "ctx "+ctx.short, "tok "+tok.short, cost.short, errs)}
+	case 2:
+		return [][]line{
+			items(q5.long(20), q7.long(20), extra(s, ui), "model "+orNA(model(s), naReason(s))),
+			items("context "+ctx.long, "tokens "+tok.long, "cost "+cost.long, errs, "agents "+agentCount(s), "time "+sessionTime(s, ui)),
+		}
+	}
+	return [][]line{
+		items(q5.long(30), q7.long(30), "plan "+metric(s, ui, "plan", text).long, extra(s, ui)),
+		items("model "+orNA(model(s), naReason(s)), "context "+ctx.long, "tokens "+tok.long, "cost "+cost.long, "last turn "+metric(s, ui, "duration.ms", seconds).long),
+		items("agents "+agentCount(s), "time "+sessionTime(s, ui), errs, retries(s), fmt.Sprintf("unrecognised events %d", s.Unrecognised)),
+	}
+}
+
+// itemGap separates zone D's values on a row.
+const itemGap = "   "
+
+// flow places the groups' items whole, left to right, onto at most rows
+// rows of w cells; a group starts its own row while the rows left can give
+// one to each group still to come. When the items do not all fit, the last
+// row ends with "+N more", N the items not drawn; only an item wider than a
+// row is cut.
+func flow(groups [][]line, w, rows int) []line {
+	var out []line
+	var cur []line // the items of the row being filled
+	width := func(r []line, it line) int {
+		n := it.width()
+		for _, x := range r {
+			n += x.width() + len(itemGap)
+		}
+		return n
+	}
+	total := 0
+	for _, g := range groups {
+		total += len(g)
+	}
+	placed := 0
+	for gi, g := range groups {
+		if len(cur) > 0 && len(groups)-gi <= rows-len(out)-1 {
+			out, cur = append(out, joinItems(cur).fit(w)), nil
+		}
+		for _, it := range g {
+			if len(cur) > 0 && width(cur, it) > w {
+				if len(out)+1 >= rows {
+					left := total - placed
+					for {
+						more := plain(fmt.Sprintf("+%d more", left), stGrey)
+						if len(cur) == 0 || width(cur, more) <= w {
+							return append(out, joinItems(append(cur, more)).fit(w))
+						}
+						cur, left = cur[:len(cur)-1], left+1
+					}
+				}
+				out, cur = append(out, joinItems(cur).fit(w)), nil
+			}
+			cur = append(cur, it)
+			placed++
+		}
+	}
+	if len(cur) > 0 {
+		out = append(out, joinItems(cur).fit(w))
+	}
+	return out
+}
+
+func joinItems(its []line) line {
+	var l line
+	for i, it := range its {
+		if i > 0 {
+			l = append(l, sp(itemGap, stText))
+		}
+		l = append(l, it...)
+	}
+	return l
+}
+
 // shown is a value in its short and long forms.
 type shown struct{ short, long string }
 
-func join(parts ...any) line {
-	var l line
-	for i, p := range parts {
-		if i > 0 {
-			l = append(l, sp("   ", stText))
-		}
+// items are zone D's values as lines; a text with "N/A" is grey.
+func items(parts ...any) []line {
+	out := make([]line, 0, len(parts))
+	for _, p := range parts {
 		switch p := p.(type) {
 		case string:
 			st := stText
 			if strings.Contains(p, "N/A") {
 				st = stGrey
 			}
-			l = append(l, sp(p, st))
+			out = append(out, plain(p, st))
 		case line:
-			l = append(l, p...)
+			out = append(out, p)
 		}
 	}
-	return l
+	return out
 }
 
 // The forms of a value.
@@ -287,7 +353,7 @@ func contextValue(s *state.State, ui UI) shown {
 func costText(s *state.State, ui UI) shown {
 	v := s.Metrics["cost.usd"]
 	if !v.Present {
-		return shown{"$ N/A", "N/A (" + missing(s, ui, "cost.usd", v, nil) + ")"}
+		return shown{"cost N/A", "N/A (" + missing(s, ui, "cost.usd", v, nil) + ")"}
 	}
 	return shown{fmt.Sprintf("$%.2f est.", v.V), fmt.Sprintf("$%.2f API-equiv. estimate", v.V)}
 }
@@ -328,11 +394,18 @@ func sessionTime(s *state.State, ui UI) string {
 // Zone D: Errors). A rendering of the same state, so it updates live; sc
 // records the body's scrolling, as for an inspection.
 func details(s *state.State, ui UI, sc *Screen) []line {
-	w, h := ui.Width, ui.Height
+	w := ui.Width
 	head := spread(line{deco(" ◀ back (Esc)   ", stTitle), deco("D · ERRORS AND TELEMETRY", stBold)},
 		decoLine(fmt.Sprintf("%d errors · last %d kept ", len(s.Errors), state.MaxErrors), stGrey), w)
+	return fullScreen(s, ui, sc, head, detailsBody(s, ui, w-2))
+}
+
+// fullScreen draws a view that covers the dashboard: the title bar, head, a
+// rule, then body scrolled as ui.InspectTop and ui.InspectHold say; at the
+// bottom unless held.
+func fullScreen(s *state.State, ui UI, sc *Screen, head line, body []line) []line {
+	w, h := ui.Width, ui.Height
 	ls := []line{titleBar(s, w, badge(s), nil), head, rule(w)}
-	body := detailsBody(s, ui, w-2)
 	room := max(h-len(ls)-1, 1)
 	bottom := max(len(body)-room, 0)
 	top := bottom

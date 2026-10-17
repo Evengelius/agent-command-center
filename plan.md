@@ -1268,7 +1268,118 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
       without a 5-hour window (simulated on mock above, not live); the
       timing step on mains power.
     - Noted for step 8: zone C's hint "z zoom" names a feature not built.
-- Step 8: outstanding.
+- Step 8, UI refinement: **done** (2026-10-17); approved by the owner after
+  a mock demo of the Markdown styling ("I like it a lot"). Each screen (startup;
+  dashboard at 80x24, 120x40, 200x60; inspection; details; approval cards)
+  compared with reference-design.md and ui-design.md. Departures found:
+  zone C titled "C · AGENTS" at 120x40 (its own width tested, not the
+  screen's); "AGENT" for the conversation's label in mock mode; zone D's
+  values cut mid-way at 120x40 ("limit N/…") and "$ N/A" at 80x24; B's
+  badge without a spinner, "Running" or "Idle"; no spinner on a running
+  tool, no moving dot on zone A's running connector; z zoom, the F1 / `?`
+  key overlay and Tab between zones advertised but not built; AI text
+  drawn plain, without Markdown styling or highlighting. Criteria
+  (baseline: `go test ./... -count=1 -v`, 158 top-level tests, 0 FAIL):
+  1. Each departure above is removed, with its test, or listed in
+     ui-design.md's departures; none left unlisted.
+  2. Zone C's title is "C · LIVE AGENTS" on a screen of 100 columns or
+     more and "C · AGENTS" below; the conversation's label is "CLAUDE" for
+     every `claude-*` mock file and "CODEX" for every `codex-*` one.
+  3. Zone D, every mock file at 80x24, 120x40 and 200x60: each item is
+     drawn whole or not at all (no item cut, no row wider than the screen);
+     what does not fit is counted at the row's end; "cost N/A", never
+     "$ N/A".
+  4. Zone B's badge, one table test: a spinner glyph then "Streaming"
+     while the last entry streams; a spinner then "Running" while the turn
+     runs otherwise; "! Waiting for approval"; "Interrupting…"; "Idle" once
+     the session is ready with no turn running; the glyph changes with the
+     spinner's frame.
+  5. While a turn runs, a running tool's row in zone A shows the spinner
+     and a dot moves along the running stage's connector, one row per
+     frame; idle, frames 0 and 5 of the spinner draw the same screen.
+  6. z with A, C or D focused draws that zone over the dashboard's middle
+     and bottom; z or Esc gives back the exact frame from before; z in B
+     types "z"; Enter on an agent in zoomed C inspects it and Esc returns
+     to the zoom.
+  7. F1, or `?` outside the editor, opens the key overlay with every row of
+     ui-design.md's key tables; it scrolls at 80x24; Esc, F1 or `?` close
+     it; `?` in the editor types "?". Tab and Shift+Tab outside the editor
+     move to the next and previous zone; in the editor Tab inserts a tab.
+  8. AI text styled as Markdown (headings, emphasis, inline code, lists,
+     quotes, links, tables, fenced code with its language and highlighted
+     keywords, strings, comments and numbers) draws the same characters:
+     on a Markdown fixture at three widths, each frame's text equals the
+     unstyled frame's; selection and copy tests unchanged;
+     `TestStreamToFrame` within its 16 ms target.
+  9. Golden frames updated, each diff reviewed; `go build ./...`, `go vet
+     ./...` (also `-tags live`, `-tags timing`) exit 0; `gofmt -l .` empty;
+     `go test ./...` exit 0 with at least 158 top-level tests.
+  Not verified by these checks: the look and feel (the owner's call); the
+  256- and 16-colour mapping; synchronized output; live Windows Terminal
+  rendering.
+  Results (2026-10-17):
+  1. PASS. Every departure listed above is removed, each with its test
+     (2 to 8 below). Found while building, and listed in ui-design.md's new
+     Departures section, none advertised on screen: the approval card's
+     Enter (full diff) and s (allow for the session, never offered); no
+     status symbol on B's tool lines; the inspection's Messages tab drawn
+     plain; a block comment highlighted on its first line only.
+  2. PASS. `TestZoneLabels`: every mock file at 80x24, 99x30, 100x30,
+     120x40, 200x60; "C · LIVE AGENTS" from 100 columns, "C · AGENTS"
+     below; CLAUDE for `claude-*`, CODEX for `codex-*`.
+  3. PASS. `TestZoneDWholeItems`: every mock file at the three sizes, no
+     item cut, no "…", "+N more" equal to the items not drawn, no "$ N/A".
+  4. PASS. `TestTurnBadge`: the eight turn states, the glyph changing
+     between spinner frames 0 and 3, and the badge in B's header.
+  5. PASS. `TestTreeAnimation`, Claude Code and Codex mock files: the
+     spinner on the running tool, one dot moving one connector row per
+     frame; frames 0 and 5 identical while waiting for approval and idle.
+  6. PASS. `TestZoom`: A, C and D at 80x24, 120x40, 200x60 (title on row
+     2, frame to the hints, no other zone's title); z, and z then Esc, give
+     back the identical frame, focus kept; F6 to B unzooms; z in B typed;
+     Enter in zoomed C inspects and Esc returns the identical zoomed frame.
+  7. PASS. `TestKeyOverlay`, `TestKeyOverlayRows`, `TestTabZones`: all 24
+     rows of ui-design.md's Anywhere and focused-panel tables in the
+     overlay, none cut at 80 columns; it scrolls at 80x24 to "Ctrl+Q", the
+     approval card and the editor tables; Esc, F1 and `?` close it with the
+     view under it (a held inspection included) restored exactly; `?` in the
+     editor typed; Tab and Shift+Tab cycle C, A, D, B outside the editor,
+     Tab in the editor inserts a tab.
+  8. PASS. `TestMarkdownSameText`, a fixture with every construct and an
+     unclosed fence at 80x60, 120x60, 200x80: the styled frame's text equals
+     the plain frame's, every cell of zone B hits the same place for
+     selection, and 19 constructs carry their style (plain: none);
+     `TestMarkdownLines` for fences and block kinds. Selection and copy
+     tests unchanged and passing. `TestStreamToFrame`, three runs: p95
+     5.7, 2.1 and 2.3 ms (target 16 ms). `TestKeystrokeAllocs` at most 846
+     allocations per key (bound 1,200); `TestFrameReuse` passes.
+  9. PASS. `TestGoldenFrames -update` changed nothing further; the 15
+     frames changed in this step were reviewed: the badges ("Idle",
+     "⠋ Streaming"), "C · LIVE AGENTS", CLAUDE and CODEX, the moving dot,
+     zone D's whole items with "+N more" and "cost N/A"; no row cut or
+     wider. `go build ./...` and `go vet ./...` exit 0, also `-tags live`
+     and `-tags timing`; `gofmt -l .` empty; `go test ./... -count=1 -v`
+     exit 0, 168 top-level tests (158 + 10), 0 FAIL.
+  - Mutation checks, each made its test fail, then restored: zoom not
+    cleared by Esc, nor by leaving the panel; the zoomed zone 2 rows short;
+    the overlay not restoring the view under it; `?` always opening it; Tab
+    taken from the editor; a key row removed; overlay rows wrapped at full
+    width; Markdown styling off; markers dropped from styled spans; only a
+    line's first row styled; a styled span's offset shifted by one; a
+    fence's body plain; inline code unstyled.
+  - Timing step (step 7's outstanding gate), run alone on 2026-10-17 on
+    **mains power** (charge 32%), CPU load 32% just before, with VS Code,
+    Firefox, Teams, Outlook and Notepad open: `TestKeystrokeToFrame` p95
+    1.0 ms, max 1.9 ms; `TestDraftKeystrokes` p95 2.5 ms, max 8.0 ms;
+    `TestKeystrokeCost` 0.22 and 0.56 ms per key, 845 and 846
+    allocations; `TestLongSession` delta-to-frame p95 3.0 ms. PASS.
+  - Not verified: the look and feel; the 256- and 16-colour mapping;
+    synchronized output; live Windows Terminal rendering of the styles,
+    the zoom and the overlay.
+  - The owner's judgement (2026-10-17): the step 8 build in Windows
+    Terminal, maximised, on a mock demo (the subagent-approval recording
+    with a 50-line Markdown answer added, kept outside the repository):
+    "I like it a lot". Approved.
 
 The owner's decisions at plan 3's approval (2026-10-16):
 - Proposal and roadmap approved; follow its order and the MVP scope.

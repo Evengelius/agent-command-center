@@ -33,6 +33,28 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	}
 	ls := []line{titleBar(s, w, badge(s), extra), projectBar(s, ui)}
 
+	if ui.Zoom && strings.Contains("ACD", ui.Focus) && ui.Focus != "" {
+		// The focused zone over the middle and bottom (ui-design.md,
+		// Scrolling, collapsing, full screen); the bars stay.
+		zh := h - len(ls) - 1
+		keys := "Enter details"
+		switch ui.Focus {
+		case "A":
+			keys = "↑↓ move · ←→ fold · Enter inspect"
+			ls = append(ls, zoneA(s, ui, w, zh)...)
+		case "C":
+			keys = "↑↓ select · Enter inspect"
+			if wide {
+				ls = append(ls, beside(zoneC(s, ui, listWide, zh), preview(s, ui, w-listWide, zh))...)
+			} else {
+				ls = append(ls, zoneC(s, ui, w, zh)...)
+			}
+		case "D":
+			ls = append(ls, zoneD(s, ui, w, zh, zh-2)...)
+		}
+		return append(ls, keyHints(w, ui, "z or Esc restore · "+keys+" · F6 zone · F1 keys"))
+	}
+
 	if w < standardWidth {
 		ls = append(ls, zoneALine(s, w))
 		dh, ch := 3, 5
@@ -280,15 +302,7 @@ func borderFor(focused bool) *lipgloss.Style {
 // mode); sc, when given, records what was shown for scrolling and the mouse.
 func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	inner := w - 4
-	var right line
-	switch s.Turn.Phase {
-	case state.Running, state.Submitted:
-		right = plain("◉ Streaming", stProgress)
-	case state.WaitingApproval:
-		right = plain("! Waiting for approval", stAttention)
-	case state.Interrupting:
-		right = plain("Interrupting…", stProgress)
-	}
+	right := turnBadge(s, ui)
 	// The editor grows up to half of B, then scrolls (ui-design.md, Input
 	// editor, Size); its rule and status line count in that half.
 	editor := editorLines(s, ui, inner, editorRows, (h-2)/2-2)
@@ -358,11 +372,11 @@ func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) [
 		out = drawn(out, line{deco("YOU", stAttentionBold), deco("  "+clock(e.At), stGrey)})
 		ls := entryLines(e)
 		if len(ls) > foldOver {
-			out = contentRows(out, wc, i, ls[:foldShow], w, stText)
+			out = contentRows(out, wc, i, ls[:foldShow], w, stText, false)
 			out = drawn(out, decoLine(fmt.Sprintf("  … %s more lines", grouped(len(ls)-foldShow)), stGrey))
 			break
 		}
-		out = contentRows(out, wc, i, ls, w, stText)
+		out = contentRows(out, wc, i, ls, w, stText, false)
 	case "assistant":
 		// Thinking marks a message that had a thinking block; its text is
 		// the answer. The thinking is folded under it, without a token
@@ -373,7 +387,7 @@ func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) [
 				head = append(head, deco("  "+m, modelStyle(m)))
 			}
 			out = drawn(out, head)
-			out = contentRows(out, wc, i, entryLines(e), w, stText)
+			out = contentRows(out, wc, i, entryLines(e), w, stText, true)
 			if e.Streaming {
 				if last := out[len(out)-1].draw(); last.width() < w {
 					out[len(out)-1] = crow{l: append(last, deco("▌", stText))}
@@ -485,7 +499,7 @@ func firstLine(s string) string {
 }
 
 func providerLabel(s *state.State) string {
-	switch s.Context.Provider {
+	switch s.CLI() { // in mock mode, the CLI the file recorded
 	case "claude-code":
 		return "CLAUDE"
 	case "codex":
@@ -632,7 +646,7 @@ func zoneC(s *state.State, ui UI, w, h int) []line {
 		body = append(body[:h-3], decoLine("↑↓ select · Enter inspect · z zoom · F6 next zone", stGrey))
 	}
 	title := "C · LIVE AGENTS"
-	if w < standardWidth {
+	if ui.Width < standardWidth { // the screen's layout, not the zone's width
 		title = "C · AGENTS"
 	}
 	return box('C', zoneTitle(title, ui.Focus == "C"), right, body, w, h, borderFor(ui.Focus == "C"))
@@ -738,4 +752,28 @@ func elapsed(start, end, now time.Time) string {
 		return fmt.Sprintf("%dm %02ds", int(d.Minutes()), int(d.Seconds())%60)
 	}
 	return fmt.Sprintf("%dh %02dm", int(d.Hours()), int(d.Minutes())%60)
+}
+
+// turnBadge is what the turn is doing, at zone B's top right: the spinner
+// turns while an answer streams or the turn runs otherwise (a tool, a
+// subagent, the model thinking), and "Idle" says the CLI waits for a message
+// (ui-design.md, Zone B; plan 4, step 8).
+func turnBadge(s *state.State, ui UI) line {
+	spin := spinner[ui.Spinner%len(spinner)]
+	switch s.Turn.Phase {
+	case state.Running, state.Submitted:
+		if n := len(s.Conversation); n > 0 && s.Conversation[n-1].Streaming {
+			return plain(spin+" Streaming", stProgress)
+		}
+		return plain(spin+" Running", stProgress)
+	case state.WaitingApproval:
+		return plain("! Waiting for approval", stAttention)
+	case state.Interrupting:
+		return plain("Interrupting…", stProgress)
+	case state.Idle:
+		if s.Session.Phase == state.Ready {
+			return plain("Idle", stGrey)
+		}
+	}
+	return nil
 }

@@ -55,6 +55,8 @@ type UI struct {
 	InspectTop  int             // the first inspection row shown while held
 	InspectHold bool            // scrolled up: the inspection stays where it is
 	Details     bool            // zone D full screen (Enter on D); it scrolls with InspectTop and InspectHold
+	Zoom        bool            // the focused zone, A, C or D, over the dashboard (z)
+	Keys        bool            // the key overlay (F1); it scrolls with InspectTop and InspectHold
 
 	// Mouse selection and scrolling (ui-design.md, Selection and copy; Zone B,
 	// Follow mode).

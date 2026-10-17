@@ -83,6 +83,17 @@ func (m *Model) focusMessage() {
 }
 
 func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
+	if m.ui.Keys {
+		if cmds, done := m.overlayKey(k); done {
+			return cmds
+		}
+	}
+	// F1 anywhere, ? outside the editor: the key overlay (ui-design.md, Focus
+	// and keys).
+	if k.String() == "f1" || k.Text == "?" && (m.ui.Focus != "B" || m.ui.Card != "" || m.ui.Inspect != "" || m.ui.Details) {
+		m.openOverlay()
+		return nil
+	}
 	if m.ui.Card != "" {
 		if cmds, done := m.cardKey(k); done {
 			return cmds
@@ -144,11 +155,25 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 			m.edit.ClearSelection()
 			return nil
 		}
+		if m.ui.Zoom {
+			m.ui.Zoom = false // back to the exact dashboard, the focus kept
+			return nil
+		}
 		m.ui.Focus = "B"
 		return nil
 	case "f6", "shift+f6":
 		m.ui.Focus = nextZone(m.ui.Focus, k.String() == "f6")
 		return nil
+	case "tab", "shift+tab":
+		if m.ui.Focus != "B" { // in the editor Tab inserts a tab
+			m.ui.Focus = nextZone(m.ui.Focus, k.String() == "tab")
+			return nil
+		}
+	case "z":
+		if m.ui.Focus != "B" { // in the editor z is typed
+			m.ui.Zoom = !m.ui.Zoom
+			return nil
+		}
 	case "F":
 		if m.s.Turn.ForceStopOffered {
 			return m.do(state.ForceStop{})

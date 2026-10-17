@@ -159,7 +159,7 @@ func TestMouseSelection(t *testing.T) {
 			h := r.h
 			x0, y0 := at(t, h, "intro", 0)
 			// Start left of the text, on the border, and end far below, in zone C.
-			_, yc := at(t, h, "C · AGENTS", 0)
+			_, yc := at(t, h, "C · LIVE AGENTS", 0)
 			dragCopy(t, h, x0-3, y0, 200, yc+3)
 			want := answer + "\n\nBash"
 			if clip.last() != want {

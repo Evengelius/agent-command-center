@@ -182,7 +182,7 @@ func inspectTools(s *state.State, a *state.Agent, w int, now time.Time) []line {
 	var out []line
 	used := map[string]bool{}
 	for _, tc := range agentTools(s, a.Key) {
-		head := line{toolSymbol(s, tc), sp(" "+tc.Name, stText)}
+		head := line{toolSymbol(s, tc, deco("◉", stProgress)), sp(" "+tc.Name, stText)}
 		target, _, body := approvalDetail(&state.Approval{Input: tc.Input})
 		if t := toolTarget(tc.Input); t != "" {
 			head = append(head, sp("  "+t, stText))

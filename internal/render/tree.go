@@ -181,26 +181,58 @@ func stageItems(s *state.State, n int) []item {
 // itemRows draws items with ├─ └─ │ connectors, and "○ (more as events
 // arrive)" last while the stage runs.
 func itemRows(s *state.State, ui UI, out []treeRow, items []item, indent string, more bool, w int) []treeRow {
+	from := len(out)
 	for i, it := range items {
 		branch, next := "├─ ", "│  "
 		if i == len(items)-1 && !more {
 			branch, next = "└─ ", "   "
 		}
 		if it.tool != nil {
-			out = append(out, treeRow{toolRow(s, it.tool, indent+branch, w), Node{ID: "t:" + it.tool.ID, Agent: it.tool.Agent}})
+			out = append(out, treeRow{toolRow(s, ui, it.tool, indent+branch, w), Node{ID: "t:" + it.tool.ID, Agent: it.tool.Agent}})
 			continue
 		}
 		out = agentRows(s, ui, out, it.agent, indent+branch, indent+next, w)
 	}
 	if more {
 		out = append(out, treeRow{l: line{deco(indent+"└─ ", stFrame), sp("○ (more as events arrive)", stGrey)}})
+		if turnRuns(s) {
+			movingDot(out[from:], len([]rune(indent)), ui.Spinner)
+		}
 	}
 	return out
 }
 
+// movingDot puts a dot on the running stage's connector, at column col of
+// the rows' prefixes, one row further each frame: work flowing down the
+// tree, as in the reference video (reference-design.md; plan 4, step 8).
+func movingDot(rows []treeRow, col, frame int) {
+	var trunk []int
+	for i, r := range rows {
+		if len(r.l) > 0 && r.l[0].ref.kind == refDeco {
+			if p := []rune(r.l[0].text); col < len(p) && strings.ContainsRune("├│└", p[col]) {
+				trunk = append(trunk, i)
+			}
+		}
+	}
+	if len(trunk) == 0 {
+		return
+	}
+	r := &rows[trunk[frame%len(trunk)]]
+	p := []rune(r.l[0].text)
+	l := make(line, 0, len(r.l)+2)
+	if col > 0 {
+		l = append(l, deco(string(p[:col]), stFrame))
+	}
+	l = append(l, deco("•", stProgress))
+	if col+1 < len(p) {
+		l = append(l, deco(string(p[col+1:]), stFrame))
+	}
+	r.l = append(l, r.l[1:]...)
+}
+
 // toolRow is "✓ Write found.txt", observed.
-func toolRow(s *state.State, tc *state.ToolCall, prefix string, w int) line {
-	l := line{deco(prefix, stFrame), toolSymbol(s, tc), sp(" "+tc.Name, stText)}
+func toolRow(s *state.State, ui UI, tc *state.ToolCall, prefix string, w int) line {
+	l := line{deco(prefix, stFrame), toolSymbol(s, tc, running(s, ui)), sp(" "+tc.Name, stText)}
 	if t := toolTarget(tc.Input); t != "" {
 		l = append(l, sp("  "+t, stGrey))
 	}
@@ -215,7 +247,8 @@ func withOrigin(l line, label string, w int) line {
 	return spread(l, plain(" "+label, stGrey), w)
 }
 
-func toolSymbol(s *state.State, tc *state.ToolCall) span {
+// toolSymbol is a call's status; run is the symbol of a running call.
+func toolSymbol(s *state.State, tc *state.ToolCall, run span) span {
 	if pending(s, tc.ID) {
 		return deco("!", stAttention)
 	}
@@ -227,7 +260,27 @@ func toolSymbol(s *state.State, tc *state.ToolCall) span {
 	case state.ToolUnfinished:
 		return deco("○", stGrey)
 	}
+	return run
+}
+
+// running is the symbol of a call or task under way: the spinner while the
+// turn runs, so the tree shows work moving (plan 4, step 8); "◉" otherwise,
+// when no frame turns it.
+func running(s *state.State, ui UI) span {
+	if turnRuns(s) {
+		return deco(spinner[ui.Spinner%len(spinner)], stProgress)
+	}
 	return deco("◉", stProgress)
+}
+
+// turnRuns says the turn is under way, so the spinner's frames turn (the
+// application animates the same phases).
+func turnRuns(s *state.State) bool {
+	switch s.Turn.Phase {
+	case state.Submitted, state.Running, state.Interrupting:
+		return true
+	}
+	return false
 }
 
 // pending says an approval for the tool call waits for the owner.
@@ -251,7 +304,7 @@ func agentRows(s *state.State, ui UI, out []treeRow, a *state.Agent, prefix, ind
 		}
 	}
 	if len(under) == 0 && !a.Status.Final() && a.LastTool != "" {
-		under = append(under, line{deco("◉", stProgress), sp(" "+a.LastTool, stGrey)})
+		under = append(under, line{running(s, ui), sp(" "+a.LastTool, stGrey)})
 	}
 	kids := children(s, a.Key)
 	id := "a:" + a.Key

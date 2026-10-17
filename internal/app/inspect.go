@@ -183,6 +183,54 @@ func (m *Model) openDetails() {
 	}
 }
 
+// openOverlay shows the key overlay from its top. The view under it keeps
+// its scroll, given back when the overlay closes.
+func (m *Model) openOverlay() {
+	if !m.ui.Keys {
+		m.under = scrollPos{m.ui.InspectTop, m.ui.InspectHold}
+	}
+	m.ui.Keys = true
+	m.ui.Sel = render.Selection{}
+	m.ui.InspectHold, m.ui.InspectTop = true, 0
+	if m.screen != nil {
+		m.screen.Inspect.Top = 0
+	}
+}
+
+// overlayKey handles a key while the key overlay is shown; done is false
+// for the keys that keep their dashboard meaning.
+func (m *Model) overlayKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
+	switch s := k.String(); s {
+	case "esc", "f1", "?":
+		if s == "esc" && !m.ui.Sel.Empty() {
+			m.ui.Sel = render.Selection{} // Esc clears a selection first
+			return nil, true
+		}
+		m.ui.Keys = false
+		m.ui.Sel = render.Selection{}
+		m.ui.InspectTop, m.ui.InspectHold = m.under.top, m.under.hold
+	case "up":
+		m.inspectScroll(-1)
+	case "down":
+		m.inspectScroll(1)
+	case "pgup", "pgdown":
+		m.inspectPage(s == "pgdown")
+	case "home":
+		m.ui.InspectHold, m.ui.InspectTop = true, 0
+	case "end":
+		m.inspectFollow()
+	case "ctrl+c", "ctrl+shift+c", "f12", "ctrl+o", "ctrl+r", "F":
+		return nil, false
+	}
+	return nil, true
+}
+
+// scrollPos is a full-screen view's scroll: InspectTop and InspectHold.
+type scrollPos struct {
+	top  int
+	hold bool
+}
+
 // detailsKey handles a key while zone D is full screen; done is false for
 // the keys that keep their dashboard meaning, as in an inspection.
 func (m *Model) detailsKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {

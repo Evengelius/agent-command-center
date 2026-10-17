@@ -67,6 +67,8 @@ func Draw(s *state.State, ui UI) *Screen {
 	switch {
 	case ui.Width < MinWidth || ui.Height < MinHeight:
 		ls = tooSmall(s, ui)
+	case s.Screen == state.ScreenDashboard && ui.Keys:
+		ls = keysOverlay(s, ui, sc)
 	case s.Screen == state.ScreenDashboard && ui.Inspect != "" && s.Agents[ui.Inspect] != nil:
 		ls = inspect(s, ui, s.Agents[ui.Inspect], sc)
 	case s.Screen == state.ScreenDashboard && ui.Details:

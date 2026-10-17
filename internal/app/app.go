@@ -110,12 +110,13 @@ var updateHook func(m *Model, msg tea.Msg) []tea.Cmd
 
 // Model is the Bubble Tea model.
 type Model struct {
-	opt  Options
-	s    *state.State
-	ui   render.UI
-	edit input.Editor // zone B's input
-	path input.Editor // the startup screen's project field
-	env  input.PathEnv
+	opt   Options
+	s     *state.State
+	ui    render.UI
+	under scrollPos    // the scroll under the key overlay
+	edit  input.Editor // zone B's input
+	path  input.Editor // the startup screen's project field
+	env   input.PathEnv
 
 	detected map[string]provider.Detection
 	sess     provider.Session
@@ -316,6 +317,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // syncUI copies what the renderer needs from the editors.
 func (m *Model) syncUI() {
 	m.settleCard()
+	if m.ui.Focus != "A" && m.ui.Focus != "C" && m.ui.Focus != "D" {
+		m.ui.Zoom = false // only a panel zooms; reaching B by F6, Tab or a click restores
+	}
 	m.ui.Draft = m.edit.Text()
 	m.ui.Editor = m.editorView()
 	m.ui.Path = m.path.Text()

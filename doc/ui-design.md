@@ -472,9 +472,11 @@ The real conversation with the orchestrator (AM2 B1-B11; AM4 D3). Every
 entry comes from the conversation record, which is built only from CLI
 events (events-and-state.md, Conversation record); nothing is simulated.
 
-- **Header**: "B · CONVERSATION" and a badge: "◉ Streaming" while text
-  arrives, "◉ Running" during tools, "! Waiting for approval", "Idle",
-  "Interrupting…".
+- **Header**: "B · CONVERSATION" and a badge: "⠋ Streaming" while text
+  arrives, "⠋ Running" while the turn runs otherwise (tools, subagents,
+  thinking), the spinner turning in both (plan 4, step 8); "! Waiting for
+  approval", "Interrupting…", and "Idle" when the session is ready with no
+  turn.
 - **Entries**:
   - **YOU** with the time: the message as sent, byte for byte (a long
     paste is shown folded, below);
@@ -507,15 +509,29 @@ label and syntax highlighting.
 - **Renderer**: our own, with no new dependency (ASM-17; the owner's
   decision of 2026-10-16). Plan 4 step 3 measured Glamour v2 re-rendering a
   streamed 2,000-line message at p95 590 ms per frame, and 3.5 ms with a
-  per-block cache. The MVP draws AI text as plain wrapped text that keeps
-  every byte; Markdown styling and syntax highlighting come in the final
-  stage, inside `internal/render` (`content.go`), measured against the same
-  16 ms target.
+  per-block cache. Ours (`markdown.go`, plan 4, step 8) styles and never
+  rewrites: every character is drawn as received, markers included (`#`,
+  `**`, backticks, `|`, fences, a link's URL), so a row's text, its wrap and
+  what a selection copies are those of the plain text
+  (`TestMarkdownSameText` compares the two frames at three widths). A
+  line's block kind comes from its own text and the fences above it; its
+  inline styles are computed only for the rows a frame shows, over the whole
+  source line, so a code span that wraps keeps its style on the next row.
+- **Styles**: markers grey; headings pale violet bold; list bullets pale
+  violet; strong bold; emphasis and quotes italic; inline code and code
+  blocks blue; links blue underlined, their URL grey italic; a fence's
+  language amber. In code: keywords violet bold, strings green, numbers
+  orange, comments grey italic. Comments start with `#` in shell, Python,
+  YAML, TOML, Ruby, PowerShell and the like, `--` in SQL, Lua and Haskell,
+  `//` or `/*` otherwise; one keyword set serves every language, since a
+  word wrongly coloured costs only a colour. Colours in
+  [Colours and symbols](#colours-and-symbols).
 - **Streaming**: each source line's wrap is cached by text and widths
   (`WrapCache`, kept for one frame after its last use), and rows are drawn
   only when shown, so a frame costs the visible rows plus one cached lookup
   per line. Measured by `TestStreamToFrame`, a 2,000-line answer at one line
-  per delta: p95 4.4 to 5.5 ms over three runs. An unclosed code fence renders as code up to the
+  per delta: p95 4.4 to 5.5 ms over three runs drawn plain, 2.1 to 5.7 ms
+  styled (step 8). An unclosed code fence renders as code up to the
   cursor `▌`, so text does not jump between "plain" and "code" as the fence
   closes.
 - **Code blocks** keep every character, including tabs (shown at 4
@@ -639,7 +655,7 @@ How each state looks, wherever it occurs (B3.3; AM2 D9):
 | State | Shown as |
 | - | - |
 | Loading | a restrained spinner and what is awaited: "detecting…", "starting Claude Code…", "waiting for the session" |
-| Streaming | "◉ Streaming" in B's header; the cursor `▌` at the end of the open entry |
+| Streaming | "⠋ Streaming", its spinner turning, in B's header; the cursor `▌` at the end of the open entry |
 | Running a tool | the tool line with ◉; in C, the agent's task |
 | Waiting for approval | "!" in the colour of attention, on the agent in A and C, the card in B, "! Waiting for approval" in B's header |
 | Interrupting | "Interrupting…" in B's header; after 10 s, "the turn did not stop · F to force stop (ends the session)" (ASM-16) |
@@ -704,6 +720,12 @@ the application's own configuration file (ASM-7).
 | Sonnet | `#FB923C` |
 | Haiku | `#60A5FA` |
 | GPT models | `#2DD4BF` |
+| Code, inline code | `#93C5FD` |
+| Code keywords | `#A78BFA`, bold |
+| Code strings | `#86EFAC` |
+| Code numbers | `#FB923C` |
+| Code comments, Markdown markers | `#6B7280` (comments italic) |
+| Links | `#60A5FA`, underlined |
 
 How Lip Gloss v2 maps these on a 256- or 16-colour terminal was not studied
 in plan 1: Not verified, checked by hand in plan 4.
@@ -954,6 +976,20 @@ out of scope (brief, amendments 6 and 7).
 The MVP's target is the first column (AGENTS.md: one Windows 11 machine,
 architecture.md, Where it runs); the others are designed for and checked by
 hand when available. Linux and macOS builds are Not verified.
+
+## Departures
+
+Where the MVP departs from this design, as found in plan 4, step 8's review
+of every screen; each is shown honestly (no key or symbol advertised for
+what is not built).
+
+| This design | The MVP | Why |
+| - | - | - |
+| Approval card: Enter shows the full diff or command full screen | Not built; the card shows its first lines | Not in step 8's scope; the card does not advertise Enter |
+| Approval card: s allows for the session | Never offered, for either CLI | Claude Code: CC-4; Codex: the adapter does not read `availableDecisions` (plan 4, step 5) |
+| Tool lines in B carry a status symbol, and a failed one `✗` with its error | `▸` and the tool line, with its origin label; status in A and inspection | A conversation entry does not link to its tool call yet |
+| AI text as Markdown everywhere | Styled in zone B; the inspection's Messages tab shows it plain | Same characters either way; styling there not in step 8's scope |
+| Syntax highlighting of a block comment | Its first line only; the next lines show as code | Highlighting works line by line ([Markdown](#markdown)) |
 
 ## Assumptions used here
 

@@ -1,11 +1,11 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
  ▣ codex-subagents.jsonl                                      Mock data 0.145.0
  A ✓ Turn 1 › ✓ /root/list_files › ✓ /root/create_found   (inferred)   F6: tree
-╭─ B · CONVERSATION ───────────────────────────────────────────────────────────╮
+╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
 │   ▸ collabAgent:wait                                                    mock │
 │ ✓ /root/create_found · fileChange  allowed by you 11:30:00                   │
 │   ▸ collabAgent:wait                                                    mock │
-│ AGENT  gpt-5.6-sol                                                           │
+│ CODEX  gpt-5.6-sol                                                           │
 │   done                                                                       │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Ask Mock data anything…                                                   │
@@ -19,6 +19,6 @@
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
-│ 5h ▱▱▱▱▱ 1%   7d ▱▱▱▱▱ 1%   ctx 6%   tok 184.3k   $ N/A   errors 0           │
+│ 5h ▱▱▱▱▱ 1%   7d ▱▱▱▱▱ 1%   ctx 6%   tok 184.3k   cost N/A   errors 0        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+J newline · F6 zone · F2 approve · F1 keys

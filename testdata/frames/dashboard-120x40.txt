@@ -1,14 +1,14 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
-╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────────────────────╮
+╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────── Idle ─╮
 │ claude-haiku-5-5 · orchestrat… ││   what it found.                                                                   │
 │ turn 2 · completed             ││   ▸ Agent                                                                     mock │
-│                                ││ AGENT  claude-haiku-5-5                                                            │
+│                                ││ CLAUDE  claude-haiku-5-5                                                           │
 │ STAGES  inferred from activity ││   I've launched the subagent in the background to list the directory and write     │
 │ TURN 1  ✓ completed · 0s       ││   `found.txt`. I'll report its result when it finishes.                            │
 │ TURN 2  ✓ completed · 0s       ││ ✓ general-purpose · Bash  ls -p "<probe-root>/probe-work…  allowed by you 11:30:00 │
 │   started by the CLI           ││ ✓ general-purpose · Write  …oot>\probe-work\p3b\found.txt  allowed by you 11:30:00 │
-│                                ││ AGENT  claude-haiku-5-5                                                            │
+│                                ││ CLAUDE  claude-haiku-5-5                                                           │
 │                                ││   The subagent found two files in the directory, `alpha.txt` and `beta.md`, and    │
 │                                ││   wrote them into `<probe-root>\probe-work\p3b\found.txt`.                         │
 │                                ││                                                                                    │
@@ -20,7 +20,7 @@
 │                                ││                                                                                    │
 │                                ││   turn started by the CLI                                   1 line · Ctrl+G editor │
 │                                │╰────────────────────────────────────────────────────────────────────────────────────╯
-│                                │╭─ C · AGENTS ─────────────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│                                │╭─ C · LIVE AGENTS ────────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
 │                                ││  ✓ general-purpose model N/A   completed · Files written to …       0s   21.5k tok │
 │                                ││                                                                                    │
 │                                ││                                                                                    │
@@ -34,7 +34,7 @@
 │ ↑↓ move ←→ fold Enter inspect  ││ ↑↓ select · Enter inspect · z zoom · F6 next zone                                  │
 ╰────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────────── quota updated 0s ago · † undocumented field ─╮
-│ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00   overage rejected … │
-│ context 4% of 1M (derived)   tokens 159.4k   cost $0.01 API-equiv. estimate   errors 0   agents 0 active / limit N/… │
+│ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00                      │
+│ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 4% of 1M (derived)   +5 more                │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit
