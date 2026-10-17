@@ -20,14 +20,15 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
-**Plan 10, a spawned Codex agent's label and the timing step, done and
-awaiting the owner's approval**
+**Plan 10, a spawned Codex agent's label and the timing step, approved by
+the owner on 2026-10-18; no plan 11 is defined yet**
 (the owner's request of 2026-10-18,
 [Plan 10](#plan-10---a-spawned-codex-agents-label-and-the-timing-step) at
 the end). Both items verified; the evaluation summary is in
-[`doc/plan10-evaluation.md`](doc/plan10-evaluation.md).
+[`doc/plan10-evaluation.md`](doc/plan10-evaluation.md), committed as
+b71c114.
 
-Plan 10 progress (update as each item finishes; read this first after a
+Plan 10 progress (closed; update as each item finishes; read this first after a
 context compaction). Items and rules:
 [Plan 10](#plan-10---a-spawned-codex-agents-label-and-the-timing-step).
 Baseline: 8dea129, 232 top-level tests in 14 packages, 0 FAIL.
