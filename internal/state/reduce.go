@@ -18,6 +18,11 @@ func (s *State) Apply(ev event.Event) []Command {
 	if ev.Agent != "" && s.Ambient[ev.Agent] {
 		return nil
 	}
+	if ev.Agent != "" && ev.Agent == s.Session.ID {
+		// The session's own key is the orchestrator's, never an agent of
+		// zone C, whatever a CLI version sends (L5: Codex 0.163.0's "/root").
+		ev.Agent = ""
+	}
 	var cmds []Command
 	if ev.Agent == "" && s.Turn.Phase == Submitted && turnActivity(ev.Kind) {
 		cmds = s.toRunning()
@@ -467,6 +472,10 @@ func (s *State) agent(ev event.Event, p event.Agent) []Command {
 		s.note(ev, "agent event without a key: attached to the orchestrator, unattributed")
 		return nil
 	}
+	if key == s.Session.ID {
+		s.note(ev, "agent event for the orchestrator's own key: not an agent")
+		return nil
+	}
 	if p.Type == "ambient" {
 		s.Ambient[key] = true
 		return nil
@@ -693,7 +702,11 @@ func (s *State) turnEnd(ev event.Event, p event.TurnEnd) []Command {
 	if ev.Agent != "" {
 		a := s.ensureAgent(ev.Agent, ev)
 		if a.Status.Final() {
-			a.History = append(a.History, "turn end after end")
+			// Codex 0.163.0 ends a child on its parent first, then with the
+			// child's own turn end (P7b): a matching end only confirms it.
+			if p.Outcome != "completed" || a.Status != AgentCompleted {
+				a.History = append(a.History, "turn end after end")
+			}
 			return nil
 		}
 		switch p.Outcome {

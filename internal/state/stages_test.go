@@ -129,3 +129,25 @@ func TestStagesP7(t *testing.T) {
 		}
 	}
 }
+
+// L5: in every recording, each agent ends with an observed status; none is
+// the orchestrator, none unannounced, and nothing is logged after its end.
+func TestAgentsEndCleanly(t *testing.T) {
+	for _, r := range recordings {
+		s, _ := replayState(t, r.name, r.provider, r.mapper())
+		for _, k := range s.Order {
+			a := s.Agents[k]
+			if k == s.Session.ID || a.Label == "unannounced agent" || strings.HasPrefix(a.Label, "/root") && !strings.HasPrefix(a.Label, "/root/") {
+				t.Errorf("%s: agent %s %q is not a real child", r.name, k, a.Label)
+			}
+			if !a.Status.Final() || a.Status == state.AgentEnded || a.StatusOrigin != event.Observed {
+				t.Errorf("%s: agent %q ends %s, origin %s", r.name, a.Label, a.Status, a.StatusOrigin)
+			}
+			for _, h := range a.History {
+				if strings.Contains(h, "after end") {
+					t.Errorf("%s: agent %q: %s", r.name, a.Label, h)
+				}
+			}
+		}
+	}
+}

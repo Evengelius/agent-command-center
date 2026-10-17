@@ -966,6 +966,27 @@ var invalids = []machineCase{
 		b.eq("status", b.agent("ghost").Status, AgentFailed)
 		b.eq("origin", b.agent("ghost").StatusOrigin, event.Inferred)
 	}},
+	{"Agent", "a completed turn end for an agent already `Completed` only confirms", func(b *bench) {
+		b.running().ev(event.AgentStarted, "", event.Agent{Key: "th1", Type: "thread"})
+		b.ev(event.AgentCompleted, "", event.Agent{Key: "th1"})
+		b.turnEnd("th1", "completed")
+		a := b.agent("th1")
+		b.eq("status", a.Status, AgentCompleted)
+		b.eq("history", strings.Join(a.History, "|"), "")
+		b.turnEnd("th1", "failed")
+		b.eq("history after a different end", strings.Join(a.History, "|"), "turn end after end")
+	}},
+	{"Agent", "an event carrying the session's own key is the orchestrator's", func(b *bench) {
+		b.running().ev(event.SessionStarted, "", event.Started{SessionID: "main"})
+		b.ev(event.AgentProgress, "", event.Agent{Key: "main", Label: "/root"})
+		b.ev(event.AgentStarted, "", event.Agent{Key: "main", Type: "thread"})
+		b.ev(event.StatusChanged, "main", event.Status{Status: "running"})
+		b.eq("agents", len(b.s.Order), 0)
+		b.eq("noted", b.noted("orchestrator's own key"), true)
+		b.ev(event.TurnCompleted, "main", event.TurnEnd{Outcome: "completed"})
+		b.eq("turn", b.s.Turn.Phase, Idle)
+		b.eq("agents after its turn end", len(b.s.Order), 0)
+	}},
 
 	{"Approval", "a second answer to the same id is ignored and logged", func(b *bench) {
 		b.running().ask("", "a1", "")

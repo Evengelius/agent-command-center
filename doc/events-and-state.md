@@ -267,7 +267,7 @@ States: `Announced`, `Running`, `WaitingApproval`, `Completed`, `Failed`,
 | `Running` | `agent.progress` | `Running` (task, tokens, last tool updated) | **P** `task_progress` (P3b) | **P** P7 |
 | `Running` | approval request carrying this key | `WaitingApproval` | **P** P3b (`agent_id`) | **P** P7 (child `threadId`) |
 | `WaitingApproval` | its approvals answered | `Running` | **P** P3b | **P** P7 |
-| `Running`, `WaitingApproval` | completed | `Completed` | **P** `task_notification completed` (P3b) | **P** child `turn/completed completed` (P7) |
+| `Running`, `WaitingApproval` | completed | `Completed` | **P** `task_notification completed` (P3b) | **P** child `turn/completed completed` (P7); `subAgentActivity completed` on the parent, then the child's `turn/completed` (P7b) |
 | `Running`, `WaitingApproval` | failed | `Failed` | **D** `task_notification failed` | **D** child `turn/completed failed` |
 | `Running`, `WaitingApproval` | stopped or killed | `Stopped` | **D** `task_notification stopped`, `task_updated killed` | **D** child `turn/completed interrupted` |
 | `Running` | absent from `background_tasks_changed` with no terminal event | `Ended`, inferred | **D** (replace semantics, CC-5) | n/a |
@@ -277,7 +277,9 @@ States: `Announced`, `Running`, `WaitingApproval`, `Completed`, `Failed`,
 Invalid: a progress or tool event for an agent in a final state is logged in
 the agent's history, flagged "after end", and does not change the status; a
 terminal event for an unknown key creates the node directly in that state,
-inferred.
+inferred; a completed turn end for an agent already `Completed` only confirms
+it, nothing logged; an event carrying the session's own key is the
+orchestrator's, never a node (L5: Codex 0.163.0's activity toward `/root`).
 
 ### Approval machine
 
