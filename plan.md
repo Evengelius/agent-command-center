@@ -1613,6 +1613,88 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
     status); Claude Code ran `/usage` and its text reached B. A file name
     in an answer is not clickable (Windows Terminal links URLs only; editor
     integration is outside amendment 4).
+  - **Rerun on Codex CLI 0.163.0** (2026-10-17, at the owner's request
+    after updating Codex; Claude Code 2.1.301; no CLI session open in a
+    terminal):
+    - Claude Code `acc-l5c-112245`: every check PASS. 36.8 s, 3 approvals
+      allowed, zone C "0 ACTIVE · 1 DONE"; "time 48s session" at 48 rows;
+      Shift-drag at both sizes; configuration NOT-VERIFIED for
+      `~\.claude.json` only; Ctrl+Q 0.77 s, none of 15460, 34568 left.
+    - Codex `acc-l5x-112401` (`gpt-6-sol` accepted, no refusal): **L2.1
+      FAIL** (240.2 s; the approval allowed at 11:24:29, the turn completed
+      in 21 s with "done" and `found.txt` "found\n", but zone C kept a
+      third row "◉ /root model N/A running" that never ended, so "0 ACTIVE"
+      was never reached); **L2.3 FAIL** (the frame was the inspector of
+      `/root/create_found`, opened by input from outside the harness, which
+      sent no key between 11:27:50 and 11:28:18; the owner or the "Move
+      Mouse" utility running then); L3 PASS ("time 4m 13s session" at 53
+      rows); Shift-drag PASS at both sizes; configuration NOT-VERIFIED
+      (`known_marketplaces.json` changed, not classified); **Q1 FAIL**
+      (30.14 s: the dashboard asked "quit? 1 agent still running will be
+      stopped · Ctrl+Q again", for the "/root" row) and **Q2 FAIL** (22624
+      and 2564 left, the application still running). A second Ctrl+Q closed
+      it in 0.21 s with none left.
+    - Cause, from probe P7b (P7 again on 0.163.0, configuration PASS,
+      `doc\research\probes\README.md`): each child now emits
+      `subAgentActivity` `kind:"interacted"` toward the orchestrator's own
+      thread (`agentPath` `/root`), which the mapper read as an agent; and
+      a `kind:"completed"` on the parent for each child, read as progress
+      ("progress after end" in the inspector). Fix in
+      `internal\provider\codex\mapper.go`: an activity toward the
+      orchestrator is a status of the child, `completed` ends the child;
+      `item/commandExecution/outputDelta` (28 in P7b) is tool progress and
+      `account/updated` a status, both new and counted as unrecognised
+      before. Regression tests: `TestStagesP7` over P7 and P7b (failed on
+      the old mapper: the "/root" child and "progress after end" on both
+      children), `TestP7bCounts`, P7b in `TestEveryLineMaps` and
+      `TestFixturesMatchRecordings`. The sanitizer now redacts `accountId`,
+      new in 0.163.0's rate limits.
+    - Codex `acc-l5x-114152`, with the fix: every check PASS. 37.0 s, 1
+      approval allowed, zone C "0 ACTIVE · 2 DONE" with no "/root" row;
+      `found.txt` "found\n"; "time 47s session" at 44 rows; Shift-drag at
+      both sizes; Ctrl+Q 0.23 s with none of 10252, 31052 left;
+      configuration PASS.
+  - **Hardening after the rerun** (2026-10-17, at the owner's request: no
+    phantom or stuck agent from any CLI version):
+    - Reducer (`internal\state\reduce.go`): an event carrying the session's
+      own key (Codex's main thread id, Claude Code's `session_id`) is the
+      orchestrator's, never a zone C node, whatever the mapper sends; a
+      completed turn end for an agent already `Completed` only confirms it
+      (P7b's order: `subAgentActivity completed` on the parent, then the
+      child's `turn/completed`). Both are rows of `doc\events-and-state.md`,
+      Agent machine, and cases of `TestStateMachines` (they failed on the
+      old reducer: "turn end after end" logged, the "main" agent created,
+      the turn left Running). With the old mapper and the new reducer the
+      "/root" phantom is already blocked.
+    - `TestAgentsEndCleanly` over every recording: each agent ends final and
+      observed, never `Ended`, never keyed by the session, never an
+      "unannounced agent" or a bare `/root`, with no "after end" in its
+      history.
+  - **Codex slash-command note** (the owner chose it from a mock-up): a
+    message whose first word is a slash command is held back once on Codex
+    with a grey note of the dashboard's (role `dashboard`); the draft stays
+    and the same text sent again goes to the model
+    (`doc\ui-design.md`, Zone B). Tests: `TestSlashCommand`,
+    `TestSlashHeldOnCodex`, `TestSlashOtherCommandHeldAgain`,
+    `TestSlashSentOnClaude`, `TestPathNotHeldOnCodex` (`internal\state`)
+    and `TestCodexSlashCommandNote` (`internal\app`: the note drawn, the
+    draft kept, no YOU entry, one `turn/start` after the second Enter).
+    Not verified live (it would use Codex quota for a check the recorded
+    wire settles).
+  - Checks after both: `go build ./...` and `go vet ./...` exit 0, `gofmt
+    -l .` prints nothing, `go test ./...` PASS in every package; golden
+    frames unchanged.
+  - **Codex rerun with both** (`acc-l5x-125316`, 2026-10-17, at the owner's
+    request to retry L2.3; no CLI session open in a terminal, the only
+    ones VS Code's): every check PASS. 40.2 s, 1 approval allowed, zone C
+    "0 ACTIVE · 2 DONE", both `/root/…` children completed, no bare
+    "/root" row; `found.txt` "found\n"; L2.3 PASS (so the earlier failure
+    was input from outside the harness); "time 50s session" at 44 rows;
+    Shift-drag at both sizes; Ctrl+Q 0.21 s with none of 25944, 18736
+    left; configuration PASS.
+  - Later improvement, at the owner's request (not part of the MVP steps):
+    show each subagent's model in zone C, where the CLI reports it; zone C
+    shows "model N/A" for Codex children today.
 
 The owner's decisions at plan 3's approval (2026-10-16):
 - Proposal and roadmap approved; follow its order and the MVP scope.
