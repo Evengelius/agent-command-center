@@ -131,13 +131,30 @@ func inspectMessages(s *state.State, a *state.Agent, w int) []line {
 	}
 	out := []line{timed(clockSec(a.StartedAt), plain(start, stText), "observed", w)}
 	for _, e := range a.Messages {
-		rows := wrap(e.Text, max(w-10, 1))
-		for i, r := range rows {
-			if i == 0 {
-				out = append(out, timed(clockSec(e.At), plain(r, stText), originLabel(e.Origin), w))
-				continue
+		// AI text takes zone B's Markdown styles, on the rows wrap draws
+		// (ui-design.md, Markdown; plan 5, item 11); a notice stays plain.
+		ps := paragraphs(e.Text)
+		var md []mdLine
+		if e.Role == "assistant" && markdownOn {
+			md = mdLines(ps)
+		}
+		first := true
+		for j, para := range ps {
+			var rs []styleRun
+			if md != nil {
+				rs = mdRuns(para, md[j])
 			}
-			out = append(out, detail(r, w))
+			for _, r := range wrapPara(para, max(w-10, 1)) {
+				switch {
+				case first:
+					out = append(out, timed(clockSec(e.At), styledRow(para, r, rs, stText), originLabel(e.Origin), w))
+					first = false
+				case rs != nil:
+					out = append(out, append(line{deco("          ", stNone)}, styledRow(para, r, rs, stText)...).fit(w))
+				default:
+					out = append(out, detail(para[r.from:r.to], w))
+				}
+			}
 		}
 	}
 	if a.Status.Final() {
@@ -243,71 +260,102 @@ func approvalRow(ap *state.Approval, origin string, w int) line {
 func inspectDiff(s *state.State, a *state.Agent, w int) []line {
 	var out []line
 	for _, tc := range agentTools(s, a.Key) {
-		switch tc.Name {
-		case "fileChange":
-			var in struct {
-				Changes []struct {
-					Path string          `json:"path"`
-					Kind json.RawMessage `json:"kind"`
-					Diff string          `json:"diff"`
-				} `json:"changes"`
-			}
-			if json.Unmarshal(tc.Input, &in) != nil {
-				continue
-			}
-			for _, c := range in.Changes {
-				var k struct {
-					Type string `json:"type"`
-				}
-				kind := strings.Trim(string(c.Kind), `"`)
-				if json.Unmarshal(c.Kind, &k) == nil && k.Type != "" {
-					kind = k.Type
-				}
-				out = append(out, timed(clockSec(tc.StartedAt), line{sp(hideUser(c.Path), stBold), sp("  "+kind, stGrey)}, originLabel(tc.Origin), w))
-				for _, l := range strings.Split(strings.TrimRight(c.Diff, "\n"), "\n") {
-					out = append(out, diffLine(l, w))
-				}
-			}
-		case "Edit", "MultiEdit", "Write":
-			var in struct {
-				Path    string `json:"file_path"`
-				Old     string `json:"old_string"`
-				New     string `json:"new_string"`
-				Content string `json:"content"`
-				Edits   []struct {
-					Old string `json:"old_string"`
-					New string `json:"new_string"`
-				} `json:"edits"`
-			}
-			if json.Unmarshal(tc.Input, &in) != nil {
-				continue
-			}
-			out = append(out, timed(clockSec(tc.StartedAt), line{sp(hideUser(in.Path), stBold), sp("  "+tc.Name, stGrey)}, "derived", w))
-			if tc.Name == "Write" {
-				for _, l := range strings.Split(strings.TrimRight(in.Content, "\n"), "\n") {
-					out = append(out, diffLine("+"+l, w))
-				}
-				continue
-			}
-			edits := in.Edits
-			if tc.Name == "Edit" {
-				edits = append(edits[:0:0], struct {
-					Old string `json:"old_string"`
-					New string `json:"new_string"`
-				}{in.Old, in.New})
-			}
-			for _, e := range edits {
-				for _, l := range strings.Split(e.Old, "\n") {
-					out = append(out, diffLine("-"+l, w))
-				}
-				for _, l := range strings.Split(e.New, "\n") {
-					out = append(out, diffLine("+"+l, w))
-				}
+		origin := "derived"
+		if tc.Name == "fileChange" {
+			origin = originLabel(tc.Origin)
+		}
+		for _, d := range fileDiffs(tc.Name, tc.Input) {
+			out = append(out, timed(clockSec(tc.StartedAt), line{sp(hideUser(d.path), stBold), sp("  "+d.kind, stGrey)}, origin, w))
+			for _, l := range d.lines {
+				out = append(out, diffLine(l, w))
 			}
 		}
 	}
 	if len(out) == 0 {
 		out = append(out, detail("no file change by this agent", w))
+	}
+	return out
+}
+
+// fileDiff is one file's change: its path, what was done, its diff lines.
+type fileDiff struct {
+	path, kind string
+	lines      []string
+}
+
+// fileDiffs reads tool name's file changes from its input: Codex
+// fileChange's changes[].diff as they came; Claude Code's Edit, MultiEdit and
+// Write as "-" old and "+" new lines. Nil for another tool, or an input it
+// cannot read.
+func fileDiffs(name string, input json.RawMessage) []fileDiff {
+	var out []fileDiff
+	switch name {
+	case "fileChange":
+		var in struct {
+			Changes []struct {
+				Path string          `json:"path"`
+				Kind json.RawMessage `json:"kind"`
+				Diff string          `json:"diff"`
+			} `json:"changes"`
+		}
+		if json.Unmarshal(input, &in) != nil {
+			return nil
+		}
+		for _, c := range in.Changes {
+			var k struct {
+				Type string `json:"type"`
+			}
+			kind := strings.Trim(string(c.Kind), `"`)
+			if json.Unmarshal(c.Kind, &k) == nil && k.Type != "" {
+				kind = k.Type
+			}
+			lines := strings.Split(strings.TrimRight(c.Diff, "\n"), "\n")
+			// An added or deleted file's diff is its content (P6b: "hello\n"),
+			// not a unified diff: marked as Write's lines are.
+			if mark := map[string]string{"add": "+", "delete": "-"}[kind]; mark != "" && !strings.HasPrefix(c.Diff, "@@") && !strings.HasPrefix(c.Diff, "---") {
+				for i, l := range lines {
+					lines[i] = mark + l
+				}
+			}
+			out = append(out, fileDiff{c.Path, kind, lines})
+		}
+	case "Edit", "MultiEdit", "Write":
+		var in struct {
+			Path    string `json:"file_path"`
+			Old     string `json:"old_string"`
+			New     string `json:"new_string"`
+			Content string `json:"content"`
+			Edits   []struct {
+				Old string `json:"old_string"`
+				New string `json:"new_string"`
+			} `json:"edits"`
+		}
+		if json.Unmarshal(input, &in) != nil {
+			return nil
+		}
+		d := fileDiff{path: in.Path, kind: name}
+		if name == "Write" {
+			for _, l := range strings.Split(strings.TrimRight(in.Content, "\n"), "\n") {
+				d.lines = append(d.lines, "+"+l)
+			}
+			return []fileDiff{d}
+		}
+		edits := in.Edits
+		if name == "Edit" {
+			edits = append(edits[:0:0], struct {
+				Old string `json:"old_string"`
+				New string `json:"new_string"`
+			}{in.Old, in.New})
+		}
+		for _, e := range edits {
+			for _, l := range strings.Split(e.Old, "\n") {
+				d.lines = append(d.lines, "-"+l)
+			}
+			for _, l := range strings.Split(e.New, "\n") {
+				d.lines = append(d.lines, "+"+l)
+			}
+		}
+		out = append(out, d)
 	}
 	return out
 }

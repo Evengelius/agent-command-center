@@ -222,10 +222,12 @@ type Approval struct {
 	ToolID      string
 	Input       json.RawMessage
 	Question    bool
+	ForSession  bool // the request lists acceptForSession (Codex; plan 5, item 8)
 	Problem     string
 	Raw         string
 	Status      ApprovalStatus
 	Answer      string
+	Cancelled   bool // answered by a cancel (c, Ctrl+C, quitting), not by d (plan 5, item 10)
 	RequestedAt time.Time
 	AnsweredAt  time.Time
 }

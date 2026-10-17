@@ -16,27 +16,6 @@ import (
 // markdownOn draws AI text styled; tests turn it off to compare the text.
 var markdownOn = true
 
-var (
-	cKeyword = lipgloss.Color("#A78BFA")
-	cString  = lipgloss.Color("#86EFAC")
-	cNumber  = lipgloss.Color("#FB923C")
-	cCode    = lipgloss.Color("#93C5FD")
-	cLink    = lipgloss.Color("#60A5FA")
-
-	stMdHeading = stTitle
-	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
-	stMdBullet  = style(lipgloss.NewStyle().Foreground(cTitle))
-	stMdStrong  = stBold
-	stMdEm      = style(lipgloss.NewStyle().Foreground(cText).Italic(true))
-	stMdCode    = style(lipgloss.NewStyle().Foreground(cCode))
-	stMdLink    = style(lipgloss.NewStyle().Foreground(cLink).Underline(true))
-	stMdLang    = style(lipgloss.NewStyle().Foreground(cProgress))
-	stMdKeyword = style(lipgloss.NewStyle().Foreground(cKeyword).Bold(true))
-	stMdString  = style(lipgloss.NewStyle().Foreground(cString))
-	stMdNumber  = style(lipgloss.NewStyle().Foreground(cNumber))
-	stMdComment = style(lipgloss.NewStyle().Foreground(cGrey).Italic(true))
-)
-
 // mdKind is a source line's block kind.
 type mdKind uint8
 
@@ -51,33 +30,40 @@ const (
 	mdCode  // inside a fence; an unclosed fence runs to the end
 )
 
-// mdLine is a line's kind and, for code and fences, its language.
+// mdLine is a line's kind and, for code and fences, its language; comment
+// marks a code line that starts inside a block comment (plan 5, item 12).
 type mdLine struct {
-	kind mdKind
-	lang string
+	kind    mdKind
+	lang    string
+	comment bool
 }
 
-// mdLines classifies an entry's lines; fences carry over from line to line.
+// mdLines classifies an entry's lines; fences, and block comments within a
+// fence, carry over from line to line.
 func mdLines(lines []string) []mdLine {
 	out := make([]mdLine, len(lines))
 	var fence string // the open fence's marker, "" outside one
 	var lang string
+	comment := false // inside a block comment, in the open fence
 	for j, l := range lines {
 		t := strings.TrimLeft(l, " ")
 		indent := len(l) - len(t)
 		if fence != "" {
 			if indent < 4 && strings.HasPrefix(t, fence) && strings.Trim(strings.TrimRight(t, " \t"), fence[:1]) == "" {
-				out[j], fence = mdLine{mdFence, lang}, ""
+				out[j], fence = mdLine{kind: mdFence, lang: lang}, ""
 				continue
 			}
-			out[j] = mdLine{mdCode, lang}
+			out[j] = mdLine{mdCode, lang, comment}
+			if lang != "" {
+				comment = codeRuns(nil, l, lang, comment)
+			}
 			continue
 		}
 		if indent < 4 {
 			if m := fenceMarker(t); m != "" {
-				fence = m
+				fence, comment = m, false
 				lang, _, _ = strings.Cut(strings.TrimSpace(t[len(m):]), " ")
-				out[j] = mdLine{mdFence, lang}
+				out[j] = mdLine{kind: mdFence, lang: lang}
 				continue
 			}
 		}
@@ -209,7 +195,7 @@ func mdRuns(src string, k mdLine) []styleRun {
 		if k.lang == "" {
 			r.add(len(src), stMdCode)
 		} else {
-			codeRuns(&r, src, k.lang)
+			codeRuns(&r, src, k.lang, k.comment)
 		}
 	case mdQuote:
 		r.add(at+1, stMdMark)
@@ -302,26 +288,42 @@ func wordByte(src string, i int) bool {
 }
 
 // codeRuns styles a line of code in lang: keywords, strings, comments and
-// numbers. A comment or string ends with its line: a block comment over
-// several lines shows as code after its first.
-func codeRuns(r *runs, src, lang string) {
+// numbers. A string ends with its line; a block comment runs on to its */
+// (plan 5, item 12): in tells that the line starts inside one, and codeRuns
+// reports whether it ends inside one. A nil r only scans for that.
+func codeRuns(r *runs, src, lang string, in bool) bool {
 	hash, dash := hashComment[strings.ToLower(lang)], dashComment[strings.ToLower(lang)]
+	add := func(to int, st *lipgloss.Style) {
+		if r != nil {
+			r.add(to, st)
+		}
+	}
 	i := 0
+	if in {
+		j := strings.Index(src, "*/")
+		if j < 0 {
+			add(len(src), stMdComment)
+			return true
+		}
+		i = j + 2
+		add(i, stMdComment)
+	}
 	for i < len(src) {
 		c := src[i]
 		switch {
 		case hash && c == '#',
 			dash && strings.HasPrefix(src[i:], "--"),
 			!hash && !dash && strings.HasPrefix(src[i:], "//"):
-			r.add(len(src), stMdComment)
-			return
+			add(len(src), stMdComment)
+			return false
 		case !hash && strings.HasPrefix(src[i:], "/*"):
-			end := len(src)
-			if j := strings.Index(src[i+2:], "*/"); j >= 0 {
-				end = i + 2 + j + 2
+			j := strings.Index(src[i+2:], "*/")
+			if j < 0 {
+				add(len(src), stMdComment)
+				return true
 			}
-			r.add(end, stMdComment)
-			i = end
+			i += 2 + j + 2
+			add(i, stMdComment)
 		case c == '"' || c == '\'' || c == '`':
 			j := i + 1
 			for j < len(src) && src[j] != c {
@@ -331,14 +333,14 @@ func codeRuns(r *runs, src, lang string) {
 				j++
 			}
 			end := min(j+1, len(src))
-			r.add(end, stMdString)
+			add(end, stMdString)
 			i = end
 		case c >= '0' && c <= '9' && !wordByte(src, i-1) && (i == 0 || src[i-1] != '_'):
 			j := i
 			for j < len(src) && (wordByte(src, j) || src[j] == '.' || src[j] == '_') {
 				j++
 			}
-			r.add(j, stMdNumber)
+			add(j, stMdNumber)
 			i = j
 		case wordByte(src, i) || c == '_':
 			j := i
@@ -346,16 +348,17 @@ func codeRuns(r *runs, src, lang string) {
 				j++
 			}
 			st := stMdCode
-			if keywords[src[i:j]] {
+			if r != nil && keywords[src[i:j]] {
 				st = stMdKeyword
 			}
-			r.add(j, st)
+			add(j, st)
 			i = j
 		default:
-			r.add(i+1, stMdCode)
+			add(i+1, stMdCode)
 			i++
 		}
 	}
+	return false
 }
 
 // Languages whose line comments start with # or --; the others use //.

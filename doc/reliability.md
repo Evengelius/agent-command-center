@@ -176,7 +176,7 @@ reset shown N/A.
 | 5-hour, 7-day quota | `account/rateLimits/read` at startup, then pushes; windows by `windowDurationMins` | API key: "N/A (API key: ChatGPT sign-in needed)"; a plan with no 5-hour window: "N/A (plan has no 5-hour limit)"; a failed read: "N/A (read failed: <error>)" and the last pushed value with its age |
 | Reset times | `resetsAt` | with the window |
 | Plan and credits | `planType`, `credits` | API key: N/A. `rateLimitResetCredits` ids are never shown or logged |
-| Model | `thread/start`, `model/rerouted` | children: "model N/A" (ASM-14) |
+| Model | `thread/start`, `model/rerouted`; a child's `subAgentActivity.model` (Codex CLI 0.163.0, P7b) | older children: "model N/A" (ASM-14) |
 | Context | `thread/tokenUsage/updated` per thread, raw value | before a thread's first model call: "N/A (no model call yet)" (CX-10 q7) |
 | Tokens | per-thread totals; session total derived | "N/A" before the first update |
 | API-equivalent cost | none | always "cost N/A (Codex reports none)" |
@@ -474,8 +474,8 @@ owner's quota and needs approval under [evaluation.md](evaluation.md);
 | tmux: the effective `extended-keys` default; re-wrapping outer pastes | manual under WSL |
 | OSC 52 size limits beyond kitty and WT; block selection per terminal | manual where available |
 | Which console reader path Bubble Tea v2 takes on Windows | read the code at the version pinned in plan 4, then manual |
-| Whether Bubble Tea v2 wraps frames in synchronized output (mode 2026) | read the renderer at the pinned version |
-| Lip Gloss v2 colour downsampling on 256- and 16-colour terminals | manual with `TERM`/`COLORTERM` variations |
+| Whether Bubble Tea v2 wraps frames in synchronized output (mode 2026) | settled 2026-10-17: yes once the terminal reports it supported, as WT 1.23 does; measured, and tested offline with WT's recorded answer ([ui-design.md, Rendering](ui-design.md#rendering)) |
+| Lip Gloss v2 colour downsampling on 256- and 16-colour terminals | settled 2026-10-17 (plan 5, item 13): measured; an explicit 16-colour palette replaces the downsampling, which merged roles ([ui-design.md, Colours and symbols](ui-design.md#colours-and-symbols)) |
 | Notepad as `$EDITOR`: does it block | manual |
 | `EDITOR`/`VISUAL` usually unset on Windows; Git for Windows' default editor | manual on this machine |
 | atotto's WSL clipboard path speed; `clip.exe` code page | not used (ASM-2); manual if the WSL build is tried |

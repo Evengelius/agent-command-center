@@ -29,6 +29,8 @@ var mdFixture = []state.Entry{
 		"\t// a comment here",
 		"\ts := \"a string\"",
 		"\tn := 1234",
+		"\t/* a block comment",
+		"\t   over lines */ m := 7",
 		"}",
 		"```",
 		"A long line with `a long inline code span that is going to be wrapped across rows at narrow widths for sure` end.",
@@ -46,8 +48,9 @@ func TestMarkdownSameText(t *testing.T) {
 	s.Screen = state.ScreenDashboard
 	s.Session.Phase = state.Ready
 	s.Conversation = mdFixture
-	// at 200 columns zone B shares its height with C: 80 rows show it all
-	for _, size := range [][2]int{{80, 60}, {120, 60}, {200, 80}} {
+	// at 200 columns zone B shares its height with C: 80 rows show it all;
+	// at 120, 64 do
+	for _, size := range [][2]int{{80, 60}, {120, 64}, {200, 80}} {
 		t.Run(fmt.Sprintf("%dx%d", size[0], size[1]), func(t *testing.T) {
 			ui := UI{Width: size[0], Height: size[1], Focus: "B"}
 			markdownOn = false
@@ -89,8 +92,10 @@ func TestMarkdownSameText(t *testing.T) {
 				{"// a comment here", stMdComment},
 				{`"a string"`, stMdString},
 				{"1234", stMdNumber},
-				{"sure", stMdCode},   // a code span's row after the wrap
-				{"def", stMdKeyword}, // in the unclosed fence
+				{"over lines */", stMdComment}, // a block comment's second line (plan 5, item 12)
+				{"7", stMdNumber},              // after its end
+				{"sure", stMdCode},             // a code span's row after the wrap
+				{"def", stMdKeyword},           // in the unclosed fence
 				{"# note", stMdComment},
 			} {
 				if got := spanStyle(md, c.text); got != c.st {
@@ -143,6 +148,84 @@ func TestMarkdownLines(t *testing.T) {
 		}
 		if got.String() != c.want {
 			t.Errorf("%q: %s, want %s", c.lines, got.String(), c.want)
+		}
+	}
+}
+
+// TestBlockComment is plan 5, item 12, criteria 1 and 2: a block comment is
+// a comment on every line to its */, and only there.
+func TestBlockComment(t *testing.T) {
+	lines := []string{
+		"```c",
+		"int a; /* opens here",
+		"   still \"in\" the comment // too",
+		"   ends */ return 42;",
+		`x = "/* in a string" + 1;`,
+		"y = 2; // line /* not opened",
+		"z = 3; /* one line */ w = 4;",
+		"int b; /* left open",
+		"```",
+		"```c",
+		"int c = 5;",
+		"```",
+		"```python",
+		"x = 1 /* not a comment",
+		"y = 2",
+		"```",
+		"```",
+		"a /* b",
+		"c */ d",
+		"```",
+	}
+	ks := mdLines(lines)
+	// style is the style of the first occurrence of text on line j.
+	style := func(j int, text string) *lipgloss.Style {
+		at := strings.Index(lines[j], text)
+		if at < 0 {
+			t.Fatalf("no %q on line %d", text, j)
+		}
+		for _, x := range mdRuns(lines[j], ks[j]) {
+			if x.to > at {
+				return x.st
+			}
+		}
+		return nil
+	}
+	for _, c := range []struct {
+		line int
+		text string
+		st   *lipgloss.Style
+	}{
+		{1, "int", stMdKeyword},
+		{1, "/* opens here", stMdComment},
+		{2, "still", stMdComment}, // the comment's next lines,
+		{2, `"in"`, stMdComment},  // a string in it,
+		{2, "// too", stMdComment},
+		{3, "ends */", stMdComment}, // its end,
+		{3, "return", stMdKeyword},  // and the code after it
+		{3, "42", stMdNumber},
+		{4, `"/* in a string"`, stMdString},
+		{5, "y", stMdCode},
+		{6, "z", stMdCode}, // after a line comment holding /*
+		{6, "/* one line */", stMdComment},
+		{6, "w", stMdCode},
+		{6, "4", stMdNumber},
+		{7, "/* left open", stMdComment},
+		{10, "int", stMdKeyword}, // a new fence starts as code
+		{10, "5", stMdNumber},
+		{13, "/", stMdCode}, // not a comment in Python
+		{13, "not", stMdKeyword},
+		{14, "2", stMdNumber},
+		{17, "a /* b", stMdCode}, // a fence without a language
+		{18, "c */ d", stMdCode},
+	} {
+		if got := style(c.line, c.text); got != c.st {
+			t.Errorf("line %d %q styled %v, want %v", c.line, c.text, got, c.st)
+		}
+	}
+	for j, want := range map[int]bool{1: false, 2: true, 3: true, 4: false, 5: false, 6: false, 7: false, 8: false, 10: false, 14: false, 18: false} {
+		if ks[j].comment != want {
+			t.Errorf("line %d starts in a comment: %v, want %v", j, ks[j].comment, want)
 		}
 	}
 }

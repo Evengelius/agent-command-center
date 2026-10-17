@@ -6,8 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"charm.land/lipgloss/v2"
-
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -29,11 +27,6 @@ type treeRow struct {
 	l    line
 	node Node
 }
-
-var (
-	stInferred   = style(stText.Italic(true))
-	stTreeCursor = style(lipgloss.NewStyle().Foreground(cText).Background(lipgloss.Color("#2E3247")))
-)
 
 // Tree is zone A's nodes in the order they show, folded nodes' children
 // left out: what ↑ and ↓ move through.
@@ -379,8 +372,14 @@ func toolTarget(in json.RawMessage) string {
 // treeWindow keeps the cursor's row visible in room rows: the tail without
 // a cursor, and the cursor's row at the top once it is above the tail.
 func treeWindow(rows []treeRow, cursor string, room int) []treeRow {
+	top := treeTop(rows, cursor, room)
+	return rows[top:min(top+room, len(rows))]
+}
+
+// treeTop is treeWindow's first row.
+func treeTop(rows []treeRow, cursor string, room int) int {
 	if len(rows) <= room {
-		return rows
+		return 0
 	}
 	top := len(rows) - room
 	for i, r := range rows {
@@ -388,7 +387,29 @@ func treeWindow(rows []treeRow, cursor string, room int) []treeRow {
 			top = i
 		}
 	}
-	return rows[top : top+room]
+	return top
+}
+
+// paneTop is the first of rows a pane shows in room: its own top while held,
+// kept in range, else rest (plan 5, item 5).
+func paneTop(p Pane, rows, room, rest int) int {
+	if !p.Hold {
+		return rest
+	}
+	return min(max(p.Top, 0), max(rows-room, 0))
+}
+
+// heldHint is a held pane's hint row: the rows out of view, then the key
+// that returns it to where it rests.
+func heldHint(above, below int, back string) line {
+	var parts []string
+	if above > 0 {
+		parts = append(parts, fmt.Sprintf("↑ %d", above))
+	}
+	if below > 0 {
+		parts = append(parts, fmt.Sprintf("↓ %d", below))
+	}
+	return decoLine(strings.Join(parts, " ")+" · "+back, stProgress)
 }
 
 // cursorLine restyles a row's content for the cursor; symbols keep their

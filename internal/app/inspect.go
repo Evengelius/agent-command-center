@@ -4,6 +4,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/Evengelius/agent-command-center/internal/render"
+	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
 // Zone A's tree, zone C's list and the agent inspection (ui-design.md, Zone
@@ -12,7 +13,7 @@ import (
 // openInspect shows agent key full screen, on its Messages tab, following.
 func (m *Model) openInspect(key string) {
 	m.ui.Inspect, m.ui.Tab = key, 0
-	m.ui.Selected = key
+	m.selectAgent(key)
 	m.ui.Sel = render.Selection{}
 	m.inspectFollow()
 }
@@ -38,7 +39,8 @@ func (m *Model) inspectKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		m.setTab(int(s[0] - '1'))
 	case "[", "]":
 		if key := step(render.AgentOrder(m.s), m.ui.Inspect, s == "]"); key != "" {
-			m.ui.Inspect, m.ui.Selected = key, key
+			m.ui.Inspect = key
+			m.selectAgent(key)
 			m.ui.Sel = render.Selection{}
 			m.inspectFollow()
 		}
@@ -148,6 +150,9 @@ func (m *Model) treeKey(k tea.KeyPressMsg) []tea.Cmd {
 		return nil
 	}
 	m.ui.ACursor = nodes[i].ID
+	if k.String() == "up" || k.String() == "down" {
+		m.paneReveal('A', m.ui.ACursor)
+	}
 	return nil
 }
 
@@ -157,9 +162,11 @@ func (m *Model) listKey(k tea.KeyPressMsg) []tea.Cmd {
 	order := render.AgentOrder(m.s)
 	switch k.String() {
 	case "up", "[":
-		m.ui.Selected = step(order, m.ui.Selected, false)
+		m.selectAgent(step(order, m.ui.Selected, false))
+		m.paneReveal('C', m.ui.Selected)
 	case "down", "]":
-		m.ui.Selected = step(order, m.ui.Selected, true)
+		m.selectAgent(step(order, m.ui.Selected, true))
+		m.paneReveal('C', m.ui.Selected)
 	case "enter":
 		key := m.ui.Selected
 		if m.s.Agents[key] == nil && len(order) > 0 {
@@ -259,4 +266,128 @@ func (m *Model) detailsKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		return nil, false
 	}
 	return nil, true
+}
+
+// openView shows approval id, or else conversation entry n (1-based), whole,
+// full screen, from its top (ui-design.md, Approvals: Enter; Zone B,
+// Expanding).
+func (m *Model) openView(id string, n int) {
+	m.ui.View, m.ui.ViewEntry = id, n
+	m.ui.Sel = render.Selection{}
+	m.ui.InspectHold, m.ui.InspectTop = true, 0
+	if m.screen != nil {
+		m.screen.Inspect.Top = 0
+	}
+}
+
+// viewKey handles a key while an approval or an entry is shown whole: a, d
+// and c answer an approval as on its card, which keeps the focus; done is
+// false for the keys that keep their dashboard meaning.
+func (m *Model) viewKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
+	if m.ui.View != "" && m.s.Approvals[m.ui.View] == nil || m.ui.ViewEntry > len(m.s.Conversation) { // gone with a resumed session
+		m.closeView()
+		return nil, false
+	}
+	switch s := k.String(); s {
+	case "esc":
+		if !m.ui.Sel.Empty() {
+			m.ui.Sel = render.Selection{} // Esc clears a selection first
+			return nil, true
+		}
+		m.closeView() // back to the card, or to the input once it is answered
+	case "a", "d", "c", "s":
+		if m.ui.View == "" || m.ui.Card != m.ui.View || m.s.Approvals[m.ui.View].Status != state.Pending {
+			return nil, true // answered or expired: nothing to answer
+		}
+		m.closeView()
+		return m.cardKey(k)
+	case "up":
+		m.inspectScroll(-1)
+	case "down":
+		m.inspectScroll(1)
+	case "pgup", "pgdown":
+		m.inspectPage(s == "pgdown")
+	case "home":
+		m.ui.InspectHold, m.ui.InspectTop = true, 0
+	case "end":
+		m.inspectFollow()
+	case "ctrl+c", "ctrl+shift+c", "f12", "ctrl+o", "shift+pgup", "shift+pgdown", "ctrl+r", "F":
+		return nil, false
+	}
+	return nil, true
+}
+
+func (m *Model) closeView() {
+	m.ui.View, m.ui.ViewEntry = "", 0 // an entry's cursor stays on it
+	m.ui.Sel = render.Selection{}
+	m.ui.InspectHold, m.ui.InspectTop = false, 0
+	if m.ui.Card == "" {
+		m.ui.Focus = "B"
+	}
+}
+
+// entryKey handles a key while zone B's entry cursor is on (ui-design.md,
+// Zone B, Expanding): ↑ ↓ move it, Enter or → shows its entry whole, Esc
+// returns to the input. done is false for the keys that keep their meaning;
+// any other key leaves the cursor and reaches the input, so typing types.
+func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
+	if m.ui.Entry > len(m.s.Conversation) || m.ui.Focus != "B" || m.ui.Card != "" {
+		m.ui.Entry = 0
+		return nil, false
+	}
+	switch k.String() {
+	case "up":
+		m.moveEntry(m.ui.Entry-1, -1)
+	case "down":
+		if !m.moveEntry(m.ui.Entry+1, 1) {
+			m.ui.Entry = 0 // past the newest: the input
+		}
+	case "enter", "right":
+		m.openView("", m.ui.Entry)
+	case "esc":
+		if !m.ui.Sel.Empty() {
+			m.ui.Sel = render.Selection{} // Esc clears a selection first
+			return nil, true
+		}
+		m.ui.Entry = 0
+	case "pgup", "pgdown", "shift+pgup", "shift+pgdown", "ctrl+c", "ctrl+shift+c", "f12", "ctrl+o", "ctrl+r":
+		return nil, false
+	default:
+		m.ui.Entry = 0
+		return nil, false
+	}
+	return nil, true
+}
+
+// moveEntry puts the entry cursor on the first expandable entry from n
+// (1-based) in direction d, and scrolls B to it; false if there is none.
+func (m *Model) moveEntry(n, d int) bool {
+	for ; n >= 1 && n <= len(m.s.Conversation); n += d {
+		if render.Expandable(m.s.Conversation[n-1]) {
+			m.ui.Entry = n
+			m.reveal(n)
+			return true
+		}
+	}
+	return false
+}
+
+// reveal scrolls B the least that shows entry n (1-based) whole, its end
+// when it is taller than B: the cursor's row is its last.
+func (m *Model) reveal(n int) {
+	if m.screen == nil || n >= len(m.screen.Conv.Starts) {
+		return
+	}
+	c := m.screen.Conv
+	top := c.Top
+	if m.ui.ConvHold {
+		top = min(max(m.ui.ConvTop, 0), max(c.Rows-c.Room, 0))
+	}
+	to := min(top, c.Starts[n-1])
+	if end := c.Starts[n]; end > to+c.Room {
+		to = end - c.Room
+	}
+	if to != top {
+		m.scroll(to - top)
+	}
 }

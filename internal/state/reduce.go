@@ -506,6 +506,10 @@ func (s *State) agent(ev event.Event, p event.Agent) []Command {
 			a = s.ensureAgent(key, ev)
 		}
 		if a.Status.Final() {
+			if p == (event.Agent{Key: p.Key, Model: p.Model}) { // the model of a message that ended late: no progress
+				s.update(a, p)
+				return nil
+			}
 			a.History = append(a.History, "progress after end")
 			return nil
 		}
@@ -570,6 +574,9 @@ func (s *State) update(a *Agent, p event.Agent) {
 	if p.Summary != "" {
 		a.Summary = p.Summary
 	}
+	if p.Model != "" { // only the agent's own, never the session's (plan 5, item 7)
+		a.Model = Value{Present: true, Text: p.Model, Origin: event.Observed, Documented: true, Source: "agent model"}
+	}
 }
 
 // agentSet applies Claude Code's background task set: replace, not merge.
@@ -602,7 +609,7 @@ func (s *State) requested(ev event.Event, p event.Approval) []Command {
 		id = "unreadable:" + itoa(ev.Seq)
 	}
 	a := &Approval{ID: id, Agent: ev.Agent, Tool: p.Tool, Display: p.Display, Summary: p.Summary, ToolID: p.ToolID,
-		Input: p.Input, Question: ev.Kind == event.Question, Problem: p.Problem, Raw: ev.Raw, Status: Pending, RequestedAt: ev.At}
+		Input: p.Input, Question: ev.Kind == event.Question, ForSession: contains(p.Offered, "acceptForSession"), Problem: p.Problem, Raw: ev.Raw, Status: Pending, RequestedAt: ev.At}
 	s.Approvals[id] = a
 	s.Queue = append(s.Queue, id)
 	s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "approval", Agent: ev.Agent, MessageID: id, Text: p.Tool, Origin: ev.Origin, At: ev.At})

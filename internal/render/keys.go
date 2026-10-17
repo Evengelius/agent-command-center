@@ -25,7 +25,7 @@ var KeyTable = []keyGroup{
 		{"F2", "go to the oldest pending approval"},
 		{"F6 / Shift+F6", "next / previous zone (B, C, A, D)"},
 		{"Tab / Shift+Tab", "next / previous zone, outside the editor"},
-		{"Esc", "close the overlay, leave zoom or inspection, clear the selection, back to the input"},
+		{"Esc", "close the overlay, leave zoom, inspection or a full view, clear the selection, back to the input"},
 		{"Shift+PgUp / Shift+PgDn", "scroll the conversation from any focus"},
 		{"F12", "toggle mouse capture (native terminal selection when off)"},
 		{"F1, ?", "this overlay (? outside the editor)"},
@@ -38,15 +38,22 @@ var KeyTable = []keyGroup{
 		{"1 2 3 4", "inspection: Messages, Tools, Diff, Raw events"},
 		{"Enter", "inspect the agent; in D, list errors and telemetry"},
 		{"z", "zoom the panel full screen; z or Esc again restores"},
-		{"PgUp PgDn Home End", "scroll; End resumes follow mode"},
+		{"PgUp PgDn Home End", "page, top, end; End follows again (A, inspection)"},
 		{"[ ]", "previous / next agent (inspection)"},
 	}},
 	{"THE APPROVAL CARD (F2 gives it the focus)", [][2]string{
 		{"a", "allow once"},
+		{"s", "allow for the session, when a Codex request offers it"},
 		{"d", "deny / decline"},
 		{"c", "cancel the turn"},
+		{"Enter", "the whole command, diff or question, full screen; a s d c answer there too"},
 		{"↑ ↓", "previous / next pending card"},
 		{"Esc", "later: back to the input, still pending"},
+	}},
+	{"B'S ENTRIES (↑ from an empty input)", [][2]string{
+		{"↑ ↓", "previous / next folded message, tool or failure; ↓ past the last, the input"},
+		{"Enter or →", "the whole entry, full screen; Esc back to the cursor"},
+		{"Esc, or typing", "back to the input"},
 	}},
 	{"THE EDITOR", [][2]string{
 		{"← → ↑ ↓ Home End", "move; Ctrl+Home and Ctrl+End the whole draft"},
@@ -89,5 +96,5 @@ func keysBody(w int) []line {
 func keysOverlay(s *state.State, ui UI, sc *Screen) []line {
 	head := spread(line{deco(" ◀ back (Esc)   ", stTitle), deco("KEYS", stBold)},
 		decoLine("F1 or Esc closes ", stGrey), ui.Width)
-	return fullScreen(s, ui, sc, head, keysBody(ui.Width-2))
+	return fullScreen(s, ui, sc, head, keysBody(ui.Width-2), scrollKeys)
 }

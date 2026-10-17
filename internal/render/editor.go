@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"charm.land/lipgloss/v2"
-
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -22,12 +20,6 @@ type EditorView struct {
 	To      [2]int // the selection's end, exclusive
 	Pasting bool   // between a paste's start and end markers
 }
-
-var (
-	stCursor   = style(lipgloss.NewStyle().Foreground(lipgloss.Color("#111827")).Background(cTitle))
-	stSelected = style(lipgloss.NewStyle().Foreground(cText).Background(lipgloss.Color("#4C4F6B")))
-	stControl  = style(lipgloss.NewStyle().Foreground(cAttention))
-)
 
 // TabWidth is the cells a tab takes on screen; the text keeps the tab
 // (ui-design.md, Input editor, Content; Markdown, Code blocks).

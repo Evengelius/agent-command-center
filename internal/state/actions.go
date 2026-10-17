@@ -252,7 +252,7 @@ func (s *State) stopWork() []Command {
 	var cmds []Command
 	for _, id := range s.Queue {
 		if ap := s.Approvals[id]; ap.Status == Pending {
-			ap.Status = Answering
+			ap.Status, ap.Cancelled = Answering, true
 			cmds = append(cmds, Command{Kind: CmdAnswer, ID: id, Decision: "cancel"})
 		}
 	}
@@ -302,7 +302,7 @@ func (s *State) interrupt() []Command {
 	// Cancelling the turn first denies the orchestrator's pending approvals.
 	for _, id := range s.Queue {
 		if ap := s.Approvals[id]; ap.Agent == "" && ap.Status == Pending {
-			ap.Status = Answering
+			ap.Status, ap.Cancelled = Answering, true
 			cmds = append(cmds, Command{Kind: CmdAnswer, ID: id, Decision: "cancel"})
 		}
 	}
@@ -320,6 +320,10 @@ func (s *State) answer(a Answer) []Command {
 		// Answers that persist a rule (permission_suggestions, execpolicy or
 		// network amendments) are never offered (events-and-state.md, Approval machine).
 		s.doNote("answer refused: " + a.Decision)
+		return nil
+	}
+	if a.Decision == "acceptForSession" && !ap.ForSession {
+		s.doNote("answer refused: acceptForSession not offered by " + a.ID) // plan 5, item 8
 		return nil
 	}
 	if ap.Status != Pending {
@@ -363,7 +367,7 @@ func (s *State) cancelTurn(a CancelTurn) []Command {
 	if s.Session.Phase != Ready || (s.Turn.Phase != Running && s.Turn.Phase != WaitingApproval) {
 		return s.interrupt() // says why nothing is interrupted
 	}
-	ap.Status = Answering
+	ap.Status, ap.Cancelled = Answering, true
 	cmds := []Command{{Kind: CmdAnswer, ID: a.ID, Decision: "cancel"}}
 	return append(cmds, s.interrupt()...)
 }

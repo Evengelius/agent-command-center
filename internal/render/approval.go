@@ -43,6 +43,9 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int) []line {
 	}
 	switch ap.Status {
 	case state.Allowed:
+		if ap.Answer == "acceptForSession" {
+			return []line{head("✓ ", stDone, deco("  allowed for the session by you "+clockSec(ap.AnsweredAt), stDone))}
+		}
 		return []line{head("✓ ", stDone, deco("  allowed by you "+clockSec(ap.AnsweredAt), stDone))}
 	case state.Denied:
 		if ap.Problem != "" {
@@ -50,6 +53,9 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int) []line {
 				head("✗ ", stFailed, deco("  denied automatically: request not readable", stFailed)),
 				decoLine("  "+cut(ap.Problem, max(w-2, 1)), stGrey),
 			}
+		}
+		if ap.Question && !ap.Cancelled { // denied with QuestionDenyMessage (plan 5, item 10)
+			return []line{head("✗ ", stFailed, deco("  denied by you "+clockSec(ap.AnsweredAt)+" · answer in your next message", stFailed))}
 		}
 		return []line{head("✗ ", stFailed, deco("  denied by you "+clockSec(ap.AnsweredAt), stFailed))}
 	case state.Expired:
@@ -75,13 +81,22 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int) []line {
 	case ap.Status == state.Answering:
 		out = append(out, decoLine("  sending answer…", stProgress))
 	case focused && ap.Question:
-		out = append(out, decoLine("  ▸ d deny, then answer in your next message · c cancel the turn · Esc later", stAttention))
+		out = append(out, decoLine("  ▸ d deny, then answer in your next message · c cancel the turn · Enter full view · Esc later", stAttention))
 	case focused:
-		out = append(out, decoLine("  ▸ a allow once · d deny · c cancel the turn · Esc later · ↑ ↓ other approvals", stAttention))
+		out = append(out, decoLine("  ▸ a allow once · "+forSession(ap)+"d deny · c cancel the turn · Enter full view · Esc later · ↑ ↓ other approvals", stAttention))
 	default:
 		out = append(out, decoLine("  F2 to answer", stGrey))
 	}
 	return out
+}
+
+// forSession is the hint for s, only when the request offers it (plan 5,
+// item 8).
+func forSession(ap *state.Approval) string {
+	if ap.ForSession && !ap.Question {
+		return "s allow for the session · "
+	}
+	return ""
 }
 
 // approvalWho is who asks: the orchestrator or the agent's label.

@@ -325,8 +325,9 @@ func (m *Mapper) serverRequest(r rpc, raw []byte) []event.Event {
 	id := idString(r.ID)
 	var p struct {
 		ids
-		Reason  *string `json:"reason"`
-		Command string  `json:"command"`
+		Reason  *string           `json:"reason"`
+		Command string            `json:"command"`
+		Offered []json.RawMessage `json:"availableDecisions"` // app-server README; not in 0.163.0's generated schema
 	}
 	err := json.Unmarshal(r.Params, &p)
 	a := event.Approval{ID: id, Tool: tool, ToolID: p.ItemID, Input: r.Params}
@@ -354,6 +355,12 @@ func (m *Mapper) serverRequest(r rpc, raw []byte) []event.Event {
 	}
 	if tool == "commandExecution" {
 		a.Display = p.Command
+	}
+	for _, d := range p.Offered {
+		var s string
+		if json.Unmarshal(d, &s) == nil { // the amendments are objects: never kept, never offered
+			a.Offered = append(a.Offered, s)
+		}
 	}
 	agent := m.agentOf(p.ThreadID)
 	m.server[id] = serverReq{agent: agent, turn: p.TurnID, item: p.ItemID, tool: tool}
@@ -539,6 +546,7 @@ type item struct {
 	Kind              string          `json:"kind"`
 	AgentThreadID     string          `json:"agentThreadId"`
 	AgentPath         string          `json:"agentPath"`
+	Model             string          `json:"model"` // subAgentActivity, Codex 0.163.0 (P7b); absent before
 	SenderThreadID    string          `json:"senderThreadId"`
 	ReceiverThreadIDs []string        `json:"receiverThreadIds"`
 	AgentsStates      map[string]struct {
@@ -592,7 +600,7 @@ func (m *Mapper) subAgent(it item, parent, turn string, line []byte) []event.Eve
 		// orchestrator is not an agent of zone C.
 		return []event.Event{m.status(parent, line, it.Kind+" "+first(it.AgentPath, "orchestrator"), "")}
 	}
-	a := event.Agent{Key: it.AgentThreadID, Parent: parent, Label: it.AgentPath, Type: "thread", Status: it.Kind}
+	a := event.Agent{Key: it.AgentThreadID, Parent: parent, Label: it.AgentPath, Type: "thread", Status: it.Kind, Model: it.Model}
 	k := event.AgentProgress
 	switch it.Kind {
 	case "started":

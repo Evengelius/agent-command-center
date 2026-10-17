@@ -159,6 +159,7 @@ type Agent struct {
 	ToolUses     int
 	LastTool     string
 	Summary      string
+	Model        string // the agent's own model as its CLI reports it; "" when not reported
 }
 
 // AgentKeys is the payload of AgentSet.
@@ -174,8 +175,9 @@ type Approval struct {
 	Summary  string
 	ToolID   string
 	Input    json.RawMessage
-	Decision string // allow, deny (resolved only)
-	Problem  string // why the request could not be read, when it could not
+	Decision string   // allow, deny (resolved only)
+	Problem  string   // why the request could not be read, when it could not
+	Offered  []string // the decisions the request lists (Codex availableDecisions, strings only); nil when it lists none
 }
 
 // Metric is one telemetry value. Documented is false for values from an

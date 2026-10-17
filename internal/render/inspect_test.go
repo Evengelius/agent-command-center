@@ -217,7 +217,7 @@ func TestTreeP3b(t *testing.T) {
 	if strings.Count(rows, "observed") != 2 || strings.Contains(rows, "more as events arrive") {
 		t.Errorf("want the tool and the agent observed, no 'more' once ended:\n%s", rows)
 	}
-	a := texts(zoneA(s, ui, 34, 30))
+	a := texts(zoneA(s, ui, 34, 30, &Screen{}))
 	if !strings.Contains(a, "STAGES  inferred from activity") {
 		t.Errorf("zone A heading:\n%s", a)
 	}
@@ -240,7 +240,7 @@ func TestTreeP7Running(t *testing.T) {
 		s.Apply(ev)
 		if s.Turn.Phase != state.Idle && labelled(s) == 2 && !mid {
 			mid = true
-			rows := texts(zoneA(s, ui, 60, 30))
+			rows := texts(zoneA(s, ui, 60, 30, &Screen{}))
 			if !strings.Contains(rows, "○ (more as events arrive)") {
 				t.Errorf("running turn without 'more':\n%s", rows)
 			}
@@ -252,7 +252,7 @@ func TestTreeP7Running(t *testing.T) {
 			p.Stages = append([]state.Stage(nil), s.Stages...)
 			p.Apply(event.Event{Seq: 1 << 40, Kind: event.StageChanged, Origin: event.Observed,
 				Payload: event.Plan{Steps: []event.PlanStep{{Step: "list files", Status: "completed"}, {Step: "create found.txt", Status: "inProgress"}, {Step: "reply", Status: "pending"}}}})
-			plan := texts(zoneA(&p, ui, 60, 30))
+			plan := texts(zoneA(&p, ui, 60, 30, &Screen{}))
 			for _, want := range []string{"PLAN  observed (turn/plan/updated)", "✓ 1 list files", "◉ 2 create found.txt", "○ 3 reply", "○ (more as events arrive)"} {
 				if !strings.Contains(plan, want) {
 					t.Errorf("plan lacks %q:\n%s", want, plan)
@@ -263,7 +263,7 @@ func TestTreeP7Running(t *testing.T) {
 	if !mid {
 		t.Fatal("never saw both children during the turn")
 	}
-	if rows := texts(zoneA(s, ui, 60, 30)); strings.Contains(rows, "more as events arrive") {
+	if rows := texts(zoneA(s, ui, 60, 30, &Screen{})); strings.Contains(rows, "more as events arrive") {
 		t.Errorf("'more' after the turn ended:\n%s", rows)
 	}
 }

@@ -298,8 +298,12 @@ func TestApprovalCards(t *testing.T) {
 			}
 			h.m.edit.Clear()
 			h.send(key(tea.KeyF2, 0))
-			if f := frameText(h); !strings.Contains(f, "▸ a allow once · d deny · c cancel the turn · Esc later") {
+			if f := frameText(h); !strings.Contains(f, "▸ a allow once · d deny · c cancel the turn · Enter full view · Esc later") {
 				t.Errorf("focused card lacks its keys:\n%s", f)
+			}
+			h.send(typed('s')) // allow for the session: never for Claude Code (CC-4; plan 5, item 8)
+			if n := len(answersFor(w, id)); n != 0 || h.m.State().Approvals[id].Status != state.Pending || h.m.edit.Text() != "" {
+				t.Fatalf("s on a Claude Code card: %d answers, editor %q", n, h.m.edit.Text())
 			}
 			h.send(typed('a'))
 			h.send(typed('a'))

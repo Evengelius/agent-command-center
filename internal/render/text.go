@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"charm.land/lipgloss/v2"
 )
@@ -221,44 +222,70 @@ func cut(s string, w int) string {
 // wrap breaks text into lines at most w cells wide, at spaces where it can.
 // Tabs become four spaces; other control characters are dropped.
 func wrap(text string, w int) []string {
-	if w < 1 {
-		w = 1
+	var out []string
+	for _, para := range paragraphs(text) {
+		for _, r := range wrapPara(para, w) {
+			out = append(out, para[r.from:r.to])
+		}
 	}
+	return out
+}
+
+// paragraphs are text's lines as wrap draws them: tabs as four spaces,
+// other control characters dropped.
+func paragraphs(text string) []string {
 	text = strings.ReplaceAll(text, "\r\n", "\n")
 	text = strings.ReplaceAll(text, "\t", "    ")
-	var out []string
-	for _, para := range strings.Split(text, "\n") {
-		para = strings.Map(func(r rune) rune {
+	ps := strings.Split(text, "\n")
+	for i, p := range ps {
+		ps[i] = strings.Map(func(r rune) rune {
 			if r < 0x20 || r == 0x7f {
 				return -1
 			}
 			return r
-		}, para)
-		if para == "" {
-			out = append(out, "")
+		}, p)
+	}
+	return ps
+}
+
+// wrapPara breaks one paragraph into rows at most w cells wide, as byte
+// ranges of para; a row broken at spaces leaves them out.
+func wrapPara(para string, w int) []rowRange {
+	if w < 1 {
+		w = 1
+	}
+	if para == "" {
+		return []rowRange{{0, 0}}
+	}
+	var out []rowRange
+	trimmed := func(from, to int) rowRange {
+		for to > from && para[to-1] == ' ' {
+			to--
+		}
+		return rowRange{from, to}
+	}
+	start, pos, cw := 0, 0, 0 // the current row is para[start:pos]
+	for _, word := range strings.SplitAfter(para, " ") {
+		ww := textWidth(word)
+		if cw+ww <= w {
+			pos, cw = pos+len(word), cw+ww
 			continue
 		}
-		cur, cw := "", 0
-		for _, word := range strings.SplitAfter(para, " ") {
-			ww := textWidth(word)
-			if cw+ww <= w {
-				cur, cw = cur+word, cw+ww
-				continue
-			}
-			if cur != "" {
-				out = append(out, strings.TrimRight(cur, " "))
-				cur, cw = "", 0
-			}
-			for textWidth(word) > w {
-				head := cut(word, w)
-				out = append(out, head)
-				word = word[len(head):]
-			}
-			cur, cw = word, textWidth(word)
+		if pos > start {
+			out = append(out, trimmed(start, pos))
 		}
-		out = append(out, strings.TrimRight(cur, " "))
+		for textWidth(word) > w {
+			head := cut(word, w)
+			if head == "" { // a rune wider than the row takes a row alone
+				_, n := utf8.DecodeRuneInString(word)
+				head = word[:n]
+			}
+			out = append(out, rowRange{pos, pos + len(head)})
+			pos, word = pos+len(head), word[len(head):]
+		}
+		start, pos, cw = pos, pos+len(word), textWidth(word)
 	}
-	return out
+	return append(out, trimmed(start, pos))
 }
 
 // box draws panel p: a rounded frame w wide and h high around body, with a

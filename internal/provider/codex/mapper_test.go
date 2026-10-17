@@ -371,3 +371,101 @@ func TestDeterministic(t *testing.T) {
 		}
 	}
 }
+
+// A command that failed completes its call as an error, its aggregated output
+// as the output (plan 5, item 6: B marks the call ✗ with that output's first
+// line). P7 has one, p7b two, all children's.
+func TestFailedCommand(t *testing.T) {
+	for _, c := range []struct {
+		file string
+		want []string
+	}{
+		{"p7-codex-subagents.jsonl", []string{"exec-8519b056-1ecc-4773-8aa3-ad18ba31e7c8 Cannot invoke method."}},
+		{"p7b-codex-subagents.jsonl", []string{"exec-f0113449-fe16-4fee-9b99-226b2ec86369 \r\nFullName", "exec-25fb5cc3-231b-4d2a-b6c3-e0096bba1852 Set-Content : Access to the path"}},
+	} {
+		_, per := replay(t, c.file)
+		var got []string
+		for _, e := range fixture.Flatten(per) {
+			if p, ok := e.Payload.(event.Tool); ok && e.Kind == event.ToolCompleted && p.IsError {
+				got = append(got, p.ToolID+" "+p.Output)
+			}
+		}
+		if len(got) != len(c.want) {
+			t.Errorf("%s: failed calls %q, want %d", c.file, got, len(c.want))
+			continue
+		}
+		for i, w := range c.want {
+			if !strings.HasPrefix(got[i], w) {
+				t.Errorf("%s: failed call %q, want it to start %q", c.file, got[i], w)
+			}
+		}
+	}
+}
+
+// TestSubagentModel is plan 5, item 7, criterion 2: Codex 0.163.0's
+// subAgentActivity gives each child its model (P7b); 0.145.0 reports none
+// (P7).
+func TestSubagentModel(t *testing.T) {
+	for _, c := range []struct {
+		file string
+		want map[string]string
+	}{
+		{"p7-codex-subagents.jsonl", map[string]string{}},
+		{"p7b-codex-subagents.jsonl", map[string]string{
+			"01a14937-2992-7d51-8e12-7ff3613a8069": "gpt-6-sol", // /root/list_files
+			"01a14937-2f86-7543-9d91-e0a0e52125cc": "gpt-6-sol", // /root/create_found
+		}},
+	} {
+		_, per := replay(t, c.file)
+		got := map[string]string{}
+		for _, e := range fixture.Flatten(per) {
+			if p, ok := e.Payload.(event.Agent); ok && p.Model != "" {
+				if e.Kind != event.AgentStarted {
+					t.Errorf("%s: model %q on %s", c.file, p.Model, e.Kind)
+				}
+				got[p.Key] = p.Model
+			}
+		}
+		if len(got) != len(c.want) {
+			t.Errorf("%s: models %v, want %v", c.file, got, c.want)
+		}
+		for k, w := range c.want {
+			if got[k] != w {
+				t.Errorf("%s: %s model %q, want %q", c.file, k, got[k], w)
+			}
+		}
+	}
+}
+
+// TestOfferedDecisions is plan 5, item 8, criterion 1: a request's
+// availableDecisions strings are kept, never its amendments (objects); no
+// recorded request lists any.
+func TestOfferedDecisions(t *testing.T) {
+	for _, name := range []string{"p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl"} {
+		_, per := replay(t, name)
+		for _, e := range fixture.Flatten(per) {
+			if a, ok := e.Payload.(event.Approval); ok && e.Kind == event.ApprovalRequest && a.Offered != nil {
+				t.Errorf("%s: offered %q", name, a.Offered)
+			}
+		}
+	}
+	for _, c := range []struct {
+		list string
+		want []string
+	}{
+		// L3's request, Codex 0.145.0 (plan.md, plan 4, step 5 rerun).
+		{`["accept",{"acceptWithExecpolicyAmendment":{"execpolicy_amendment":["go","vet"]}},"cancel"]`, []string{"accept", "cancel"}},
+		{`["accept","acceptForSession",{"applyNetworkPolicyAmendment":{}},"decline","cancel"]`, []string{"accept", "acceptForSession", "decline", "cancel"}},
+		{`[]`, nil},
+		{`null`, nil},
+	} {
+		line := `{"id":3,"method":"item/commandExecution/requestApproval","params":{"threadId":"t","turnId":"u","itemId":"i","command":"go vet","availableDecisions":` + c.list + `}}`
+		evs := NewMapper().Out([]byte(line))
+		if len(evs) != 1 || evs[0].Kind != event.ApprovalRequest {
+			t.Fatalf("%s: %+v", c.list, evs)
+		}
+		if a := evs[0].Payload.(event.Approval); !slices.Equal(a.Offered, c.want) || a.Problem != "" {
+			t.Errorf("%s: offered %q, problem %q; want %q", c.list, a.Offered, a.Problem, c.want)
+		}
+	}
+}

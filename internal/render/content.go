@@ -12,16 +12,42 @@ import (
 // and copied (ui-design.md, Selection and copy: the content, not the
 // drawing). Labels, symbols and the streaming cursor are drawn around them
 // and never part of them. Step 8's Markdown renderer draws these same lines,
-// styled, so selection and copy do not change with it.
-func entryLines(e state.Entry) []string {
+// styled, so selection and copy do not change with it. A failed tool call
+// adds its error as a second line, drawn on the same row (plan 5, item 6).
+func entryLines(s *state.State, e state.Entry) []string {
 	switch e.Role {
-	case "tool", "approval", "error":
+	case "tool":
+		name, _, _ := strings.Cut(e.Text, "\n")
+		if err := toolError(s, e); err != "" {
+			return []string{name, err}
+		}
+		return []string{name}
+	case "approval", "error":
 		if i := strings.IndexByte(e.Text, '\n'); i >= 0 {
 			return []string{e.Text[:i]}
 		}
 		return []string{e.Text}
 	}
 	return strings.Split(e.Text, "\n")
+}
+
+// toolError is what B shows of a failed call's error: the first non-blank
+// line of its output, as received; "" when the call did not fail or wrote
+// nothing.
+func toolError(s *state.State, e state.Entry) string {
+	if s == nil {
+		return ""
+	}
+	tc := s.Tools[e.MessageID]
+	if tc == nil || tc.Status != state.ToolFailed {
+		return ""
+	}
+	for l := range strings.SplitSeq(tc.Output, "\n") {
+		if l = strings.TrimRight(l, " \t\r"); strings.TrimSpace(l) != "" {
+			return l
+		}
+	}
+	return ""
 }
 
 // Long sent messages fold to their first lines (ui-design.md, Zone B, Long
@@ -120,6 +146,28 @@ func rowLine(src string, r rowRange, at ref, st *lipgloss.Style, runs []styleRun
 		cs[i].off += r.from
 	}
 	return cellSpans(src, cs, at, st, runs)
+}
+
+// styledRow is row r of src as spans of its runs' styles, st without runs;
+// they are not keyed, so a panel keys them as its row's content (the
+// inspection's Messages tab, plan 5, item 11).
+func styledRow(src string, r rowRange, runs []styleRun, st *lipgloss.Style) line {
+	if runs == nil || r.from == r.to {
+		return plain(src[r.from:r.to], st)
+	}
+	var l line
+	from := 0
+	for _, x := range runs {
+		a, b := max(from, r.from), min(x.to, r.to)
+		if a < b {
+			l = append(l, sp(src[a:b], x.st))
+		}
+		from = x.to
+	}
+	if from < r.to { // past the last run: the base style
+		l = append(l, sp(src[max(from, r.from):r.to], st))
+	}
+	return l
 }
 
 // WrapCache keeps where source lines break, so a frame wraps only the lines

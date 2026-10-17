@@ -90,9 +90,14 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 	}
 	// F1 anywhere, ? outside the editor: the key overlay (ui-design.md, Focus
 	// and keys).
-	if k.String() == "f1" || k.Text == "?" && (m.ui.Focus != "B" || m.ui.Card != "" || m.ui.Inspect != "" || m.ui.Details) {
+	if k.String() == "f1" || k.Text == "?" && (m.ui.Focus != "B" || m.ui.Card != "" || m.ui.Inspect != "" || m.ui.Details || m.ui.View != "" || m.ui.ViewEntry > 0) {
 		m.openOverlay()
 		return nil
+	}
+	if m.ui.View != "" || m.ui.ViewEntry > 0 {
+		if cmds, done := m.viewKey(k); done {
+			return cmds
+		}
 	}
 	if m.ui.Card != "" {
 		if cmds, done := m.cardKey(k); done {
@@ -106,6 +111,11 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 	}
 	if m.ui.Details {
 		if cmds, done := m.detailsKey(k); done {
+			return cmds
+		}
+	}
+	if m.ui.Entry > 0 {
+		if cmds, done := m.entryKey(k); done {
 			return cmds
 		}
 	}
@@ -185,14 +195,24 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 		case "pgup", "pgdown":
 			m.scroll(m.pageStep(k.String() == "pgdown"))
 			return nil
+		case "up":
+			// ↑ from an empty input: the cursor on the newest entry B shows
+			// in part (ui-design.md, Zone B, Expanding).
+			if m.ui.Card == "" && m.edit.Text() == "" && m.moveEntry(len(m.s.Conversation), -1) {
+				return nil
+			}
 		}
 		return m.editorKey(k)
 	case "A":
+		if m.paneKey('A', k.String()) {
+			return nil
+		}
 		return m.treeKey(k)
 	case "C":
-		if k.String() != "end" {
-			return m.listKey(k)
+		if m.paneKey('C', k.String()) {
+			return nil
 		}
+		return m.listKey(k)
 	case "D":
 		if k.String() == "enter" {
 			m.openDetails()
@@ -200,7 +220,7 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 		}
 	}
 	if k.String() == "end" {
-		m.follow() // End resumes follow mode; in B, End is the editor's
+		m.follow() // End resumes follow mode; in B, End is the editor's, in A and C the pane's
 	}
 	return nil
 }
@@ -279,7 +299,7 @@ func step(list []string, cur string, forward bool) string {
 }
 
 // cardKey handles a key while an approval card has the focus (ui-design.md,
-// Approvals). Only a focused card takes a, d and c, and the focus stays on
+// Approvals). Only a focused card takes a, s, d and c, and the focus stays on
 // the card until its answer is final, so a second press never answers
 // another card. Letters typed meanwhile go nowhere; done is false for the
 // keys that keep their usual meaning (Ctrl+Q, F6, ...).
@@ -287,14 +307,25 @@ func (m *Model) cardKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	ap := m.s.Approvals[m.ui.Card]
 	switch k.String() {
 	case "a":
+		if ap.Question { // allowing would echo the unanswered questions (CC-10 q3)
+			return nil, true // not offered: nothing sent (plan 5, item 10)
+		}
 		return m.do(state.Answer{ID: ap.ID, Decision: m.decision(true)}), true
 	case "d":
 		return m.do(state.Answer{ID: ap.ID, Decision: m.decision(false)}), true
+	case "s":
+		if !ap.ForSession || ap.Question { // only a Codex request lists acceptForSession
+			return nil, true // not offered: nothing sent
+		}
+		return m.do(state.Answer{ID: ap.ID, Decision: "acceptForSession"}), true
 	case "c":
 		return m.do(state.CancelTurn{ID: ap.ID}), true
 	case "esc":
 		m.ui.Card = "" // later: back to the input, still pending
 		m.ui.Focus = "B"
+		return nil, true
+	case "enter":
+		m.openView(ap.ID, 0)
 		return nil, true
 	case "up", "down":
 		return m.focusCard(ap.ID, k.String() == "down"), true
@@ -303,10 +334,10 @@ func (m *Model) cardKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 }
 
 // decision is the CLI's word for allow once or deny (ui-design.md,
-// Approvals). Allow for the session (s) is never offered for Claude Code
-// (CC-4), nor for Codex: the adapter does not read availableDecisions, so
-// acceptForSession is never known to be allowed (plan 4, step 5, check 4;
-// L3 saw it offer acceptWithExecpolicyAmendment, never to be offered).
+// Approvals). Allow for the session (s, in cardKey) is never offered for
+// Claude Code (CC-4), and for Codex only when the request lists
+// acceptForSession in availableDecisions (plan 5, item 8); the amendments
+// it may list are never offered.
 func (m *Model) decision(allow bool) string {
 	switch {
 	case m.s.Context.Provider == "codex" && allow:

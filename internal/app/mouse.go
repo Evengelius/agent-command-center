@@ -71,6 +71,15 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			case tea.MouseWheelDown:
 				m.scroll(wheelRows)
 			}
+		} else if p == 'A' || p == 'C' || p == 'P' {
+			// The pane under the pointer, whatever has the focus (plan 5,
+			// item 5).
+			switch mo.Button {
+			case tea.MouseWheelUp:
+				m.paneScroll(p, -wheelRows)
+			case tea.MouseWheelDown:
+				m.paneScroll(p, wheelRows)
+			}
 		}
 	}
 	return nil

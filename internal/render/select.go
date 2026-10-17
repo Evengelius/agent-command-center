@@ -41,6 +41,9 @@ type ConvView struct {
 	Top  int  // the first row shown
 	Y    int  // the screen row the first shown row is on
 	Held bool // scrolled up: new rows do not move the view
+	// Starts are each entry's first row, then the end of the entries: the
+	// entry cursor keeps its entry in view.
+	Starts []int
 }
 
 // Screen is a drawn frame that still knows what each cell shows, so a mouse
@@ -52,6 +55,15 @@ type Screen struct {
 	src     map[srcKey]string // the text of the panels other than B and E, by row
 	Conv    ConvView
 	Inspect ConvView // what the inspection showed of its tab, for scrolling
+	// What zone A's tree, C's list and C's preview showed, for scrolling;
+	// zero when not drawn.
+	Tree, List, Preview PaneView
+}
+
+// PaneView is what a pane of zone A or C showed (plan 5, item 5).
+type PaneView struct {
+	Rows, Room, Top int
+	IDs             []string // each row's node (A) or agent (C); "" for neither
 }
 
 type srcKey struct {
@@ -69,6 +81,10 @@ func Draw(s *state.State, ui UI) *Screen {
 		ls = tooSmall(s, ui)
 	case s.Screen == state.ScreenDashboard && ui.Keys:
 		ls = keysOverlay(s, ui, sc)
+	case s.Screen == state.ScreenDashboard && ui.View != "" && s.Approvals[ui.View] != nil:
+		ls = viewer(s, ui, s.Approvals[ui.View], sc)
+	case s.Screen == state.ScreenDashboard && ui.ViewEntry > 0 && ui.ViewEntry <= len(s.Conversation):
+		ls = entryViewer(s, ui, ui.ViewEntry-1, sc)
 	case s.Screen == state.ScreenDashboard && ui.Inspect != "" && s.Agents[ui.Inspect] != nil:
 		ls = inspect(s, ui, s.Agents[ui.Inspect], sc)
 	case s.Screen == state.ScreenDashboard && ui.Details:
@@ -296,8 +312,9 @@ func pick(us []unit, x int) (Pos, Pos, bool) {
 	return prev.end, prev.end, true
 }
 
-// Text is the content sel covers: zone B's from the conversation itself,
-// whole logical lines joined by line breaks and entries by a blank line;
+// Text is the content sel covers: zone B's from the conversation itself and
+// the session state after it, whole logical lines joined by line breaks and
+// items by a blank line;
 // the other panels' from what their rows show.
 func (sc *Screen) Text(s *state.State, sel Selection) string {
 	if sel.Empty() {
@@ -306,8 +323,11 @@ func (sc *Screen) Text(s *state.State, sel Selection) string {
 	f, t := sel.From, sel.To
 	if f.Panel == 'B' {
 		var parts []string
-		for i := f.Item; i <= t.Item && i < len(s.Conversation); i++ {
-			ls := entryLines(s.Conversation[i])
+		for i := f.Item; i <= t.Item; i++ {
+			ls := bLines(s, i)
+			if len(ls) == 0 {
+				continue
+			}
 			l0, o0, l1, o1 := 0, 0, len(ls)-1, len(ls[len(ls)-1])
 			if i == f.Item {
 				l0, o0 = f.Line, f.Off
@@ -334,6 +354,18 @@ func (sc *Screen) Text(s *state.State, sel Selection) string {
 	return strings.Join(rows, "\n")
 }
 
+// bLines is zone B's item i: entry i's lines, or after the last entry the
+// session state's (plan 5, item 9); nil for any other.
+func bLines(s *state.State, i int) []string {
+	switch {
+	case i >= 0 && i < len(s.Conversation):
+		return entryLines(s, s.Conversation[i])
+	case i == len(s.Conversation):
+		return sessionLines(s)
+	}
+	return nil
+}
+
 // between is the text of lines from (l0, o0) to (l1, o1), clamped.
 func between(ls []string, l0, o0, l1, o1 int) string {
 	l0, l1 = min(max(l0, 0), len(ls)-1), min(max(l1, 0), len(ls)-1)
@@ -351,10 +383,7 @@ func between(ls []string, l0, o0, l1, o1 int) string {
 // LineText is the logical line p is on, for word and line selection.
 func (sc *Screen) LineText(s *state.State, p Pos) string {
 	if p.Panel == 'B' {
-		if p.Item < 0 || p.Item >= len(s.Conversation) {
-			return ""
-		}
-		if ls := entryLines(s.Conversation[p.Item]); p.Line >= 0 && p.Line < len(ls) {
+		if ls := bLines(s, p.Item); p.Line >= 0 && p.Line < len(ls) {
 			return ls[p.Line]
 		}
 		return ""

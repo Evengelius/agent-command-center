@@ -504,8 +504,8 @@ func (s *Session) Interrupt() error {
 func (s *Session) Refresh() error { return s.request("account/rateLimits/read", nil) }
 
 // Capabilities of Codex CLI 0.145 through app-server. Allow for the session
-// is not offered until a request is seen to permit it (no recording carries
-// availableDecisions).
+// is offered per request, when its availableDecisions lists acceptForSession
+// (plan 5, item 8); no recording carries the field.
 func (s *Session) Capabilities() provider.Capabilities {
 	return provider.Capabilities{SubagentText: true, QuotaWithoutTurn: true}
 }

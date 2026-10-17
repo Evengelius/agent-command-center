@@ -41,13 +41,13 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		switch ui.Focus {
 		case "A":
 			keys = "↑↓ move · ←→ fold · Enter inspect"
-			ls = append(ls, zoneA(s, ui, w, zh)...)
+			ls = append(ls, zoneA(s, ui, w, zh, sc)...)
 		case "C":
 			keys = "↑↓ select · Enter inspect"
 			if wide {
-				ls = append(ls, beside(zoneC(s, ui, listWide, zh), preview(s, ui, w-listWide, zh))...)
+				ls = append(ls, beside(zoneC(s, ui, listWide, zh, sc), preview(s, ui, w-listWide, zh, sc))...)
 			} else {
-				ls = append(ls, zoneC(s, ui, w, zh)...)
+				ls = append(ls, zoneC(s, ui, w, zh, sc)...)
 			}
 		case "D":
 			ls = append(ls, zoneD(s, ui, w, zh, zh-2)...)
@@ -60,15 +60,19 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		dh, ch := 3, 5
 		bh := h - len(ls) - ch - dh - 1
 		if ui.Focus == "A" { // the tree takes B's and C's place until F6 leaves it
-			ls = append(ls, zoneA(s, ui, w, bh+ch)...)
+			ls = append(ls, zoneA(s, ui, w, bh+ch, sc)...)
 			ls = append(ls, zoneD(s, ui, w, dh, 1)...)
 			return append(ls, keyHints(w, ui, "↑↓ move · ←→ fold · Enter inspect · F6 zone · Esc back to the input"))
 		}
 		sc.Conv.Y = len(ls) + 1
 		ls = append(ls, zoneB(s, ui, w, bh, 3, sc)...)
-		ls = append(ls, zoneC(s, ui, w, ch)...)
+		ls = append(ls, zoneC(s, ui, w, ch, sc)...)
 		ls = append(ls, zoneD(s, ui, w, dh, 1)...)
-		return append(ls, keyHints(w, ui, "Enter send · Ctrl+J newline · F6 zone · F2 approve · F1 keys"))
+		hints := "Enter send · Ctrl+J newline · F6 zone · F2 approve · F1 keys"
+		if ui.Entry > 0 && ui.Focus == "B" && ui.Card == "" {
+			hints = entryKeys
+		}
+		return append(ls, keyHints(w, ui, hints))
 	}
 
 	aw, dh, rows := zoneAStandard, 4, 2
@@ -81,15 +85,18 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	right := zoneB(s, ui, rw, bh, 3+2*boolInt(wide), sc)
 	sc.Conv.Y = len(ls) + 1
 	if wide {
-		right = append(right, beside(zoneC(s, ui, listWide, mid-bh), preview(s, ui, rw-listWide, mid-bh))...)
+		right = append(right, beside(zoneC(s, ui, listWide, mid-bh, sc), preview(s, ui, rw-listWide, mid-bh, sc))...)
 	} else {
-		right = append(right, zoneC(s, ui, rw, mid-bh)...)
+		right = append(right, zoneC(s, ui, rw, mid-bh, sc)...)
 	}
-	ls = append(ls, beside(zoneA(s, ui, aw, mid), right)...)
+	ls = append(ls, beside(zoneA(s, ui, aw, mid, sc), right)...)
 	ls = append(ls, zoneD(s, ui, w, dh, rows)...)
 	hints := "Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit"
 	if wide {
 		hints = "Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
+	}
+	if ui.Entry > 0 && ui.Focus == "B" && ui.Card == "" {
+		hints = entryKeys
 	}
 	return append(ls, keyHints(w, ui, hints))
 }
@@ -217,7 +224,7 @@ func zoneALine(s *state.State, w int) line {
 }
 
 // zoneA is the orchestrator and its stage tree (ui-design.md, Zone A).
-func zoneA(s *state.State, ui UI, w, h int) []line {
+func zoneA(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	var body []line
 	m := model(s)
 	if m == "" {
@@ -246,7 +253,12 @@ func zoneA(s *state.State, ui UI, w, h int) []line {
 		rows = []treeRow{{l: plain("○ (stages appear as turns run)", stGrey)}}
 	}
 	room := max(h-3-len(body), 0)
-	for _, r := range treeWindow(rows, ui.ACursor, room) {
+	top := paneTop(ui.Tree, len(rows), room, treeTop(rows, ui.ACursor, room))
+	sc.Tree = PaneView{Rows: len(rows), Room: room, Top: top}
+	for _, r := range rows {
+		sc.Tree.IDs = append(sc.Tree.IDs, r.node.ID)
+	}
+	for _, r := range rows[top:min(top+room, len(rows))] {
 		if ui.Focus == "A" && r.node.ID != "" && r.node.ID == ui.ACursor {
 			r.l = cursorLine(r.l.fit(w-4), w-4)
 		}
@@ -255,7 +267,11 @@ func zoneA(s *state.State, ui UI, w, h int) []line {
 	for len(body) < h-3 {
 		body = append(body, line{})
 	}
-	body = append(body[:max(h-3, 0)], decoLine("↑↓ move ←→ fold Enter inspect", stGrey))
+	hint := decoLine("↑↓ move ←→ fold Enter inspect", stGrey)
+	if ui.Tree.Hold && top < len(rows)-room { // held away from the tail
+		hint = heldHint(top, len(rows)-top-room, "End follows")
+	}
+	body = append(body[:max(h-3, 0)], hint)
 	return box('A', zoneTitle("A · ORCHESTRATOR", ui.Focus == "A"), nil, body, w, h, borderFor(ui.Focus == "A"))
 }
 
@@ -307,7 +323,7 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	// editor, Size); its rule and status line count in that half.
 	editor := editorLines(s, ui, inner, editorRows, (h-2)/2-2)
 	room := max(h-2-len(editor), 0)
-	conv, rows, top := conversation(s, ui, inner, room)
+	conv, rows, top, starts := conversation(s, ui, inner, room)
 	var shown []line // only the rows shown are drawn
 	for _, c := range conv {
 		shown = append(shown, c.draw())
@@ -319,7 +335,7 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 		shown[room-1] = spread(nil, decoLine(fmt.Sprintf("↓ %d new", n), stProgress), inner)
 	}
 	if sc != nil {
-		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold}
+		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold, Starts: starts}
 	}
 	body := append(shown, editor...)
 	focused := ui.Focus == "B" || ui.Focus == ""
@@ -330,12 +346,13 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 // rows in view, at most room from top, and the count of all rows. It follows
 // the end unless the owner scrolled up. Only the entries in view are drawn;
 // the others are counted, from the cache once finished (test 11).
-func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top int) {
-	counts := make([]int, len(s.Conversation))
+func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top int, starts []int) {
+	starts = make([]int, len(s.Conversation)+1)
 	for i, e := range s.Conversation {
-		counts[i] = ui.Wrap.rowCount(i, e, w, func() int { return len(entryRows(s, ui, nil, i, e, w)) })
-		rows += counts[i]
+		rows += ui.Wrap.rowCount(i, e, w, func() int { return len(entryRows(s, ui, nil, i, e, w)) })
+		starts[i+1] = rows
 	}
+	counts := func(i int) int { return starts[i+1] - starts[i] }
 	tail := sessionState(s, ui, w)
 	rows += len(tail)
 	top = max(rows-room, 0)
@@ -347,11 +364,11 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 		if at >= end {
 			break
 		}
-		if at+counts[i] > top {
+		if at+counts(i) > top {
 			rs := entryRows(s, ui, nil, i, e, w)
 			view = append(view, rs[min(max(top-at, 0), len(rs)):min(end-at, len(rs))]...)
 		}
-		at += counts[i]
+		at += counts(i)
 	}
 	for _, l := range tail {
 		if at >= top && at < end {
@@ -359,7 +376,7 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 		}
 		at++
 	}
-	return view, rows, top
+	return view, rows, top, starts
 }
 
 // entryRows adds the rows of conversation entry i. Content comes from
@@ -367,13 +384,20 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) []crow {
 	wc := ui.Wrap
 	who := providerLabel(s)
+	// Its row shows the entry cursor, its rows as many as without it.
+	focused := ui.Entry == i+1 && ui.Card == "" && (ui.Focus == "B" || ui.Focus == "")
 	switch e.Role {
 	case "user":
 		out = drawn(out, line{deco("YOU", stAttentionBold), deco("  "+clock(e.At), stGrey)})
-		ls := entryLines(e)
+		ls := entryLines(s, e)
 		if len(ls) > foldOver {
 			out = contentRows(out, wc, i, ls[:foldShow], w, stText, false)
-			out = drawn(out, decoLine(fmt.Sprintf("  … %s more lines", grouped(len(ls)-foldShow)), stGrey))
+			more := fmt.Sprintf("… %s more lines", grouped(len(ls)-foldShow))
+			if focused {
+				out = drawn(out, spread(decoLine("  ▸ "+more, stAttentionBold), decoLine(entryHint, stAttention), w))
+				break
+			}
+			out = drawn(out, decoLine("  "+more, stGrey))
 			break
 		}
 		out = contentRows(out, wc, i, ls, w, stText, false)
@@ -387,7 +411,7 @@ func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) [
 				head = append(head, deco("  "+m, modelStyle(m)))
 			}
 			out = drawn(out, head)
-			out = contentRows(out, wc, i, entryLines(e), w, stText, true)
+			out = contentRows(out, wc, i, entryLines(s, e), w, stText, true)
 			if e.Streaming {
 				if last := out[len(out)-1].draw(); last.width() < w {
 					out[len(out)-1] = crow{l: append(last, deco("▌", stText))}
@@ -400,9 +424,19 @@ func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) [
 			out = drawn(out, decoLine("  ∴ thinking", stGrey))
 		}
 	case "tool":
-		// Drawn only when shown: a long session has thousands (test 11).
+		// Drawn only when shown: a long session has thousands (test 11). A
+		// failed or denied call is marked ✗, with its error (plan 5, item 6).
 		out = append(out, crow{fn: func() line {
-			l := append(line{deco("  ▸ ", stGrey)}, oneRow(i, e, stGrey)...)
+			fail := toolFailure(s, i, e)
+			if focused {
+				l := append(append(line{deco("  ▸ ", stAttentionBold)}, oneRow(i, e, stText)...), fail...)
+				return spread(l, decoLine(entryHint, stAttention), w)
+			}
+			lead := deco("  ▸ ", stGrey)
+			if fail != nil {
+				lead = deco("  ✗ ", stFailed)
+			}
+			l := append(append(line{lead}, oneRow(i, e, stGrey)...), fail...)
 			return spread(l, decoLine(originLabel(e.Origin), stGrey), w)
 		}})
 	case "approval":
@@ -411,28 +445,51 @@ func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) [
 		// The error's first line, as received; Enter on D shows it
 		// whole (ui-design.md, States: Error).
 		out = append(out, crow{fn: func() line {
-			return append(line{deco("✗ turn failed: ", stFailedBold)}, oneRow(i, e, stFailed)...).fit(w)
+			l := append(line{deco("✗ turn failed: ", stFailedBold)}, oneRow(i, e, stFailed)...)
+			if focused {
+				return spread(l, decoLine(entryHint, stAttention), w)
+			}
+			return l.fit(w)
 		}})
 	case "dashboard":
 		// The dashboard's own note, grey, never the CLI's (AGENTS.md: shown
 		// distinctly); every row under the first's text.
 		p := &rowStyle{lead0: deco("  · ", stGrey), lead: deco("    ", stGrey), at: ref{panel: 'B', item: i}, st: stGrey}
-		for j, l := range entryLines(e) {
+		for j, l := range entryLines(s, e) {
 			out = sourceRows(out, wc, p, j, l, w-4, w-4)
 		}
 	default:
 		p := &rowStyle{lead0: deco("  · ", stProgress), lead: deco("  ", stProgress), at: ref{panel: 'B', item: i}, st: stProgress}
-		for j, l := range entryLines(e) {
+		for j, l := range entryLines(s, e) {
 			out = sourceRows(out, wc, p, j, l, w-4, w-2)
 		}
 	}
 	return out
 }
 
+// toolFailure is what follows a failed or denied call's name in B: its error,
+// the entry's second line (entryLines), or the status when it wrote none;
+// nil for any other call.
+func toolFailure(s *state.State, i int, e state.Entry) line {
+	tc := s.Tools[e.MessageID]
+	switch {
+	case tc == nil:
+		return nil
+	case tc.Status == state.ToolDenied:
+		return line{deco(" · denied", stFailed)}
+	case tc.Status != state.ToolFailed:
+		return nil
+	}
+	if ls := entryLines(s, e); len(ls) > 1 {
+		return append(line{deco(" · ", stGrey)}, wrapSource(ls[1], 1<<30, 1<<30, ref{panel: 'B', item: i, line: 1}, stFailed)[0]...)
+	}
+	return line{deco(" · failed", stFailed)}
+}
+
 // oneRow is a tool or approval entry's first line on one row, marked when
 // more lines follow.
 func oneRow(i int, e state.Entry, st *lipgloss.Style) line {
-	l := wrapSource(entryLines(e)[0], 1<<30, 1<<30, ref{panel: 'B', item: i}, st)[0]
+	l := wrapSource(entryLines(nil, e)[0], 1<<30, 1<<30, ref{panel: 'B', item: i}, st)[0]
 	if strings.IndexByte(e.Text, '\n') >= 0 {
 		l = append(l, deco(" …", st))
 	}
@@ -448,54 +505,120 @@ func grouped(n int) string {
 	return s
 }
 
-// sessionState is what zone B shows about the session itself.
-func sessionState(s *state.State, ui UI, w int) []line {
+// sessionPart is a row of zone B's session state: its lead and, unless it is
+// a key hint, one logical line of content, copied with a selection like an
+// entry's (plan 5, item 9). A wrapped part continues under its lead's indent.
+type sessionPart struct {
+	lead, text string
+	st         *lipgloss.Style
+	hint       bool // decoration: a key hint, never copied
+	wrap       bool // wrapped to the width, else one row cut at its edge
+}
+
+// sessionParts is what zone B shows about the session itself, after the
+// last entry; spin is the spinner's frame.
+func sessionParts(s *state.State, spin int) []sessionPart {
 	name := s.Context.ProviderName
 	if s.Session.Version != "" {
 		name += " " + s.Session.Version
 	}
 	switch {
 	case s.Startup.Phase == state.StartFailed && s.Context.Mock:
-		return failureCard(s, w, "The mock replay could not start", "Ctrl+Q quit")
+		return failureCard(s, "The mock replay could not start", "Ctrl+Q quit")
 	case s.Startup.Phase == state.StartFailed:
-		return failureCard(s, w, "The session could not start", "Esc back to startup (answers kept) · Ctrl+Q quit")
+		return failureCard(s, "The session could not start", "Esc back to startup (answers kept) · Ctrl+Q quit")
 	case s.Session.Phase == state.Crashed && s.Session.ID != "" && !s.Context.Mock:
-		return failureCard(s, w, "The session ended unexpectedly", "Ctrl+R resume · Ctrl+Q quit")
+		return failureCard(s, "The session ended unexpectedly", "Ctrl+R resume · Ctrl+Q quit")
 	case s.Session.Phase == state.Crashed:
-		return failureCard(s, w, "The session ended unexpectedly", "Ctrl+Q quit")
+		return failureCard(s, "The session ended unexpectedly", "Ctrl+Q quit")
 	case s.Session.Phase == state.Spawning || s.Session.Phase == state.Handshaking:
-		return indented(spinner[ui.Spinner%len(spinner)]+" Starting "+name+" in "+hideUser(s.Context.Project)+"…", w, stProgress)
+		return []sessionPart{{lead: "  " + spinner[spin%len(spinner)] + " ", text: "Starting " + name + " in " + hideUser(s.Context.Project) + "…", st: stProgress, wrap: true}}
 	case s.Session.Phase == state.Closed:
-		return []line{plain("Session closed.", stGrey)}
+		return []sessionPart{{text: "Session closed.", st: stGrey}}
 	case s.Session.Phase == state.Ready && len(s.Conversation) == 0:
-		return []line{plain("Waiting for instructions", stTitle), plain("Ready to work on this project.", stGrey)}
+		return []sessionPart{{text: "Waiting for instructions", st: stTitle}, {text: "Ready to work on this project.", st: stGrey}}
 	}
 	return nil
 }
 
-func failureCard(s *state.State, w int, title, keys string) []line {
-	out := []line{plain("✗ "+title, stFailedBold)}
+func failureCard(s *state.State, title, keys string) []sessionPart {
+	out := []sessionPart{{lead: "✗ ", text: title, st: stFailedBold}}
 	if s.Session.Reason != "" {
-		out = append(out, indented(s.Session.Reason, w, stFailed)...)
-	}
-	if s.Session.HasExitCode {
-		out = append(out, plain(fmt.Sprintf("  exit code %d", s.Session.ExitCode), stText))
-	}
-	if n := len(s.Session.StderrTail); n > 0 {
-		out = append(out, plain("  stderr:", stGrey))
-		for _, l := range s.Session.StderrTail[max(0, n-5):] {
-			out = append(out, plain("    "+l, stGrey))
+		for _, l := range strings.Split(strings.ReplaceAll(s.Session.Reason, "\r\n", "\n"), "\n") {
+			out = append(out, sessionPart{lead: "  ", text: l, st: stFailed, wrap: true})
 		}
 	}
-	return append(out, plain(keys, stGrey))
+	if s.Session.HasExitCode {
+		out = append(out, sessionPart{lead: "  ", text: fmt.Sprintf("exit code %d", s.Session.ExitCode), st: stText})
+	}
+	if n := len(s.Session.StderrTail); n > 0 {
+		out = append(out, sessionPart{lead: "  ", text: "stderr:", st: stGrey})
+		for _, l := range s.Session.StderrTail[max(0, n-5):] {
+			out = append(out, sessionPart{lead: "    ", text: l, st: stGrey})
+		}
+	}
+	return append(out, sessionPart{text: keys, st: stGrey, hint: true})
 }
 
-func indented(text string, w int, st *lipgloss.Style) []line {
-	var out []line
-	for _, l := range wrap(text, w-2) {
-		out = append(out, plain("  "+l, st))
+// sessionLines are the session state's logical lines of content, item
+// len(s.Conversation) of zone B for selection and copy.
+func sessionLines(s *state.State) []string {
+	var out []string
+	for _, p := range sessionParts(s, 0) {
+		if !p.hint {
+			out = append(out, p.text)
+		}
 	}
 	return out
+}
+
+// sessionState draws the session state w cells wide; its content spans
+// refer to zone B's item after the last entry.
+func sessionState(s *state.State, ui UI, w int) []line {
+	var out []line
+	at := ref{panel: 'B', item: len(s.Conversation)}
+	for _, p := range sessionParts(s, ui.Spinner) {
+		if p.hint {
+			out = append(out, decoLine(p.text, p.st))
+			continue
+		}
+		lead := deco(p.lead, p.st)
+		first, rest := 1<<30, 1<<30
+		if p.wrap {
+			first, rest = w-textWidth(p.lead), w-2
+		}
+		for k, l := range wrapSource(p.text, first, rest, at, p.st) {
+			if k > 0 {
+				lead = deco("  ", p.st)
+			}
+			row := append(line{lead}, l...)
+			if !p.wrap && row.width() > w {
+				row = cutRow(row, w, at, len(p.text))
+			}
+			out = append(out, row)
+		}
+		at.line++
+	}
+	return out
+}
+
+// cutRow cuts a session state's row at w, its "…" standing for the rest of
+// the source line at: a selection over it, or past it, copies the line whole
+// (plan 5, item 9).
+func cutRow(row line, w int, at ref, n int) line {
+	row = row.fit(w)
+	end := 0 // the source bytes the row still shows
+	for _, s := range row {
+		switch s.ref.kind {
+		case refText:
+			end = s.ref.off + len(s.text)
+		case refAtom:
+			end = s.ref.off + s.ref.n
+		}
+	}
+	at.kind, at.off, at.n = refAtom, end, n-end
+	row[len(row)-1].ref = at
+	return row
 }
 
 func firstLine(s string) string {
@@ -624,7 +747,7 @@ func activeAgents(s *state.State) (active, done int) {
 }
 
 // zoneC is the live agents list.
-func zoneC(s *state.State, ui UI, w, h int) []line {
+func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	agents := agentsByActivity(s)
 	active, done := activeAgents(s)
 	right := plain(fmt.Sprintf("%d ACTIVE · %d DONE", active, done), stText)
@@ -642,15 +765,23 @@ func zoneC(s *state.State, ui UI, w, h int) []line {
 			from = i - room + 1
 		}
 	}
-	for _, a := range agents[from:min(from+h, len(agents))] { // only the rows the box can show
-
+	from = paneTop(ui.List, len(agents), max(room, 0), from)
+	sc.List = PaneView{Rows: len(agents), Room: max(room, 0), Top: from}
+	for _, a := range agents {
+		sc.List.IDs = append(sc.List.IDs, a.Key)
+	}
+	for _, a := range agents[from:min(from+max(room, 0), len(agents))] { // only the rows the box can show
 		body = append(body, agentRow(a, ui, w-4))
 	}
 	if h-2 >= 4 {
 		for len(body) < h-3 {
 			body = append(body, line{})
 		}
-		body = append(body[:h-3], decoLine("↑↓ select · Enter inspect · z zoom · F6 next zone", stGrey))
+		hint := decoLine("↑↓ select · Enter inspect · z zoom · F6 next zone", stGrey)
+		if ui.List.Hold && from > 0 { // held away from the top
+			hint = heldHint(from, len(agents)-from-room, "Home top")
+		}
+		body = append(body[:h-3], hint)
 	}
 	title := "C · LIVE AGENTS"
 	if ui.Width < standardWidth { // the screen's layout, not the zone's width
@@ -666,7 +797,9 @@ func agentRow(a *state.Agent, ui UI, w int) line {
 	}
 	m := "model N/A"
 	if a.Model.Present {
-		m = a.Model.Text
+		// The column is the mock-up's "haiku-5-5": Claude's family name
+		// without its prefix; the preview and inspection show it in full.
+		m = strings.TrimPrefix(a.Model.Text, "claude-")
 	}
 	activity := strings.ToLower(string(a.Status))
 	switch {
@@ -687,7 +820,7 @@ func agentRow(a *state.Agent, ui UI, w int) line {
 }
 
 // preview is the selected agent's last events, at wide width.
-func preview(s *state.State, ui UI, w, h int) []line {
+func preview(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	a := s.Agents[ui.Selected]
 	if a == nil {
 		if ag := agentsByActivity(s); len(ag) > 0 {
@@ -708,11 +841,18 @@ func preview(s *state.State, ui UI, w, h int) []line {
 	if len(body) == 0 {
 		body = append(body, plain("no activity yet", stGrey))
 	}
-	body = tail(body, h-3)
+	room := max(h-3, 0)
+	top := paneTop(ui.Preview, len(body), room, max(len(body)-room, 0))
+	sc.Preview = PaneView{Rows: len(body), Room: room, Top: top}
+	body = body[top:min(top+room, len(body))]
 	for len(body) < h-3 {
 		body = append(body, line{})
 	}
-	body = append(body, decoLine("Enter full screen · [ ] previous / next agent", stGrey))
+	hint := decoLine("Enter full screen · [ ] previous / next agent", stGrey)
+	if ui.Preview.Hold && top < sc.Preview.Rows-room { // held away from the tail
+		hint = heldHint(top, sc.Preview.Rows-top-room, "scroll to the end follows")
+	}
+	body = append(body, hint)
 	right := plain("model N/A (not reported)", stGrey)
 	if a.Model.Present {
 		right = plain(a.Model.Text, modelStyle(a.Model.Text))

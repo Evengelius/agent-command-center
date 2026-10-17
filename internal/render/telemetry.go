@@ -397,13 +397,16 @@ func details(s *state.State, ui UI, sc *Screen) []line {
 	w := ui.Width
 	head := spread(line{deco(" ◀ back (Esc)   ", stTitle), deco("D · ERRORS AND TELEMETRY", stBold)},
 		decoLine(fmt.Sprintf("%d errors · last %d kept ", len(s.Errors), state.MaxErrors), stGrey), w)
-	return fullScreen(s, ui, sc, head, detailsBody(s, ui, w-2))
+	return fullScreen(s, ui, sc, head, detailsBody(s, ui, w-2), scrollKeys)
 }
+
+// scrollKeys are the hints of a view that only scrolls.
+const scrollKeys = "↑↓ PgUp PgDn scroll · Home top · End bottom · Esc back"
 
 // fullScreen draws a view that covers the dashboard: the title bar, head, a
 // rule, then body scrolled as ui.InspectTop and ui.InspectHold say; at the
-// bottom unless held.
-func fullScreen(s *state.State, ui UI, sc *Screen, head line, body []line) []line {
+// bottom unless held. keys are its key hints.
+func fullScreen(s *state.State, ui UI, sc *Screen, head line, body []line, keys string) []line {
 	w, h := ui.Width, ui.Height
 	ls := []line{titleBar(s, w, badge(s), nil), head, rule(w)}
 	room := max(h-len(ls)-1, 1)
@@ -420,7 +423,7 @@ func fullScreen(s *state.State, ui UI, sc *Screen, head line, body []line) []lin
 		}
 		ls = append(ls, content('I', i, append(line{deco(" ", stNone)}, l...).fit(w)))
 	}
-	hints := "↑↓ PgUp PgDn scroll · Home top · End bottom · Esc back"
+	hints := keys
 	if top < bottom {
 		hints = fmt.Sprintf("↓ %d more · ", bottom-top) + hints
 	}

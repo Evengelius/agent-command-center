@@ -357,7 +357,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-11 | The dashboard's own session record, kept in memory for the session; no history file written in the MVP | reliability.md |
 | ASM-12 | The layout geometry: breakpoints at 100 and 160 columns; the 80x24 minimum; A 34 then 44 columns wide, C's agent list 74; B about 60% of the right column | ui-design.md, Layouts |
 | ASM-13 | The colours: the palette hex values, each model family's colour, a quota bar turning red from 90% | ui-design.md |
-| ASM-14 | Codex threads given model "N/A" until a per-thread source appears | events-and-state.md |
+| ASM-14 | Codex threads given model "N/A" until a per-thread source appears; from Codex CLI 0.163.0, `subAgentActivity.model` is that source (P7b; plan 5, item 7) | events-and-state.md |
 | ASM-15 | No message is sent while a turn runs; the draft waits (Codex `turn/steer` and Claude Code's queue are not verified) | events-and-state.md, Turn machine |
 | ASM-16 | The 10 s an interrupt has to end the turn before "force stop" is offered (the 5 s shutdown steps are the Agent SDK's, CC-4; ASM-5 extends them to Codex) | events-and-state.md, Turn machine |
 | ASM-17 | The Markdown renderer: our own, no new dependency (the owner's decision of 2026-10-16, plan 4 step 3, after Glamour v2 measured p95 590 ms re-rendering a streamed 2,000-line message); Markdown styling and syntax highlighting come in the final stage | ui-design.md, Markdown |

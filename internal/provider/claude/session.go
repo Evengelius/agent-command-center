@@ -171,11 +171,12 @@ func (s *Session) read(r io.Reader) {
 }
 
 // pendingReq is a pending approval: its input, which an allow echoes back,
-// and whether the request could not be read, which only a deny answers
-// (INT 4 fallback).
+// whether the request could not be read, which only a deny answers (INT 4
+// fallback), and whether it is a question (AskUserQuestion).
 type pendingReq struct {
 	input      []byte
 	unreadable bool
+	question   bool
 }
 
 // track keeps each pending approval's request until it is answered.
@@ -187,7 +188,7 @@ func (s *Session) track(ev event.Event) {
 	switch ev.Kind {
 	case event.ApprovalRequest, event.Question:
 		if a.ID != "" {
-			s.inputs[a.ID] = pendingReq{input: a.Input, unreadable: a.Problem != ""}
+			s.inputs[a.ID] = pendingReq{input: a.Input, unreadable: a.Problem != "", question: ev.Kind == event.Question}
 		}
 	case event.ApprovalResolved:
 		delete(s.inputs, a.ID)
@@ -304,8 +305,14 @@ func (s *Session) Send(text string) error {
 // DenyMessage is what Claude Code is told when the owner denies a request.
 const DenyMessage = "The user denied this in Agent Command Center."
 
+// QuestionDenyMessage denies a question the owner saw: the answer comes as
+// their next message, since the updatedInput round trip is unprobed (CC-10
+// q3; plan 5, item 10).
+const QuestionDenyMessage = "The user saw these questions in Agent Command Center, which cannot answer them here, and will answer them in their next message. Wait for that message; do not ask them again."
+
 // Answer answers a pending approval: allow echoes the tool's input
-// unchanged, anything else denies.
+// unchanged, anything else denies; a readable question is denied with
+// QuestionDenyMessage.
 func (s *Session) Answer(id, decision string) error {
 	s.mu.Lock()
 	req, ok := s.inputs[id]
@@ -317,7 +324,11 @@ func (s *Session) Answer(id, decision string) error {
 		return fmt.Errorf("request %q was not readable: only a deny answers it", id)
 	}
 	input := req.input
-	resp := map[string]any{"behavior": "deny", "message": DenyMessage}
+	msg := DenyMessage
+	if decision == "deny" && req.question && !req.unreadable { // not a cancel; an unreadable question was never shown
+		msg = QuestionDenyMessage
+	}
+	resp := map[string]any{"behavior": "deny", "message": msg}
 	if decision == "allow" {
 		if len(bytes.TrimSpace(input)) == 0 || string(input) == "null" {
 			input = []byte("{}")

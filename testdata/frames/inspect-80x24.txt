@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ◀ back (Esc)   general-purpose · model N/A · ✓ completed 0s · …  [ ] prev/next
+ ◀ back (Esc)   general-purpose · claude-haiku-5-5 · ✓ complete…  [ ] prev/next
 ────────────────────────────────────────────────────────────────────────────────
   Messages │ Tools │ Diff │ Raw events
 ────────────────────────────────────────────────────────────────────────────────

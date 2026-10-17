@@ -193,3 +193,75 @@ func TestMalformedApprovalHasProblem(t *testing.T) {
 		t.Errorf("got %+v, want one error", evs)
 	}
 }
+
+// A tool_result with is_error completes its call as an error, its content as
+// the output (plan 5, item 6: B marks the call ✗ with that output's first
+// line). P3's only one, a subagent's.
+func TestToolError(t *testing.T) {
+	_, per := replay(t, "p3-claude-subagent.jsonl")
+	var got []string
+	for _, e := range fixture.Flatten(per) {
+		if p, ok := e.Payload.(event.Tool); ok && e.Kind == event.ToolCompleted && p.IsError {
+			got = append(got, p.ToolID+" "+p.Output)
+		}
+	}
+	if want := "toolu_01GCkWKjmPUFvje2MRWNXr8N Tool permission request failed: AbortError: Stream closed"; len(got) != 1 || got[0] != want {
+		t.Errorf("failed calls %q, want [%q]", got, want)
+	}
+}
+
+// TestSubagentModel is plan 5, item 7, criteria 1 and 4: a subagent's own
+// model, from its messages, sent once per change; never the main thread's.
+func TestSubagentModel(t *testing.T) {
+	for _, c := range []struct{ file, key string }{
+		{"p3-claude-subagent.jsonl", "ad30fdcc2c6928f90"},
+		{"p3b-claude-subagent-approval.jsonl", "a9dcbbc8d63adf34c"},
+	} {
+		_, per := replay(t, c.file)
+		var got []string
+		for _, e := range fixture.Flatten(per) {
+			if p, ok := e.Payload.(event.Agent); ok && p.Model != "" {
+				got = append(got, string(e.Kind)+" "+e.Agent+" "+p.Key+" "+p.Model)
+			}
+		}
+		if want := "agent.progress " + c.key + " " + c.key + " claude-haiku-5-5"; len(got) != 1 || got[0] != want {
+			t.Errorf("%s: model events %q, want [%q]", c.file, got, want)
+		}
+	}
+
+	m := NewMapper()
+	msg := func(parent, id, model, content string) []event.Event {
+		p := "null"
+		if parent != "" {
+			p = `"` + parent + `"`
+		}
+		return m.Out([]byte(`{"type":"assistant","session_id":"s1","parent_tool_use_id":` + p + `,"agent_id":"ag1","message":{"id":"` + id + `","model":"` + model + `","content":[` + content + `]}}`))
+	}
+	tool := func(id string) string { return `{"type":"tool_use","id":"t` + id + `","name":"Bash","input":{}}` }
+	models := func(evs []event.Event) (out []string, completed bool) {
+		for _, e := range evs {
+			if p, ok := e.Payload.(event.Agent); ok {
+				out = append(out, e.Agent+" "+p.Model)
+			}
+			completed = completed || e.Kind == event.MessageCompleted
+		}
+		return out, completed
+	}
+	for _, c := range []struct {
+		name, parent, id, model, content string
+		want                             []string
+		completed                        bool
+	}{
+		{"first", "toolu_1", "m1", "claude-haiku-5-5", tool("1"), []string{"ag1 claude-haiku-5-5"}, false},
+		{"same model", "toolu_1", "m2", "claude-haiku-5-5", tool("2"), nil, false},
+		{"changed", "toolu_1", "m3", "claude-sonnet-5-5", tool("3"), []string{"ag1 claude-sonnet-5-5"}, false},
+		{"made by the CLI", "toolu_1", "m4", "<synthetic>", tool("4"), nil, false},
+		{"main thread", "", "m5", "claude-opus-5-5", tool("5"), nil, false},
+		{"no blocks", "toolu_1", "m6", "claude-opus-5-5", "", []string{"ag1 claude-opus-5-5"}, true},
+	} {
+		got, completed := models(msg(c.parent, c.id, c.model, c.content))
+		if strings.Join(got, ",") != strings.Join(c.want, ",") || completed != c.completed {
+			t.Errorf("%s: model events %q, completed %v; want %q, %v", c.name, got, completed, c.want, c.completed)
+		}
+	}
+}

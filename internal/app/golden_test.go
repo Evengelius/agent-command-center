@@ -53,8 +53,8 @@ func TestGoldenFrames(t *testing.T) {
 	dash := func(t *testing.T) *harness {
 		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")}})
 		h.settle()
-		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 154 {
-			t.Fatalf("dashboard: screen %q, %d events, want 154", s.Screen, len(s.Log))
+		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 155 { // 154 and the subagent's model (plan 5, item 7)
+			t.Fatalf("dashboard: screen %q, %d events, want 155", s.Screen, len(s.Log))
 		}
 		return h
 	}

@@ -31,8 +31,8 @@
 │                                          ││                                                                                                                                                          │
 │                                          ││   turn started by the CLI                                                                                                         1 line · Ctrl+G editor │
 │                                          │╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-│                                          │╭─ C · LIVE AGENTS ────────────────────────────────── 0 ACTIVE · 1 DONE ─╮╭─ general-purpose · LIVE ──────────────────────────── model N/A (not reported) ─╮
-│                                          ││  ✓ general-purpose model N/A   completed · Files…       0s   21.5k tok ││ 11:30:00  assistant  Files written to found.txt: …                        mock │
+│                                          │╭─ C · LIVE AGENTS ────────────────────────────────── 0 ACTIVE · 1 DONE ─╮╭─ general-purpose · LIVE ──────────────────────────────────── claude-haiku-5-5 ─╮
+│                                          ││  ✓ general-purpose haiku-5-5   completed · Files…       0s   21.5k tok ││ 11:30:00  assistant  Files written to found.txt: …                        mock │
 │                                          ││                                                                        ││                                                                                │
 │                                          ││                                                                        ││                                                                                │
 │                                          ││                                                                        ││                                                                                │

@@ -57,6 +57,12 @@ type UI struct {
 	Details     bool            // zone D full screen (Enter on D); it scrolls with InspectTop and InspectHold
 	Zoom        bool            // the focused zone, A, C or D, over the dashboard (z)
 	Keys        bool            // the key overlay (F1); it scrolls with InspectTop and InspectHold
+	View        string          // the approval shown whole, full screen (Enter on its card); "" none; it scrolls with InspectTop and InspectHold
+	Entry       int             // zone B's entry cursor, Conversation[Entry-1]; 0 none (ui-design.md, Zone B, Expanding)
+	ViewEntry   int             // the entry shown whole, full screen (Enter on it), as Entry; 0 none; it scrolls with InspectTop and InspectHold
+	Tree        Pane            // zone A's tree as the owner scrolled it (plan 5, item 5)
+	List        Pane            // zone C's agent list, likewise
+	Preview     Pane            // zone C's preview, likewise
 
 	// Mouse selection and scrolling (ui-design.md, Selection and copy; Zone B,
 	// Follow mode).
@@ -71,42 +77,17 @@ type UI struct {
 	Wrap *WrapCache
 }
 
-// Colours and symbols (ui-design.md, Colours and symbols).
-var (
-	cFrame     = lipgloss.Color("#3B3F51")
-	cTitle     = lipgloss.Color("#C4B5FD")
-	cText      = lipgloss.Color("#E5E7EB")
-	cDone      = lipgloss.Color("#4ADE80")
-	cProgress  = lipgloss.Color("#FBBF24")
-	cAttention = lipgloss.Color("#F472B6")
-	cFailed    = lipgloss.Color("#F87171")
-	cGrey      = lipgloss.Color("#6B7280")
+// Pane is a pane of zone A or C the owner scrolled (ui-design.md,
+// Scrolling, collapsing, full screen). Not held, it shows what it always
+// did: A's tree and the preview their tail, C's list its top, each with its
+// cursor in view.
+type Pane struct {
+	Top  int  // the first row shown while held
+	Hold bool // scrolled: the pane stays at Top as rows come and go
+}
 
-	stFrame     = style(lipgloss.NewStyle().Foreground(cFrame))
-	stTitle     = style(lipgloss.NewStyle().Foreground(cTitle).Bold(true))
-	stText      = style(lipgloss.NewStyle().Foreground(cText))
-	stDone      = style(lipgloss.NewStyle().Foreground(cDone))
-	stProgress  = style(lipgloss.NewStyle().Foreground(cProgress))
-	stAttention = style(lipgloss.NewStyle().Foreground(cAttention))
-	stFailed    = style(lipgloss.NewStyle().Foreground(cFailed))
-	stGrey      = style(lipgloss.NewStyle().Foreground(cGrey))
-	stBold      = style(lipgloss.NewStyle().Foreground(cText).Bold(true))
-	stButton    = style(lipgloss.NewStyle().Foreground(lipgloss.Color("#111827")).Background(cTitle).Bold(true))
-
-	stAttentionBold = style(stAttention.Bold(true))
-	stFailedBold    = style(stFailed.Bold(true))
-	stNone          = style(lipgloss.NewStyle())
-
-	modelColours = [][2]string{{"opus", "#A78BFA"}, {"sonnet", "#FB923C"}, {"haiku", "#60A5FA"}, {"gpt", "#2DD4BF"}}
-	modelStyles  = func() (out []*lipgloss.Style) {
-		for _, kc := range modelColours {
-			out = append(out, style(lipgloss.NewStyle().Foreground(lipgloss.Color(kc[1]))))
-		}
-		return out
-	}()
-
-	spinner = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
-)
+// Symbols (ui-design.md, Colours and symbols); the colours are in palette.go.
+var spinner = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
 // style is a shared style. Spans hold a pointer to one, never a copy: a
 // lipgloss.Style is hundreds of bytes, and spans equal by value let a frame
@@ -117,7 +98,7 @@ func style(s lipgloss.Style) *lipgloss.Style { return &s }
 func modelStyle(model string) *lipgloss.Style {
 	m := strings.ToLower(model)
 	for i, kc := range modelColours {
-		if strings.Contains(m, kc[0]) {
+		if strings.Contains(m, kc.family) {
 			return modelStyles[i]
 		}
 	}

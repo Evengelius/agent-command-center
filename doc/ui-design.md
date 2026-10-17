@@ -464,7 +464,9 @@ The orchestrator and its workflow tree (AM2 A1-A6; AM4 D3; B2.2).
   unfoldable.
 - **Keys** when focused: ↑ ↓ move, ← → fold and unfold, Enter inspects the
   agent or tool under the cursor, z zooms. Long trees scroll; the cursor's
-  node stays visible.
+  node stays visible. PgUp, PgDn and the wheel scroll the tree, Home shows
+  its first row and End its tail (plan 5, item 5): see [Scrolling,
+  collapsing, full screen](#scrolling-collapsing-full-screen).
 
 ## Zone B
 
@@ -482,9 +484,12 @@ events (events-and-state.md, Conversation record); nothing is simulated.
     paste is shown folded, below);
   - **CLAUDE** or **CODEX** with the model: the AI text, streamed, rendered
     as Markdown;
-  - tool lines `▸ Read src/auth/middleware.go · 212 lines`, with the
-    status symbol and, right-aligned, the origin label `observed`; a failed
-    tool shows `✗` and its error's first line;
+  - tool lines `▸ Read src/auth/middleware.go · 212 lines`, with,
+    right-aligned, the origin label `observed`; a failed call reads
+    `✗ Bash · exit status 1: FAIL pkg/a`, its output's first non-blank
+    line in red (plan 5, item 6), `✗ Grep · failed` when it wrote nothing,
+    and a call denied at its approval `✗ Edit · denied`. The error is
+    content: a selection copies the name and the error as two lines;
   - agent lines `▸ Agent scan-routes started` (the agent's own text stays in
     C and in inspection: subagent text is not streamed by Claude Code,
     events-and-state.md, `conversation.message.delta`);
@@ -504,8 +509,25 @@ events (events-and-state.md, Conversation record); nothing is simulated.
     checked anew. Claude Code runs its slash commands through the stream,
     so nothing is held there.
 - **Long pasted messages**: a sent message over 20 lines shows its first 5 (ASM-22)
-  and "… 9,995 more lines · Enter expand" (the CLIs fold large pastes the
+  and "… 9,995 more lines" (the CLIs fold large pastes the
   same way, TI 3.4); the record keeps the full text.
+- **Expanding** (plan 5, item 4): B has an entry cursor. ↑ from an empty
+  input puts it on the newest entry B shows in part: a folded message, a
+  tool line (one row, its output not shown), a failure (one row, cut to the
+  width). Its row turns to the attention colour, `▸` in front and
+  "Enter full view · ↑↓ entries · Esc back" on the right, without changing
+  B's height; the bottom hints say the same. ↑ ↓ move between such
+  entries, B scrolling to keep the marked row in view; ↓ past the newest,
+  Esc or a typed character return to the input (the character is typed
+  there). With a draft, ↑ moves in the draft as before. A mouse click is not
+  used: a click on a row starts a selection. Enter or → shows the entry
+  whole, full screen, as the approval's full view does: a message with
+  its time and line count, every line; a tool with its name, status,
+  elapsed time, origin, its input (a diff coloured, a command, else the raw
+  input) and its whole output, or "no output", updated live while it runs;
+  a failure with every line. It scrolls with ↑ ↓ PgUp PgDn Home End and the
+  wheel, copies with a selection, and Esc returns to B as it was, the
+  cursor on the same entry.
 - **Follow mode**: new text keeps the view at the bottom; once the owner
   scrolls up, follow stops and "↓ 12 new" shows at the bottom edge; End
   resumes following.
@@ -535,9 +557,11 @@ label and syntax highlighting.
   language amber. In code: keywords violet bold, strings green, numbers
   orange, comments grey italic. Comments start with `#` in shell, Python,
   YAML, TOML, Ruby, PowerShell and the like, `--` in SQL, Lua and Haskell,
-  `//` or `/*` otherwise; one keyword set serves every language, since a
-  word wrongly coloured costs only a colour. Colours in
-  [Colours and symbols](#colours-and-symbols).
+  `//` otherwise. Outside the `#` languages a `/*` comment runs on to its
+  `*/` over the lines of its block, the code after `*/` highlighted again,
+  and one left open ends with its fence (plan 5, item 12). One keyword set
+  serves every language, since a word wrongly coloured costs only a colour.
+  Colours in [Colours and symbols](#colours-and-symbols).
 - **Streaming**: each source line's wrap is cached by text and widths
   (`WrapCache`, kept for one frame after its last use), and rows are drawn
   only when shown, so a frame costs the visible rows plus one cached lookup
@@ -546,6 +570,13 @@ label and syntax highlighting.
   styled (step 8). An unclosed code fence renders as code up to the
   cursor `▌`, so text does not jump between "plain" and "code" as the fence
   closes.
+- **The inspection's Messages tab** styles an agent's AI messages the same
+  way (plan 5, item 11); its notices, start, end, error and history lines
+  stay as they were. The tab's wrap is unchanged (tabs as four spaces,
+  control characters dropped), so its rows, hits and copies are those of
+  the plain text (`TestInspectMarkdown`, at three sizes, scrolled top to
+  bottom). An AI message's later rows are drawn in text colour, as in
+  zone B, where they were grey.
 - **Code blocks** keep every character, including tabs (shown at 4
   columns) and trailing spaces; copying one copies its exact text (see
   [Selection and copy](#selection-and-copy)).
@@ -560,14 +591,20 @@ The live subagents (AM2 C1-C11; AM4 D3).
   counts derived from the agent machines (`Running` and `WaitingApproval`
   are active).
 - **One row per agent**: status symbol, label (Claude Code's description or
-  `agent_id`; Codex `agentPath`), model in its colour or "model N/A"
-  (Codex children, ASM-14), current task (last tool and its target, or
-  "waiting: approval Edit", or "completed · 3 files read"), elapsed time,
-  tokens. A retry shows "↻ 2" after the time (AM2 C7). Rows are ordered:
-  waiting for approval, running, then ended, most recent first (ASM-22).
+  `agent_id`; Codex `agentPath`), the agent's own model in its colour
+  (Claude Code: its forwarded messages' `message.model`, shown without the
+  "claude-" prefix to fit the column, in full in the preview and the
+  inspection; Codex: `subAgentActivity.model`, from Codex CLI 0.163.0) or
+  "model N/A" (older Codex children, ASM-14; plan 5, item 7), current task
+  (last tool and its target, or "waiting: approval Edit", or "completed · 3
+  files read"), elapsed time, tokens. A retry shows "↻ 2" after the time
+  (AM2 C7). Rows are ordered: waiting for approval, running, then ended,
+  most recent first (ASM-22).
 - **Preview** (wide only): the selected agent's last events, timestamped,
-  each with its origin label; it follows the selection.
-- **Keys** when focused: ↑ ↓ select, Enter inspects, z zooms.
+  each with its origin label; it follows the selection, and the wheel
+  scrolls it.
+- **Keys** when focused: ↑ ↓ select, Enter inspects, z zooms; PgUp, PgDn,
+  Home and End scroll the list, the selection kept.
 - Background agents that outlive their turn stay listed and running (P3,
   P3b): the agent machine, not the turn, decides their status.
 
@@ -641,11 +678,11 @@ the agent that asked, and marks that agent "!" in A and C.
 
   | Key | Answer | Claude Code | Codex |
   | - | - | - | - |
-  | a | allow once | allow (**P**) | `accept` (**P**) |
-  | s | allow for the session | not offered in the MVP (CC-4) | `acceptForSession` (**D**), shown only when offered |
+  | a | allow once | allow (**P**); not for a question (plan 5, item 10) | `accept` (**P**) |
+  | s | allow for the session | not offered (CC-4) | `acceptForSession` (**D**), offered only when the request's `availableDecisions` lists it (plan 5, item 8) |
   | d | deny / decline | deny with a message (**D**) | `decline` (**D**) |
   | c | cancel the turn | deny, then interrupt | `cancel` (**D**) |
-  | Enter | full diff or command, full screen | | |
+  | Enter | the whole diff, command or question, full screen; a, s, d, c answer there, Esc back to the card | Edit, MultiEdit, Write from the request | `fileChange` from its tool call's `changes[].diff` |
   | Esc | later: back to the input, still pending | | |
 
 - **Typing never answers an approval**: letters typed in the editor stay in
@@ -659,6 +696,13 @@ the agent that asked, and marks that agent "!" in A and C.
 - **Questions** (`AskUserQuestion`, Claude Code): shown as a card with the
   questions and options; until the round trip is verified (CC-10 q3) the
   answer is typed as the next message, as events-and-state.md describes.
+  Only `d` and `c` answer one: `d` denies it with "The user saw these
+  questions in Agent Command Center, which cannot answer them here, and
+  will answer them in their next message. Wait for that message; do not ask
+  them again.", and the card reads "✗ … denied by you 14:03:20 · answer in
+  your next message"; `c` (or Ctrl+C, or quitting) cancels it with the
+  usual deny message and card line; `a` sends nothing, as allowing would
+  echo the unanswered questions (plan 5, item 10).
 
 ## States
 
@@ -713,34 +757,55 @@ rounded frames, pale violet panel titles (RD "Layout mock-up").
 | ▸ | a tool or agent event line | grey |
 
 Model colours, after RD's legend (one colour per model family, ASM-13):
-Opus violet, Sonnet orange, Haiku blue, OpenAI GPT models teal, unknown or
-N/A grey. The model name is always written next to its colour, and every
+Opus violet, Sonnet orange, Haiku blue, OpenAI GPT models teal, any other
+model in the text colour. The model name is always written next to its colour, and every
 status has its symbol, so nothing depends on colour alone (a 16-colour
 terminal or `NO_COLOR` still reads correctly). Colours are configurable in
 the application's own configuration file (ASM-7).
 
-| Role | Value (ASM-13) |
-| - | - |
-| Frame | `#3B3F51` |
-| Panel title | pale violet `#C4B5FD` |
-| Done | `#4ADE80` |
-| In progress, 7-day bar | `#FBBF24` |
-| Attention | `#F472B6` |
-| Failed | `#F87171` |
-| Waiting, hints, origin labels | `#6B7280` |
-| 5-hour bar, Opus | `#A78BFA` |
-| Sonnet | `#FB923C` |
-| Haiku | `#60A5FA` |
-| GPT models | `#2DD4BF` |
-| Code, inline code | `#93C5FD` |
-| Code keywords | `#A78BFA`, bold |
-| Code strings | `#86EFAC` |
-| Code numbers | `#FB923C` |
-| Code comments, Markdown markers | `#6B7280` (comments italic) |
-| Links | `#60A5FA`, underlined |
+| Role | Value (ASM-13) | 256 colours | 16 colours |
+| - | - | - | - |
+| Frame | `#3B3F51` | 238 | 8 bright black |
+| Panel title, 5-hour bar | pale violet `#C4B5FD` | 183 | 15 bright white |
+| Text | `#E5E7EB` | 189 | 7 white |
+| Done | `#4ADE80` | 78 | 10 bright green |
+| In progress, 7-day bar | `#FBBF24` | 214 | 11 bright yellow |
+| Attention | `#F472B6` | 205 | 13 bright magenta |
+| Failed | `#F87171` | 203 | 9 bright red |
+| Waiting, hints, origin labels | `#6B7280` | 60 | 8 bright black |
+| Opus | `#A78BFA` | 141 | 5 magenta |
+| Sonnet | `#FB923C` | 209 | 3 yellow |
+| Haiku | `#60A5FA` | 75 | 12 bright blue |
+| GPT models | `#2DD4BF` | 43 | 14 bright cyan |
+| Code, inline code | `#93C5FD` | 117 | 6 cyan |
+| Code keywords | `#A78BFA`, bold | 141 | 5 magenta |
+| Code strings | `#86EFAC` | 121 | 2 green |
+| Code numbers | `#FB923C` | 209 | 3 yellow |
+| Code comments, Markdown markers | `#6B7280` (comments italic) | 60 | 8 bright black |
+| Links | `#60A5FA`, underlined | 75 | 12 bright blue |
+| Text on a title-coloured button or cursor | `#111827` | 234 | 0 black |
+| Editor selection, background | `#4C4F6B` | 240 | 4 blue |
+| Zone A cursor row, background (text `#E5E7EB`) | `#2E3247` | 23 | 8 bright black (text 15) |
 
-How Lip Gloss v2 maps these on a 256- or 16-colour terminal was not studied
-in plan 1: Not verified, checked by hand in plan 4.
+The application draws the true colours whatever the terminal, except on a
+16-colour one (plan 5, item 13). Bubble Tea detects the terminal's colour
+profile and sends it at startup, and again when the terminal reports RGB
+support; its renderer then writes each true colour as is, maps it to the
+nearest of the 256, or drops every colour when the output is no terminal.
+The 256 column is that mapping as measured (`internal\render\palette_test.go`,
+TestPalette256): one index per colour, no two colours on the same index; the
+zone A cursor row comes out a dark teal. On a 16-colour profile the renderer's
+own mapping folds the roles together (done, GPT and strings on one green;
+in progress, attention, failed and Sonnet on one red; title, text, Opus, Haiku
+and code on one blue), so the application switches to the explicit palette of
+the 16 column instead, and back when the profile changes, drawing every row
+again (`internal\render\palette.go`). In it the statuses differ from one
+another, as do the four model families and the code colours; frame, hints and
+the cursor row share bright black, which the symbols and text keep readable.
+Checked offline by TestColourProfiles and TestPaletteSwitch
+(`internal\app\colour_test.go`): the same characters under true colour, 256,
+16 and no terminal, as Windows Terminal, an `xterm-256color` and an `xterm`
+receive them.
 
 ## Animations
 
@@ -764,8 +829,19 @@ connectors").
   in the next frame.
 - Bubble Tea v2's cell renderer redraws only the cells that changed
   (`cursed_renderer.go`, TI 2.2), so streaming text does not repaint the
-  screen and does not flicker (AM2 U8). Whether it also wraps frames in
-  synchronized output (mode 2026) was not read in plan 1: Not verified.
+  screen and does not flicker (AM2 U8). It also wraps each frame in
+  synchronized output (mode 2026), once the terminal reports the mode
+  supported: at start, Bubble Tea v2.1.0 asks for modes 2026 and 2027
+  (`tea.go`, `shouldQuerySynchronizedOutput`, true under WT), and on a report
+  of 2026 supported and off it writes every frame inside `?2026h … ?2026l`
+  (`cursed_renderer.go`); it also measures width by grapheme when 2027 is
+  set. Measured in WT 1.23.20211.0 on 2026-10-17 (plan 5, item 14), the
+  application on a mock replay with `TEA_TRACE`: WT answers
+  `?2026;2$y ?2027;3$y` as plain VT input, and 92 of the 95 writes are
+  wrapped; the other three are the query, the first frame, drawn before the
+  answer arrives, and the exit sequence. `TestSynchronizedOutput` replays
+  WT's recorded answer through the real program: every frame after it is
+  wrapped, and with no answer or another one no frame is.
 - Claude Code documents stale fragments on WT through ConPTY in its
   alternate screen (TI 6.2); if seen, an option forces full repaints.
 - The renderer never computes text: wrapping, Markdown and highlighting are
@@ -822,10 +898,18 @@ the console reads plain VT input after Ctrl+Q.
 | ← → | in A fold and unfold; in inspection change tab |
 | Enter | inspect the agent; in D, list errors |
 | z | zoom the panel full screen; z or Esc again restores |
-| PgUp PgDn Home End | scroll; End resumes follow mode |
+| PgUp PgDn Home End | page, top, end; End follows again (A, inspection) |
 | `[` `]` | previous / next agent (inspection) |
 
 **The approval card**: a, s, d, c, Enter, Esc, ↑ ↓ ([Approvals](#approvals)).
+
+**B's entries** (↑ from an empty input, [Zone B](#zone-b))
+
+| Key | Action |
+| - | - |
+| ↑ ↓ | previous / next folded message, tool or failure; ↓ past the last, the input |
+| Enter or → | the whole entry, full screen; Esc back to the cursor |
+| Esc, or typing | back to the input |
 
 **The editor**: see [Input editor](#input-editor).
 
@@ -833,17 +917,29 @@ the console reads plain VT input after Ctrl+Q.
 
 AM2 U4, U5, U7.
 
-- Every panel scrolls on its own: PgUp and PgDn on the focused panel; the
-  mouse wheel scrolls the panel under the pointer, whatever has the focus;
+- Every panel scrolls on its own: PgUp and PgDn (a page, its rows less
+  one), Home and End on the focused panel; the mouse wheel, 3 rows, scrolls
+  the panel under the pointer, whatever has the focus, the focus unchanged;
   Shift+PgUp and Shift+PgDn scroll the conversation from anywhere.
-- Follow mode in B, C's preview and inspection: on at the bottom, off when
-  scrolled up, with "↓ N new" shown; End resumes.
-- Collapsing: tree nodes and previous turns in A; thinking text, long
-  pastes and long tool outputs in B (first lines and "… N more lines");
-  everything expands with Enter or → on the focused item.
+- Follow mode in B and inspection: on at the bottom, off when scrolled up,
+  with "↓ N new" shown; End resumes.
+- Zone A's tree and C's preview rest at their tail; zone C's list at its
+  top, the selection in view (plan 5, item 5). Scrolled, a pane is held:
+  rows coming and going do not move it, ↑ ↓ keep the cursor or selection
+  in view with the least move, and its hint row says so in amber, the rows
+  out of view, then the way back: "↑ 12 ↓ 25 · End follows" (A), "· Home
+  top" (C), "· scroll to the end follows" (the preview). A and the preview
+  follow again at their end; the preview also for another agent. End in A
+  with the cursor above the tail shows the tail and keeps following it. A
+  three-row C (80x24) has no hint row. Zoomed panes scroll the same way.
+- Collapsing: tree nodes and previous turns in A, unfolded with ← →; in B,
+  long pastes (first lines and "… N more lines"), tool lines and failures
+  (one row), each shown whole with Enter or → on B's entry cursor
+  ([Zone B](#zone-b), Expanding).
 - Full screen: z zooms the focused panel; Enter on an agent opens
-  inspection; Enter on an approval card shows the whole diff. Esc goes back
-  to the exact previous view.
+  inspection; Enter on an approval card shows the whole diff; Enter on B's
+  entry cursor shows the entry whole. Esc goes back to the exact previous
+  view.
 
 ## Input editor
 
@@ -961,8 +1057,12 @@ Mouse selection in any panel, with clean text (AM3 M3; TI 6.3):
 - **Native escape**: F12 turns mouse capture off; the hint line then says
   "mouse capture off: the terminal selects (whole screen, borders
   included) · F12 back on".
-- MVP limits (plan 4 step 3): failure cards and the session-state lines in
-  B are decoration and are not copied; only B scrolls.
+- B's session state (a failure card, "Starting …", "Session closed.",
+  "Waiting for instructions") is content after the last entry: a failure
+  card copies its title, each reason and stderr line whole (a cut line's
+  "…" stands for its rest), "exit code N" and "stderr:", never the ✗, the
+  indentation, the spinner or the key hint (plan 5, item 9).
+- MVP limit (plan 4 step 3): only B scrolls during a drag.
   When capture is on, the key overlay names the terminal's bypass key
   (Shift in WT).
 
@@ -997,17 +1097,16 @@ what is not built).
 
 | This design | The MVP | Why |
 | - | - | - |
-| Approval card: Enter shows the full diff or command full screen | Not built; the card shows its first lines | Not in step 8's scope; the card does not advertise Enter |
-| Approval card: s allows for the session | Never offered, for either CLI | Claude Code: CC-4; Codex: the adapter does not read `availableDecisions` (plan 4, step 5) |
-| Tool lines in B carry a status symbol, and a failed one `✗` with its error | `▸` and the tool line, with its origin label; status in A and inspection | A conversation entry does not link to its tool call yet |
-| AI text as Markdown everywhere | Styled in zone B; the inspection's Messages tab shows it plain | Same characters either way; styling there not in step 8's scope |
-| Syntax highlighting of a block comment | Its first line only; the next lines show as code | Highlighting works line by line ([Markdown](#markdown)) |
+| Approval card: s allows for the session | Never for Claude Code; for Codex only when the request's `availableDecisions` lists `acceptForSession`, which no recording does and Codex CLI 0.163.0's generated schema omits | Claude Code: CC-4; Codex: plan 5, item 8 |
+| Tool lines in B carry a status symbol, and a failed one `✗` with its error | `✗` and the error for a failed or denied call; `▸` for the others, their status in A and the viewer | Only the calls that need a look are marked in B (plan 5, item 6) |
+| Syntax highlighting of a string over several lines (raw and template strings, Python's triple quotes) | Its first line only; the next lines show as code | A string ends with its line; only a block comment carries over ([Markdown](#markdown), plan 5, item 12) |
+| Thinking text folded under the message, "thinking · 312 tokens", unfoldable | "∴ thinking" marks a message that had a thinking block; nothing unfolds | The conversation record keeps that a thinking block arrived (`Entry.Thinking`), not its text (found in plan 5, item 4) |
 
 ## Assumptions used here
 
 ASM-3 (30 fps), ASM-7 (own configuration file), ASM-8 (prefill flags),
 ASM-9 (default keys), ASM-10 (editor budget), ASM-12 (layout geometry), ASM-13
-(colours), ASM-14 (Codex child model N/A), ASM-15 (no send while a turn
-runs), ASM-16 (interrupt timeout), ASM-17 (Markdown renderer), ASM-18
-(animation rates), ASM-21 (timeouts), ASM-22 (display defaults); all are
+(colours), ASM-14 (Codex child model N/A before 0.163.0), ASM-15 (no send
+while a turn runs), ASM-16 (interrupt timeout), ASM-17 (Markdown renderer),
+ASM-18 (animation rates), ASM-21 (timeouts), ASM-22 (display defaults); all are
 listed in [architecture.md, Assumptions](architecture.md#assumptions).

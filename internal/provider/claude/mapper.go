@@ -29,11 +29,12 @@ type Mapper struct {
 	// Telemetry sources: Context).
 	lastModel   string
 	lastContext float64
+	models      map[string]string // each subagent's last model sent (plan 5, item 7)
 }
 
 // NewMapper returns an empty mapper.
 func NewMapper() *Mapper {
-	return &Mapper{pending: map[string]string{}}
+	return &Mapper{pending: map[string]string{}, models: map[string]string{}}
 }
 
 type line struct {
@@ -366,7 +367,13 @@ func (m *Mapper) assistant(l line, agent string, raw []byte) []event.Event {
 		// input + cache creation + cache read).
 		m.lastModel, m.lastContext = msg.Model, u.Input+u.CacheRead+u.CacheCreation
 	}
-	var out []event.Event
+	var out, pre []event.Event
+	if agent != "" && msg.Model != "" && !strings.HasPrefix(msg.Model, "<") && m.models[agent] != msg.Model {
+		// A subagent's own model, sent when it first appears or changes; a
+		// name in angle brackets marks a message the CLI made, not a model.
+		m.models[agent] = msg.Model
+		pre = append(pre, m.ev(event.AgentProgress, event.Observed, agent, raw, event.Agent{Key: agent, Model: msg.Model}))
+	}
 	c := event.Completed{MessageID: msg.ID, Model: msg.Model}
 	var texts []string
 	hasText := false
@@ -388,6 +395,7 @@ func (m *Mapper) assistant(l line, agent string, raw []byte) []event.Event {
 		e.Item = msg.ID
 		out = append([]event.Event{e}, out...)
 	}
+	out = append(pre, out...)
 	if len(l.Error) > 0 && string(l.Error) != "null" {
 		out = append(out, m.ev(event.Error, event.Observed, agent, raw, event.Problem{Message: "assistant error: " + strings.Trim(string(l.Error), `"`)}))
 	}

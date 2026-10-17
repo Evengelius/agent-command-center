@@ -21,7 +21,7 @@
 │                                ││   turn started by the CLI                                   1 line · Ctrl+G editor │
 │                                │╰────────────────────────────────────────────────────────────────────────────────────╯
 │                                │╭─ C · LIVE AGENTS ────────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
-│                                ││  ✓ general-purpose model N/A   completed · Files written to …       0s   21.5k tok │
+│                                ││  ✓ general-purpose haiku-5-5   completed · Files written to …       0s   21.5k tok │
 │                                ││                                                                                    │
 │                                ││                                                                                    │
 │                                ││                                                                                    │

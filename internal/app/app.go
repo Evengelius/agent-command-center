@@ -17,6 +17,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/input"
@@ -137,9 +138,10 @@ type Model struct {
 	pasting  bool // between a paste's start and end markers
 	toastGen int  // the toast on screen; an older timer leaves it
 
-	screen *render.Screen // the last frame drawn: what the mouse points at
-	drag   drag
-	click  clicks
+	screen  *render.Screen // the last frame drawn: what the mouse points at
+	repaint bool           // the palette changed: the next frame draws every row
+	drag    drag
+	click   clicks
 }
 
 // Messages.
@@ -223,6 +225,9 @@ func (m *Model) Init() tea.Cmd {
 // View draws the frame.
 func (m *Model) View() tea.View {
 	prev := m.screen
+	if m.repaint {
+		prev, m.repaint = nil, false // its rows hold the old palette's colours
+	}
 	m.screen = render.Draw(m.s, m.ui)
 	v := tea.NewView(m.screen.StringAfter(prev))
 	v.AltScreen = true
@@ -243,6 +248,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.ui.Width, m.ui.Height = msg.Width, msg.Height
+	case tea.ColorProfileMsg:
+		// The terminal's colours, at startup and on an RGB capability report
+		// (plan 5, item 13).
+		if render.UsePalette(lipgloss.Complete(msg.Profile)) {
+			m.repaint = true
+		}
 	case actionMsg:
 		cmds = append(cmds, m.do(msg.a)...)
 		if _, ok := msg.a.(state.ValidationFailed); ok {

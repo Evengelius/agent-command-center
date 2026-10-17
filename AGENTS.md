@@ -21,9 +21,10 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: plan 4, the MVP, in progress.** Plans 1 to 3 (research;
-architecture and reliability; proposal) are closed; the proposal was approved
-on 2026-10-16. `plan.md` holds the step reached and its test evidence.
+**Status: plan 5, post-MVP improvements, in progress.** Plans 1 to 4
+(research; architecture and reliability; proposal; the MVP) are closed; the
+MVP was approved on 2026-10-17. `plan.md` holds the step reached and its test
+evidence.
 
 ## Delegation: highest priority
 

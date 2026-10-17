@@ -20,9 +20,16 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
+**Plan 5, post-MVP improvements, in progress** (the owner's request of
+2026-10-17, [Plan 5](#plan-5---post-mvp-improvements) at the end). Every
+item done; the evaluation summary, 17 of 17 PASS, is in
+[`doc/plan5-evaluation.md`](doc/plan5-evaluation.md), with the live
+verification the owner ran before the commit (15 of 15 PASS); awaiting the
+owner's approval.
+
 **Plan 4, the MVP, approved by the owner on 2026-10-17** after a live demo on
 both CLIs (14 of 14 PASS, [`doc/plan4-evaluation.md`](doc/plan4-evaluation.md));
-all four plans are done. Plan 3
+the four original plans are done. Plan 3
 approved by the owner on 2026-10-16 ([`doc/proposal.md`](doc/proposal.md);
 12 of 12 PASS on the main session's checks, no verifier run). Plan 2 approved
 on 2026-10-16 (15 of 15 PASS; the independent verifier did not re-run after
@@ -30,8 +37,816 @@ the final fixes, [`doc/plan2-evaluation.md`](doc/plan2-evaluation.md)).
 Plan 1 accepted on 2026-10-16, with criteria 8 and 9 kept as FAIL and accepted
 as documented exceptions ([`doc/research/plan1-evaluation.md`](doc/research/plan1-evaluation.md)).
 
-Plan 4 progress (update as each step finishes; read this first after a
-context compaction). Steps and their checks: [proposal.md, section 4](doc/proposal.md#4-prioritised-mvp-roadmap).
+Plan 5 progress (update as each item finishes; read this first after a
+context compaction). Items, order and rules: [Plan 5](#plan-5---post-mvp-improvements).
+Baseline: cf58739, 177 top-level tests in 14 packages, 0 FAIL.
+
+- Phase 0, item 1 (step 8's additions live in Windows Terminal): **done**
+  (2026-10-17), 6 of 6 PASS, main session, no CLI, no quota. Harness
+  `p5look.ps1` (session scratchpad; SendInput keys, UI Automation text,
+  window screenshots). Runs:
+  - Run 1: zone-title checks FAIL, a test defect: PowerShell variables are
+    case-insensitive, so the screen text `$t` overwrote the titles table `$T`;
+    the saved screen text showed all four titles. Variable renamed.
+  - Run 2: every check PASS, but the screenshots had no colour. Cause: the
+    agent's shell has `NO_COLOR=1`, which the new Windows Terminal passed to
+    the application, which honoured it. Every earlier Windows Terminal run
+    launched from the agent's shell (L5 included) was colourless; their checks
+    read text only, so their results stand. The harness now removes
+    `NO_COLOR` before launch.
+  - Runs 3 and 4 (4 adds a third PgUp shot): 22 of 22 automatic checks PASS
+    each, maximised and at the default size.
+  Results:
+  1. PASS: started with `wt.exe -w new --maximized` on
+     `claude-markdown-demo.jsonl`; "Idle" after the 22 s replay; titles ABCD.
+  2. PASS, from the screenshots: heading "## Summary of the run" violet bold
+     with grey markers; bold with grey `**`; inline code blue with its
+     backticks; list numbers coloured; quote italic with a grey `>`; link text
+     blue underlined, URL grey italic; fence language tag yellow, keywords
+     violet, strings green, numbers orange, comments grey italic; table and
+     rule drawn. The screen text keeps every marker.
+  3. PASS at both sizes: the overlay lists Ctrl+Q, with its scroll hint
+     ("↓ 6 more" maximised, "↓ 20 more" at the default size); Esc gives back
+     the identical text.
+  4. PASS at both sizes: z on C, A and D shows only that zone's title, the
+     zone fills the screen with "z or Esc restore"; Esc gives back the
+     identical text.
+  5. PASS: every screenshot of runs 3 and 4 looked at; no wrapped or cut row,
+     borders joined, no stray characters, maximised and at the default size.
+  6. PASS: Ctrl+Q closed the window; no `acc-p5` process left.
+  Observation for the owner, no change: "∴ thinking" stays under the final
+  answer once the turn is over (`internal/render/dashboard.go:399-401`, by
+  design and in the golden frames); it marks that the answer followed a
+  thinking block, not that the model is still thinking.
+  Criteria:
+  1. The build of cf58739 starts with `wt.exe` in a new, maximised Windows
+     Terminal window on step 8's Markdown demo (the subagent-approval
+     recording with a 50-line Markdown answer, `claude-markdown-demo.jsonl`
+     in the session scratchpad); the screen text shows the four zone titles.
+  2. Markdown: in a window screenshot, zone B's heading, bold, inline code,
+     list, quote and fenced code are drawn in styles distinct from the body
+     text, and the fence's keywords, strings and comments in distinct
+     colours; the screen text keeps the answer's characters (no marker
+     dropped).
+  3. Help overlay: F1 opens it, its text lists "Ctrl+Q"; Esc closes it and
+     the screen text equals the one before.
+  4. Zoom: A, C and D each focused and z pressed: the screen shows that
+     zone's title and none of the others'; Esc gives back the screen text
+     from before.
+  5. Every screenshot looked at directly: no row wrapped or cut, borders
+     joined, no stray characters; the same checks at Windows Terminal's
+     default size (memory: maximised first, then the normal size).
+  6. Ctrl+Q closes the application; no process of it left.
+- Phase 0, item 2 (the Codex slash note live, physical keys): **done**
+  (2026-10-17), 4 of 4 PASS, no turn, no quota. Harness `p5slash.ps1`
+  (session scratchpad), Codex 0.163.0, folder `acc-p5slash-141311`; the
+  owner typed `/status` and pressed Enter once on the physical keyboard.
+  1. PASS: no CLI session open in a terminal (three under VS Code, two
+     parentless `codex.exe` from before, none closed); snapshot taken; window
+     maximised; startup screen showed the folder; "Ready to work on this
+     project." after Enter; one Codex process started.
+  2. PASS: zone B showed the note in full, "· /status is a command of
+     Codex's own terminal; it does not work here, so nothing was sent. Zone D
+     shows the 5h and weekly limits. / Press Enter again to send it to the
+     model as a message."; the editor still held `/status`. The harness's
+     check for "Zone D shows the 5h and weekly limits" FAILed on one screen
+     row, a test defect: the note wraps after "5h and"; with zone B's rows
+     joined the phrase is there, and the screenshot shows it.
+  3. PASS: zone A "no turn yet", badge Idle; no Codex session file written
+     after launch (Codex writes one at the first turn), so none holds
+     `/status`.
+  4. PASS: Ctrl+Q closed the window, no Codex or `acc-p5` process left; the
+     folder empty; `confcheck compare -cli-ran` PASS, every file identical,
+     `~\.claude.json` included, 0 new session files.
+  The physical key presses this covers: typed characters and Enter reach the
+  editor as with SendInput. Criteria:
+  1. Before: no Claude Code or Codex session of the owner's open in a
+     terminal (closed if there is one); `confcheck snapshot` taken; a new
+     empty folder under `%LOCALAPPDATA%\Temp`. The build of cf58739 starts
+     with `wt.exe` in a new, maximised window with `--provider codex
+     --project` that folder; after Enter on the startup screen, zone A shows
+     "Ready to work on this project."
+  2. The owner, on the physical keyboard, types `/status` in the editor and
+     presses Enter once. Zone B then shows the dashboard's note: "a command
+     of Codex's own terminal", "nothing was sent", "Zone D shows the 5h and
+     weekly limits", "Press Enter again"; the editor still holds `/status`.
+  3. No turn started: zone A lists no turn stage and the status badge is not
+     "Working"; no Codex session file for that folder holds `/status` as a
+     user message.
+  4. After: Ctrl+Q closes the application; no Codex process it started is
+     left; the folder is still empty; `confcheck compare -cli-ran` PASS, or
+     NOT-VERIFIED only for files Codex writes itself.
+- Phase 1, item 3 (the whole command or diff behind an approval card):
+  **done**, 9 of 9 PASS. Criteria, each checked by a test unless said otherwise:
+  1. Enter on a focused, pending card opens a full-screen viewer: the title
+     bar, then "◀ back (Esc)", "! APPROVAL" (or "? QUESTION"), who asks and
+     the tool; the zones are not drawn.
+  2. Every line of the request is shown, none cut: a 40-line command shows
+     its 40 "$ " lines and no "more lines"; a line wider than the screen
+     wraps; the target (path or URL) is whole.
+  3. A diff is coloured: Claude Code's Edit, MultiEdit and Write from the
+     request's input, Codex's fileChange from its linked tool call's
+     `changes[].diff` (P6b: `hello.txt`), "-" lines in the failed colour and
+     "+" lines in the done colour.
+  4. ↑ ↓ PgUp PgDn Home End and the wheel scroll it; it opens at its top.
+  5. Esc closes it: the same card is focused and still pending, the
+     conversation where it was; a second Esc returns to the input.
+  6. a, d and c in the viewer answer as on the card (the same line written
+     to the CLI, once) and close it; a key that answers nothing does nothing.
+  7. An approval resolved while it is open (expired, answered elsewhere)
+     shows its outcome in the viewer's head; Esc then returns to the input.
+  8. The focused card's hint, the key overlay and the viewer's own hint name
+     Enter; ui-design.md's Departures no longer lists it.
+  9. The full check passes; the golden frames that change differ only in
+     the card's hint (diff reviewed).
+  Evidence: `internal/app/view_test.go` TestApprovalViewer (P2 open, back,
+  answer; scroll over a 200-line command; resolved while open; P6b
+  fileChange declined once) covers 1, 4-8, and checks the dashboard after
+  Esc is the same frame as before Enter; `internal/render/viewer_test.go`
+  TestViewerWhole (40 lines and a 195-character line at 80 columns, the
+  whole path), TestViewerDiff (Edit, MultiEdit, Write, fileChange colours)
+  and TestViewerHead (each status and its hints) cover 2, 3 and 7. Full
+  check: build; vet, also `-tags live` and `-tags timing`; gofmt empty;
+  `go test ./...` 181 top-level tests (177 + 4) in 14 packages, all PASS;
+  race detector clean; golden frames rewritten, no file changed (the card
+  hint shows only when it is focused). Changes beyond the viewer: an added
+  or deleted file's fileChange content (P6b: `hello`) now reads as "+" or
+  "-" lines, in the viewer and in the inspection's diff, as Write's do;
+  ui-design.md's Enter row names both sources and its Departures row is
+  gone. Not verified: the viewer live in Windows Terminal (no live turn;
+  the frames are rendered by the same code the tests draw).
+- Phase 1, item 4 (Enter expands a folded paste or tool output in B):
+  **done**, 7 of 7 PASS. Zone B has no item cursor (its focus is the editor), so
+  one is added, reached from the input; a click is not used, since a click
+  on a row starts a selection. Criteria, each checked by a test:
+  1. With the input focused and the draft empty, ↑ puts a cursor on B's
+     newest expandable entry: a sent message over 20 lines (folded), an
+     orchestrator tool line, or a failure (every one: a one-line failure
+     can be cut by the width; criterion amended while building). Its row
+     shows "Enter full view · ↑↓ entries · Esc back" in the attention
+     colour, and B's row count does not change. With no such entry, or with
+     a draft, ↑ does what it did.
+  2. ↑ ↓ move between expandable entries only, B scrolling to keep the
+     focused one in view; ↓ past the newest and Esc return to the input; a
+     typed character returns to the input and is typed there; F2 still
+     focuses the oldest pending card.
+  3. Enter or → opens it full screen, opening at its top: a 200-line paste
+     shows its 200 lines, none cut, under "YOU" and its time; a tool shows
+     its name, status, its input (command lines; a diff coloured as in item
+     3) and its whole output, or "no output"; an error shows every line.
+  4. ↑ ↓ PgUp PgDn Home End and the wheel scroll it; Esc returns to the
+     conversation with the cursor on the same entry, the frame identical to
+     before Enter; a second Esc returns to the input.
+  5. A tool's view is live: output and status that arrive while it is open
+     show.
+  6. The key overlay and ui-design.md describe the cursor and the view.
+  7. The full check passes; golden frames unchanged, or the diff reviewed.
+  Evidence: `internal/render/viewer_test.go` TestEntryCursor (at 120x40,
+  200x60 and 80x24, each expandable entry marked: the same row count and
+  entry starts, exactly two rows differ, the marked one and the bottom
+  hints; focus in A, C or D draws no cursor) and TestEntryViewerBody (a
+  30-line paste whole; a tool's command, status, elapsed and output; "no
+  output" while running; an unknown input raw; an Edit's diff; a call no
+  longer recorded; every line of a failure) cover 1, 3 and 5;
+  `internal/app/view_test.go` TestEntryViewer, on P2 replayed whole plus a
+  200-line paste, covers 1-5: the expandable entries are the Write, turn
+  3's failure and the paste; ↑ ↑ ↑ walk them, ↑ at the oldest stays, ↓ ↓ ↓
+  return to the input; a typed x lands in the editor; ↑ with a draft
+  places no cursor; Enter and → open the paste (200 lines, End shows line
+  200, the wheel and Home scroll back), Esc gives the same frame as before
+  Enter with the cursor kept, a second Esc the input; the failure's and the
+  Write's views (diff, "OUTPUT", the output); F2 clears the cursor; twelve
+  folded messages added at 160x60 are each in view as ↑ and ↓ reach them
+  (with `reveal`'s scroll disabled the test fails at message 8); on P2
+  pending, the open Write view shows "no output", then the output and
+  "completed · 1s" once they arrive. TestKeyOverlayRows now also checks
+  ui-design.md's "B's entries" table (27 rows). Full check: build; vet,
+  also `-tags live` and `-tags timing`; gofmt empty; `go test ./...` 184
+  top-level tests (181 + 3) in 14 packages, all PASS; race detector clean;
+  golden frames rewritten, no file changed; the changed files have no CR
+  and no BOM (bytes counted). ui-design.md: Zone B's "Expanding", the
+  scrolling section, the key table; a Departures row added for thinking
+  text, which the record does not keep (only that a thinking block
+  arrived), so "∴ thinking" unfolds nothing. Not verified: the cursor and
+  view live in Windows Terminal (no live turn; the tests draw the same
+  frames); "↓ N new" can cover the marked row while the view is held, as it
+  covers any last row (existing behaviour).
+- Phase 1, item 5 (scrolling in zones A and C): **done**, 8 of 8 PASS. Before, A's
+  tree shows its tail or the cursor's row, C's list its top or the selected
+  agent, C's preview its tail; PgUp PgDn Home End and the wheel do nothing
+  there, though the key overlay and ui-design.md say a focused panel
+  scrolls (End in C resumes B's follow mode instead). Each pane, A's tree,
+  C's list and C's preview, gets a held view. Criteria, each checked by a
+  test:
+  1. Focus A: PgUp and PgDn scroll the tree one page (its rows less one),
+     Home shows its first row, End its tail as before (following again);
+     the cursor stays on its node, in view or not. While held away from the
+     tail, a new stage does not move the view.
+  2. Focus C: PgUp and PgDn scroll the list one page, Home shows its top,
+     End its last agents; the selection stays.
+  3. ↑ ↓ in a held pane keep the cursor or selection in view, the view
+     moving no more than needed; a pane never scrolled draws exactly as
+     before (golden frames unchanged).
+  4. The wheel over A's tree, C's list or C's preview scrolls that pane by
+     3 rows, whatever has the focus, the focus unchanged; a held preview
+     stays as the agent's events arrive and follows again at its end or
+     when another agent is selected.
+  5. A pane held away from where it rests says so on its hint row, in the
+     progress colour of B's "↓ N new": the rows above and below and the
+     way back, "↑ 12 ↓ 25 · End follows" (A), "· Home top" (C), "· scroll
+     to the end follows" (the preview); C at 80x24 has no hint row (three
+     rows). (Amended while building it: "↑ 12 above · ↓ 25 below" did not
+     fit zone A's 30 columns at 120x40, and a pane held where it rests
+     shows its usual hint.)
+  6. Zoomed A and C and the 80x24 layout scroll the same way.
+  7. The key overlay and ui-design.md say what scrolls where.
+  8. The full check passes; golden frames unchanged.
+
+  Evidence: `internal/app/pane_test.go` TestPaneScroll, on the
+  codex-subagents mock with 60 more turns (one stage and one agent each):
+  "tree" covers 1, 3 and 5 at 120x40 (PgUp a page held with its hint, PgDn
+  back to the tail following, Home top 0 with the cursor unmoved, two new
+  stages leave the held view at 0, End follows; ↑ in a tree held at its top
+  brings the cursor to the view's last row, ↓ to the last node follows; End
+  with the cursor above the tail shows the tail and keeps following it as a
+  stage arrives); "list" covers 2, 3 and 5 (PgDn a page with the "↑ N ↓ M ·
+  Home top" hint, End the last agents, B's held view not resumed,
+  the selection unchanged, Home top without the held hint, ↓ from the end
+  to the first agent shows it at the top, ↓ past the view moves it one
+  row); "wheel" covers 4 and 5 at 170x50 (the wheel over A, C and the
+  preview moves each 3 rows with the focus left on B, the three held hints
+  drawn, a new event leaves the held preview, scrolling to its end
+  follows, another agent's preview starts at its tail); "zoom and 80x24"
+  covers 6 (a page in zoomed A and C and at 80x24, A's hint, no hint in a
+  three-row C, each frame its exact size). Mutations: with `paneReveal`
+  disabled the test fails 4 times, with the hold ignored in `paneTop` 13
+  times. Criterion 7: the overlay row "PgUp PgDn Home End · page, top, end;
+  End follows again (A, inspection)" and ui-design.md (Zone A keys, Zone C
+  preview and keys, the focused-panel table, "Scrolling, collapsing, full
+  screen", the drag note). Full check: build; vet, also `-tags live` and
+  `-tags timing`; gofmt empty; `go test ./...` 185 top-level tests (184 +
+  1) in 14 packages, all PASS; race detector clean; golden frames
+  rewritten, no file changed; the changed files have no CR and no BOM.
+  Changed: End in zone C shows the end of C's list instead of resuming B's follow
+  mode (zone D keeps that). Not verified: the wheel and keys live in
+  Windows Terminal (no live turn; the tests drive the same messages).
+- Phase 1, item 6 (a failed tool's line in B): **done**, 8 of 8 PASS. Before it, B
+  drew every tool call "▸ name" in grey, its status only in A and the
+  viewer; the entry already holds the call's ID (`MessageID`, item 4).
+  Criteria:
+  1. A call that failed (Claude Code `is_error`; Codex `failed`,
+     `declined` or a non-zero exit) shows in B as one row: "✗" in the
+     failure colour, its name, " · " and the first non-blank line of its
+     output in the failure colour, the origin label on the right, cut to
+     the width.
+  2. A failed call with no output reads "✗ name · failed"; a call denied
+     at its approval "✗ name · denied".
+  3. Running, completed and unfinished calls are drawn as before: golden
+     frames unchanged.
+  4. The error is content: a selection across the row copies the name and
+     the error as two lines, without "✗" or " · "; a double click in the
+     error selects one of its words.
+  5. With the entry cursor on that row: "▸" and the hint in the attention
+     colour, the error still in the failure colour; Enter opens item 4's
+     viewer as before.
+  6. From events through the reducer: a tool started then completed with
+     `IsError` and an output gives criterion 1's row; the same call
+     completed without `IsError` gives the "▸" row.
+  7. ui-design.md: the Entries bullet and the Departures row say what B
+     now shows.
+  8. The full check passes.
+
+  Evidence: `TestToolFailureRow` (internal\render) builds five calls from
+  events through the reducer and checks, at 120x40, 200x60 and 80x24, the
+  rows "✗ Bash · exit status 1: FAIL pkg/a" (the first non-blank line, past
+  two blank ones, without the next), "✗ Grep · failed", "✗ Edit · denied",
+  "▸ Read" and "▸ Glob", their styles, the origin label after the error,
+  no row wider than the screen, a long error cut on one row, the same call
+  completed without `IsError` as "▸ Bash", and the cursor row (criteria 1,
+  2, 3, 5, 6). `TestFailedToolRow` (internal\app) copies
+  "Bash\nexit status 1: FAIL pkg/a" from a drag across the row, "status"
+  from a double click, and opens the viewer on the marked row (criteria 4,
+  5). `TestToolError` and `TestFailedCommand` pin the failed calls in the
+  probe recordings: one Claude Code `is_error` in p3, three failed Codex
+  commands in p7 and p7b; all are subagents' calls, which B does not show,
+  hence the synthetic events above. Mutation check: with `toolError`
+  always empty, four tests fail. ui-design.md: the Entries bullet and the
+  Departures row (criterion 7). Full check: build; vet, also `-tags live`
+  and `-tags timing`; gofmt empty; `go test ./...` 189 top-level tests
+  (185 + 4) in 14 packages, all PASS; race detector clean; golden frames
+  rewritten, no file changed; the changed files have no CR and no BOM.
+  Not verified: a live failed call in Windows Terminal (no live turn).
+  Known limit: a failed Codex command's error is the first non-blank line
+  of its aggregated output, which can be stdout (p7b: "FullName"), since
+  the exit code is not kept in the call.
+- Phase 1, item 7 (each subagent's model in zone C): **done**, 7 of 7 PASS.
+  Before it, no event carried a subagent's model, so every row reads "model N/A".
+  Sources: Claude Code's subagent `assistant` lines carry `message.model`
+  with `agent_id` (P3, P3b: "claude-haiku-5-5"); Codex 0.163.0's
+  `subAgentActivity` carries `model`, documented in its generated schema as
+  "Resolved model at sub-agent creation; absent from older records" (P7b:
+  "gpt-6-sol"); Codex 0.145.0 has no such field (P7). Criteria:
+  1. Claude Code: a subagent's message with a model gives that agent the
+     model; the mapper sends it when it first appears or changes, not on
+     every message (P3: one model event for `ad30fdcc2c6928f90`).
+  2. Codex: `subAgentActivity` with `model` gives the child that model
+     (P7b: both `/root/list_files` and `/root/create_found` "gpt-6-sol");
+     without the field (P7) the child keeps "model N/A".
+  3. Zone C's row shows the model in its colour, a leading "claude-"
+     dropped to fit the column, as the mock-up's "haiku-5-5"; the preview
+     and inspection headers show the name in full; "model N/A" without one.
+  4. The model is the agent's own, observed: never the session's model,
+     the Agent tool's input or another agent's.
+  5. The mock files are rewritten from the probes; the golden frames
+     change only in zone C's model column, its preview header and the
+     inspection header that criterion 3 names (diff reviewed).
+  6. ui-design.md (zone C row) and ASM-14 say Codex children from 0.163.0
+     report their model.
+  7. The full check passes.
+  Evidence: the Claude mapper sends an `agent.progress` with the model when
+  a subagent's message first shows it or changes it, never for a model in
+  angle brackets (`<synthetic>`); the Codex mapper reads
+  `subAgentActivity.model`; the reducer keeps only the agent's own,
+  observed and documented, and a model that arrives after the agent ended
+  updates it without a "progress after end" note. `TestSubagentModel`
+  (claude): P3 and P3b give exactly one model event each,
+  "claude-haiku-5-5"; a repeat gives none, a change one, `<synthetic>` and
+  the main thread none, a block-less message keeps its `Completed`
+  (criterion 1). `TestSubagentModel` (codex): P7 none, P7b both children
+  "gpt-6-sol" (criterion 2). `TestAgentModel` (state): no model from the
+  session's, one from `AgentStarted` or `AgentProgress`, another agent's
+  untouched, the late model (criterion 4). `TestAgentModelColumn`
+  (render), from events through the reducer at 80x24, 120x40 and 200x60:
+  "haiku-5-5", "gpt-6-sol" and "model N/A" in `modelStyle`'s colours, no
+  "claude-haiku" in a row, "claude-haiku-5-5" in the preview header, no
+  row wider than the screen (criterion 3). Mutation check: without the
+  prefix trim, the repeat check, the `<` check, Codex's `Model` or the
+  late-model branch, the matching test fails (5 of 5 killed). Mocks: the
+  Claude mock gains one model event, every agent payload a `Model` field;
+  the dashboard replay is 155 events (154 before). Golden frames: the six
+  that show the Claude subagent change only in "model N/A" to
+  "haiku-5-5" in C, the preview header and the inspection header to
+  "claude-haiku-5-5"; the 80x24 inspection header, already cut, cuts one
+  word earlier (criterion 5, amended before the check to name the
+  inspection header). ui-design.md (zone C row, ASM list),
+  architecture.md ASM-14 and reliability.md's Codex Model row (criterion
+  6). Full check: build; vet, also `-tags live` and `-tags timing`; gofmt
+  empty; `go test ./...` 193 top-level tests (189 + 4) in 14 packages, all
+  PASS; race detector clean; the changed files have no CR and no BOM.
+  Not verified: a live subagent's model in Windows Terminal (no live
+  turn); a Codex `collabAgentToolCall` `model` (documented for spawnAgent,
+  in no recording) is not used.
+- Phase 1, item 8 (allow for the session on Codex): **done**, 7 of 7 PASS.
+  Before it, `s` was never offered: the adapter did not read
+  `availableDecisions` (plan 4, step 5, check 4). Sources: the app-server
+  README lists it in a request ([T] README:1526-1553, codex-cli.md,
+  question 4); L3 (Codex 0.145.0) saw `["accept", {"acceptWithExecpolicyAmendment": …}, "cancel"]`;
+  no probe recording carries it; Codex 0.163.0's generated schema
+  (`codex app-server generate-json-schema`) has no such property, while
+  its decision type keeps `acceptForSession` ("future prompts in the same
+  session-scoped approval cache should run without prompting"). Criteria:
+  1. The Codex mapper keeps a request's `availableDecisions` strings on the
+     approval, never its objects (the amendments); without the field, none
+     (P6b and P7 requests: none; an L3-shaped request: "accept", "cancel").
+  2. `s` on a focused Codex card whose request lists `acceptForSession`
+     sends `acceptForSession` once, with the request's id; from the full
+     view as well. Without it in the list, for Claude Code, and on a
+     question, `s` sends nothing.
+  3. The state refuses `acceptForSession` for a request that does not list
+     it, with a note, whatever sends it.
+  4. "s allow for the session" appears in the focused card's hint and the
+     full view's hint only when the request lists it; the probe frames
+     still offer it nowhere (`noSessionAnswer`).
+  5. An answered card reads "allowed for the session by you"; an amendment
+     is never offered nor sent.
+  6. The key overlay lists `s`; ui-design.md (Approvals key table,
+     Departures row) and events-and-state.md (Approval machine) say when
+     it is offered.
+  7. The full check passes; golden frames unchanged except the key overlay,
+     if a frame shows it (diff reviewed); mocks rewritten for the new field.
+  Evidence (2026-10-17): `TestOfferedDecisions` (codex): no request in
+  P6b, P7 or P7b offers anything; L3's list gives "accept", "cancel",
+  another keeps "acceptForSession" and "decline" and drops a network
+  amendment, `[]` and `null` give none (criterion 1).
+  `TestCodexSessionAllow` (app), on P6b with its request given a synthetic
+  list (L3's, plus `acceptForSession` and `decline`): from the card and
+  from the full view, two presses of `s` write exactly
+  `{"id":0,"result":{"decision":"acceptForSession"}}`, the card reads
+  "allowed for the session by you"; without the list, nothing is written,
+  the approval stays pending, no "answer refused" note, no frame offers it;
+  no frame shows "execpolicy" or "acceptWith" (criteria 2, 4, 5).
+  `TestApprovalCards`: `s` on a focused Claude Code card sends nothing and
+  types nothing (criterion 2). `TestStateMachines`: `acceptForSession` for
+  a request that does not list it is refused with a note, then allowed for
+  one that does (criterion 3). `TestViewerHead`: the full view's hint and
+  its "allowed for the session by you" outcome; the key overlay's `s` row
+  (criteria 4 to 6). Mutation check, 10 of 10 killed: the mapper keeping
+  objects, `ForSession` always true, no state refusal, no `s` key, no `s`
+  in the full view, no card hint, no full-view hint, either answered text,
+  no key guard. A provider guard on the key was removed as unreachable
+  (only the Codex mapper fills the list). ui-design.md (Approvals key
+  table, Enter row, Departures row), events-and-state.md (Approval
+  machine), the `noSessionAnswer` and Codex `Capabilities` comments
+  (criterion 6). Mocks: every approval payload gains `"Offered":null`,
+  nothing else (compared pairwise). Golden frames unchanged; none shows
+  the key overlay. Full check: build; vet, also `-tags live` and
+  `-tags timing`; gofmt empty; `go test ./...` 195 top-level tests (193 +
+  2) in 14 packages, all PASS; race detector clean; the changed files have
+  no CR and no BOM (criterion 7). Not verified: a live request listing
+  `acceptForSession` - none was seen, and Codex CLI 0.163.0's generated
+  schema has no `availableDecisions`, so on that version `s` may never be
+  offered; `d` still sends `decline` when a list omits it, as L3's did
+  (L4 saw decline work).
+- Phase 1, item 9 (failure cards and session-state lines copied): **done**,
+  6 of 6 PASS. Before it, B's session state (the failure cards, "Starting …",
+  "Session closed.", "Waiting for instructions") was decoration, never
+  copied (ui-design.md, Selection and copy, MVP limits). Criteria:
+  1. A selection over a failure card copies its title, each line of its
+     reason whole (wrapped or not), "exit code N", "stderr:" and each stderr
+     line whole (even when cut); never the ✗, the indentation or the key
+     hint.
+  2. The other session-state lines copy the same way: "Starting <CLI> in
+     <project>…", "Session closed.", "Waiting for instructions", "Ready to
+     work on this project."; never the spinner.
+  3. A selection from a conversation entry into the session state copies
+     both, separated by a blank line; double-click selects a word and
+     triple-click a line of the session state; a selection there is
+     highlighted.
+  4. The drawing is unchanged: the same text on the same rows at 80x24,
+     120x40 and 200x60 (a test pins the rows of a failure card, "Starting
+     …" and "Waiting for instructions"); golden frames unchanged. Two
+     departures, stated before the check: the space where a reason wraps is
+     now inside its styled span (a foreground colour on a space, nothing
+     visible), and a tab in a stderr line is drawn to its tab stop, as in
+     every content line of B, no longer as one space.
+  5. ui-design.md's Selection and copy no longer lists them as an MVP limit.
+  6. The full check passes.
+  Evidence (2026-10-17): B's session state is now content: item
+  `len(Conversation)` of zone B, its lines from `sessionLines` (the parts
+  `sessionParts` draws, the key hint aside), copied through `bLines` like
+  an entry's; the ✗, the indentation, the spinner and the hint stay
+  decoration. A non-wrapped row cut at the edge ends in a "…" that stands
+  for the rest of its line (`cutRow`). `TestSessionStateCopy` (render), for
+  the seven states (mock start failed, start failed, crashed and
+  resumable, crashed, starting, closed, ready) at 80x24, 120x40 and
+  200x60: the lines are exactly the title, the two reason lines whole,
+  "exit code 3", "stderr:", the last five stderr lines (one cut, one with
+  a tab kept), or the state's line(s); a selection over every shown row
+  copies them (all of them at 120x40 and 200x60, the scrolled-in part at
+  80x24), never "✗", "Ctrl+" or the spinner; the last line is highlighted,
+  the ✗ never; `LineText` gives each line; a selection kept after the
+  state is gone copies what is left (criteria 1 to 3). `TestSessionCutRow`:
+  at widths 8 to 60, a cut row's shown part then its "…" copy the line
+  exactly, cut in a word or after a tab (criterion 1).
+  `TestSessionStateMouse` (app), on a scripted Codex session that answers,
+  writes three stderr lines and exits with code 3: a drag from the answer
+  to past the cut stderr row copies "an answer", a blank line, then the
+  card down to the whole cut line; a double click copies "exited", a
+  triple click on the cut row its whole line (criteria 1 and 3). Drawing:
+  the rows of every state at widths 30, 56, 96 and 156, text and style
+  runs, compared before and after: identical but for the two departures of
+  criterion 4; `TestSessionStateCopy` pins the failure card's, "Starting
+  …"'s and "Waiting for instructions"' rows; golden frames unchanged
+  (criterion 4). Mutation check, 12 of 12 killed: no session case in
+  `bLines`, the hint copied, the hint drawn as content, no line count, the
+  wrong item, the lead as content, no `cutRow`, its rest empty, its text
+  or its tab ignored, no cut guard, no skip of an empty item. ui-design.md,
+  Selection and copy: the session state described, the MVP limit removed
+  (criterion 5). Full check: build; vet, also `-tags live` and
+  `-tags timing`; gofmt empty; `go test ./...` 198 top-level tests (195 +
+  3) in 14 packages, all PASS; race detector clean; the changed files have
+  no CR and no BOM (criterion 6). Not verified: a real failure card in
+  Windows Terminal (copied by hand), as no CLI was made to fail live.
+- Phase 1, item 10 (a deny message specific to a question): **done**,
+  6 of 6 PASS. Before it, denying a Claude Code question
+  (`AskUserQuestion`) sent the generic `DenyMessage`, "The user denied this
+  in Agent Command Center.", while the card told the owner to answer in
+  the next message (CC-10 q3: the `updatedInput` round trip stays
+  unprobed). Criteria:
+  1. `d` on a readable Claude Code question writes one control response,
+     `{"behavior":"deny","message":QuestionDenyMessage}`, the message being
+     exactly "The user saw these questions in Agent Command Center, which
+     cannot answer them here, and will answer them in their next message.
+     Wait for that message; do not ask them again." A second `d` writes
+     nothing.
+  2. Every other deny keeps `DenyMessage` byte for byte: an approval, an
+     unreadable question (denied automatically, its questions never shown),
+     `c` on a question (the turn is cancelled, no answer awaited).
+  3. A denied question's card reads "✗ … denied by you HH:MM:SS · answer
+     in your next message", in the card and the full view; a denied
+     approval's line, and a question cancelled by `c`, Ctrl+C or quitting,
+     read "denied by you HH:MM:SS" as before.
+  4. `a` on a question, from the card or the full view, writes nothing and
+     leaves it pending: the hint never offered it, and allowing would echo
+     the unanswered questions, the unprobed round trip (found while
+     writing these criteria).
+  5. ui-design.md (Questions), events-and-state.md (`question.requested`)
+     and the session's comments name the message.
+  6. Golden frames unchanged; the full check passes.
+  Evidence (2026-10-17): the Claude Code session remembers which pending
+  request is a question (`pendingReq.question`); `Answer` writes
+  `QuestionDenyMessage` for a `deny` of a readable question, `DenyMessage`
+  for every other deny and for a cancel. `a` on a question card is a no-op
+  (`cardKey`); the full view routes its keys through it. The state marks an
+  approval answered by a cancel (`Approval.Cancelled`, set by `c`, Ctrl+C
+  and quitting), and the card and the full view add "· answer in your next
+  message" only to a question denied by `d`. `TestQuestionDeny` (app), on a
+  scripted Claude Code session with a synthetic `AskUserQuestion`
+  `can_use_tool` request (no probe recorded one): the message is pinned
+  word for word; `a` on the card and in the full view writes nothing and
+  the question stays pending; `d` then `d` writes one deny with
+  `QuestionDenyMessage`, and the card reads "denied by you" and "answer in
+  your next message" (criteria 1, 3, 4); a Write approval denied writes
+  `DenyMessage`, its line without the suffix; `c` on a question in a
+  running turn writes `DenyMessage`, its line without the suffix; an
+  unreadable question is denied automatically with `DenyMessage`
+  (criteria 2, 3). `TestViewerHead` (render): the full view's outcome has
+  the suffix for a denied question only, not for an approval or a
+  cancelled question (criterion 3). `TestStateMachines`: Ctrl+C and
+  quitting mark the approvals they cancel. Mutation check, 13 of 13
+  killed: the question message never used, the unreadable or the cancel
+  case not excluded, the question not tracked, the message text changed,
+  the `a` guard removed, the card's or the full view's suffix removed or
+  ignoring a cancel, `c`, Ctrl+C or quitting not marking the cancel.
+  ui-design.md (Questions, and `a` in the key table), events-and-state.md
+  (`question.requested`) and the session's comments name the message
+  (criterion 5). Full check: build; vet, also `-tags live` and
+  `-tags timing`; gofmt empty; `go test ./...` 199 top-level tests (198 +
+  1) in 14 packages, all PASS; golden frames unchanged; race detector
+  clean; the changed files have no CR and no BOM (criterion 6). Not
+  verified: the live round trip, how Claude Code reacts to the message (no
+  quota spent; CC-10 q3 stays open).
+- Phase 2, item 11 (Markdown styling in the inspection's Messages tab):
+  **done**, 5 of 5 PASS. Before it, the tab drew an agent's AI messages
+  plain, while zone B styles them (ui-design.md, Limits). Criteria:
+  1. An agent's AI message in the Messages tab takes zone B's Markdown
+     styles: each construct of the Markdown test fixture (heading and its
+     marker, strong, emphasis, inline code, link, quote, bullets, table
+     pipes and rule, fence language, keyword, comment, string, number, a
+     code span's row after its wrap, code in an unclosed fence) has the
+     style zone B gives it. Amended while building it: an AI message's
+     later rows take text colour, as in zone B, where they were grey.
+  2. The same text: with styling on and off, the tab draws the same
+     characters on the same rows at 80x24, 120x40 and 200x60, scrolled
+     from top to bottom; every cell hits the same place, and a selection
+     over every row copies the same text.
+  3. Everything else in the tab is unchanged: the start and end rows, the
+     error and history lines, a message that is not AI text (drawn plain),
+     the time and origin labels.
+  4. ui-design.md: the Markdown section names the tab; the Limits row "AI
+     text as Markdown everywhere" is removed.
+  5. Golden frames unchanged; the full check passes.
+  Evidence (2026-10-17): `wrap` is split into `paragraphs` (tabs as four
+  spaces, controls dropped) and `wrapPara`, which gives each row as a byte
+  range of its paragraph; the Messages tab styles an assistant entry's rows
+  with `mdLines` over its paragraphs and `mdRuns` over each whole paragraph
+  (`styledRow`), so a code span keeps its style across the wrap; other
+  roles take the plain path as before. Found on the way: `wrap` looped for
+  ever, its memory growing, on a rune wider than the row (a wide character
+  at width 1); a rune wider than the row now takes a row alone.
+  `TestWrapUnchanged` (render): 3,000 seeded texts of words, runs of
+  spaces, tabs, CRLF, CR, controls including 0x1F and DEL, wide and
+  accented runes, at widths 1 to 30, wrap exactly as the old code (kept in
+  the test, with the one fix) and `wrap("a界b", 1)` is three rows.
+  `TestStyledRow`: a row takes each run's style over its bytes and the base
+  style past the last run. `TestInspectMarkdown` (render), an agent with
+  the Markdown fixture's two AI messages around a long notice, an end, an
+  error and a history line: at 80 columns each of 19 constructs has zone
+  B's style, and with styling off each is text or grey (criterion 1); at
+  80x24, 120x40 and 200x60, at every scroll position, styled and plain
+  draw the same text, every row's hit units are equal, `HitIn` agrees on
+  every fifth column and a selection over the shown rows copies the same
+  text (criterion 2); every row that is not an AI message's (start,
+  notice, end, error, history, blank) is equal span by span, text, style
+  and kind (criterion 3). Mutation check, 12 of 12 killed: `styledRow`
+  ignoring its runs, dropping its tail or the row's start; styling never
+  on; the role check removed; continuation rows unstyled; line kinds
+  ignored; the trailing-space trim removed; the wide-rune fix taking the
+  whole word; DEL or 0x1F kept; the carried word's width lost. Removing the
+  wide-rune fix was not run as a mutant: it hangs and exhausts memory (it
+  did once, by accident); the test's direct case covers it. ui-design.md:
+  the Markdown section names the tab, its unchanged wrap and the
+  continuation colour; the Limits row is removed (criterion 4). Full
+  check: build; vet, also `-tags live` and `-tags timing`; gofmt empty;
+  `go test ./...` 202 top-level tests (199 + 3) in 14 packages, all PASS;
+  golden frames unchanged; race detector clean; the changed files have no
+  CR and no BOM (criterion 5).
+- Phase 2, item 12 (every line of a block comment highlighted): **done**
+  (2026-10-17), 6 of 6 PASS, checked by the main session (deterministic
+  commands; no subagent, no CLI started, no quota used). Before it, a
+  `/* … */` comment over several lines was highlighted on its first line
+  only, the next ones drawn as code (ui-design.md, Limits). Criteria:
+  1. In a fenced block whose language does not use `#` comments, every
+     line from `/*` to its `*/` is drawn in the comment style, in zone B
+     and in the inspection's Messages tab; the code after `*/` on the
+     closing line is highlighted as code (a keyword, a number).
+  2. What is not a block comment is drawn as before: `/*` in a string or
+     after `//`; `/*` in a `#`-comment language (Python); a one-line
+     `/* … */`; a fence without a language. A comment left open ends with
+     its fence: the next fence starts as code.
+  3. The same text: styled and plain draw the same characters, each cell
+     hitting the same place (`TestMarkdownSameText` and
+     `TestInspectMarkdown`, their fixture given a block comment).
+  4. The cost: `TestStreamToFrame` p95 within 16 ms, compared with the
+     2.0 to 2.1 ms measured before the change (three runs, 2026-10-17).
+  5. ui-design.md: the Markdown section says a block comment spans its
+     lines; the Limits row is removed. Amended while building it: the row
+     is replaced by the limit that remains, a string over several lines
+     (raw and template strings, Python's triple quotes), still highlighted
+     on its first line only.
+  6. Golden frames unchanged; the full check passes.
+
+  Evidence. `mdLines` carries the comment state through a fence: each code
+  line records whether it starts inside a block comment (`mdLine.comment`),
+  the state reset when a fence opens and not carried by a fence without a
+  language; `codeRuns` takes that state and returns the one the line ends
+  in, and with no runs to fill only scans. `TestBlockComment` (render), a C
+  block, a second C block, a Python block and one without a language: the
+  opening, middle (a string and `//` inside it) and closing lines are
+  comment, `return` after `*/` a keyword and `42` a number (criterion 1);
+  `"/* in a string"` a string, `/*` after `//` opens nothing, a one-line
+  `/* one line */ w = 4;` is followed by code and a number, a comment left
+  open stops at its fence, the next block's `int` a keyword, Python's
+  `x = 1 /* not a comment` code with `not` a keyword, the fence without a
+  language all code; the `comment` flag of eleven lines checked (criterion
+  2). The Markdown fixture's go block gained a two-line block comment
+  ending `*/ m := 7`: `TestMarkdownSameText` and `TestInspectMarkdown`
+  check its second line is comment and `7` a number, and their same-text,
+  hit and copy comparisons pass with it (criterion 3); the zone B test's
+  120-column size takes 64 rows instead of 60 to show the two new lines.
+  `TestStreamToFrame`, three runs: p95 2.35, 2.26 and 2.43 ms (2.0 to
+  2.1 ms before), within 16 ms (criterion 4). Mutation check, 8 of 8
+  killed: the starting state ignored; an unclosed `/*` ending the comment;
+  no reset when a fence opens; the flag not stored, or not passed to the
+  styling; the no-language guard removed; a line comment opening a block;
+  the closing `*/` left unstyled. ui-design.md: the Styles bullet says a
+  `/*` comment outside the `#` languages runs on to its `*/`, and that one
+  left open ends with its fence; the Limits row is replaced as amended
+  (criterion 5). Full check: build; vet, also `-tags live` and `-tags
+  timing`; gofmt empty; `go test ./...` 203 top-level tests (202 + 1) in
+  14 packages, all PASS; golden frames unchanged (`TestGoldenFrames`
+  without `-update`); race detector clean; the changed files have no CR
+  and no BOM (criterion 6).
+- Phase 3, item 13 (256- and 16-colour rendering, by an offline frame
+  test): **done** (2026-10-17), 6 of 6 PASS, checked by the main session
+  (deterministic commands; no subagent, no CLI started, no quota used).
+  Probe first (2026-10-17): Bubble Tea v2.1.0
+  picks the profile with `colorprofile.Detect(output, environment)` and its
+  renderer converts every cell's colour; a test can give it a buffer, an
+  environment and `TTY_FORCE=1`. Found: in 256 colours the 15 foreground
+  and 3 background colours stay distinct; in 16 colours they collapse:
+  text, titles, Opus, Haiku, code and keywords all bright blue; in
+  progress, attention, failed, Sonnet and numbers all bright red; the hint
+  grey dark blue; the tree cursor bright blue on cyan. So item 13 also
+  gives the 16-colour terminal its own palette. Criteria:
+  1. An offline test runs the frames (startup, Claude and Codex
+     dashboards, inspection) through Bubble Tea's own detection and
+     renderer, no terminal: with `WT_SESSION` they carry 24-bit colours;
+     with `TERM=xterm-256color` 256-colour codes and no 24-bit one; with
+     `TERM=xterm` 16-colour codes only; on a non-terminal no colour code.
+     The characters drawn are the same under all four.
+  2. 256 colours: Bubble Tea's mapping keeps every colour of the palette
+     distinct from the others (foregrounds; backgrounds).
+  3. 16 colours: the application switches to an explicit 16-colour
+     palette on Bubble Tea's colour-profile message, and back on a later
+     one (the RGB capability upgrade). In it these stay pairwise distinct:
+     the statuses (done, in progress, attention, failed, waiting); the
+     model families (Opus, Sonnet, Haiku, GPT, other); the code styles
+     (code, keyword, string, number, comment). Text, frame and hints are
+     neutral (white, bright black); a highlighted row's text differs from
+     its background. No row of a frame drawn with the other palette is
+     reused.
+  4. True colour and 256 colours unchanged: the styled frames the
+     application draws are byte for byte those recorded before the change.
+  5. ui-design.md, Colours and symbols: the 16-colour palette and the
+     256-colour mapping as measured, in place of "not studied".
+  6. Golden frames unchanged; the full check passes, the race detector
+     included.
+
+  Evidence. Every colour and shared style moved to
+  `internal\render\palette.go`: each colour has its true colour and an ANSI
+  index, each style is a pointer rebuilt in place by `paint`, and
+  `UsePalette` takes Lip Gloss's choice for the profile (`lipgloss.Complete`;
+  no new dependency) and reports whether the palette changed. The
+  application calls it on `tea.ColorProfileMsg` and then draws the next
+  frame with no previous screen, since a reused row holds the old palette's
+  colours. `TestColourProfiles` (app) runs Bubble Tea's own detection under
+  `TTY_FORCE=1 WT_SESSION=1`, `TERM=xterm-256color`, `TERM=xterm` and a
+  non-terminal, draws the startup screen, the Claude and Codex dashboards
+  and an inspection with each profile, and writes each through Bubble
+  Tea's renderer into a buffer: 24-bit codes only, 256 only, the 16 only,
+  no colour code, as expected; the screen rebuilt from the output (cursor
+  moves and erasures emulated, as the renderer uses them differently by
+  profile) is the same under all four (criterion 1). `TestPalette256`
+  (render): every style drawn through Bubble Tea in 256 colours, the
+  mapping a one-to-one function for the foregrounds and the backgrounds
+  (criterion 2). `TestPalette16`: 256, true colour and no-terminal picks
+  leave the palette as it is, the 16-colour pick changes it once; every
+  colour one of the 16; statuses, the model families with "other", and the
+  code styles pairwise distinct; text 7, frame and hints 8, title 15;
+  highlighted rows' text unlike their background; back to true colour, every
+  style as before. `TestPaletteSwitch`: after a true-colour frame, a
+  16-colour profile leaves no 24-bit code in the next one; back in true
+  colour, the frame is the first byte for byte (criterion 3). Criterion 4,
+  once against a recording made before the change (the startup, Claude,
+  Codex and inspection frames, 120x40, styled): 8 of 8 byte for byte equal,
+  true colour and 256; kept by `TestTrueColours` (each true colour pinned
+  to ui-design.md) and `TestColourProfiles` (the 256 and no-terminal frames
+  equal to the true-colour one). Mutation check, 12 of 12 killed: no
+  redraw after a change; the profile ignored; the detection inverted; done
+  as in progress; Opus as Sonnet; text not neutral; `get` ignoring the
+  palette; a style not repainted; a change always reported; a true colour
+  altered; the selection's text on its own colour; keyword as string.
+  ui-design.md: the colour table gains the measured 256 index and the
+  16-colour one of each role, with the text, button text, selection and
+  tree cursor rows, and a paragraph on how the profile is followed, in
+  place of "not studied" (criterion 5). Corrected in passing, the table
+  only: the 5-hour bar is drawn in the title colour and an unknown model in
+  the text colour, as the code has done since plan 4. Full check: build;
+  vet, also `-tags live` and `-tags timing`; gofmt empty; `go test ./...`
+  208 top-level tests (203 + 5) in 14 packages, all PASS; golden frames
+  unchanged; race detector clean; the changed files have no CR and no BOM (criterion 6).
+- Phase 3, item 14 (synchronized output, mode 2026): **done** (2026-10-17),
+  5 of 5 PASS. Read
+  first (2026-10-17), Bubble Tea v2.1.0: at start it asks the terminal for
+  modes 2026 and 2027 (DECRQM) when `shouldQuerySynchronizedOutput` holds,
+  `WT_SESSION` set among others (`tea.go`), and from the terminal's report
+  that 2026 is supported and off (DECRPM, `ModeReportMsg`) its renderer
+  wraps every frame that changes cells in `CSI ?2026h … CSI ?2026l`
+  (`cursed_renderer.go`); without the report, never. Nothing in the
+  application turns it on or off. Criteria:
+  1. Measured in Windows Terminal (version recorded), the application on a
+     mock replay with `TEA_TRACE`, no CLI: whether the terminal answers the
+     query, and whether the frames written after the answer are wrapped.
+  2. An offline test through Bubble Tea's own program: after a report that
+     2026 is supported, every frame written is wrapped (each `?2026h`
+     closed by a `?2026l`, no cell update outside a pair); with no report,
+     or a report that it is not supported, no `?2026h` or `?2026l` is
+     written (amended while writing the test: the query `?2026$p` is
+     always written, under every answer).
+  3. If the terminal answers in a form the input decoder misses (it runs
+     with win32-input-mode on), the report reaches the program: fixed and
+     tested offline with the recorded bytes; otherwise recorded as not
+     needed.
+  4. ui-design.md (Performance) and reliability.md: the question settled
+     with the measurement, in place of "not read" / "Not verified".
+  5. Golden frames unchanged; the full check passes, the race detector
+     included.
+
+  Evidence. Measured in Windows Terminal 1.23.20211.0 (criterion 1), the
+  application built from the tree on the `claude-subagent-approval` replay,
+  maximised, `TEA_TRACE` set, no CLI started; no terminal-hosted Claude or
+  Codex session was open (the three running were VS Code's). The first
+  write is the query (`?2026$p ?2027$p`, with `?9001h`); the first frame
+  follows unwrapped; WT then answers `ESC[?2026;2$y ESC[?2027;3$y` (2026
+  supported and off, 2027 permanently set) as plain VT input, and from the
+  next write, a full redraw opening with `?2026h ?2027h`, every frame is
+  wrapped: 92 of the 95 writes in exactly one `?2026h … ?2026l` pair, the
+  other three being the query, the first frame and the exit sequence. The
+  screenshot shows the dashboard drawn normally; the window closed on Ctrl+Q
+  and no process was left. Criterion 3: the input reader decodes the answer
+  (the frames after it are wrapped), so no fix is needed; pinned offline.
+  `TestSynchronizedOutput` (app) runs the real program as WT starts it
+  (`TTY_FORCE=1 WT_SESSION=1`), the terminal's answer written to its input,
+  types three characters once the dashboard is ready and quits with WT's
+  Ctrl+Q: with WT's recorded answer, at least four frames are wrapped, none
+  opened twice or left open, and nothing is drawn outside a pair after the
+  first one; with no answer, `?2026;0$y` (not recognised) and `?2026;4$y`
+  (permanently reset), no `?2026h` or `?2026l`; in every case the query is
+  written, the dashboard drawn and "abc" in the editor (criterion 2;
+  3 of 3 repeated runs PASS). Mutation check, 4 of 4 killed: the patched
+  decoder's mode report with the value off by one, with the mode off by
+  one, or not decoded (`third_party\ultraviolet\decoder.go`); the program
+  run under `TERM_PROGRAM=Apple_Terminal`, where Bubble Tea does not ask.
+  A first try with `TERM_PROGRAM=x` survived as an equivalent mutant: Bubble
+  Tea asks under any terminal program but Apple's. ui-design.md: the
+  Rendering bullet (Animations; criterion 4 calls it Performance) now gives
+  the reading and the measurement in place of "Not verified"; reliability.md:
+  the mode 2026 row settled, and, from item 13, the Lip Gloss downsampling
+  row (criterion 4). No application code changed. Full check: build; vet,
+  also `-tags live` and `-tags timing`; gofmt empty; `go test ./...` 209
+  top-level tests (208 + 1) in 14 packages, all PASS; golden frames
+  unchanged; race detector clean; the changed files have no CR and no BOM
+  (criterion 5).
+- Phase 3, item 15: **confirmed simulated**
+  (2026-10-17), no live run: `testdata/mock/claude-api-key-context-refused.jsonl`,
+  `codex-api-key.jsonl` and `codex-no-5h-window.jsonl`, built from the probes
+  by `TestMockFiles` and checked by `TestSyntheticScenarios` (zone D's "N/A"
+  reasons, the refusal counted as an error); `TestTelemetryNA` (P2 with
+  `get_context_usage` refused) and `TestDetailsKeys` cover the refusal's
+  line. Rechecked in the full check at plan 5's close.
+- Live verification before the commit (2026-10-17, the owner's request):
+  **done**, 15 of 15 PASS on the owner's verdict, recorded in
+  [`doc/plan5-evaluation.md`, Live verification](doc/plan5-evaluation.md#live-verification).
+  Twelve runs in Windows Terminal (ten with a live CLI: Claude Code 2.1.301
+  on Haiku, Codex 0.163.0; two on the mock in 256 and 16 colours) and the
+  three item 15 mocks, the owner at the keyboard, one window each. Configuration:
+  Codex runs PASS; Claude Code runs NOT-VERIFIED for `~\.claude.json`; one
+  FAIL on record (t03, Claude Code's plugin cache refreshed during the run).
+  Settled: CC-10 q3 (Claude waits after the question deny message). Still
+  open: a live Codex `s` offer (0.163.0 offered none).
+
+Plan 4 progress (closed). Steps and their checks: [proposal.md, section 4](doc/proposal.md#4-prioritised-mvp-roadmap).
 
 - Step 0 (foundation): **done** (2026-10-16), 10 of 10 items PASS, checked
   by the main session (deterministic commands; no verifier run, no CLI
@@ -2067,3 +2882,57 @@ project path validated; the CLI working in that directory; real prompts with
 streamed answers; files inspected and changed with approvals; multiline input,
 long pastes and copying reliable; real agent activity shown; telemetry accurate
 or marked unavailable; both screens in the sequence and layout of the images.
+
+## Plan 5 - Post-MVP improvements
+
+The owner's request (2026-10-17), after plan 4's approval, on the list of
+what plan 4 left open, word for word: "Ok do all of this, except linux or
+Macos, Windows only for now, so it is for a later view, like really not now.
+phase 0, then 1,  then 2, then 3 We won't do this : An API-key session, a plan
+without a 5-hour window, a live get_context_usage refusal. Each needs a key,
+another account, or a CLI fault that can't be triggered on purpose. They stay
+on the list until one of those is at hand => Unless we can simulate it,
+otherwise no because i don't want to use my quota for this"
+
+Phases run in order; within a phase, the items in the order below. Each item
+gets its yes/no criteria in the progress list before work starts, regression
+tests, the full check (build, vet with `-tags live` and `-tags timing`,
+gofmt, `go test ./...`), and its result recorded as it finishes.
+
+- **Phase 0, checks; no new code, no quota.**
+  1. Step 8's additions live in Windows Terminal (Markdown styles, zone
+     zoom, key overlay) on the mock recording.
+  2. The Codex slash-command note live: `/status` and one Enter, held back
+     so nothing reaches the model; the owner's physical key presses.
+- **Phase 1, make it work.**
+  3. The full diff or command behind an approval card (Enter, full screen).
+  4. Enter expands a folded paste or tool output in zone B, in item 3's
+     viewer.
+  5. Scrolling in zones A and C.
+  6. A failed tool's line in B marked `✗` with its error.
+  7. Each subagent's model in zone C where the CLI reports it, "N/A"
+     otherwise.
+  8. `s`, allow for the session, on Codex only, from the request's
+     `availableDecisions`; Claude Code cannot offer it (CC-4).
+  9. Failure cards and session-state lines in B copied with a selection.
+  10. A deny message specific to a question (CC-10 q3).
+- **Phase 2, make it beautiful.**
+  11. Markdown styling in the inspection's Messages tab.
+  12. Every line of a block comment highlighted.
+- **Phase 3.**
+  13. 256- and 16-colour rendering, by an offline frame test.
+  14. Synchronized output (mode 2026).
+  15. An API-key session, a plan without a 5-hour window, a live
+      `get_context_usage` refusal: only simulated, no quota; confirmed
+      simulated already (progress list).
+
+Rules: Windows 11 and Windows Terminal only; Linux and macOS are a later
+view, not this plan. No live CLI turn, so no quota, unless the owner approves
+one. The limits accepted at plan 4 stay (`~\.claude.json` not classified; the
+Codex thread limit N/A, `config/read` may expose secrets), and amendment 4's
+excluded features, Gemini CLI, Antigravity, the VS Code terminal and conhost
+stay out.
+
+Done when every item has passed its criteria or is recorded with why it could
+not be done, the full check passes, and the evaluation summary is reported to
+the owner.

@@ -427,6 +427,7 @@ var transitions = []machineCase{
 		c.eq("from WaitingApproval", c.s.Turn.Phase, Interrupting)
 		c.eq("commands", c.kinds(), "answer,interrupt")
 		c.eq("decision", c.cmds[0].Decision, "cancel")
+		c.eq("marked cancelled", c.s.Approvals["a1"].Cancelled, true) // plan 5, item 10
 	}},
 	{"Turn", "`Interrupting` | turn end reported", func(b *bench) {
 		b.running().do(Interrupt{})
@@ -470,6 +471,7 @@ var transitions = []machineCase{
 		b.eq("orchestrator's", b.cmds[0].ID+" "+b.cmds[0].Decision, "a1 cancel")
 		b.eq("the agent's", b.cmds[1].ID+" "+b.cmds[1].Decision, "a2 cancel")
 		b.eq("answering", b.s.Approvals["a2"].Status, Answering)
+		b.eq("marked cancelled", b.s.Approvals["a1"].Cancelled && b.s.Approvals["a2"].Cancelled, true) // plan 5, item 10
 		b.eq("turn", b.s.Turn.Phase, Interrupting)
 		b.eq("session", b.s.Session.Phase, Closing)
 
@@ -676,7 +678,11 @@ var transitions = []machineCase{
 		b.eq("allowed", b.s.Approvals["a1"].Status, Allowed)
 	}},
 	{"Approval", "`Pending` | owner allows for the session", func(b *bench) {
-		b.running().ask("", "a1", "")
+		b.running().ask("", "a0", "")
+		b.do(Answer{ID: "a0", Decision: "acceptForSession"}) // not offered: refused (plan 5, item 8)
+		b.eq("not offered", b.kinds(), "")
+		b.eq("still pending", b.s.Approvals["a0"].Status, Pending)
+		b.ev(event.ApprovalRequest, "", event.Approval{ID: "a1", Tool: "commandExecution", Offered: []string{"accept", "acceptForSession", "decline", "cancel"}})
 		b.do(Answer{ID: "a1", Decision: "acceptForSession"})
 		b.eq("decision", b.cmds[0].Decision, "acceptForSession")
 		b.resolve("a1", "acceptForSession")

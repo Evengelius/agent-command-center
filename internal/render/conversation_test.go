@@ -2,6 +2,7 @@ package render
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -41,7 +42,7 @@ func TestConversationWindow(t *testing.T) {
 		if want.Conv.Rows <= want.Conv.Room {
 			t.Fatalf("%s: %d rows in %d: nothing to window", name, want.Conv.Rows, want.Conv.Room)
 		}
-		if got.String() != want.String() || got.Conv != want.Conv {
+		if got.String() != want.String() || !reflect.DeepEqual(got.Conv, want.Conv) {
 			t.Errorf("%s: the cached frame differs (rows %d, want %d):\n%s\nwant:\n%s", name, got.Conv.Rows, want.Conv.Rows, got, want)
 		}
 	}

@@ -275,7 +275,8 @@ func firstTurn(t *testing.T, recs []fixture.Record, nth int) (string, int) {
 }
 
 // noSessionAnswer fails when a frame offers allow for the session: no
-// recorded Codex request carries availableDecisions (step 5, check 4).
+// recorded Codex request carries availableDecisions (step 5, check 4; plan 5,
+// item 8).
 func noSessionAnswer(t *testing.T, frame string) {
 	t.Helper()
 	low := strings.ToLower(frame)
@@ -327,7 +328,7 @@ func TestCodexApprovalCards(t *testing.T) {
 				}
 				before := len(w.written(0))
 				h.send(key(tea.KeyF2, 0))
-				if f := frameText(h); !strings.Contains(f, "▸ a allow once · d deny · c cancel the turn · Esc later") {
+				if f := frameText(h); !strings.Contains(f, "▸ a allow once · d deny · c cancel the turn · Enter full view · Esc later") {
 					t.Errorf("focused card lacks its keys:\n%s", f)
 				}
 				h.send(typed(c.key))
