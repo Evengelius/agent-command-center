@@ -20,11 +20,11 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
-**Plan 8, Codex's allow for the session, done and awaiting the owner's
-approval** (the owner's request of 2026-10-17,
+**Plan 8, Codex's allow for the session, approved by the owner on
+2026-10-17; no plan 9 is defined yet** (the owner's request of 2026-10-17,
 [Plan 8](#plan-8---codexs-allow-for-the-session) at the end). Its one item
 done; the evaluation summary, 6 of 6 PASS, and its follow-up, 3 of 3, are in
-[`doc/plan8-evaluation.md`](doc/plan8-evaluation.md).
+[`doc/plan8-evaluation.md`](doc/plan8-evaluation.md), committed as e75d591.
 
 **Plan 7, the open list after plan 6, approved by the owner on 2026-10-17**
 (the owner's request of 2026-10-17,
@@ -58,7 +58,7 @@ the final fixes, [`doc/plan2-evaluation.md`](doc/plan2-evaluation.md)).
 Plan 1 accepted on 2026-10-16, with criteria 8 and 9 kept as FAIL and accepted
 as documented exceptions ([`doc/research/plan1-evaluation.md`](doc/research/plan1-evaluation.md)).
 
-Plan 8 progress (update as each item finishes; read this first after a
+Plan 8 progress (closed; update as each item finishes; read this first after a
 context compaction). Item and rules: [Plan 8](#plan-8---codexs-allow-for-the-session).
 Baseline: bffe9a5, 231 top-level tests in 14 packages, 0 FAIL.
 
