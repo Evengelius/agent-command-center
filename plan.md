@@ -20,15 +20,16 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
-**Plan 11, a live approval offering the allow for the session, done and
-awaiting the owner's approval**
+**Plan 11, a live approval offering the allow for the session, approved by
+the owner on 2026-10-18; no plan 12 is defined yet**
 (the owner's request of 2026-10-18,
 [Plan 11](#plan-11---a-live-approval-offering-the-allow-for-the-session) at
 the end). Its one item is closed as not verifiable, by the owner's choice;
 the evaluation summary is in
-[`doc/plan11-evaluation.md`](doc/plan11-evaluation.md).
+[`doc/plan11-evaluation.md`](doc/plan11-evaluation.md), committed as
+81f3bf8.
 
-Plan 11 progress (update as each item finishes; read this first after a
+Plan 11 progress (closed; update as each item finishes; read this first after a
 context compaction). Items and rules:
 [Plan 11](#plan-11---a-live-approval-offering-the-allow-for-the-session).
 Baseline: 621609e, 235 top-level tests in 14 packages, 0 FAIL.
