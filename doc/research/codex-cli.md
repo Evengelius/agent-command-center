@@ -416,7 +416,14 @@ All from app-server unless stated. "N/A" means no supported source.
    `acceptForSession` (`protocol/src/approvals.rs`,
    `default_available_decisions`, 0.145.0). The dashboard offers it
    unless a request's list omits it (plan 8): on file changes, not on
-   ordinary commands.
+   ordinary commands. A network approval could not be raised on this
+   machine: P9n (0.163.0, `features.network_proxy=true`, workspace-write
+   with network access) failed the command before any approval, "managed
+   networking requires the elevated Windows sandbox backend"
+   [P:p9n-codex-network.jsonl]; `codex sandbox setup --elevated` creates
+   local sandbox accounts, firewall rules and ACLs and writes
+   `windows.sandbox = "elevated"` to `config.toml`
+   (`cli/src/sandbox_setup.rs` 86-124), declined by the owner (plan 9).
    Native sandbox stays in charge; the dashboard never weakens it.
 5. **Persistence, cancellation, resume?** Codex persists every thread
    (rollout path in `thread.path`); `turn/interrupt` ends a turn as
@@ -480,7 +487,17 @@ Still open:
    version). P7c (0.163.0, the orchestrator asked to pass a model and an
    effort): no `spawnAgent` item; the child's `subAgentActivity`
    `kind:"started"` carries the model and effort asked for (`gpt-6-luna`,
-   `low`) [P:p7c-codex-spawn-model.jsonl].
+   `low`) [P:p7c-codex-spawn-model.jsonl]. `spawnAgent` appears on the
+   multi-agent v1 backend, which the model catalogue decides: 0.163.0
+   takes the catalogue's `multi_agent_version` unless the MultiAgentV2
+   feature forces v2 (`core/src/config/mod.rs` 1637-1664), so
+   `features.multi_agent_v2=false` leaves `gpt-6-sol` on v2; of the
+   catalogue's models only `gpt-5.6-luna` declares v1
+   (`models-manager/models.json`). P9a (0.163.0, orchestrator on
+   `gpt-5.6-luna`): one `collabAgentToolCall` `spawnAgent`, started with
+   empty `receiverThreadIds`, completed with the child's thread id, both
+   with `model:"gpt-5.6-luna"`, `reasoningEffort:"low"`; no
+   `subAgentActivity` [P:p9a-codex-spawn-request.jsonl].
 4. **Resume across processes:** a new app-server process, `thread/resume`
    on P6b's thread: returned `turns`, replayed `thread/tokenUsage/updated`.
 5. **`turn/steer`** mid-turn and a second `turn/start` while one is running

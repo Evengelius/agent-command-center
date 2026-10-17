@@ -41,7 +41,7 @@ func countRaw(evs []event.Event, k event.Kind, method string) int {
 	return n
 }
 
-var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl", "p7c-codex-spawn-model.jsonl"}
+var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl", "p7c-codex-spawn-model.jsonl", "p9a-codex-spawn-request.jsonl"}
 
 // Every line of every app-server recording maps to at least one event, and no
 // line is unreadable or unrecognised.
@@ -634,6 +634,27 @@ func TestSpawnRequestModel(t *testing.T) {
 	}
 	if got := requested(NewMapper().Out(line("sendInput", "gpt-6-mini"))); len(got) != 0 {
 		t.Errorf("sendInput: %v", got)
+	}
+}
+
+// TestSpawnRequestRecorded is plan 9, item 1, criterion 2: probe P9a (Codex
+// 0.163.0, the orchestrator on gpt-5.6-luna, whose catalogue entry declares
+// multi-agent v1) recorded a spawnAgent item carrying the requested model
+// and effort. The completed item names the spawned thread; the started one
+// names none, so it gives nothing. No subAgentActivity reports the child's
+// own values. The caller is the orchestrator, whose key is "".
+func TestSpawnRequestRecorded(t *testing.T) {
+	const main, child = "", "01a14bd7-1754-76f2-b210-de4cf274f58b"
+	_, per := replay(t, "p9a-codex-spawn-request.jsonl")
+	var got []string
+	for _, e := range fixture.Flatten(per) {
+		if p, ok := e.Payload.(event.Agent); ok && (p.Model != "" || p.Effort != "") {
+			got = append(got, fmt.Sprintf("%s %s parent=%q %s %s requested=%v", e.Kind, p.Key, p.Parent, p.Model, p.Effort, p.ModelRequested))
+		}
+	}
+	want := []string{fmt.Sprintf("%s %s parent=%q gpt-5.6-luna low requested=true", event.AgentProgress, child, main)}
+	if fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("model and effort events:\n got %q\nwant %q", got, want)
 	}
 }
 

@@ -20,8 +20,100 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
+**Plan 9, plan 8's items left not verified, done and awaiting the owner's
+approval** (the owner's request of 2026-10-17,
+[Plan 9](#plan-9---plan-8s-items-left-not-verified) at the end). Items 1
+and 2 verified, item 3 recorded as not verifiable; the evaluation summary
+is in [`doc/plan9-evaluation.md`](doc/plan9-evaluation.md).
+
+Plan 9 progress (update as each item finishes; read this first after a
+context compaction). Items and rules:
+[Plan 9](#plan-9---plan-8s-items-left-not-verified). Baseline: 1daeec1, 231
+top-level tests in 14 packages, 0 FAIL.
+
+Method, for every dashboard run of this plan: a test-only `codex.exe`
+wrapper, built in the session's scratchpad (Go standard library, never in
+the repository), first on the PATH of the dashboard's window only. It passes
+`--version` and every argument through to the real
+`%LOCALAPPDATA%\Programs\OpenAI\Codex\bin\codex.exe`, inserts the run's
+`-c key=value` overrides before `app-server` (per process: no configuration
+file is changed), and copies Codex's stdin and stdout byte for byte into a
+log: the raw events the dashboard received.
+
+- Item 1 (a spawn request carrying a model or an effort): **done**
+  (2026-10-18), 3 of 3 PASS. P9a (2026-10-17): the orchestrator on
+  `gpt-5.6-luna` (`-c model=...`; `features.multi_agent_v2=false` alone
+  stayed v2, the catalogue decides) recorded `spawnAgent` with model
+  `gpt-5.6-luna`, effort `low`; configuration check PASS before and after.
+  `p9a-codex-spawn-request.jsonl` (63 lines) in both folders;
+  `TestSpawnRequestRecorded` PASS. Live run 2026-10-18 (project
+  `acc-p9live-235645`, turn 27.0 s, no approval asked): at 156 and 120
+  columns C's row `unannounced agent | gpt-5.6-luna* | low`, C's header
+  `* requested model · 0 ACTIVE · 1 DONE`, the inspection
+  `gpt-5.6-luna (requested) · ... · effort low (requested)`; the wrapper's
+  log holds `spawnAgent` model `gpt-5.6-luna`, effort `low`. Ctrl+Q 0.21 s,
+  no process left (wrapper included); configuration check PASS. Criteria:
+  1. Probe P9a: one turn through `codex app-server` (the dashboard's
+     handshake), in a temporary folder outside the repository, the
+     orchestrator on a model whose catalogue entry declares multi-agent v1,
+     asked to spawn one subagent with a model and the effort "low"; the
+     configuration check before and after PASS. The recording's
+     `spawnAgent` item carries a non-null `model` and `reasoningEffort`.
+  2. The recording, sanitized, enters `testdata/probes/` and
+     `doc/research/probes/`; `TestFixturesMatchRecordings` counts it; a
+     mapper test replays it: the spawned thread gets the model and the
+     effort with the source "spawn request", on `AgentProgress`, its parent
+     the orchestrator.
+  3. Live, in the dashboard, Windows Terminal maximised and at the default
+     size: C's row for the subagent shows the model with "*" and the effort
+     "low", C's header "* requested model"; the inspection shows
+     "<model> (requested)" and "effort low (requested)"; the wrapper's log
+     holds the `spawnAgent` item with those values.
+- Item 2 (the exit code checked against Codex's own event): **done**
+  (2026-10-18), PASS at both sizes, in item 1's live run. The wrapper's log:
+  `git status` completed with `exitCode` 1, last line
+  `fatal: not a git repository (or any of the parent directories): .git`;
+  B at 156 columns `✗ commandExecution · exit 1 · fatal: not a git
+  repository (or any of the parent directories): .git`, at 120 the same cut
+  with "…". The harness's first check run read the row's provenance tag
+  "observed" as part of the line and gave 2 FAIL; the harness was fixed
+  (strip the tag; equal when whole, a prefix only before "…") and the
+  re-run gave 0 FAIL, both runs kept in `doc/plan9-evaluation.md`.
+  Criteria: in a live dashboard run, one command that fails; the wrapper's
+  log holds its `item/completed` `commandExecution` with `exitCode` N and
+  `aggregatedOutput`; B shows `✗ commandExecution · exit N · <line>` with
+  that N and the last non-blank line of that output, at both sizes.
+- Item 3 (a live approval whose list holds `acceptForSession`): **not
+  verifiable**, the owner's decision of 2026-10-18; not reported as PASS.
+  P9n (2026-10-17, Codex 0.163.0, `-c features.network_proxy=true -c
+  sandbox_mode="workspace-write" -c
+  sandbox_workspace_write.network_access=true`, `curl.exe` to example.com):
+  no approval was asked, the command never started, stderr "managed
+  networking requires the elevated Windows sandbox backend"; exit 0 after
+  6 s; configuration check PASS before and after. What would make it
+  possible: `codex sandbox setup --elevated --current-user`
+  (`cli/src/sandbox_setup.rs` 86-124), which creates the local accounts
+  CodexSandboxOffline and CodexSandboxOnline, firewall rules and ACLs, and
+  writes `windows.sandbox = "elevated"` to `~/.codex/config.toml`: a system
+  and configuration change the owner declined. The case stays covered by
+  `TestOfferedDecisions` and `TestCodexSessionAllow` (synthetic lists).
+  Criteria: Codex adds it only to a network approval
+  (`default_available_decisions`, 0.163.0). If a live network approval can
+  be raised on this machine within the plan's rules: its recorded
+  `availableDecisions` holds `acceptForSession`, the card offers
+  "s allow for the session", `s` answers it, the card reads "allowed for
+  the session by you". If it cannot: recorded as not verifiable, with the
+  probe's evidence and what would make it possible; not reported as PASS.
+- Full check (2026-10-18): `go build ./...` and `go vet ./...` (also
+  `-tags live`, `-tags timing`) exit 0; `gofmt -l .` prints nothing;
+  `go test ./... -count=1` 232 top-level tests PASS in 14 packages (231
+  plus `TestSpawnRequestRecorded`), 0 FAIL; go.mod and go.sum unchanged.
+  Mutants on the spawn path (`mapper.go` 673-677) against
+  `TestSpawnRequestRecorded`: 4 killed, 0 survived (emission disabled;
+  `ModelRequested` false; the parent set to the child; the effort dropped).
+
 **Plan 8, Codex's allow for the session, approved by the owner on
-2026-10-17; no plan 9 is defined yet** (the owner's request of 2026-10-17,
+2026-10-17** (the owner's request of 2026-10-17,
 [Plan 8](#plan-8---codexs-allow-for-the-session) at the end). Its one item
 done; the evaluation summary, 6 of 6 PASS, and its follow-up, 3 of 3, are in
 [`doc/plan8-evaluation.md`](doc/plan8-evaluation.md), committed as e75d591.
@@ -3532,3 +3624,28 @@ until the owner approves.
 Done when the item has passed its criteria or is recorded with why it could
 not be done, the full check passes, and the evaluation summary is reported to
 the owner.
+
+## Plan 9 - Plan 8's items left not verified
+
+The owner's request (2026-10-17), after plan 8's approval, on the three
+items still listed as not verified: "You can use my codex quota, [...] I
+want these to be verified".
+
+1. A spawn request carrying a model or an effort (Codex 0.163.0 sent no
+   `spawnAgent` item in P7c; only `subAgentActivity` carried them).
+2. The exit code checked against Codex's own event (the dashboard keeps no
+   event log).
+3. A live approval whose list includes `acceptForSession` (Codex adds it
+   only to network approvals).
+
+Rules: as plan 8's; the owner's Codex quota approved on 2026-10-17, each
+run in a temporary project outside the repository, with the configuration
+check before and after. Per-process `-c` overrides only, through the
+test-only wrapper (Plan 9 progress, Method); no configuration file and no
+system setting is changed without the owner's approval. Windows 11 and
+Windows Terminal only; no new dependency. No commit until the owner
+approves.
+
+Done when every item has passed its criteria or is recorded with why it
+could not be done, the full check passes, and the evaluation summary is
+reported to the owner.

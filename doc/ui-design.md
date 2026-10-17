@@ -620,8 +620,8 @@ The live subagents (AM2 C1-C11; AM4 D3).
   inspection; Codex: `subAgentActivity.model`, from Codex CLI 0.163.0, else the
   model its `spawnAgent` call requested, `collabAgentToolCall.model` for each
   of its `receiverThreadIds`, source "spawn request": the agent's own report
-  always wins, in either order; plan 6, item 4, from the generated schema,
-  no recording carries it) or
+  always wins, in either order; plan 6, item 4, from the generated schema;
+  recorded by P9a on the multi-agent v1 backend, plan 9) or
   "model N/A" (older Codex children, ASM-14; plan 5, item 7); a requested
   model is followed by a grey "*", footnoted "* requested model" in the
   header, as D's "†" (plan 6, item 5); then, when any listed agent has one,
