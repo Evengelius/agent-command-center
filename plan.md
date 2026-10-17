@@ -20,13 +20,14 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
-**Plan 9, plan 8's items left not verified, done and awaiting the owner's
-approval** (the owner's request of 2026-10-17,
+**Plan 9, plan 8's items left not verified, approved by the owner on
+2026-10-18; no plan 10 is defined yet** (the owner's request of 2026-10-17,
 [Plan 9](#plan-9---plan-8s-items-left-not-verified) at the end). Items 1
 and 2 verified, item 3 recorded as not verifiable; the evaluation summary
-is in [`doc/plan9-evaluation.md`](doc/plan9-evaluation.md).
+is in [`doc/plan9-evaluation.md`](doc/plan9-evaluation.md), committed as
+c9576d9.
 
-Plan 9 progress (update as each item finishes; read this first after a
+Plan 9 progress (closed; update as each item finishes; read this first after a
 context compaction). Items and rules:
 [Plan 9](#plan-9---plan-8s-items-left-not-verified). Baseline: 1daeec1, 231
 top-level tests in 14 packages, 0 FAIL.
