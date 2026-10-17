@@ -1379,7 +1379,240 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
   - The owner's judgement (2026-10-17): the step 8 build in Windows
     Terminal, maximised, on a mock demo (the subagent-approval recording
     with a 50-line Markdown answer added, kept outside the repository):
-    "I like it a lot". Approved.
+    "I like it a lot". Approved. Committed as `9a27951`, not pushed.
+- Done, amendment 4's acceptance criteria (proposal.md, section 4, Done):
+  **done** (2026-10-17), awaiting the owner's approval. L2 and L4 ran
+  at steps 4 and 5, before steps 6 to 8 changed zones A, B, C and D; they
+  are re-run on the current build, within their approved scope (re-runs
+  after a change, no new turn, no extra quota), with a check of what
+  steps 6 to 8 draw.
+  Criteria (baseline: 168 top-level tests):
+  1. An acceptance matrix below: each of amendment 4's ten criteria ("any
+     of the three providers" read as the two of amendment 5) for Claude
+     Code and for Codex, each cell with its evidence (test, live run,
+     step) or "not verified" with the reason; no cell blank.
+  2. `TestActivityShown` (no tag): `activityShown` returns nil on the
+     Claude Code and Codex recordings (`claude-subagent-approval`,
+     `codex-subagents`) at 160x60, and an error on each of 8 mutations
+     (stages open, only CLI stages, no tool, a silent N/A, a value without
+     source, no token value, badge not Idle, no stage drawn).
+  3. L2 re-run (Haiku, three short turns, each capped at 2 minutes, any
+     failure stops): PASS as before, and after turn 1 `activityShown` nil
+     (the owner's last turn a completed stage in zone A with a completed
+     tool; every zone D value present with a source or N/A with a reason;
+     a token or context value present; badge "Idle") and the frame within
+     160x60.
+  4. L4 re-run (Codex's default model and its fallback, three short
+     turns): the same as 3.
+  5. `confcheck` before and after each run: PASS, or NOT-VERIFIED only for
+     files the CLI itself writes, as at L1 to L4; never FAIL. Each folder
+     holds only `allow.txt` afterwards.
+  6. `go build ./...`, `go vet ./...` (also `-tags live`, `-tags timing`)
+     exit 0; `gofmt -l .` empty; `go test ./...` exit 0, at least 169
+     top-level tests.
+  Not verified by these checks: live subagents through the dashboard (no
+  approved run spawns one; the evidence is P3b's and P7's live
+  recordings, replayed); the real executable started from Windows
+  Terminal with a live CLI (the live tests drive the same program in
+  process; the owner's call).
+  Acceptance matrix (criterion 1; "L2d" and "L4d" are this step's re-runs,
+  results below; the same cell holds for both CLIs unless split):
+  1. Launched from a terminal. Both: the owner started the executable from
+     a terminal at step 1 (item 6) and on mock data at steps 7 and 8;
+     step 3's Windows Terminal runs (criterion 9) drove the built program
+     maximised and at the default size. A live session started from
+     Windows Terminal by the agent: not verified (L2d and L4d run the same
+     program in process).
+  2. Either CLI selectable. Both: `TestDetect` (neither, either, both),
+     `TestStartupGate` (the other CLI stays selectable, `--provider` only
+     prefills); detection on this machine at step 1; L2d detected Claude
+     Code 2.1.301, L4d Codex 0.145.0.
+  3. Project path validated. Both (the check is the CLI's choice's
+     companion, independent of it): `TestResolvePath` (44 cases),
+     `TestCheckProject`, `TestCheckProjectNotReadable`,
+     `TestStartupMessageFrames`, `TestStartupGate`.
+  4. The CLI working in that directory. Claude Code: L1 (cwd checked), L2d
+     "Ready, cwd" the folder and `allow.txt` written there. Codex: L3
+     (cwd in `thread/start`), L4d the same; each folder holds only
+     `allow.txt`.
+  5. Real prompts, streamed answers. Both: L2d and L4d, three turns each;
+     turn 2 streamed and interrupted mid-stream as one answer (Claude Code
+     8 ms after Ctrl+C, Codex 9 ms, 8 text deltas); turn 3 answered after
+     a crash and Ctrl+R from the resumed session.
+  6. Files inspected and changed with approvals. Claude Code: L2d, Glob
+     then Write, its approval allowed with F2, a; "allowed by you" in B.
+     Codex: L4d, fileChange accepted with F2, a, then a commandExecution
+     reading it back (no request: Codex's read-only sandbox runs it); L3
+     covers decline and cancel. Approval cards for both CLIs:
+     `TestApprovalCards` and step 4's checks.
+  7. Multiline input, long pastes, copying. Both, the same code for every
+     CLI (step 3, criterion 8: identical results with the Claude Code,
+     Codex and mock adapters): `TestInputByteForByte`,
+     `TestPasteNeverSubmits`, the keystroke timing step (on mains power at
+     step 8), step 3's Windows Terminal runs for paste, Shift+Enter, copy
+     and mouse selection. Not verified: Shift-drag selection in Windows
+     Terminal while the app captures the mouse; a NUL in a paste (Windows'
+     clipboard cannot carry one).
+  8. Real agent activity. Both: L2d and L4d, zone A's stages and tools
+     from the live events (`activityShown`); Codex's refused first turn
+     shown as a failed stage. Subagents: P3b (Claude Code) and P7 (Codex),
+     live recordings, replayed by step 6's tests. Not verified: a live
+     subagent through the dashboard.
+  9. Telemetry accurate or unavailable. Both: step 7's parsing tests on the
+     probes' exact lines; L2d and L4d, every zone D value from a named
+     source or N/A with its reason, a token value present. Claude Code:
+     5h 53%, context 3% of 1M (derived), tokens 99.5k, cost an API-
+     equivalent estimate. Codex: 5h 0%, context 6% of 258.4k, tokens 45.5k
+     (derived), "cost N/A (Codex reports none)". Not verified: the values
+     against each CLI's own usage screen at the same moment; a live
+     `get_context_usage` refusal, API-key session, or plan without a
+     5-hour window (step 7, simulated on mock).
+  10. Both screens, sequence and layout. Both: golden frames of the startup
+      screen and the dashboard for each CLI at 80x24, 120x40, 200x60;
+      step 8's comparison with reference-design.md; the owner's approvals
+      of the look (steps 1, 7 and 8).
+  Results (2026-10-17):
+  1. PASS. The matrix above: ten criteria, each with its evidence for both
+     CLIs; the not-verified parts named in criteria 1, 7, 8 and 9.
+  2. PASS. `TestActivityShown`: nil on both recordings at 160x60; each of
+     the 8 mutations gives an error. Written first against the last stage,
+     it failed on P3b, whose last turn Claude Code opened itself with no
+     tool; it now takes the owner's last turn.
+  3. PASS. L2d (`acc-l2d-101915`) in 19.61 s on Claude Code 2.1.301, Haiku
+     (`claude-haiku-5-5`): turn 1 Write allowed, `allow.txt` "ok", answer
+     "done", `activityShown` nil, frame within 160x60; turn 2 interrupted
+     8 ms after Ctrl+C; taskkill shown as exit code 1, Ctrl+R resumed the
+     same session; turn 3 "LANTERN-73"; Ctrl+Q closed in 1.152 s, exit 0.
+  4. PASS. L4d (`acc-l4d-102105`) in 22.20 s on Codex 0.145.0: `gpt-6-sol`
+     refused, fallback thread on `gpt-5.6-sol`, message sent again; the
+     fileChange accepted, `allow.txt` "ok", answer "done", none declined,
+     `activityShown` nil, frame within 160x60; turn 2 interrupted 9 ms
+     after Ctrl+C; crash, Ctrl+R resumed the fallback thread; turn 3
+     "LANTERN-73"; Ctrl+Q closed in 2.609 s, `app-server` exit 0.
+  5. PASS. L2d: NOT-VERIFIED for `~\.claude.json` only ("changed, not
+     classified", Claude Code writes it), every other file identical, 1
+     new session file. L4d: PASS, 2 new session files. Each folder holds
+     only `allow.txt`.
+  6. PASS. `go build ./...`, `go vet ./...` (also `-tags live` and
+     `-tags timing`), `gofmt -l .` empty, `go test ./... -count=1` ok in
+     all 14 packages: 169 top-level tests (168 + `TestActivityShown`).
+  - Seen in both live frames: zone D's "time -- session". A test-harness
+    artefact, not a defect: `newHarness` pins the app's clock to
+    `testNow` (2026-10-15) while the live CLI's events carry the real time,
+    so the session seems to start in the future; the application uses
+    `time.Now` for both.
+- L5, live subagents in Windows Terminal: **done** (2026-10-17), one FAIL
+  for the owner to judge (result 5, Claude Code) (approved by the
+  owner on 2026-10-17: "Live subagent run ... I want this"; the owner reads
+  the CLIs' own usage screens). Scope: one turn per CLI, the built
+  executable started by `wt.exe` in a new, maximised window, in a fresh
+  folder under `%LOCALAPPDATA%\Temp`; step 3's harness (SendInput, UI
+  Automation, the clipboard saved and restored) types and reads. Claude
+  Code: P3b's prompt, on Haiku through `ANTHROPIC_MODEL` and
+  `CLAUDE_CODE_SUBAGENT_MODEL` set for that process only (no configuration
+  file; the application has no model option, amendment 4). Codex: P7's
+  prompt, on the application's fallback model. Criteria, for each CLI:
+  1. Launch: the startup screen shows the CLI and the folder; Enter gives
+     the dashboard and "Ready" within 60 s.
+  2. Subagents: every approval card answered with F2, a; within 240 s
+     `found.txt` exists in the folder, zone C reads "0 ACTIVE · n DONE"
+     with n ≥ 1 (Claude Code) or n ≥ 2 (Codex), B's badge is Idle, every
+     row of the frame closed by its border.
+  3. Real clock: zone D's session time is not "--" (the L2d and L4d
+     "time --" is the test harness's).
+  4. Shift-drag with mouse capture on, maximised and at the default size:
+     a plain drag copies through the application on release (control);
+     a Shift-drag over the same cells leaves the clipboard unchanged on
+     release, and Ctrl+C then copies exactly those cells' text.
+  5. `confcheck`: PASS, or NOT-VERIFIED only for files the CLI writes;
+     the folder holds only `found.txt`.
+  6. Zone D against the CLI's own screen (Claude Code `/usage`, Codex
+     `/status`): read and judged by the owner, reported as given.
+  7. Ctrl+Q closes the application; no CLI process it started remains.
+  Not verifiable, stays listed: a NUL in a paste (the Windows clipboard
+  ends text at the first NUL); an API-key session (needs a key and API
+  billing); a plan without a 5-hour window (another account); Claude Code
+  refusing `get_context_usage` (cannot be caused on a real CLI).
+  Runs: Claude Code `acc-l5c-103340` (10:33, the full turn) and
+  `acc-l5c-105614` (10:56, reopened for criteria 6 and 7 after the owner
+  closed Windows Terminal: no subagent prompt, one "Reply with the single
+  word ok." so that zone D carries Claude Code's rate-limit report).
+  Codex 0.145.0: `acc-l5x-103340` (the harness missed the refusal note,
+  wrapped over two rows; no turn ran), `acc-l5x-104828` (the approval
+  allowed and `found.txt` written, then the owner closed Windows Terminal),
+  `acc-l5x-105458` (the full turn).
+  Results (2026-10-17):
+  1. PASS, both. Window maximised 1938x1098 px; the startup screen showed
+     the folder; "Ready" 2 to 3 s after Enter; 2 CLI processes started; the
+     frame 44x156, every row closed by its border.
+  2. PASS, both. Claude Code: 29.8 s, 2 approvals allowed (the subagent's
+     PowerShell `Get-ChildItem`, then its Write of `found.txt`, both
+     "allowed by you"), zone C "0 ACTIVE · 1 DONE" with the row
+     "✓ general-purpose … completed 10s 26.7k tok", zone A turn 1 with
+     Agent, agent and Glob, B Idle; `found.txt` empty (the folder was empty
+     when listed; the answer says so). Codex: `gpt-6-sol` refused, the
+     prompt sent again on `gpt-5.6-sol`, 37.8 s, 1 approval allowed
+     (`/root/create_found`'s fileChange), zone C "0 ACTIVE · 2 DONE"
+     (`/root/create_found` 13s 93.5k tok, `/root/list_files` 11s 46.1k
+     tok), B Idle, `found.txt` "found\n". Every row closed by its border.
+  3. PASS, both. Claude Code "time 2m 41s session" (48 rows: one Windows
+     Terminal Ctrl+minus, as at 44 rows step 8's zone D folds the time into
+     "+2 more"); Codex "time 48s session" at 44 rows.
+  4. PASS, both, maximised (44x156) and at the default size (30x120): the
+     plain drag copied through the application on release ("Use th" /
+     "Use t", "Spawn " / "Spawn"); the Shift-drag left the clipboard
+     unchanged; Ctrl+C copied exactly "Use the Agent " / "Use the Agen" and
+     "Spawn two suba" / "Spawn two su". Claude Code's first attempt
+     (10:34) failed both Ctrl+C checks, "se the Agent " for "Use the
+     Agent ": the harness dragged from cell centres and Windows Terminal
+     snaps to the nearest cell edge (fix below); the rechecks at 10:36:07
+     and 10:36:42 passed. The clipboard was saved and restored, never
+     printed.
+  5. Codex: PASS. `acc-l5x-104828`: every file identical; `acc-l5x-105458`:
+     NOT-VERIFIED for `~\.claude.json` only, written by the Claude Code
+     dashboard started inside that window (10:56:19). Each folder holds only
+     `found.txt`. Claude Code: `acc-l5c-103340` NOT-VERIFIED for
+     `~\.claude.json` only (Claude Code writes it), every other file
+     identical; **`acc-l5c-105614` FAIL**: `~\.codex\config.toml` changed
+     (written 11:16:39), and `~\.claude.json` (11:14:38) and
+     `~\.claude\plugins\known_marketplaces.json` (11:00:31) changed, not
+     classified; contents not inspected. Attribution from the timestamps
+     only: Codex was updated to 0.163.0 at 11:15:09 (its executable
+     recreated) and the owner's own Codex 0.163.0 started at 11:16:40 (its
+     `app-server-daemon` folder created then), one second after the
+     `config.toml` write; the owner's Claude Code `/usage` ran about 11:14.
+     The application writes no file; that it caused none of these writes is
+     inferred, not verified. The folder holds no file.
+  6. Read by the owner, as given. Codex `/status` (0.163.0, about 11:17):
+     5h 97% left, resets 15:21; weekly 99% left, resets 10:30 on 22 Oct.
+     Zone D (10:56): 5h 3%, resets Sat 15:21; 7d 1%, resets Thu 10:30:
+     equal. Claude Code `/usage` (about 11:14): session 64% used, resets
+     1:19pm; week 11% used, resets Oct 24, 7:59am. Zone D (10:57, "quota
+     updated 12m 36s ago" when the owner looked): 5h 63%, resets Sat 13:20;
+     7d 10%, resets Sat 08:00. The percentages differ by one point,
+     consistent with the owner's sessions between the two readings; the
+     reset times by one minute: Claude Code reports whole minutes (the
+     probes' `resetsAt` 1792216800 is 08:00:00) and zone D shows them as
+     reported, while `/usage` shows the minute before.
+  7. PASS, both. Ctrl+Q closed the window in 5.22 s (Codex) and 0.75 s
+     (Claude Code); 2 seconds later none of the CLI processes the
+     application started remained (2264, 12032; 17448, 16108).
+  - Covered now, listed as not verified in the Done matrix above: a live
+    session started from Windows Terminal (criterion 1), Shift-drag with
+    mouse capture (7), a live subagent through the dashboard (8), zone D
+    against each CLI's own screen (9).
+  - Harness fixes during the run (scratchpad, not in the repository):
+    Windows Terminal snaps a selection to the nearest cell edge, so a drag
+    starts at 0.2 of its first cell and ends at 0.8 of its last; the
+    session time read after Ctrl+minus with `time (\S+(?: \S+)?) session`;
+    the refusal detected on "Codex refused the model", the one row of the
+    note that does not wrap.
+  - Seen by the owner: Codex has no slash commands through `app-server`,
+    so `/status` typed in the dashboard went to the model as a message
+    (its answer "Idle. No active tasks." is the model's, not Codex's
+    status); Claude Code ran `/usage` and its text reached B. A file name
+    in an answer is not clickable (Windows Terminal links URLs only; editor
+    integration is outside amendment 4).
 
 The owner's decisions at plan 3's approval (2026-10-16):
 - Proposal and roadmap approved; follow its order and the MVP scope.

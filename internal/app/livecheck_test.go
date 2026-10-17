@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
+	"github.com/Evengelius/agent-command-center/internal/provider"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -184,6 +186,131 @@ func oneEntryPerMessage(s *state.State, from int) error {
 		seen[e.MessageID] = true
 	}
 	return nil
+}
+
+// tokenMetrics are the token and context values a turn of either CLI gives
+// (telemetry-sources.md); one at least must be present after a turn.
+var tokenMetrics = []string{"tokens.turn", "tokens.last", "tokens.total", "tokens.session", "context.used"}
+
+// activityShown fails unless the dashboard shows, after a completed turn,
+// what steps 6 to 8 draw from its events (plan 4, Done): the owner's last
+// turn as a stage of zone A, closed and completed, with a completed tool
+// under it; every telemetry value real, from a named source, or N/A with its
+// reason (never a silent zero); a token or context value present; B's badge
+// Idle.
+func activityShown(s *state.State, frame string) error {
+	i := len(s.Stages) - 1
+	for i >= 0 && s.Stages[i].ByCLI { // a turn the CLI opened, with no prompt
+		i--
+	}
+	if i < 0 {
+		return fmt.Errorf("no stage the owner opened in zone A")
+	}
+	st := s.Stages[i]
+	if st.Open || st.Outcome != "completed" {
+		return fmt.Errorf("stage %d open %v, outcome %q; want closed and completed", st.N, st.Open, st.Outcome)
+	}
+	if want := fmt.Sprintf("TURN %d  ✓ completed", st.N); !strings.Contains(frame, want) {
+		return fmt.Errorf("zone A lacks %q", want)
+	}
+	tool := false
+	for _, tc := range s.Tools {
+		tool = tool || tc.Stage == st.N && tc.Status == state.ToolCompleted
+	}
+	if !tool {
+		return fmt.Errorf("no completed tool under stage %d", st.N)
+	}
+	tokens := false
+	for _, k := range slices.Sorted(maps.Keys(s.Metrics)) {
+		v := s.Metrics[k]
+		switch {
+		case v.Present && v.Source == "":
+			return fmt.Errorf("metric %s has a value without a source", k)
+		case !v.Present && v.Reason == "":
+			return fmt.Errorf("metric %s is neither a value nor N/A with a reason", k)
+		}
+		tokens = tokens || v.Present && v.V > 0 && slices.Contains(tokenMetrics, k)
+	}
+	if !tokens {
+		return fmt.Errorf("no token or context value present (%v)", tokenMetrics)
+	}
+	if !strings.Contains(frame, "Idle") {
+		return fmt.Errorf("zone B's badge is not Idle")
+	}
+	return nil
+}
+
+// TestActivityShown checks activityShown on the recordings of both CLIs, and
+// that it fails on what it guards against.
+func TestActivityShown(t *testing.T) {
+	for _, name := range []string{"claude-subagent-approval.jsonl", "codex-subagents.jsonl"} {
+		t.Run(name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				h := newHarness(t, Options{
+					Config:    Config{Mock: filepath.Join("..", "..", "testdata", "mock", name)},
+					Providers: []provider.Provider{spawnTrap{t}},
+					Cwd:       t.TempDir(),
+				})
+				h.deliver(tea.WindowSizeMsg{Width: 160, Height: 60})
+				h.settle()
+				s, f := h.m.State(), frameText(h)
+				if err := activityShown(s, f); err != nil {
+					t.Fatalf("%v\n%s", err, f)
+				}
+				for _, m := range []struct {
+					name   string
+					change func() func()
+				}{
+					{"stages open", func() func() {
+						old := slices.Clone(s.Stages)
+						for i := range s.Stages {
+							s.Stages[i].Open = true
+						}
+						return func() { s.Stages = old }
+					}},
+					{"only CLI stages", func() func() {
+						old := slices.Clone(s.Stages)
+						for i := range s.Stages {
+							s.Stages[i].ByCLI = true
+						}
+						return func() { s.Stages = old }
+					}},
+					{"no tool", func() func() {
+						old := s.Tools
+						s.Tools = map[string]*state.ToolCall{}
+						return func() { s.Tools = old }
+					}},
+					{"silent N/A", func() func() {
+						s.Metrics["x"] = state.Value{}
+						return func() { delete(s.Metrics, "x") }
+					}},
+					{"value without source", func() func() {
+						s.Metrics["x"] = state.Value{Present: true, V: 1}
+						return func() { delete(s.Metrics, "x") }
+					}},
+					{"no tokens", func() func() {
+						old := maps.Clone(s.Metrics)
+						for _, k := range tokenMetrics {
+							delete(s.Metrics, k)
+						}
+						return func() { s.Metrics = old }
+					}},
+				} {
+					undo := m.change()
+					if activityShown(s, f) == nil {
+						t.Errorf("%s: activityShown passed", m.name)
+					}
+					undo()
+				}
+				if activityShown(s, strings.ReplaceAll(f, "Idle", "Busy")) == nil {
+					t.Error("not Idle: activityShown passed")
+				}
+				if activityShown(s, strings.ReplaceAll(f, "TURN", "STEP")) == nil {
+					t.Error("no stage drawn: activityShown passed")
+				}
+			})
+		})
+	}
 }
 
 // coherent fails unless the turn from entry from shows its streamed text as

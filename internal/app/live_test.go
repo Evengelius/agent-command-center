@@ -194,6 +194,15 @@ func TestLiveDashboard(t *testing.T) {
 		t.Errorf("turn 1: no resolved approval line in the frame:\n%s", f)
 	}
 	t.Logf("turn 1: completed, allow.txt %q, answer %q", strings.TrimSpace(string(b)), lastAssistant(s))
+	// What steps 6 to 8 draw from the turn (plan 4, Done): zone A's stage and
+	// tool, zone D's values or N/A with a reason, B's badge; telemetry may
+	// trail the turn's end by a few events.
+	h.until(func(s *state.State) bool { return activityShown(s, frameText(h)) == nil }, 10*time.Second)
+	if err := activityShown(h.m.State(), frameText(h)); err != nil {
+		t.Errorf("turn 1: %v\n%s", err, frameText(h))
+	}
+	checkFrame(t, h.m.View().Content, 160, 60)
+	t.Logf("turn 1: activity shown; frame:\n%s", frameText(h))
 
 	// 2. A longer turn interrupted with Ctrl+C at its first streamed text,
 	// its answer one entry (interruptMidStream, checked on P2's turn by
