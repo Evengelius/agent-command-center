@@ -240,6 +240,30 @@ func TestTelemetryNA(t *testing.T) {
 		{name: "codex context before the first model call", provider: codex.ProviderID,
 			recs: func(t *testing.T) []fixture.Record { return upTo(p6b(t), 20) },
 			want: []string{"context N/A (no model call yet)"}},
+		{name: "codex limit set", provider: codex.ProviderID,
+			recs: func(t *testing.T) []fixture.Record {
+				return append(p6b(t), rec(900000, "in", `{"id":98,"method":"config/read","params":{"cwd":"C:/x","includeLayers":false}}`),
+					rec(900001, "out", `{"id":98,"result":{"config":{"agents":{"max_concurrent_threads_per_session":3}}}}`))
+			},
+			want: []string{"active / limit 3 (config)"}, errors: -1},
+		{name: "codex limit not set", provider: codex.ProviderID,
+			recs: func(t *testing.T) []fixture.Record {
+				return append(p6b(t), rec(900000, "in", `{"id":98,"method":"config/read","params":{"cwd":"C:/x","includeLayers":false}}`),
+					rec(900001, "out", `{"id":98,"result":{"config":{}}}`))
+			},
+			want: []string{"active / limit N/A (not set; default not reported)"}, errors: -1},
+		{name: "codex limit per backend", provider: codex.ProviderID,
+			recs: func(t *testing.T) []fixture.Record {
+				return append(p6b(t), rec(900000, "in", `{"id":98,"method":"config/read","params":{"cwd":"C:/x","includeLayers":false}}`),
+					rec(900001, "out", `{"id":98,"result":{"config":{"features":{"multi_agent_v2":{"max_concurrent_threads_per_session":5}}}}}`))
+			},
+			want: []string{"active / limit N/A (set per backend; backend not reported)"}, errors: -1},
+		{name: "codex limit read refused", provider: codex.ProviderID,
+			recs: func(t *testing.T) []fixture.Record {
+				return append(p6b(t), rec(900000, "in", `{"id":98,"method":"config/read","params":{"cwd":"C:/x","includeLayers":false}}`),
+					rec(900001, "out", `{"id":98,"error":{"code":-32603,"message":"nope"}}`))
+			},
+			want: []string{"active / limit N/A (not read)"}, errors: -1},
 		{name: "codex cost and limit", provider: codex.ProviderID,
 			recs: p6b,
 			want: []string{"cost N/A (Codex reports none)", "active / limit N/A (not read)"}, errors: -1},

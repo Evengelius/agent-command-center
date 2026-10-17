@@ -81,6 +81,7 @@ type Session struct {
 	fellBack  bool                  // the model fallback ran: never twice
 	from      string                // the refused model, until the new thread starts
 	fallback  bool                  // the fallback is due once the line's events are queued
+	dir       string                // the project directory, the cwd of config/read
 
 	wmu      sync.Mutex // one write at a time
 	inClosed atomic.Bool
@@ -117,7 +118,7 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext) (*Sess
 	if now == nil {
 		now = time.Now
 	}
-	s := &Session{prov: p, p: pr, stdin: pr.Stdin(), step: step, m: NewMapper(), calls: map[string]string{},
+	s := &Session{prov: p, p: pr, stdin: pr.Stdin(), step: step, m: NewMapper(), calls: map[string]string{}, dir: sc.ProjectPath,
 		approvals: map[string]pendingReq{}, resume: sc.ResumeID, pin: p.fallbackModel(),
 		q: pipe.NewQueue(now), exited: make(chan struct{})}
 	s.q.Push(event.Event{Provider: ProviderID, Kind: event.SessionSpawned, Origin: event.Observed,
@@ -270,6 +271,11 @@ func (s *Session) react(l []byte, evs []event.Event) func() {
 				if err := s.notify("initialized"); err != nil {
 					s.problem("initialized not sent: " + err.Error())
 					return
+				}
+				// Only the concurrency limit is read from the reply (reliability.md,
+				// Telemetry sources: Concurrency limit; probe 2026-10-17, Codex CLI 0.163.0).
+				if err := s.request("config/read", map[string]any{"cwd": s.dir, "includeLayers": false}); err != nil {
+					s.problem("config/read not sent: " + err.Error())
 				}
 				s.startThread()
 			}

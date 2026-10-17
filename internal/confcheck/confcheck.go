@@ -4,7 +4,9 @@
 //
 // Rules it enforces: credential-named files are never opened or stat-read;
 // the only code that reads a file's bytes is Hasher (SHA-256 over the whole
-// file); no content is parsed, printed or stored, only names and digests.
+// file); no content is printed or stored, only names and digests. The one
+// exception is the key-level diff of ~/.claude.json (keys.go, the owner's
+// approval, 2026-10-17).
 package confcheck
 
 import (
@@ -53,6 +55,13 @@ type Entry struct {
 	Name   string `json:"name"`
 	State  string `json:"state"`
 	Digest string `json:"digest,omitempty"`
+
+	// Key-level data for .claude.json only (keys.go): digests of compacted
+	// values by key name; Skipped lists sensitive names, never hashed.
+	Parsed   bool                         `json:"parsed,omitempty"`
+	Keys     map[string]string            `json:"keys,omitempty"`
+	Projects map[string]map[string]string `json:"projects,omitempty"`
+	Skipped  []string                     `json:"skippedKeys,omitempty"`
 }
 
 // Snapshot is the baseline: no file content.
@@ -70,6 +79,7 @@ type Checker struct {
 	Home    string
 	Project string
 	Hash    Hasher
+	Read    func(path string) ([]byte, error) // .claude.json only; default os.ReadFile
 	Procs   ProcessLister
 	Now     func() time.Time
 }
@@ -233,6 +243,9 @@ func (c *Checker) Snapshot() (*Snapshot, error) {
 			e.State = StateSkipped
 		} else if d, err := hash(cd.path); err == nil {
 			e.State, e.Digest = StateHashed, d
+			if cd.path == h(".claude.json") {
+				c.keyLevel(&e, cd.path)
+			}
 		} else if errors.Is(err, fs.ErrNotExist) {
 			e.State = StateAbsent
 		} else {
@@ -326,7 +339,7 @@ func Compare(before, after *Snapshot, cliRan bool) *Report {
 			e = be
 		}
 		var res string
-		diff := false
+		diff, keyLevel := false, false
 		switch {
 		case be.State == StateSkipped || ae.State == StateSkipped:
 			res = "skipped (credential name)"
@@ -342,13 +355,26 @@ func Compare(before, after *Snapshot, cliRan bool) *Report {
 			res = "identical"
 		default:
 			res, diff = "changed", true
+			keyLevel = be.Parsed && ae.Parsed
 		}
+		var extra []string
 		if diff {
 			if e.Class == ClassMixed {
-				if res == "changed" {
-					res = "changed, not classified (contents not inspected)"
+				if keyLevel {
+					project := after.Project
+					if project == "" {
+						project = before.Project
+					}
+					var f, m bool
+					extra, f, m = diffClaudeJSON(e.Name, be, ae, project, r.CLIRan)
+					fail, mixed = fail || f, mixed || m
+					res = "changed (key-level diff follows)"
+				} else {
+					if res == "changed" {
+						res = "changed, not classified (contents not inspected)"
+					}
+					mixed = true
 				}
-				mixed = true
 			} else {
 				fail = true
 			}
@@ -358,6 +384,7 @@ func Compare(before, after *Snapshot, cliRan bool) *Report {
 			line += "  sha256=" + ae.Digest
 		}
 		r.Lines = append(r.Lines, line)
+		r.Lines = append(r.Lines, extra...)
 	}
 
 	old := map[string]bool{}
@@ -381,4 +408,22 @@ func Compare(before, after *Snapshot, cliRan bool) *Report {
 		r.Verdict = Pass
 	}
 	return r
+}
+
+// keyLevel adds the key-level digests of ~/.claude.json to e (keys.go).
+// Invalid JSON (mid-write) leaves e as a whole-file entry.
+func (c *Checker) keyLevel(e *Entry, path string) {
+	read := c.Read
+	if read == nil {
+		read = os.ReadFile
+	}
+	data, err := read(path)
+	if err != nil {
+		return
+	}
+	keys, projects, skipped, ok := keyDigests(data)
+	if !ok {
+		return
+	}
+	e.Parsed, e.Keys, e.Projects, e.Skipped = true, keys, projects, skipped
 }

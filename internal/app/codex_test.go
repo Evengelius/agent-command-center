@@ -306,7 +306,7 @@ func TestCodexApprovalCards(t *testing.T) {
 	}{
 		{'a', []string{`{"id":0,"result":{"decision":"accept"}}`}, state.Allowed},
 		{'d', []string{`{"id":0,"result":{"decision":"decline"}}`}, state.Denied},
-		{'c', []string{`{"id":0,"result":{"decision":"cancel"}}`, `{"id":5,"method":"turn/interrupt","params":{"threadId":"` + p6bThread + `","turnId":"01a14117-b213-7692-a2f6-654541dd8c8f"}}`}, state.Denied},
+		{'c', []string{`{"id":0,"result":{"decision":"cancel"}}`, `{"id":6,"method":"turn/interrupt","params":{"threadId":"` + p6bThread + `","turnId":"01a14117-b213-7692-a2f6-654541dd8c8f"}}`}, state.Denied},
 	} {
 		t.Run(string(c.key), func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
@@ -433,7 +433,7 @@ func TestCodexCrashAndResume(t *testing.T) {
 			t.Fatalf("spawns %q; want app-server twice", argv)
 		}
 		got := w.written(skip)
-		if len(got) < 3 || got[2] != `{"id":2,"method":"thread/resume","params":{"threadId":"th-crash","sandbox":"read-only","approvalPolicy":"on-request"}}` {
+		if len(got) < 4 || got[3] != `{"id":3,"method":"thread/resume","params":{"threadId":"th-crash","sandbox":"read-only","approvalPolicy":"on-request"}}` {
 			t.Errorf("after Ctrl+R:\n%s", strings.Join(got, "\n"))
 		}
 		if n := len(w.method("thread/start")); n != 1 {

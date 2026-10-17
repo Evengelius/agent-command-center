@@ -241,6 +241,7 @@ type run struct {
 	evs  []event.Event
 	done bool // the events channel closed
 	log  string
+	dir  string // the project directory
 }
 
 // start runs the fake in mode, replaying files, with a stdin log.
@@ -266,7 +267,7 @@ func start(t *testing.T, mode string, p *Provider, resume string, files ...strin
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := &run{t: t, sess: sess, st: st, log: log}
+	r := &run{t: t, sess: sess, st: st, log: log, dir: dir}
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
@@ -321,7 +322,7 @@ func (r *run) wait(k event.Kind) event.Event {
 func (r *run) limits() {
 	r.t.Helper()
 	r.waitFor("rate limits answer", func(ev event.Event) bool {
-		return ev.Kind == event.Telemetry && strings.HasPrefix(ev.Raw, `{"id":`)
+		return ev.Kind == event.Telemetry && strings.HasPrefix(ev.Raw, `{"id":`) && !strings.Contains(ev.Raw, "config/read")
 	})
 }
 
@@ -374,6 +375,9 @@ func (r *run) written() []string {
 func (r *run) expect(want []string) {
 	r.t.Helper()
 	lines := r.written()
+	for i := range want {
+		want[i] = strings.ReplaceAll(want[i], "<dir>", strings.Trim(quote(r.dir), `"`))
+	}
 	if len(lines) != len(want) {
 		r.t.Fatalf("%d lines written, want %d:\n%s", len(lines), len(want), strings.Join(lines, "\n"))
 	}
@@ -386,7 +390,7 @@ func (r *run) expect(want []string) {
 
 // forbiddenMethods are never sent (architecture.md, Codex adapter, "Never
 // called"; AGENTS.md: never change a CLI's configuration).
-var forbiddenMethods = []string{"config/", "skills/config/write", "marketplace/", "plugin/", "externalAgentConfig/", "windowsSandbox/"}
+var forbiddenMethods = []string{"config/value", "config/batch", "config/mcp", "skills/config/write", "marketplace/", "plugin/", "externalAgentConfig/", "windowsSandbox/"}
 
 // forbidden says why a written line is one the adapter must never send, ""
 // when it is allowed.
@@ -403,6 +407,17 @@ func forbidden(line string) string {
 		if strings.HasPrefix(m.Method, f) {
 			return "method " + m.Method
 		}
+	}
+	if m.Method == "config/read" {
+		// The one config call: the limit only, in the project directory, no layers.
+		var p struct {
+			Cwd           *string `json:"cwd"`
+			IncludeLayers *bool   `json:"includeLayers"`
+		}
+		if json.Unmarshal(m.Params, &p) != nil || p.Cwd == nil || p.IncludeLayers == nil || *p.IncludeLayers {
+			return "config/read with other parameters"
+		}
+		return ""
 	}
 	var walk func(v any) string
 	walk = func(v any) string {
@@ -491,7 +506,7 @@ func TestNoForbiddenMethodInSource(t *testing.T) {
 				}
 			}
 		}
-		if strings.Contains(string(b), `"cwd"`) || strings.Contains(string(b), "workspace-write") || strings.Contains(string(b), "danger-full-access") {
+		if strings.Count(string(b), `"cwd"`) > 1 || strings.Contains(string(b), "workspace-write") || strings.Contains(string(b), "danger-full-access") {
 			t.Errorf("%s names cwd or a writable sandbox", f)
 		}
 	}
@@ -580,12 +595,13 @@ func TestHandshakeApprovalInterrupt(t *testing.T) {
 	r.expect([]string{
 		initLine,
 		`{"method":"initialized"}`,
-		`{"id":2,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request"}}`,
-		`{"id":3,"method":"account/rateLimits/read"}`,
-		turnLine(4, p6bThread, "make hello.txt"),
+		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
+		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request"}}`,
+		`{"id":4,"method":"account/rateLimits/read"}`,
+		turnLine(5, p6bThread, "make hello.txt"),
 		`{"id":0,"result":{"decision":"accept"}}`,
-		turnLine(5, p6bThread, "count"),
-		`{"id":6,"method":"turn/interrupt","params":{"threadId":"` + p6bThread + `","turnId":"` + p6bTurn2 + `"}}`,
+		turnLine(6, p6bThread, "count"),
+		`{"id":7,"method":"turn/interrupt","params":{"threadId":"` + p6bThread + `","turnId":"` + p6bTurn2 + `"}}`,
 	})
 }
 
@@ -644,13 +660,14 @@ func TestModelFallback(t *testing.T) {
 	r.expect([]string{
 		initLine,
 		`{"method":"initialized"}`,
-		`{"id":2,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request"}}`,
-		`{"id":3,"method":"account/rateLimits/read"}`,
-		turnLine(4, p6Thread, "make hello.txt"),
-		`{"id":5,"method":"model/list","params":{}}`,
-		`{"id":6,"method":"thread/start","params":{"model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request"}}`,
-		`{"id":7,"method":"account/rateLimits/read"}`,
-		turnLine(8, p6bThread, "make hello.txt"),
+		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
+		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request"}}`,
+		`{"id":4,"method":"account/rateLimits/read"}`,
+		turnLine(5, p6Thread, "make hello.txt"),
+		`{"id":6,"method":"model/list","params":{}}`,
+		`{"id":7,"method":"thread/start","params":{"model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request"}}`,
+		`{"id":8,"method":"account/rateLimits/read"}`,
+		turnLine(9, p6bThread, "make hello.txt"),
 		`{"id":0,"result":{"decision":"accept"}}`,
 	})
 }
@@ -693,9 +710,10 @@ func TestChildApproval(t *testing.T) {
 	r.expect([]string{
 		initLine,
 		`{"method":"initialized"}`,
-		`{"id":2,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request"}}`,
-		`{"id":3,"method":"account/rateLimits/read"}`,
-		turnLine(4, p7Thread, "spawn two"),
+		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
+		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request"}}`,
+		`{"id":4,"method":"account/rateLimits/read"}`,
+		turnLine(5, p7Thread, "spawn two"),
 		`{"id":0,"result":{"decision":"accept"}}`,
 	})
 }
@@ -819,8 +837,9 @@ func TestResume(t *testing.T) {
 	r.expect([]string{
 		initLine,
 		`{"method":"initialized"}`,
-		`{"id":2,"method":"thread/resume","params":{"threadId":"th-9","model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request"}}`,
-		`{"id":3,"method":"account/rateLimits/read"}`,
+		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
+		`{"id":3,"method":"thread/resume","params":{"threadId":"th-9","model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request"}}`,
+		`{"id":4,"method":"account/rateLimits/read"}`,
 	})
 }
 
@@ -980,5 +999,39 @@ func TestStartNeedsExecutableAndProject(t *testing.T) {
 	}
 	if _, err := (&Provider{}).Start(context.Background(), provider.SessionContext{Executable: "x"}); err == nil {
 		t.Error("started without a project")
+	}
+}
+
+// TestConfigReadOnce: config/read is written once, after initialized, with
+// the project directory as cwd and no layers; only the limit reaches the
+// state, and nothing of the reply stays in an event (plan 5).
+func TestConfigReadOnce(t *testing.T) {
+	recs := append(append([]string{}, handshake...),
+		`{"dir":"in","msg":{"id":9,"method":"config/read"}}`,
+		`{"dir":"out","msg":{"id":9,"result":{"config":{"mcp_servers":{"x":{"env":{"TOKEN":"SECRET-MARKER-123"}}},"agents":{"max_concurrent_threads_per_session":3}}}}}`)
+	r, _ := start(t, "replay", nil, "", script(t, recs...))
+	r.waitFor("the limit", func(ev event.Event) bool { return strings.Contains(ev.Raw, "config/read reply not kept") })
+	r.limits()
+	if v := r.st.Metrics[event.LimitMetric]; v.V != 3 {
+		t.Errorf("limit %+v", v)
+	}
+	r.close()
+	n := 0
+	for _, l := range r.written() {
+		if strings.Contains(l, `"config/read"`) {
+			n++
+			want := `{"id":2,"method":"config/read","params":{"cwd":` + quote(r.dir) + `,"includeLayers":false}}`
+			if l != want {
+				t.Errorf("written %s, want %s", l, want)
+			}
+		}
+	}
+	if n != 1 {
+		t.Errorf("%d config/read written", n)
+	}
+	for _, e := range r.evs {
+		if strings.Contains(e.Raw, "SECRET-MARKER-123") || strings.Contains(fmt.Sprintf("%+v", e), "SECRET-MARKER-123") {
+			t.Errorf("event keeps the secret: %s", e.Kind)
+		}
 	}
 }

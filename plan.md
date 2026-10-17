@@ -24,8 +24,9 @@ is worth forking; reliability is designed with the architecture, not after it.
 2026-10-17, [Plan 5](#plan-5---post-mvp-improvements) at the end). Every
 item done; the evaluation summary, 17 of 17 PASS, is in
 [`doc/plan5-evaluation.md`](doc/plan5-evaluation.md), with the live
-verification the owner ran before the commit (15 of 15 PASS); awaiting the
-owner's approval.
+verification the owner ran before the commit (15 of 15 PASS), committed as
+d42531f; then six follow-up items, 6 of 6 PASS (same file, After the
+commit); awaiting the owner's approval.
 
 **Plan 4, the MVP, approved by the owner on 2026-10-17** after a live demo on
 both CLIs (14 of 14 PASS, [`doc/plan4-evaluation.md`](doc/plan4-evaluation.md));
@@ -845,6 +846,16 @@ Baseline: cf58739, 177 top-level tests in 14 packages, 0 FAIL.
   FAIL on record (t03, Claude Code's plugin cache refreshed during the run).
   Settled: CC-10 q3 (Claude waits after the question deny message). Still
   open: a live Codex `s` offer (0.163.0 offered none).
+- After the commit d42531f (2026-10-17, the owner's decisions on what was
+  open): **done**, 6 of 6 PASS, recorded in
+  [`doc/plan5-evaluation.md`, After the commit](doc/plan5-evaluation.md#after-the-commit).
+  A selection into a failure card (t13) and a NUL in a paste (t14) live on
+  the mock; the Codex thread limit read from `config/read`, only the limit
+  kept (live t15c: "not set"), and the V2 backend's own limit (N/A when
+  the two backends differ); `confcheck` diffs `~\.claude.json` by key,
+  sensitive names never hashed; test 3 rerun (t03b), configuration PASS,
+  only state keys changed. Full check: 221 top-level tests, all PASS. Not
+  pursued, the owner's decision: the Codex `s` offer, Linux and macOS.
 
 Plan 4 progress (closed). Steps and their checks: [proposal.md, section 4](doc/proposal.md#4-prioritised-mvp-roadmap).
 

@@ -359,9 +359,9 @@ func costText(s *state.State, ui UI) shown {
 }
 
 // agentCount is the agents running against the CLI's limit: Claude Code
-// reports none; Codex's agents.max_threads is only in config/read, which is
-// not called because the effective configuration it returns can hold
-// secrets (reliability.md, Telemetry sources: Concurrency limit).
+// reports none; Codex's comes from config/read, of which only the limit is
+// kept (probe 2026-10-17, Codex CLI 0.163.0; reliability.md, Telemetry
+// sources: Concurrency limit).
 func agentCount(s *state.State) string {
 	switch s.Session.Phase {
 	case state.Spawning, state.Handshaking, "":
@@ -371,6 +371,16 @@ func agentCount(s *state.State) string {
 	limit := "N/A (not reported)"
 	if s.CLI() == "codex" {
 		limit = "N/A (not read)"
+		if v := s.Metrics[event.LimitMetric]; v.Present {
+			switch v.Text {
+			case event.LimitNotSet:
+				limit = "N/A (not set; default not reported)"
+			case event.LimitPerBackend:
+				limit = "N/A (set per backend; backend not reported)"
+			default:
+				limit = fmt.Sprintf("%.0f (config)", v.V)
+			}
+		}
 	}
 	return fmt.Sprintf("%d active / limit %s", n, limit)
 }

@@ -1,6 +1,7 @@
 package codex
 
 import (
+	"fmt"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -467,5 +468,89 @@ func TestOfferedDecisions(t *testing.T) {
 		if a := evs[0].Payload.(event.Approval); !slices.Equal(a.Offered, c.want) || a.Problem != "" {
 			t.Errorf("%s: offered %q, problem %q; want %q", c.list, a.Offered, a.Problem, c.want)
 		}
+	}
+}
+
+// configReadEvents maps a config/read request and its reply.
+func configReadEvents(t *testing.T, reply string) []event.Event {
+	t.Helper()
+	m := NewMapper()
+	m.In([]byte(`{"id":7,"method":"config/read","params":{"cwd":"C:/x","includeLayers":false}}`))
+	return m.Out([]byte(reply))
+}
+
+func limitOf(t *testing.T, evs []event.Event) event.Metric {
+	t.Helper()
+	for _, e := range evs {
+		if p, ok := e.Payload.(event.Metrics); ok && len(p.Items) == 1 && p.Items[0].Name == event.LimitMetric {
+			return p.Items[0]
+		}
+	}
+	t.Fatalf("no limit event in %+v", evs)
+	return event.Metric{}
+}
+
+// TestConfigReadKeepsOnlyTheLimit: the reply can hold secrets; the limit is
+// read and no event carries a byte of the result.
+func TestConfigReadKeepsOnlyTheLimit(t *testing.T) {
+	evs := configReadEvents(t, `{"id":7,"result":{"config":{"model":"x","mcp_servers":{"x":{"env":{"TOKEN":"SECRET-MARKER-123"}}},"agents":{"max_concurrent_threads_per_session":3,"job_max_runtime_seconds":null}},"origins":{}}}`)
+	if m := limitOf(t, evs); m.Value != 3 || m.Text != "" || m.Source != "config/read" {
+		t.Errorf("limit %+v", m)
+	}
+	for _, e := range evs {
+		if strings.Contains(e.Raw, "SECRET-MARKER-123") || strings.Contains(fmt.Sprintf("%+v", e), "SECRET-MARKER-123") {
+			t.Errorf("event keeps the secret: %+v", e)
+		}
+	}
+	if len(evs) != 1 || !strings.HasPrefix(evs[0].Raw, `{"id":"7","result":"config/read reply not kept`) {
+		t.Errorf("raw %q", evs[0].Raw)
+	}
+}
+
+func TestConfigReadFallbackName(t *testing.T) {
+	m := limitOf(t, configReadEvents(t, `{"id":7,"result":{"config":{"agents":{"max_threads":5}}}}`))
+	if m.Value != 5 {
+		t.Errorf("limit %+v", m)
+	}
+}
+
+func TestConfigReadNotSet(t *testing.T) {
+	m := limitOf(t, configReadEvents(t, `{"id":7,"result":{"config":{"model":"x","mcp_servers":{"x":{"env":{"TOKEN":"SECRET-MARKER-123"}}}},"origins":{}}}`))
+	if m.Text != event.LimitNotSet || m.Value != 0 {
+		t.Errorf("limit %+v", m)
+	}
+}
+
+// TestConfigReadV2Limit: features.multi_agent_v2's limit counts the main thread
+// and applies on V2 only; the backend is not reported, so a limit is shown
+// only when both backends agree (true or false: no limit of its own).
+func TestConfigReadV2Limit(t *testing.T) {
+	for _, c := range []struct {
+		name, config string
+		want         float64
+		text         string
+	}{
+		{"v2 only", `{"features":{"multi_agent_v2":{"max_concurrent_threads_per_session":5}}}`, 0, event.LimitPerBackend},
+		{"v2 one, agents unset", `{"features":{"multi_agent_v2":{"max_concurrent_threads_per_session":1}}}`, 0, event.LimitPerBackend},
+		{"both differ", `{"agents":{"max_threads":3},"features":{"multi_agent_v2":{"max_concurrent_threads_per_session":3}}}`, 0, event.LimitPerBackend},
+		{"both agree", `{"agents":{"max_threads":3},"features":{"multi_agent_v2":{"max_concurrent_threads_per_session":4}}}`, 3, ""},
+		{"v2 true", `{"agents":{"max_threads":3},"features":{"multi_agent_v2":true}}`, 3, ""},
+		{"v2 true, agents unset", `{"features":{"multi_agent_v2":true}}`, 0, event.LimitNotSet},
+		{"v2 table without limit", `{"features":{"multi_agent_v2":{"enabled":true}}}`, 0, event.LimitNotSet},
+	} {
+		m := limitOf(t, configReadEvents(t, `{"id":7,"result":{"config":`+c.config+`}}`))
+		if m.Value != c.want || m.Text != c.text {
+			t.Errorf("%s: limit %+v", c.name, m)
+		}
+	}
+}
+
+func TestConfigReadRefused(t *testing.T) {
+	evs := configReadEvents(t, `{"id":7,"error":{"code":-32600,"message":"config unavailable"}}`)
+	if len(evs) != 1 || evs[0].Kind != event.Error {
+		t.Fatalf("events %+v", evs)
+	}
+	if p := evs[0].Payload.(event.Problem); p.Message != "config/read refused by Codex: config unavailable" {
+		t.Errorf("message %q", p.Message)
 	}
 }

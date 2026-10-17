@@ -181,7 +181,7 @@ reset shown N/A.
 | Tokens | per-thread totals; session total derived | "N/A" before the first update |
 | API-equivalent cost | none | always "cost N/A (Codex reports none)" |
 | Agent count | derived from thread events | "N/A" before the session starts |
-| Concurrency limit | none read: `agents.max_threads` is only in `config/read`, which is not called because the effective configuration it returns can hold secrets (an MCP server's `env`, a provider's bearer token; plan 4, step 7) | always "limit N/A (not read)" |
+| Concurrency limit | `config/read` (`{"cwd": <project>, "includeLayers": false}`), once per session after `initialized`; only `config.agents.max_concurrent_threads_per_session` (fallback name `agents.max_threads`) is decoded, and `config.features.multi_agent_v2.max_concurrent_threads_per_session`, the V2 backend's own limit, which counts the main thread (Codex 0.163.0 source, `codex-rs/core/src/config/mod.rs:1666-1680`; probe 2026-10-17). The reply is the effective configuration and can hold secrets (an MCP server's `env`, a provider's bearer token), so no event keeps any byte of it: its `Raw` is a fixed placeholder. When unset the reply has no `agents` key and the built-in default is never reported (probe 2026-10-17, Codex CLI 0.163.0; owner's approval 2026-10-17) | set: "limit 3 (config)"; replied but unset: "limit N/A (not set; default not reported)"; the V2 limit minus one differs from `agents`' (or `agents` unset): "limit N/A (set per backend; backend not reported)", since the active backend is not reported; no reply yet or refused: "limit N/A (not read)" |
 | Duration | `turn/completed.durationMs` | "N/A" before the first turn ends |
 | Errors, retries | `error`, failed `turn/completed`; `willRetry` | counters from 0 once the stream is up; retries "N/A (none reported)" (CX-10 q9) |
 
@@ -359,6 +359,25 @@ Rules of the check:
   is expected to write the file. The owner may also compare the file
   themselves; the check never does.
 - **Whole files are never excluded** (the owner's instruction 2 at plan 1).
+- **Key-level diff of `~/.claude.json` only** (the owner's approval,
+  2026-10-17; this test tool only, never the application). The snapshot also
+  keeps the SHA-256 of each top-level key's compacted value, and of each
+  sub-key of each `projects` entry; keys whose name matches
+  `oauth|token|secret|password|credential|api_key|auth|account|email|session`
+  are not hashed and are reported "not compared (sensitive name)"; no value
+  and no value digest is printed or stored for them. A changed key is
+  **state** (Claude Code's bookkeeping: a fixed list of names, the prefixes
+  `cached`, `tip(s)`, `last`, `has`, and the suffixes `Cache`, `At`; see
+  `internal\confcheck\keys.go`) or **config** (every other key, including any
+  unknown one). Config change: FAIL; state change: fine when a CLI ran, FAIL
+  otherwise. In `projects`, the test project's entry may change in state
+  sub-keys only (`allowedTools`, the MCP keys, `hasTrustDialogAccepted` and
+  `ignorePatterns` are config); another project's entry changing gives
+  NOT-VERIFIED naming its path. A changed file in which no compared key
+  changed (a sensitive key, or formatting only) is NOT-VERIFIED, never a
+  silent pass. If the file is not valid JSON in either snapshot, the
+  whole-file behaviour above applies. `known_marketplaces.json` stays
+  hash-only.
 
 The earlier evidence stays as recorded: on 2026-10-15, 20 of 22 files were
 identical and `~/.claude.json` and `known_marketplaces.json` differed (plan 1
@@ -461,7 +480,7 @@ owner's quota and needs approval under [evaluation.md](evaluation.md);
 | Shutdown mid-turn on Windows: orphaned shells, rollout state (CX-10 q8) | probe |
 | `error.willRetry` behind the corporate proxy (CX-10 q9) | observed when it happens; "N/A" meanwhile |
 | The rate-limit error text with an API key (CX-10 q10) | needs an API-key login; likely never tested; a synthetic fixture covers the display |
-| Whether `config/read` reports `agents.max_threads` when unset | probe: `config/read` (no model call) |
+| Whether `config/read` reports `agents.max_threads` when unset | answered, probe 2026-10-17, Codex CLI 0.163.0: unset, `config` has no `agents` key; set, the key is `agents.max_concurrent_threads_per_session` (alias `max_threads`) |
 | Codex's `alternate_screen` option (TI open question) | not needed: the MVP never runs Codex's TUI (INT 6); manual if the escape hatch `codex resume` is ever offered inside the dashboard |
 
 **Terminals and input** (TI, "Open questions")

@@ -451,7 +451,7 @@ ui-design.md, `REL` reliability.md.
 | AM2 D3 | Reset times when available | same |
 | AM2 D4 | Model and context-window usage | same |
 | AM2 D5 | Tokens and API-equivalent cost, apart from subscription usage | UI Zone D; REL Telemetry sources |
-| AM2 D6 | Active agents and concurrency limit | UI Zone D (limit N/A, with the reason) |
+| AM2 D6 | Active agents and concurrency limit | UI Zone D (Codex: the limit from `config/read`, only it kept; else N/A, with the reason) |
 | AM2 D7 | Execution duration | UI Zone D |
 | AM2 D8 | Errors and retry counters | UI Zone D; EVT `error`, `retry` |
 | AM2 D9 | Real telemetry; "N/A" when unavailable | REL Telemetry sources; UI States |

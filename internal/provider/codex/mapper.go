@@ -67,6 +67,9 @@ type ids struct {
 
 // Out maps one line read from the CLI's stdout.
 func (m *Mapper) Out(raw []byte) []event.Event {
+	if evs, ok := m.configRead(raw); ok {
+		return evs
+	}
 	raw = redactCredits(raw)
 	var r rpc
 	if err := json.Unmarshal(raw, &r); err != nil {
@@ -813,4 +816,76 @@ func (m *Mapper) plan(params json.RawMessage, agent, turn string, line []byte) e
 		out.Steps = append(out.Steps, event.PlanStep{Step: s.Step, Status: s.Status})
 	}
 	return m.ev(event.StageChanged, event.Observed, agent, turn, "", line, out)
+}
+
+// configRead maps the reply to the dashboard's `config/read`, before any
+// other step touches the line. The reply is the effective configuration and
+// can hold secrets (an MCP server's env, a provider's bearer token), so only
+// agents.max_concurrent_threads_per_session (or max_threads) is decoded, and no
+// event carries a byte of the result: Raw is a fixed placeholder. Unset, the
+// reply has no `agents` key (probe 2026-10-17, Codex CLI 0.163.0). ok is
+// false for any other line.
+func (m *Mapper) configRead(raw []byte) ([]event.Event, bool) {
+	var h struct {
+		ID     json.RawMessage `json:"id"`
+		Method string          `json:"method"`
+	}
+	if json.Unmarshal(raw, &h) != nil || h.Method != "" || len(h.ID) == 0 || string(h.ID) == "null" {
+		return nil, false
+	}
+	id := idString(h.ID)
+	if m.pending[id] != "config/read" {
+		return nil, false
+	}
+	delete(m.pending, id)
+	q, _ := json.Marshal(id)
+	kept := []byte(`{"id":` + string(q) + `,"result":"config/read reply not kept: it can hold secrets"}`)
+	var r struct {
+		Result json.RawMessage `json:"result"`
+		Error  json.RawMessage `json:"error"`
+	}
+	_ = json.Unmarshal(raw, &r)
+	if len(r.Error) > 0 && string(r.Error) != "null" {
+		// The error's message carries no configuration; it is shown as any refusal.
+		msg := problemMessage(r.Error)
+		return []event.Event{m.ev(event.Error, event.Observed, "", "", "", kept, event.Problem{Message: "config/read refused by Codex: " + msg})}, true
+	}
+	var c struct {
+		Config struct {
+			Agents *struct {
+				PerSession *int `json:"max_concurrent_threads_per_session"`
+				MaxThreads *int `json:"max_threads"`
+			} `json:"agents"`
+			Features struct {
+				// true, false or a table; only the table's limit is decoded.
+				V2 json.RawMessage `json:"multi_agent_v2"`
+			} `json:"features"`
+		} `json:"config"`
+	}
+	_ = json.Unmarshal(r.Result, &c)
+	item := event.Metric{Name: event.LimitMetric, Text: event.LimitNotSet, Documented: true, Source: "config/read"}
+	n := 0
+	if a := c.Config.Agents; a != nil {
+		p := a.PerSession
+		if p == nil {
+			p = a.MaxThreads
+		}
+		if p != nil && *p > 0 {
+			n = *p
+		}
+	}
+	if n > 0 {
+		item.Text, item.Value, item.Unit = "", float64(n), "threads"
+	}
+	// The V2 backend's own limit counts the main thread (Codex 0.163.0,
+	// codex-rs/core/src/config/mod.rs:1666-1680); it overrides agents' on V2
+	// only, and the active backend is not reported: a limit only when both
+	// backends agree (doc/plan5-evaluation.md, After the commit).
+	var v2 struct {
+		Max *int `json:"max_concurrent_threads_per_session"`
+	}
+	if json.Unmarshal(c.Config.Features.V2, &v2) == nil && v2.Max != nil && *v2.Max > 0 && (n == 0 || *v2.Max-1 != n) {
+		item.Text, item.Value, item.Unit = event.LimitPerBackend, 0, ""
+	}
+	return []event.Event{m.ev(event.Telemetry, event.Observed, "", "", "", kept, event.Metrics{Items: []event.Metric{item}})}, true
 }

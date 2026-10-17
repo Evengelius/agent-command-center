@@ -164,3 +164,45 @@ the arguments unquoted, and Windows Terminal took the title's second word
 for the command; fixed by passing one quoted argument line. In t05 the
 main session's first Ctrl+Q came while a Bash card was still pending; the
 owner allowed it and finished the run before the capture.
+
+## After the commit
+
+Added on 2026-10-17, after commit d42531f, which the sections above
+describe and which stay as they were. On the list of what was still open,
+the owner decided: the simulated item 15 cases stand ("No need we already
+simulated it"); no further work on the Codex `s` offer; Linux and macOS
+stay a later view; and the five items below are done.
+
+```text
+Follow-up - Plan 5, after d42531f - 6 items: 6 PASS, 0 FAIL
+PASS F1 A selection from a conversation entry into a failure card (t13; mock, the claude-subagent-approval recording plus a session end with code 3): the owner's copy held the message text and "The session ended unexpectedly / the CLI exited unexpectedly / exit code 3", no ✗ and no key hint
+PASS F2 A NUL in a paste (t14; mock): the clipboard held "before", NUL, "after"; Ctrl+V gave "> before", 1 line, no ^@, the editor responsive. Windows' clipboard ends text at the first NUL (Set-Clipboard "before`0after" reads back 6 characters); a NUL that reaches the editor is kept (TestInputByteForByte)
+PASS F3 The Codex thread limit (the owner chose "Call config/read"): config/read once per session after initialized, {"cwd": <project>, "includeLayers": false}; only config.agents.max_concurrent_threads_per_session (fallback max_threads) decoded; every event of the reply carries a fixed placeholder as Raw, so no byte of it is kept or shown (TestConfigReadKeepsOnlyTheLimit, with a marker); live t15c, Codex 0.163.0, no prompt sent: details "agents.limit  not set · config/read"; configuration PASS
+PASS F4 Key-level diff of ~\.claude.json in confcheck (the owner chose "Key-level diff"; this test tool only): digests per key, sensitive names never hashed, unknown keys counted as config; a change in no compared key is NOT-VERIFIED (found in review: the first version passed it silently; test tightened)
+PASS F5 Test 3 again (t03b; Claude Code 2.1.301 on Haiku; the owner ran the Expand and fold-back steps: "It worked fine"): configuration PASS; ~\.claude.json: cachedExperimentData, cachedGrowthBookFeatures, cachedGrowthBookFeaturesAt changed (state); oauthAccount, claudeCodeFirstTokenDate not compared (sensitive name); no project entry changed; plugin-directory-cache-v2.json and known_marketplaces.json identical
+PASS F6 The V2 backend's own limit (the owner's request, after the source reading below): config/read also decodes features.multi_agent_v2.max_concurrent_threads_per_session; when its value minus one differs from agents' limit, or agents' is unset, zone D shows "limit N/A (set per backend; backend not reported)"; probe with -c overrides, no model call: the reply carries it as a table with the number, or as true; configuration PASS (TestConfigReadV2Limit, seven cases; TestTelemetryNA "codex limit per backend")
+Full check: build; vet, also -tags live and -tags timing; gofmt empty; go test ./... 221 top-level tests (209 + 12) in 14 packages, all PASS
+After every run: no acc-live, claude or codex process left outside VS Code; every project folder empty
+Still not verified: a live Codex acceptForSession offer (0.163.0 offered none; not pursued, the owner's decision); Codex's built-in thread limit when unset (6 subagents on the V1 backend, 3 on V2; the backend is never reported: shown "N/A (not set; default not reported)")
+```
+
+t03's FAIL above stays on record. The rerun did not reproduce it: the
+plugin cache was not refreshed during t03b. Before the runs, no
+terminal-hosted Claude Code or Codex session was open. t15 and t15b were
+harness attempts that captured the startup screen and the folded zone D;
+both left the configuration identical and no process.
+
+**The limit's range**, read in Codex's source at tag `rust-v0.163.0`
+(openai/codex, 2026-10-17, the owner's question):
+`agents.max_concurrent_threads_per_session` (alias `max_threads`) counts the
+spawned agents open at once in a session; its minimum is 1 (0 stops Codex at
+startup: "must be at least 1", `codex-rs/core/src/config/mod.rs:4003-4007`;
+`#[schemars(range(min = 1))]`, `codex-rs/config/src/config_toml.rs:764-766`)
+and it has no maximum (a `usize`). Unset, the V1 backend allows 6
+(`DEFAULT_AGENT_MAX_THREADS`, `mod.rs:255`) and V2 allows 3: its default of 4
+threads counts the main one (`mod.rs:256`, `mod.rs:1666-1680`). Set, both
+backends allow exactly that number (V2 adds the main thread and subtracts it,
+`mod.rs:2815-2823`). `features.multi_agent_v2.max_concurrent_threads_per_session`,
+when set, overrides it on V2 and counts the main thread; the application reads it
+(F6): when the two backends' limits differ, zone D says so and shows N/A,
+since the active backend is not reported. `agents.max_depth` (default 1) applies to V1 only.

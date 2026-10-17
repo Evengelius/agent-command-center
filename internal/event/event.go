@@ -196,6 +196,15 @@ type Metric struct {
 	Derived    bool   `json:",omitempty"`
 }
 
+// LimitMetric names the metric that carries Codex's concurrency limit: a
+// positive Value, Text LimitNotSet when config/read reports none, or Text
+// LimitPerBackend when Codex's two agent backends have different limits.
+const (
+	LimitMetric     = "agents.limit"
+	LimitNotSet     = "not set"
+	LimitPerBackend = "set per backend"
+)
+
 // Metrics is the payload of Telemetry.
 type Metrics struct {
 	Items []Metric

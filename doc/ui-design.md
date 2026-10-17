@@ -383,7 +383,7 @@ narrow width C has 3 rows and D 1.
 ╭─ D · QUOTA & TELEMETRY ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── quota read 14:03:12 · pushed ─╮
 │ 5-hour  ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 21%  resets 16:40          7-day  ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 38%  resets Mon 09:00          plan plus · credits N/A                                       │
 │ model gpt-5.6-sol   context 30% of 258.4k (orchestrator)   tokens 184.3k session (derived: sum of 3 threads)   cost N/A (Codex reports none)                                                         │
-│ agents 1 active (derived) / limit N/A (agents.max_threads not set)   time 2m 40s turn · 5m 12s session   errors 0   retries 0   unrecognised events 0                                                │
+│ agents 1 active (derived) / limit N/A (not set; default not reported)   time 2m 40s turn · 5m 12s session   errors 0   retries 0   unrecognised events 0                                                │
 │                                                                                                                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit                                        
@@ -621,7 +621,7 @@ Quota and telemetry (AM2 D1-D9; AM4 D3, D5, D6). Every value is a `Value`
 | Tokens | session total from `result.usage` and messages | session total, derived: the sum over threads, labelled so |
 | Cost | "$0.42 API-equiv. estimate", from `total_cost_usd`, never mixed with quota | "cost N/A (Codex reports none)" |
 | Model | from `system/init` and each message | from `thread/start`; children "N/A" |
-| Agents | active count, derived; "limit N/A" | active count, derived; "limit N/A (agents.max_threads not set)" |
+| Agents | active count, derived; "limit N/A" | active count, derived; "limit 3 (config)" from `config/read`, or "limit N/A (not set; default not reported)", or "limit N/A (set per backend; backend not reported)" when `features.multi_agent_v2` sets a different limit, or "limit N/A (not read)" |
 | Time | turn and session durations | same |
 | Errors, retries, unrecognised events | counters; Enter on D lists the last errors | same |
 
