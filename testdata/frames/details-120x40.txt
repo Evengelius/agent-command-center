@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ◀ back (Esc)   D · ERRORS AND TELEMETRY                                                        5 errors · last 50 kept
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ERRORS  newest first
+ 11:30:05  session     numbered error 2
+ 11:30:04  session     numbered error 1
+ 11:30:03  session     turn failed: API Error: 400 the request was rejected because the prompt, together with the
+                       files it names and the tool results already in the context, is longer than the model accepts
+                       request id req_011CgExample
+ 11:30:02  general-purpose · retry
+                       API Error: 529 Overloaded; retrying in 2s (attempt 1 of 10)
+ 11:30:01  session     get_context_usage refused by Claude Code: Unsupported control request subtype: get_context_usage
+
+ TELEMETRY  value · source · received
+ context.compact_at  967,000 tokens†  · get_context_usage 0s ago
+ context.used        35,061 tokens (derived)  · last assistant usage over result.modelUsage.contextWindow 0s ago
+ context.window      1,000,000 tokens (derived)  · last assistant usage over result.modelUsage.contextWindow 0s ago
+ cost.usd            $0.0066 API-equiv. estimate  · result.total_cost_usd (API-equivalent estimate) 0s ago
+ duration.ms         2s  · result.duration_ms 0s ago
+ model               claude-haiku-5-5  · session.started 0s ago
+ overage             rejected (org_level_disabled)  · rate_limit_event.overageStatus 0s ago
+ quota.5h            35%†  · rate_limit_event.unifiedWindows 0s ago
+ quota.7d            47%†  · rate_limit_event.unifiedWindows 0s ago
+ quota.status        allowed  · rate_limit_event 0s ago
+ thinking.estimate   343 tokens†  · system/thinking_tokens 0s ago
+ tokens.session      159,362 tokens  · result.modelUsage (running total, subagents included) 0s ago
+ tokens.turn         35,443 tokens  · result.usage 0s ago
+
+
+
+
+
+
+
+
+
+
+
+
+ ↑↓ PgUp PgDn scroll · Home top · End bottom · Esc back

@@ -15,7 +15,7 @@ import (
 // keystroke measures, on the wall clock with the garbage collector on, run on
 // their own, never in parallel with the other packages' tests:
 //
-//	go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost)$' -count=1 -v
+//	go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession)$' -count=1 -v
 //
 // Each starts with warmUp untimed keys, so the first frames' allocations and
 // caches are not counted; the target stays 16 ms at the 95th percentile, and

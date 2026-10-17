@@ -24,6 +24,11 @@ type Mapper struct {
 	session     string
 	pending     map[string]string // request_id -> subtype of our own requests
 	interrupted bool
+	// The main thread's last message: its model and the tokens its usage
+	// puts in the context, for the derived context (reliability.md,
+	// Telemetry sources: Context).
+	lastModel   string
+	lastContext float64
 }
 
 // NewMapper returns an empty mapper.
@@ -142,6 +147,7 @@ func (m *Mapper) system(l line, raw []byte) []event.Event {
 			Model          string `json:"model"`
 			PermissionMode string `json:"permissionMode"`
 			Version        string `json:"claude_code_version"`
+			APIKeySource   string `json:"apiKeySource"`
 			Plugins        []struct {
 				Name string `json:"name"`
 			} `json:"plugins"`
@@ -151,7 +157,17 @@ func (m *Mapper) system(l line, raw []byte) []event.Event {
 		for _, p := range s.Plugins {
 			st.Plugins = append(st.Plugins, p.Name)
 		}
-		return []event.Event{m.ev(event.SessionStarted, event.Observed, "", raw, st)}
+		out := []event.Event{m.ev(event.SessionStarted, event.Observed, "", raw, st)}
+		if s.APIKeySource != "" && s.APIKeySource != "none" {
+			// An API key has no subscription window (reliability.md,
+			// Telemetry sources: 5-hour, 7-day quota).
+			const why = "API key: no subscription window"
+			out = append(out, m.ev(event.Telemetry, event.Observed, "", raw, event.Metrics{Items: []event.Metric{
+				{Name: "quota.5h", Documented: true, Source: "system/init.apiKeySource", Reason: why},
+				{Name: "quota.7d", Documented: true, Source: "system/init.apiKeySource", Reason: why},
+			}}))
+		}
+		return out
 	case "status":
 		var s struct {
 			Status         *string `json:"status"`
@@ -338,8 +354,18 @@ func (m *Mapper) assistant(l line, agent string, raw []byte) []event.Event {
 		ID      string  `json:"id"`
 		Model   string  `json:"model"`
 		Content []block `json:"content"`
+		Usage   *struct {
+			Input         float64 `json:"input_tokens"`
+			CacheRead     float64 `json:"cache_read_input_tokens"`
+			CacheCreation float64 `json:"cache_creation_input_tokens"`
+		} `json:"usage"`
 	}
 	_ = json.Unmarshal(l.Message, &msg)
+	if u := msg.Usage; agent == "" && u != nil {
+		// What the request put in the context (claude-code.md, section 9:
+		// input + cache creation + cache read).
+		m.lastModel, m.lastContext = msg.Model, u.Input+u.CacheRead+u.CacheCreation
+	}
 	var out []event.Event
 	c := event.Completed{MessageID: msg.ID, Model: msg.Model}
 	var texts []string
@@ -410,6 +436,9 @@ func (m *Mapper) rateLimit(raw []byte) []event.Event {
 				Utilization float64 `json:"utilization"`
 				ResetsAt    int64   `json:"resetsAt"`
 			} `json:"unifiedWindows"`
+			OverageStatus  string `json:"overageStatus"`
+			OverageReason  string `json:"overageDisabledReason"`
+			IsUsingOverage bool   `json:"isUsingOverage"`
 		} `json:"rate_limit_info"`
 	}
 	_ = json.Unmarshal(raw, &r)
@@ -420,12 +449,27 @@ func (m *Mapper) rateLimit(raw []byte) []event.Event {
 			ms = append(ms, event.Metric{Name: names[key], Value: w.Utilization * 100, Unit: "%", ResetsAt: unix(w.ResetsAt), Documented: false, Source: "rate_limit_event.unifiedWindows"})
 		}
 	}
-	if len(ms) == 0 && r.Info.Utilization != nil {
-		if n, ok := names[r.Info.RateLimitType]; ok {
+	if n, ok := names[r.Info.RateLimitType]; ok && len(ms) == 0 {
+		if r.Info.Utilization != nil {
 			ms = append(ms, event.Metric{Name: n, Value: *r.Info.Utilization * 100, Unit: "%", ResetsAt: unix(r.Info.ResetsAt), Documented: true, Source: "rate_limit_event"})
+		} else if r.Info.Status != "" {
+			// The status word alone, with no percentage (reliability.md,
+			// Telemetry sources: 5-hour, 7-day quota).
+			ms = append(ms, event.Metric{Name: n, Text: r.Info.Status, ResetsAt: unix(r.Info.ResetsAt), Documented: true, Source: "rate_limit_event.status"})
 		}
 	}
 	ms = append(ms, event.Metric{Name: "quota.status", Text: r.Info.Status, Documented: true, Source: "rate_limit_event"})
+	// Overage, kept apart from the plan's quota (claude-code.md, section 9).
+	switch {
+	case r.Info.IsUsingOverage:
+		ms = append(ms, event.Metric{Name: "overage", Text: "in use", Documented: true, Source: "rate_limit_event.isUsingOverage"})
+	case r.Info.OverageStatus != "":
+		t := r.Info.OverageStatus
+		if r.Info.OverageReason != "" {
+			t += " (" + r.Info.OverageReason + ")"
+		}
+		ms = append(ms, event.Metric{Name: "overage", Text: t, Documented: true, Source: "rate_limit_event.overageStatus"})
+	}
 	return []event.Event{m.ev(event.Telemetry, event.Observed, "", raw, event.Metrics{Items: ms})}
 }
 
@@ -443,6 +487,7 @@ func (m *Mapper) result(raw []byte) []event.Event {
 		DurationMS int64    `json:"duration_ms"`
 		CostUSD    *float64 `json:"total_cost_usd"`
 		Result     string   `json:"result"`
+		Errors     []string `json:"errors"`
 		Usage      struct {
 			Input         int64 `json:"input_tokens"`
 			Output        int64 `json:"output_tokens"`
@@ -450,6 +495,10 @@ func (m *Mapper) result(raw []byte) []event.Event {
 			CacheCreation int64 `json:"cache_creation_input_tokens"`
 		} `json:"usage"`
 		ModelUsage map[string]struct {
+			Input         float64 `json:"inputTokens"`
+			Output        float64 `json:"outputTokens"`
+			CacheRead     float64 `json:"cacheReadInputTokens"`
+			CacheCreation float64 `json:"cacheCreationInputTokens"`
 			ContextWindow float64 `json:"contextWindow"`
 		} `json:"modelUsage"`
 	}
@@ -461,7 +510,14 @@ func (m *Mapper) result(raw []byte) []event.Event {
 	case m.interrupted && r.Subtype == "error_during_execution":
 		end.Outcome = "interrupted"
 	default:
+		// The error as received: its errors, else its result text, else
+		// the subtype (claude-code.md, section 9: Errors).
 		end.Outcome, end.Error = "failed", r.Subtype
+		if len(r.Errors) > 0 && r.Errors[0] != "" {
+			end.Error = strings.Join(r.Errors, "\n")
+		} else if r.IsError && r.Result != "" {
+			end.Error = r.Result
+		}
 	}
 	m.interrupted = false
 	ms := []event.Metric{{Name: "duration.ms", Value: float64(r.DurationMS), Unit: "ms", Documented: true, Source: "result.duration_ms"}}
@@ -470,6 +526,29 @@ func (m *Mapper) result(raw []byte) []event.Event {
 	}
 	tokens := r.Usage.Input + r.Usage.Output + r.Usage.CacheRead + r.Usage.CacheCreation
 	ms = append(ms, event.Metric{Name: "tokens.turn", Value: float64(tokens), Unit: "tokens", Documented: true, Source: "result.usage"})
+	if len(r.ModelUsage) > 0 {
+		// The running total, subagents included: read, not summed over turns
+		// (claude-code.md, section 9: Tokens).
+		var total float64
+		for _, u := range r.ModelUsage {
+			total += u.Input + u.Output + u.CacheRead + u.CacheCreation
+		}
+		ms = append(ms, event.Metric{Name: "tokens.session", Value: total, Unit: "tokens", Documented: true, Source: "result.modelUsage (running total, subagents included)"})
+	}
+	// The derived context: the main thread's last request over its model's
+	// window. A get_context_usage reply after this result replaces it.
+	u, ok := r.ModelUsage[m.lastModel]
+	if !ok && len(r.ModelUsage) == 1 {
+		for _, only := range r.ModelUsage {
+			u, ok = only, true
+		}
+	}
+	if ok && m.lastContext > 0 && u.ContextWindow > 0 {
+		const src = "last assistant usage over result.modelUsage.contextWindow"
+		ms = append(ms,
+			event.Metric{Name: "context.used", Value: m.lastContext, Unit: "tokens", Documented: true, Source: src, Derived: true},
+			event.Metric{Name: "context.window", Value: u.ContextWindow, Unit: "tokens", Documented: true, Source: src, Derived: true})
+	}
 	return []event.Event{
 		m.ev(event.TurnCompleted, event.Observed, "", raw, end),
 		m.ev(event.Telemetry, event.Observed, "", raw, event.Metrics{Items: ms}),

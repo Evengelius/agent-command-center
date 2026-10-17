@@ -19,6 +19,7 @@ var entryKinds = map[string][]event.Kind{
 	"tool":      {event.ToolStarted},
 	"approval":  {event.ApprovalRequest, event.Question},
 	"notice":    {event.StatusChanged},
+	"error":     {event.TurnCompleted},
 }
 
 // untraced lists the entries of s that no applied event accounts for.

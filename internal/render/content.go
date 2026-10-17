@@ -15,7 +15,7 @@ import (
 // styled, so selection and copy do not change with it.
 func entryLines(e state.Entry) []string {
 	switch e.Role {
-	case "tool", "approval":
+	case "tool", "approval", "error":
 		if i := strings.IndexByte(e.Text, '\n'); i >= 0 {
 			return []string{e.Text[:i]}
 		}
@@ -129,6 +129,35 @@ func rowLine(src string, r rowRange, at ref, st *lipgloss.Style) line {
 // not used in a frame are dropped after it.
 type WrapCache struct {
 	cur, old map[wrapKey][]rowRange
+	counts   []entryCount // by entry: its rows, kept across frames
+}
+
+// entryCount is how many rows a finished entry takes at width w: a function of
+// these fields alone, so an entry that moved still finds a right count.
+type entryCount struct {
+	text, role string
+	w          int
+	thinking   bool
+	n          int
+}
+
+// rowCount is entry i's row count, from count when not cached. Streaming
+// entries and approval cards change between frames and are always counted.
+func (c *WrapCache) rowCount(i int, e state.Entry, w int, count func() int) int {
+	if c == nil || e.Streaming || e.Role == "approval" {
+		return count()
+	}
+	if i < len(c.counts) {
+		if k := c.counts[i]; k.text == e.Text && k.role == e.Role && k.w == w && k.thinking == e.Thinking {
+			return k.n
+		}
+	}
+	n := count()
+	for len(c.counts) <= i {
+		c.counts = append(c.counts, entryCount{w: -1})
+	}
+	c.counts[i] = entryCount{e.Text, e.Role, w, e.Thinking, n}
+	return n
 }
 
 type wrapKey struct {
@@ -209,6 +238,7 @@ type crow struct {
 	line  int  // the source line, in the entry
 	first bool // the source line's first row
 	p     *rowStyle
+	fn    func() line // a row drawn only when shown
 }
 
 // rowStyle is what the rows of one entry share.
@@ -219,6 +249,9 @@ type rowStyle struct {
 }
 
 func (c crow) draw() line {
+	if c.fn != nil {
+		return c.fn()
+	}
 	if c.p == nil {
 		return c.l
 	}

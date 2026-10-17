@@ -47,14 +47,7 @@ func (m *Model) inspectKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	case "down":
 		m.inspectScroll(1)
 	case "pgup", "pgdown":
-		p := 1
-		if m.screen != nil {
-			p = max(m.screen.Inspect.Room-1, 1)
-		}
-		if s == "pgup" {
-			p = -p
-		}
-		m.inspectScroll(p)
+		m.inspectPage(s == "pgdown")
 	case "home":
 		m.ui.InspectHold, m.ui.InspectTop = true, 0
 	case "end":
@@ -93,6 +86,18 @@ func (m *Model) inspectScroll(d int) {
 	}
 	m.ui.InspectHold, m.ui.InspectTop = true, top
 	m.screen.Inspect.Top = top // a second step before the next frame starts here
+}
+
+// inspectPage scrolls the inspection or the details view one page.
+func (m *Model) inspectPage(down bool) {
+	p := 1
+	if m.screen != nil {
+		p = max(m.screen.Inspect.Room-1, 1)
+	}
+	if !down {
+		p = -p
+	}
+	m.inspectScroll(p)
 }
 
 func (m *Model) inspectFollow() {
@@ -165,4 +170,45 @@ func (m *Model) listKey(k tea.KeyPressMsg) []tea.Cmd {
 		}
 	}
 	return nil
+}
+
+// openDetails shows zone D full screen at its top: the newest error first
+// (ui-design.md, Zone D: Errors).
+func (m *Model) openDetails() {
+	m.ui.Details = true
+	m.ui.Sel = render.Selection{}
+	m.ui.InspectHold, m.ui.InspectTop = true, 0
+	if m.screen != nil {
+		m.screen.Inspect.Top = 0
+	}
+}
+
+// detailsKey handles a key while zone D is full screen; done is false for
+// the keys that keep their dashboard meaning, as in an inspection.
+func (m *Model) detailsKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
+	switch s := k.String(); s {
+	case "esc":
+		if !m.ui.Sel.Empty() {
+			m.ui.Sel = render.Selection{} // Esc clears a selection first
+			return nil, true
+		}
+		m.ui.Details = false // back to D, still focused
+		m.ui.InspectHold, m.ui.InspectTop = false, 0
+	case "up":
+		m.inspectScroll(-1)
+	case "down":
+		m.inspectScroll(1)
+	case "pgup", "pgdown":
+		m.inspectPage(s == "pgdown")
+	case "home":
+		m.ui.InspectHold, m.ui.InspectTop = true, 0
+	case "end":
+		m.inspectFollow()
+	case "f2":
+		m.ui.Details = false
+		return m.focusCard("", true), true
+	case "ctrl+c", "ctrl+shift+c", "f12", "ctrl+o", "shift+pgup", "shift+pgdown", "ctrl+r", "F":
+		return nil, false
+	}
+	return nil, true
 }

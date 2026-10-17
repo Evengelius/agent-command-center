@@ -88,7 +88,7 @@ owner's normal working conditions (owner, 2026-10-16), since the target is
 about real use:
 
 ```text
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession)$' -count=1 -v
 ```
 
 - Allowed: the owner's usual applications open and idle (VS Code, browsers,
@@ -107,6 +107,10 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   conditions.
 - `TestKeystrokeCost` judges nothing: it reports a key's mean time, bytes and
   allocations, the before and after of a change to the drawing.
+- `TestLongSession` is test 11 (reliability.md, Test plan): two hours of
+  generated events applied at speed, then 400 answer deltas each timed to
+  its frame at 200x60; the same 16 ms target at p95 (`streamTarget`). It
+  reports the heap and the sizes of the lists the state keeps.
 - A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
   profile, the same test on the last commit) and report it as the loop above
   says.

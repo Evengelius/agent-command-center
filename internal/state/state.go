@@ -173,7 +173,7 @@ type TurnState struct {
 // Entry is one item of a conversation record.
 type Entry struct {
 	Seq       uint64
-	Role      string // user, assistant, tool, notice, approval
+	Role      string // user, assistant, tool, notice, approval, error
 	Agent     string
 	MessageID string
 	Text      string
@@ -271,6 +271,8 @@ type Value struct {
 	ReceivedAt time.Time
 	ResetsAt   time.Time
 	Reason     string
+	ReasonAt   time.Time // when the source said N/A
+	Last       bool      // N/A, and V, Text and ReceivedAt keep the last value
 }
 
 // ErrorEntry is one error shown in zone D.
@@ -328,6 +330,20 @@ func New() *State {
 		Metrics:   map[string]Value{},
 		Diffs:     map[string]string{},
 	}
+}
+
+// CLI is the agent CLI the session's events come from: the provider id, or in
+// mock mode the provider the replayed events name; "" before any.
+func (s *State) CLI() string {
+	if !s.Context.Mock {
+		return s.Context.Provider
+	}
+	for _, ev := range s.Log {
+		if ev.Provider != "" {
+			return ev.Provider
+		}
+	}
+	return ""
 }
 
 // CommandKind is an effect the reducer asks the application to carry out.

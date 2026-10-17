@@ -1134,13 +1134,141 @@ context compaction). Steps and their checks: [proposal.md, section 4](doc/propos
        2.5 ms (target 16 ms).
     - Not verified: the look; live rendering in Windows Terminal; the zone A
       cursor's highlight (plain-text frames carry no background).
+- Step 7, usage and quota telemetry: **done** (2026-10-17; approved by the owner after the mock scenarios, "it is good"): 8 criteria PASS; the timing step passed on battery and its gate run on mains power is outstanding.
+  Criteria, written before the work, from proposal.md step 7, reliability.md
+  (Telemetry sources), telemetry-sources.md, and the owner's two additions
+  of 2026-10-16 (ui-design.md, States: Error; Zone D: Errors):
+  1. Telemetry parsing (test 2), table tests on the probes' exact lines:
+     P1 line 3 gives 5h 22% and 7d 45% with resets 1792109400 and
+     1792216800, undocumented (shown "22%†"), and overage "rejected
+     (org_level_disabled)" shown apart from quota; P1's `result` gives
+     `total_cost_usd` 0.00249374, shown only as "API-equiv. estimate"; P6b
+     line 7 gives 5h and 7d by `windowDurationMins` (300, 10080), plan
+     "plus" and credits; P7 gives the thread totals 76,521, 30,455 and
+     77,336 and the derived session total 184,312.
+  2. Every N/A case of reliability.md's two value tables shows "N/A" with
+     its reason in zone D, never 0 (one table-test row each, on zone D's
+     text). Claude Code: quota before the first event "no report yet"; an
+     API key (`apiKeySource` other than "none") "API key: no subscription
+     window"; a window past its reset "window reset"; a `rate_limit_event`
+     with `rateLimitType` and `status` only shows the status word with no
+     percentage; overage "not reported"; context before the first turn
+     "no turn yet", and **derived** (from the last message's usage and
+     `modelUsage.contextWindow`, labelled "derived") once `get_context_usage`
+     is refused, the refusal counted as an error (step 2's finding); tokens,
+     cost and the last turn's duration N/A before the first `result`; agents
+     N/A before the stream is up; "limit N/A (not reported)"; retries
+     "N/A (none reported)" until one arrives. Codex: a rate-limits read
+     refused for an API key "API key: ChatGPT sign-in needed"; windows
+     without a 300-minute one "plan has no 5-hour limit"; another refused
+     read "read failed: <error>" with the last pushed value and its age;
+     context before a thread's first model call "no model call yet"; "cost
+     N/A (Codex reports none)"; the thread limit N/A (see 3).
+  3. Decided, not built: `config/read` (the source of `agents.max_threads`)
+     is not called, because the effective configuration it returns can hold
+     secrets (an MCP server's `env`, a provider's bearer token); the limit
+     shows "limit N/A (not read)", and reliability.md records the reason.
+     `rateLimitResetCredits` ids are never shown (a frame test).
+  4. A failed turn shows in B "✗ turn failed: <first line of the error, as
+     received>" in red, for each CLI: Codex P6's refusal replayed; Claude
+     Code a `result` with `is_error` and its `errors` or `result` text (the
+     documented schema; no probe failed a turn).
+  5. Enter on D (focused) lists the last errors (`state.Errors`, at most
+     `MaxErrors`), newest first: time, agent label or "session", the whole
+     message wrapped; ↑↓ PgUp PgDn scroll; Esc returns to D.
+  6. Long session (test 11, `-tags timing`): two hours of generated events
+     at speed through the model; heap and retained list sizes reported; the
+     frame time at the end within 16 ms (FAIL above).
+  7. Golden frames: the dashboards updated for zone D's new values, and the
+     errors list at 80x24, 120x40 and 200x60; exact height, no line wider;
+     the diffs reviewed.
+  8. `go build ./...`, `go vet ./...` (also `-tags live` and `-tags timing`)
+     exit 0; `gofmt -l .` prints nothing; `go test ./...` exit 0; the timing
+     step passes.
+  Not verified by these checks: the look; live Windows Terminal rendering;
+  a live `get_context_usage` refusal, a live API-key session and a live
+  plan without a 5-hour window (no probe has them).
+  - Results, 2026-10-17:
+    1. PASS. `TestTelemetryParsing`, 5 cases on the probes' exact lines: P1
+       line 3 (5h 22%, 7d 45%, the two resets, "22%†", overage "rejected
+       (org_level_disabled)" apart); P1's `result` (0.00249374 only as
+       "API-equiv. estimate"); P6b line 7 (300 and 10080 minutes, "plus",
+       credits); P7 (76,521, 30,455, 77,336; session 184,312); P3b (the
+       running total, subagents included).
+    2. PASS. `TestTelemetryNA`, 16 rows, one per N/A case of both tables,
+       on zone D's text: each shows "N/A" with its reason, never 0; the
+       refused `get_context_usage` counts as an error and the context turns
+       "derived" after the `result`. Fixed on the way: `missing()` gives the
+       source's own reason (an API key, a failed read) before the generic
+       "no report yet", with the last value and its age when there was one.
+    3. PASS. `config/read` is not called; the limit shows "limit N/A (not
+       read)"; reliability.md's Codex table records why (its effective
+       configuration can hold secrets). `TestCreditIDsNotKept`: P6b's first
+       lines plus a pushed and a read `rateLimitResetCredits` and a cut line;
+       the secret id is in no event's Raw or Payload, no metric, no log
+       entry (which says "not kept"), and no frame (200x60, the errors list
+       at 200x60 and 80x24, ANSI stripped).
+    4. PASS. `TestTurnFailedLine`: Codex P6's refusal gives two rows,
+       "✗ turn failed: " bold red then the first line in red, as received;
+       Claude Code `result` with `errors`, and with `result` text, give one
+       row each, and `state.Errors` keeps the whole message.
+    5. PASS. `TestDetailsErrors`: newest first, time and "session" or the
+       agent's label (an unknown key shown as is), "retry", the whole
+       message wrapped, no row wider; "no errors" when there are none.
+       `TestDetailsKeys` (80x24, 23 errors): the title and "23 errors · last
+       50 kept"; ↓ ↑ PgDn PgUp End Home and the wheel scroll by the expected
+       rows without holding zone B; new errors show "26 errors"; Esc clears
+       a selection first, then returns to D with "Enter details" and B shown.
+       A long agent label now keeps its own row, whole.
+    6. FAIL, then PASS (the first result kept). First runs: p95 at the end
+       18 to 26 ms, p50 about 12 ms: every frame drew all 5,281 conversation
+       entries' rows, all 720 agents in zone C, and the log's bounded append
+       copied 2,000 events per event. Fixed: `appendBounded` slides its
+       window (apply about 3x faster); zone C draws only the rows its box
+       shows; tool and error rows in B are drawn only when shown; zone B
+       draws only the entries in view and counts the others from a per-entry
+       cache (`WrapCache.rowCount`, keyed by text, role, width and thinking;
+       streaming entries and approval cards always counted).
+       `TestConversationWindow` checks the cached frames equal the uncached
+       ones across 5 sizes, 5 scroll positions, new entries, a changed
+       entry, a thinking flag and moved indices; removing the width, text or
+       thinking key each makes it fail (60, 10 and 5 frames). Now, 26,209
+       events (240 turns, 720 agents, 6,960 tools): heap 6.5 MiB after (1.2
+       before); kept conversation 5,281, stages 240, agents 720, tools 6,960,
+       diffs 20, log 2,000, errors 48; at the end p50 2.0 to 3.7 ms, p95 4.4
+       to 7.1 ms, max 5.5 to 10.1 ms (4 runs; target 16 ms). Conditions not
+       met: these runs were on battery (see 8).
+    7. PASS. `TestGoldenFrames`: new `details-*` at 80x24, 120x40, 200x60
+       (and 79x24 too small); the dashboards and stream frames updated for
+       zone D's values; heights exact, no line wider; diffs reviewed. The
+       zone B window left every golden frame unchanged.
+    8. PASS for the checks; the timing step's conditions not met. `go build
+       ./...` 0; `go vet ./...` 0, also `-tags live` and `-tags timing`;
+       `gofmt -l .` empty; `go test ./... -count=1` all ok. Timing step, run
+       once on 2026-10-17: every test passes (10k lines p95 1.0 ms, 50k lines
+       p95 3.0 ms, `TestLongSession` p95 4.4 ms; `TestKeystrokeCost` 0.30 and
+       0.66 ms per key, 825 and 826 allocations), but on **battery** (power
+       line offline, 72%), CPU load 29%, with VS Code, Firefox, Teams,
+       Outlook and Notepad open. evaluation.md requires mains power: the
+       gate run is outstanding. `TestLongSession` joins the timing command
+       (AGENTS.md, evaluation.md).
+    - Simulated on mock, at the owner's request (2026-10-17): the three
+      cases no probe has, as synthetic mock files built from P2 and P7 with
+      the documented reply put in (reliability.md, Mock mode, Input).
+      `TestSyntheticScenarios`, mapper to frame at 120x40 and 200x60: Claude
+      Code with an API key shows "5h N/A (API key: no subscription window)"
+      and the same for 7d, the refusal counts as "errors 1", and the context
+      turns "3% of 1M (derived)"; Codex with an API key shows 5h, 7d, plan
+      and credits "N/A (API key: ChatGPT sign-in needed)"; Codex without a
+      5-hour window shows "5h N/A (plan has no 5-hour limit)" with the 7d
+      bar at 1%. No row wider than the screen. Run on the original mock
+      files instead, it fails (12 assertions).
+    - Not verified: the look; live Windows Terminal rendering; a live
+      `get_context_usage` refusal, a live API-key session, a live plan
+      without a 5-hour window (simulated on mock above, not live); the
+      timing step on mains power.
+    - Noted for step 8: zone C's hint "z zoom" names a feature not built.
 - Step 8: outstanding.
-  - Step 7, added by the owner on 2026-10-16 (ui-design.md, States: Error;
-    Zone D: Errors), checked with each CLI:
-    1. A failed turn shows in B "✗ turn failed:" in red with the first line
-       of its error, as received (L4's refusal is the case to replay).
-    2. Enter on D lists the last errors (`state.Errors`, at most
-       `MaxErrors`): time, agent or session, the full message; Esc returns.
 
 The owner's decisions at plan 3's approval (2026-10-16):
 - Proposal and roadmap approved; follow its order and the MVP scope.

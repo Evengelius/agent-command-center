@@ -67,6 +67,7 @@ type ids struct {
 
 // Out maps one line read from the CLI's stdout.
 func (m *Mapper) Out(raw []byte) []event.Event {
+	raw = redactCredits(raw)
 	var r rpc
 	if err := json.Unmarshal(raw, &r); err != nil {
 		return []event.Event{m.ev(event.Error, event.Observed, "", "", "", raw, event.Problem{Message: "unreadable line from Codex: " + err.Error()})}
@@ -221,7 +222,12 @@ func (m *Mapper) response(r rpc, raw []byte) []event.Event {
 		if what == "" {
 			what = "request " + id
 		}
-		return []event.Event{m.ev(event.Error, event.Observed, "", "", "", raw, event.Problem{Message: what + " refused by Codex: " + problemMessage(r.Error)})}
+		msg := problemMessage(r.Error)
+		refused := m.ev(event.Error, event.Observed, "", "", "", raw, event.Problem{Message: what + " refused by Codex: " + msg})
+		if method == "account/rateLimits/read" {
+			return m.rateLimitsRefused(msg, refused, raw)
+		}
+		return []event.Event{refused}
 	}
 	if !known {
 		return []event.Event{m.unknown(raw, "response/unmatched", "response to a request the dashboard did not send")}
@@ -493,6 +499,10 @@ func (m *Mapper) turnCompleted(raw json.RawMessage, agent, turnID string, line [
 	}
 	m.interrupted = false
 	out := []event.Event{m.ev(event.TurnCompleted, event.Observed, agent, first(t.ID, turnID), "", line, end)}
+	if agent == "" && t.DurationMs > 0 {
+		out = append(out, m.ev(event.Telemetry, event.Observed, "", first(t.ID, turnID), "", line, event.Metrics{Items: []event.Metric{
+			{Name: "duration.ms", Value: float64(t.DurationMs), Unit: "ms", Documented: true, Source: "turn/completed.durationMs"}}}))
+	}
 	if agent != "" {
 		// A child thread's turn is the work its parent handed it.
 		a := event.Agent{Key: agent, Type: "thread", Status: end.Outcome}
@@ -667,7 +677,11 @@ func (m *Mapper) tokenUsage(raw json.RawMessage, agent, turn string, line []byte
 		{Name: "tokens.last", Value: u.Last.TotalTokens, Unit: "tokens", Documented: true, Source: src},
 	}
 	if u.Window != nil {
-		ms = append(ms, event.Metric{Name: "context.window", Value: *u.Window, Unit: "tokens", Documented: true, Source: src})
+		// The context: the last call's total over the window, the raw value
+		// (telemetry-sources.md, Codex: Context).
+		ms = append(ms,
+			event.Metric{Name: "context.used", Value: u.Last.TotalTokens, Unit: "tokens", Documented: true, Source: src + ".last.totalTokens"},
+			event.Metric{Name: "context.window", Value: *u.Window, Unit: "tokens", Documented: true, Source: src})
 	}
 	return m.ev(event.Telemetry, event.Observed, agent, turn, "", line, event.Metrics{Items: ms})
 }
@@ -678,14 +692,45 @@ type window struct {
 	ResetsAt    int64   `json:"resetsAt"`
 }
 
+// rateLimitsRefused maps a refused `account/rateLimits/read`: an API-key
+// session is not an error, the values are N/A for that reason; any other
+// refusal is an error, and the values turn N/A keeping the last pushed one
+// (reliability.md, Telemetry sources: 5-hour, 7-day quota).
+func (m *Mapper) rateLimitsRefused(msg string, refused event.Event, line []byte) []event.Event {
+	why, names := "read failed: "+msg, []string{"quota.5h", "quota.7d"}
+	// The refusal an API-key session gets (telemetry-sources.md, Codex:
+	// 5-hour quota; account_processor.rs:1016-1030).
+	apiKey := strings.Contains(strings.ToLower(msg), "chatgpt authentication required")
+	if apiKey {
+		why, names = "API key: ChatGPT sign-in needed", []string{"quota.5h", "quota.7d", "plan", "credits"}
+	}
+	var ms []event.Metric
+	for _, n := range names {
+		ms = append(ms, event.Metric{Name: n, Documented: true, Source: "account/rateLimits/read", Reason: why})
+	}
+	t := m.ev(event.Telemetry, event.Observed, "", "", "", line, event.Metrics{Items: ms})
+	if apiKey {
+		return []event.Event{t}
+	}
+	return []event.Event{refused, t}
+}
+
 func (m *Mapper) rateLimits(raw json.RawMessage, source string, line []byte) event.Event {
 	var l struct {
 		Primary   *window `json:"primary"`
 		Secondary *window `json:"secondary"`
 		PlanType  string  `json:"planType"`
+		Credits   *struct {
+			HasCredits bool   `json:"hasCredits"`
+			Unlimited  bool   `json:"unlimited"`
+			Balance    string `json:"balance"`
+		} `json:"credits"`
 	}
 	_ = json.Unmarshal(raw, &l)
 	var ms []event.Metric
+	if (l.Primary != nil || l.Secondary != nil) && !(l.Primary != nil && l.Primary.Mins == 300) && !(l.Secondary != nil && l.Secondary.Mins == 300) {
+		ms = append(ms, event.Metric{Name: "quota.5h", Documented: true, Source: source, Reason: "plan has no 5-hour limit"})
+	}
 	for _, w := range []*window{l.Primary, l.Secondary} {
 		if w == nil {
 			continue
@@ -707,6 +752,16 @@ func (m *Mapper) rateLimits(raw json.RawMessage, source string, line []byte) eve
 	}
 	if l.PlanType != "" {
 		ms = append(ms, event.Metric{Name: "plan", Text: l.PlanType, Documented: true, Source: source})
+	}
+	if c := l.Credits; c != nil {
+		t := "none"
+		switch {
+		case c.Unlimited:
+			t = "unlimited"
+		case c.HasCredits:
+			t = "balance " + c.Balance
+		}
+		ms = append(ms, event.Metric{Name: "credits", Text: t, Documented: true, Source: source + ".credits"})
 	}
 	return m.ev(event.Telemetry, event.Observed, "", "", "", line, event.Metrics{Items: ms})
 }

@@ -181,7 +181,7 @@ reset shown N/A.
 | Tokens | per-thread totals; session total derived | "N/A" before the first update |
 | API-equivalent cost | none | always "cost N/A (Codex reports none)" |
 | Agent count | derived from thread events | "N/A" before the session starts |
-| Concurrency limit | `agents.max_threads` from `config/read` when set | "limit N/A (agents.max_threads not set)"; whether `config/read` reports it when unset is Not verified |
+| Concurrency limit | none read: `agents.max_threads` is only in `config/read`, which is not called because the effective configuration it returns can hold secrets (an MCP server's `env`, a provider's bearer token; plan 4, step 7) | always "limit N/A (not read)" |
 | Duration | `turn/completed.durationMs` | "N/A" before the first turn ends |
 | Errors, retries | `error`, failed `turn/completed`; `willRetry` | counters from 0 once the stream is up; retries "N/A (none reported)" (CX-10 q9) |
 
@@ -398,7 +398,16 @@ provider):
   is reachable through `--mock` alone.
 - **Input**: a JSONL file of normalised events with their timing, either
   hand-written or produced from a probe recording by the real adapter's
-  mapping, so that mock screens exercise the same parts 2 to 4.
+  mapping, so that mock screens exercise the same parts 2 to 4. Three files
+  are synthetic: a probe recording with one documented reply put in, for a
+  case no probe has (`TestMockFiles`, internal/provider/mock/files_test.go).
+  `claude-api-key-context-refused.jsonl` is P2 with `apiKeySource`
+  `ANTHROPIC_API_KEY`, no `rate_limit_event` and `get_context_usage` refused;
+  `codex-api-key.jsonl` is P7 with `account/rateLimits/read` refused as
+  account_processor.rs does without a ChatGPT sign-in (codex-cli.md) and no
+  pushed update; `codex-no-5h-window.jsonl` is P7 with the 7-day window as
+  the only one (`primary` 10,080 minutes, `secondary` null). They show what
+  the mapping does with those replies, not that a live CLI sends them.
 - **Labelled everywhere**: every event gets `Origin: mock`, whatever the file
   says; the title bar of every screen shows "◆ MOCK — not a live session"
   instead of "● LIVE"; inspection labels every value mock
@@ -562,7 +571,8 @@ those marked live.
     with a visible message; none hangs the loop.
 11. **Long session**: a fixture replaying 2 hours of events at speed; memory
     is reported, and the test fails if the frame time exceeds 16 ms at the
-    end.
+    end. `TestLongSession`, in the timing step (evaluation.md).
+    Generated, not replayed: no probe lasts two hours.
 12. **Clipboard and selection**: OSC 52 encoding and its tmux passthrough
     wrapping; the native path behind an interface with a fake; selection
     mapped to the content model (a wrapped line copies as one line; origin

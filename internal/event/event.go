@@ -179,7 +179,9 @@ type Approval struct {
 }
 
 // Metric is one telemetry value. Documented is false for values from an
-// undocumented field (shown with †).
+// undocumented field (shown with †). A non-empty Reason makes the value N/A
+// for that reason (reliability.md, Fallback: N/A and its reason); Derived
+// marks a value computed from other fields rather than read.
 type Metric struct {
 	Name       string // quota.5h, quota.7d, tokens.total, cost.usd, context.used, context.window, model, duration.ms...
 	Value      float64
@@ -188,6 +190,8 @@ type Metric struct {
 	ResetsAt   time.Time
 	Documented bool
 	Source     string
+	Reason     string `json:",omitempty"`
+	Derived    bool   `json:",omitempty"`
 }
 
 // Metrics is the payload of Telemetry.

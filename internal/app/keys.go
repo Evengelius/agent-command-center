@@ -93,6 +93,11 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 			return cmds
 		}
 	}
+	if m.ui.Details {
+		if cmds, done := m.detailsKey(k); done {
+			return cmds
+		}
+	}
 	switch k.String() {
 	case "ctrl+c", "ctrl+shift+c":
 		// Copy the selection if there is one, the mouse's first; else Ctrl+C
@@ -162,6 +167,11 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 	case "C":
 		if k.String() != "end" {
 			return m.listKey(k)
+		}
+	case "D":
+		if k.String() == "enter" {
+			m.openDetails()
+			return nil
 		}
 	}
 	if k.String() == "end" {

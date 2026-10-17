@@ -2,7 +2,6 @@ package render
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"strings"
 	"time"
@@ -294,14 +293,9 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	// editor, Size); its rule and status line count in that half.
 	editor := editorLines(s, ui, inner, editorRows, (h-2)/2-2)
 	room := max(h-2-len(editor), 0)
-	conv := conversation(s, ui, inner)
-	bottom := max(len(conv)-room, 0)
-	top := bottom
-	if ui.ConvHold {
-		top = min(max(ui.ConvTop, 0), bottom)
-	}
+	conv, rows, top := conversation(s, ui, inner, room)
 	var shown []line // only the rows shown are drawn
-	for _, c := range conv[top:min(top+room, len(conv))] {
+	for _, c := range conv {
 		shown = append(shown, c.draw())
 	}
 	if len(shown) < room {
@@ -311,66 +305,107 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 		shown[room-1] = spread(nil, decoLine(fmt.Sprintf("↓ %d new", n), stProgress), inner)
 	}
 	if sc != nil {
-		sc.Conv = ConvView{Rows: len(conv), Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold}
+		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold}
 	}
 	body := append(shown, editor...)
 	focused := ui.Focus == "B" || ui.Focus == ""
 	return box('B', zoneTitle("B · CONVERSATION", focused), right, body, w, h, borderFor(focused))
 }
 
-// conversation is the orchestrator's record as lines, or the session's state
-// when there is nothing yet. Content comes from entryLines; everything else
-// on these lines is decoration.
-func conversation(s *state.State, ui UI, w int) []crow {
-	var out []crow
+// conversation is the orchestrator's record, then the session's state: the
+// rows in view, at most room from top, and the count of all rows. It follows
+// the end unless the owner scrolled up. Only the entries in view are drawn;
+// the others are counted, from the cache once finished (test 11).
+func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top int) {
+	counts := make([]int, len(s.Conversation))
+	for i, e := range s.Conversation {
+		counts[i] = ui.Wrap.rowCount(i, e, w, func() int { return len(entryRows(s, ui, nil, i, e, w)) })
+		rows += counts[i]
+	}
+	tail := sessionState(s, ui, w)
+	rows += len(tail)
+	top = max(rows-room, 0)
+	if ui.ConvHold {
+		top = min(max(ui.ConvTop, 0), top)
+	}
+	at, end := 0, top+room
+	for i, e := range s.Conversation {
+		if at >= end {
+			break
+		}
+		if at+counts[i] > top {
+			rs := entryRows(s, ui, nil, i, e, w)
+			view = append(view, rs[min(max(top-at, 0), len(rs)):min(end-at, len(rs))]...)
+		}
+		at += counts[i]
+	}
+	for _, l := range tail {
+		if at >= top && at < end {
+			view = append(view, crow{l: l})
+		}
+		at++
+	}
+	return view, rows, top
+}
+
+// entryRows adds the rows of conversation entry i. Content comes from
+// entryLines; everything else on these rows is decoration.
+func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) []crow {
 	wc := ui.Wrap
 	who := providerLabel(s)
-	for i, e := range s.Conversation {
-		switch e.Role {
-		case "user":
-			out = drawn(out, line{deco("YOU", stAttentionBold), deco("  "+clock(e.At), stGrey)})
-			ls := entryLines(e)
-			if len(ls) > foldOver {
-				out = contentRows(out, wc, i, ls[:foldShow], w, stText)
-				out = drawn(out, decoLine(fmt.Sprintf("  … %s more lines", grouped(len(ls)-foldShow)), stGrey))
-				break
+	switch e.Role {
+	case "user":
+		out = drawn(out, line{deco("YOU", stAttentionBold), deco("  "+clock(e.At), stGrey)})
+		ls := entryLines(e)
+		if len(ls) > foldOver {
+			out = contentRows(out, wc, i, ls[:foldShow], w, stText)
+			out = drawn(out, decoLine(fmt.Sprintf("  … %s more lines", grouped(len(ls)-foldShow)), stGrey))
+			break
+		}
+		out = contentRows(out, wc, i, ls, w, stText)
+	case "assistant":
+		// Thinking marks a message that had a thinking block; its text is
+		// the answer. The thinking is folded under it, without a token
+		// count the state does not keep (ui-design.md, Markdown, Thinking).
+		if e.Text != "" || !e.Thinking {
+			head := line{deco(who, stTitle)}
+			if m := model(s); m != "" {
+				head = append(head, deco("  "+m, modelStyle(m)))
 			}
-			out = contentRows(out, wc, i, ls, w, stText)
-		case "assistant":
-			// Thinking marks a message that had a thinking block; its text is
-			// the answer. The thinking is folded under it, without a token
-			// count the state does not keep (ui-design.md, Markdown, Thinking).
-			if e.Text != "" || !e.Thinking {
-				head := line{deco(who, stTitle)}
-				if m := model(s); m != "" {
-					head = append(head, deco("  "+m, modelStyle(m)))
+			out = drawn(out, head)
+			out = contentRows(out, wc, i, entryLines(e), w, stText)
+			if e.Streaming {
+				if last := out[len(out)-1].draw(); last.width() < w {
+					out[len(out)-1] = crow{l: append(last, deco("▌", stText))}
+				} else {
+					out = drawn(out, decoLine("  ▌", stText))
 				}
-				out = drawn(out, head)
-				out = contentRows(out, wc, i, entryLines(e), w, stText)
-				if e.Streaming {
-					if last := out[len(out)-1].draw(); last.width() < w {
-						out[len(out)-1] = crow{l: append(last, deco("▌", stText))}
-					} else {
-						out = drawn(out, decoLine("  ▌", stText))
-					}
-				}
-			}
-			if e.Thinking {
-				out = drawn(out, decoLine("  ∴ thinking", stGrey))
-			}
-		case "tool":
-			l := append(line{deco("  ▸ ", stGrey)}, oneRow(i, e, stGrey)...)
-			out = drawn(out, spread(l, decoLine(originLabel(e.Origin), stGrey), w))
-		case "approval":
-			out = drawn(out, approvalCard(s, ui, i, e, w)...)
-		default:
-			p := &rowStyle{lead0: deco("  · ", stProgress), lead: deco("  ", stProgress), at: ref{panel: 'B', item: i}, st: stProgress}
-			for j, l := range entryLines(e) {
-				out = sourceRows(out, wc, p, j, l, w-4, w-2)
 			}
 		}
+		if e.Thinking {
+			out = drawn(out, decoLine("  ∴ thinking", stGrey))
+		}
+	case "tool":
+		// Drawn only when shown: a long session has thousands (test 11).
+		out = append(out, crow{fn: func() line {
+			l := append(line{deco("  ▸ ", stGrey)}, oneRow(i, e, stGrey)...)
+			return spread(l, decoLine(originLabel(e.Origin), stGrey), w)
+		}})
+	case "approval":
+		out = drawn(out, approvalCard(s, ui, i, e, w)...)
+	case "error":
+		// The error's first line, as received; Enter on D shows it
+		// whole (ui-design.md, States: Error).
+		out = append(out, crow{fn: func() line {
+			return append(line{deco("✗ turn failed: ", stFailedBold)}, oneRow(i, e, stFailed)...).fit(w)
+		}})
+	default:
+		p := &rowStyle{lead0: deco("  · ", stProgress), lead: deco("  ", stProgress), at: ref{panel: 'B', item: i}, st: stProgress}
+		for j, l := range entryLines(e) {
+			out = sourceRows(out, wc, p, j, l, w-4, w-2)
+		}
 	}
-	return drawn(out, sessionState(s, ui, w)...)
+	return out
 }
 
 // oneRow is a tool or approval entry's first line on one row, marked when
@@ -586,7 +621,8 @@ func zoneC(s *state.State, ui UI, w, h int) []line {
 			from = i - room + 1
 		}
 	}
-	for _, a := range agents[from:] {
+	for _, a := range agents[from:min(from+h, len(agents))] { // only the rows the box can show
+
 		body = append(body, agentRow(a, ui, w-4))
 	}
 	if h-2 >= 4 {
@@ -668,189 +704,6 @@ func clockSec(t time.Time) string {
 		return "--:--:--"
 	}
 	return t.Local().Format("15:04:05")
-}
-
-// zoneD is quota and telemetry, rows lines high.
-func zoneD(s *state.State, ui UI, w, h, rows int) []line {
-	m := s.Metrics
-	q5, q7 := quota(s, "quota.5h", "5h"), quota(s, "quota.7d", "7d")
-	ctx := contextValue(s)
-	tok := valueText(s, m["tokens.session"], func(v state.Value) string { return count(v.V) })
-	cost := costText(s)
-	errs := fmt.Sprintf("errors %d", len(s.Errors))
-	var body []line
-	switch rows {
-	case 1:
-		body = []line{join(q5.short(10), q7.short(10), "ctx "+ctx.short, "tok "+tok.short, cost.short, errs)}
-	case 2:
-		body = []line{
-			join(q5.long(20), q7.long(20), "model "+orNA(model(s), naReason(s))),
-			join("context "+ctx.long, "tokens "+tok.long, "cost "+cost.long, "agents "+agentCount(s), "time "+sessionTime(s, ui), errs),
-		}
-	default:
-		body = []line{
-			join(q5.long(30), q7.long(30), "plan "+valueText(s, m["plan"], func(v state.Value) string { return v.Text }).long),
-			join("model "+orNA(model(s), naReason(s)), "context "+ctx.long, "tokens "+tok.long, "cost "+cost.long),
-			join("agents "+agentCount(s), "time "+sessionTime(s, ui), errs, fmt.Sprintf("retries %d", s.Retries), fmt.Sprintf("unrecognised events %d", s.Unrecognised)),
-		}
-	}
-	title := "D · QUOTA & TELEMETRY"
-	if rows == 1 {
-		title = "D"
-	}
-	return box('D', zoneTitle(title, ui.Focus == "D"), plain("† undocumented field", stGrey), body, w, h, borderFor(ui.Focus == "D"))
-}
-
-// shown is a value in its short and long forms.
-type shown struct{ short, long string }
-
-func join(parts ...any) line {
-	var l line
-	for i, p := range parts {
-		if i > 0 {
-			l = append(l, sp("   ", stText))
-		}
-		switch p := p.(type) {
-		case string:
-			st := stText
-			if strings.Contains(p, "N/A") {
-				st = stGrey
-			}
-			l = append(l, sp(p, st))
-		case line:
-			l = append(l, p...)
-		}
-	}
-	return l
-}
-
-type quotaShown struct {
-	label   string
-	v       state.Value
-	present bool
-	reason  string
-}
-
-func quota(s *state.State, key, label string) quotaShown {
-	v := s.Metrics[key]
-	return quotaShown{label: label, v: v, present: v.Present, reason: reasonOf(s, v)}
-}
-
-func (q quotaShown) bar(n int) line {
-	full := int(math.Round(q.v.V / 100 * float64(n)))
-	full = max(0, min(n, full))
-	st := stDone
-	switch {
-	case q.v.V >= 90:
-		st = stFailed
-	case q.v.V >= 70:
-		st = stProgress
-	}
-	return line{deco(strings.Repeat("▰", full), st), deco(strings.Repeat("▱", n-full), stFrame)}
-}
-
-func (q quotaShown) pct() string {
-	p := fmt.Sprintf("%.0f%%", q.v.V)
-	if !q.v.Documented {
-		p += "†"
-	}
-	return p
-}
-
-func (q quotaShown) short(n int) line {
-	if !q.present {
-		return plain(q.label+" N/A", stGrey)
-	}
-	return append(append(line{sp(q.label+" ", stText)}, q.bar(n)...), sp(" "+q.pct(), stText))
-}
-
-func (q quotaShown) long(n int) line {
-	if !q.present {
-		return plain(q.label+" N/A ("+q.reason+")", stGrey)
-	}
-	l := append(append(line{sp(q.label+" ", stText)}, q.bar(n)...), sp(" "+q.pct(), stText))
-	if !q.v.ResetsAt.IsZero() {
-		l = append(l, sp("  resets "+q.v.ResetsAt.Local().Format("Mon 15:04"), stGrey))
-	}
-	return l
-}
-
-func valueText(s *state.State, v state.Value, f func(state.Value) string) shown {
-	if !v.Present {
-		return shown{"N/A", "N/A (" + reasonOf(s, v) + ")"}
-	}
-	t := f(v)
-	if !v.Documented {
-		t += "†"
-	}
-	if v.Origin == event.Derived {
-		return shown{t, t + " (derived)"}
-	}
-	return shown{t, t}
-}
-
-func contextValue(s *state.State) shown {
-	used, win := s.Metrics["context.used"], s.Metrics["context.window"]
-	if !used.Present || !win.Present || win.V <= 0 {
-		missing := used
-		if used.Present {
-			missing = win
-		}
-		return shown{"N/A", "N/A (" + reasonOf(s, missing) + ")"}
-	}
-	p := fmt.Sprintf("%.0f%%", used.V/win.V*100)
-	if !used.Documented || !win.Documented {
-		p += "†"
-	}
-	return shown{p, p + " of " + count(win.V)}
-}
-
-func costText(s *state.State) shown {
-	v := s.Metrics["cost.usd"]
-	if !v.Present {
-		if s.Context.Provider == "codex" {
-			return shown{"$ N/A", "N/A (Codex reports none)"}
-		}
-		return shown{"$ N/A", "N/A (" + reasonOf(s, v) + ")"}
-	}
-	return shown{fmt.Sprintf("$%.2f est.", v.V), fmt.Sprintf("$%.2f API-equiv. estimate", v.V)}
-}
-
-func agentCount(s *state.State) string {
-	n, _ := activeAgents(s)
-	return fmt.Sprintf("%d active / limit N/A (not reported)", n)
-}
-
-func sessionTime(s *state.State, ui UI) string {
-	if len(s.Log) == 0 || ui.Now.IsZero() {
-		return "N/A (" + naReason(s) + ")"
-	}
-	return elapsed(s.Log[0].At, time.Time{}, ui.Now) + " session"
-}
-
-func reasonOf(s *state.State, v state.Value) string {
-	if v.Reason != "" {
-		return v.Reason
-	}
-	return naReason(s)
-}
-
-// naReason says why a value is missing, from the session's state.
-func naReason(s *state.State) string {
-	switch s.Session.Phase {
-	case state.Spawning, state.Handshaking, "":
-		return "session starting"
-	case state.Ready:
-		return "not reported yet"
-	}
-	return "session ended"
-}
-
-func orNA(v, reason string) string {
-	if v == "" {
-		return "N/A (" + reason + ")"
-	}
-	return v
 }
 
 // count shows a number of tokens: 950, 12.1k, 1.2M.

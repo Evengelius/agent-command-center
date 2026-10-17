@@ -720,6 +720,9 @@ func (s *State) turnEnd(ev event.Event, p event.TurnEnd) []Command {
 	s.Turn.Phase, s.Turn.Outcome, s.Turn.ForceStopOffered = Idle, outcome, false
 	if outcome == "failed" && p.Error != "" {
 		s.Errors = appendBounded(s.Errors, ErrorEntry{Seq: ev.Seq, At: ev.At, Message: "turn failed: " + p.Error}, MaxErrors)
+		// The error as received, in B (ui-design.md, States: Error); B shows
+		// its first line, the errors list in D the whole of it.
+		s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "error", Text: p.Error, Origin: ev.Origin, At: ev.At})
 	}
 	s.expireFor("")
 	for _, t := range s.Tools {
@@ -745,6 +748,9 @@ func (s *State) telemetry(ev event.Event, p event.Metrics) {
 	for _, m := range p.Items {
 		v := Value{Present: true, V: m.Value, Text: m.Text, Unit: m.Unit, Origin: ev.Origin, Source: m.Source,
 			Documented: m.Documented, ReceivedAt: ev.At, ResetsAt: m.ResetsAt}
+		if m.Derived {
+			v.Origin = event.Derived
+		}
 		if ev.Agent != "" {
 			a := s.ensureAgent(ev.Agent, ev)
 			if m.Name == "tokens.total" {
@@ -752,28 +758,33 @@ func (s *State) telemetry(ev event.Event, p event.Metrics) {
 			}
 			continue
 		}
+		if m.Reason != "" {
+			// N/A for that reason; the last value and its time stay, for
+			// "read failed" (reliability.md, Telemetry sources).
+			prev := s.Metrics[m.Name]
+			v = Value{Reason: m.Reason, Source: m.Source, Documented: m.Documented, Origin: v.Origin, ReasonAt: ev.At,
+				Last: prev.Present || prev.Last, V: prev.V, Text: prev.Text, Unit: prev.Unit, ReceivedAt: prev.ReceivedAt}
+		}
 		s.Metrics[m.Name] = v
 	}
 	s.deriveTokens(ev)
 }
 
-// deriveTokens keeps "tokens.session": Codex, the main thread's last total
-// plus each child thread's; Claude Code, the sum of each turn's result usage.
+// deriveTokens keeps Codex's "tokens.session": the main thread's last total
+// plus each child thread's. Claude Code reports its running total itself
+// (result.modelUsage).
 func (s *State) deriveTokens(ev event.Event) {
-	if main, ok := s.Metrics["tokens.total"]; ok {
-		sum := main.V
-		for _, k := range s.Order {
-			if a := s.Agents[k]; a.Kind == "thread" && a.Tokens.Present {
-				sum += a.Tokens.V
-			}
-		}
-		s.Metrics["tokens.session"] = Value{Present: true, V: sum, Unit: "tokens", Origin: event.Derived, Source: "sum of each thread's last tokens.total", Documented: true, ReceivedAt: ev.At}
+	main, ok := s.Metrics["tokens.total"]
+	if !ok {
 		return
 	}
-	if t, ok := s.Metrics["tokens.turn"]; ok && t.ReceivedAt.Equal(ev.At) {
-		prev := s.Metrics["tokens.session"]
-		s.Metrics["tokens.session"] = Value{Present: true, V: prev.V + t.V, Unit: "tokens", Origin: event.Derived, Source: "sum of result.usage over turns", Documented: true, ReceivedAt: ev.At}
+	sum := main.V
+	for _, k := range s.Order {
+		if a := s.Agents[k]; a.Kind == "thread" && a.Tokens.Present {
+			sum += a.Tokens.V
+		}
 	}
+	s.Metrics["tokens.session"] = Value{Present: true, V: sum, Unit: "tokens", Origin: event.Derived, Source: "sum of each thread's last tokens.total", Documented: true, ReceivedAt: ev.At}
 }
 
 func (s *State) status(ev event.Event, p event.Status) {
@@ -801,10 +812,13 @@ func (s *State) note(ev event.Event, msg string) {
 	s.Notes = appendBounded(s.Notes, "#"+itoa(ev.Seq)+" "+string(ev.Kind)+": "+msg, MaxErrors)
 }
 
+// appendBounded keeps the last max items. The window slides over its array,
+// which append replaces only once full, copying max items: a full list costs
+// a few copies per item, not max (test 11). Items already in it never change.
 func appendBounded[T any](list []T, v T, max int) []T {
 	list = append(list, v)
 	if len(list) > max {
-		list = append(list[:0:0], list[len(list)-max:]...)
+		list = list[len(list)-max:]
 	}
 	return list
 }

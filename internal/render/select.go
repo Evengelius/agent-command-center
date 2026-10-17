@@ -69,6 +69,8 @@ func Draw(s *state.State, ui UI) *Screen {
 		ls = tooSmall(s, ui)
 	case s.Screen == state.ScreenDashboard && ui.Inspect != "" && s.Agents[ui.Inspect] != nil:
 		ls = inspect(s, ui, s.Agents[ui.Inspect], sc)
+	case s.Screen == state.ScreenDashboard && ui.Details:
+		ls = details(s, ui, sc)
 	case s.Screen == state.ScreenDashboard:
 		ls = dashboard(s, ui, sc)
 	default:

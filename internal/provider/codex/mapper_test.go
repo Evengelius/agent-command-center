@@ -307,11 +307,13 @@ func TestRateLimitWindows(t *testing.T) {
 		t.Fatalf("events %d", len(evs))
 	}
 	items := evs[0].Payload.(event.Metrics).Items
-	if len(items) != 3 || items[0].Name != "quota.60m" || items[0].Value != 42 || items[1].Name != "quota.7d" || items[2].Name != "plan" || items[2].Text != "plus" {
-		t.Errorf("metrics %+v", items)
+	// No 300-minute window: the 5-hour quota is N/A for that reason, first.
+	if len(items) != 4 || items[0].Name != "quota.5h" || items[0].Reason != "plan has no 5-hour limit" ||
+		items[1].Name != "quota.60m" || items[1].Value != 42 || items[2].Name != "quota.7d" || items[3].Name != "plan" || items[3].Text != "plus" {
+		t.Fatalf("metrics %+v", items)
 	}
-	if items[1].ResetsAt.Unix() != 1792657845 {
-		t.Errorf("resets at %v", items[1].ResetsAt)
+	if items[2].ResetsAt.Unix() != 1792657845 {
+		t.Errorf("resets at %v", items[2].ResetsAt)
 	}
 }
 

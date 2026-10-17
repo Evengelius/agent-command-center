@@ -61,8 +61,8 @@ func TestGoldenFrames(t *testing.T) {
 	codexDash := func(t *testing.T) *harness {
 		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "codex-subagents.jsonl")}})
 		h.settle()
-		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 176 {
-			t.Fatalf("codex dashboard: screen %q, %d events, want 176", s.Screen, len(s.Log))
+		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 177 {
+			t.Fatalf("codex dashboard: screen %q, %d events, want 177", s.Screen, len(s.Log))
 		}
 		return h
 	}
@@ -91,10 +91,19 @@ func TestGoldenFrames(t *testing.T) {
 		return h
 	}
 
+	// The details of zone D, with errors of the session, of an agent and a
+	// retry, one long and on two lines (plan 4, step 7).
+	details := func(t *testing.T) *harness {
+		h := dash(t)
+		addErrors(h, 2)
+		openDetailsView(t, h)
+		return h
+	}
+
 	for _, sc := range []struct {
 		name string
 		rig  func(*testing.T) *harness
-	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}} {
+	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}} {
 		for _, size := range sizes {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)

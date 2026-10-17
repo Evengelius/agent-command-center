@@ -54,6 +54,7 @@ type UI struct {
 	Tab         int             // the inspection's tab: 0 Messages, 1 Tools, 2 Diff, 3 Raw events
 	InspectTop  int             // the first inspection row shown while held
 	InspectHold bool            // scrolled up: the inspection stays where it is
+	Details     bool            // zone D full screen (Enter on D); it scrolls with InspectTop and InspectHold
 
 	// Mouse selection and scrolling (ui-design.md, Selection and copy; Zone B,
 	// Follow mode).

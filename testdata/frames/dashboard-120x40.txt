@@ -33,8 +33,8 @@
 │                                ││                                                                                    │
 │ ↑↓ move ←→ fold Enter inspect  ││ ↑↓ select · Enter inspect · z zoom · F6 next zone                                  │
 ╰────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
-╭─ D · QUOTA & TELEMETRY ─────────────────────────────────────────────────────────────────────── † undocumented field ─╮
-│ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00   model claude-haik… │
-│ context 2%† of 1M   tokens 217.3k (derived)   cost $0.01 API-equiv. estimate   agents 0 active / limit N/A (not rep… │
+╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────────── quota updated 0s ago · † undocumented field ─╮
+│ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00   overage rejected … │
+│ context 4% of 1M (derived)   tokens 159.4k   cost $0.01 API-equiv. estimate   errors 0   agents 0 active / limit N/… │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit
