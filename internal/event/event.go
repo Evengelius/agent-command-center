@@ -41,8 +41,12 @@ const (
 	Retry            Kind = "retry"
 	Error            Kind = "error"
 	StatusChanged    Kind = "status.changed"
-	Sent             Kind = "sent"   // a control write of the dashboard's own (initialize, interrupt...)
-	Stderr           Kind = "stderr" // one line of the CLI's stderr, kept for the error tail
+	ApprovalMode     Kind = "approvals.mode"    // the approval mode in force (plan 12, item 2)
+	ToolDecision     Kind = "tool.decision"     // who decided a tool call's permission (plan 12, item 2; undocumented for Claude Code)
+	ReviewUpdated    Kind = "approvals.review"  // an auto-review's progress or verdict ([UNSTABLE] in Codex)
+	ReviewWarning    Kind = "approvals.warning" // Codex's guardianWarning: kept in the event log only
+	Sent             Kind = "sent"              // a control write of the dashboard's own (initialize, interrupt...)
+	Stderr           Kind = "stderr"            // one line of the CLI's stderr, kept for the error tail
 	Unrecognised     Kind = "unrecognised"
 )
 
@@ -95,6 +99,9 @@ type Started struct {
 	Plugins        []string
 	Sandbox        string
 	ApprovalPolicy string
+	// ApprovalMode is the mode in force the CLI reported: manual, auto, or
+	// the CLI's own word for another; "" when it reported none (plan 12).
+	ApprovalMode string `json:",omitempty"`
 }
 
 // Ended is the payload of SessionEnded.
@@ -259,6 +266,49 @@ type PlanStep struct {
 type Problem struct {
 	Message   string
 	WillRetry bool
+}
+
+// The approval modes the adapters name (plan 12, item 2); any other word of a
+// CLI is carried as given.
+const (
+	ModeManual = "manual"
+	ModeAuto   = "auto"
+)
+
+// Mode is the payload of ApprovalMode: the mode in force, manual, auto, or
+// the CLI's own word for another.
+type Mode struct {
+	Mode string
+	// Answers marks the response to a request for a mode: the request is
+	// settled whatever the mode. Refused marks a refusal, with its Text for
+	// zone B; the mode in force is unchanged.
+	Answers bool   `json:",omitempty"`
+	Refused bool   `json:",omitempty"`
+	Text    string `json:",omitempty"`
+	// Sandbox is the sandbox that comes with the mode, when the dashboard
+	// names one per turn (Codex, plan 12 addendum); empty leaves it as is.
+	Sandbox string `json:",omitempty"`
+}
+
+// Verdict is the payload of ToolDecision: the permission decision the CLI
+// recorded for a tool call (Claude Code tool_result_meta, undocumented).
+// Decision is accept or reject; ReasonType names who decided.
+type Verdict struct {
+	ToolID     string
+	Decision   string
+	ReasonType string
+}
+
+// Review is the payload of ReviewUpdated: one auto-review, started then
+// completed (Codex item/autoApprovalReview/*, [UNSTABLE]). Status is as
+// reported: inProgress, approved, denied, timedOut, aborted.
+type Review struct {
+	ReviewID      string
+	Command       string
+	Status        string
+	Risk          string
+	Authorization string
+	Rationale     string
 }
 
 // Status is the payload of StatusChanged.

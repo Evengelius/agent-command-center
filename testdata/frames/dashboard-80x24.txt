@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
+ ▣ claude-subagent-approval.jsonl          Mock data 2.1.300 · approvals Manual
  A ✓ Turn 2                                               (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
 │   The subagent found two files in the directory, `alpha.txt` and `beta.md`,  │

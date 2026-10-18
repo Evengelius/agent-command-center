@@ -94,6 +94,12 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 		m.openOverlay()
 		return nil
 	}
+	// F4 from any zone, with a card open too: Manual or Auto approvals (plan 12,
+	// item 2).
+	if k.String() == "f4" {
+		capable := m.sess != nil && m.sess.Capabilities().AutoApprovals
+		return m.do(state.ToggleApprovals{Capable: capable})
+	}
 	if m.ui.View != "" || m.ui.ViewEntry > 0 {
 		if cmds, done := m.viewKey(k); done {
 			return cmds

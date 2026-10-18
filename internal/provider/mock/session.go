@@ -136,6 +136,11 @@ func (s *Session) Interrupt() error {
 	return nil
 }
 
+// SetApprovalMode: a mock session has no approvals to switch.
+func (s *Session) SetApprovalMode(bool) error {
+	return errors.New("the mock session has no approval mode")
+}
+
 // Refresh has nothing to read.
 func (s *Session) Refresh() error { return nil }
 

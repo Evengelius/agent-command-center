@@ -1,0 +1,60 @@
+ >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                               Mock data 2.1.300 · approvals Auto
+╭─ A · ORCHESTRATOR ───────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
+│ claude-haiku-5-5 · orchestrator          ││ YOU  11:30                                                                                                                                               │
+│ turn 2 · completed                       ││   Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into a new file   │
+│                                          ││   named found.txt with the Write tool, and report the names. Then tell me in one line what it found.                                                     │
+│ STAGES  inferred from activity           ││   ▸ Agent · approved by auto-review                                                                                                                 mock │
+│ TURN 1  ✓ completed · 0s                 ││ CLAUDE  claude-haiku-5-5                                                                                                                                 │
+│ TURN 2  ✓ completed · 0s                 ││   I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it finishes.                     │
+│   started by the CLI                     ││ ✓ general-purpose · Bash  ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'  allowed by you 11:30:00                                                    │
+│                                          ││ ✓ general-purpose · Write  <probe-root>\probe-work\p3b\found.txt  allowed by you 11:30:00                                                                │
+│                                          ││ CLAUDE  claude-haiku-5-5                                                                                                                                 │
+│                                          ││   The subagent found two files in the directory, `alpha.txt` and `beta.md`, and wrote them into `<probe-root>\probe-work\p3b\found.txt`.                 │
+│                                          ││                                                                                                                                                          │
+│                                          ││   Found 2 files: alpha.txt and beta.md.                                                                                                                  │
+│                                          ││   ∴ thinking                                                                                                                                             │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│                                          ││ >  Ask Mock data anything…                                                                                                                               │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││   turn started by the CLI                                                                                                         1 line · Ctrl+G editor │
+│                                          │╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+│                                          │╭─ C · LIVE AGENTS ────────────────────────────────── 0 ACTIVE · 1 DONE ─╮╭─ general-purpose · LIVE ───────────────────────── claude-haiku-5-5 (reported) ─╮
+│                                          ││  ✓ general-purpose haiku-5-5   completed · Files…       0s   21.5k tok ││ 11:30:00  assistant  Files written to found.txt: …                        mock │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│ ↑↓ move ←→ fold Enter inspect            ││ ↑↓ select · Enter inspect · z zoom · F6 next zone                      ││ Enter full screen · [ ] previous / next agent                                  │
+╰──────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────╯
+╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── quota updated 0s ago · † undocumented field ─╮
+│ 5h ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00   plan N/A (not reported)   overage rejected (org_level_disabled)                │
+│ model claude-haiku-5-5   context 4% of 1M (derived)   tokens 159.4k   cost $0.01 API-equiv. estimate   last turn 2s                                                                                  │
+│ agents 0 active / limit N/A (not reported)   time 0s session   errors 0   retries N/A (none reported)   unrecognised events 0                                                                        │
+│                                                                                                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit

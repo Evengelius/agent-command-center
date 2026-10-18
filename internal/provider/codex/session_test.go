@@ -449,6 +449,9 @@ func forbidden(line string) string {
 	}
 	var p any
 	_ = json.Unmarshal(m.Params, &p)
+	if why := turnSandboxForbidden(m.Method, p); why != "" {
+		return why
+	}
 	if why := walk(p); why != "" {
 		return why
 	}
@@ -464,6 +467,35 @@ func forbidden(line string) string {
 	return ""
 }
 
+// turnSandboxForbidden checks turn/start's sandboxPolicy and takes it out of
+// params when allowed: the one writable sandbox ever sent is Codex's own
+// "Approve for me", workspaceWrite with no other field and only with the
+// auto_review reviewer (plan 12 addendum); otherwise readOnly, nothing else.
+func turnSandboxForbidden(method string, params any) string {
+	p, ok := params.(map[string]any)
+	if !ok || p["sandboxPolicy"] == nil {
+		return ""
+	}
+	if method != "turn/start" {
+		return "sandboxPolicy on " + method
+	}
+	sp, ok := p["sandboxPolicy"].(map[string]any)
+	if !ok || len(sp) != 1 {
+		return fmt.Sprintf("sandboxPolicy %v", p["sandboxPolicy"])
+	}
+	switch sp["type"] {
+	case "readOnly":
+	case "workspaceWrite":
+		if p["approvalsReviewer"] != "auto_review" {
+			return fmt.Sprintf("sandbox workspaceWrite with reviewer %v", p["approvalsReviewer"])
+		}
+	default:
+		return fmt.Sprintf("sandbox %v", sp["type"])
+	}
+	delete(p, "sandboxPolicy")
+	return ""
+}
+
 // TestForbiddenCheck: the check catches what it is there for, so a clean
 // log means something (a planted cwd fails it).
 func TestForbiddenCheck(t *testing.T) {
@@ -475,13 +507,21 @@ func TestForbiddenCheck(t *testing.T) {
 		`{"id":2,"method":"windowsSandbox/setupStart"}`,
 		`{"id":0,"result":{"decision":{"acceptWithExecpolicyAmendment":{"execpolicy_amendment":["ls"]}}}}`,
 		`{"id":0,"result":{"decision":"allow"}}`,
+		`{"id":5,"method":"turn/start","params":{"approvalsReviewer":"user","sandboxPolicy":{"type":"workspaceWrite"},"threadId":"t"}}`,
+		`{"id":5,"method":"turn/start","params":{"sandboxPolicy":{"type":"workspaceWrite"},"threadId":"t"}}`,
+		`{"id":5,"method":"turn/start","params":{"approvalsReviewer":"auto_review","sandboxPolicy":{"type":"workspaceWrite","networkAccess":true},"threadId":"t"}}`,
+		`{"id":5,"method":"turn/start","params":{"approvalsReviewer":"auto_review","sandboxPolicy":{"type":"workspaceWrite","writableRoots":["C:\\"]},"threadId":"t"}}`,
+		`{"id":5,"method":"turn/start","params":{"approvalsReviewer":"auto_review","sandboxPolicy":{"type":"dangerFullAccess"},"threadId":"t"}}`,
+		`{"id":2,"method":"thread/start","params":{"sandboxPolicy":{"type":"readOnly"}}}`,
 	} {
 		if forbidden(l) == "" {
 			t.Errorf("not caught: %s", l)
 		}
 	}
 	for _, l := range []string{
-		`{"id":2,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request"}}`,
+		`{"id":2,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":5,"method":"turn/start","params":{"approvalsReviewer":"user","sandboxPolicy":{"type":"readOnly"},"threadId":"t"}}`,
+		`{"id":5,"method":"turn/start","params":{"approvalsReviewer":"auto_review","sandboxPolicy":{"type":"workspaceWrite"},"threadId":"t"}}`,
 		`{"id":0,"result":{"decision":"cancel"}}`,
 		`{"error":{"code":-32601,"message":"x"},"id":9}`,
 	} {
@@ -506,8 +546,12 @@ func TestNoForbiddenMethodInSource(t *testing.T) {
 				}
 			}
 		}
-		if strings.Count(string(b), `"cwd"`) > 1 || strings.Contains(string(b), "workspace-write") || strings.Contains(string(b), "danger-full-access") {
+		if strings.Count(string(b), `"cwd"`) > 1 || strings.Contains(string(b), "workspace-write") || strings.Contains(string(b), "danger-full-access") || strings.Contains(string(b), "dangerFullAccess") {
 			t.Errorf("%s names cwd or a writable sandbox", f)
+		}
+		// The one writable sandbox: Auto's turns (turnSandbox; plan 12 addendum).
+		if n := strings.Count(string(b), `"workspaceWrite"`); n > 1 || (n == 1 && !strings.Contains(string(b), `reviewerAuto: "workspaceWrite"`)) {
+			t.Errorf("%s names workspaceWrite other than for Auto's turns", f)
 		}
 	}
 }
@@ -523,7 +567,7 @@ const (
 const initLine = `{"id":1,"method":"initialize","params":{"clientInfo":{"name":"agent_command_center","title":"Agent Command Center","version":"dev"}}}`
 
 func turnLine(id int, thread, text string) string {
-	return `{"id":` + strconv.Itoa(id) + `,"method":"turn/start","params":{"input":[{"text":` + quote(text) + `,"type":"text"}],"threadId":"` + thread + `"}}`
+	return `{"id":` + strconv.Itoa(id) + `,"method":"turn/start","params":{"approvalsReviewer":"user","input":[{"text":` + quote(text) + `,"type":"text"}],"sandboxPolicy":{"type":"readOnly"},"threadId":"` + thread + `"}}`
 }
 
 // TestHandshakeApprovalInterrupt replays P6b through the real process
@@ -596,7 +640,7 @@ func TestHandshakeApprovalInterrupt(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request"}}`,
+		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
 		`{"id":4,"method":"account/rateLimits/read"}`,
 		turnLine(5, p6bThread, "make hello.txt"),
 		`{"id":0,"result":{"decision":"accept"}}`,
@@ -661,11 +705,11 @@ func TestModelFallback(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request"}}`,
+		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
 		`{"id":4,"method":"account/rateLimits/read"}`,
 		turnLine(5, p6Thread, "make hello.txt"),
 		`{"id":6,"method":"model/list","params":{}}`,
-		`{"id":7,"method":"thread/start","params":{"model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request"}}`,
+		`{"id":7,"method":"thread/start","params":{"model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
 		`{"id":8,"method":"account/rateLimits/read"}`,
 		turnLine(9, p6bThread, "make hello.txt"),
 		`{"id":0,"result":{"decision":"accept"}}`,
@@ -711,7 +755,7 @@ func TestChildApproval(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request"}}`,
+		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
 		`{"id":4,"method":"account/rateLimits/read"}`,
 		turnLine(5, p7Thread, "spawn two"),
 		`{"id":0,"result":{"decision":"accept"}}`,
@@ -838,7 +882,7 @@ func TestResume(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"thread/resume","params":{"threadId":"th-9","model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request"}}`,
+		`{"id":3,"method":"thread/resume","params":{"threadId":"th-9","model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
 		`{"id":4,"method":"account/rateLimits/read"}`,
 	})
 }
@@ -1033,5 +1077,51 @@ func TestConfigReadOnce(t *testing.T) {
 		if strings.Contains(e.Raw, "SECRET-MARKER-123") || strings.Contains(fmt.Sprintf("%+v", e), "SECRET-MARKER-123") {
 			t.Errorf("event keeps the secret: %s", e.Kind)
 		}
+	}
+}
+
+// TestSetApprovalMode is plan 12, item 2, criteria 1 and 2 and 3: Manual at
+// every launch (thread/start carries approvalsReviewer user), SetApprovalMode
+// writes nothing at once, the next turn/start carries auto_review, and that
+// turn puts Auto in force in the state.
+func TestSetApprovalMode(t *testing.T) {
+	r, _ := start(t, "replay", nil, "", probe("p6b-codex-app-server.jsonl"))
+	r.wait(event.SessionStarted)
+	r.limits()
+	if !r.sess.Capabilities().AutoApprovals {
+		t.Error("Codex does not offer Auto approvals")
+	}
+	if r.st.Mode() != state.ModeManual {
+		t.Errorf("mode %q at launch", r.st.Mode())
+	}
+	if err := r.sess.SetApprovalMode(true); err != nil {
+		t.Fatal(err)
+	}
+	if n := len(r.written()); n != 5 {
+		t.Errorf("%d lines written after SetApprovalMode, want the 5 of the handshake", n)
+	}
+	r.send("make hello.txt")
+	req := r.wait(event.ApprovalRequest).Payload.(event.Approval)
+	if r.st.Mode() != state.ModeAuto {
+		t.Errorf("mode %q after the turn", r.st.Mode())
+	}
+	if err := r.sess.Answer(req.ID, "accept"); err != nil {
+		t.Fatal(err)
+	}
+	r.wait(event.TurnCompleted)
+	r.close()
+	got := r.written()
+	if len(got) != 7 || got[6] != `{"id":0,"result":{"decision":"accept"}}` {
+		t.Fatalf("written %q", got)
+	}
+	// Auto is Codex's "Approve for me": auto_review with workspace-write
+	// (plan 12 addendum).
+	want := strings.NewReplacer(`"approvalsReviewer":"user"`, `"approvalsReviewer":"auto_review"`,
+		`"sandboxPolicy":{"type":"readOnly"}`, `"sandboxPolicy":{"type":"workspaceWrite"}`).Replace(turnLine(5, p6bThread, "make hello.txt"))
+	if got[5] != want {
+		t.Errorf("turn/start\n got %s\nwant %s", got[5], want)
+	}
+	if s := r.st.Session.Sandbox; s != "workspaceWrite" {
+		t.Errorf("sandbox shown %q after the Auto turn, want workspaceWrite", s)
 	}
 }

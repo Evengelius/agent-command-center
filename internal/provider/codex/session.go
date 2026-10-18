@@ -37,7 +37,9 @@ const drainWait = 2 * time.Second
 
 // Sandbox and ApprovalPolicy are the only ones the MVP sends: P6b and P7 ran
 // with them and the configuration unchanged, and every write then asks
-// through the dashboard (architecture.md, Codex adapter).
+// through the dashboard (architecture.md, Codex adapter). Sandbox is the
+// thread's at start and resume; each turn/start then names its own
+// (turnSandbox), a writable one only in Auto.
 const (
 	Sandbox        = "read-only"
 	ApprovalPolicy = "on-request"
@@ -58,6 +60,9 @@ type threadParams struct {
 	Model          string `json:"model,omitempty"`
 	Sandbox        string `json:"sandbox"`
 	ApprovalPolicy string `json:"approvalPolicy"`
+	// ApprovalsReviewer is "user" (Manual) or "auto_review" (Auto), sent with
+	// every thread/start, thread/resume and turn/start (plan 12, item 2).
+	ApprovalsReviewer string `json:"approvalsReviewer"`
 }
 
 // Session is one running `codex app-server` process.
@@ -77,6 +82,7 @@ type Session struct {
 	thread    string                // the main thread, "" while none is usable
 	turn      string                // the running main turn
 	model     string                // the model the main thread reports
+	reviewer  string                // the approvals reviewer in force: reviewerUser, or reviewerAuto once asked for
 	refused   bool                  // the running turn failed with the model refused
 	fellBack  bool                  // the model fallback ran: never twice
 	from      string                // the refused model, until the new thread starts
@@ -354,7 +360,7 @@ func defaultModel(result json.RawMessage) string {
 // names, with the fallback model once there is one.
 func (s *Session) startThread() {
 	s.mu.Lock()
-	p := threadParams{ThreadID: s.resume, Model: s.pin, Sandbox: Sandbox, ApprovalPolicy: ApprovalPolicy}
+	p := threadParams{ThreadID: s.resume, Model: s.pin, Sandbox: Sandbox, ApprovalPolicy: ApprovalPolicy, ApprovalsReviewer: s.reviewerLocked()}
 	s.resume = ""
 	s.mu.Unlock()
 	method := "thread/start"
@@ -468,13 +474,14 @@ func (s *Session) notify(method string) error {
 // byte.
 func (s *Session) Send(text string) error {
 	s.mu.Lock()
-	thread := s.thread
+	thread, reviewer := s.thread, s.reviewerLocked()
 	s.mu.Unlock()
 	if thread == "" {
 		return errors.New("no Codex thread to send to yet")
 	}
 	return s.request("turn/start", map[string]any{"threadId": thread,
-		"input": []map[string]string{{"type": "text", "text": text}}})
+		"input": []map[string]string{{"type": "text", "text": text}}, "approvalsReviewer": reviewer,
+		"sandboxPolicy": map[string]string{"type": turnSandbox[reviewer]}})
 }
 
 // Answer answers a pending approval with one of Codex's decisions, echoing
@@ -513,7 +520,7 @@ func (s *Session) Refresh() error { return s.request("account/rateLimits/read", 
 // is decided per request by the mapper: offered unless the request's
 // availableDecisions omits acceptForSession (plan 5, item 8; plan 8).
 func (s *Session) Capabilities() provider.Capabilities {
-	return provider.Capabilities{SubagentText: true, QuotaWithoutTurn: true}
+	return provider.Capabilities{SubagentText: true, QuotaWithoutTurn: true, AutoApprovals: true}
 }
 
 // Close closes stdin, then terminates the CLI, then kills its tree, each
@@ -555,4 +562,38 @@ func (s *Session) waitExit() bool {
 	case <-t.C:
 		return false
 	}
+}
+
+// The approvals reviewers Codex takes: the owner, or Codex's auto-review
+// (plan 12, item 2; P12x).
+const (
+	reviewerUser = "user"
+	reviewerAuto = "auto_review"
+)
+
+// turnSandbox is the sandbox each turn/start carries with its reviewer. Auto
+// is Codex's own "Approve for me" (codex --approve-for-me sets the reviewer
+// auto_review, the policy on-request and the workspace-writing sandbox), so
+// its turns run in workspaceWrite with no other field; Manual turns stay
+// readOnly, as the thread starts (plan 12 addendum; P12x-sandbox). Codex
+// keeps a turn's sandbox for the turns after it, so every turn sends it.
+var turnSandbox = map[string]string{reviewerUser: "readOnly", reviewerAuto: "workspaceWrite"}
+
+func (s *Session) reviewerLocked() string {
+	if s.reviewer == "" {
+		return reviewerUser
+	}
+	return s.reviewer
+}
+
+// SetApprovalMode writes nothing: the reviewer goes with the next
+// turn/start, which is when the change is in force (plan 12, item 2).
+func (s *Session) SetApprovalMode(auto bool) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.reviewer = reviewerUser
+	if auto {
+		s.reviewer = reviewerAuto
+	}
+	return nil
 }

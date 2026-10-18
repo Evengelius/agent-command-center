@@ -147,6 +147,8 @@ Session
   Answer(ApprovalID, Decision) error  allow / deny / allow-for-session where offered
   AnswerQuestion(QuestionID, Answers) error   where the CLI supports it
   Interrupt() error                 cancel the running turn
+  SetApprovalMode(auto bool) error  Manual or Auto approvals (plan 12): Claude Code at once,
+                                    Codex from the next turn; refused where not supported
   Refresh(TelemetryKind) error      on-demand reads (quota, context); never a timer
   Capabilities() Capabilities       what this CLI and version support (below)
   Close(ctx) error                  graceful, then forced (reliability.md)
@@ -156,7 +158,8 @@ Session
 the handshake, so the interface never pretends both CLIs are the same (AM4
 D6 "Do not force all providers to expose identical telemetry"): streaming of
 subagent text, per-subagent model, quota without a turn, API-equivalent cost,
-clarification questions, plan steps, resume with history, allow-for-session.
+clarification questions, plan steps, resume with history, allow-for-session,
+Manual or Auto approvals.
 The UI shows "N/A" or hides an action when a flag is off.
 
 ### Claude Code adapter
@@ -178,6 +181,19 @@ CLI's own default, which prompts through the dashboard (CC-3 "Permission
 modes"; ASM-4). It never passes a mode weaker than the owner's settings would
 apply, and shows the `permissionMode` that `system/init` reports.
 
+Manual or Auto (plan 12, brief amendment 8): every session starts Manual
+(`default`); F4 sends the `set_permission_mode` control request, `auto` or
+`default`, and the project bar shows the mode Claude Code confirms (the
+control response, then `system/status` `permissionMode`), "→ Auto …" while
+it is asked, and a notice if it is refused. In Auto, an action the
+classifier allows runs without a card; one it would pause still arrives as
+`can_use_tool` and is a card as in Manual. A tool result's
+`tool_result_meta[].permission_decision` with `reason_type:"classifier"`
+(undocumented) marks the call "approved by auto-review" or "denied by
+auto-review"; other reasons (`mode`, a rule, the owner) leave no mark. The
+mode is never saved: it is not a setting, and the CLI's configuration is
+not touched (CC-11; P12c, P12c-switch).
+
 ### Codex adapter
 
 | Step | Design | Source |
@@ -196,11 +212,30 @@ Sandbox and approval policy: `sandbox: "read-only"` and
 `approvalPolicy: "on-request"`, the combination P6b and P7 ran with the
 configuration hashes unchanged; every file change then asks through the
 dashboard (`item/fileChange/requestApproval`, P6b), which is what AM4 W3 asks
-for. `workspace-write` is **not** used in the MVP until CX-10 q2 shows it
-does not write `trust_level` into the user `config.toml` (CX-3, "Configuration
-write to avoid"; ASM-6). The sandbox the `thread/start` response reports is
-shown in the project bar; a downgrade on Windows is visible, never hidden
-(INT 9).
+for. `workspace-write` is **not** used in Manual (CX-3, "Configuration
+write to avoid"; ASM-6); Auto's turns use it, below. The sandbox the
+`thread/start` response reports is shown in the project bar; a downgrade on
+Windows is visible, never hidden (INT 9).
+
+Manual or Auto (plan 12, brief amendment 8): every session starts Manual,
+`approvalsReviewer: "user"` on `thread/start`; F4 sets the reviewer the
+next `turn/start` carries, `auto_review` or `user`; Codex echoes the
+reviewer only on `thread/start`, so a turn's change is never confirmed. The
+project bar shows "→ Auto (next turn)" until that message is sent, then the
+new mode. In Auto, the escalations Codex's reviewer handles never reach the
+dashboard; its `item/autoApprovalReview/started` and `.../completed`
+notifications ([UNSTABLE] in the schema) become one zone B entry per
+review, "auto-review approved · risk low · …"; `guardianWarning` repeats it
+and stays in the event log. A request that still reaches the dashboard is a
+card as in Manual. Auto is Codex's own "Approve for me" (`codex
+--approve-for-me`: the `auto_review` reviewer, the `on-request` policy, the
+`workspace-write` sandbox), so each `turn/start` also carries
+`sandboxPolicy`, `{type: "workspaceWrite"}` in Auto and `{type: "readOnly"}`
+in Manual, sent every turn because Codex keeps a turn's sandbox for the turns
+after it; the threads still start read-only, and the project bar shows the
+sandbox the last turn sent. Nothing is written to `config.toml`, unlike the
+TUI's permissions picker (codex-cli.md 11.1; P12x, P12x-switch,
+P12x-sandbox to P12x-sandbox3).
 
 ### Mock provider
 
@@ -349,7 +384,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-3 | Rendering at most 30 frames per second, coalescing events per frame | Threads; ui-design.md |
 | ASM-4 | Claude Code runs with `--permission-mode default` | Claude Code adapter |
 | ASM-5 | Codex shutdown uses the same timed escalation as Claude Code | Codex adapter |
-| ASM-6 | Codex runs with `read-only` and `on-request`, every write approved in the dashboard, until CX-10 q2 is settled | Codex adapter |
+| ASM-6 | Codex runs with `read-only` and `on-request`, every write approved in the dashboard, until CX-10 q2 is settled; Auto's turns run `workspaceWrite`, the owner's choice (plan 12 addendum, brief amendment 8) | Codex adapter |
 | ASM-7 | The application's own configuration file path and TOML format | How it starts |
 | ASM-8 | `--provider` and `--project` prefill the startup answers, never skip validation | How it starts |
 | ASM-9 | Default key bindings beyond those TI fixes | ui-design.md |

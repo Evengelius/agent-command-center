@@ -149,7 +149,7 @@ func Expandable(e state.Entry) bool {
 	switch e.Role {
 	case "user":
 		return len(entryLines(nil, e)) > foldOver
-	case "tool", "error":
+	case "tool", "error", "review":
 		return true
 	}
 	return false
@@ -172,6 +172,12 @@ func entryViewer(s *state.State, ui UI, i int, sc *Screen) []line {
 		}
 	case "tool":
 		head, body = toolView(s, ui, e, back, w)
+	case "review":
+		head = line{back, deco("◈ AUTO-REVIEW [UNSTABLE]", stBold), deco("  "+clockSec(e.At), stGrey)}
+		for _, l := range strings.Split(e.Text, "\n") {
+			body = append(body, wrapped(l, w-2, stText, "")...)
+		}
+		body = append(body, line{}, plain("observed from Codex's item/autoApprovalReview, a notification marked unstable in its schema", stGrey))
 	default:
 		head = line{back, deco("✗ TURN FAILED", stFailedBold)}
 		if !e.At.IsZero() {
@@ -203,6 +209,10 @@ func toolView(s *state.State, ui UI, e state.Entry, back span, w int) (line, []l
 		body = wrapped(in, w, stText, "") // an input of no known shape, as received
 	} else {
 		body = []line{plain("no input", stGrey)}
+	}
+	if tc.Reviewed != "" {
+		// The field is undocumented: said where the owner can see it (plan 12, item 2).
+		body = append(body, line{}, line{deco("PERMISSION", stBold)}, plain(tc.Reviewed+" · tool_result_meta.permission_decision, an undocumented field of Claude Code", stText))
 	}
 	body = append(body, line{}, line{deco("OUTPUT", stBold)})
 	if tc.Output == "" {

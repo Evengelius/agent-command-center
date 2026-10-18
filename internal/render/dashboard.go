@@ -93,7 +93,7 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	ls = append(ls, zoneD(s, ui, w, dh, rows)...)
 	hints := "Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit"
 	if wide {
-		hints = "Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
+		hints = "Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
 	}
 	if ui.Entry > 0 && ui.Focus == "B" && ui.Card == "" {
 		hints = entryKeys
@@ -147,28 +147,79 @@ func model(s *state.State) string {
 // projectBar is the line under the title (ui-design.md, Project bar).
 func projectBar(s *state.State, ui UI) line {
 	left := line{sp(" ▣ ", stTitle), sp(base(s.Context.Project), stBold)}
+	branch := ""
 	if ui.Branch != "" {
-		left = append(left, sp("   branch ", stGrey), sp(ui.Branch, stText))
+		branch = ui.Branch
+	}
+	withBranch := func() line {
+		if branch == "" {
+			return left
+		}
+		return append(append(line{}, left...), sp("   branch ", stGrey), sp(branch, stText))
 	}
 	name := s.Context.ProviderName
 	if s.Session.Version != "" {
 		name += " " + s.Session.Version
 	}
+	// Codex's own settings, dropped from the right one when the bar is too
+	// narrow; the approvals mode never is (plan 12, item 2).
+	var extras []string
 	if s.Context.Provider == "codex" {
-		for _, x := range []struct{ k, v string }{{"", s.Session.Model}, {"sandbox ", s.Session.Sandbox}, {"approvals ", s.Session.ApprovalPolicy}} {
+		for _, x := range []struct{ k, v string }{{"", s.Session.Model}, {"sandbox ", s.Session.Sandbox}, {"policy ", s.Session.ApprovalPolicy}} {
 			if x.v != "" {
-				name += " · " + x.k + x.v
+				extras = append(extras, x.k+x.v)
 			}
 		}
 	}
-	right := plain(name+" ", stText)
+	short := false // at the narrowest, the approvals mode alone
+	right := func() line {
+		if short {
+			return approvalsSpans(s)
+		}
+		r := plain(name+strings.Join(append([]string{""}, extras...), " · ")+" · ", stText)
+		return append(r, approvalsSpans(s)...)
+	}
+	for len(extras) > 0 && withBranch().width()+right().width() >= ui.Width {
+		extras = extras[:len(extras)-1]
+	}
+	if withBranch().width()+right().width() >= ui.Width {
+		branch = ""
+	}
+	if withBranch().width()+right().width() >= ui.Width {
+		short = true
+	}
+	left = withBranch()
+	r := right()
 	if ui.Width >= standardWidth {
-		room := ui.Width - left.width() - right.width() - 6
+		room := ui.Width - left.width() - r.width() - 6
 		if room > 10 {
 			left = append(left, sp("   "+elide(s.Context.Project, room), stGrey))
 		}
 	}
-	return spread(left, right, ui.Width)
+	return spread(left, r, ui.Width)
+}
+
+// approvalsSpans is the project bar's approvals mode: Auto in the attention
+// colour, a change asked for and not yet in force after an arrow (plan 12,
+// item 2). Codex applies it with its next turn; Claude Code answers at once.
+func approvalsSpans(s *state.State) line {
+	cur := s.Mode()
+	l := line{sp("approvals ", stGrey), sp(state.ModeLabel(cur), modeStyle(cur))}
+	if req := s.Session.ApprovalRequested; req != "" {
+		suffix := " …"
+		if s.CLI() == "codex" {
+			suffix = " (next turn)"
+		}
+		l = append(l, sp(" → ", stGrey), sp(state.ModeLabel(req), modeStyle(req)), sp(suffix, stGrey))
+	}
+	return append(l, sp(" ", stText))
+}
+
+func modeStyle(mode string) *lipgloss.Style {
+	if mode == state.ModeAuto {
+		return stAttentionBold
+	}
+	return stText
 }
 
 // status symbols and their styles (ui-design.md, Colours and symbols).
@@ -431,16 +482,29 @@ func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) [
 		out = append(out, crow{fn: func() line {
 			fail := toolFailure(s, i, e)
 			if focused {
-				l := append(append(line{deco("  ▸ ", stAttentionBold)}, oneRow(i, e, stText)...), fail...)
+				l := append(append(append(line{deco("  ▸ ", stAttentionBold)}, oneRow(i, e, stText)...), fail...), toolReviewed(s, e)...)
 				return spread(l, decoLine(entryHint, stAttention), w)
 			}
 			lead := deco("  ▸ ", stGrey)
 			if fail != nil {
 				lead = deco("  ✗ ", stFailed)
 			}
-			l := append(append(line{lead}, oneRow(i, e, stGrey)...), fail...)
+			l := append(append(append(line{lead}, oneRow(i, e, stGrey)...), fail...), toolReviewed(s, e)...)
 			return spread(l, decoLine(originLabel(e.Origin), stGrey), w)
 		}})
+	case "review":
+		// An auto-review's entry, the reviewer's own, observed; a verdict other
+		// than approved is shown as a failure (plan 12, item 2).
+		st := stProgress
+		switch e.Status {
+		case "inProgress", "approved":
+		default:
+			st = stFailed
+		}
+		p := &rowStyle{lead0: deco("  ◈ ", st), lead: deco("    ", st), at: ref{panel: 'B', item: i}, st: st}
+		for j, l := range entryLines(s, e) {
+			out = sourceRows(out, wc, p, j, l, w-4, w-4)
+		}
 	case "approval":
 		out = drawn(out, approvalCard(s, ui, i, e, w)...)
 	case "error":
@@ -467,6 +531,19 @@ func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) [
 		}
 	}
 	return out
+}
+
+// toolReviewed marks a call the CLI says an auto-review decided: approved or
+// denied by it (plan 12, item 2).
+func toolReviewed(s *state.State, e state.Entry) line {
+	tc := s.Tools[e.MessageID]
+	if tc == nil || tc.Reviewed == "" {
+		return nil
+	}
+	if tc.Status == state.ToolDenied || strings.HasPrefix(tc.Reviewed, "denied") {
+		return line{deco(" · "+tc.Reviewed, stFailed)}
+	}
+	return line{deco(" · "+tc.Reviewed, stAttention)}
 }
 
 // toolFailure is what follows a failed or denied call's name in B: its error,

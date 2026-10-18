@@ -597,3 +597,60 @@ not a target of its own.
 ---
 
 Ok, then let's get rid of conhost fully, this is too old.
+
+## Amendment 8, 2026-10-18: an approval mode the owner chooses
+
+The owner's request, word for word, with two screenshots: Codex's "Approve
+for me" ("Only ask for actions detected as potentially unsafe") and Claude
+Code's "Auto" ("Claude will approve actions that pass a safety check and
+pause for anything risky"). After the recommendation below, the owner
+answered "I approve". It allows one per-session switch between Manual (every
+approval asked, as before) and each CLI's own auto mode: Claude Code's
+`auto` permission mode, Codex's `auto_review` approvals reviewer. The
+dashboard starts in Manual at every launch and saves the choice nowhere: no
+CLI configuration file changes. Choosing Auto is the owner's explicit act
+and uses the CLI's own reviewer, so the application still never weakens the
+CLI's permissions by itself; the decisions the reviewer takes are shown as
+the reviewer's, apart from the owner's. Amendment 4's exclusions stand
+otherwise: this is not a general orchestration setting or a session profile.
+
+Recommendation approved: default Manual on every launch, never saved; one
+key toggles Manual and Auto during the session; the header always shows the
+mode; in Auto only what the CLI escalates reaches the owner as a card, and
+what its reviewer decided is listed as "approved by auto-review" or "denied
+by auto-review"; probes first.
+
+---
+
+My proposal is this,
+
+For codex: approve for me => only ask for actions detected as potentially unsafe
+For claude : Auto => Claude will approve actions that pass a safety check and pause for anything risky
+
+Way better, how would you set it though? Somewhere in the tool? from Manual to Auto so that i can choose?
+
+I approve
+
+### Follow-up, 2026-10-18: each CLI's exact mechanism
+
+The owner asked that Auto be each CLI's own mechanism, unchanged: for
+Claude Code its `auto` permission mode, as its terminal runs it (first
+message below); for Codex its "Approve for me", which `codex
+--approve-for-me` sets as three things, the `auto_review` reviewer, the
+`on-request` policy and the `workspace-write` sandbox (second message). So
+Codex's Auto turns run in workspace-write, Codex's own sandbox for that
+mode, and Manual turns stay read-only as before; nothing is written to any
+CLI configuration. This is the one place where the dashboard asks Codex for
+a writable sandbox, and only because the owner chose Auto.
+
+---
+
+Well let me be clear, I want the same safety check that claude use for "Auto" => Claude will approve actions that pass a safety check and pause for for anythijng risky
+
+Is it the case?
+
+---
+
+Good, before doing so, let's do the same for openai, Openai has : "Approve for me" rule => only ask for actions detected as potentially unsafe => I want the exact same mechanism, so we follow openai rule without reinventing the wheel also here.
+
+Continue

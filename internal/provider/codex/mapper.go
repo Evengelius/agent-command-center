@@ -111,6 +111,8 @@ func (m *Mapper) In(raw []byte) []event.Event {
 				Type string `json:"type"`
 				Text string `json:"text"`
 			} `json:"input"`
+			Reviewer string          `json:"approvalsReviewer"`
+			Sandbox  json.RawMessage `json:"sandboxPolicy"`
 		}
 		_ = json.Unmarshal(r.Params, &p)
 		switch r.Method {
@@ -133,7 +135,13 @@ func (m *Mapper) In(raw []byte) []event.Event {
 		case "turn/interrupt":
 			m.interrupted = true
 		}
-		return append(out, m.ev(event.Sent, event.Observed, agent, p.TurnID, "", raw, event.Write{What: r.Method, RequestID: id}))
+		out = append(out, m.ev(event.Sent, event.Observed, agent, p.TurnID, "", raw, event.Write{What: r.Method, RequestID: id}))
+		if r.Method == "turn/start" && p.Reviewer != "" {
+			// The reviewer in force for this turn (plan 12, item 2), with the
+			// sandbox the turn names (plan 12 addendum).
+			out = append(out, m.ev(event.ApprovalMode, event.Observed, agent, "", "", raw, event.Mode{Mode: reviewerMode(p.Reviewer), Sandbox: namedValue(p.Sandbox)}))
+		}
+		return out
 	case r.hasID():
 		id := idString(r.ID)
 		req, ok := m.server[id]
@@ -280,13 +288,14 @@ func (m *Mapper) threadStart(r rpc, raw []byte) []event.Event {
 		CliVersion     string          `json:"cliVersion"`
 		Sandbox        json.RawMessage `json:"sandbox"`
 		ApprovalPolicy json.RawMessage `json:"approvalPolicy"`
+		Reviewer       string          `json:"approvalsReviewer"`
 	}
 	if err := json.Unmarshal(r.Result, &s); err != nil || s.Thread.ID == "" {
 		return []event.Event{m.ev(event.Error, event.Observed, "", "", "", raw, event.Problem{Message: "thread/start response without a thread id"})}
 	}
 	m.main, m.session = s.Thread.ID, s.Thread.ID
 	st := event.Started{SessionID: s.Thread.ID, Model: s.Model, Cwd: first(s.Cwd, s.Thread.Cwd), Version: first(s.Thread.CliVersion, s.CliVersion),
-		Sandbox: namedValue(s.Sandbox), ApprovalPolicy: namedValue(s.ApprovalPolicy)}
+		Sandbox: namedValue(s.Sandbox), ApprovalPolicy: namedValue(s.ApprovalPolicy), ApprovalMode: reviewerMode(s.Reviewer)}
 	return []event.Event{
 		m.ev(event.SessionReady, event.Observed, "", "", "", raw, event.Ready{Detail: "thread/start response"}),
 		m.ev(event.SessionStarted, event.Observed, "", "", "", raw, st),
@@ -456,6 +465,27 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 		return []event.Event{m.ev(k, event.Observed, agent, p.TurnID, "", raw, event.Problem{Message: msg, WillRetry: p.WillRetry})}
 	case "warning":
 		return []event.Event{m.status(agent, raw, "warning", p.Message)}
+	case "item/autoApprovalReview/started", "item/autoApprovalReview/completed":
+		// [UNSTABLE] in the v2 schema (P12x): one review's progress, then its verdict.
+		var rv struct {
+			ReviewID     string `json:"reviewId"`
+			TargetItemID string `json:"targetItemId"`
+			Review       struct {
+				Status        string `json:"status"`
+				RiskLevel     string `json:"riskLevel"`
+				Authorization string `json:"userAuthorization"`
+				Rationale     string `json:"rationale"`
+			} `json:"review"`
+			Action struct {
+				Command string `json:"command"`
+			} `json:"action"`
+		}
+		_ = json.Unmarshal(r.Params, &rv)
+		return []event.Event{m.ev(event.ReviewUpdated, event.Observed, agent, p.TurnID, rv.TargetItemID, raw, event.Review{ReviewID: rv.ReviewID, Command: rv.Action.Command,
+			Status: rv.Review.Status, Risk: rv.Review.RiskLevel, Authorization: rv.Review.Authorization, Rationale: rv.Review.Rationale})}
+	case "guardianWarning":
+		// [UNSTABLE]: repeats the review's verdict as a sentence; kept in the event log.
+		return []event.Event{m.ev(event.ReviewWarning, event.Observed, agent, p.TurnID, "", raw, event.Line{Text: p.Message})}
 	case "mcpServer/startupStatus/updated":
 		var s struct {
 			Status string `json:"status"`
@@ -931,4 +961,17 @@ func (m *Mapper) configRead(raw []byte) ([]event.Event, bool) {
 		item.Text, item.Value, item.Unit = event.LimitPerBackend, 0, ""
 	}
 	return []event.Event{m.ev(event.Telemetry, event.Observed, "", "", "", kept, event.Metrics{Items: []event.Metric{item}})}, true
+}
+
+// reviewerMode is an approvalsReviewer as the dashboard names the mode: user
+// is Manual, auto_review is Auto, any other as given; "" when not reported
+// (plan 12, item 2).
+func reviewerMode(reviewer string) string {
+	switch reviewer {
+	case reviewerUser:
+		return event.ModeManual
+	case reviewerAuto:
+		return event.ModeAuto
+	}
+	return reviewer
 }

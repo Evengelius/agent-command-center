@@ -48,6 +48,7 @@ type Capabilities struct {
 	PlanSteps        bool
 	ResumeHistory    bool
 	AllowForSession  bool
+	AutoApprovals    bool // the session can switch between Manual and Auto approvals (plan 12)
 }
 
 // Provider is one agent CLI.
@@ -66,6 +67,9 @@ type Session interface {
 	Answer(approvalID, decision string) error
 	Interrupt() error
 	Refresh() error
+	// SetApprovalMode asks for Auto (true) or Manual (false) approvals; the mode
+	// in force is reported by events (plan 12, item 2).
+	SetApprovalMode(auto bool) error
 	Capabilities() Capabilities
 	Close(ctx context.Context) error
 }

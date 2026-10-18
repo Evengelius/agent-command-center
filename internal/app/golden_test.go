@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"testing/synctest"
@@ -13,6 +14,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/provider"
 	"github.com/Evengelius/agent-command-center/internal/render"
 	"github.com/Evengelius/agent-command-center/internal/state"
@@ -100,10 +102,47 @@ func TestGoldenFrames(t *testing.T) {
 		return h
 	}
 
+	// Plan 12, item 2: Claude Code in Auto, its reviewer's mark on a tool;
+	// Codex with a change requested for its next turn; Codex in Auto with an
+	// auto-review entry in zone B. Manual is the bar of every other frame.
+	claudeAuto := func(t *testing.T) *harness {
+		h := dash(t)
+		var ids []string
+		for id, tc := range h.m.State().Tools {
+			if tc.Agent == "" {
+				ids = append(ids, id)
+			}
+		}
+		sort.Strings(ids)
+		if len(ids) == 0 {
+			t.Fatal("no orchestrator tool in the mock")
+		}
+		pushEvents(h, "claude-code", evOf(event.ToolDecision, event.Verdict{ToolID: ids[0], Decision: "accept", ReasonType: "classifier"}))
+		pushEvents(h, "claude-code", evOf(event.ApprovalMode, event.Mode{Mode: event.ModeAuto, Answers: true}))
+		if h.m.State().Mode() != state.ModeAuto {
+			t.Fatalf("mode %q", h.m.State().Mode())
+		}
+		return h
+	}
+	codexRequested := func(t *testing.T) *harness {
+		h := codexDash(t)
+		h.m.State().Do(state.ToggleApprovals{Capable: true})
+		if h.m.State().Session.ApprovalRequested != state.ModeAuto {
+			t.Fatalf("requested %q", h.m.State().Session.ApprovalRequested)
+		}
+		return h
+	}
+	codexReview := func(t *testing.T) *harness {
+		h := codexDash(t)
+		pushEvents(h, "codex",
+			evOf(event.ApprovalMode, event.Mode{Mode: event.ModeAuto}),
+			evOf(event.ReviewUpdated, event.Review{ReviewID: "rv1", Command: "go vet ./...", Status: "approved", Risk: "low", Authorization: "high", Rationale: "a read-only check of the project"}))
+		return h
+	}
 	for _, sc := range []struct {
 		name string
 		rig  func(*testing.T) *harness
-	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}} {
+	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}} {
 		for _, size := range sizes {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)

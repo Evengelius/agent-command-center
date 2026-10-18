@@ -531,3 +531,70 @@ Still open:
    errors behind the corporate proxy, to drive the retry counter.
 10. **API-key sessions:** `account/rateLimits/read` error text, to show N/A
     cleanly (needs an API-key login, so likely untested).
+
+## 11. The auto-review reviewer (plan 12, 2026-10-18)
+
+Probes P12x and P12x-switch on Codex CLI 0.163.0, the dashboard's handshake
+and thread parameters plus `approvalsReviewer` (`probes/README.md`); schema
+from `codex app-server generate-json-schema` of the same version:
+
+- **`approvalsReviewer`** (`user` default, `auto_review`, legacy
+  `guardian_subagent`) is accepted on `thread/start` and echoed in its
+  result [P:p12x-codex-auto-review.jsonl]; on `turn/start` it applies "on
+  this thread and subsequent turns". A `turn/start` result and
+  `turn/started` do not echo it, and P12x-switch emitted no
+  `thread/settings/updated` (the schema has one, with `approvalsReviewer`
+  in `threadSettings`) [P:p12x-switch-codex-user-to-auto-review.jsonl].
+  No client request other than the `config/*` writes changes it; those
+  write the owner's configuration and are not used.
+- **With `auto_review`** no `requestApproval` reached the client. Each
+  escalation gave `item/autoApprovalReview/started` (`reviewId`,
+  `targetItemId`, `action:{type:"command", source, command, cwd}`,
+  `review:{status:"inProgress"}`), then `.../completed` (adds
+  `completedAtMs`, `decisionSource:"agent"`, `review:{status:"approved",
+  riskLevel:"low", userAuthorization:"high", rationale}`), plus a
+  `guardianWarning` whose `message` repeats the decision as text. Schema
+  enums: status `inProgress | approved | denied | timedOut | aborted`;
+  `riskLevel` `low | medium | high | critical`; `userAuthorization`
+  `unknown | low | medium | high`. The schema marks these payloads
+  "[UNSTABLE] ... expected to change soon".
+- **Switching:** a thread started with `user` asked the client on turn 1
+  (declined, the item `declined`); `auto_review` on the second `turn/start`
+  sent that turn's escalation to the reviewer [P:p12x-switch-codex-user-to-auto-review.jsonl].
+- **Not observed:** a denied review, and whether a denial reaches the
+  client. The reviewer's tokens are not reported apart:
+  `thread/tokenUsage/updated` covers the main thread.
+
+### 11.1 "Approve for me" (plan 12 addendum, 2026-10-18)
+
+- **What it is.** `codex --approve-for-me` (hidden alias `--not-so-yolo`)
+  becomes three per-process overrides: `approvals_reviewer="auto_review"`,
+  `approval_policy="on-request"`, `sandbox_mode="workspace-write"`
+  [T] `codex-rs/cli/src/main.rs:3240-3258` (0.163.0); a later explicit
+  sandbox or approval flag overrides its part (`:3285-3375`). The TUI's own
+  permission picker persists the chosen preset to `config.toml`
+  [T] `codex-rs/tui/src/app/config_persistence.rs`, so it is never used in
+  tests. In the TUI, `/status` reads "Permissions: Workspace (Approve for
+  me)", and every turn of its rollout records `approval_policy:"on-request"`,
+  `approvals_reviewer:"auto_review"` and a `workspace-write` sandbox with
+  `network_access:false` (comparison of 2026-10-18, plan 12 evaluation).
+- **The same through app-server.** `turn/start` takes `sandboxPolicy`, a
+  SandboxPolicy (`readOnly`, `workspaceWrite` with optional `writableRoots`,
+  `networkAccess`, `excludeTmpdirEnvVar`, `excludeSlashTmp`,
+  `dangerFullAccess`, `externalSandbox`) that applies "to this turn and
+  subsequent turns" (schema 0.163.0). `{type:"workspaceWrite"}` with
+  `auto_review` matches the thread-level `workspace-write` result field for
+  field; a later `{type:"readOnly"}` turn with `user` asks the client again
+  [P:p12x-sandbox-codex-turn-workspace-write.jsonl].
+- **Writable roots on this machine.** The project only: `writableRoots:[]`,
+  TMPDIR is not set, and 0.163.0 adds TMPDIR alone, not TEMP
+  [T] `codex-rs/protocol/src/permissions.rs:2151`; `/tmp` only on Unix.
+- **apply_patch outside the project is not reviewed.** Under
+  workspace-write with `auto_review`, a shell write to the parent folder is
+  escalated and reviewed (approved, `riskLevel:"low"`), but an apply_patch
+  to the same folder is written with no review and no request, by the
+  per-turn and the thread-level sandbox alike
+  [P:p12x-sandbox2-codex-thread-workspace-write-shell.jsonl,
+  p12x-sandbox3-codex-thread-workspace-write-patch.jsonl]. Windows sandbox
+  `elevated` (the owner's configuration). This is Codex's own behaviour;
+  the dashboard does not change it.

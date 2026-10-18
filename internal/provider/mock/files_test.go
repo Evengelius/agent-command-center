@@ -2,6 +2,7 @@ package mock_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/fixture"
+	"github.com/Evengelius/agent-command-center/internal/provider"
 	"github.com/Evengelius/agent-command-center/internal/provider/claude"
 	"github.com/Evengelius/agent-command-center/internal/provider/codex"
 	"github.com/Evengelius/agent-command-center/internal/provider/mock"
@@ -303,5 +305,20 @@ func TestMockFiles(t *testing.T) {
 			}
 			t.Logf("%d events from %d records", len(evs), len(recs))
 		})
+	}
+}
+
+// A mock session offers no Manual or Auto switch (plan 12, item 2).
+func TestMockHasNoApprovalMode(t *testing.T) {
+	s, err := (&mock.Provider{}).Start(context.Background(), provider.SessionContext{Mock: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close(context.Background())
+	if s.Capabilities().AutoApprovals {
+		t.Error("the mock offers Auto approvals")
+	}
+	if s.SetApprovalMode(true) == nil {
+		t.Error("the mock accepted a mode")
 	}
 }

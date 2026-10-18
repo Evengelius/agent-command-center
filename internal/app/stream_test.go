@@ -53,6 +53,8 @@ type scriptSession struct {
 	sent       []string
 	answers    []string
 	interrupts int
+	auto       bool   // Capabilities().AutoApprovals
+	modes      []bool // the SetApprovalMode calls, in order
 }
 
 func newScriptSession() *scriptSession { return &scriptSession{events: make(chan event.Event, 4096)} }
@@ -76,8 +78,16 @@ func (s *scriptSession) Interrupt() error {
 	s.interrupts++
 	return nil
 }
-func (s *scriptSession) Refresh() error                      { return nil }
-func (s *scriptSession) Capabilities() provider.Capabilities { return provider.Capabilities{} }
+func (s *scriptSession) Refresh() error { return nil }
+func (s *scriptSession) Capabilities() provider.Capabilities {
+	return provider.Capabilities{AutoApprovals: s.auto}
+}
+func (s *scriptSession) SetApprovalMode(auto bool) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.modes = append(s.modes, auto)
+	return nil
+}
 func (s *scriptSession) Close(context.Context) error {
 	s.close.Do(func() { close(s.events) }) // as a real session ends its events
 	return nil

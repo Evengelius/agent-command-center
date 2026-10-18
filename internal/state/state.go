@@ -157,6 +157,12 @@ type SessionState struct {
 	Reason         string   // why it ended or crashed
 	StderrTail     []string // the last lines of stderr
 	Notice         string   // the last refusal shown to the owner
+	// ApprovalMode is the mode in force: ModeManual, ModeAuto or the CLI's own
+	// word; "" before the CLI reports, which reads as Manual, the mode the
+	// dashboard starts with. ApprovalRequested is a change asked for and not
+	// yet in force, "" when none (plan 12, item 2).
+	ApprovalMode      string
+	ApprovalRequested string
 }
 
 // TurnState is the turn machine.
@@ -182,6 +188,9 @@ type Entry struct {
 	Streaming bool
 	Thinking  bool
 	At        time.Time
+	// Status is a review entry's status as reported (inProgress, approved,
+	// denied, timedOut, aborted); "" for any other entry (plan 12, item 2).
+	Status string
 }
 
 // Agent is one node of the agent tree.
@@ -254,6 +263,11 @@ type ToolCall struct {
 	// ExitCode is a command's exit code from the event (plan 6, item 1).
 	ExitCode    int
 	HasExitCode bool
+
+	// Reviewed is who decided the call's permission when the CLI says an
+	// auto-review did: "approved by auto-review" or "denied by auto-review";
+	// "" otherwise (plan 12, item 2).
+	Reviewed string
 }
 
 // Stage is one user turn as zone A shows it: an inferred stage whose
@@ -373,6 +387,13 @@ const (
 	CmdDraftAccepted CommandKind = "draft-accepted" // the CLI accepted the message: delete its draft
 	CmdRestoreDraft  CommandKind = "restore-draft"  // put Text back in the editor
 	CmdExit          CommandKind = "exit"           // leave the application
+	CmdSetApprovals  CommandKind = "set-approvals"  // ask for Auto (Decision auto) or Manual (Decision manual) approvals
+)
+
+// The approval modes (plan 12, item 2).
+const (
+	ModeManual = event.ModeManual
+	ModeAuto   = event.ModeAuto
 )
 
 // Command is one effect.
@@ -381,4 +402,24 @@ type Command struct {
 	ID       string
 	Text     string
 	Decision string
+}
+
+// Mode is the approval mode in force; Manual until the CLI reports another.
+func (s *State) Mode() string {
+	if s.Session.ApprovalMode == "" {
+		return ModeManual
+	}
+	return s.Session.ApprovalMode
+}
+
+// ModeLabel writes a mode as the project bar shows it: Manual, Auto, or the
+// CLI's own word for another.
+func ModeLabel(mode string) string {
+	switch mode {
+	case "", ModeManual:
+		return "Manual"
+	case ModeAuto:
+		return "Auto"
+	}
+	return mode
 }

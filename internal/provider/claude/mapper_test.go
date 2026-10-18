@@ -31,7 +31,7 @@ func count(evs []event.Event, k event.Kind) int {
 // Every line of every Claude recording maps to at least one event, and no
 // line is unreadable (proposal step 0, item 6: 0 lines dropped).
 func TestEveryLineMaps(t *testing.T) {
-	for _, name := range []string{"p1-claude-stream.jsonl", "p2-claude-conversation.jsonl", "p3-claude-subagent.jsonl", "p3b-claude-subagent-approval.jsonl", "p4-claude-resume.jsonl"} {
+	for _, name := range []string{"p1-claude-stream.jsonl", "p2-claude-conversation.jsonl", "p3-claude-subagent.jsonl", "p3b-claude-subagent-approval.jsonl", "p4-claude-resume.jsonl", "p12c-claude-auto.jsonl", "p12c-switch-claude-default-to-auto.jsonl"} {
 		recs, per := replay(t, name)
 		for i, evs := range per {
 			if len(evs) == 0 {
@@ -262,6 +262,45 @@ func TestSubagentModel(t *testing.T) {
 		got, completed := models(msg(c.parent, c.id, c.model, c.content))
 		if strings.Join(got, ",") != strings.Join(c.want, ",") || completed != c.completed {
 			t.Errorf("%s: model events %q, completed %v; want %q, %v", c.name, got, completed, c.want, c.completed)
+		}
+	}
+}
+
+// Plan 12, item 2, criterion 3: set_permission_mode answers and refusals, and
+// the modes system/status and system/init report.
+func TestPermissionModeReports(t *testing.T) {
+	in := `{"type":"control_request","request_id":"req_2","request":{"subtype":"set_permission_mode","mode":"auto"}}`
+	m := NewMapper()
+	m.In([]byte(in))
+	evs := m.Out([]byte(`{"type":"control_response","response":{"subtype":"error","request_id":"req_2","error":"nope"}}`))
+	if len(evs) != 1 || evs[0].Kind != event.ApprovalMode {
+		t.Fatalf("refusal: %+v", evs)
+	}
+	if p := evs[0].Payload.(event.Mode); !p.Refused || p.Text != "set_permission_mode refused by Claude Code: nope" || p.Mode != "" {
+		t.Errorf("refusal payload %+v", p)
+	}
+	m.In([]byte(in))
+	evs = m.Out([]byte(`{"type":"control_response","response":{"subtype":"success","request_id":"req_2","response":{"mode":"auto"}}}`))
+	if len(evs) != 1 || evs[0].Payload != (event.Mode{Mode: event.ModeAuto, Answers: true}) {
+		t.Errorf("answer: %+v", evs)
+	}
+	for word, want := range map[string]string{"default": event.ModeManual, "auto": event.ModeAuto, "acceptEdits": "acceptEdits"} {
+		if got := approvalMode(word); got != want {
+			t.Errorf("approvalMode(%q) = %q, want %q", word, got, want)
+		}
+	}
+}
+
+// A decision whose reason_type is not classifier adds no event.
+func TestVerdictsOnlyForTheClassifier(t *testing.T) {
+	for _, c := range []struct {
+		reason string
+		want   int
+	}{{"classifier", 1}, {"mode", 0}, {"user_reject", 0}} {
+		m := NewMapper()
+		evs := m.Out([]byte(`{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":"ok"}]},"tool_result_meta":[{"tool_use_id":"toolu_1","permission_decision":{"decision":"accept","reason_type":"` + c.reason + `"}}]}`))
+		if n := count(evs, event.ToolDecision); n != c.want {
+			t.Errorf("reason_type %q: %d decisions, want %d", c.reason, n, c.want)
 		}
 	}
 }

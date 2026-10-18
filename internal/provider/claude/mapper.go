@@ -46,6 +46,7 @@ type line struct {
 	Message         json.RawMessage `json:"message"`
 	Event           json.RawMessage `json:"event"`
 	APIMessageID    string          `json:"api_message_id"`
+	ToolResultMeta  json.RawMessage `json:"tool_result_meta"`
 	RequestID       string          `json:"request_id"`
 	Request         json.RawMessage `json:"request"`
 	Response        json.RawMessage `json:"response"`
@@ -154,7 +155,7 @@ func (m *Mapper) system(l line, raw []byte) []event.Event {
 			} `json:"plugins"`
 		}
 		_ = json.Unmarshal(raw, &s)
-		st := event.Started{SessionID: l.SessionID, Model: s.Model, Cwd: s.Cwd, PermissionMode: s.PermissionMode, Version: s.Version}
+		st := event.Started{SessionID: l.SessionID, Model: s.Model, Cwd: s.Cwd, PermissionMode: s.PermissionMode, Version: s.Version, ApprovalMode: approvalMode(s.PermissionMode)}
 		for _, p := range s.Plugins {
 			st.Plugins = append(st.Plugins, p.Name)
 		}
@@ -179,7 +180,11 @@ func (m *Mapper) system(l line, raw []byte) []event.Event {
 		if s.Status != nil {
 			st.Status = *s.Status
 		}
-		return []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, st)}
+		out := []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, st)}
+		if s.PermissionMode != "" {
+			out = append(out, m.ev(event.ApprovalMode, event.Observed, "", raw, event.Mode{Mode: approvalMode(s.PermissionMode)}))
+		}
+		return out
 	case "session_state_changed":
 		var s struct {
 			State string `json:"state"`
@@ -427,8 +432,46 @@ func (m *Mapper) user(l line, agent string, raw []byte) []event.Event {
 			out = append(out, m.ev(event.StatusChanged, event.Observed, agent, raw, event.Status{Status: "notice", Detail: b.Text}))
 		}
 	}
+	out = append(out, m.verdicts(l, agent, raw)...)
 	if len(out) == 0 {
 		out = append(out, m.unknown(raw, "user", "empty"))
+	}
+	return out
+}
+
+// approvalMode is a Claude Code permissionMode as the dashboard names it:
+// default is Manual, auto is Auto, any other as given (plan 12, item 2).
+func approvalMode(mode string) string {
+	switch mode {
+	case "default":
+		return event.ModeManual
+	case "auto":
+		return event.ModeAuto
+	}
+	return mode
+}
+
+// verdicts reads the line's tool_result_meta (undocumented): a decision the
+// classifier made is a tool.decision; any other reason adds nothing.
+func (m *Mapper) verdicts(l line, agent string, raw []byte) []event.Event {
+	var metas []struct {
+		ID       string `json:"id"`
+		Decision struct {
+			Decision   string `json:"decision"`
+			ReasonType string `json:"reason_type"`
+		} `json:"permission_decision"`
+	}
+	if json.Unmarshal(l.ToolResultMeta, &metas) != nil {
+		return nil
+	}
+	var out []event.Event
+	for _, x := range metas {
+		if x.Decision.ReasonType != "classifier" {
+			continue
+		}
+		e := m.ev(event.ToolDecision, event.Observed, agent, raw, event.Verdict{ToolID: x.ID, Decision: x.Decision.Decision, ReasonType: x.Decision.ReasonType})
+		e.Item = x.ID
+		out = append(out, e)
 	}
 	return out
 }
@@ -608,6 +651,10 @@ func (m *Mapper) controlResponse(l line, raw []byte) []event.Event {
 	what := m.pending[resp.RequestID]
 	delete(m.pending, resp.RequestID)
 	if resp.Subtype == "error" {
+		if what == "set_permission_mode" {
+			// Zone B shows the refusal; the mode in force is unchanged (plan 12, item 2).
+			return []event.Event{m.ev(event.ApprovalMode, event.Observed, "", raw, event.Mode{Refused: true, Text: what + " refused by Claude Code: " + resp.Error})}
+		}
 		return []event.Event{m.ev(event.Error, event.Observed, "", raw, event.Problem{Message: what + " refused by Claude Code: " + resp.Error})}
 	}
 	switch what {
@@ -630,6 +677,15 @@ func (m *Mapper) controlResponse(l line, raw []byte) []event.Event {
 		return []event.Event{m.ev(event.Telemetry, event.Observed, "", raw, event.Metrics{Items: ms})}
 	case "interrupt":
 		return []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, event.Status{Status: "interrupt acknowledged"})}
+	case "set_permission_mode":
+		var r struct {
+			Mode string `json:"mode"`
+		}
+		_ = json.Unmarshal(resp.Response, &r)
+		if r.Mode == "" {
+			return []event.Event{m.ev(event.ApprovalMode, event.Observed, "", raw, event.Mode{Refused: true, Text: what + " answered without a mode"})}
+		}
+		return []event.Event{m.ev(event.ApprovalMode, event.Observed, "", raw, event.Mode{Mode: approvalMode(r.Mode), Answers: true})}
 	}
 	return []event.Event{m.unknown(raw, "control_response", "unmatched")}
 }

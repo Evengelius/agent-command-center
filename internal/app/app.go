@@ -422,6 +422,17 @@ func (m *Model) command(c state.Command) tea.Cmd {
 			}
 			return nil
 		}, actionMsg{state.AnswerFailed{ID: id, Message: "too many writes waiting"}})
+	case state.CmdSetApprovals:
+		sess, auto := m.sess, c.Decision == state.ModeAuto
+		return m.write(func() tea.Msg {
+			if sess == nil {
+				return actionMsg{state.ApprovalFailed{Message: "no session"}}
+			}
+			if err := sess.SetApprovalMode(auto); err != nil {
+				return actionMsg{state.ApprovalFailed{Message: err.Error()}}
+			}
+			return nil
+		}, actionMsg{state.ApprovalFailed{Message: "too many writes waiting"}})
 	case state.CmdInterrupt:
 		sess := m.sess
 		return tea.Batch(m.write(func() tea.Msg {

@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
- ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
+ ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
 ╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────── Idle ─╮
 │ claude-haiku-5-5 · orchestrat… ││   what it found.                                                                   │
 │ turn 2 · completed             ││   ▸ Agent                                                                     mock │

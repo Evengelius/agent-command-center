@@ -23,6 +23,7 @@ var KeyTable = []keyGroup{
 		{"Ctrl+O", "copy the orchestrator's last message"},
 		{"Ctrl+G", "open the draft in $EDITOR"},
 		{"F2", "go to the oldest pending approval"},
+		{"F4", "approvals Manual / Auto"},
 		{"F6 / Shift+F6", "next / previous zone (B, C, A, D)"},
 		{"Tab / Shift+Tab", "next / previous zone, outside the editor"},
 		{"Esc", "close the overlay, leave zoom, inspection or a full view, clear the selection, back to the input"},

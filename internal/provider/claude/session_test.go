@@ -53,6 +53,8 @@ func fake(mode string) {
 	switch mode {
 	case "replay":
 		replayFixture(next, out, cwd)
+	case "ready": // answers the handshake, then reads
+		ready()
 	case "silent": // never answers the handshake
 	case "midturn":
 		ready()
@@ -466,5 +468,50 @@ func TestChildEnv(t *testing.T) {
 	}
 	if a := strings.Join(args("abc", nil), " "); !strings.HasSuffix(a, "--permission-mode default --resume abc") {
 		t.Errorf("args %q", a)
+	}
+}
+
+// TestSetApprovalMode is plan 12, item 2, criteria 1 and 2: Manual at every
+// launch (the arguments carry --permission-mode default, checked above and
+// here), the capability, and the control requests written at once, byte for
+// byte.
+func TestSetApprovalMode(t *testing.T) {
+	log := filepath.Join(t.TempDir(), "stdin.jsonl")
+	t.Setenv("ACC_FAKE_LOG", log)
+	r, _ := start(t, "ready", nil)
+	r.wait(event.SessionReady)
+	if !r.sess.Capabilities().AutoApprovals {
+		t.Error("Claude Code does not offer Auto approvals")
+	}
+	if err := r.sess.SetApprovalMode(true); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.sess.SetApprovalMode(false); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	var lines []string
+	for time.Now().Before(deadline) {
+		b, _ := os.ReadFile(log)
+		if lines = strings.Split(strings.TrimSuffix(string(b), "\n"), "\n"); len(lines) >= 3 {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	want := []string{
+		`{"request":{"subtype":"initialize","hooks":null},"request_id":"req_1","type":"control_request"}`,
+		`{"request":{"subtype":"set_permission_mode","mode":"auto"},"request_id":"req_2","type":"control_request"}`,
+		`{"request":{"subtype":"set_permission_mode","mode":"default"},"request_id":"req_3","type":"control_request"}`,
+	}
+	if len(lines) != len(want) {
+		t.Fatalf("%d lines written, want %d: %q", len(lines), len(want), lines)
+	}
+	for i := range want {
+		if lines[i] != want[i] {
+			t.Errorf("line %d:\n got %s\nwant %s", i+1, lines[i], want[i])
+		}
+	}
+	if a := strings.Join(args("", nil), " "); !strings.Contains(a, "--permission-mode default") || strings.Contains(a, "auto") {
+		t.Errorf("a launch is not Manual: %q", a)
 	}
 }

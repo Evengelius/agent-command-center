@@ -9,6 +9,7 @@ import (
 
 	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/fixture"
+	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
 func replay(t *testing.T, name string) ([]fixture.Record, [][]event.Event) {
@@ -41,7 +42,7 @@ func countRaw(evs []event.Event, k event.Kind, method string) int {
 	return n
 }
 
-var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl", "p7c-codex-spawn-model.jsonl", "p9a-codex-spawn-request.jsonl"}
+var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl", "p7c-codex-spawn-model.jsonl", "p9a-codex-spawn-request.jsonl", "p12x-codex-auto-review.jsonl", "p12x-switch-codex-user-to-auto-review.jsonl", "p12x-sandbox-codex-turn-workspace-write.jsonl"}
 
 // Every line of every app-server recording maps to at least one event, and no
 // line is unreadable or unrecognised.
@@ -747,5 +748,69 @@ func TestSpawnLabel(t *testing.T) {
 				t.Errorf("prompt %q: %+v", prompt, p)
 			}
 		}
+	}
+}
+
+// Plan 12, item 2, criteria 3 and 6: the reviewer echoed by thread/start, the
+// auto-review notifications as one review each, and guardianWarning mapped.
+func TestAutoReviewEvents(t *testing.T) {
+	_, per := replay(t, "p12x-codex-auto-review.jsonl")
+	all := fixture.Flatten(per)
+	if n := count(all, event.ApprovalMode); n != 2 {
+		t.Errorf("%d mode events, want 2 (the thread/start echo and the turn)", n)
+	}
+	var reviews []event.Review
+	for _, e := range all {
+		if e.Kind == event.ReviewUpdated {
+			if e.Origin != event.Observed {
+				t.Errorf("review origin %q", e.Origin)
+			}
+			reviews = append(reviews, e.Payload.(event.Review))
+		}
+	}
+	if len(reviews) != 4 {
+		t.Fatalf("%d review updates, want 4 (two reviews, started then completed)", len(reviews))
+	}
+	for _, r := range reviews {
+		switch r.Status {
+		case "inProgress":
+			if r.Command == "" {
+				t.Errorf("started review without its command: %+v", r)
+			}
+		case "approved":
+			if r.Risk != "low" || r.Authorization != "high" || r.Rationale == "" {
+				t.Errorf("completed review %+v", r)
+			}
+		default:
+			t.Errorf("status %q", r.Status)
+		}
+	}
+	if n := count(all, event.ReviewWarning); n != 2 {
+		t.Errorf("%d guardian warnings, want 2", n)
+	}
+}
+
+// The plan 12 addendum: each turn/start's sandbox comes with its mode, and
+// the state shows the one the last turn named (P12x-sandbox: two Auto turns
+// in workspace-write, then a Manual turn in read-only).
+func TestTurnSandbox(t *testing.T) {
+	_, per := replay(t, "p12x-sandbox-codex-turn-workspace-write.jsonl")
+	var got []string
+	st := state.New()
+	for _, e := range fixture.Flatten(per) {
+		st.Apply(e)
+		if m, ok := e.Payload.(event.Mode); ok && e.Kind == event.ApprovalMode && m.Sandbox != "" {
+			got = append(got, m.Mode+" "+m.Sandbox)
+			if st.Session.Sandbox != m.Sandbox {
+				t.Errorf("sandbox shown %q after %q", st.Session.Sandbox, m.Sandbox)
+			}
+		}
+	}
+	want := []string{"auto workspaceWrite", "auto workspaceWrite", "manual readOnly"}
+	if !slices.Equal(got, want) {
+		t.Errorf("turn modes %q, want %q", got, want)
+	}
+	if st.Session.Sandbox != "readOnly" || st.Mode() != state.ModeManual {
+		t.Errorf("at the end: sandbox %q, mode %q", st.Session.Sandbox, st.Mode())
 	}
 }

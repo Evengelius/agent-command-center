@@ -18,7 +18,8 @@ var entryKinds = map[string][]event.Kind{
 	"assistant": {event.MessageDelta, event.MessageCompleted},
 	"tool":      {event.ToolStarted},
 	"approval":  {event.ApprovalRequest, event.Question},
-	"notice":    {event.StatusChanged},
+	"notice":    {event.StatusChanged, event.ApprovalMode}, // a mode refusal (plan 12)
+	"review":    {event.ReviewUpdated},
 	"error":     {event.TurnCompleted},
 }
 

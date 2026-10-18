@@ -116,6 +116,9 @@ func (s *State) apply(ev event.Event) []Command {
 	case event.Ended:
 		return s.ended(ev, p)
 	case event.Line:
+		if ev.Kind == event.ReviewWarning {
+			return nil // Codex's guardianWarning: in the event log only (plan 12, item 2)
+		}
 		s.Session.StderrTail = appendBounded(s.Session.StderrTail, p.Text, MaxStderr)
 		return nil
 	case event.User:
@@ -191,6 +194,15 @@ func (s *State) apply(ev event.Event) []Command {
 	case event.Status:
 		s.status(ev, p)
 		return nil
+	case event.Mode:
+		s.approvalMode(ev, p)
+		return nil
+	case event.Verdict:
+		s.verdict(ev, p)
+		return nil
+	case event.Review:
+		s.review(ev, p)
+		return nil
 	case event.Unknown:
 		s.Unrecognised++
 		s.UnrecognisedLast = appendBounded(s.UnrecognisedLast, ev.Raw, MaxUnrecognised)
@@ -227,6 +239,9 @@ func (s *State) started(ev event.Event, p event.Started) []Command {
 	s.Session.ID = p.SessionID
 	s.Session.Model, s.Session.Cwd, s.Session.PermissionMode = p.Model, p.Cwd, p.PermissionMode
 	s.Session.Version, s.Session.Plugins = p.Version, p.Plugins
+	if p.ApprovalMode != "" {
+		s.inForce(p.ApprovalMode)
+	}
 	if p.Sandbox != "" {
 		s.Session.Sandbox = p.Sandbox
 	}
@@ -877,4 +892,85 @@ func itoa(n uint64) string {
 		n /= 10
 	}
 	return string(b[i:])
+}
+
+// inForce records the mode the CLI reports in force; a request for it is
+// met.
+func (s *State) inForce(mode string) {
+	s.Session.ApprovalMode = mode
+	if s.Session.ApprovalRequested == mode {
+		s.Session.ApprovalRequested = ""
+	}
+}
+
+// approvalMode applies a mode report: in force, an answer to the request
+// (met or not), or a refusal, which leaves the mode as it was (plan 12,
+// item 2).
+func (s *State) approvalMode(ev event.Event, p event.Mode) {
+	if p.Refused {
+		s.Session.ApprovalRequested = ""
+		list := s.messages(ev.Agent)
+		*list = append(*list, Entry{Seq: ev.Seq, Role: "notice", Agent: ev.Agent, Text: p.Text, Origin: ev.Origin, At: ev.At})
+		return
+	}
+	s.inForce(p.Mode)
+	if p.Sandbox != "" {
+		s.Session.Sandbox = p.Sandbox
+	}
+	if p.Answers {
+		s.Session.ApprovalRequested = ""
+	}
+}
+
+// verdict marks a tool call decided by an auto-review: only the classifier
+// is one; any other reason adds nothing.
+func (s *State) verdict(ev event.Event, p event.Verdict) {
+	t := s.Tools[p.ToolID]
+	if t == nil || p.ReasonType != "classifier" {
+		return
+	}
+	switch p.Decision {
+	case "accept":
+		t.Reviewed = "approved by auto-review"
+	case "reject":
+		t.Reviewed = "denied by auto-review"
+	}
+}
+
+// review is one auto-review's entry in zone B: one per review id, updated in
+// place from started to completed.
+func (s *State) review(ev event.Event, p event.Review) {
+	text := reviewText(p)
+	list := s.messages(ev.Agent)
+	for i := len(*list) - 1; i >= 0; i-- {
+		if e := &(*list)[i]; e.Role == "review" && e.MessageID == p.ReviewID {
+			e.Text, e.Status = text, p.Status
+			return
+		}
+	}
+	*list = append(*list, Entry{Seq: ev.Seq, Role: "review", Agent: ev.Agent, MessageID: p.ReviewID, Text: text, Status: p.Status, Origin: ev.Origin, At: ev.At})
+}
+
+func reviewText(p event.Review) string {
+	if p.Status == "inProgress" {
+		return "auto-review in progress: " + p.Command
+	}
+	word := p.Status
+	switch p.Status {
+	case "timedOut":
+		word = "timed out"
+	case "":
+		word = "reported"
+	}
+	t := "auto-review " + word
+	if p.Risk != "" {
+		t += " · risk " + p.Risk
+	}
+	if p.Authorization != "" {
+		t += " · authorization " + p.Authorization
+	}
+	if p.Rationale != "" {
+		t += ": " + p.Rationale
+	}
+	return t
 }

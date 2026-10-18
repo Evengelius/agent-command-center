@@ -347,7 +347,7 @@ func (s *Session) Refresh() error { return s.control("get_context_usage", "") }
 
 // Capabilities of Claude Code 2.1 in way A.
 func (s *Session) Capabilities() provider.Capabilities {
-	return provider.Capabilities{SubagentText: true, APICost: true, Questions: true, ResumeHistory: true}
+	return provider.Capabilities{SubagentText: true, APICost: true, Questions: true, ResumeHistory: true, AutoApprovals: true}
 }
 
 // Close closes stdin, then terminates the CLI, then kills its tree, each
@@ -389,4 +389,15 @@ func (s *Session) waitExit() bool {
 	case <-t.C:
 		return false
 	}
+}
+
+// SetApprovalMode asks Claude Code for the auto permission mode or, for
+// Manual, the default one, at once; the response says which is in force
+// (plan 12, item 2; P12c-switch).
+func (s *Session) SetApprovalMode(auto bool) error {
+	mode := "default"
+	if auto {
+		mode = "auto"
+	}
+	return s.control("set_permission_mode", `"mode":"`+mode+`"`)
 }

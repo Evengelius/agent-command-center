@@ -21,8 +21,8 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: plan 11, a live approval offering the allow for the session,
-approved on 2026-10-18; no plan 12 yet.** Plans 1 to 11 (research; architecture and reliability; proposal; the
+**Status: plan 12, Manual or Auto approvals, done and awaiting the owner's
+approval.** Plans 1 to 11 (research; architecture and reliability; proposal; the
 MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the step reached and its test
 evidence.
 
@@ -136,8 +136,9 @@ and need the owner's approval where it says so. tmux is not used.
   agent CLI (brief, amendment 3).
 - **The chosen project is the only working directory.** The agent CLI runs in
   the directory chosen at startup, under its own native permissions and
-  sandboxing, which the application never weakens. One agent CLI per session,
-  no switching during a session.
+  sandboxing, which the application never weakens; Auto, chosen by the owner,
+  uses the CLI's own Auto as its terminal sets it (amendment 8). One agent
+  CLI per session, no switching during a session.
 - **MVP scope is fixed** by amendment 4: build none of the features it leaves
   out (recent projects, favourites, project browser, worktrees, editor
   integration, model configuration, cross-provider collaboration, provider

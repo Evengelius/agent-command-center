@@ -11,19 +11,24 @@ import (
 // recordings in doc/research/probes (proposal step 0, item 5).
 func TestFixturesMatchRecordings(t *testing.T) {
 	want := map[string]int{
-		"p1-claude-stream.jsonl":             12,
-		"p2-claude-conversation.jsonl":       79,
-		"p3-claude-subagent.jsonl":           99,
-		"p3b-claude-subagent-approval.jsonl": 153,
-		"p4-claude-resume.jsonl":             4,
-		"p5-codex-exec.jsonl":                5,
-		"p5b-codex-exec.jsonl":               4,
-		"p6-codex-app-server.jsonl":          37,
-		"p6b-codex-app-server.jsonl":         94,
-		"p7-codex-subagents.jsonl":           173,
-		"p7b-codex-subagents.jsonl":          215,
-		"p7c-codex-spawn-model.jsonl":        108,
-		"p9a-codex-spawn-request.jsonl":      63,
+		"p1-claude-stream.jsonl":                        12,
+		"p2-claude-conversation.jsonl":                  79,
+		"p3-claude-subagent.jsonl":                      99,
+		"p3b-claude-subagent-approval.jsonl":            153,
+		"p4-claude-resume.jsonl":                        4,
+		"p5-codex-exec.jsonl":                           5,
+		"p5b-codex-exec.jsonl":                          4,
+		"p6-codex-app-server.jsonl":                     37,
+		"p6b-codex-app-server.jsonl":                    94,
+		"p7-codex-subagents.jsonl":                      173,
+		"p7b-codex-subagents.jsonl":                     215,
+		"p7c-codex-spawn-model.jsonl":                   108,
+		"p9a-codex-spawn-request.jsonl":                 63,
+		"p12c-claude-auto.jsonl":                        99,
+		"p12c-switch-claude-default-to-auto.jsonl":      211,
+		"p12x-codex-auto-review.jsonl":                  167,
+		"p12x-sandbox-codex-turn-workspace-write.jsonl": 245,
+		"p12x-switch-codex-user-to-auto-review.jsonl":   180,
 	}
 	copies, _ := filepath.Glob("../../testdata/probes/*.jsonl")
 	if len(copies) != len(want) {

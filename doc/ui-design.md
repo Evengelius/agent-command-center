@@ -223,7 +223,10 @@ One line under the title (AM4 W1; architecture.md, Session context):
   when it does not fit, and dropped below 100 columns;
 - **right**: the provider's name and version; for Codex also the model,
   sandbox and approval policy reported by `thread/start` (P6b), because
-  they decide what the agent may do.
+  they decide what the agent may do; last, "approvals Manual" or
+  "approvals Auto" (Auto in the attention colour), with "→ Auto …" while
+  Claude Code is asked and "→ Auto (next turn)" until the next Codex
+  message; when narrow, Codex's sandbox and policy drop first (plan 12).
 
 ## Layouts at three sizes
 
@@ -730,6 +733,15 @@ the agent that asked, and marks that agent "!" in A and C.
   | Enter | the whole diff, command or question, full screen; a, s, d, c answer there, Esc back to the card | Edit, MultiEdit, Write from the request | `fileChange` from its tool call's `changes[].diff` |
   | Esc | later: back to the input, still pending | | |
 
+- **Manual or Auto** (plan 12, brief amendment 8): in Manual, every
+  request the CLI sends is a card. In Auto, the CLI's own reviewer decides
+  what it can (Claude Code's classifier, Codex's auto-review) and only what
+  it escalates is a card, exactly as in Manual. A call Claude Code's
+  classifier decided reads "▸ Write · approved by auto-review" in B; a
+  Codex review is a "◈ auto-review approved · risk low · …" entry, its
+  inspector marked [UNSTABLE]. Codex's Auto is its "Approve for me", so
+  the bar's "sandbox" reads workspaceWrite once an Auto turn is sent, and
+  readOnly again after a Manual one.
 - **Typing never answers an approval**: letters typed in the editor stay in
   the draft; only a focused card takes a, s, d, c.
 - Options that would persist a rule in the CLI's configuration ("always
@@ -914,6 +926,7 @@ this table as an overlay.
 | Ctrl+O | copy the orchestrator's last message (as Codex does) | TI 6.2; ASM-9 |
 | Ctrl+G | open the draft in `$EDITOR` | TI 8 (both CLIs use Ctrl+G) |
 | F2 | go to the oldest pending approval | ASM-9 |
+| F4 | approvals Manual ⇄ Auto, from any focus; Manual at every launch, never saved | plan 12; brief amendment 8 |
 | F6 / Shift+F6 | next / previous zone (B, C, A, D) | ASM-9 |
 | Tab / Shift+Tab | next / previous zone, outside the editor (in the editor Tab inserts a tab) | ASM-9 |
 | Esc | close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |

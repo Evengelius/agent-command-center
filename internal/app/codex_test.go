@@ -205,7 +205,8 @@ func codexRig(t *testing.T) inputRig {
 			enc := json.NewEncoder(&b)
 			enc.SetEscapeHTML(false)
 			_ = enc.Encode(map[string]any{"id": json.RawMessage(m.ID), "method": "turn/start", "params": map[string]any{
-				"threadId": "th-input", "input": []map[string]string{{"type": "text", "text": want}}}})
+				"approvalsReviewer": "user", "threadId": "th-input", "input": []map[string]string{{"type": "text", "text": want}},
+				"sandboxPolicy": map[string]string{"type": "readOnly"}}})
 			if got := ls[i] + "\n"; got != b.String() {
 				t.Errorf("stdin line\n got %q\nwant %q", got, b.String())
 			}
@@ -445,7 +446,7 @@ func TestCodexCrashAndResume(t *testing.T) {
 			t.Fatalf("spawns %q; want app-server twice", argv)
 		}
 		got := w.written(skip)
-		if len(got) < 4 || got[3] != `{"id":3,"method":"thread/resume","params":{"threadId":"th-crash","sandbox":"read-only","approvalPolicy":"on-request"}}` {
+		if len(got) < 4 || got[3] != `{"id":3,"method":"thread/resume","params":{"threadId":"th-crash","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}` {
 			t.Errorf("after Ctrl+R:\n%s", strings.Join(got, "\n"))
 		}
 		if n := len(w.method("thread/start")); n != 1 {

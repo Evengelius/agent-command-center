@@ -82,6 +82,11 @@ func Replay(provider string, recs []Record, m Mapper) [][]event.Event {
 			}
 			_ = json.Unmarshal(r.Msg, &s)
 			evs = []event.Event{{Provider: provider, Kind: event.SessionSpawned, Origin: event.Observed, Payload: event.Spawned{Argv: s.Argv, Dir: s.Cwd}, Raw: string(r.Msg)}}
+		case "argv":
+			// The plan 12 recordings write the argument list itself, without a cwd.
+			var argv []string
+			_ = json.Unmarshal(r.Msg, &argv)
+			evs = []event.Event{{Provider: provider, Kind: event.SessionSpawned, Origin: event.Observed, Payload: event.Spawned{Argv: argv}, Raw: string(r.Msg)}}
 		case "exit":
 			var s struct {
 				Code *int `json:"code"`

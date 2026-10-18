@@ -35,7 +35,9 @@ type (
 	ForceStop        struct{}
 	Answer           struct{ ID, Decision string }
 	AnswerFailed     struct{ ID, Message string }
-	CancelTurn       struct{ ID string } // c on an approval card: cancel it, then interrupt the turn
+	CancelTurn       struct{ ID string }      // c on an approval card: cancel it, then interrupt the turn
+	ToggleApprovals  struct{ Capable bool }   // F4: switch between Manual and Auto approvals; Capable is the session's AutoApprovals
+	ApprovalFailed   struct{ Message string } // the request for another mode could not be written
 	CloseTimeout     struct{}
 	Tick             struct{ At time.Time }
 )
@@ -59,6 +61,8 @@ func (ForceStop) action()        {}
 func (Answer) action()           {}
 func (AnswerFailed) action()     {}
 func (CancelTurn) action()       {}
+func (ToggleApprovals) action()  {}
+func (ApprovalFailed) action()   {}
 func (CloseTimeout) action()     {}
 func (Tick) action()             {}
 
@@ -159,6 +163,11 @@ func (s *State) Do(a Action) []Command {
 		}
 	case Answer:
 		return s.answer(a)
+	case ToggleApprovals:
+		return s.toggleApprovals(a)
+	case ApprovalFailed:
+		s.Session.ApprovalRequested = ""
+		s.Turn.Notice = "approvals not changed: " + a.Message
 	case CancelTurn:
 		return s.cancelTurn(a)
 	case AnswerFailed:
@@ -406,4 +415,32 @@ func (s *State) lastSeq() uint64 {
 		return s.Log[n-1].Seq
 	}
 	return 0
+}
+
+// toggleApprovals switches to the other mode than the one asked for last, or
+// in force. Only a ready session whose CLI can switch is asked; otherwise
+// zone B says why and nothing is sent (plan 12, item 2).
+func (s *State) toggleApprovals(a ToggleApprovals) []Command {
+	switch {
+	case s.Session.Phase != Ready:
+		s.Turn.Notice = "approvals not changed: the session is " + strings.ToLower(string(s.Session.Phase))
+		return nil
+	case !a.Capable:
+		s.Turn.Notice = "approvals not changed: no Manual/Auto switch here"
+		return nil
+	}
+	cur := s.Mode()
+	if s.Session.ApprovalRequested != "" {
+		cur = s.Session.ApprovalRequested
+	}
+	target := ModeAuto
+	if cur == ModeAuto {
+		target = ModeManual
+	}
+	s.Session.ApprovalRequested = target
+	if target == s.Mode() {
+		s.Session.ApprovalRequested = ""
+	}
+	s.Turn.Notice = ""
+	return []Command{{Kind: CmdSetApprovals, Decision: target}}
 }
