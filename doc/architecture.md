@@ -397,7 +397,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-14 | Codex threads given model "N/A" until a per-thread source appears; from Codex CLI 0.163.0, `subAgentActivity.model` is that source (P7b; plan 5, item 7) | events-and-state.md |
 | ASM-15 | No message is sent while a turn runs; the draft waits (Codex `turn/steer` and Claude Code's queue are never used; CX-10 q5, closed in plan 14) | events-and-state.md, Turn machine |
 | ASM-16 | The 10 s an interrupt has to end the turn before "force stop" is offered (the 5 s shutdown steps are the Agent SDK's, CC-4; ASM-5 extends them to Codex) | events-and-state.md, Turn machine |
-| ASM-17 | The Markdown renderer: our own, no new dependency (the owner's decision of 2026-10-16, plan 4 step 3, after Glamour v2 measured p95 590 ms re-rendering a streamed 2,000-line message); Markdown styling and syntax highlighting come in the final stage | ui-design.md, Markdown |
+| ASM-17 | The Markdown renderer: our own, no new dependency (the owner's decision of 2026-10-16, plan 4 step 3, after Glamour v2 measured p95 590 ms re-rendering a streamed 2,000-line message); Markdown styling and syntax highlighting built in plan 4, step 8, and extended in plans 5 and 6 | ui-design.md, Markdown |
 | ASM-18 | Animation rates: spinners and the moving connector dot at 10 frames per second, only while something runs | ui-design.md, Animations |
 | ASM-19 | Each CLI process runs in a Windows job object that ends it when the dashboard's process ends, so no CLI is orphaned | reliability.md, Separated parts |
 | ASM-20 | The event reader accepts lines up to 64 MiB; a longer line is recorded as an error with its size and skipped | reliability.md, Concurrent output |

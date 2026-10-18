@@ -140,6 +140,9 @@ digest; the zip is not signed.
 
 ## After a CLI update
 
+**[Recurring]**: on every Claude Code or Codex CLI update, never closed
+(`plan.md`, Recurring).
+
 The dashboard depends on each CLI's documented interfaces and on a few
 undocumented fields, each labelled where it is used. A new CLI version can
 change either without notice, so an update is never silent.

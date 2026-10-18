@@ -36,6 +36,19 @@ Decisions of closed plans that still apply; `AGENTS.md` and
   they can be simulated without quota (plan 5); the items the owner closed on
   2026-10-18 (plan 14, item 3).
 
+## Recurring
+
+Tasks tagged **[Recurring]** repeat on an outside event: they are never
+closed, never listed as remaining, and each occurrence is reported in the
+summary format (the owner, 2026-10-18).
+
+- **[Recurring] After a CLI update.** At session start, `claude --version`
+  and `codex --version` are compared with the "Last probed" line of
+  `doc/research/probes/README.md`; a newer one is told to the owner with the
+  re-check proposed (`doc/evaluation.md`, After a CLI update), which runs
+  only once the owner approves it. The dashboard's project bar shows
+  "newer than tested" meanwhile.
+
 ## Plan 14 - Nothing left open
 
 **Done, approved by the owner on 2026-10-18** (committed as 0206ac1). The owner's request (2026-10-18), after plan 13's

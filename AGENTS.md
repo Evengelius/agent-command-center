@@ -160,8 +160,8 @@ and need the owner's approval where it says so. tmux is not used.
 - Windows 11; PowerShell and Git Bash; WSL 2 available; Node 24; Git; Go
   1.27.2 under `%LOCALAPPDATA%\Programs\go` (user install, on the user PATH).
   Python is not installed.
-- Agent CLIs on 2026-10-15: Claude Code 2.1.300 and Codex CLI 0.145.0 are
-  installed.
+- Agent CLIs: Claude Code and Codex CLI are installed; the versions tested
+  are the "Last probed" line of `doc\research\probes\README.md`.
 - The network goes through a corporate proxy: `curl` fails the TLS handshake
   (exit 35). Use PowerShell's web client with the system proxy, or a web fetch
   tool.
@@ -196,11 +196,13 @@ and need the owner's approval where it says so. tmux is not used.
   before resuming; never redo finished work. Prefer a focused lookup (headings,
   a search) to rereading whole documents. Documents hold the latest state;
   git holds the history.
-- **Check the CLI versions at session start.** Compare `claude --version` and
-  `codex --version` with the last probed versions
+- **[Recurring] Check the CLI versions at session start.** Compare
+  `claude --version` and `codex --version` with the last probed versions
   (`doc\research\probes\README.md`); if one is newer, tell the owner and
   propose the re-check of `doc\evaluation.md`, After a CLI update, which runs
-  only once the owner approves it.
+  only once the owner approves it. A **[Recurring]** task repeats on an
+  outside event: it is never closed and never listed as remaining
+  (`plan.md`, Recurring).
 - **Evaluate.** Before starting, state how the result will be checked: yes/no
   criteria with exact expected values. Afterwards, check each one and report as
   the [evaluation guide](doc/evaluation.md) shows, listing what could not be
