@@ -474,6 +474,17 @@ no trace and is not shown.
   fit, "Ctrl+J newline" (shown in B's input) is left out so that "Ctrl+Q
   quit" stays visible, at 120x40 too. 29 golden frames changed in their
   footer alone; `go test ./...` 339 PASS, 1 SKIP, 0 FAIL.
+- The draft window, at the owner's request (brief amendment 13): 12
+  criteria, 12 PASS
+  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#the-draft-window-2026-10-19)).
+  Ctrl+G opens the same draft in a window "Draft" over the dashboard, placed
+  as the file viewer, Ctrl+F full screen (`f` types a letter), Esc back with
+  the draft kept; the external editor is removed. A 10,000-line draft stays
+  byte for byte; the window's keystroke allocations are under the unchanged
+  bound (998); `go test ./...` 341 PASS, 1 SKIP, 0 FAIL; timing 4/4 PASS.
+  In a real Windows Terminal, maximised and 80x24: 16 checks PASS at each
+  size, Ctrl+F included, a real paste, mouse copy and wheel
+  ([the terminal run](doc/plan17-evaluation.md#the-draft-window-in-a-real-terminal-2026-10-19)).
 
 ## Closed plans
 

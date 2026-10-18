@@ -439,3 +439,87 @@ PASS go build, go vet clean; gofmt -l prints nothing; go test ./... -count=1: 33
 Not verified: the footer in a real terminal (the golden frames are the rendered text).
 Verdict: DONE
 ```
+
+## The draft window (2026-10-19)
+
+The owner pressed Ctrl+G, which opened the draft in VS Code through
+`$EDITOR`, asked for it in a window in the terminal, as the file viewer
+is, and said "I don't want any vscode"; brief amendment 13. Ctrl+G now opens
+the same draft in a window named "Draft" over the dashboard, placed and
+sized as the file viewer, and the external editor is removed: its code, its
+two tests and its two platform files.
+
+Departures from the proposal the owner approved:
+
+- **Ctrl+F, not `f`, for full screen**: the proposal's footer said "f full
+  screen", but `f` must type the letter in a draft, so the footer says
+  "Ctrl+F full screen". TestDraftWindow checks that `f` is typed.
+- **F2, F3 and F6 / Shift+F6 close the window**, then do what they do from
+  the dashboard, so that the approvals, the Explorer or the next zone are
+  not hidden behind it; the proposal did not say.
+- **Enter on an empty draft keeps the window open**, as in the input box it
+  sends nothing.
+
+The renderer's cost: in the window a keystroke made 2,436 allocations
+(Ctrl+Home) and 1,397 (Ctrl+End), over the guard's bound of 1,200, which
+stays as it is. Two changes bring it under: placing a window over the
+dashboard copies whole spans instead of rebuilding each row; and each
+shared style's escape codes are kept from the palette (`paintStyle`), so a
+span is written as those codes around its text instead of through Lip
+Gloss's Render, except for the underlined styles, whose spaces Lip Gloss
+styles apart, and for text holding a tab or a line break. TestStyleWraps
+checks that both paths write the same bytes for every style, in the true,
+256 and 16-colour palettes.
+
+Because "Ctrl+G draft" is one cell shorter than "Ctrl+G editor", each
+footer threshold of [F3 in the dashboard footer](#f3-in-the-dashboard-footer-2026-10-18)
+moves down one column: "Ctrl+Q quit" from 108 columns (standard) and 173
+(wide), "Ctrl+J newline" from 125 and 190. TestDashboardF3 and ui-design.md
+now say so; that section's result stays as it was recorded.
+
+```text
+Evaluation - Plan 17, the draft window - 12 criteria: 12 PASS
+PASS Ctrl+G opens a window "Draft" over the dashboard at the file viewer's place (FileRect), corners ╭╮╰╯ where it says, "N lines" on its top edge, the footer keys and "line 2/2"; Ctrl+F fills the screen and back; TestDraftWindow
+PASS The same draft with the input box's keys: f ? z typed; Ctrl+J a new line; Ctrl+Z undoes, Ctrl+Y redoes; Ctrl+C copies a Shift+← selection ("z") and sends nothing; F1 shows the key page and Esc comes back to the window; TestDraftWindow
+PASS Esc goes back to the input box with the draft kept and the window no longer drawn; Ctrl+G inside does nothing (no command, window open, draft unchanged); F6 closes the window and moves the focus, Shift+F6 brings it back; TestDraftWindow
+PASS Enter sends the draft ("first\nsecondf?z") and closes the window; on an empty draft it sends nothing and the window stays; TestDraftWindow
+PASS A 10,000-line draft, after every paste case, typed text with · 日本 👍🏽, a tab and Ctrl+J, is the same bytes in the window, after Esc, and as sent; TestDraftWindowByteForByte
+PASS The mouse: a drag over "beta" in the window copies "beta"; a click outside the window changes neither focus nor selection; the wheel moves the cursor 3 lines; TestDraftWindowMouse
+PASS No external editor: no VISUAL, EDITOR, ExecProcess or "code --wait" in the code; internal/app imports no os/exec outside its tests; split_windows.go and split_other.go deleted
+PASS The input box's status "N lines · Ctrl+G draft window", the dashboard footer "Ctrl+G draft", the F1 page "draft window: the draft larger; in it Ctrl+F full screen, Esc back"; TestDraftWindow, TestEditorDisplay, TestDashboardF3
+PASS Golden frames: 8 new (draft and draft-full at 79x24, 80x24, 120x40, 200x60); 31 changed, every changed line the Ctrl+G wording (in the footer, or in B's status, visible beside a window); all pass again without -update after the renderer change
+PASS Allocations, bound 1,200 unchanged: in the window 998 (Ctrl+Home) and 883 (Ctrl+End), were 2,436 and 1,397; in the dashboard 592 and 570, were 879 and 649; TestKeystrokeAllocs; TestStyleWraps PASS
+PASS Timing, run alone, 4/4 PASS: keystroke-to-frame p95 1.03 ms, in the draft window p95 1.15 ms (10,000 lines, 800 keys, target 16 ms); 50,000 lines p95 1.82 ms; 592 allocations per key at 10,000 and 50,000 lines; the 2-hour session delta-to-frame p95 3.00 ms
+PASS go build, go vet clean; gofmt -l prints nothing; go test ./... -count=1: 341 PASS, 1 SKIP, 0 FAIL; brief.md amendment 13; ui-design.md (Draft window, the keys table, the samples, What works where), architecture.md and reliability.md updated
+Not verified: the window in a real terminal, Ctrl+F in Windows Terminal included (the golden frames are the rendered text, the keys arrive as Bubble Tea messages).
+Verdict: DONE
+```
+
+### The draft window in a real terminal (2026-10-19)
+
+The owner asked for the run the block above leaves not verified. The script,
+`p17draft.ps1`, follows the runs above: a Windows Terminal window driven by
+UI Automation, real keys, a real paste through the clipboard (saved before
+and restored after), a real mouse drag and wheel, the screen read as text.
+A mock session in a temporary project under `%TEMP%`, with a temporary store
+and home and a PATH of System32 only; no agent CLI started. The block above
+stays as it was reported; its "Not verified" line is settled here.
+
+```text
+Evaluation - Plan 17, the draft window in a real terminal - 2 criteria: 2 PASS
+PASS Maximised (156x44), 16 checks PASS, 0 FAIL: the input box "3 lines · Ctrl+G draft window" (no "Ctrl+G editor"); Ctrl+G opens "╭─ Draft … 3 lines ─╮" over the dashboard (its header still on screen) with "line 3/3" and the footer keys; f ? z typed ("thirdf?z"), no key page; Ctrl+F full screen (row 1 "╭─ Draft", no dashboard header) and Ctrl+F back, so Windows Terminal lets Ctrl+F through; Ctrl+J then Ctrl+V pastes 40 lines: "43 lines", "line 43/43"; a drag over "beta" copies "beta"; Ctrl+Home "line 1/43", one wheel notch down "line 4/43"; Esc closes the window with "43 lines" kept in the input box; Ctrl+G, F1 shows the key page, Esc the window again; Enter sends: the mock's notice "the message was not sent to any CLI", the message's lines in the conversation, the window closed, the input box "1 line"; Ctrl+Q quits, no process left, no new claude or codex process, the project unchanged
+PASS 80x24, the same 16 checks PASS, 0 FAIL: the window from row 2 (the title row still on screen), its footer "Enter send · Ctrl+J newline · Ctrl+F full screen · Esc back" with "line 43/43"; full screen and back, the paste, the copy, the wheel, Esc, F1 and Enter as above
+Not verified: none for this item.
+Verdict: DONE
+```
+
+The first 80x24 run gave one FAIL, in the script's check, not the program's:
+it looked for the message's first line, "alpha beta gamma", in the
+conversation after Enter, and at 24 rows that line had scrolled above the
+message's last lines, which were there with the mock's notice and an empty
+input box (`i-sent.txt`). The check now looks for two of the message's
+other lines ("thirdf?z", "row 02 pasted") and the empty input box, at both
+sizes; a second attempt failed on both sizes because the script held a
+non-ASCII "·", which Windows PowerShell 5.1 reads as ANSI; written as
+`[char]0xB7`, both sizes passed, as above. The claude and codex processes
+before and after are VS Code's, none hosted by a terminal.

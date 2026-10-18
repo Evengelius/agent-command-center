@@ -112,6 +112,11 @@ func Draw(s *state.State, ui UI) *Screen {
 		ui.Width >= MinWidth && ui.Height >= MinHeight {
 		floatWindow(s, ui, sc)
 	}
+	if s.Screen == state.ScreenDashboard && ui.DraftWin.Open && !ui.Keys && !ui.Worktrees.Open &&
+		ui.Width >= MinWidth && ui.Height >= MinHeight {
+		x, y, ww, hh := DraftRect(ui)
+		sc.place(draftWindow(s, ui, ww, hh), x, y, ww)
+	}
 	if !ui.Sel.Empty() && ui.Sel.From.Panel != 'E' {
 		for i, l := range sc.lines {
 			sc.lines[i] = highlight(l, ui.Sel)

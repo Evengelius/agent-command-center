@@ -51,6 +51,24 @@ func TestKeystrokeToFrame(t *testing.T) {
 	if p95 > keystrokeTarget {
 		overTarget(t, "p95 %v over the %v target", p95, keystrokeTarget)
 	}
+
+	// The same keys in the draft window, Ctrl+G (amendment 13).
+	h.send(key('g', tea.ModCtrl))
+	if !h.m.ui.DraftWin.Open {
+		t.Fatal("Ctrl+G did not open the draft window")
+	}
+	ds = ds[:0]
+	for _, place := range []tea.KeyPressMsg{key(tea.KeyHome, tea.ModCtrl), key(tea.KeyEnd, tea.ModCtrl)} {
+		h.send(place)
+		for i := 0; i < 400; i++ {
+			ds = append(ds, frameTime(h, editKeys[i%len(editKeys)]))
+		}
+	}
+	p50, p95, worst = percentile(ds, 0.50), percentile(ds, 0.95), percentile(ds, 1)
+	t.Logf("keystroke-to-frame in the draft window, 10,000-line draft, %d keys: p50 %v, p95 %v, max %v (target p95 ≤ %v)", len(ds), p50, p95, worst, keystrokeTarget)
+	if p95 > keystrokeTarget {
+		overTarget(t, "draft window: p95 %v over the %v target", p95, keystrokeTarget)
+	}
 }
 
 // TestDraftKeystrokes is step 4, check 4: typing in a 50,000-line draft

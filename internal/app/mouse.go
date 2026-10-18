@@ -44,7 +44,8 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 	mo := msg.Mouse()
 	switch msg.(type) {
 	case tea.MouseClickMsg:
-		if mo.Button == tea.MouseLeft {
+		// Over the draft window, only the window takes a click (amendment 13).
+		if mo.Button == tea.MouseLeft && (!m.ui.DraftWin.Open || m.screen.PanelAt(mo.X, mo.Y) == 'E') {
 			m.press(mo)
 		}
 	case tea.MouseMotionMsg:
@@ -60,6 +61,18 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			return m.copySelection()
 		}
 	case tea.MouseWheelMsg:
+		if m.ui.DraftWin.Open {
+			if m.screen.PanelAt(mo.X, mo.Y) == 'E' && (mo.Button == tea.MouseWheelUp || mo.Button == tea.MouseWheelDown) {
+				mv := input.Down
+				if mo.Button == tea.MouseWheelUp {
+					mv = input.Up
+				}
+				for range wheelRows {
+					m.edit.Move(mv, false) // the wheel moves through the draft
+				}
+			}
+			return nil
+		}
 		if p := m.screen.PanelAt(mo.X, mo.Y); p == 'I' {
 			switch mo.Button {
 			case tea.MouseWheelUp:

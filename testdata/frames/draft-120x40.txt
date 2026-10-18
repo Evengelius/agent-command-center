@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
+╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────── Idle ─╮
+│ claude-haiku-5-5 · orchestrat… ││   `found.txt`. I'll report its result when it finishes.                            │
+│ turn 2 · c╭─ Draft ──────────────────────────────────────────────────────────────────────────── 7 lines ─╮u 11:30:00 │
+│           │ > Review the colour palette in sample/viewer.go:                                             │u 11:30:00 │
+│ STAGES  in│                                                                                              │           │
+│ TURN 1  ✓ │   1. keep the five accents of the reference screen;                                          │d`, and    │
+│ TURN 2  ✓ │   2. check each one against the dark background;                                             │           │
+│   started │   3. report any pair under 4.5:1, with its hex values.                                       │           │
+│           │                                                                                              │           │
+│           │   Do not change the file yet.                                                                │           │
+│           │                                                                                              │────────── │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │aft window │
+│           │                                                                                              │───────────╯
+│           │                                                                                              │ · 1 DONE ─╮
+│           │                                                                                              │ 21.5k tok │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│ ↑↓ move ←→│                                                                                              │           │
+╰───────────│ Enter send · Ctrl+J newline · Ctrl+F full screen · Esc back          turn started by the CLI │───────────╯
+╭─ D · QUOTA╰──────────────────────────────────────────────────────────────────────────────────────────────╯ted field ─╮
+│ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00                      │
+│ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 4% of 1M (derived)   +5 more                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

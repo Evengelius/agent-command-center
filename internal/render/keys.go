@@ -21,7 +21,7 @@ var KeyTable = []keyGroup{
 		{"Ctrl+C", "copy the selection; else interrupt the running turn"},
 		{"Ctrl+Shift+C", "copy the selection"},
 		{"Ctrl+O", "copy the orchestrator's last message"},
-		{"Ctrl+G", "open the draft in $EDITOR"},
+		{"Ctrl+G", "draft window: the draft larger; in it Ctrl+F full screen, Esc back"},
 		{"Ctrl+W", "worktrees: list, diff, merge, remove"},
 		{"F2", "go to the oldest pending approval"},
 		{"F3", "the file in front in the file viewer; else the Explorer; in them, close"},

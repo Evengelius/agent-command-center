@@ -101,13 +101,26 @@ func (l line) width() int {
 }
 
 func (l line) String() string {
+	n := 0
+	for _, s := range l {
+		n += len(s.text) + 24 // a span's text and, about, its escape codes
+	}
 	var b strings.Builder
+	b.Grow(n)
 	for _, s := range l {
 		switch {
 		case s.text == "":
 		case s.st == nil:
 			b.WriteString(s.text)
 		default:
+			// A style's wrap around a single line of text is what Render
+			// gives, without its allocations (ui-design.md, Budget).
+			if w, ok := wraps[s.st]; ok && !strings.ContainsAny(s.text, "\t\n\r") {
+				b.WriteString(w[0])
+				b.WriteString(s.text)
+				b.WriteString(w[1])
+				continue
+			}
 			b.WriteString(s.st.Render(s.text))
 		}
 	}

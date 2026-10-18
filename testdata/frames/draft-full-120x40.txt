@@ -1,0 +1,40 @@
+╭─ Draft ──────────────────────────────────────────────────────────────────────────────────────────────────── 7 lines ─╮
+│ > Review the colour palette in sample/viewer.go:                                                                     │
+│                                                                                                                      │
+│   1. keep the five accents of the reference screen;                                                                  │
+│   2. check each one against the dark background;                                                                     │
+│   3. report any pair under 4.5:1, with its hex values.                                                               │
+│                                                                                                                      │
+│   Do not change the file yet.                                                                                        │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│ Enter send · Ctrl+J newline · Ctrl+F full screen · Ctrl+C copy · F1 keys · Esc back          turn started by the CLI │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯

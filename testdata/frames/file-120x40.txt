@@ -18,7 +18,7 @@
 │           │ 40  func Names() []string {                                                                  │           │
 │           │ 41      out := make([]string, 0, len(palette))                                               │           │
 │           │ 42      for _, c := range palette {                                                          │           │
-│           │ 43          out = append(out, c.Name)                                                        │l+G editor │
+│           │ 43          out = append(out, c.Name)                                                        │aft window │
 │           │ 44      }                                                                                    │───────────╯
 │           │ 45      return out                                                                           │ · 1 DONE ─╮
 │           │ 46  }                                                                                        │ 21.5k tok │

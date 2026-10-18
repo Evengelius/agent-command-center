@@ -831,3 +831,41 @@ you somehow reverse the two keys if I'm not mistaken
 ---
 
 It goes into 17 plan, let's go
+
+## Amendment 13, 2026-10-19: the draft in a window in the terminal, part of plan 17
+
+The owner's request, word for word, after pressing Ctrl+G, which opened the
+draft in VS Code through `$EDITOR`. The owner's screenshot showed the draft
+open as a file in VS Code. It goes into plan 17, before its approval. It
+replaces the external editor of section 4, "Optionally allow editing a
+prompt in an external editor via $EDITOR", which stays above as written.
+
+Choices agreed:
+
+- **Ctrl+G opens the draft in a window over the dashboard**, named "Draft",
+  placed and sized as the file viewer, with a full-screen toggle.
+- **The same draft, with the input box's keys**: Enter sends it and closes
+  the window, Ctrl+J adds a new line, Ctrl+C copies, Esc goes back to the
+  input box with the draft kept; Ctrl+G inside the window does nothing.
+- **No external editor**: the application never opens VS Code or any
+  other program for the draft.
+
+---
+
+What does CTLRL+G Editor does ?
+
+---
+
+I don't know if it is necessary to keep it, because i typed it, and it opened what you see on image
+
+---
+
+Why not open the editor in a window in picture in picture instead? Like we did for tree with f3 ?
+
+---
+
+I don't want any vscode
+
+---
+
+Yes

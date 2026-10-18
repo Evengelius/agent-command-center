@@ -327,3 +327,29 @@ func TestTrueColours(t *testing.T) {
 		}
 	}
 }
+
+// TestStyleWraps checks the wrap line.String writes around a span against
+// Lip Gloss's Render, for every shared style in each palette, so that the
+// cheaper path draws the same bytes (ui-design.md, Budget).
+func TestStyleWraps(t *testing.T) {
+	defer UsePalette(pickTrue)
+	texts := []string{"x", " ", "   ", "a b", "─╭╮│", "· é", "日本語", "👍🏽 end", "␉ ␊", "\t", "a\tb", "a\nb", "a\r\nb", "\x1b"}
+	for _, pick := range []lipgloss.CompleteFunc{pickTrue, pick256, pickANSI} {
+		UsePalette(pick)
+		if len(wraps) < 30 {
+			t.Errorf("%d styles with a wrap, want most of them", len(wraps))
+		}
+		for _, p := range []*lipgloss.Style{stMdLink, stMatchCur} {
+			if _, ok := wraps[p]; ok {
+				t.Errorf("an underlined style has a wrap: Lip Gloss styles its spaces apart")
+			}
+		}
+		for p := range wraps {
+			for _, s := range texts {
+				if got, want := (line{{text: s, st: p}}).String(), p.Render(s); got != want {
+					t.Errorf("%q: line.String %q, Render %q", s, got, want)
+				}
+			}
+		}
+	}
+}

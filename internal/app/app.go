@@ -68,8 +68,7 @@ type Options struct {
 	Providers []provider.Provider
 	Now       func() time.Time
 	Clipboard input.Clipboard
-	// Getenv reads the environment (TMUX, SSH_*, VISUAL, EDITOR); nil is
-	// os.Getenv.
+	// Getenv reads the environment (TMUX, SSH_*); nil is os.Getenv.
 	Getenv func(string) string
 	// After delivers msg after d; nil uses a real timer. Tests return nil
 	// to switch timers off.
@@ -370,8 +369,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.gen == m.toastGen {
 			m.ui.Toast = ""
 		}
-	case editedMsg:
-		cmds = append(cmds, m.edited(msg)...)
 	case spinMsg:
 		m.spinning = false
 		m.ui.Spinner++

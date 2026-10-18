@@ -133,6 +133,30 @@ func (v EditorView) selected(line, off int) bool {
 // the cursor in view (ui-design.md, Input editor, Size).
 func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 	v := ui.Editor
+	out := append([]line{rule(w)}, draftRows(s, ui, w, minRows, maxRows)...)
+	status := editorStatus(s)
+	if v.Pasting {
+		status = "pasting…"
+	}
+	out = append(out, spread(plain("  "+status, stGrey), plain(lineCount(v)+" · Ctrl+G draft window", stGrey), w))
+	for i := range out {
+		out[i] = out[i].fit(w) // the padding is the editor's: a click on it goes to the editor
+	}
+	return in('E', out)
+}
+
+// lineCount is the draft's logical lines, "1 line" or "n lines".
+func lineCount(v EditorView) string {
+	if v.Total > 1 {
+		return fmt.Sprintf("%d lines", v.Total)
+	}
+	return "1 line"
+}
+
+// draftRows are the draft's rows, w cells wide, from minRows up to maxRows:
+// "> " before the first, the placeholder while it is empty.
+func draftRows(s *state.State, ui UI, w, minRows, maxRows int) []line {
+	v := ui.Editor
 	if maxRows < minRows {
 		maxRows = minRows
 	}
@@ -141,7 +165,7 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 	focused := ui.Focus == "B" || ui.Focus == ""
 	empty := v.Total <= 1 && (len(v.Lines) == 0 || v.Lines[0] == "")
 
-	out := []line{rule(w)}
+	var out []line
 	for i := 0; i < show; i++ {
 		prefix := "  "
 		if i == 0 {
@@ -160,19 +184,48 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 		}
 		out = append(out, l)
 	}
-	count := fmt.Sprintf("%d line", max(v.Total, 1))
-	if v.Total > 1 {
-		count += "s"
+	return out
+}
+
+// DraftWindow is the draft in a window over the dashboard, Ctrl+G from the
+// input box: the same editor, more of it on screen (amendment 13).
+type DraftWindow struct {
+	Open bool
+	Full bool // the window fills the screen (Ctrl+F)
+}
+
+// draftKeys are the draft window's key hints, the longest first.
+var draftKeys = []string{
+	"Enter send · Ctrl+J newline · Ctrl+F full screen · Ctrl+C copy · F1 keys · Esc back",
+	"Enter send · Ctrl+J newline · Ctrl+F full screen · Esc back",
+	"Enter send · Ctrl+J newline · Esc back",
+}
+
+// DraftRect is the draft window's place on a w by h screen: the file
+// viewer's (FileRect).
+func DraftRect(ui UI) (x, y, ww, hh int) { return FileRect(ui.Width, ui.Height, ui.DraftWin.Full) }
+
+// draftWindow is the draft window, ww by hh: the draft's rows, then a footer
+// with the keys and, on the right, why Enter would not send, or the cursor's
+// line.
+func draftWindow(s *state.State, ui UI, ww, hh int) []line {
+	v := ui.Editor
+	inner := ww - 4
+	rows := max(hh-3, 1)
+	body := draftRows(s, ui, inner, rows, rows)
+	right := decoLine(fmt.Sprintf("line %s/%s", grouped(v.Line+1), grouped(max(v.Total, 1))), stGrey)
+	switch st := editorStatus(s); {
+	case v.Pasting:
+		right = decoLine("pasting…", stProgress)
+	case st != idleHint:
+		right = decoLine(st, stProgress)
 	}
-	status := editorStatus(s)
-	if v.Pasting {
-		status = "pasting…"
+	room := inner - right.width() - 1
+	body = append(body, spread(windowLeft(s, ui, draftKeys, room), right, inner))
+	for i := range body {
+		body[i] = body[i].fit(inner)
 	}
-	out = append(out, spread(plain("  "+status, stGrey), plain(count+" · Ctrl+G editor", stGrey), w))
-	for i := range out {
-		out[i] = out[i].fit(w) // the padding is the editor's: a click on it goes to the editor
-	}
-	return in('E', out)
+	return in('E', frameBox(line{deco("Draft", stTitle)}, decoLine(lineCount(v), stGrey), body, ww, hh, stFileFrame))
 }
 
 // shownRows is the editor rows shown, each at most text cells wide: show

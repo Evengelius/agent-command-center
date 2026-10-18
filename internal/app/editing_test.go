@@ -2,15 +2,10 @@ package app
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
-	"reflect"
-	"runtime"
 	"strings"
 	"sync"
 	"testing"
 	"testing/synctest"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -240,93 +235,6 @@ func TestToast(t *testing.T) {
 	})
 }
 
-// TestEditorCommand is ui-design.md, $EDITOR: VISUAL, then EDITOR, split as
-// the platform's shell would; else a detected editor, named.
-func TestEditorCommand(t *testing.T) {
-	found := func(names ...string) func(string) (string, error) {
-		return func(n string) (string, error) {
-			for _, f := range names {
-				if f == n {
-					return "/bin/" + n, nil
-				}
-			}
-			return "", errors.New("not found")
-		}
-	}
-	quoted, quotedWant := `'/opt/my editor/ed' -w`, []string{"/opt/my editor/ed", "-w"}
-	fallback := []string{"nano"}
-	if runtime.GOOS == "windows" {
-		quoted, quotedWant = `"C:\Program Files\My Editor\ed.exe" -w`, []string{`C:\Program Files\My Editor\ed.exe`, "-w"}
-		fallback = []string{"notepad"}
-	}
-	for _, c := range []struct {
-		name  string
-		env   map[string]string
-		look  func(string) (string, error)
-		want  []string
-		note  string
-		error bool
-	}{
-		{"VISUAL first", map[string]string{"VISUAL": "code --wait", "EDITOR": "vi"}, found(), []string{"code", "--wait"}, "", false},
-		{"EDITOR", map[string]string{"EDITOR": "  vim  "}, found(), []string{"vim"}, "", false},
-		{"quoted path", map[string]string{"EDITOR": quoted}, found(), quotedWant, "", false},
-		{"code found", nil, found("code", fallback[0]), []string{"code", "--wait"}, "no $VISUAL or $EDITOR: using code --wait", false},
-		{"fallback", nil, found(fallback[0]), fallback, "no $VISUAL or $EDITOR: using " + fallback[0], false},
-		{"none", nil, found(), nil, "", true},
-	} {
-		args, note, err := editorCommand(func(k string) string { return c.env[k] }, c.look)
-		if (err != nil) != c.error || !reflect.DeepEqual(args, c.want) || note != c.note {
-			t.Errorf("%s: %q, %q, %v; want %q, %q, error %v", c.name, args, note, err, c.want, c.note, c.error)
-		}
-	}
-}
-
-// TestEditedDraft: the edited file replaces the draft byte for byte as one
-// undo step and is deleted; a failed editor keeps the draft; an editor that
-// returns at once is named.
-func TestEditedDraft(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		r, _ := copyRig(t, nil)
-		h := r.h
-		h.send(tea.PasteMsg{Content: "before"})
-		write := func(text string) string {
-			p := filepath.Join(t.TempDir(), "acc-draft-1.md")
-			if err := os.WriteFile(p, []byte(text), 0o600); err != nil {
-				t.Fatal(err)
-			}
-			return p
-		}
-
-		const after = "after\r\n\twith CRLF kept\x01 \n"
-		p := write(after)
-		h.send(editedMsg{path: p, took: 5 * time.Second})
-		if h.m.edit.Text() != after {
-			t.Errorf("draft %q, want %q", h.m.edit.Text(), after)
-		}
-		if _, err := os.Stat(p); !os.IsNotExist(err) {
-			t.Errorf("the draft file was not deleted: %v", err)
-		}
-		h.send(key('z', tea.ModCtrl))
-		if h.m.edit.Text() != "before" {
-			t.Errorf("one undo gives %q, want %q", h.m.edit.Text(), "before")
-		}
-
-		p = write("lost")
-		h.send(editedMsg{path: p, took: 5 * time.Second, err: errors.New("exit status 1")})
-		if h.m.edit.Text() != "before" {
-			t.Errorf("a failed editor changed the draft to %q", h.m.edit.Text())
-		}
-		if f := plainText(h.m.View().Content); !strings.Contains(f, "the draft is kept") {
-			t.Errorf("no failure toast:\n%s", f)
-		}
-
-		h.send(editedMsg{path: write("quick"), took: 100 * time.Millisecond})
-		if f := plainText(h.m.View().Content); !strings.Contains(f, "the editor returned immediately") {
-			t.Errorf("no warning for an editor that returned at once:\n%s", f)
-		}
-	})
-}
-
 // TestEditorDisplay is ui-design.md, Input editor: tabs as four spaces,
 // control characters visible, long lines wrapped, and "N lines".
 func TestEditorDisplay(t *testing.T) {
@@ -336,7 +244,7 @@ func TestEditorDisplay(t *testing.T) {
 		long := strings.Repeat("0123456789", 30)
 		h.send(tea.PasteMsg{Content: "a\tb\x01c\x7fd\u0085e\n" + long})
 		f := plainText(h.m.View().Content)
-		for _, want := range []string{"a    b^Ac^?d<85>e", "2 lines · Ctrl+G editor"} {
+		for _, want := range []string{"a    b^Ac^?d<85>e", "2 lines · Ctrl+G draft window"} {
 			if !strings.Contains(f, want) {
 				t.Errorf("no %q in the editor:\n%s", want, f)
 			}

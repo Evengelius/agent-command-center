@@ -11,7 +11,7 @@
 │ >  Ask Mock data anything…                                                   │
 │                                                                              │
 │                                                                              │
-│   Enter send · Ctrl+J newline                         1 line · Ctrl+G editor │
+│   Enter send · Ctrl+J newline                   1 line · Ctrl+G draft window │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
 │  ✓ /root/create_found model N/A   completed                   0s   77.3k tok │

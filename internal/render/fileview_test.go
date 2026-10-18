@@ -202,16 +202,16 @@ func TestFileFooters(t *testing.T) {
 
 // TestDashboardF3 is plan 17's F3 in the dashboard footer: "F3 Explorer" at
 // every layout; "Ctrl+J newline", which B's input shows too, left out only
-// when the whole line does not fit, so that Ctrl+Q quit shows from 109
-// columns in the standard layout and from 174 in the wide one.
+// when the whole line does not fit, so that Ctrl+Q quit shows from 108
+// columns in the standard layout and from 173 in the wide one.
 func TestDashboardF3(t *testing.T) {
 	for _, c := range []struct {
 		w           int
 		ctrlJ, quit bool
 	}{
-		{80, true, false}, {99, true, false}, {100, false, false}, {108, false, false}, {109, false, true},
-		{120, false, true}, {125, false, true}, {126, true, true}, {159, true, true},
-		{160, false, false}, {173, false, false}, {174, false, true}, {190, false, true}, {191, true, true}, {200, true, true},
+		{80, true, false}, {99, true, false}, {100, false, false}, {107, false, false}, {108, false, true},
+		{120, false, true}, {124, false, true}, {125, true, true}, {159, true, true},
+		{160, false, false}, {172, false, false}, {173, false, true}, {189, false, true}, {190, true, true}, {200, true, true},
 	} {
 		ls := dashboard(state.New(), UI{Width: c.w, Height: 40}, new(Screen))
 		foot := texts(ls[len(ls)-1:])

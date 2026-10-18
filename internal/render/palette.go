@@ -2,6 +2,7 @@ package render
 
 import (
 	"image/color"
+	"strings"
 
 	"charm.land/lipgloss/v2"
 )
@@ -94,55 +95,79 @@ var (
 
 func init() { paint() }
 
-// paint builds every shared style from the palette in use.
+// paint builds every shared style from the palette in use, and its wrap.
 func paint() {
-	*stFrame = fg(cFrame)
-	*stTitle = fg(cTitle).Bold(true)
-	*stText = fg(cText)
-	*stDone = fg(cDone)
-	*stProgress = fg(cProgress)
-	*stAttention = fg(cAttention)
-	*stFailed = fg(cFailed)
-	*stGrey = fg(cGrey)
-	*stBold = fg(cText).Bold(true)
-	*stButton = fg(cInk).Background(cTitle.get()).Bold(true)
-	*stAttentionBold = stAttention.Bold(true)
-	*stFailedBold = stFailed.Bold(true)
-	*stNone = lipgloss.NewStyle()
+	wraps = map[*lipgloss.Style][2]string{}
+	paintStyle(stFrame, fg(cFrame))
+	paintStyle(stTitle, fg(cTitle).Bold(true))
+	paintStyle(stText, fg(cText))
+	paintStyle(stDone, fg(cDone))
+	paintStyle(stProgress, fg(cProgress))
+	paintStyle(stAttention, fg(cAttention))
+	paintStyle(stFailed, fg(cFailed))
+	paintStyle(stGrey, fg(cGrey))
+	paintStyle(stBold, fg(cText).Bold(true))
+	paintStyle(stButton, fg(cInk).Background(cTitle.get()).Bold(true))
+	paintStyle(stAttentionBold, stAttention.Bold(true))
+	paintStyle(stFailedBold, stFailed.Bold(true))
+	paintStyle(stNone, lipgloss.NewStyle())
 
-	*stCursor = fg(cInk).Background(cTitle.get())
-	*stSelected = fg(cText).Background(cSelection.get())
-	*stControl = fg(cAttention)
-	*stInferred = stText.Italic(true)
-	*stTreeCursor = fg(cTreeText).Background(cTreeRow.get())
+	paintStyle(stCursor, fg(cInk).Background(cTitle.get()))
+	paintStyle(stSelected, fg(cText).Background(cSelection.get()))
+	paintStyle(stControl, fg(cAttention))
+	paintStyle(stInferred, stText.Italic(true))
+	paintStyle(stTreeCursor, fg(cTreeText).Background(cTreeRow.get()))
 
-	*stMdBullet = fg(cTitle)
-	*stMdEm = fg(cText).Italic(true)
-	*stMdCode = fg(cCode)
-	*stMdLink = fg(cLink).Underline(true)
-	*stMdLang = fg(cProgress)
-	*stMdKeyword = fg(cKeyword).Bold(true)
-	*stMdString = fg(cString)
-	*stMdNumber = fg(cNumber)
-	*stMdComment = fg(cGrey).Italic(true)
-	*stSynBuiltin = fg(cLink)
-	*stSynTag = fg(cKeyword)
-	*stFileFrame = fg(cTitle)
-	*stFileRowNum = fg(cGrey).Background(cTreeRow.get())
-	*stFileRowMark = fg(cAttention).Background(cTreeRow.get())
-	*stMatch = fg(cInk).Background(cProgress.get())
-	*stMatchCur = stMatch.Bold(true).Underline(true)
-	*stExpRowDir = stTitle.Background(cTreeRow.get())
-	*stExpRowGrey = stGrey.Background(cTreeRow.get())
-	*stExpRowProgress = stProgress.Background(cTreeRow.get())
-	*stExpRowDone = stDone.Background(cTreeRow.get())
-	*stExpRowFailed = stFailed.Background(cTreeRow.get())
+	paintStyle(stMdBullet, fg(cTitle))
+	paintStyle(stMdEm, fg(cText).Italic(true))
+	paintStyle(stMdCode, fg(cCode))
+	paintStyle(stMdLink, fg(cLink).Underline(true))
+	paintStyle(stMdLang, fg(cProgress))
+	paintStyle(stMdKeyword, fg(cKeyword).Bold(true))
+	paintStyle(stMdString, fg(cString))
+	paintStyle(stMdNumber, fg(cNumber))
+	paintStyle(stMdComment, fg(cGrey).Italic(true))
+	paintStyle(stSynBuiltin, fg(cLink))
+	paintStyle(stSynTag, fg(cKeyword))
+	paintStyle(stFileFrame, fg(cTitle))
+	paintStyle(stFileRowNum, fg(cGrey).Background(cTreeRow.get()))
+	paintStyle(stFileRowMark, fg(cAttention).Background(cTreeRow.get()))
+	paintStyle(stMatch, fg(cInk).Background(cProgress.get()))
+	paintStyle(stMatchCur, stMatch.Bold(true).Underline(true))
+	paintStyle(stExpRowDir, stTitle.Background(cTreeRow.get()))
+	paintStyle(stExpRowGrey, stGrey.Background(cTreeRow.get()))
+	paintStyle(stExpRowProgress, stProgress.Background(cTreeRow.get()))
+	paintStyle(stExpRowDone, stDone.Background(cTreeRow.get()))
+	paintStyle(stExpRowFailed, stFailed.Background(cTreeRow.get()))
 	for c := range synRow {
-		*synRow[c] = SynClass(c).style().Background(cTreeRow.get())
+		paintStyle(synRow[c], SynClass(c).style().Background(cTreeRow.get()))
 	}
 
 	for i, m := range modelColours {
-		*modelStyles[i] = fg(m.c)
+		paintStyle(modelStyles[i], fg(m.c))
+	}
+}
+
+// wraps is each shared style's escape codes before and after a span's text,
+// for line.String: what Lip Gloss's Render gives a single line without tabs,
+// for a style that styles spaces as the rest (ui-design.md, Budget).
+var wraps map[*lipgloss.Style][2]string
+
+// paintStyle gives the shared style p the value v, and its wrap when Render is the
+// text between two fixed strings: a probe with spaces, a wide and an accented
+// character checks it, so a style Lip Gloss draws otherwise (underlined
+// spaces) keeps going through Render.
+func paintStyle(p *lipgloss.Style, v lipgloss.Style) {
+	*p = v
+	delete(wraps, p)
+	x := v.Render("x")
+	i := strings.IndexByte(x, 'x')
+	if i < 0 {
+		return
+	}
+	const probe = "a b · é日 z"
+	if w := [2]string{x[:i], x[i+1:]}; v.Render(probe) == w[0]+probe+w[1] {
+		wraps[p] = w
 	}
 }
 

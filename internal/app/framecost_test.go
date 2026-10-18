@@ -28,7 +28,7 @@ const keystrokeAllocs = 1200
 // Keystroke timing): a keystroke in a 10,000-line draft costs a bounded
 // number of allocations, whatever the machine's load, and the editor draws
 // from a window of the draft, never all of it. The timing step measures the
-// time.
+// time. The draft window, Ctrl+G (amendment 13), has the same bound.
 func TestKeystrokeAllocs(t *testing.T) {
 	r, _ := copyRig(t, nil)
 	h := r.h
@@ -36,8 +36,18 @@ func TestKeystrokeAllocs(t *testing.T) {
 	if n := h.m.edit.Lines(); n < 10_000 {
 		t.Fatalf("%d lines in the draft", n)
 	}
-	for _, place := range []tea.KeyPressMsg{key(tea.KeyHome, tea.ModCtrl), key(tea.KeyEnd, tea.ModCtrl)} {
+	for i, place := range []tea.KeyPressMsg{key(tea.KeyHome, tea.ModCtrl), key(tea.KeyEnd, tea.ModCtrl), key(tea.KeyHome, tea.ModCtrl), key(tea.KeyEnd, tea.ModCtrl)} {
+		if i == 2 {
+			h.send(key('g', tea.ModCtrl))
+			if !h.m.ui.DraftWin.Open {
+				t.Fatal("Ctrl+G did not open the draft window")
+			}
+		}
 		h.send(place)
+		where := place.String()
+		if h.m.ui.DraftWin.Open {
+			where += " in the draft window"
+		}
 		_ = h.m.View()
 		got := testing.AllocsPerRun(20, func() {
 			for _, k := range editKeys {
@@ -45,14 +55,14 @@ func TestKeystrokeAllocs(t *testing.T) {
 				_ = h.m.View()
 			}
 		}) / float64(len(editKeys))
-		t.Logf("%s: %.0f allocations per keystroke (bound %d)", place, got, keystrokeAllocs)
+		t.Logf("%s: %.0f allocations per keystroke (bound %d)", where, got, keystrokeAllocs)
 		if got > keystrokeAllocs {
-			t.Errorf("%s: %.0f allocations per keystroke, over the bound of %d", place, got, keystrokeAllocs)
+			t.Errorf("%s: %.0f allocations per keystroke, over the bound of %d", where, got, keystrokeAllocs)
 		}
 		// Wrapping a line to count its rows allocates nothing: the bound
 		// above would miss a renderer given every line of the draft.
 		if n, most := len(h.m.editorView().Lines), 4*max(h.m.ui.Height, render.MinHeight); n > most {
-			t.Errorf("%s: the editor draws from %d lines of the draft, over %d (4 screen heights)", place, n, most)
+			t.Errorf("%s: the editor draws from %d lines of the draft, over %d (4 screen heights)", where, n, most)
 		}
 	}
 }

@@ -1,11 +1,6 @@
 package app
 
 import (
-	"errors"
-	"fmt"
-	"os"
-	"os/exec"
-	"runtime"
 	"strings"
 	"time"
 
@@ -20,20 +15,9 @@ import (
 // Clipboard, Feedback).
 const toastFor = 3 * time.Second
 
-// editorReturnedAt is the shortest run a blocking editor is expected to take;
-// a quicker return means a GUI editor without its blocking flag (ui-design.md,
-// $EDITOR, item 4).
-const editorReturnedAt = time.Second
-
 type (
 	copiedMsg    struct{ seq, toast string }
 	toastDoneMsg struct{ gen int }
-	editedMsg    struct {
-		path string
-		took time.Duration
-		note string
-		err  error
-	}
 )
 
 // editorKey handles a key in zone B's editor (ui-design.md, Input editor).
@@ -73,7 +57,7 @@ func (m *Model) editorKey(k tea.KeyPressMsg) []tea.Cmd {
 	case "ctrl+delete", "alt+delete":
 		e.DeleteWordRight()
 	case "ctrl+g":
-		return m.externalEditor()
+		m.ui.DraftWin = render.DraftWindow{Open: true} // the same draft, in a window (amendment 13)
 	default:
 		if mo, extend, ok := motion(k); ok {
 			e.Move(mo, extend)
@@ -184,77 +168,33 @@ func linePos(text string, off int) [2]int {
 	return [2]int{strings.Count(text[:off], "\n"), off - (strings.LastIndexByte(text[:off], '\n') + 1)}
 }
 
-// externalEditor opens the draft in $VISUAL or $EDITOR (ui-design.md,
-// $EDITOR). The draft stays in the editor whatever happens.
-func (m *Model) externalEditor() []tea.Cmd {
-	args, note, err := editorCommand(m.opt.Getenv, exec.LookPath)
-	if err != nil {
-		return m.toast("editor: " + err.Error())
-	}
-	f, err := os.CreateTemp("", "acc-draft-*.md")
-	if err != nil {
-		return m.toast("editor: " + err.Error())
-	}
-	path := f.Name()
-	_, err = f.WriteString(m.edit.Text())
-	if cerr := f.Close(); err == nil {
-		err = cerr
-	}
-	if err != nil {
-		_ = os.Remove(path)
-		return m.toast("editor: " + err.Error())
-	}
-	c := exec.Command(args[0], append(args[1:], path)...)
-	start := m.opt.Now()
-	return []tea.Cmd{tea.ExecProcess(c, func(err error) tea.Msg {
-		return editedMsg{path: path, took: m.opt.Now().Sub(start), note: note, err: err}
-	})}
-}
-
-// edited reads the file back byte for byte and deletes it; on failure the
-// draft is kept as it was.
-func (m *Model) edited(msg editedMsg) []tea.Cmd {
-	defer os.Remove(msg.path)
-	if msg.err != nil {
-		return m.toast("editor failed: " + msg.err.Error() + "; the draft is kept")
-	}
-	b, err := os.ReadFile(msg.path)
-	if err != nil {
-		return m.toast("editor: " + err.Error() + "; the draft is kept")
-	}
-	if string(b) != m.edit.Text() {
-		m.edit.SelectAll()
-		m.edit.Insert(string(b)) // one undo step
-	}
-	switch {
-	case msg.took < editorReturnedAt:
-		return m.toast("the editor returned immediately: add --wait (or your editor's blocking flag)")
-	case msg.note != "":
-		return m.toast(msg.note)
-	}
-	return nil
-}
-
-// editorCommand resolves VISUAL, then EDITOR, split as the platform's shell
-// would; with neither, a detected editor, named in the note.
-func editorCommand(getenv func(string) string, lookPath func(string) (string, error)) (args []string, note string, err error) {
-	for _, name := range []string{"VISUAL", "EDITOR"} {
-		if v := strings.TrimSpace(getenv(name)); v != "" {
-			args, err := splitCommand(v)
-			if err != nil || len(args) == 0 {
-				return nil, "", fmt.Errorf("$%s %q cannot be read: %v", name, v, err)
-			}
-			return args, "", nil
+// draftWinKey handles a key in the draft window: the input box's keys,
+// Esc back to it with the draft kept, Ctrl+F full screen (amendment 13).
+func (m *Model) draftWinKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
+	switch k.String() {
+	case "f1", "f4", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+q", "ctrl+o":
+		return nil, false
+	case "f2", "f3", "f6", "shift+f6":
+		m.ui.DraftWin = render.DraftWindow{} // the approvals, the Explorer or another zone instead
+		return nil, false
+	case "esc":
+		if !m.ui.Sel.Empty() {
+			m.ui.Sel = render.Selection{} // Esc clears a selection first
+		} else {
+			m.ui.DraftWin = render.DraftWindow{}
 		}
+		return nil, true
+	case "ctrl+f":
+		m.ui.DraftWin.Full = !m.ui.DraftWin.Full
+		return nil, true
+	case "ctrl+g":
+		return nil, true // the window is open
 	}
-	candidates := [][]string{{"code", "--wait"}, {"nano"}, {"vi"}}
-	if runtime.GOOS == "windows" {
-		candidates = [][]string{{"code", "--wait"}, {"notepad"}}
+	m.ui.Focus = "B"
+	draft := m.edit.Text() != ""
+	cmds = m.editorKey(k)
+	if k.String() == "enter" && draft && m.edit.Text() == "" {
+		m.ui.DraftWin = render.DraftWindow{} // sent: back to the dashboard
 	}
-	for _, c := range candidates {
-		if _, err := lookPath(c[0]); err == nil {
-			return c, "no $VISUAL or $EDITOR: using " + strings.Join(c, " "), nil
-		}
-	}
-	return nil, "", errors.New("no $VISUAL or $EDITOR, and no editor found")
+	return cmds, true
 }

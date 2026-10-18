@@ -84,6 +84,8 @@ type UI struct {
 	File     FileView
 	Finder   FinderView
 	Explorer ExplorerView
+	// DraftWin is the draft in a window, Ctrl+G (amendment 13).
+	DraftWin DraftWindow
 
 	// Wrap keeps the conversation's line breaks between frames; nil wraps
 	// every line each frame, with the same result.

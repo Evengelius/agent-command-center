@@ -29,7 +29,7 @@
 │                   │ 35▌ func (c Colour) Hex() string {                                                                                                                           │                   │
 │                   │ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                                                                                   │                   │
 │                   │ 37▌ }                                                                                                                                                        │                   │
-│                   │ 38                                                                                                                                                           │ne · Ctrl+G editor │
+│                   │ 38                                                                                                                                                           │trl+G draft window │
 │                   │ 39  // Names lists the palette's colour names, in order.                                                                                                     │───────────────────╯
 │                   │ 40  func Names() []string {                                                                                                                                  │ku-5-5 (reported) ─╮
 │                   │ 41      out := make([]string, 0, len(palette))                                                                                                               │              mock │

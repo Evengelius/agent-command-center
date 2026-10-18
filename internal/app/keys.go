@@ -132,9 +132,14 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 			return cmds
 		}
 	}
-	// The window in front, the quick open, the file viewer or the Explorer,
-	// takes every key but the global ones (plan 17, Keys; amendment 12).
+	// The window in front, the draft, the quick open, the file viewer or the
+	// Explorer, takes every key but the global ones (plan 17, Keys;
+	// amendments 12 and 13).
 	switch {
+	case m.ui.DraftWin.Open:
+		if cmds, done := m.draftWinKey(k); done {
+			return cmds
+		}
 	case m.ui.Finder.Open:
 		if cmds, done := m.finderKey(k); done {
 			return cmds
@@ -304,6 +309,7 @@ func (m *Model) closeSession() {
 	}
 	m.sess, m.cancel = nil, nil
 	m.closeWindows()
+	m.ui.DraftWin = render.DraftWindow{}
 	m.ui.Explorer = render.ExplorerView{} // the next session may be in another project
 	m.draft = nil                         // the stored draft stays on disk for the next start
 	m.edit.Clear()

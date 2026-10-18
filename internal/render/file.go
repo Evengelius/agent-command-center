@@ -110,52 +110,100 @@ func floatWindow(s *state.State, ui UI, sc *Screen) {
 		win = fileWindow(s, ui, ww, hh)
 		sc.fileLines = ui.File.Lines
 	}
+	sc.place(win, x, y, ww)
+}
+
+// place draws the window win, ww wide, at (x, y) over the frame drawn behind
+// it, each row built once in a line of its final length.
+func (sc *Screen) place(win []line, x, y, ww int) {
 	for i, l := range win {
 		b := sc.lines[y+i]
-		sc.lines[y+i] = append(append(cols(b, 0, x), l...), cols(b, x+ww, ui.Width)...)
+		row := appendCols(make(line, 0, len(b)+len(l)+2), b, 0, x)
+		sc.lines[y+i] = appendCols(append(row, l...), b, x+ww, b.width())
 	}
 }
 
 // cols is the part of l between the columns from and to, exactly that wide:
 // a wide character the edge cuts becomes spaces, and a span cut in part is
 // decoration, its source offsets no longer true.
-func cols(l line, from, to int) line {
-	var out line
-	x := 0
+func cols(l line, from, to int) line { return appendCols(nil, l, from, to) }
+
+// appendCols appends cols(l, from, to) to out.
+func appendCols(out, l line, from, to int) line {
+	x, n := 0, 0 // the column in l, the cells appended
 	for _, s := range l {
 		w := textWidth(s.text)
 		switch {
 		case x+w <= from || x >= to:
 		case x >= from && x+w <= to:
 			out = append(out, s)
+			n += w
 		default:
-			var b strings.Builder
-			cx, kept := x, false
-			for _, r := range s.text {
-				rw := runeWidth(r)
-				switch {
-				case rw == 0:
-					if kept {
-						b.WriteRune(r)
-					}
-				case cx >= from && cx+rw <= to:
-					b.WriteRune(r)
-					kept = true
-				case cx < to && cx+rw > from:
-					b.WriteString(strings.Repeat(" ", min(cx+rw, to)-max(cx, from)))
-					kept = false
-				default:
-					kept = false
-				}
-				cx += rw
-			}
 			c := s
-			c.text, c.ref = b.String(), ref{panel: s.ref.panel, kind: refDeco}
+			c.text, c.ref = cutCols(s.text, x, from, to), ref{panel: s.ref.panel, kind: refDeco}
 			out = append(out, c)
+			n += textWidth(c.text)
 		}
 		x += w
 	}
-	return out.pad(to - from)
+	if n < to-from {
+		out = append(out, deco(strings.Repeat(" ", to-from-n), stNone))
+	}
+	return out
+}
+
+// cutCols is the part of text, starting at column x, between the columns
+// from and to: a slice of it unless the edge cuts a wide character, which
+// becomes spaces.
+func cutCols(text string, x, from, to int) string {
+	start, end, cx := -1, len(text), x
+	for i, r := range text {
+		rw := runeWidth(r)
+		switch {
+		case rw == 0:
+		case cx >= from && cx+rw <= to:
+			if start < 0 {
+				start = i
+			}
+		case cx < to && cx+rw > from:
+			return cutWide(text, x, from, to)
+		case cx >= to:
+			end = i
+		}
+		if end < len(text) {
+			break
+		}
+		cx += rw
+	}
+	if start < 0 {
+		return ""
+	}
+	return text[start:end]
+}
+
+// cutWide is cutCols where the edge cuts a wide character.
+func cutWide(text string, x, from, to int) string {
+	var b strings.Builder
+	cx, kept := x, false
+	for _, r := range text {
+		rw := runeWidth(r)
+		switch {
+		case rw == 0:
+			if kept {
+				b.WriteRune(r)
+			}
+		case cx >= from && cx+rw <= to:
+			b.WriteRune(r)
+			kept = true
+		case cx < to && cx+rw > from:
+			b.WriteString(strings.Repeat(" ", min(cx+rw, to)-max(cx, from)))
+			kept = false
+		default:
+			kept = false
+		}
+		cx += rw
+	}
+	return b.String()
 }
 
 // frameIn makes every span of a window not marked otherwise decoration of

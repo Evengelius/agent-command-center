@@ -29,7 +29,7 @@
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
-│                                          ││   turn started by the CLI                                                                                                         1 line · Ctrl+G editor │
+│                                          ││   turn started by the CLI                                                                                                   1 line · Ctrl+G draft window │
 │                                          │╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 │                                          │╭─ C · LIVE AGENTS ────────────────────────────────── 0 ACTIVE · 1 DONE ─╮╭─ general-purpose · LIVE ───────────────────────── claude-haiku-5-5 (reported) ─╮
 │                                          ││  ✓ general-purpose haiku-5-5   completed · Files…       0s   21.5k tok ││ 11:30:00  assistant  Files written to found.txt: …                        mock │
@@ -57,4 +57,4 @@
 │ agents 0 active / limit N/A (not reported)   time 0s session   errors 0   retries N/A (none reported)   unrecognised events 0                                                                        │
 │                                                                                                                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit

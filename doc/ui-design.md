@@ -515,7 +515,7 @@ narrow width C has 3 rows and D 1.
 │                                ││ ────────────────────────────────────────────────────────────────────────────────── │
 │                                ││ > Also check the logout path█                                                      │
 │                                ││                                                                                    │
-│                                ││   turn running: the draft waits · Ctrl+C interrupt          1 line · Ctrl+G editor │
+│                                ││   turn running: the draft waits · Ctrl+C interrupt    1 line · Ctrl+G draft window │
 │                                ││                                                                                    │
 │                                ││                                                                                    │
 │                                ││                                                                                    │
@@ -536,7 +536,7 @@ narrow width C has 3 rows and D 1.
 │ 5h ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 23%†  resets 16:40   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 45%†  resets Mon 09:00   model claude-opus-5-5  │
 │ context 12% of 1M   tokens 41.2k   cost $0.42 API-equiv. estimate   agents 2 / limit N/A   time 3m 05s   errors 0    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit           
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit            
 ```
 
 - A is a 34-column column, full height: orchestrator, model, turn and its
@@ -548,7 +548,7 @@ narrow width C has 3 rows and D 1.
   when no file is in front ("F3 file" while B's entry cursor is on an entry
   that names one). When the whole line does not fit, as at 120 columns, it
   leaves out "Ctrl+J newline", which B's input shows above it, so that
-  "Ctrl+Q quit" stays visible (from 109 columns here, from 174 in the wide
+  "Ctrl+Q quit" stays visible (from 108 columns here, from 173 in the wide
   layout) (plan 17).
 
 ### Wide, 200x60
@@ -583,7 +583,7 @@ narrow width C has 3 rows and D 1.
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
-│                                          ││   turn running: the draft waits until the turn ends · Ctrl+C interrupt                                   2 lines · Ctrl+G editor                         │
+│                                          ││   turn running: the draft waits until the turn ends · Ctrl+C interrupt                             2 lines · Ctrl+G draft window                         │
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
 │                                          │╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -613,7 +613,7 @@ narrow width C has 3 rows and D 1.
 │ agents 1 active (derived) / limit N/A (not set; default not reported)   time 2m 40s turn · 5m 12s session   errors 0   retries 0   unrecognised events 0                                                │
 │                                                                                                                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit                          
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit                           
 ```
 
 - A grows to 44 columns, with turn history below the current plan.
@@ -1360,7 +1360,7 @@ this table as an overlay.
 | Ctrl+C | copy the selection if there is one; else interrupt the running turn; else show "Ctrl+Q quits" | TI 6.3 item 4; ASM-9 |
 | Ctrl+Shift+C | copy the selection | TI 6.3 |
 | Ctrl+O | copy the orchestrator's last message (as Codex does) | TI 6.2; ASM-9 |
-| Ctrl+G | open the draft in `$EDITOR` | TI 8 (both CLIs use Ctrl+G) |
+| Ctrl+G | open the draft in the [draft window](#draft-window), in the terminal; in it Ctrl+F full screen, Esc back | TI 8 (both CLIs use Ctrl+G); brief amendment 13 |
 | F2 | go to the oldest pending approval | ASM-9 |
 | F3 | the file the entry, full view or request in front names, in the [file viewer](#file-viewer); else the [Explorer](#explorer); in either, close back to the dashboard | plan 17; brief amendments 11 and 12 |
 | F4 | approvals Manual ⇄ Auto, from any focus; Manual at every launch, never saved | plan 12; brief amendment 8 |
@@ -1517,25 +1517,69 @@ provider: it has no provider code and sends a string to part 5's caller
   reliability.md, Test plan). No line cap; if one is ever needed, it is
   visible.
 
-### `$EDITOR`
+### Draft window
 
-Ctrl+G, as in both CLIs (TI 8; AM3 M8):
+Ctrl+G, the key both CLIs give their external editor (TI 8; AM3 M8), opens
+the draft in a window over the dashboard instead, in the terminal: no
+external editor, the application never starts VS Code or any other program
+for the draft (brief amendment 13). At 80x24:
 
-1. Resolve `VISUAL`, then `EDITOR`; split the value with `CommandLineToArgvW`
-   rules on Windows and shell rules elsewhere, so `code --wait` works.
-2. If neither is set, use a detected editor and say which ("no $VISUAL or
-   $EDITOR: using `code --wait`").
-3. Write the draft to a temporary file and close it; run the editor with
-   `ExecProcess`; read the file back byte for byte; delete it.
-4. A GUI editor without its blocking flag returns at once; the status line
-   warns "the editor returned immediately: add --wait (or your editor's
-   blocking flag)". Notepad's behaviour is not checked: that warning covers
-   it, and the owner closed the checks by hand (plan 14, item 3; TI 8).
-5. If the editor fails or is not found, show the error; **the draft is
-   never discarded**.
-6. While the editor runs, the tea loop is blocked; CLI events are buffered
-   outside it and applied when the editor returns (architecture.md,
-   Threads of execution). On return, the dashboard catches up in one frame.
+```text
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣╭─ Draft ──────────────────────────────────────────────────────── 7 lines ─╮l
+ A│ > Review the colour palette in sample/viewer.go:                         │e
+╭─│                                                                          │─╮
+│ │   1. keep the five accents of the reference screen;                      │ │
+│ │   2. check each one against the dark background;                         │ │
+│ │   3. report any pair under 4.5:1, with its hex values.                   │ │
+│ │                                                                          │ │
+│ │   Do not change the file yet.                                            │ │
+│ │                                                                          │ │
+│ │                                                                          │ │
+│ │                                                                          │ │
+│ │                                                                          │ │
+│ │                                                                          │ │
+╰─│                                                                          │─╯
+╭─│                                                                          │─╮
+│ │                                                                          │ │
+│ │                                                                          │ │
+│ │                                                                          │ │
+╰─│                                                                          │─╯
+╭─│                                                                          │─╮
+│ │ Enter send · Ctrl+J newline · Esc back           turn started by the CLI │ │
+╰─╰──────────────────────────────────────────────────────────────────────────╯─╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys
+```
+
+- **The window**: the file viewer's place and size (FileRect, [File
+  viewer](#file-viewer)): 76x22 at 80x24, 96x32 at 120x40, 160x48 at
+  200x60, centred; **Ctrl+F** fills the screen and back (`f` types a letter
+  in a draft). The dashboard keeps updating behind it. On the top edge,
+  "Draft" on the left, the line count on the right.
+- **The same draft, the same editor**: the window shows `m.edit`, the input
+  box's buffer, with every key of the [Input editor](#input-editor):
+  Enter sends and closes the window (on an empty draft it does nothing and
+  the window stays), Ctrl+J and the other newline keys add a line, Ctrl+C
+  copies a selection, Ctrl+Z and Ctrl+Y undo and redo, a paste is kept byte
+  for byte. While a turn runs, Enter does not send, as in the input box.
+- **Esc** clears a selection first, then goes back to the input box with the
+  draft kept. **Ctrl+G** inside the window does nothing more. F1 shows the
+  key page over it and Esc comes back to it; F4, F12, Ctrl+O and Ctrl+Q do
+  what they do everywhere. F2, F3 and F6 / Shift+F6 close the window, then
+  go to the approvals, the Explorer or the next zone, as the footer says.
+- **The footer**: the keys on the left, cut to fit ("Enter send · Ctrl+J
+  newline · Ctrl+F full screen · Ctrl+C copy · F1 keys · Esc back" at its
+  longest); on the right "line <cursor>/<N>", or "pasting…", or the
+  editor's status when Enter would not send ("turn running: the draft
+  waits · Ctrl+C interrupt").
+- **The mouse**: a drag in the window selects in the draft and copies on
+  release, as in the input box; the wheel moves the cursor 3 lines; a click
+  outside the window does nothing while it is open.
+- **Budget**: the window draws only its rows, from the editor's view around
+  the cursor, as the input box does ([Budget](#budget)); a keystroke in it
+  is measured with a 10,000-line draft by the timing step, and its
+  allocations are bounded by the same guard as the input box's
+  (`TestKeystrokeAllocs`).
 
 ## Clipboard
 
@@ -1605,7 +1649,7 @@ out of scope (brief, amendments 6 and 7).
 | Paste | Ctrl+V bracketed | Ctrl+V bracketed | bracketed through tmux | bracketed |
 | Mouse selection in a panel | yes (measured) | yes | yes | yes |
 | Native escape | F12, then the terminal's own drag and Ctrl+C (measured); Shift-drag Not verified | Shift-drag, F12 | outer Shift-drag | Shift (Option on iTerm2, Fn on Terminal.app) |
-| `$EDITOR` | `code --wait`; Notepad Not verified | `nvim` | same | `$EDITOR` |
+| Draft window (Ctrl+G) | in the terminal, no external editor (brief amendment 13; tested) | same | same | same |
 
 The MVP's target is the first column (AGENTS.md: one Windows 11 machine,
 architecture.md, Where it runs). The other columns are design notes, not

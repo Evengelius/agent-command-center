@@ -95,7 +95,7 @@ group; arrows are the only paths data takes.
 | 2. **Event collection and normalisation** | reading each stdout line, framing, decoding, mapping to the normalised events of [events-and-state.md](events-and-state.md), keeping unknown events as "unrecognised", writing the session log | decide anything about the UI | AM2 E5; INT shape ("unknown event types ... kept, logged and shown"); CX-9 |
 | 3. **Application state** | one reducer: `apply(state, event) -> state`; the conversation record, the agent tree, approvals, telemetry with ages, errors; the state machines | do I/O, call a model, read the clock except through events | AM2 E1, E2; AGENTS.md "The interface renders state" |
 | 4. **Terminal rendering** | `view(state, ui) -> frame` with Lip Gloss; layout per terminal size; animation frames from a local tick | change the state, read the CLI | B3.2; AM2 E2 |
-| 5. **Input and commands** | the editor, key bindings, focus, selection and clipboard, `$EDITOR`; turning keys into commands (send, approve, interrupt, select agent) | send to the CLI directly: commands go through part 1 | AM2 E5; AM3; TI 11 |
+| 5. **Input and commands** | the editor, key bindings, focus, selection and clipboard, the draft window; turning keys into commands (send, approve, interrupt, select agent) | send to the CLI directly: commands go through part 1 | AM2 E5; AM3; TI 11 |
 
 Rules that keep them apart:
 
@@ -113,9 +113,8 @@ Rules that keep them apart:
 
 - **One reader goroutine per CLI process** reads stdout line by line into an
   unbounded in-memory queue (part 2 decodes there), so the CLI's pipe never
-  blocks, even while Bubble Tea is paused by `$EDITOR` (TI 8: `ExecProcess`
-  blocks the event loop). A stderr reader keeps the last 50 lines for error
-  display (ASM-22).
+  blocks, however slowly the event loop drains it. A stderr reader keeps
+  the last 50 lines for error display (ASM-22).
 - **One forwarder** takes normalised events from the queue and hands them to
   the Bubble Tea program as messages, coalescing high-rate kinds (text deltas
   per message, rate-limit pushes, token updates) to at most one state update
@@ -585,7 +584,7 @@ ui-design.md, `REL` reliability.md.
 | AM3 M5 | Bracketed paste never submits | UI Input editor, "Paste"; REL Test plan |
 | AM3 M6 | Scrollable input with thousands of lines | UI Input editor, "Budget" |
 | AM3 M7 | Configurable Enter-to-send and newline keys | UI Focus and keys |
-| AM3 M8 | `$EDITOR` | UI Input editor, "`$EDITOR`" |
+| AM3 M8 | `$EDITOR`, replaced by the draft window (brief amendment 13) | UI Input editor, "Draft window" |
 | AM3 M9 | Content, whitespace, indentation, line breaks preserved | UI Input editor; REL Test plan |
 | AM3 M10 | Works across WT, PowerShell, WSL2, Linux, macOS where supported | UI What works where |
 | AM3 M11 | Terminal limits investigated | TI (plan 1); UI What works where |

@@ -91,9 +91,9 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	}
 	ls = append(ls, beside(zoneA(s, ui, aw, mid, sc), right)...)
 	ls = append(ls, zoneD(s, ui, w, dh, rows)...)
-	hints := "Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit"
+	hints := "Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit"
 	if wide {
-		hints = "Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
+		hints = "Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
 	}
 	if lipgloss.Width(hints)+1 > w {
 		// Zone B's input shows Ctrl+J above: the room goes to the end
@@ -757,6 +757,9 @@ func placeholder(s *state.State) string {
 	return ""
 }
 
+// idleHint is the editor's status while Enter sends.
+const idleHint = "Enter send · Ctrl+J newline"
+
 func editorStatus(s *state.State) string {
 	switch {
 	case s.QuitAsked:
@@ -774,7 +777,7 @@ func editorStatus(s *state.State) string {
 	case s.Session.Phase != state.Ready:
 		return "the session is " + strings.ToLower(string(s.Session.Phase)) + ": nothing can be sent"
 	case s.Turn.Phase == state.Idle:
-		return "Enter send · Ctrl+J newline"
+		return idleHint
 	case s.Turn.Phase == state.Interrupting:
 		return "interrupting…"
 	}
