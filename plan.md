@@ -199,6 +199,16 @@ Design:
    - Terminal runs: 34/34 PASS maximised and 34/34 at 80x24 (the second
      80x24 run; the first failed one check on the script's side).
    - 65 files free of CR, BOM and NUL.
+   - After the commit, at the owner's request: two dashboards and a test
+     double for `claude.exe` ran the two items not verified, a session
+     started on a worktree and another session's "session" mark. 37/37 PASS
+     maximised and at 80x24 (`doc/plan16-evaluation.md`, added section).
+   - Then live, on the owner's quota: a real Claude Code 2.1.302 on Haiku
+     started on a worktree, wrote a file there and named it; a second
+     dashboard marked it "session" until it quit. 80x24: 25/25 PASS;
+     maximised: 24 PASS, configuration NOT-VERIFIED (Claude Code rewrote
+     `known_marketplaces.json` during the turn). Earlier runs failed on the
+     script's side; all are kept (`doc/plan16-evaluation.md`, added section).
 
 ### Criteria
 

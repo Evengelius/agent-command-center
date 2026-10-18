@@ -126,3 +126,137 @@ script looked for the whole path, or the path with the user folder shortened
 to `C:\Users\…`. The check was changed to look for the end of the path
 (`p16-small\demo.worktrees\clash`), and the whole 80x24 run was repeated:
 34 PASS.
+
+## The two items not verified, run with a test double (2026-10-18)
+
+At the owner's request, the first two items of the "Not verified" line were
+run in a terminal after the plan was committed (ce95ba2). The summary block
+above is left as it was reported. No real agent CLI was started and no
+quota was used: `claude.exe` on the launch `PATH` was a test double, a small
+Go program kept outside the repository. It answers `-v` with
+`2.1.302 (Claude Code)` and the `initialize` control request with success.
+It emits a `system/init` event naming its working directory, with the model
+`fakeclaude-test-double`, and records that directory and its arguments in a
+file beside itself. It exits when its stdin closes and calls no model.
+
+The setup was as for the runs above: a temporary repository `demo` with
+`feature` and `clash` worktrees, each one commit ahead, and a temporary
+`LOCALAPPDATA`, `USERPROFILE` and `HOME`. `PATH` held the double's
+directory, `C:\Windows\System32` and git's `cmd` directory. Two dashboards
+ran in two Windows Terminal windows sharing that `LOCALAPPDATA`, so they
+shared one session registry:
+
+```text
+Two dashboard sessions, test double for claude.exe - 37 checks, maximised (156x44): 37 PASS; 80x24: 37 PASS
+PASS The double detected as Claude Code 2.1.302 on the startup screen
+PASS Dashboard 1: Ctrl+W, Enter on feature started the session; the CLI's working directory was <base>\demo.worktrees\feature, its arguments -p --input-format stream-json ... --permission-mode default
+PASS Dashboard 1: the header names feature and its branch (and its path, maximised); one session file, holding the worktree's path
+PASS Dashboard 1: Ctrl+W marks feature "this session"; x refused "this session runs in this worktree"; m refused "this session runs in feature: merge it from another directory"
+PASS Dashboard 2, at startup: feature marked "session", main and clash unmarked; x on feature refused "another dashboard session runs in this worktree", directory and branch kept
+PASS Dashboard 2: Enter on main started a session whose working directory was <base>\demo; two session files; its view marks main "this session" and feature "session"
+PASS Dashboard 1 again: main marked "session"; m on clash refused "another dashboard session runs in main", main's HEAD unchanged, no MERGE_HEAD
+PASS Dashboard 1, Ctrl+Q: window closed, the double saw its stdin close, one session file left (main's)
+PASS Dashboard 2: feature no longer marked; x on feature now asks "Remove <path>? ..."; n kept the directory and the branch
+PASS Dashboard 2, Ctrl+Q: no session file, no dashboard and no double process left; main's HEAD and status unchanged
+```
+
+Two runs did not complete cleanly, both through faults of the script, not of
+the dashboard:
+
+- The first maximised run stopped after 11 checks. The script read the
+  session file with .NET's `ReadAllText`, which does not share write
+  access, and the dashboard holds the file open for writing. The read now
+  shares read and write access, as the dashboard's own reader does. That
+  first run left dashboard 1 open, and Ctrl+Q closed it: no dashboard, no
+  double and no session file were left. Its results file was overwritten by
+  the repeated run; this paragraph is its record.
+- The first 80x24 run gave 36 PASS and 1 FAIL, "dashboard on the worktree".
+  The check looked for the worktree's path in the header. At 80 columns the
+  header shows `▣ feature   branch feature` without the path, as ui-design.md
+  draws the narrow header. The path is now required only maximised, and the
+  whole 80x24 run was repeated: 37 PASS.
+
+Still not verified: a real Claude Code or Codex CLI started on a worktree.
+That would be a live run under doc/evaluation.md, on the owner's quota and
+with the owner's approval. The double shows the dashboard's side, which is
+the same Start path, the same arguments and the same registry. A symbolic
+link in the project browser (TestDiskListLink SKIPs) is unchanged.
+
+## A real Claude Code started on a worktree, live (2026-10-18)
+
+At the owner's request ("do that live test simulation with my quota"), the
+item the double left open was run live, before the evaluation was
+committed. The CLI was Claude Code 2.1.302, the version last probed, on
+Haiku: `ANTHROPIC_MODEL=haiku` was set in the test window only. Each run
+used a new temporary repository `demo` under `%TEMP%`, outside the
+repository, with one worktree `feature` one commit ahead. Its two dashboards
+shared a temporary `LOCALAPPDATA`, so they shared one session registry. The
+real home was kept, so that Claude Code was signed in. The launch `PATH`
+began with the logging wrapper of the earlier live runs, which starts the
+real `claude.exe` with the same arguments and working directory and records
+its stdin and stdout. confcheck ran before and after each run, with the
+worktree as the project. Rules fixed beforehand: one prompt per run ("Use
+the Write tool to create a file named live.txt in the current directory
+containing the single word live. Then reply with only the absolute path of
+the current directory."); allow only the first Write card naming live.txt
+in the worktree, deny every other card; three minutes at most for the turn.
+
+```text
+A real Claude Code (2.1.302, Haiku) started on a worktree - 25 checks, maximised (156x44): 24 PASS, 1 NOT-VERIFIED (configuration); 80x24: 25 PASS
+PASS Startup screen: Claude Code 2.1.302 chosen, through the wrapper on PATH
+PASS Dashboard 1: Ctrl+W, Enter on feature; "Ready to work on this project." within 60 s; argv -p --input-format stream-json --output-format stream-json --verbose --include-partial-messages --forward-subagent-text --permission-prompt-tool stdio --permission-mode default
+PASS Dashboard 1: the header shows "▣ feature   branch feature" (and the path, maximised); one session file, holding the worktree's path; Ctrl+W marks feature "this session"
+PASS Dashboard 2, at startup: feature marked "session", main unmarked; x on feature refused "another dashboard session runs in this worktree", directory kept
+PASS Dashboard 1, the turn: the Write card named <base>\demo.worktrees\feature\live.txt and was allowed; result success; model claude-haiku-5-5
+PASS Claude Code's system/init cwd was <base>\demo.worktrees\feature; live.txt written there and not in <base>\demo
+PASS The reply, <base>\demo.worktrees\feature, shown whole in zone B
+PASS Dashboard 1, Ctrl+Q: window closed, no Claude Code process left from the run, no session file left
+PASS Dashboard 2: feature no longer marked, and now shows +1 (the new live.txt); Ctrl+Q closed it
+PASS Nothing left (session files, dashboards, Claude Code processes); main's HEAD and status unchanged
+PASS 80x24 / NOT-VERIFIED maximised: configuration; ~\.claude.json: claudeCodeFirstTokenDate and oauthAccount not compared (sensitive name); maximised, ~\.claude\plugins\known_marketplaces.json changed at 17:34:23, during the turn, not classified (contents not inspected)
+```
+
+`known_marketplaces.json` is hash-only (reliability.md, mixed state): a
+change there makes the run NOT-VERIFIED, never PASS. Its change at 17:34:23
+came in the maximised run's turn; plan 1 and plan 4 recorded the same
+rewrite as Claude Code's marketplace auto-update. The three maximised runs
+before it, with the same CLI and the same prompt, had configuration PASS.
+In two runs, 80x24 run 3 and maximised run 5, Haiku first asked to run
+`(Get-Location).Path` in PowerShell. That card was denied by the rule above.
+Claude Code then wrote live.txt through the Write card, which was allowed.
+
+The block above is the final runs, maximised run 5 and 80x24 run 4. The
+earlier runs are kept in this record. Each failure was a fault of the
+script, not of the dashboard:
+
+- Maximised run 1, 19 PASS and 6 FAIL. The Write card, naming the worktree's
+  live.txt, showed collapsed ("F2 to answer") because the input had the
+  focus. The script waited for the expanded keys line and never answered.
+  The turn stayed open for the three minutes, so Ctrl+Q asked the quit
+  question instead of quitting, and dashboard 2 kept marking feature
+  "session", rightly. The script's clean-up then denied the card,
+  interrupted the turn and closed dashboard 1. Nothing was left, and
+  configuration was PASS. The script now presses F2 when a card is collapsed.
+- Maximised run 2, 25 PASS, with the reply check looking only for
+  "demo.worktrees" on the screen.
+- 80x24 run 1, 24 PASS and 1 FAIL, "reply on screen". At 80 columns zone B
+  wraps the reply mid-word ("…demo.worktre" / "es\feature"), and that check
+  did not read across the wrap. The check now requires the whole reply,
+  read across the wrap.
+- Maximised runs 3 and 4, 24 PASS and 1 FAIL, the same check. It read
+  whole rows, so zone A's text, beside zone B, came between the wrapped
+  halves. Run 4's fix to read zone B's column did not take effect: a
+  PowerShell pipeline passed the frame as a single item. Run 4's saved
+  frame shows the reply whole, and the check, corrected, passes on it.
+  The 80x24 runs 2 and 3, 25 PASS each.
+
+Quota: nine turns on Haiku, API-equivalent $0.0039 to $0.0061 each, $0.037
+for the eight that ended. For run 1's turn, which was interrupted, no
+result and no cost were reported, so its cost is N/A. Zone D showed the
+5-hour window at 3% throughout.
+
+Now verified: a real Claude Code started on a worktree, and another
+dashboard's "session" mark for it, at both sizes. Codex CLI was not started
+on a worktree: it uses the same Start path and registry, and was not in the
+approved scope. A symbolic link in the project browser (TestDiskListLink
+SKIPs) is unchanged.
