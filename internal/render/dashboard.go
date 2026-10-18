@@ -489,7 +489,9 @@ func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) [
 			if fail != nil {
 				lead = deco("  ✗ ", stFailed)
 			}
-			l := append(append(append(line{lead}, oneRow(i, e, stGrey)...), fail...), toolReviewed(s, e)...)
+			// The reviewer's verdict before the error: a refusal's error text
+			// is long and would push it off the row (plan 13, item 1).
+			l := append(append(append(line{lead}, oneRow(i, e, stGrey)...), toolReviewed(s, e)...), fail...)
 			return spread(l, decoLine(originLabel(e.Origin), stGrey), w)
 		}})
 	case "review":

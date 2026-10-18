@@ -208,6 +208,17 @@ func (m *Mapper) system(l line, raw []byte) []event.Event {
 		}
 		_ = json.Unmarshal(raw, &s)
 		return []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, event.Status{Detail: fmt.Sprintf("%d commands available", len(s.Commands))})}
+	case "permission_check_status":
+		// A tool's permission being checked, "checking" then "done"
+		// (undocumented; P13c, Claude Code 2.1.302). The verdict comes with
+		// the tool's result (verdicts), so it is known and logged with no
+		// status, as commands_changed.
+		var s struct {
+			ToolUseID string `json:"tool_use_id"`
+			Status    string `json:"status"`
+		}
+		_ = json.Unmarshal(raw, &s)
+		return []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, event.Status{Detail: "permission check " + s.Status + ": " + s.ToolUseID})}
 	case "permission_denied":
 		return []event.Event{m.ev(event.Error, event.Observed, "", raw, event.Problem{Message: "permission denied"})}
 	case "thinking_tokens":

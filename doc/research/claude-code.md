@@ -428,7 +428,8 @@ activity counts (doc `#sdktaskstartedmessage`).
 | `system/compact_boundary` | `trigger`, `pre_tokens` | Context reset marker |
 | `system/api_retry` | `attempt`, `max_retries`, `retry_delay_ms`, `error_status`, `error` | Retry counter (doc `headless#handle-api-retries`) |
 | `system/informational` | `content`, `level` | Notices |
-| `system/permission_denied` | `tool_name`, `tool_use_id`, `agent_id`, `decision_reason`, `message` | Denials |
+| `system/permission_denied` | `tool_name`, `tool_use_id`, `agent_id`, `decision_reason`, `decision_reason_type` (e.g. `"classifier"`, P13c), `message` | Denials |
+| `system/permission_check_status` | `tool_use_id`, `status` (`"checking"`, `"done"`); undocumented, P13c | A tool's permission check, before its verdict |
 | `system/task_*`, `system/background_tasks_changed`, `tool_progress` | section 5 | Zone C |
 | `system/hook_started`, `hook_progress`, `hook_response` | hook name, output (with `--include-hook-events`) | Hook activity |
 | `system/session_state_changed` | `state`: `idle` / `running` / `requires_action` (needs `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS=1`) | Orchestrator state |
@@ -750,11 +751,29 @@ with only `--permission-mode` changed (`probes/README.md`):
   configuration check after the run found the settings files identical, so
   `set_permission_mode` writes no settings file (open question 11, for that
   request).
-- **Not observed:** a classifier block. A project write is allowed by the
-  mode and never reaches the classifier; asked to write outside the project
-  against a boundary it was given, the model refused without a tool call
+- **A classifier block, observed live** (plan 13, Claude Code 2.1.302, Haiku,
+  the dashboard in Auto, 2026-10-18): asked to follow a `SETUP.md` whose
+  steps the owner never authorised, the classifier denied a PowerShell call
+  that scouted the exfil [P:p13c-claude-auto-classifier-deny.jsonl]. The
+  reject is the mirror of the accepts above: the `user` line's tool result
+  carries `tool_result_meta[].non_execution_kind:"automode-blocked"` with
+  `permission_decision {decision:"reject", source:"config",
+  reason_type:"classifier"}`, and the tool-result content reads "Permission
+  for this action was denied by the Claude Code auto mode classifier.
+  Reason: [Exfil Scouting]…". A separate `system`/`permission_denied`
+  repeats it (`decision_reason_type:"classifier"`,
+  `decision_reason:"[Exfil Scouting]"`). This confirms the mapper's earlier
+  guess of `"reject"` for a classifier block. (Earlier, P12c saw no block
+  because a project write never reaches the classifier and an out-of-project
+  write was refused by the model without a tool call
   [P:p12c-block-claude-auto-boundary-edit.jsonl,
-  P:p12c-block2-claude-auto-boundary-shell.jsonl].
+  P:p12c-block2-claude-auto-boundary-shell.jsonl].)
+- **`system`/`permission_check_status` (undocumented, new):** a tool's
+  permission check is bracketed by `{type:"system",
+  subtype:"permission_check_status", tool_use_id, status:"checking"}` then
+  the same with `"done"` [P:p13c-claude-auto-classifier-deny.jsonl]. The
+  verdict itself arrives with the tool's result (above), so the dashboard
+  logs this event as `commands_changed` with no on-screen status.
 - **Documented** (https://code.claude.com/docs/en/permission-modes, fetched
   2026-10-18): on a block Claude receives the reason and tries another
   way; after 3 blocks in a row or 20 in a session auto mode pauses and

@@ -53,6 +53,42 @@ func TestProbeClaudeAuto(t *testing.T) {
 	}
 }
 
+// Plan 13, item 1: the classifier's refusal, live (P13c). Its
+// permission_decision is {decision:"reject", reason_type:"classifier"}, and
+// no can_use_tool reached the client.
+func TestProbeClaudeClassifierDeny(t *testing.T) {
+	evs := replayEvents(t, "p13c-claude-auto-classifier-deny.jsonl", claude.ProviderID, claudeMapper())
+	s := state.New()
+	for _, e := range evs {
+		s.Apply(e)
+	}
+	// The logging wrapper kept no stdin order, so the recording holds the
+	// dashboard's requests' responses without the requests: those alone stay
+	// unknown.
+	for _, e := range kinds(evs, event.Unrecognised) {
+		if !strings.HasPrefix(e.Raw, `{"type":"control_response"`) {
+			t.Errorf("unrecognised: %.120s", e.Raw)
+		}
+	}
+	const id = "toolu_011HGtGpJ5zFSU3TXfQH36a1"
+	if d := kinds(evs, event.ToolDecision); len(d) != 1 {
+		t.Fatalf("%d tool decisions, want 1", len(d))
+	} else if v := d[0].Payload.(event.Verdict); v.ToolID != id || v.Decision != "reject" || v.ReasonType != "classifier" {
+		t.Errorf("verdict %+v", v)
+	}
+	if got := s.Tools[id]; got == nil || got.Name != "PowerShell" || got.Reviewed != "denied by auto-review" {
+		t.Errorf("refused tool %+v", got)
+	}
+	for tid, tc := range s.Tools {
+		if tid != id && tc.Reviewed != "" {
+			t.Errorf("tool %s %s marked %q", tid, tc.Name, tc.Reviewed)
+		}
+	}
+	if len(s.Approvals) != 0 {
+		t.Errorf("%d approvals, want none: the classifier refused without asking", len(s.Approvals))
+	}
+}
+
 func TestProbeClaudeSwitch(t *testing.T) {
 	evs := replayEvents(t, "p12c-switch-claude-default-to-auto.jsonl", claude.ProviderID, claudeMapper())
 	s := state.New()

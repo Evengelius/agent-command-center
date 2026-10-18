@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
+	"github.com/Evengelius/agent-command-center/internal/provider/claude"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -231,6 +233,46 @@ func TestToolMarkerInZoneB(t *testing.T) {
 			evOf(event.ToolDecision, event.Verdict{ToolID: "t2", Decision: "accept", ReasonType: "mode"}))
 		f := h.frame()
 		if n := strings.Count(f, "approved by auto-review"); n != 1 {
+			t.Fatalf("%d markers, want 1:\n%s", n, f)
+		}
+	})
+}
+
+// Plan 13, item 1: the classifier's refusal recorded live (P13c) reaches
+// zone B as the reviewer's, on the refused call's own row.
+func TestClassifierDenialInZoneB(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		h, _ := readyScript(t, "claude-code", true, event.Started{SessionID: "s1", ApprovalMode: event.ModeAuto})
+		h.send(tea.WindowSizeMsg{Width: 156, Height: 40})
+		m := claude.NewMapper()
+		evs := []event.Event{evOf(event.TurnStarted, nil)}
+		for _, r := range probe(t, "p13c-claude-auto-classifier-deny.jsonl") {
+			if r.Dir != "out" {
+				continue
+			}
+			for _, e := range m.Out(r.Msg) {
+				switch e.Kind {
+				case event.SessionSpawned, event.SessionReady, event.SessionStarted:
+				default:
+					evs = append(evs, e)
+				}
+			}
+			if bytes.Contains(r.Msg, []byte(`"reason_type":"classifier"`)) {
+				break // the refused call's result; the answer after it would scroll it away
+			}
+		}
+		pushEvents(h, "claude-code", evs...)
+		f := h.frame()
+		var row string
+		for _, l := range strings.Split(f, "\n") {
+			if strings.Contains(l, "✗ PowerShell") {
+				row = l
+			}
+		}
+		if !strings.Contains(row, "denied by auto-review") {
+			t.Fatalf("refused call's row %q, want the reviewer's denial on it:\n%s", row, f)
+		}
+		if n := strings.Count(f, "by auto-review"); n != 1 {
 			t.Fatalf("%d markers, want 1:\n%s", n, f)
 		}
 	})

@@ -31,7 +31,7 @@ func count(evs []event.Event, k event.Kind) int {
 // Every line of every Claude recording maps to at least one event, and no
 // line is unreadable (proposal step 0, item 6: 0 lines dropped).
 func TestEveryLineMaps(t *testing.T) {
-	for _, name := range []string{"p1-claude-stream.jsonl", "p2-claude-conversation.jsonl", "p3-claude-subagent.jsonl", "p3b-claude-subagent-approval.jsonl", "p4-claude-resume.jsonl", "p12c-claude-auto.jsonl", "p12c-switch-claude-default-to-auto.jsonl"} {
+	for _, name := range []string{"p1-claude-stream.jsonl", "p2-claude-conversation.jsonl", "p3-claude-subagent.jsonl", "p3b-claude-subagent-approval.jsonl", "p4-claude-resume.jsonl", "p12c-claude-auto.jsonl", "p12c-switch-claude-default-to-auto.jsonl", "p13c-claude-auto-classifier-deny.jsonl"} {
 		recs, per := replay(t, name)
 		for i, evs := range per {
 			if len(evs) == 0 {

@@ -191,8 +191,10 @@ classifier allows runs without a card; one it would pause still arrives as
 `tool_result_meta[].permission_decision` with `reason_type:"classifier"`
 (undocumented) marks the call "approved by auto-review" or "denied by
 auto-review"; other reasons (`mode`, a rule, the owner) leave no mark. The
-mode is never saved: it is not a setting, and the CLI's configuration is
-not touched (CC-11; P12c, P12c-switch).
+reviewer's verdict is placed on the tool row before the error text, so a
+refusal's long error does not push the verdict off the row (plan 13, item
+1; P13c). The mode is never saved: it is not a setting, and the CLI's
+configuration is not touched (CC-11; P12c, P12c-switch).
 
 ### Codex adapter
 

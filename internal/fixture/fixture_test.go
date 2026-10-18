@@ -29,6 +29,7 @@ func TestFixturesMatchRecordings(t *testing.T) {
 		"p12x-codex-auto-review.jsonl":                  167,
 		"p12x-sandbox-codex-turn-workspace-write.jsonl": 245,
 		"p12x-switch-codex-user-to-auto-review.jsonl":   180,
+		"p13c-claude-auto-classifier-deny.jsonl":        260,
 	}
 	copies, _ := filepath.Glob("../../testdata/probes/*.jsonl")
 	if len(copies) != len(want) {
