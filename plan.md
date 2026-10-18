@@ -20,14 +20,15 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
-**Plan 12, Manual or Auto approvals, done and awaiting the owner's
-approval**
+**Plan 12, Manual or Auto approvals, approved by the owner on
+2026-10-18; no plan 13 is defined yet**
 (the owner's request of 2026-10-18, brief amendment 8,
 [Plan 12](#plan-12---manual-or-auto-approvals) at the end). Its four items
 are done, 18 of 19 criteria PASS and 1 FAIL accepted; the evaluation
-summary is in [`doc/plan12-evaluation.md`](doc/plan12-evaluation.md).
+summary is in [`doc/plan12-evaluation.md`](doc/plan12-evaluation.md), with the
+two comparison addenda, committed as cb31557.
 
-Plan 12 progress (update as each item finishes; read this first after a
+Plan 12 progress (closed; update as each item finishes; read this first after a
 context compaction). Items and rules:
 [Plan 12](#plan-12---manual-or-auto-approvals).
 Baseline: cb206b6, 235 top-level tests in 14 packages, 0 FAIL.
