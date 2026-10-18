@@ -281,9 +281,9 @@ Without losing the session (B3.4):
   dashboard does not depend on it); the record is still what is shown, so
   both CLIs behave the same.
 - **Across dashboard runs**: not in the MVP. The record lives in memory
-  (ASM-11) and no history file is written; reopening an older session would
-  be a "recent projects" style feature, which AM4 excludes. The CLIs' own
-  `--resume` in another terminal remains (INT 6).
+  (ASM-11) and no history file is written; reopening an older session is
+  not built; plan 15's recent projects keep paths only (ASM-24). The CLIs'
+  own `--resume` in another terminal remains (INT 6).
 - **If the dashboard itself fails** (killed, crashed or panicking): the
   draft is on disk (ASM-23) and offered back on the next start in the same
   project; a panic restores the terminal, saves the draft and closes the CLI

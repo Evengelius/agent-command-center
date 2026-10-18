@@ -83,6 +83,11 @@ type Options struct {
 	Home string
 	// Drafts keeps the draft on disk; nil keeps it in memory only.
 	Drafts *input.Drafts
+	// Projects keeps the startup screen's project list (plan 15); nil reads
+	// and writes nothing, and the screen has no list.
+	Projects *input.Projects
+	// Lister reads directories for the project browser; nil is the disk.
+	Lister input.Lister
 	// DetectTimeout bounds each adapter's detection; 0 is DetectTimeout.
 	DetectTimeout time.Duration
 }
@@ -132,6 +137,14 @@ type Model struct {
 	draftTimer bool   // a save is due
 	draftSaved string // the text last saved or read
 	draftGen   int
+
+	// The project list (projects.go): nil when it is off.
+	projects     *projectStore
+	projectList  []input.Project
+	projectsGen  int // the last read or change asked for
+	projectsSeen int // the last one shown
+	// The project browser (browse.go): nil when closed.
+	browse *browser
 
 	spinning, clocking bool
 
@@ -191,6 +204,9 @@ func New(opt Options) *Model {
 	if opt.Getenv == nil {
 		opt.Getenv = os.Getenv
 	}
+	if opt.Lister == nil {
+		opt.Lister = input.Disk{}
+	}
 	m := &Model{opt: opt, s: state.New(), detected: map[string]provider.Detection{}}
 	m.env = input.PathEnv{Windows: filepath.Separator == '\\', Home: opt.Home, Cwd: opt.Cwd}
 	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache()}
@@ -204,6 +220,10 @@ func New(opt Options) *Model {
 	m.pending = m.do(state.Launch{Mock: opt.Mock})
 	if opt.Mock == "" {
 		m.pending = append(m.pending, m.detect())
+		if opt.Projects != nil {
+			m.projects = &projectStore{p: *opt.Projects}
+			m.pending = append(m.pending, m.projectsCmd(nil))
+		}
 	}
 	m.syncUI()
 	return m
@@ -255,10 +275,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.repaint = true
 		}
 	case actionMsg:
+		validating := m.s.Startup.Phase == state.Validating
 		cmds = append(cmds, m.do(msg.a)...)
 		if _, ok := msg.a.(state.ValidationFailed); ok {
 			m.focusMessage()
 		}
+		if ok, isOK := msg.a.(state.ValidationOK); isOK && validating && !m.s.Context.Mock {
+			cmds = append(cmds, m.recordProject(ok.Project)) // the validated path (plan 15)
+		}
+	case projectsMsg:
+		cmds = append(cmds, m.projectsDone(msg)...)
+	case browseMsg:
+		m.browseDone(msg)
 	case detectedMsg:
 		cmds = append(cmds, m.detectionDone(msg.found)...)
 	case startedMsg:
@@ -339,6 +367,14 @@ func (m *Model) syncUI() {
 	m.ui.Branch = ""
 	if c := m.s.Context; c.Project != "" && c.Project == r.Path {
 		m.ui.Branch = c.Branch // read on validation, for the path validated
+	}
+	if m.s.Screen == state.ScreenStartup {
+		m.ui.Projects = m.projectRows()
+		m.ui.ProjectSel = max(min(m.ui.ProjectSel, len(m.projectList)-1), 0)
+		if m.ui.Field == 3 && len(m.projectList) == 0 {
+			m.ui.Field = 1
+		}
+		m.ui.Browser = m.browserView()
 	}
 }
 
@@ -642,6 +678,8 @@ func (m *Model) Shutdown() {
 
 func (m *Model) paste(text string) {
 	switch {
+	case m.s.Screen == state.ScreenStartup && m.browse != nil:
+		m.browse.paste(text)
 	case m.s.Screen == state.ScreenStartup && m.ui.Field == 1:
 		m.path.Insert(input.CleanPath(text))
 	case m.s.Screen == state.ScreenDashboard && m.ui.Focus == "B":

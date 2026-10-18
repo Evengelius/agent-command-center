@@ -179,7 +179,7 @@ The text is the specification; the images give the look.
 
 | In the image | The text says | So |
 | --- | --- | --- |
-| "Browse directories, recent projects, or enter a path" | manual entry only; no browser, no recent projects in the MVP | a text field with the current directory prefilled; the hint becomes a short help line |
+| "Browse directories, recent projects, or enter a path" | manual entry only in the MVP; amendment 9 adds recent projects, favourites and a project browser | a text field with the current directory prefilled and a short help line; under it the recent and favourite projects, and Ctrl+O opens the browser (ui-design.md, Startup screen) |
 | "Optional session settings" | exactly two mandatory questions; no advanced configuration | not in the MVP |
 | "Preview configuration" | proceed once both answers are validated | the button starts the session, after validation |
 | "AGENT CONTROL CENTER" (image 2) | "AGENT COMMAND CENTER - LIVE" | the project's name, "AGENT COMMAND CENTER" |

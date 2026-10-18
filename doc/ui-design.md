@@ -28,7 +28,8 @@ child, cost N/A, an observed plan). Colours are described in
 ## Startup screen
 
 The first screen (AM4 S1-S15). Two mandatory questions, validated before the
-dashboard opens; nothing else.
+dashboard opens; since plan 15, the recent and favourite projects under them
+and a project browser (amendment 9).
 
 ```text
  >_ AGENT COMMAND CENTER                                            New session 
@@ -54,7 +55,7 @@ dashboard opens; nothing else.
                                                                                 
                                                                                 
                                                                                 
- ↑↓ agent · Tab next field · Enter start · Ctrl+Q quit                          
+ ↑↓ agent · Tab next field · Enter start · Ctrl+O browse · Ctrl+Q quit         
 ```
 
 ### Questions
@@ -133,20 +134,96 @@ The screen with two failures, Codex missing and a mistyped path:
                                                                                 
                                                                                 
                                                                                 
- ↑↓ agent · Tab next field · Enter start · Ctrl+Q quit                          
+ ↑↓ agent · Tab next field · Enter start · Ctrl+O browse · Ctrl+Q quit         
 ```
 
 Warnings (shown in amber with !, Start still allowed): a UNC path ("a
 network share can be slow or disappear"); a `\\wsl$` or `\\wsl.localhost`
 path ("files in Linux, used by a Windows agent CLI: slow, and unverified").
 
+### Projects
+
+The project store, `projects.json` in the dashboard's own folder
+(`%LOCALAPPDATA%\agent-command-center\`, beside `drafts\`), keeps one entry
+per project: its validated path, when a session last started in it, and
+whether it is a favourite. It is written through a temporary file renamed
+over the old one; paths are compared without case on Windows; it holds no
+conversation data. A path is recorded once validation passes, even if the
+agent CLI then fails to start. At most 10 recent projects are kept; a
+favourite is never dropped. A mock run passes no store: nothing is read or
+written and the screen is unchanged.
+
+Under the project field, "Projects" lists favourites first (★), then the
+other recent projects, each group by its last start: the directory's name,
+its path and its age ("3 h ago", "never" for a directory starred from the
+browser before any session). It is a Tab stop between the project field
+and Start, shown only when not empty, with as many rows as fit so the Start
+button stays whole at 80x24; when rows are left out the heading shows the
+window ("1–3 of 11"). A store that cannot be read shows "Recent projects
+unavailable:" and the reason in its place, never an empty list; one that
+cannot be written shows "Recent projects not saved:" and the reason.
+
+```text
+    Projects   1–3 of 11
+         ★ docs                C:\javadev\projets\docs               3 h ago
+       › ★ scratch             C:\javadev\projets\scratch            1 d ago
+         ★ acme-portal         D:\clients\acme-portal                  never
+```
+
+### Project browser
+
+Ctrl+O on the startup screen (not while validating) opens the browser full
+screen at the project field's resolved directory, else its nearest existing
+parent, else the home directory. It lists directories only, sorted without
+case, with ★ for a favourite, "git" for a directory holding `.git` (a
+directory or a file) and "link" for a link or junction to a directory.
+Hidden and system directories are left out and counted until Ctrl+H. The
+first row, "Use this directory", chooses the directory shown; then `..`;
+then the subdirectories. A directory is read off the update loop, with
+"reading…" until it is listed; one that cannot be listed shows its error in
+red with ✗, worded as validation words it, and stays browsable upwards. On
+Windows, `..` at a drive's root lists the drives. The rows are windowed
+around the selection, their window on the right of the count line.
+
+```text
+ >_ AGENT COMMAND CENTER                                        Project browser
+────────────────────────────────────────────────────────────────────────────────
+
+    Choose a project directory
+    In      C:\javadev\projets
+    Filter  █ type to filter
+    ────────────────────────────────────────────────────────────────────────
+        Use this directory                            start the session here
+        ..                                                            parent
+      ★ agent-command-center                                             git
+    ›   billing-service                                                  git
+        docs-site
+        legacy-portal                                                   link
+        tools                                                      link  git
+    ────────────────────────────────────────────────────────────────────────
+    5 directories · 1 hidden, Ctrl+H shows them
+ Enter open · ↑↓ move · ← up · Ctrl+F star · Ctrl+H hidden · Esc back
+```
+
+| Key | Action |
+| - | - |
+| Typing, paste | filter by name, without case (a paste's first line); the first match is selected |
+| ↑ ↓ PgUp PgDn Home End | move |
+| Enter / → | open the directory; on "Use this directory" (Enter only), fill the project field and start, validated as a typed path |
+| ← / Backspace | with an empty filter, go up with the directory left selected; Backspace otherwise edits the filter |
+| Ctrl+F | star or unstar the selected directory (with a store) |
+| Ctrl+H | show or hide the hidden directories |
+| Esc | clear the filter, then close with the project field unchanged |
+
 ### Keys
 
 | Key | Action |
 | - | - |
-| ↑ / ↓ | choose the agent CLI (on question 1) |
-| Tab / Shift+Tab | next / previous field (question 1, question 2, Start) |
-| Enter | Start: validate both answers, then start |
+| ↑ / ↓ | choose the agent CLI (on question 1); move in Projects |
+| Tab / Shift+Tab | next / previous field (question 1, question 2, Projects, Start) |
+| Enter | Start: validate both answers, then start; in Projects, with that project's path |
+| f / Del | in Projects: star or unstar / forget that project |
+| Ctrl+O | open the project browser |
 | Editing keys | as in the [Input editor](#input-editor), on one line |
 | Ctrl+Q | quit |
 
@@ -161,7 +238,7 @@ Against [RD, Image 1](reference-design.md#image-1-startup-configuration):
 | Two numbered questions, red asterisks, thin separators | Same | AM4 S15 |
 | Three agents, including Google Gemini CLI | Two: Claude Code and OpenAI Codex | AM5 |
 | Each agent a bare name | Each row adds the detected version and path, or "not installed" | AM4 S2, S3 |
-| "Browse directories, recent projects, or enter a path" | A help line for manual entry, and the resolved path shown live | AM4 S13, X1-X3 (RD, "Where the images and amendment 4's text differ") |
+| "Browse directories, recent projects, or enter a path" | A help line for manual entry and the resolved path shown live; the recent and favourite projects under it, and Ctrl+O for the browser | AM4 S13, X1-X3; amendment 9 (RD, "Where the images and amendment 4's text differ") |
 | "Optional session settings" | Absent | AM4: exactly two questions; X10 |
 | One wide light button "Preview configuration →" | One wide light button "Start session →", which validates then starts | AM4 S14 |
 

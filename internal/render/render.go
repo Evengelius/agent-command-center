@@ -29,13 +29,18 @@ type UI struct {
 	Now           time.Time // the frame's time, for elapsed times
 
 	// Startup screen.
-	Field       int    // 0 agent CLI, 1 project directory, 2 Start
+	Field       int    // 0 agent CLI, 1 project directory, 2 Start, 3 the project list
 	Choice      string // the provider id the radio buttons select
 	Path        string // the project field's text
 	Resolved    string // the path the agent would receive, computed without I/O
 	PathProblem string // why the typed form is refused, computed without I/O
 	PathWarning string // a caution on an accepted path (UNC, WSL)
 	Branch      string // the git branch, once read
+	// The project list (plan 15): favourites first, then recent projects.
+	Projects        []ProjectRow
+	ProjectSel      int         // the selected row
+	ProjectsProblem string      // the list cannot be read or written
+	Browser         BrowserView // the project browser, over the screen while Open
 
 	// Dashboard.
 	Focus    string // "A", "B", "C" or "D"

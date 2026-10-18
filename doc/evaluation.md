@@ -55,7 +55,7 @@ work is done only when every criterion passes. What only the owner can judge
 | Path validation | table tests: Windows path, `~`, WSL path, relative path, trailing separator, non-existent, a file instead of a directory, no access; each accepted or refused with its message |
 | Working directory | the started CLI's working directory equals the chosen project path, read from the process or the CLI's own output |
 | Startup gate | the dashboard cannot open before both answers are validated |
-| MVP scope | none of the features amendment 4 leaves out exists in the code or the screens |
+| MVP scope | none of the features amendment 4 leaves out exists in the code or the screens, except recent projects, favourites and a project browser (amendment 9) |
 | MVP acceptance | plan 4 ends with amendment 4's acceptance criteria, each checked with each agent CLI, or listed under not verified |
 
 A check that cannot fail proves nothing. When you write a new check, run it once

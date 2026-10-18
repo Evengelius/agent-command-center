@@ -345,18 +345,21 @@ agent-command-center [--mock <file>] [--provider <id>] [--project <path>]
 ## Out of scope
 
 Not designed, not built, and no option for them (AM4 "MVP Scope"; AM5).
-Google Antigravity and amendment 4's ten exclusions are **[Nice to have]**
+Google Antigravity and seven of amendment 4's ten exclusions are **[Nice to have]**
 ([plan.md](../plan.md#nice-to-have)): built only if the owner asks for one
 in a new plan.
 
 - Gemini CLI and Google Antigravity: no adapter, option or test (AM5). The
   research record [research/gemini-cli.md](research/gemini-cli.md) is kept,
   marked out of scope.
-- Recent project history; project favourites; an advanced project browser;
-  git worktree management; automatic VS Code integration; advanced model
+- Git worktree management; automatic VS Code integration; advanced model
   configuration; cross-provider agent collaboration; provider switching
   during a session; complex session profiles; advanced orchestration
-  configuration (AM4 X1 to X10).
+  configuration (AM4 X4 to X10).
+
+Recent project history, project favourites and a project browser (AM4 X1
+to X3) are built on the startup screen since plan 15 (amendment 9;
+ui-design.md, Startup screen).
 
 The provider interface stays open to another agent CLI later (AGENTS.md).
 
@@ -407,6 +410,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-21 | Timeouts no source gives: Codex's handshake 60 s, as Claude Code's (CC-4); each CLI's detection 10 s | events-and-state.md, Startup and Session machines; How it starts |
 | ASM-22 | Display defaults: thinking text folded; a sent message over 20 lines folded to its first 5; zone C ordered waiting, running, ended, most recent first; copy on mouse release; the last 50 stderr lines kept for error display | ui-design.md; Threads of execution |
 | ASM-23 | The editor's draft is saved byte for byte at most 1 s after the last change, by atomic rename, to `%LOCALAPPDATA%agent-command-centerdrafts`, one file per project named by the SHA-256 of its path; deleted once the CLI accepts the send, kept if the send fails, offered back on the next start in that project. On quit, crash or panic the dashboard prints the CLI session id and the CLI's own resume command; a panic restores the terminal, saves the draft, closes the CLI and exits with code 2. Not a history file (ASM-11) | reliability.md, Resumption; plan 3 (d5b910e) |
+| ASM-24 | The startup screen's project store is `projects.json` in `%LOCALAPPDATA%\agent-command-center\`, written by atomic rename: per project its validated path, its last start and whether it is a favourite; at most 10 recent projects, favourites never dropped; paths compared without case on Windows. No conversation data (ASM-11). A store that cannot be read or written is said so on screen; a mock run uses none | ui-design.md, Projects; plan 15 |
 
 ## Coverage of the brief
 
@@ -570,7 +574,7 @@ ui-design.md, `REL` reliability.md.
 | AM4 S10 | Exists and accessible | same |
 | AM4 S11 | It becomes the working directory | ARCH Session context |
 | AM4 S12 | Current directory prefilled | ARCH How it starts |
-| AM4 S13 | No advanced project browser | ARCH Out of scope |
+| AM4 S13 | No advanced project browser; amendment 9 adds one | UI Startup screen, Project browser |
 | AM4 S14 | Dashboard only after both are validated | EVT Startup machine |
 | AM4 S15 | Startup follows image 1 | UI Startup screen, "Follows and departs" |
 | AM4 D1 | Transition to the dashboard | UI Transition |
@@ -584,7 +588,8 @@ ui-design.md, `REL` reliability.md.
 | AM4 W3 | The agent inspects, modifies with approval, runs tools, reports | EVT Approval machine; UI Approvals |
 | AM4 F1-F10 | The 10-step expected experience | UI Interaction flow |
 | AM4 F11 | One coherent application | UI Transition |
-| AM4 X1-X10 | The 10 excluded features | ARCH Out of scope |
+| AM4 X1-X3 | Recent projects, favourites, a project browser: built by amendment 9 | UI Startup screen, Projects and Project browser |
+| AM4 X4-X10 | The 7 excluded features left | ARCH Out of scope |
 | AM4 P1-P6 | The six priorities | ARCH Build order |
 | AM4 P7 | One provider end to end first | ARCH Integration strategy; ARCH Build order |
 | AM4 P8 | No function traded for a visual detail | ARCH Build order step 7 |

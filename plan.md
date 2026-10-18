@@ -5,8 +5,9 @@ entry per closed plan. Each plan comes from `doc/brief.md` and its
 amendments, ends with the evaluation summary of `doc/evaluation.md`, and
 waits for the owner's approval before the next one starts. This file keeps
 the current state only (the owner, 2026-10-18): a closed plan's full text,
-criteria and progress log are in git, `git show 8888f59:plan.md` for plans 1
-to 13, and its results in its evaluation file.
+criteria and progress log are in git (`git show 8888f59:plan.md` for plans 1
+to 13, `git show 84d2ad8:plan.md` for plan 14), and its results in its
+evaluation file.
 
 ## The owner's standing decisions
 
@@ -49,13 +50,11 @@ summary format (the owner, 2026-10-18).
 
 Items tagged **[Nice to have]** are future improvements: none is built, and
 none is listed as remaining, until the owner asks for one in a new plan
-(the owner, 2026-10-18). Amendment 4 names the first ten "future
+(the owner, 2026-10-18). Amendment 4 names the first seven "future
 improvements" (`doc/brief.md`, Amendment 4, "For this phase, do NOT
-implement").
+implement"); its other three, recent projects, favourites and a project
+browser, are plan 15 (amendment 9).
 
-- **[Nice to have]** Recent project history.
-- **[Nice to have]** Project favourites.
-- **[Nice to have]** An advanced project browser.
 - **[Nice to have]** Git worktree management.
 - **[Nice to have]** Automatic VS Code integration.
 - **[Nice to have]** Advanced model configuration.
@@ -66,238 +65,150 @@ implement").
 - **[Nice to have]** Google Antigravity as an agent CLI, removed from the
   MVP by amendment 5; the provider interface stays open to it.
 
-## Plan 14 - Nothing left open
+## Plan 15 - Recent projects, favourites and a project browser
 
-**Done, approved by the owner on 2026-10-18** (committed as 0206ac1). The owner's request (2026-10-18), after plan 13's
-approval: settle what is still open so that no plan 15 is needed for it.
-Anything not settled is closed with its reason, and nothing is left for
-later. Items 5 to 7 were added by the owner on 2026-10-18, after items 1 to
-4 were done.
+**Done, awaiting the owner's approval:** 21 criteria, 21 PASS
+([`doc/plan15-evaluation.md`](doc/plan15-evaluation.md)). The owner's
+request (2026-10-18, `doc/brief.md`, amendment 9): three of amendment 4's
+future improvements, built "sequentially, one by
+one": recent project history, project favourites, then a project browser.
+Each item is checked before the next starts. Everything is on the startup
+screen; the dashboard, the agent CLIs and their configuration are not
+touched. No new dependency: `encoding/json` and `x/sys/windows` are already
+in the graph.
 
-1. Claude Code's question round trip (CC-10 q3): probe whether allow with
-   `updatedInput: {questions, answers}` gives the model the owner's
-   answers. If it does, the question card answers from the dashboard. If
-   it does not, the card keeps deny-and-type, and the reason is recorded.
-2. The remaining open questions of `doc/research/claude-code.md` section
-   10 (q2, q4 to q7, q9 to q11, q13, q14): each one is settled with
-   evidence, or closed with the reason the dashboard does not depend on
-   it. A probe runs only where the dashboard depends on the answer.
-3. The items the owner closed on 2026-10-18, recorded as the owner's
-   decisions:
-   - Claude Code's Auto falling back to a prompt after repeated classifier
-     blocks: the dashboard relays Claude Code's own mechanism, since any
-     `can_use_tool` is already a card, and does not try to provoke it.
-   - Codex: a subagent launch naming its model or effort, and Codex's
-     default subagent limit: closed.
-   - The checks by eye (look and feel; 256- and 16-colour terminals;
-     flicker; physical keys; a NUL in a paste) and the excluded list:
-     closed.
-4. Documents and the full check.
-5. The documents hold the latest state; git holds the history. This file
-   keeps the active plan, the standing decisions and one entry per closed
-   plan; `doc/proposal.md` (plan 3's roadmap, replaced by the design
-   documents and the code) is deleted. The brief, the evaluation files and
-   plan 1's research stay as they are.
-6. A CLI update is never silent. The project bar says when the running CLI
-   is newer than the last version probed; Claude Code's one undocumented
-   field the dashboard depends on without a visible failure
-   (`tool_result_meta[].permission_decision`) counts as unrecognised when
-   it is missing; at each session start the agent compares the installed
-   CLI versions with the last probed ones, tells the owner of an update,
-   and proposes the re-check that `doc/evaluation.md` describes, which
-   runs only on the owner's approval.
-7. The full check for items 5 and 6.
+Design, one store for the three items:
 
-Rules: the owner's Claude quota, Haiku as a per-process override, each run
-in a temporary project outside the repository, with the configuration check
-before and after. Per-process flags and protocol parameters only: no CLI
-configuration file or system setting changed. Windows 11 and Windows
-Terminal only; no new dependency. No commit until the owner approves.
+- **The store.** `projects.json` in the dashboard's own folder,
+  `%LOCALAPPDATA%\agent-command-center\` (beside `drafts\`), written through
+  a temporary file renamed over the old one; one entry per project: its
+  validated path, when a session last started in it, and whether it is a
+  favourite. Paths are compared without case on Windows. It holds no
+  conversation data. A store that cannot be read or written is said so on
+  screen, never shown as an empty list. Tests and mock runs pass no store:
+  nothing is read or written, and the startup screen is unchanged.
+- **The startup list.** Under the project field, "Projects": favourites
+  first (★), then recent projects, each by its last start, with the
+  directory's name, its path and its age ("3 h ago"). It is a Tab stop
+  between the project field and Start, shown only when not empty, with as
+  many rows as fit so the Start button stays whole at 80x24. ↑↓ move,
+  Enter fills the project field with that path and starts (Enter starts on
+  this screen), Del forgets the project, `f` stars or unstars it.
+- **The browser.** Ctrl+O on the startup screen opens it full screen at the
+  project field's directory (or its nearest existing parent, or the home
+  directory). It lists directories only, sorted without case, with a git
+  mark and ★; hidden and system directories are counted and left out until
+  Ctrl+H. The first row chooses the directory shown, then `..`, then the
+  subdirectories. Typing filters by name; ↑↓ PgUp PgDn Home End move;
+  Enter opens a directory, or on the first row fills the project field and
+  starts; ← or Backspace (empty filter) goes up; Ctrl+F stars or unstars
+  the selected directory; Esc clears the filter, then closes the browser
+  with the field unchanged. On Windows, `..` at a drive's root lists the
+  drives. A directory is read off the update loop; an unreadable one shows
+  its error and stays browsable upwards.
 
-Done when every item has passed its criteria or is closed with why, the
-full check passes, no open item is left in plan.md or the research
-documents, and the evaluation summary is reported to the owner.
+1. **Recent project history.** Done, 1.1 to 1.6 PASS. The store is
+   `internal/input/projects.go` (TestProjectsStore, TestRecordProject);
+   the list, its keys and its problems are `internal/app/projects.go` and
+   `internal/render/startup.go` (TestProjectRecording, TestProjectListKeys,
+   TestProjectStoreProblems, TestAge). Golden frames `startup-projects` and
+   `startup-projects-focused` at the four sizes: at 80x24 three rows show,
+   windowed around the selection ("6–8 of 10"), and the Start button is
+   whole (checked in TestGoldenFrames for every startup frame); the existing
+   frames are unchanged. A path is recorded once validation passes, even if
+   the agent CLI then fails to start: it is the validated path. go build,
+   go vet, gofmt clean; `go test ./...` 279 PASS, 0 FAIL (273 before); the
+   timing step PASS (p95 1.04 ms, 2.07 ms, 3.15 ms).
+2. **Project favourites.** Done, 2.1 to 2.3 PASS. `Projects.Star` in the
+   store (TestStarProject: first, kept past the cap, unstarred a recent
+   project again; a directory starred before any session, from the
+   browser, goes when unstarred and shows "never" as its age); `f` in the
+   list (TestProjectFavourites: stars, the store keeps it, the selection
+   follows it first; `f` again unstars; Del forgets a favourite; `f` in the
+   project field is typed). Golden frame `startup-favourites` at the four
+   sizes; the list's footer gains "f star", so the two
+   `startup-projects-focused` frames changed in that line only. go build,
+   go vet, gofmt clean; `go test ./...` 281 PASS, 0 FAIL.
+3. **A project browser.** Done, 3.1 to 3.4 PASS. The listing is
+   `internal/input/browse.go` (TestDiskList: sorting, a hidden directory, a
+   git mark from a `.git` directory or file, an empty, a missing and a file
+   path; TestSortEntries; TestDiskListWindows: the hidden and system
+   attributes, a junction listed as a link, the drives). TestDiskListLink
+   SKIPs here: a symbolic link needs a privilege this account lacks; the
+   junction covers the link case. The browser is `internal/app/browse.go`
+   and `internal/render/browse.go` (TestBrowserOpens, TestBrowserKeys,
+   TestBrowserDrives, TestBrowserSlow), listed through `Options.Lister` so
+   the tests use a fake one. Golden frames `browser`, `browser-filter` and
+   `browser-reading` at the four sizes; the startup footers gain "Ctrl+O
+   browse", so the three `startup` and six `startup-msg` frames changed in
+   that line only. go build, go vet (also `-tags live`, `-tags timing`),
+   gofmt clean; `go test ./...` 288 PASS, 0 FAIL, 1 SKIP; the timing step
+   PASS (p95 1.05 ms, 1.56 ms, 3.23 ms).
+4. **Documents and the full check.** Done, 4.1 to 4.8 PASS. Amendment 9
+   in `doc/brief.md`; the three items leave [Nice to have]; ui-design.md's
+   startup screen, reference-design.md's and ui-design.md's image rows,
+   architecture.md's Out of scope and doc/evaluation.md's MVP-scope check
+   say what is built; go build, go vet (also `-tags live`, `-tags timing`),
+   gofmt, `go test ./...` with 0 FAIL; the timing step (the startup screen
+   is a render path); a terminal run in Windows Terminal maximised and at
+   80x24 with a temporary store, no agent CLI started; changed files without
+   CR or BOM; the summary in `doc/plan15-evaluation.md`. Result: `go test
+   ./...` 288 PASS, 1 SKIP, 0 FAIL; the timing step PASS (p95 1.01 ms,
+   2.03 ms, 3.02 ms); the terminal runs, maximised (156x44) and at 80x24,
+   26 checks PASS each, both agent CLIs not installed, none started; 61
+   files without CR, BOM or NUL.
 
-Progress (update as each item finishes; read this first after a context
-compaction).
-Baseline: 8888f59, 261 top-level tests in 14 packages, 0 FAIL.
-- [x] Item 1, Claude Code's question round trip. Criteria, written before
-  the work. Probe P14a: a driver with the dashboard's arguments, Haiku, in
-  `%TEMP%\acc-p14`. The prompt asks for one AskUserQuestion call with two
-  questions, one single-select whose options include the non-ASCII label
-  "Rouge café ✓", and one multiSelect.
-  (1.1) a `can_use_tool` with `tool_name:"AskUserQuestion"` arrives with
-  the documented input `{questions:[{question, header, options:[{label,
-  description}], multiSelect}]}`;
-  (1.2) the driver answers allow with `updatedInput: {questions, answers}`
-  ("Rouge café ✓" for the first question, two labels joined by ", " for
-  the second). The tool result is not an error and carries both answers;
-  (1.3) the model's next text repeats the chosen labels byte for byte;
-  (1.4) configuration check before and after: identical; the folder
-  deleted, no CLI process left.
-  If 1.1 to 1.3 pass:
-  (1.5) the card answers. Keys 1 to 4 choose an option of the selected
-  question (they toggle it when the question is multiSelect), ← and →
-  select the question, and `a` sends once every question has a choice.
-  The response sent is allow with `updatedInput {questions, answers}`;
-  `d` and `c` are unchanged. Tests cover the keys, the JSON sent and the
-  rendered card;
-  (1.6) a live dashboard run (Haiku, Windows Terminal maximised): the card
-  answered from the dashboard, the card line reads "answered by you
-  HH:MM:SS", and the model's next text names the chosen option.
-  Configuration check before and after: identical; the folder deleted, no
-  process left.
-  If the probe fails, the card stays as it is, and the reason is recorded
-  in `doc/research/claude-code.md` and `doc/ui-design.md`.
-- [x] Item 2, the open research questions. Criteria: in
-  `doc/research/claude-code.md` section 10 (q2, q4 to q7, q9 to q11, q13,
-  q14) and `doc/research/codex-cli.md` section 10 (q1 to q10), each
-  question is settled, with evidence (a probe, a plan record with its
-  date, or a test), or closed, with the reason the dashboard does not
-  depend on it. Neither "Still open" list keeps an entry. Each design
-  document that cites one of these questions as open (architecture.md,
-  reliability.md, events-and-state.md, ui-design.md) says how it ended.
-  - For CC-10 q13, a deterministic test passes non-ASCII text and CRLF
-    through the fake CLI's pipes, and the text comes back byte for byte.
-  - For CC-10 q10, P14a records `get_context_usage`'s latency, and whether
-    any assistant, result or usage event follows it.
-- [x] Item 3, the owner's closures recorded: Claude Code's Auto fallback
-  (Claude Code's own mechanism, not provoked); the Codex subagent model or
-  effort at launch, and the default subagent limit (closed); the checks
-  by eye and the excluded list (closed). Each document listing one of
-  these as open names the owner's decision of 2026-10-18.
-- [x] Item 4, documents and the full check: go build and go vet (also
-  `-tags live` and `-tags timing`), gofmt, and `go test ./...` with 0 FAIL;
-  the timing step if an input, stream or frame path changes; the changed
-  files without CR or BOM; a search of the living documents finds no open
-  item without its outcome; the summary in `doc/plan14-evaluation.md`.
-- [x] Item 5, the documents hold the latest state. Criteria:
-  (5.1) plan.md holds the active plan with its progress, the owner's
-  standing decisions, and one entry per closed plan under its exact
-  `## Plan N - …` heading (approval, evaluation file, commits); every
-  `plan.md#plan-…` link in `doc/` resolves to a heading; under 400 lines;
-  (5.2) every standing decision found only in the closed plans' logs is
-  kept: in plan.md, or in `doc/evaluation.md` for the race detector's
-  setup;
-  (5.3) `doc/proposal.md` is deleted and no living file (AGENTS.md,
-  CLAUDE.md, plan.md, the design documents, the research documents but
-  plan 1's evaluation) links to it; architecture.md cites commit d5b910e
-  where it cited the proposal;
-  (5.4) item 5 changes neither `doc/brief.md`, the evaluation files, plan
-  1's reference studies, `doc/research/summary.md` nor
-  `doc/research/gemini-cli.md`;
-  (5.5) AGENTS.md's status line and layout say what the files now hold.
-- [x] Item 6, a CLI update is never silent. Criteria:
-  (6.1) each adapter names the last CLI version probed (Claude Code
-  2.1.302, Codex CLI 0.163.0), and a test fails if that differs from the
-  "Last probed" line of `doc/research/probes/README.md`;
-  (6.2) the project bar adds "newer than tested", in the warning style,
-  when the session's CLI version is newer than the one its adapter names;
-  nothing when it is equal, older, unparsable or unknown, or in a mock
-  session; tests cover each case; the existing golden frames are
-  unchanged;
-  (6.3) a Claude Code tool result with no `permission_decision` in its
-  `tool_result_meta` counts as one unrecognised event whose reason names
-  the field; every recording replays with none;
-  (6.4) `doc/evaluation.md`, "After a CLI update": the session-start
-  check (`claude --version` and `codex --version` against the last
-  probed versions; the owner told of an update, the re-check proposed)
-  and the re-check (the live gates, the probe drivers, new recordings
-  added to the replay tests, the "Last probed" line and the adapters'
-  versions updated), run only on the owner's approval;
-  (6.5) an AGENTS.md working rule for the session-start check.
-  Session-start check of 2026-10-18: Claude Code 2.1.302, Codex CLI
-  0.163.0, both equal to the last probed; no update.
-- [x] Item 7, the full check for items 5 and 6: go build and go vet (also
-  `-tags live` and `-tags timing`), gofmt, `go test ./...` 0 FAIL
-  (baseline 267); the timing step run alone if a render path changes; the
-  changed files without CR or BOM; a second summary block in
-  `doc/plan14-evaluation.md`, the first one unchanged.
+### Criteria
 
-Plan 14 results (2026-10-18):
-- **Item 1, Claude Code's question round trip: done, all six criteria
-  PASS.** P14a (about 11:52, Haiku, Claude Code 2.1.302): the
-  `can_use_tool` carried `tool_name:"AskUserQuestion"`, the documented
-  input and a new `requires_user_interaction:true`; the allow with
-  `updatedInput {questions, answers}` produced the tool result "Your
-  questions have been answered: "Which colour?"="Rouge café ✓", "Which
-  days?"="Monday, Tuesday". …", not an error, and the model replied
-  `Colour: "Rouge café ✓"; Days: "Monday, Tuesday"`, byte for byte;
-  recorded as `p14a-claude-question-answer.jsonl` (68 lines, in
-  `doc/research/probes` and `testdata/probes`); configuration check PASS,
-  the folder deleted, no process left. The card (1.5): keys 1 to 4, ←
-  and →, `a`; `d` and `c` unchanged; `TestQuestionAnswerKeys`,
-  `TestAnswerQuestion`, `TestQuestionCard`, `TestQuestionAnswerRules`.
-  The live run (1.6, about 12:22, Haiku, Windows Terminal maximised,
-  attempt 2): the card answered 2, then 1 and 3, then `a` in 7.2 s; the
-  card read "● Blue", "[x] Monday", "[x] Friday" before sending, then
-  "✓ orchestrator · AskUserQuestion answered by you 12:22:17", "Which
-  colour? → Blue", "Which days? → Monday, Friday"; the wrapper's log
-  holds the allow with `answers {"Which colour?":"Blue", "Which
-  days?":"Monday, Friday"}`; the model replied "Colour: Blue; Days:
-  Monday, Friday"; Ctrl+Q closed it in 3.1 s; configuration check PASS
-  (files identical, `~/.claude.json` only cache-state keys), the folder
-  deleted, no process left. Attempt 1 (about 12:14) is not counted: the
-  run script waited for "! APPROVAL " but a question card's header reads
-  "? QUESTION ", so it never pressed F2; the card was later answered
-  (Red, Monday at 12:19:53) by the owner by hand (confirmed by the owner),
-  and the round trip worked the same way.
-- **Item 2, the open research questions: done.** CC-10 and CX-10 each
-  give every question an outcome, settled with evidence or closed with
-  the reason; neither keeps a "Still open" list. CC-10 q13: P14a live and
-  `TestEchoUnicode` ("café ✓ — 日本\r\nline 2\n" byte for byte through the
-  fake CLI's pipes). CC-10 q10: `get_context_usage` answered in 914 ms,
-  no assistant, result or `rate_limit_event` after it. The compaction
-  row now has its test, `TestCompactBoundary`. reliability.md's "Not
-  verified" tables give each row an outcome; architecture.md,
-  events-and-state.md and ui-design.md say how each question ended.
-- **Item 3, the owner's closures: done.** Claude Code's Auto fallback
-  (claude-code.md section 11), the Codex subagent model or effort and its
-  default limit (codex-cli.md section 10), the checks by eye and the
-  excluded list (ui-design.md, reliability.md) each name the owner's
-  decision of 2026-10-18.
-- **Item 4: done.** go build, go vet (also `-tags live`, `-tags timing`)
-  exit 0; gofmt prints nothing; `go test ./...` 267 top-level tests in 14
-  packages, 0 FAIL (baseline 261, +6); the timing step run alone, all
-  PASS (keystroke-to-frame p95 1.07 ms, 50,000-line draft p95 2.01 ms,
-  long-session delta-to-frame p95 3.05 ms, target ≤ 16 ms); the 40
-  changed and new files carry no CR and no BOM; the search of the living
-  documents finds no open item without its outcome (the remaining hits
-  are headings, pointers to reliability.md, or historical files). The
-  summary is in [`doc/plan14-evaluation.md`](doc/plan14-evaluation.md).
-- **Item 5, the documents hold the latest state: done, five criteria
-  PASS.** plan.md holds the active plan, the owner's standing decisions and
-  one entry per closed plan (10 `plan.md#` links, 0 unresolved); the race
-  detector's setup moved to `doc/evaluation.md`; `doc/proposal.md`
-  deleted, architecture.md cites d5b910e; brief.md, the evaluation files,
-  plan 1's reference studies and summary.md untouched (gemini-cli.md's
-  note dates from item 3); AGENTS.md's status line, layout and working
-  rule updated.
-- **Item 6, a CLI update is never silent: done, five criteria PASS.**
-  `TestedVersion` in each adapter (Claude Code 2.1.302, Codex CLI 0.163.0)
-  with `TestTestedVersion` against the README's "Last probed" bullet; the
-  project bar's "newer than tested" in the attention colour
-  (`TestNewerThanTested`, `TestProjectBarNewerThanTested`), the golden
-  frames unchanged; a tool result without `permission_decision` is one
-  unrecognised event naming the field
-  (`TestToolResultWithoutPermissionDecision`), the 9 Claude recordings and
-  their 17 tool results replay with none
-  (`TestRecordingsHavePermissionDecision`); `doc/evaluation.md`, After a
-  CLI update; the AGENTS.md session-start rule. The recordings key
-  `tool_result_meta` by `"id"`: plan 13's
-  `TestVerdictsOnlyForTheClassifier` now uses it too.
-- **Item 7: done.** go build, go vet (also `-tags live`, `-tags timing`)
-  exit 0; gofmt prints nothing; `go test ./...` 273 top-level tests in 14
-  packages, 0 FAIL (baseline 267, +6); the timing step run alone, all PASS
-  (keystroke-to-frame p95 1.05 ms, 50,000-line draft p95 2.03 ms,
-  long-session delta-to-frame p95 3.29 ms, target ≤ 16 ms); the 49
-  changed and new files carry no CR and no BOM. The summary is the second
-  block of [`doc/plan14-evaluation.md`](doc/plan14-evaluation.md).
+Item 1, recent project history:
+
+- 1.1 The store: Save then Load gives the same entries; a missing file is
+  an empty list without error; a damaged file is an error naming the file;
+  a failed write leaves the previous file whole.
+- 1.2 Recording: the project moves to the front with its start time, no
+  duplicate (a path differing only in case on Windows is the same
+  project), at most 10 recent projects kept.
+- 1.3 A session started from the startup screen records its validated
+  path; a refused validation, a mock run or no store records nothing.
+- 1.4 The startup screen lists the recent projects with name, path and
+  age; with no store or an empty one the screen is byte for byte today's
+  (the existing golden frames unchanged); with 10 entries the Start button
+  is whole at 80x24 (golden frames).
+- 1.5 Keys: Tab goes agent, project, list, Start; ↑↓ move in the list and
+  still choose the agent in field 1; Enter starts with the entry's path;
+  Del forgets it and the store no longer holds it.
+- 1.6 A store that cannot be read shows "Recent projects unavailable:" and
+  the reason on the startup screen; one that cannot be written shows it
+  too.
+
+Item 2, project favourites:
+
+- 2.1 `f` on an entry stars it and the store keeps it; `f` again unstars
+  it.
+- 2.2 Favourites come first, marked ★, then the others, each group by its
+  last start; a favourite is never dropped by the cap of 10.
+- 2.3 Del on a favourite forgets it; golden frame of the list with
+  favourites.
+
+Item 3, a project browser:
+
+- 3.1 The listing (table tests on a temporary tree): directories only,
+  sorted without case; a git mark on a directory holding `.git`; hidden
+  and system directories counted and left out, shown with Ctrl+H; a link to
+  a directory listed; a missing or unreadable directory gives its message.
+- 3.2 The browser opens at the field's directory, else its nearest existing
+  parent, else the home directory.
+- 3.3 Keys: open, up, filter, Esc twice, Enter on the first row starts with
+  that directory, Ctrl+F stars it in the store; on Windows `..` at a root
+  lists the drives.
+- 3.4 A slow listing shows "reading…" and keys stay handled; golden frames
+  of the browser at 80x24 and maximised from a fake listing.
 
 ## Closed plans
 
 One entry each: what the plan did, its approval, its evaluation file and
-its commits. Their criteria and progress logs: `git show 8888f59:plan.md`.
+its commits. Their criteria and progress logs: `git show 8888f59:plan.md`
+(plans 1 to 13), `git show 84d2ad8:plan.md` (plan 14).
 
 ## Plan 1 - Research
 
@@ -388,3 +299,11 @@ fixed; Codex's reviewer not reached, closed by the owner. Approved on
 2026-10-18, 14 PASS and 3 not observed
 ([`doc/plan13-evaluation.md`](doc/plan13-evaluation.md));
 commits d68bb55, 8888f59.
+
+## Plan 14 - Nothing left open
+
+Every open question of the research files settled or closed by the owner,
+Claude Code's question card built and seen live, the documents reduced to
+the latest state and a CLI update made visible. Approved on 2026-10-18, 18
+PASS and 15 PASS ([`doc/plan14-evaluation.md`](doc/plan14-evaluation.md));
+commits 0206ac1, ce06b97.

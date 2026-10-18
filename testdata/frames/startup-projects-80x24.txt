@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                                            New session
+────────────────────────────────────────────────────────────────────────────────
+    Configure your workspace
+    Select an agent CLI and the project to work on.
+    1. Agent CLI *
+       (•) Claude Code     2.1.300   C:\Tools\claude.exe
+       ( ) OpenAI Codex    not installed: adapter not built yet
+    ────────────────────────────────────────────────────────────────────────
+    2. Project directory *
+       ╭────────────────────────────────────────────────────────────────╮
+       │ C:\work\demo-project                                           │
+       ╰────────────────────────────────────────────────────────────────╯
+       → C:\work\demo-project
+       Type a full path; ~ and /mnt/c/… are expanded. Default: current dir.
+    ────────────────────────────────────────────────────────────────────────
+    Projects   1–3 of 10
+           agent-command-cent… …adev\projets\agent-command-center   just now
+           billing-service     C:\javadev\projets\billing-service  8 min ago
+           a-project-with-a-v… …t-with-a-very-long-directory-name 58 min ago
+    ────────────────────────────────────────────────────────────────────────
+                  ╭──────────────────────────────────────────╮
+                  │             Start session  →             │
+                  ╰──────────────────────────────────────────╯
+ ↑↓ agent · Tab next field · Enter start · Ctrl+O browse · Ctrl+Q quit

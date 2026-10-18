@@ -22,6 +22,9 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	if m.s.QuitAsked && k.String() == "esc" {
 		return m.do(state.Stay{})
 	}
+	if m.s.Screen == state.ScreenStartup && m.browse != nil {
+		return m.browseKey(k)
+	}
 	if m.s.Screen == state.ScreenStartup {
 		return m.startupKey(k)
 	}
@@ -35,12 +38,43 @@ func (m *Model) startupKey(k tea.KeyPressMsg) []tea.Cmd {
 			return m.do(state.Quit{})
 		}
 	case "up", "down":
+		if m.ui.Field == 3 {
+			// The project list (plan 15); elsewhere ↑↓ choose the agent.
+			step := -1
+			if k.String() == "down" {
+				step = 1
+			}
+			m.ui.ProjectSel = max(min(m.ui.ProjectSel+step, len(m.projectList)-1), 0)
+			return nil
+		}
 		m.moveChoice(k.String() == "down")
+	case "ctrl+o":
+		// The project browser (plan 15), not while a start is validated.
+		if m.s.Startup.Phase != state.Validating {
+			return []tea.Cmd{m.openBrowser()}
+		}
 	case "tab":
-		m.ui.Field = (m.ui.Field + 1) % 3
+		m.nextField(1)
 	case "shift+tab":
-		m.ui.Field = (m.ui.Field + 2) % 3
+		m.nextField(-1)
+	case "delete":
+		switch m.ui.Field {
+		case 1:
+			return m.editKey(&m.path, k, true)
+		case 3:
+			return []tea.Cmd{m.forgetProject()}
+		}
+	case "f":
+		switch m.ui.Field {
+		case 1:
+			return m.editKey(&m.path, k, true)
+		case 3:
+			return []tea.Cmd{m.starProject()}
+		}
 	case "enter":
+		if m.ui.Field == 3 && m.ui.ProjectSel < len(m.projectList) {
+			m.path.SetText(m.projectList[m.ui.ProjectSel].Path)
+		}
 		cmds := m.do(state.Confirm{Provider: m.ui.Choice, Project: m.path.Text()})
 		m.focusMessage()
 		return cmds

@@ -1,6 +1,7 @@
 package render
 
 import (
+	"fmt"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -95,7 +96,20 @@ func startup(s *state.State, ui UI) []line {
 		ls = append(ls, sub(plain("→ type a directory", stGrey)))
 	}
 	ls = append(ls, sub(plain("Type a full path; ~ and /mnt/c/… are expanded. Default: current dir.", stGrey)))
-	ls = append(ls, in(plain(strings.Repeat("─", cw), stFrame)))
+
+	// The project list (plan 15), shown when it has a row or a problem.
+	var head, rows []line
+	if len(ui.Projects) > 0 || ui.ProjectsProblem != "" {
+		head = append(head, in(plain(strings.Repeat("─", cw), stFrame)), nil)
+		if ui.ProjectsProblem != "" {
+			head = append(head, note("✗ ", hideUser(ui.ProjectsProblem), stFailed)...)
+		}
+		for i, r := range ui.Projects {
+			rows = append(rows, sub(projectRow(r, ui.Field == 3 && i == ui.ProjectSel, cw-3)))
+		}
+	}
+	var bottom []line
+	bottom = append(bottom, in(plain(strings.Repeat("─", cw), stFrame)))
 
 	bw := min(44, cw)
 	bm := strings.Repeat(" ", (w-bw)/2)
@@ -114,23 +128,70 @@ func startup(s *state.State, ui UI) []line {
 		bst = stTitle
 	}
 	lpad := (bw - 2 - textWidth(label)) / 2
-	ls = append(ls,
+	bottom = append(bottom,
 		line{sp(bm, stText), sp("╭"+strings.Repeat("─", bw-2)+"╮", bst)},
 		line{sp(bm, stText), sp("│", bst), sp(strings.Repeat(" ", lpad)+label, lst), sp("", stText)}.fit(len(bm)+bw-1).append(sp("│", bst)),
 		line{sp(bm, stText), sp("╰"+strings.Repeat("─", bw-2)+"╯", bst)},
 	)
-	// Wrapped messages can make the screen taller than the terminal: the
-	// blank spacing lines go first, so the Start button stays whole.
-	for i := len(ls) - 1; i >= 0 && len(ls) > h-1; i-- {
+	// Wrapped messages and the project list can make the screen taller than
+	// the terminal: the blank spacing lines go first, then the list shows the
+	// rows around the selected one, so the Start button stays whole.
+	tall := func() bool { return len(ls)+len(head)+len(rows)+len(bottom) > h-1 }
+	for i := len(ls) - 1; i >= 0 && tall(); i-- {
 		if len(ls[i]) == 0 {
 			ls = append(ls[:i], ls[i+1:]...)
 		}
 	}
+	first := 0
+	if n := h - 1 - len(ls) - len(head) - len(bottom); len(rows) > max(n, 1) {
+		n = max(n, 1)
+		first = min(max(ui.ProjectSel-n/2, 0), len(rows)-n)
+		rows = rows[first : first+n]
+	}
+	if head != nil {
+		title := question("Projects", ui.Field == 3)[:1]
+		if len(rows) < len(ui.Projects) {
+			title = append(title, sp(fmt.Sprintf("  %d–%d of %d", first+1, first+len(rows), len(ui.Projects)), stGrey))
+		}
+		head[1] = in(title)
+	}
+	ls = append(append(append(ls, head...), rows...), bottom...)
 	for len(ls) < h-1 {
 		ls = append(ls, line{})
 	}
 	ls = ls[:h-1]
-	return append(ls, plain(" ↑↓ agent · Tab next field · Enter start · Ctrl+Q quit", stGrey))
+	if ui.Field == 3 {
+		return append(ls, plain(" ↑↓ project · Enter start · f star · Del forget · Ctrl+O browse · Ctrl+Q quit", stGrey))
+	}
+	return append(ls, plain(" ↑↓ agent · Tab next field · Enter start · Ctrl+O browse · Ctrl+Q quit", stGrey))
+}
+
+// ProjectRow is one entry of the startup screen's project list (plan 15).
+type ProjectRow struct {
+	Path      string
+	Age       string // since its last start: "3 h ago"
+	Favourite bool
+}
+
+// projectRow is a list entry within w cells: the directory's name, its path
+// and its age, the selected one marked.
+func projectRow(r ProjectRow, selected bool, w int) line {
+	mark, nst := "  ", stBold
+	if selected {
+		mark, nst = "› ", stTitle
+	}
+	star := "  "
+	if r.Favourite {
+		star = "★ "
+	}
+	name := base(hideUser(r.Path))
+	if name == "" {
+		name = r.Path // a drive's root
+	}
+	l := line{sp(mark, stTitle), sp(star, stAttention)}
+	l = append(l, line{sp(name, nst)}.fit(19)...)
+	l = append(l, sp(" ", stText), sp(elide(r.Path, w-4-20-11), stText))
+	return spread(l, plain(fmt.Sprintf(" %10s", r.Age), stGrey), w)
 }
 
 func question(text string, focused bool) line {

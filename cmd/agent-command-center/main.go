@@ -30,6 +30,7 @@ func main() {
 		Clipboard: input.System{},
 		MockSpeed: 1,
 		Drafts:    &input.Drafts{},
+		Projects:  &input.Projects{},
 	})
 	code, out := app.Run(m)
 	for _, l := range out {

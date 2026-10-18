@@ -654,3 +654,19 @@ Is it the case?
 Good, before doing so, let's do the same for openai, Openai has : "Approve for me" rule => only ask for actions detected as potentially unsafe => I want the exact same mechanism, so we follow openai rule without reinventing the wheel also here.
 
 Continue
+
+## Amendment 9, 2026-10-18: recent projects, favourites and a project browser
+
+The owner's request, word for word, after asking what remained: three of
+amendment 4's future improvements (section 5, "For this phase, do NOT
+implement"), built one after the other in plan 15. The startup screen's
+typed or pasted path stays; the three add ways to fill it. The other future
+improvements of amendment 4 stay out (`plan.md`, Nice to have).
+
+---
+
+Recent project history
+Project favourites
+Advanced project browsers (startup only takes a typed or pasted path)
+
+Let's do these, sequentially, one by one.

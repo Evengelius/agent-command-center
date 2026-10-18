@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -142,7 +143,7 @@ func TestGoldenFrames(t *testing.T) {
 	for _, sc := range []struct {
 		name string
 		rig  func(*testing.T) *harness
-	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}} {
+	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}} {
 		for _, size := range sizes {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)
@@ -164,6 +165,14 @@ func TestGoldenFrames(t *testing.T) {
 					small := strings.Contains(text, "Terminal too small")
 					if small != (w < render.MinWidth || hgt < render.MinHeight) {
 						t.Errorf("too-small message shown %v at %dx%d", small, w, hgt)
+					}
+					if strings.HasPrefix(sc.name, "startup") && !small {
+						// The Start button stays whole under the project list (plan 15, 1.4).
+						tl := strings.Split(text, "\n")
+						i := slices.IndexFunc(tl, func(l string) bool { return strings.Contains(l, "Start session") })
+						if i < 1 || i+1 >= len(tl) || !strings.Contains(tl[i-1], "╭") || !strings.Contains(tl[i+1], "╰") {
+							t.Errorf("the Start button is not whole above the footer")
+						}
 					}
 					golden(t, name, text)
 				})

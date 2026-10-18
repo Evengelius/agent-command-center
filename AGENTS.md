@@ -21,9 +21,9 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: plan 14, nothing left open, approved by the owner on
-2026-10-18.** Plans 1 to 13 (research; architecture and reliability; proposal; the
-MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
+**Status: plan 15, recent projects, favourites and a project browser, done
+and awaiting the owner's approval (amendment 9).** Plans 1 to 14 (research; architecture and reliability; proposal; the
+MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live; nothing left open) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
 plan's progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.
 
@@ -142,9 +142,10 @@ and need the owner's approval where it says so. tmux is not used.
   uses the CLI's own Auto as its terminal sets it (amendment 8). One agent
   CLI per session, no switching during a session.
 - **MVP scope is fixed** by amendment 4: build none of the features it leaves
-  out (recent projects, favourites, project browser, worktrees, editor
-  integration, model configuration, cross-provider collaboration, provider
-  switching, session profiles, orchestration settings). They are
+  out (worktrees, editor integration, model configuration, cross-provider
+  collaboration, provider switching, session profiles, orchestration
+  settings), except recent projects, favourites and a project browser, which
+  the owner asked for in amendment 9 (plan 15). The ones left out are
   **[Nice to have]**: future improvements, never listed as remaining, built
   only if the owner asks for one in a new plan (`plan.md`, Nice to have).
 - **Dependencies are fixed** at the four the owner approved on 2026-10-16

@@ -57,4 +57,4 @@
 
 
 
- ↑↓ agent · Tab next field · Enter start · Ctrl+Q quit
+ ↑↓ agent · Tab next field · Enter start · Ctrl+O browse · Ctrl+Q quit
