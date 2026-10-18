@@ -69,7 +69,9 @@ the terminal, plan 17 (amendment 11).
 ## Plan 17 - A file viewer in the terminal
 
 **Approved by the owner on 2026-10-18; amendment 12, the Explorer, added
-to it the same day before its evaluation was approved: in progress.** The
+to it the same day, and amendment 13, the draft window, on 2026-10-19.
+Done and approved by the owner on 2026-10-19**: every evaluation in
+`doc/plan17-evaluation.md` PASS, nothing left not verified. The
 owner's request
 (2026-10-18, `doc/brief.md`, amendment 11): instead of the VS Code
 integration, a file shown in a window floating over the dashboard, with
