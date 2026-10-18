@@ -260,3 +260,125 @@ dashboard's "session" mark for it, at both sizes. Codex CLI was not started
 on a worktree: it uses the same Start path and registry, and was not in the
 approved scope. A symbolic link in the project browser (TestDiskListLink
 SKIPs) is unchanged.
+
+## A real Codex CLI on a worktree, and a real symbolic link (2026-10-18)
+
+After the approval, the owner asked for the two items the section above left
+not verified.
+
+### A real Codex CLI started on a worktree, live
+
+The CLI was Codex CLI 0.163.0, the version last probed, on gpt-5.6-luna.
+The model came from the logging wrapper of plan 13, which adds
+`-c model="gpt-5.6-luna"` to the `app-server` invocation only; Codex's
+configuration was not changed. Everything else was as in the Claude Code
+runs above: a new temporary repository `demo` under `%TEMP%` for each run,
+with one worktree `feature` one commit ahead; two dashboards sharing a
+temporary `LOCALAPPDATA`; the real home; the wrapper first on the launch
+`PATH`; confcheck before and after, with the worktree as the project. OpenAI
+Codex was chosen on the startup screen with ↓. Rules fixed beforehand: one
+prompt per run ("Create a file named live.txt in the current directory
+containing the single word live. Then reply with only the absolute path of
+the current directory, as plain text."); allow the first card naming
+live.txt but not main's live.txt, deny every other card; three minutes at
+most for the turn, which ends on `turn/completed`.
+
+```text
+A real Codex CLI (0.163.0, gpt-5.6-luna) started on a worktree - 25 checks, maximised (156x44): 25 PASS; 80x24: 25 PASS
+PASS Startup screen: OpenAI Codex 0.163.0 chosen, through the wrapper on PATH
+PASS Dashboard 1: Ctrl+W, Enter on feature; "Ready to work on this project."; argv -c model="gpt-5.6-luna" app-server
+PASS Dashboard 1: the header shows "▣ feature   branch feature" (and, maximised, the path's end "…\demo.worktrees\feature"); one session file, holding the worktree's path; Ctrl+W marks feature "this session"
+PASS Dashboard 2, at startup: feature marked "session", main unmarked; x on feature refused "another dashboard session runs in this worktree", directory kept
+PASS Dashboard 1, the turn: one card, allowed; maximised, a commandExecution (PowerShell Set-Content on <base>\demo.worktrees\feature\live.txt, cwd the worktree); 80x24, a fileChange of that file; turn completed; model gpt-5.6-luna
+PASS Codex's thread/start result gave cwd <base>\demo.worktrees\feature; live.txt written there and not in <base>\demo
+PASS The reply, <base>\demo.worktrees\feature, shown whole in zone B
+PASS Dashboard 1, Ctrl+Q: window closed, no codex.exe left from the run, no session file left
+PASS Dashboard 2: feature no longer marked, and now shows +1 (the new live.txt); Ctrl+Q closed it
+PASS Nothing left (session files, dashboards, Codex processes); main's HEAD and status unchanged
+PASS Configuration, before and after each run
+```
+
+The script's allow rule was looser than the rule above. It looked for
+live.txt anywhere on the screen, and the prompt in zone B names it. The
+wrapper's record shows what each allowed request did. In maximised run 1
+and the 80x24 run it was a fileChange of the worktree's live.txt; in
+maximised run 2, a PowerShell `Set-Content -LiteralPath` on that same file,
+run in the worktree. No run showed a second card. Codex asked before writing
+because the thread runs with sandbox readOnly and policy on-request, as the
+header shows.
+
+The block above is the final runs, maximised run 2 and the one 80x24 run.
+Maximised run 1 had 24 PASS and 1 FAIL, "header on the worktree", a fault of
+the script. Beside Codex's longer status, the header shortened the path from
+the left to "…80627\demo.worktrees\feature", and the check required the
+whole path. The check now accepts an end of the path that names the
+worktree. Run 1's other checks passed, configuration included.
+
+Quota: three turns, 28,876 to 29,225 tokens each (input 28,686 to 28,860, of
+which 14,080 to 20,864 cached; output 190 to 365). Codex reported 0% of the
+5-hour window and 1% of the weekly window throughout. Codex reports no cost,
+so the cost is N/A.
+
+### A real symbolic link in the project browser
+
+Unelevated, this account cannot create a symbolic link: it lacks
+SeCreateSymbolicLink and Developer Mode is off, so TestDiskListLink SKIPs.
+The owner accepted one UAC prompt, and an elevated PowerShell did two things:
+
+- it ran the test binary built from the working copy (`go test -c
+  ./internal/input`);
+- it made a fixture with `mklink` under `%TEMP%\acc-p16link`: `target\inside`,
+  `plain`, `f.txt`, `dirlink` (to `target`), `filelink` (to `f.txt`) and
+  `dangling` (to `gone`).
+
+The dashboard then ran unelevated, through `--project` on the fixture, with a
+temporary `LOCALAPPDATA`. No agent session was started.
+
+```text
+A real symbolic link - TestDiskListLink elevated: PASS; the project browser, 11 checks, maximised (156x44): 11 PASS; 80x24: 11 PASS
+PASS TestDiskListLink, elevated: --- PASS (the link to a directory listed and marked; the file link and the dangling link left out)
+PASS Fixture: dirlink, filelink and dangling are symbolic links (dir /AL)
+PASS Startup screen; Ctrl+O opens the browser "In C:\Users\…\AppData\Local\Temp\acc-p16link"
+PASS dirlink listed with "link" on the right; target and plain listed, unmarked
+PASS filelink, dangling and f.txt not listed
+PASS Typing "dirlink" selects it; Enter opens it: "In C:\Users\…\AppData\Local\Temp\acc-p16link\dirlink", listing inside
+PASS Esc, Ctrl+Q: the window closed, no dashboard process left
+```
+
+The block is maximised run 2 and the one 80x24 run. Maximised run 1 had
+10 PASS and 1 FAIL, "dirlink opened", a fault of the script. The check
+looked for the full path, while the browser shortens the home directory to
+`C:\Users\…`. The run's frame shows "In C:\Users\…\AppData\Local\Temp\acc-p16link\dirlink"
+and inside. The check now accepts either form. TestDiskListLink itself is
+unchanged, and still SKIPs in an unelevated `go test ./...`.
+
+Now verified: a real Codex CLI started on a worktree, with another
+dashboard's "session" mark for it, at both sizes; and a real symbolic link
+in the project browser, at both sizes. Nothing of plan 16 is left not
+verified, apart from the configuration of the Claude Code maximised run
+above, which stays NOT-VERIFIED.
+
+## The Claude Code maximised run, rerun for its configuration (2026-10-18)
+
+At the owner's request, the maximised live Claude Code run on a worktree
+was run once more, with the same script, CLI (2.1.302, Haiku), prompt and
+rules, in a new temporary repository, so that its configuration check could
+be settled. Run 5's record above is unchanged. Before the run,
+`known_marketplaces.json` still had its write time of 17:34:23; it was read
+for its timestamp only, never its contents.
+
+```text
+A real Claude Code (2.1.302, Haiku) started on a worktree, maximised run 6 (156x44) - 25 checks: 25 PASS
+PASS Every check of the block above, as there, at 18:21:52 to 18:22:40
+PASS The turn: 1 card allowed (the Write of the worktree's live.txt), 0 denied; result success; model claude-haiku-5-5; $0.0039
+PASS Configuration: ~\.claude.json: claudeCodeFirstTokenDate and oauthAccount not compared (sensitive name); no other change; configuration: PASS
+```
+
+The maximised run with a clean configuration check confirms run 5's
+NOT-VERIFIED came from a change the dashboard did not make. The likely
+cause is Claude Code's marketplace auto-update, which the hash-only rule
+cannot confirm. Quota: one turn on Haiku, API-equivalent $0.0039.
+
+Now verified: the configuration of a maximised live Claude Code run on a
+worktree. Nothing of plan 16 is left not verified; run 5's NOT-VERIFIED
+stays recorded as it was.

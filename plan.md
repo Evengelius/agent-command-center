@@ -209,6 +209,15 @@ Design:
      maximised: 24 PASS, configuration NOT-VERIFIED (Claude Code rewrote
      `known_marketplaces.json` during the turn). Earlier runs failed on the
      script's side; all are kept (`doc/plan16-evaluation.md`, added section).
+   - After the approval, at the owner's request, the two items left: a real
+     Codex CLI 0.163.0 on gpt-5.6-luna started on a worktree the same way,
+     25/25 PASS maximised and at 80x24; TestDiskListLink run elevated, PASS,
+     and a real symbolic link in the project browser, 11/11 PASS at both
+     sizes. One earlier run of each failed one check on the script's side;
+     both are kept (`doc/plan16-evaluation.md`, added section).
+   - The maximised live Claude Code run rerun once for its configuration
+     check: 25/25 PASS, configuration PASS; run 5's NOT-VERIFIED
+     (`known_marketplaces.json` changed during the turn) stays recorded.
 
 ### Criteria
 
