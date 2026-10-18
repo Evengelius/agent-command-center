@@ -38,9 +38,10 @@ type UI struct {
 	Branch      string // the git branch, once read
 	// The project list (plan 15): favourites first, then recent projects.
 	Projects        []ProjectRow
-	ProjectSel      int         // the selected row
-	ProjectsProblem string      // the list cannot be read or written
-	Browser         BrowserView // the project browser, over the screen while Open
+	ProjectSel      int           // the selected row
+	ProjectsProblem string        // the list cannot be read or written
+	Browser         BrowserView   // the project browser, over the screen while Open
+	Worktrees       WorktreesView // the Worktrees view, over either screen while Open (plan 16)
 
 	// Dashboard.
 	Focus    string // "A", "B", "C" or "D"

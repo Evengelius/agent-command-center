@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+────────────────────────────────────────────────────────────────────────────────
+
+    Git worktrees
+    Repo    C:\javadev\projets\demo-project
+    ────────────────────────────────────────────────────────────────────────
+      main               clean                      …ev\projets\demo-project
+    › feature            clean   ↑2    session      …oject.worktrees\feature
+      fix-login          +3      ↑1                 …ect.worktrees\fix-login
+      docs               clean   ↑0                 …-project.worktrees\docs
+      old-spike          missing                    …ect.worktrees\old-spike
+
+
+
+
+
+
+
+
+
+
+    ────────────────────────────────────────────────────────────────────────
+    5 worktrees
+ ↑↓ move · d diff · m merge into main · x remove · Esc back to the session

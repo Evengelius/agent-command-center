@@ -160,10 +160,21 @@ func startup(s *state.State, ui UI) []line {
 		ls = append(ls, line{})
 	}
 	ls = ls[:h-1]
-	if ui.Field == 3 {
-		return append(ls, plain(" ↑↓ project · Enter start · f star · Del forget · Ctrl+O browse · Ctrl+Q quit", stGrey))
+	return append(ls, plain(startupKeys(ui.Field, w), stGrey))
+}
+
+// startupKeys is the startup footer: every key from 100 columns, within 79
+// cells below, which leave out one key each (plan 16, Ctrl+W).
+func startupKeys(field, w int) string {
+	switch {
+	case field == 3 && w >= 100:
+		return " ↑↓ project · Enter start · f star · Del forget · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit"
+	case field == 3:
+		return " ↑↓ · Enter start · f star · Del forget · Ctrl+W worktrees · Ctrl+Q quit"
+	case w >= 100:
+		return " ↑↓ agent · Tab next field · Enter start · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit"
 	}
-	return append(ls, plain(" ↑↓ agent · Tab next field · Enter start · Ctrl+O browse · Ctrl+Q quit", stGrey))
+	return " ↑↓ agent · Tab next field · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit"
 }
 
 // ProjectRow is one entry of the startup screen's project list (plan 15).

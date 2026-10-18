@@ -79,6 +79,8 @@ func Draw(s *state.State, ui UI) *Screen {
 	switch {
 	case ui.Width < MinWidth || ui.Height < MinHeight:
 		ls = tooSmall(s, ui)
+	case ui.Worktrees.Open:
+		ls = worktreesScreen(s, ui)
 	case s.Screen == state.ScreenStartup && ui.Browser.Open:
 		ls = browserScreen(s, ui)
 	case s.Screen == state.ScreenDashboard && ui.Keys:

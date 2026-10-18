@@ -6,8 +6,8 @@ amendments, ends with the evaluation summary of `doc/evaluation.md`, and
 waits for the owner's approval before the next one starts. This file keeps
 the current state only (the owner, 2026-10-18): a closed plan's full text,
 criteria and progress log are in git (`git show 8888f59:plan.md` for plans 1
-to 13, `git show 84d2ad8:plan.md` for plan 14), and its results in its
-evaluation file.
+to 13, `git show 84d2ad8:plan.md` for plan 14, `git show b047434:plan.md`
+for plan 15), and its results in its evaluation file.
 
 ## The owner's standing decisions
 
@@ -50,12 +50,11 @@ summary format (the owner, 2026-10-18).
 
 Items tagged **[Nice to have]** are future improvements: none is built, and
 none is listed as remaining, until the owner asks for one in a new plan
-(the owner, 2026-10-18). Amendment 4 names the first seven "future
-improvements" (`doc/brief.md`, Amendment 4, "For this phase, do NOT
-implement"); its other three, recent projects, favourites and a project
-browser, are plan 15 (amendment 9).
+(the owner, 2026-10-18). Amendment 4 names ten "future improvements"
+(`doc/brief.md`, Amendment 4, "For this phase, do NOT implement"). Six
+remain below. Recent projects, favourites and a project browser were plan 15
+(amendment 9); git worktree management is plan 16 (amendment 10).
 
-- **[Nice to have]** Git worktree management.
 - **[Nice to have]** Automatic VS Code integration.
 - **[Nice to have]** Advanced model configuration.
 - **[Nice to have]** Cross-provider agent collaboration.
@@ -65,150 +64,258 @@ browser, are plan 15 (amendment 9).
 - **[Nice to have]** Google Antigravity as an agent CLI, removed from the
   MVP by amendment 5; the provider interface stays open to it.
 
-## Plan 15 - Recent projects, favourites and a project browser
+## Plan 16 - Git worktree management
 
-**Approved by the owner on 2026-10-18:** 21 criteria, 21 PASS
-([`doc/plan15-evaluation.md`](doc/plan15-evaluation.md)). The owner's
-request (2026-10-18, `doc/brief.md`, amendment 9): three of amendment 4's
-future improvements, built "sequentially, one by
-one": recent project history, project favourites, then a project browser.
-Each item is checked before the next starts. Everything is on the startup
-screen; the dashboard, the agent CLIs and their configuration are not
-touched. No new dependency: `encoding/json` and `x/sys/windows` are already
-in the graph.
+**Done, awaiting the owner's approval**: 26 criteria, 26 PASS
+(`doc/plan16-evaluation.md`). The owner's request (2026-10-18, `doc/brief.md`, amendment
+10): the first of amendment 4's other future improvements, with the three
+choices approved there: worktrees beside the repository; create, list,
+diff, merge and remove; at startup and in session. Git runs through
+`os/exec` (no new dependency; `x/sys/windows` is already in the graph). The
+agent CLIs and their configuration are not touched. Nothing is written
+inside the repository except what git itself writes for an operation the
+owner confirmed.
 
-Design, one store for the three items:
+Design:
 
-- **The store.** `projects.json` in the dashboard's own folder,
-  `%LOCALAPPDATA%\agent-command-center\` (beside `drafts\`), written through
-  a temporary file renamed over the old one; one entry per project: its
-  validated path, when a session last started in it, and whether it is a
-  favourite. Paths are compared without case on Windows. It holds no
-  conversation data. A store that cannot be read or written is said so on
-  screen, never shown as an empty list. Tests and mock runs pass no store:
-  nothing is read or written, and the startup screen is unchanged.
-- **The startup list.** Under the project field, "Projects": favourites
-  first (★), then recent projects, each by its last start, with the
-  directory's name, its path and its age ("3 h ago"). It is a Tab stop
-  between the project field and Start, shown only when not empty, with as
-  many rows as fit so the Start button stays whole at 80x24. ↑↓ move,
-  Enter fills the project field with that path and starts (Enter starts on
-  this screen), Del forgets the project, `f` stars or unstars it.
-- **The browser.** Ctrl+O on the startup screen opens it full screen at the
-  project field's directory (or its nearest existing parent, or the home
-  directory). It lists directories only, sorted without case, with a git
-  mark and ★; hidden and system directories are counted and left out until
-  Ctrl+H. The first row chooses the directory shown, then `..`, then the
-  subdirectories. Typing filters by name; ↑↓ PgUp PgDn Home End move;
-  Enter opens a directory, or on the first row fills the project field and
-  starts; ← or Backspace (empty filter) goes up; Ctrl+F stars or unstars
-  the selected directory; Esc clears the filter, then closes the browser
-  with the field unchanged. On Windows, `..` at a drive's root lists the
-  drives. A directory is read off the update loop; an unreadable one shows
-  its error and stays browsable upwards.
+- **The git layer.** `internal/input/git.go` holds the `Git` interface and
+  `GitCLI`, which finds `git` on the PATH. With none on it, the view says
+  "git not found: worktrees unavailable".
+  - Every call runs `git -C <dir>` with no standard input,
+    `GIT_TERMINAL_PROMPT=0` and `GIT_OPTIONAL_LOCKS=0`, so a read never
+    writes and nothing waits on a prompt.
+  - Every call has a time limit: 15 s for a read, 2 min for an operation.
+  - stderr is kept and shown as git's reason.
+  - The list comes from `git worktree list --porcelain`, the main worktree
+    first. Each row counts its uncommitted changes from `git status
+    --porcelain`, and its commits ahead of the main worktree's branch from
+    `git rev-list --count`.
+  - No call ever passes `--force`, `-f` or `-D`.
+- **Create** (startup only).
+  - The path is `<main>.worktrees\<name>`, beside the main worktree.
+    `<name>` is the branch name's last segment, with every character other
+    than letters, digits, `.`, `_` and `-` replaced by `-`.
+  - The branch name is checked by `git check-ref-format --branch`, and an
+    existing path is refused.
+  - An existing branch is checked out there; a new one starts from the main
+    worktree's HEAD (`git worktree add -b`).
+- **Diff.**
+  - A worktree's diff runs against its merge base with the main branch. It
+    covers committed and uncommitted changes (`git diff --no-color
+    --no-ext-diff --no-textconv <base>`), then names its untracked files.
+  - The main worktree's diff is its uncommitted changes.
+  - At most 5000 lines show, then "… N lines left out".
+- **Merge into main.**
+  - It runs `git merge --no-edit <branch>` in the main worktree, only when
+    both worktrees are clean and the branch is ahead.
+  - If the merge fails and `MERGE_HEAD` is present, `git merge --abort`
+    runs and the view says "conflict: merge aborted, main unchanged".
+- **Remove.**
+  - It runs `git worktree remove <path>`; git refuses a dirty or locked
+    worktree.
+  - Then `git branch -d <branch>` runs. If git refuses to delete an
+    unmerged branch, the view says "branch kept:" with git's reason.
+- **Sessions.** `internal/input/sessions.go` records which worktrees a
+  dashboard session runs in.
+  - Each dashboard session keeps a file open in
+    `%LOCALAPPDATA%\agent-command-center\sessions\` holding its project
+    path.
+  - On Windows, a file another handle holds open is a live session: opening
+    it unshared fails with a sharing violation. A file nobody holds is stale
+    and is deleted.
+  - On other systems the column says N/A.
+  - Documented limit: it knows this dashboard's sessions only, not an agent
+    CLI started in another terminal.
+  - Tests and mock runs register nothing.
+- **The Worktrees view.** Ctrl+W opens it full screen, like the browser.
+  - **Which repository.** At startup, the one holding the project field's
+    directory (the current directory when the field is empty). In session,
+    the session's project; for a mock run, the mock file's directory.
+  - **One row per worktree:**
+    - its branch, or "detached";
+    - its state: "clean", or "+N" uncommitted changes;
+    - "↑N" commits ahead of main;
+    - "this session" or "session" where a dashboard session runs;
+    - its path.
+  - **Keys:**
+    - ↑↓ PgUp PgDn Home End move; Esc closes the view.
+    - At startup, Enter fills the project field with the selected path and
+      starts.
+    - At startup, `n` asks for a branch name and shows the path it will
+      create. Enter creates it and selects it; Esc cancels.
+    - On both screens, `d` shows the diff full screen (↑↓ PgUp PgDn Home
+      End, Esc back).
+    - On both screens, `m` merges into main and `x` removes, each after a
+      y/n question.
+  - **`m` is refused, with the reason said in the view:**
+    - on the main worktree, a detached one, or the one this session runs
+      in;
+    - when either side has changes, or nothing is ahead;
+    - when main is detached;
+    - when another dashboard session runs in main;
+    - when this session runs in main and its turn is not idle.
+  - **`x` is refused:** on the main worktree, this session's, a dirty one,
+    or one where another session runs.
+  - **Git never runs in the update loop.** It runs in a command, with a
+    generation number so a stale result is dropped. While it runs, the view
+    says "reading…" or what it is doing, and keys stay handled.
+  - The startup footers and the key overlay gain Ctrl+W.
 
-1. **Recent project history.** Done, 1.1 to 1.6 PASS. The store is
-   `internal/input/projects.go` (TestProjectsStore, TestRecordProject);
-   the list, its keys and its problems are `internal/app/projects.go` and
-   `internal/render/startup.go` (TestProjectRecording, TestProjectListKeys,
-   TestProjectStoreProblems, TestAge). Golden frames `startup-projects` and
-   `startup-projects-focused` at the four sizes: at 80x24 three rows show,
-   windowed around the selection ("6–8 of 10"), and the Start button is
-   whole (checked in TestGoldenFrames for every startup frame); the existing
-   frames are unchanged. A path is recorded once validation passes, even if
-   the agent CLI then fails to start: it is the validated path. go build,
-   go vet, gofmt clean; `go test ./...` 279 PASS, 0 FAIL (273 before); the
-   timing step PASS (p95 1.04 ms, 2.07 ms, 3.15 ms).
-2. **Project favourites.** Done, 2.1 to 2.3 PASS. `Projects.Star` in the
-   store (TestStarProject: first, kept past the cap, unstarred a recent
-   project again; a directory starred before any session, from the
-   browser, goes when unstarred and shows "never" as its age); `f` in the
-   list (TestProjectFavourites: stars, the store keeps it, the selection
-   follows it first; `f` again unstars; Del forgets a favourite; `f` in the
-   project field is typed). Golden frame `startup-favourites` at the four
-   sizes; the list's footer gains "f star", so the two
-   `startup-projects-focused` frames changed in that line only. go build,
-   go vet, gofmt clean; `go test ./...` 281 PASS, 0 FAIL.
-3. **A project browser.** Done, 3.1 to 3.4 PASS. The listing is
-   `internal/input/browse.go` (TestDiskList: sorting, a hidden directory, a
-   git mark from a `.git` directory or file, an empty, a missing and a file
-   path; TestSortEntries; TestDiskListWindows: the hidden and system
-   attributes, a junction listed as a link, the drives). TestDiskListLink
-   SKIPs here: a symbolic link needs a privilege this account lacks; the
-   junction covers the link case. The browser is `internal/app/browse.go`
-   and `internal/render/browse.go` (TestBrowserOpens, TestBrowserKeys,
-   TestBrowserDrives, TestBrowserSlow), listed through `Options.Lister` so
-   the tests use a fake one. Golden frames `browser`, `browser-filter` and
-   `browser-reading` at the four sizes; the startup footers gain "Ctrl+O
-   browse", so the three `startup` and six `startup-msg` frames changed in
-   that line only. go build, go vet (also `-tags live`, `-tags timing`),
-   gofmt clean; `go test ./...` 288 PASS, 0 FAIL, 1 SKIP; the timing step
-   PASS (p95 1.05 ms, 1.56 ms, 3.23 ms).
-4. **Documents and the full check.** Done, 4.1 to 4.8 PASS. Amendment 9
-   in `doc/brief.md`; the three items leave [Nice to have]; ui-design.md's
-   startup screen, reference-design.md's and ui-design.md's image rows,
-   architecture.md's Out of scope and doc/evaluation.md's MVP-scope check
-   say what is built; go build, go vet (also `-tags live`, `-tags timing`),
-   gofmt, `go test ./...` with 0 FAIL; the timing step (the startup screen
-   is a render path); a terminal run in Windows Terminal maximised and at
-   80x24 with a temporary store, no agent CLI started; changed files without
-   CR or BOM; the summary in `doc/plan15-evaluation.md`. Result: `go test
-   ./...` 288 PASS, 1 SKIP, 0 FAIL; the timing step PASS (p95 1.01 ms,
-   2.03 ms, 3.02 ms); the terminal runs, maximised (156x44) and at 80x24,
-   26 checks PASS each, both agent CLIs not installed, none started; 61
-   files without CR, BOM or NUL.
+1. **The git layer and the session registry.** Done, 1.1 to 1.7 PASS.
+   `internal/input/git.go` (TestWorktreePath, TestGitWorktrees, TestGitAdd,
+   TestGitMerge, TestGitRemove, TestGitDiff, TestGitMissing) on temporary
+   repositories, git run with an empty global and no system configuration;
+   git lists the linked worktrees by path, after the main one.
+   `internal/input/sessions.go` (TestSessionRegistry: a held file is live,
+   a file nobody holds is deleted at the next read, Release leaves nothing).
+   `go vet ./internal/input`, gofmt clean; `go test ./internal/input` PASS.
+2. **The view at startup.** Done, 2.1 to 2.4 PASS. `internal/app/worktrees.go`
+   and `internal/render/worktrees.go`; Ctrl+W on the startup screen.
+   TestWorktreesStartup, TestWorktreeCreate on a fake git; golden frames
+   `worktrees` and `worktrees-new` at the four sizes; the 18 existing startup
+   frames change in their footer line only (`git diff --stat`: 18 files, 18
+   lines each way); TestFootersFit (render): every startup and Worktrees
+   footer within 79 cells below 100 columns.
+3. **The view in session.** Done, 3.1 to 3.7 PASS. Ctrl+W on the dashboard;
+   the mouse is off while the view is open; a session registers its project
+   (`input.Sessions`) and releases it at Shutdown. TestWorktreesSession,
+   TestWorktreeDiff, TestWorktreeMerge, TestWorktreeRemove,
+   TestWorktreesSlow, TestSessionRegistered, TestKeysListWorktrees; golden
+   frames `worktrees-session`, `worktrees-diff`, `worktrees-confirm` at the
+   four sizes. A diff's tabs are drawn as four spaces, as `wrap` draws them
+   (found on the `worktrees-diff` frame). `go test ./internal/app
+   ./internal/render ./internal/input` PASS.
+4. **Documents and the full check.** Done, 4.1 to 4.8 PASS. Amendment 10,
+   AGENTS.md, architecture.md (ASM-25), ui-design.md (Worktrees, startup
+   keys and footers, Anywhere), reliability.md, evaluation.md.
+   TestKeyOverlayRows now reads 29 rows (Ctrl+W added).
+   - Build, vet (also `-tags live` and `timing`), gofmt: clean.
+   - `go test ./...`: 306 PASS, 1 SKIP, 0 FAIL.
+   - Timing: 4/4 PASS, the worst p95 7.08 ms.
+   - Both checks ran first with `confcheck.go` at HEAD through `-overlay`,
+     because the working copy's uncommitted change broke the build. The
+     owner then approved restoring the file to HEAD, and the plain commands
+     gave the same results (`doc/plan16-evaluation.md`).
+   - Terminal runs: 34/34 PASS maximised and 34/34 at 80x24 (the second
+     80x24 run; the first failed one check on the script's side).
+   - 65 files free of CR, BOM and NUL.
 
 ### Criteria
 
-Item 1, recent project history:
+Item 1, the git layer and the session registry. The tests run on a
+temporary repository and are skipped where git is not installed.
 
-- 1.1 The store: Save then Load gives the same entries; a missing file is
-  an empty list without error; a damaged file is an error naming the file;
-  a failed write leaves the previous file whole.
-- 1.2 Recording: the project moves to the front with its start time, no
-  duplicate (a path differing only in case on Windows is the same
-  project), at most 10 recent projects kept.
-- 1.3 A session started from the startup screen records its validated
-  path; a refused validation, a mock run or no store records nothing.
-- 1.4 The startup screen lists the recent projects with name, path and
-  age; with no store or an empty one the screen is byte for byte today's
-  (the existing golden frames unchanged); with 10 entries the Start button
-  is whole at 80x24 (golden frames).
-- 1.5 Keys: Tab goes agent, project, list, Start; ↑↓ move in the list and
-  still choose the agent in field 1; Enter starts with the entry's path;
-  Del forgets it and the store no longer holds it.
-- 1.6 A store that cannot be read shows "Recent projects unavailable:" and
-  the reason on the startup screen; one that cannot be written shows it
-  too.
+- 1.1 The list (TestGitWorktrees):
+  - the main worktree comes first;
+  - each row has its branch, or detached;
+  - its uncommitted changes and its commits ahead of main are counted;
+  - paths are in Windows form;
+  - a directory outside any repository gives "Not a git repository" and
+    the directory.
+- 1.2 Create:
+  - the path is `<repo>.worktrees\<name>` (TestWorktreePath);
+  - a new branch starts from main's HEAD (TestGitAdd);
+  - an existing branch is checked out (TestGitAdd);
+  - an invalid name, an existing path and a branch checked out elsewhere
+    are refused with the reason, and nothing is created (TestGitAdd).
+- 1.3 Merge (TestGitMerge):
+  - a branch ahead merges;
+  - a conflict is aborted: main's HEAD is unchanged, there is no
+    `MERGE_HEAD`, its status is clean, and the error says "conflict".
+- 1.4 Remove (TestGitRemove, the calls recorded):
+  - a clean worktree goes, and its merged branch is deleted;
+  - an unmerged branch is kept, with git's reason;
+  - a dirty worktree is refused by git and left whole;
+  - no git call in the layer's tests passes `--force`, `-f` or `-D`.
+- 1.5 Diff (TestGitDiff): committed and uncommitted changes against the
+  merge base; the untracked files named; capped with "… N lines left out".
+- 1.6 No git on the PATH (TestGitMissing): every call fails with "git not
+  found".
+- 1.7 The registry (TestSessionRegistry):
+  - a registered session is live for a second reader;
+  - once it is released, its file is stale and is deleted at the next
+    read.
 
-Item 2, project favourites:
+Item 2, the view at startup. The tests use a fake git, no repository.
 
-- 2.1 `f` on an entry stars it and the store keeps it; `f` again unstars
-  it.
-- 2.2 Favourites come first, marked ★, then the others, each group by its
-  last start; a favourite is never dropped by the cap of 10.
-- 2.3 Del on a favourite forgets it; golden frame of the list with
-  favourites.
+- 2.1 Opening and closing (TestWorktreesStartup):
+  - Ctrl+W opens the view for the project field's directory, or the
+    current one when the field is empty;
+  - outside a repository it says "Not a git repository";
+  - with no git it says "git not found";
+  - Esc closes it with the field unchanged.
+- 2.2 Enter on a row fills the project field with its path and starts
+  (TestWorktreesStartup).
+- 2.3 Create (TestWorktreeCreate):
+  - `n` shows the branch field and the path it will create;
+  - Enter creates it and selects the new row;
+  - a refusal shows the reason, and the list is unchanged;
+  - Esc cancels.
+- 2.4 Frames:
+  - golden frames `worktrees` and `worktrees-new` at 79x24, 80x24, 120x40
+    and 200x60;
+  - the existing startup frames change in the footer line only;
+  - every footer fits within the width.
 
-Item 3, a project browser:
+Item 3, the view in session. The tests use a fake git.
 
-- 3.1 The listing (table tests on a temporary tree): directories only,
-  sorted without case; a git mark on a directory holding `.git`; hidden
-  and system directories counted and left out, shown with Ctrl+H; a link to
-  a directory listed; a missing or unreadable directory gives its message.
-- 3.2 The browser opens at the field's directory, else its nearest existing
-  parent, else the home directory.
-- 3.3 Keys: open, up, filter, Esc twice, Enter on the first row starts with
-  that directory, Ctrl+F stars it in the store; on Windows `..` at a root
-  lists the drives.
-- 3.4 A slow listing shows "reading…" and keys stay handled; golden frames
-  of the browser at 80x24 and maximised from a fake listing.
+- 3.1 Opening and closing (TestWorktreesSession):
+  - Ctrl+W on the dashboard opens the view for the session's project;
+  - the session's row is marked "this session", and another dashboard
+    session's row "session";
+  - Esc returns to the dashboard;
+  - an event that arrives meanwhile is in the state after Esc.
+- 3.2 The diff (TestWorktreeDiff):
+  - `d` shows the diff coloured, scrolls, and shows the cap line;
+  - Esc returns to the list.
+- 3.3 Merge (TestWorktreeMerge):
+  - `m` asks y/n;
+  - `y` merges, says so, and reads the list again;
+  - `n` cancels;
+  - each refusal of the design gives its reason and calls no git merge;
+  - a conflict says "conflict: merge aborted".
+- 3.4 Remove (TestWorktreeRemove):
+  - `x` asks y/n;
+  - `y` removes and says what became of the branch;
+  - each refusal of the design gives its reason and calls no git removal.
+- 3.5 A slow git (TestWorktreesSlow): the view shows "reading…" or the
+  operation, keys stay handled, and a stale result is dropped.
+- 3.6 Registration (TestSessionRegistered):
+  - a session started from the startup screen registers its project and
+    releases it at the end;
+  - a mock run, or no registry, registers nothing.
+- 3.7 Frames:
+  - golden frames `worktrees-session`, `worktrees-diff` and
+    `worktrees-confirm` at the four sizes;
+  - the key overlay lists Ctrl+W.
+
+Item 4, documents and the full check:
+
+- 4.1 The documents:
+  - amendment 10 is in `doc/brief.md`;
+  - worktrees leave [Nice to have] in `plan.md` and AGENTS.md;
+  - architecture.md, ui-design.md, reliability.md and `doc/evaluation.md`
+    say what is built.
+- 4.2 `go build ./...` and `go vet ./...` (also `-tags live` and `-tags
+  timing`) exit 0, and `gofmt -l .` prints nothing.
+- 4.3 `go test ./...` gives 0 FAIL, the new tests included.
+- 4.4 The timing step, run alone: every test PASS (p95 <= 16 ms).
+- 4.5 A terminal run in Windows Terminal, maximised:
+  - setup: a temporary repository with two worktrees, a temporary store
+    and home, and no agent CLI on the PATH;
+  - it covers the view, create, diff, a merge, a refused merge, a removal,
+    Esc and Ctrl+Q;
+  - no agent CLI is started.
+- 4.6 The same run at 80x24.
+- 4.7 The changed and new files carry no CR, no BOM and no NUL.
+- 4.8 The summary is in `doc/plan16-evaluation.md` and here.
 
 ## Closed plans
 
 One entry each: what the plan did, its approval, its evaluation file and
 its commits. Their criteria and progress logs: `git show 8888f59:plan.md`
-(plans 1 to 13), `git show 84d2ad8:plan.md` (plan 14).
+(plans 1 to 13), `git show 84d2ad8:plan.md` (plan 14), `git show
+b047434:plan.md` (plan 15).
 
 ## Plan 1 - Research
 
@@ -307,3 +414,10 @@ Claude Code's question card built and seen live, the documents reduced to
 the latest state and a CLI update made visible. Approved on 2026-10-18, 18
 PASS and 15 PASS ([`doc/plan14-evaluation.md`](doc/plan14-evaluation.md));
 commits 0206ac1, ce06b97.
+
+## Plan 15 - Recent projects, favourites and a project browser
+
+Brief amendment 9: the startup screen's project list (`projects.json`,
+favourites first) and its Ctrl+O browser. Approved on 2026-10-18, 21 PASS
+([`doc/plan15-evaluation.md`](doc/plan15-evaluation.md)); commits bd9ffa3,
+b047434.

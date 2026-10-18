@@ -290,7 +290,13 @@ Without losing the session (B3.4):
   through its input before exiting with code 2; on quit, crash and panic the
   session id and the CLI's own resume command are printed. The job object
   ends the CLI when the dashboard dies (ASM-19); a turn killed that way
-  leaves a resumable transcript (plan 4, L1 (g); CC-10 q13).
+  leaves a resumable transcript (plan 4, L1 (g); CC-10 q13). Its session
+  registration (ASM-25) is a file only an open handle keeps live: Windows
+  closes the handle with the process, so the next read finds it stale and
+  deletes it. A git operation of the Worktrees view the dashboard's death
+  interrupts is git's to recover; the next list shows the worktree as git
+  then sees it, and a merge left half done shows main with its changes, so
+  no merge or removal is offered on it.
 
 ## Configuration untouched
 

@@ -37,4 +37,4 @@
 
 
 
- ↑↓ project · Enter start · f star · Del forget · Ctrl+O browse · Ctrl+Q quit
+ ↑↓ project · Enter start · f star · Del forget · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit

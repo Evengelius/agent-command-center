@@ -262,9 +262,12 @@ part (AM4 "Project awareness"; AGENTS.md "One agent CLI per session").
 | `Mock` | true only for the mock provider | every screen's mock label |
 | `StartedAt` | the dashboard's clock at spawn | the session wall time (TEL CC "Duration") |
 
-The branch is read from the file, not by running git, and never changed; no
-git operation exists in the application (AM4 MVP scope: no worktree
-management).
+The branch is read from the file, not by running git, and never changed.
+Git runs only in the Worktrees view (plan 16, amendment 10; ui-design.md,
+Worktrees): `internal/input/git.go` runs the `git` on the PATH inside a
+Bubble Tea command, never in the reducer or the view, and never with
+`--force`, `-f` or `-D`. A worktree chosen there is validated as a typed
+path is, and the session context stays immutable (ASM-25).
 
 ## Integration strategy
 
@@ -345,21 +348,23 @@ agent-command-center [--mock <file>] [--provider <id>] [--project <path>]
 ## Out of scope
 
 Not designed, not built, and no option for them (AM4 "MVP Scope"; AM5).
-Google Antigravity and seven of amendment 4's ten exclusions are **[Nice to have]**
+Google Antigravity and six of amendment 4's ten exclusions are **[Nice to have]**
 ([plan.md](../plan.md#nice-to-have)): built only if the owner asks for one
 in a new plan.
 
 - Gemini CLI and Google Antigravity: no adapter, option or test (AM5). The
   research record [research/gemini-cli.md](research/gemini-cli.md) is kept,
   marked out of scope.
-- Git worktree management; automatic VS Code integration; advanced model
-  configuration; cross-provider agent collaboration; provider switching
-  during a session; complex session profiles; advanced orchestration
-  configuration (AM4 X4 to X10).
+- Automatic VS Code integration; advanced model configuration;
+  cross-provider agent collaboration; provider switching during a session;
+  complex session profiles; advanced orchestration configuration (AM4 X5 to
+  X10).
 
 Recent project history, project favourites and a project browser (AM4 X1
 to X3) are built on the startup screen since plan 15 (amendment 9;
 ui-design.md, Startup screen).
+Git worktree management (AM4 X4) is built since plan 16 (amendment 10;
+ui-design.md, Worktrees).
 
 The provider interface stays open to another agent CLI later (AGENTS.md).
 
@@ -411,6 +416,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-22 | Display defaults: thinking text folded; a sent message over 20 lines folded to its first 5; zone C ordered waiting, running, ended, most recent first; copy on mouse release; the last 50 stderr lines kept for error display | ui-design.md; Threads of execution |
 | ASM-23 | The editor's draft is saved byte for byte at most 1 s after the last change, by atomic rename, to `%LOCALAPPDATA%agent-command-centerdrafts`, one file per project named by the SHA-256 of its path; deleted once the CLI accepts the send, kept if the send fails, offered back on the next start in that project. On quit, crash or panic the dashboard prints the CLI session id and the CLI's own resume command; a panic restores the terminal, saves the draft, closes the CLI and exits with code 2. Not a history file (ASM-11) | reliability.md, Resumption; plan 3 (d5b910e) |
 | ASM-24 | The startup screen's project store is `projects.json` in `%LOCALAPPDATA%\agent-command-center\`, written by atomic rename: per project its validated path, its last start and whether it is a favourite; at most 10 recent projects, favourites never dropped; paths compared without case on Windows. No conversation data (ASM-11). A store that cannot be read or written is said so on screen; a mock run uses none | ui-design.md, Projects; plan 15 |
+| ASM-25 | The Worktrees view: git calls time out after 15 s for a read and 2 min for an operation (a merge may run hooks); a diff is capped at 5000 lines, the rest counted. Sessions are registered in `%LOCALAPPDATA%\agent-command-center\sessions\`, one file per dashboard session holding its project path, kept open until the session ends; a file nobody holds is a session that ended and is deleted at the next read. It knows the dashboard's own sessions only, not an agent CLI started in another terminal, and is "N/A" outside Windows, where an open file cannot be told from a closed one; a mock run registers none | ui-design.md, Worktrees; plan 16 |
 
 ## Coverage of the brief
 
@@ -589,7 +595,8 @@ ui-design.md, `REL` reliability.md.
 | AM4 F1-F10 | The 10-step expected experience | UI Interaction flow |
 | AM4 F11 | One coherent application | UI Transition |
 | AM4 X1-X3 | Recent projects, favourites, a project browser: built by amendment 9 | UI Startup screen, Projects and Project browser |
-| AM4 X4-X10 | The 7 excluded features left | ARCH Out of scope |
+| AM4 X4 | Worktree management: built by amendment 10 | UI Worktrees; ARCH Session context |
+| AM4 X5-X10 | The 6 excluded features left | ARCH Out of scope |
 | AM4 P1-P6 | The six priorities | ARCH Build order |
 | AM4 P7 | One provider end to end first | ARCH Integration strategy; ARCH Build order |
 | AM4 P8 | No function traded for a visual detail | ARCH Build order step 7 |

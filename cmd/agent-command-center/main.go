@@ -31,6 +31,8 @@ func main() {
 		MockSpeed: 1,
 		Drafts:    &input.Drafts{},
 		Projects:  &input.Projects{},
+		Git:       input.GitCLI{},
+		Sessions:  &input.Sessions{},
 	})
 	code, out := app.Run(m)
 	for _, l := range out {

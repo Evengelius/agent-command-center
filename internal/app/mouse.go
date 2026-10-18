@@ -35,8 +35,8 @@ type clicks struct {
 
 // mouse handles a mouse message on the dashboard.
 func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
-	if m.s.Screen != state.ScreenDashboard || m.screen == nil {
-		return nil
+	if m.s.Screen != state.ScreenDashboard || m.screen == nil || m.wt != nil {
+		return nil // the Worktrees view takes no mouse: the terminal selects
 	}
 	mo := msg.Mouse()
 	switch msg.(type) {

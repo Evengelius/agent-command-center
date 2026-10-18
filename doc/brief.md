@@ -670,3 +670,38 @@ Project favourites
 Advanced project browsers (startup only takes a typed or pasted path)
 
 Let's do these, sequentially, one by one.
+
+## Amendment 10, 2026-10-18: git worktree management
+
+The owner's request, word for word, after reading the Nice to have list: the
+first of amendment 4's other future improvements ("Worktree management",
+section 5), built in plan 16. The owner asked what it meant, saw an example
+(a repository's worktrees listed with their state, a new one created for a
+branch, its diff shown, merged into main and removed) and wanted it. The
+three choices below were the owner's answers to three questions, each the
+recommended option. The rest of amendment 4's exclusions stand (`plan.md`,
+Nice to have).
+
+Choices approved:
+
+- **Location: beside the repository.** A new worktree goes to
+  `<repo>.worktrees\<name>`, for example `C:\javadev\projets\shop.worktrees\login`:
+  outside the repository, so nothing inside it changes.
+- **Operations: create, list, diff, merge, remove.** A merge runs only when
+  both sides are clean and git merges without a conflict; on a conflict it is
+  aborted and said. Only a clean worktree is removed, and its branch is
+  deleted only if merged, through git's own safe refusals, never `--force`.
+- **Where: at startup and in session.** At startup the owner chooses or
+  creates the worktree the session runs in; during a session an overlay lists
+  the repository's worktrees with their state, for the diff, merge and
+  removal of the others, never the one the session runs in.
+
+---
+
+Git worktree management.
+
+What do you mean by that? Give me an example
+
+---
+
+Ok this is cool, I want it

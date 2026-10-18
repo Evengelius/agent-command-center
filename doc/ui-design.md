@@ -55,7 +55,7 @@ and a project browser (amendment 9).
                                                                                 
                                                                                 
                                                                                 
- ↑↓ agent · Tab next field · Enter start · Ctrl+O browse · Ctrl+Q quit         
+ ↑↓ agent · Tab next field · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit    
 ```
 
 ### Questions
@@ -134,7 +134,7 @@ The screen with two failures, Codex missing and a mistyped path:
                                                                                 
                                                                                 
                                                                                 
- ↑↓ agent · Tab next field · Enter start · Ctrl+O browse · Ctrl+Q quit         
+ ↑↓ agent · Tab next field · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit    
 ```
 
 Warnings (shown in amber with !, Start still allowed): a UNC path ("a
@@ -224,8 +224,13 @@ around the selection, their window on the right of the count line.
 | Enter | Start: validate both answers, then start; in Projects, with that project's path |
 | f / Del | in Projects: star or unstar / forget that project |
 | Ctrl+O | open the project browser |
+| Ctrl+W | open the [Worktrees](#worktrees) view on the project field's repository |
 | Editing keys | as in the [Input editor](#input-editor), on one line |
 | Ctrl+Q | quit |
+
+Below 100 columns the footer leaves Enter out to fit Ctrl+W within 79 cells;
+from 100 it shows "Enter start" too. On Projects it reads "↑↓ · Enter start
+· f star · Del forget · Ctrl+W worktrees · Ctrl+Q quit" (plan 16).
 
 ### Follows and departs
 
@@ -241,6 +246,139 @@ Against [RD, Image 1](reference-design.md#image-1-startup-configuration):
 | "Browse directories, recent projects, or enter a path" | A help line for manual entry and the resolved path shown live; the recent and favourite projects under it, and Ctrl+O for the browser | AM4 S13, X1-X3; amendment 9 (RD, "Where the images and amendment 4's text differ") |
 | "Optional session settings" | Absent | AM4: exactly two questions; X10 |
 | One wide light button "Preview configuration →" | One wide light button "Start session →", which validates then starts | AM4 S14 |
+
+## Worktrees
+
+Ctrl+W opens the Worktrees view full screen, on the startup screen (not
+while validating) and on the dashboard (plan 16, amendment 10; ASM-25). It
+lists one repository's git worktrees and creates, diffs, merges and removes
+them through git itself (architecture.md, Session context). Its repository
+is, at startup, the one holding the project field's directory (the current
+directory when the field is empty); in session, the session's project; for
+a mock run, the mock file's directory.
+
+```text
+ >_ AGENT COMMAND CENTER                                              Worktrees
+────────────────────────────────────────────────────────────────────────────────
+
+    Git worktrees
+    Repo    C:\javadev\projets\demo-project
+    ────────────────────────────────────────────────────────────────────────
+    › main               clean                      …ev\projets\demo-project
+      feature            clean   ↑2    session      …oject.worktrees\feature
+      fix-login          +3      ↑1                 …ect.worktrees\fix-login
+      docs               clean   ↑0                 …-project.worktrees\docs
+      old-spike          missing                    …ect.worktrees\old-spike
+
+    ────────────────────────────────────────────────────────────────────────
+    5 worktrees
+ Enter start here · n new · d diff · m merge into main · x remove · Esc back
+```
+
+**The rows.** The main worktree first, then the linked ones as git lists
+them (`git worktree list --porcelain`). Each row shows:
+
+- its branch, bold for main, or "detached" in grey;
+- its state: "clean" in green, "+N" uncommitted changes (`git status
+  --porcelain`) in amber, "missing" in red when its directory is gone,
+  "bare", or "N/A" in red when its state cannot be read (the reason under
+  the list while it is selected);
+- "↑N" commits ahead of main's branch (`git rev-list --count`), "↑N/A"
+  when they cannot be counted; nothing for main;
+- "this session" (violet) where this dashboard runs, "session" (amber)
+  where another dashboard session runs, else "locked" for a locked
+  worktree;
+- its path, elided from the left.
+
+Rows are windowed around the selection, the window on the right of the
+count line. Outside Windows the count line adds "other sessions: N/A: no
+session registry" (ASM-25). With no git on the PATH the view says "✗ git
+not found: worktrees unavailable"; outside a repository, git's "Not a git
+repository" and the directory, both in red.
+
+**New worktree** (startup only). `n` opens a one-line branch field under
+the list and shows the path it will create, `<repo>.worktrees\<name>`,
+`<name>` being the branch's last segment with every character but letters,
+digits, `.`, `_` and `-` made `-`. An existing branch is checked out there;
+a new one starts from main's HEAD. Enter creates it and selects its row;
+git's reason is shown for an invalid name, an existing path or a branch
+checked out elsewhere, and nothing is created.
+
+```text
+    ────────────────────────────────────────────────────────────────────────
+    New worktree
+    Branch  release-2.1█
+    Creates C:\javadev\projets\demo-project.worktrees\release-2.1
+    ────────────────────────────────────────────────────────────────────────
+    5 worktrees
+ Enter create · Esc cancel · Ctrl+Q quit
+```
+
+**Diff.** `d` shows the selected worktree's diff full screen: committed and
+uncommitted changes against its merge base with main, then its untracked
+files; for main, its uncommitted changes. Lines are coloured as git
+colours them (headers bold, hunks violet, additions green, removals red),
+a tab drawn as four spaces. At most 5000 lines, then "… N lines left out".
+
+```text
+ >_ AGENT COMMAND CENTER                                              Worktrees
+────────────────────────────────────────────────────────────────────────────────
+ Diff  feature against main
+────────────────────────────────────────────────────────────────────────────────
+ diff --git a/internal/auth/login.go b/internal/auth/login.go
+ index 3f1c2a0..9b8e7d4 100644
+ --- a/internal/auth/login.go
+ +++ b/internal/auth/login.go
+ @@ -12,7 +12,9 @@ func Login(user, password string) (*Session, error) {
+      if user == "" {
+          return nil, ErrNoUser
+      }
+ -    s, err := store.Open(user)
+ +    s, err := store.Open(user, store.WithTimeout(5*time.Second))
+ …
+────────────────────────────────────────────────────────────────────────────────
+ 1–17 of 18 lines
+ ↑↓ PgUp PgDn Home End scroll · Esc back to the list
+```
+
+**Merge and remove.** `m` merges the selected branch into main (`git merge
+--no-edit` in the main worktree) and `x` removes the selected worktree
+(`git worktree remove`, then `git branch -d`), each after "? Merge feature
+into main?  y/n" or its remove question in amber. The outcome follows in
+green with ✓, or in red with ✗ and git's reason. A conflict is aborted
+(`git merge --abort`): "conflict: merge aborted, main unchanged". A branch
+git will not delete because it is not merged stays: "branch kept:" and
+git's reason. No call passes `--force`, `-f` or `-D`.
+
+Refused before git runs, with the reason in red:
+
+| Key | Refused when |
+| - | - |
+| `m` | the selection is main, missing, detached, or the worktree this session runs in; its state or main's cannot be read; either side has uncommitted changes; nothing is ahead, or that cannot be counted; main is detached; another dashboard session runs in main; this session runs in main and its turn is not idle |
+| `x` | the selection is main, this session's worktree, one with uncommitted changes or an unreadable state, or one where another dashboard session runs (git itself refuses a locked one) |
+| `n` | in session ("a new worktree is created from the startup screen"); while the list is being read |
+| Enter, `d` | the selection's directory is missing |
+| any operation | while another one runs ("wait: " and what it is doing) |
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | move (in a diff, scroll) |
+| Enter | at startup: fill the project field with the selected path and start, validated as a typed path |
+| n | at startup: a new worktree |
+| d | the diff, full screen; Esc back to the list |
+| m / x | merge into main / remove, after y/n |
+| y / n | answer the question |
+| Esc | cancel the field or the question, leave the diff, close the view (not while an operation runs) |
+| Ctrl+Q | close the view and quit, its question shown on the screen beneath |
+
+Git never runs in the update loop: each call is a command with a time limit
+(15 s for a read, 2 min for an operation) and a generation number, so a
+stale result is dropped; meanwhile the view says "reading…" or the
+operation running, and keys stay handled. The mouse is off while the view
+is open. The session context is never changed by the view: in session it
+only reads, merges and removes; a worktree is entered by starting a new
+session on it from the startup screen. "session" knows the dashboard's own
+sessions only, not an agent CLI started in another terminal (ASM-25).
 
 ## Transition
 
@@ -1019,6 +1157,7 @@ this table as an overlay.
 | Esc | close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
 | Shift+PgUp / Shift+PgDn | scroll the conversation from any focus | ASM-9 |
 | F12 | toggle mouse capture (native terminal selection when off) | TI 6.3 item 6 |
+| Ctrl+W | the [Worktrees](#worktrees) view of the session's repository: list, diff, merge, remove | plan 16; brief amendment 10 |
 | F1, `?` | key overlay | ASM-9 |
 | Ctrl+R | after a crash only: resume the same CLI session in a new process ([reliability.md, Resumption](reliability.md#resumption)) | ASM-9 |
 | Ctrl+Q | quit; asks to confirm while a turn or an agent runs | ASM-9 |

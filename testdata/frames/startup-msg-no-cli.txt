@@ -21,4 +21,4 @@
                   ╭──────────────────────────────────────────╮
                   │             Start session  →             │
                   ╰──────────────────────────────────────────╯
- ↑↓ agent · Tab next field · Enter start · Ctrl+O browse · Ctrl+Q quit
+ ↑↓ agent · Tab next field · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit

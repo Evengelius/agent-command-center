@@ -88,6 +88,11 @@ type Options struct {
 	Projects *input.Projects
 	// Lister reads directories for the project browser; nil is the disk.
 	Lister input.Lister
+	// Git runs the Worktrees view's git (plan 16); nil is the git on the PATH.
+	Git input.Git
+	// Sessions records this dashboard's sessions for the Worktrees view;
+	// nil registers nothing, and the view says other sessions are N/A.
+	Sessions *input.Sessions
 	// DetectTimeout bounds each adapter's detection; 0 is DetectTimeout.
 	DetectTimeout time.Duration
 }
@@ -145,6 +150,12 @@ type Model struct {
 	projectsSeen int // the last one shown
 	// The project browser (browse.go): nil when closed.
 	browse *browser
+	// The Worktrees view (worktrees.go): nil when closed.
+	wt    *worktrees
+	wtGen int // the last git result asked for
+	// This session's registration (plan 16, Sessions): nil when none.
+	lock    *input.SessionLock
+	locking bool
 
 	spinning, clocking bool
 
@@ -251,7 +262,7 @@ func (m *Model) View() tea.View {
 	m.screen = render.Draw(m.s, m.ui)
 	v := tea.NewView(m.screen.StringAfter(prev))
 	v.AltScreen = true
-	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff {
+	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
 	}
 	v.WindowTitle = "Agent Command Center"
@@ -287,6 +298,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.projectsDone(msg)...)
 	case browseMsg:
 		m.browseDone(msg)
+	case wtListMsg:
+		m.worktreesListed(msg)
+	case wtOpMsg:
+		cmds = append(cmds, m.worktreeDone(msg)...)
+	case wtDiffMsg:
+		m.worktreeDiffed(msg)
+	case lockMsg:
+		cmds = append(cmds, m.locked(msg)...)
 	case detectedMsg:
 		cmds = append(cmds, m.detectionDone(msg.found)...)
 	case startedMsg:
@@ -347,6 +366,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Refresh reads telemetry after a turn; a failed read leaves the
 		// values as they are, each with its own age (no zero, no guess).
 	}
+	cmds = append(cmds, m.lockSync()...)
 	m.syncUI()
 	cmds = append(cmds, m.timers()...)
 	cmds = append(cmds, m.draftChanged()...)
@@ -376,6 +396,7 @@ func (m *Model) syncUI() {
 		}
 		m.ui.Browser = m.browserView()
 	}
+	m.ui.Worktrees = m.worktreesView()
 }
 
 // animating reports whether a spinner is on screen.
@@ -664,6 +685,10 @@ func (m *Model) close() tea.Cmd {
 // than the reducer's exit (an error, a signal). Safe to call twice.
 func (m *Model) Shutdown() {
 	m.once.Do(func() {
+		if m.lock != nil {
+			_ = m.lock.Release() // the program ends: its registration with it
+			m.lock = nil
+		}
 		if m.sess == nil {
 			return
 		}
@@ -678,6 +703,10 @@ func (m *Model) Shutdown() {
 
 func (m *Model) paste(text string) {
 	switch {
+	case m.wt != nil:
+		if m.wt.mode == 'n' && m.wt.busy == "" {
+			m.wt.branch.Insert(firstLine(text)) // a branch name is one line
+		}
 	case m.s.Screen == state.ScreenStartup && m.browse != nil:
 		m.browse.paste(text)
 	case m.s.Screen == state.ScreenStartup && m.ui.Field == 1:

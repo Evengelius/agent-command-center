@@ -1,0 +1,60 @@
+ >_ AGENT COMMAND CENTER                                                                                                                                                    ◆ MOCK — not a live session
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Diff  feature against main
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ diff --git a/internal/auth/login.go b/internal/auth/login.go
+ index 3f1c2a0..9b8e7d4 100644
+ --- a/internal/auth/login.go
+ +++ b/internal/auth/login.go
+ @@ -12,7 +12,9 @@ func Login(user, password string) (*Session, error) {
+      if user == "" {
+          return nil, ErrNoUser
+      }
+ -    s, err := store.Open(user)
+ +    s, err := store.Open(user, store.WithTimeout(5*time.Second))
+ +    if errors.Is(err, store.ErrLocked) {
+ +        return nil, fmt.Errorf("%s is signed in elsewhere: %w", user, err)
+ +    }
+      if err != nil {
+          return nil, err
+      }
+ Untracked files:
+ internal/auth/login_test.go
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ 1–18 of 18 lines
+ ↑↓ PgUp PgDn Home End scroll · Esc back to the list

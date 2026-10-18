@@ -17,10 +17,20 @@ var zones = []string{"B", "C", "A", "D"}
 // essentials; step 3 adds selection, undo, the external editor and the rest.
 func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	if k.String() == "ctrl+q" {
+		m.wt = nil // a quit question shows on the screen under it
 		return m.do(state.Quit{})
 	}
 	if m.s.QuitAsked && k.String() == "esc" {
 		return m.do(state.Stay{})
+	}
+	if m.wt != nil {
+		return m.worktreesKey(k)
+	}
+	// Ctrl+W, on both screens: the Worktrees view (plan 16); not while a
+	// start is validated or a quit question waits.
+	if k.String() == "ctrl+w" && m.browse == nil && !m.s.QuitAsked &&
+		!(m.s.Screen == state.ScreenStartup && m.s.Startup.Phase == state.Validating) {
+		return m.openWorktrees()
 	}
 	if m.s.Screen == state.ScreenStartup && m.browse != nil {
 		return m.browseKey(k)

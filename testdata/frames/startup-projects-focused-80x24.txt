@@ -21,4 +21,4 @@
                   ╭──────────────────────────────────────────╮
                   │             Start session  →             │
                   ╰──────────────────────────────────────────╯
- ↑↓ project · Enter start · f star · Del forget · Ctrl+O browse · Ctrl+Q quit
+ ↑↓ · Enter start · f star · Del forget · Ctrl+W worktrees · Ctrl+Q quit
