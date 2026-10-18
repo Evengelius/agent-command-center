@@ -67,7 +67,7 @@ browser, are plan 15 (amendment 9).
 
 ## Plan 15 - Recent projects, favourites and a project browser
 
-**Done, awaiting the owner's approval:** 21 criteria, 21 PASS
+**Approved by the owner on 2026-10-18:** 21 criteria, 21 PASS
 ([`doc/plan15-evaluation.md`](doc/plan15-evaluation.md)). The owner's
 request (2026-10-18, `doc/brief.md`, amendment 9): three of amendment 4's
 future improvements, built "sequentially, one by

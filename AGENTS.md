@@ -21,8 +21,8 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: plan 15, recent projects, favourites and a project browser, done
-and awaiting the owner's approval (amendment 9).** Plans 1 to 14 (research; architecture and reliability; proposal; the
+**Status: plan 15, recent projects, favourites and a project browser, approved
+by the owner on 2026-10-18 (amendment 9).** Plans 1 to 14 (research; architecture and reliability; proposal; the
 MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live; nothing left open) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
 plan's progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.
