@@ -38,7 +38,7 @@ Decisions of closed plans that still apply; `AGENTS.md` and
 
 ## Plan 14 - Nothing left open
 
-**Done, awaiting the owner's approval.** The owner's request (2026-10-18), after plan 13's
+**Done, approved by the owner on 2026-10-18** (committed as 0206ac1). The owner's request (2026-10-18), after plan 13's
 approval: settle what is still open so that no plan 15 is needed for it.
 Anything not settled is closed with its reason, and nothing is left for
 later. Items 5 to 7 were added by the owner on 2026-10-18, after items 1 to
