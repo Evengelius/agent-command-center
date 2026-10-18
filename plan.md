@@ -20,14 +20,14 @@ The order puts the biggest risk first: whether each agent CLI can be driven
 from another program decides the architecture, and whether a reference project
 is worth forking; reliability is designed with the architecture, not after it.
 
-**Plan 13, a reviewer's refusal live, done and awaiting the owner's
-approval**
+**Plan 13, a reviewer's refusal live, approved by the owner on 2026-10-18**
 (the owner's request of 2026-10-18,
 [Plan 13](#plan-13---a-reviewers-refusal-live) at the end). All three items
 done or recorded with why; Claude's classifier denial seen live and a
 render defect it exposed fixed; Codex's reviewer not reached (the model
-refused first) after two attempts. The summary is in
-[`doc/plan13-evaluation.md`](doc/plan13-evaluation.md).
+refused first) after two attempts, a point the owner considers closed (it
+follows Codex's own auto rule). The summary is in
+[`doc/plan13-evaluation.md`](doc/plan13-evaluation.md), committed as d68bb55.
 
 Plan 13 progress (update as each item finishes; read this first after a
 context compaction). Items and rules:
