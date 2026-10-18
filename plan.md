@@ -66,7 +66,7 @@ remain below. Recent projects, favourites and a project browser were plan 15
 
 ## Plan 16 - Git worktree management
 
-**Done, awaiting the owner's approval**: 26 criteria, 26 PASS
+**Approved by the owner on 2026-10-18**: 26 criteria, 26 PASS
 (`doc/plan16-evaluation.md`). The owner's request (2026-10-18, `doc/brief.md`, amendment
 10): the first of amendment 4's other future improvements, with the three
 choices approved there: worktrees beside the repository; create, list,
