@@ -64,9 +64,9 @@ Verdict: DONE
   fallback arrives as a `can_use_tool`, and every `can_use_tool` is already
   a card.
 - **A Codex subagent launch naming its model or effort, and Codex's default
-  subagent limit:** won't do.
+  subagent limit:** closed.
 - **The checks by eye** (look and feel, 256 and 16 colours, flicker,
-  physical keys, a NUL in a paste) **and the excluded list:** won't do.
+  physical keys, a NUL in a paste) **and the excluded list:** closed.
 
 ## Items 5 to 7 (2026-10-18)
 
@@ -80,7 +80,7 @@ unchanged. The results are not to be rewritten.
 ```text
 Evaluation - Plan 14, items 5 to 7 - 15 criteria: 15 PASS
 PASS 5.1 plan.md holds the active plan with its progress, "The owner's standing decisions" and one entry per closed plan under its exact "## Plan N - ..." heading (approval, counts, evaluation file, commits); 10 plan.md# links in doc/, AGENTS.md, CLAUDE.md and plan.md, 0 unresolved; 332 lines before this record (under 400)
-PASS 5.2 The standing decisions of the closed plans' logs kept: in plan.md (live runs, hash-only configuration check, measured not assumed, the integration, drafts, won't do), in doc/evaluation.md (The race detector: WinLibs GCC 16.2.0 UCRT r2, its SHA-256, no PATH change), and where they already lived (ASM-17's renderer in architecture.md, plan 11's network item in plan11-evaluation.md)
+PASS 5.2 The standing decisions of the closed plans' logs kept: in plan.md (live runs, hash-only configuration check, measured not assumed, the integration, drafts), in doc/evaluation.md (The race detector: WinLibs GCC 16.2.0 UCRT r2, its SHA-256, no PATH change), and where they already lived (ASM-17's renderer in architecture.md, plan 11's network item in plan11-evaluation.md)
 PASS 5.3 doc/proposal.md deleted; no living file links to it (the only mentions are plan.md's history entries naming the deletion and commit d5b910e); architecture.md cites d5b910e where it cited the proposal
 PASS 5.4 Item 5 changed neither doc/brief.md, the evaluation files, plan 1's reference studies nor doc/research/summary.md; doc/research/gemini-cli.md's only change (the closed open questions) was made under item 3, before items 5 and 6 were approved
 PASS 5.5 AGENTS.md's status line and layout say what plan.md, the design documents and the evaluation files now hold; working rule "Documents hold the latest state; git holds the history."

@@ -31,10 +31,6 @@ Decisions of closed plans that still apply; `AGENTS.md` and
 - **Drafts and session data** survive cancellation, crashes and recovery; no
   conversation data is stored beyond the draft, and nothing sensitive goes
   into a log (2026-10-16).
-- **Won't do:** Linux and macOS (Windows only, plan 5); an API-key session, a
-  plan without a 5-hour window and a live `get_context_usage` refusal, unless
-  they can be simulated without quota (plan 5); the items the owner closed on
-  2026-10-18 (plan 14, item 3).
 
 ## Recurring
 
@@ -48,6 +44,27 @@ summary format (the owner, 2026-10-18).
   re-check proposed (`doc/evaluation.md`, After a CLI update), which runs
   only once the owner approves it. The dashboard's project bar shows
   "newer than tested" meanwhile.
+
+## Nice to have
+
+Items tagged **[Nice to have]** are future improvements: none is built, and
+none is listed as remaining, until the owner asks for one in a new plan
+(the owner, 2026-10-18). Amendment 4 names the first ten "future
+improvements" (`doc/brief.md`, Amendment 4, "For this phase, do NOT
+implement").
+
+- **[Nice to have]** Recent project history.
+- **[Nice to have]** Project favourites.
+- **[Nice to have]** An advanced project browser.
+- **[Nice to have]** Git worktree management.
+- **[Nice to have]** Automatic VS Code integration.
+- **[Nice to have]** Advanced model configuration.
+- **[Nice to have]** Cross-provider agent collaboration.
+- **[Nice to have]** Provider switching during an active session.
+- **[Nice to have]** Complex session profiles.
+- **[Nice to have]** Advanced orchestration configuration.
+- **[Nice to have]** Google Antigravity as an agent CLI, removed from the
+  MVP by amendment 5; the provider interface stays open to it.
 
 ## Plan 14 - Nothing left open
 
@@ -71,10 +88,10 @@ later. Items 5 to 7 were added by the owner on 2026-10-18, after items 1 to
      blocks: the dashboard relays Claude Code's own mechanism, since any
      `can_use_tool` is already a card, and does not try to provoke it.
    - Codex: a subagent launch naming its model or effort, and Codex's
-     default subagent limit: won't do.
+     default subagent limit: closed.
    - The checks by eye (look and feel; 256- and 16-colour terminals;
      flicker; physical keys; a NUL in a paste) and the excluded list:
-     won't do.
+     closed.
 4. Documents and the full check.
 5. The documents hold the latest state; git holds the history. This file
    keeps the active plan, the standing decisions and one entry per closed
@@ -146,8 +163,8 @@ Baseline: 8888f59, 261 top-level tests in 14 packages, 0 FAIL.
     any assistant, result or usage event follows it.
 - [x] Item 3, the owner's closures recorded: Claude Code's Auto fallback
   (Claude Code's own mechanism, not provoked); the Codex subagent model or
-  effort at launch, and the default subagent limit (won't do); the checks
-  by eye and the excluded list (won't do). Each document listing one of
+  effort at launch, and the default subagent limit (closed); the checks
+  by eye and the excluded list (closed). Each document listing one of
   these as open names the owner's decision of 2026-10-18.
 - [x] Item 4, documents and the full check: go build and go vet (also
   `-tags live` and `-tags timing`), gofmt, and `go test ./...` with 0 FAIL;

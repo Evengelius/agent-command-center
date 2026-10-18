@@ -344,7 +344,10 @@ agent-command-center [--mock <file>] [--provider <id>] [--project <path>]
 
 ## Out of scope
 
-Not designed, not built, and no option for them (AM4 "MVP Scope"; AM5):
+Not designed, not built, and no option for them (AM4 "MVP Scope"; AM5).
+Google Antigravity and amendment 4's ten exclusions are **[Nice to have]**
+([plan.md](../plan.md#nice-to-have)): built only if the owner asks for one
+in a new plan.
 
 - Gemini CLI and Google Antigravity: no adapter, option or test (AM5). The
   research record [research/gemini-cli.md](research/gemini-cli.md) is kept,

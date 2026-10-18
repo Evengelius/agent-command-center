@@ -109,7 +109,8 @@ and need the owner's approval where it says so. tmux is not used.
 - **Every agent CLI is optional.** The dashboard works with either Claude Code
   or Codex CLI, shows the other as not installed, and depends on neither; JEV
   is optional too. Gemini CLI and Google Antigravity are out of scope
-  (amendment 5): no adapter, option or test for them.
+  (amendment 5): no adapter, option or test for them; Antigravity is
+  **[Nice to have]** (`plan.md`, Nice to have).
 - **Never change an agent CLI's configuration** (`~/.claude`, `~/.codex`,
   `~/.gemini`, and any project `.claude\`, `.codex\` or `.gemini\` folder)
   unless the owner asks: read only. An integration that needs a hook, a status
@@ -143,7 +144,9 @@ and need the owner's approval where it says so. tmux is not used.
 - **MVP scope is fixed** by amendment 4: build none of the features it leaves
   out (recent projects, favourites, project browser, worktrees, editor
   integration, model configuration, cross-provider collaboration, provider
-  switching, session profiles, orchestration settings).
+  switching, session profiles, orchestration settings). They are
+  **[Nice to have]**: future improvements, never listed as remaining, built
+  only if the owner asks for one in a new plan (`plan.md`, Nice to have).
 - **Dependencies are fixed** at the four the owner approved on 2026-10-16
   (Bubble Tea, Lip Gloss, x/clipboard, x/sys, pinned in `go.mod`); another
   direct dependency needs a technical justification and the owner's approval.

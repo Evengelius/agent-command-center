@@ -539,7 +539,7 @@ Closed, the dashboard does not depend on the answer:
    each child's status from that child's own events, so zone C reports
    whatever Codex does. Further spawn checks (a launch naming its model or
    effort, Codex's default subagent limit) were closed by the owner on
-   2026-10-18 ("Won't do").
+   2026-10-18.
 5. **`turn/steer`.** The dashboard never sends it: the state refuses a
    message while a turn runs (`internal/state/actions.go`), so only
    `turn/start` is sent.
