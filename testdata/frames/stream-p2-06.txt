@@ -37,4 +37,4 @@
 │ 5h ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 25%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 46%†  resets Sat 08:00                      │
 │ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 3% of 1M (derived)   tokens 91.1k   +4 more │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit
+ Enter send · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

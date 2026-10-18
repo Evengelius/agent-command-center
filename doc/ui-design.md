@@ -480,7 +480,7 @@ narrow width C has 3 rows and D 1.
 ╭─ D ──────────────────────────────────────────────────────────────────────────╮
 │ 5h ▰▰▰▱▱▱▱▱▱▱ 23%† 7d ▰▰▰▰▰▱▱▱▱▱ 45%† ctx 12%  tok 41.2k  $0.42 est.  err 0  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · F6 zone · F2 approve · F1 keys                   
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys     
 ```
 
 - A collapses to one line, the current path through the stage tree with a
@@ -536,7 +536,7 @@ narrow width C has 3 rows and D 1.
 │ 5h ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 23%†  resets 16:40   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 45%†  resets Mon 09:00   model claude-opus-5-5  │
 │ context 12% of 1M   tokens 41.2k   cost $0.42 API-equiv. estimate   agents 2 / limit N/A   time 3m 05s   errors 0    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit        
+ Enter send · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit           
 ```
 
 - A is a 34-column column, full height: orchestrator, model, turn and its
@@ -544,6 +544,12 @@ narrow width C has 3 rows and D 1.
 - B above C on the right, as in the layout mock-up. B's input area sits at
   B's bottom edge, separated by a rule.
 - D is two lines.
+- The footer names F3 at every size: "F3 Explorer", the Explorer F3 opens
+  when no file is in front ("F3 file" while B's entry cursor is on an entry
+  that names one). When the whole line does not fit, as at 120 columns, it
+  leaves out "Ctrl+J newline", which B's input shows above it, so that
+  "Ctrl+Q quit" stays visible (from 109 columns here, from 174 in the wide
+  layout) (plan 17).
 
 ### Wide, 200x60
 
@@ -607,7 +613,7 @@ narrow width C has 3 rows and D 1.
 │ agents 1 active (derived) / limit N/A (not set; default not reported)   time 2m 40s turn · 5m 12s session   errors 0   retries 0   unrecognised events 0                                                │
 │                                                                                                                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit                                        
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit                          
 ```
 
 - A grows to 44 columns, with turn history below the current plan.

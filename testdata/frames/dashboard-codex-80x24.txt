@@ -21,4 +21,4 @@
 ╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
 │ 5h ▱▱▱▱▱ 1%   7d ▱▱▱▱▱ 1%   ctx 6%   tok 184.3k   cost N/A   errors 0        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · F6 zone · F2 approve · F1 keys
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

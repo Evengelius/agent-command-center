@@ -199,3 +199,45 @@ func TestFileFooters(t *testing.T) {
 		t.Errorf("F3 in the key overlay's groups %v, want ANYWHERE, B's entries and the file viewer", found)
 	}
 }
+
+// TestDashboardF3 is plan 17's F3 in the dashboard footer: "F3 Explorer" at
+// every layout; "Ctrl+J newline", which B's input shows too, left out only
+// when the whole line does not fit, so that Ctrl+Q quit shows from 109
+// columns in the standard layout and from 174 in the wide one.
+func TestDashboardF3(t *testing.T) {
+	for _, c := range []struct {
+		w           int
+		ctrlJ, quit bool
+	}{
+		{80, true, false}, {99, true, false}, {100, false, false}, {108, false, false}, {109, false, true},
+		{120, false, true}, {125, false, true}, {126, true, true}, {159, true, true},
+		{160, false, false}, {173, false, false}, {174, false, true}, {190, false, true}, {191, true, true}, {200, true, true},
+	} {
+		ls := dashboard(state.New(), UI{Width: c.w, Height: 40}, new(Screen))
+		foot := texts(ls[len(ls)-1:])
+		if c.w < 100 { // the compact layout's own line, whole at 80 columns
+			c.quit = true
+			if !strings.Contains(foot, "F2 approve · F3 Explorer · F1 keys") {
+				t.Errorf("%d columns: %q", c.w, foot)
+			}
+			continue
+		}
+		if !strings.Contains(foot, "F2 approvals · F3 Explorer ·") ||
+			strings.Contains(foot, "Ctrl+J newline") != c.ctrlJ || strings.Contains(foot, "Ctrl+Q quit") != c.quit {
+			t.Errorf("%d columns: %q", c.w, foot)
+		}
+	}
+	// On an entry that names a file, the entry footer: "F3 file".
+	s := entryState()
+	in, _ := json.Marshal(map[string]string{"file_path": "main.go"})
+	s.Tools["t2"] = &state.ToolCall{ID: "t2", Name: "Read", Input: in, Status: state.ToolCompleted}
+	s.Conversation = append(s.Conversation, state.Entry{Seq: uint64(len(s.Conversation) + 1), Role: "tool", MessageID: "t2", Text: "Read"})
+	for _, w := range []int{80, 120, 200} {
+		for n, want := range map[int]string{len(s.Conversation): "F3 file", 4: "Esc back to the input · F1 keys"} {
+			ls := dashboard(s, UI{Width: w, Height: 40, Focus: "B", Entry: n}, new(Screen))
+			if foot := texts(ls[len(ls)-1:]); !strings.Contains(foot, want) || strings.Contains(foot, "F3 Explorer") {
+				t.Errorf("%d columns, entry %d: %q", w, n, foot)
+			}
+		}
+	}
+}

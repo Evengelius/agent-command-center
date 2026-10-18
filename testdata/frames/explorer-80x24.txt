@@ -21,4 +21,4 @@
 ╭─│                                                                          │─╮
 │ │ Enter view · / find · Esc back · F3 close                        2 of 11 │ │
 ╰─╰──────────────────────────────────────────────────────────────────────────╯─╯
- Enter send · Ctrl+J newline · F6 zone · F2 approve · F1 keys
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

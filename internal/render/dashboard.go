@@ -68,7 +68,7 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		ls = append(ls, zoneB(s, ui, w, bh, 3, sc)...)
 		ls = append(ls, zoneC(s, ui, w, ch, sc)...)
 		ls = append(ls, zoneD(s, ui, w, dh, 1)...)
-		hints := "Enter send · Ctrl+J newline · F6 zone · F2 approve · F1 keys"
+		hints := "Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys"
 		if ui.Entry > 0 && ui.Focus == "B" && ui.Card == "" {
 			hints = entryFooter(s, ui)
 		}
@@ -91,9 +91,14 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	}
 	ls = append(ls, beside(zoneA(s, ui, aw, mid, sc), right)...)
 	ls = append(ls, zoneD(s, ui, w, dh, rows)...)
-	hints := "Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit"
+	hints := "Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit"
 	if wide {
-		hints = "Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
+		hints = "Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
+	}
+	if lipgloss.Width(hints)+1 > w {
+		// Zone B's input shows Ctrl+J above: the room goes to the end
+		// of the line, Ctrl+Q quit (plan 17, F3 in the footer).
+		hints = strings.Replace(hints, "Ctrl+J newline · ", "", 1)
 	}
 	if ui.Entry > 0 && ui.Focus == "B" && ui.Card == "" {
 		hints = entryFooter(s, ui)

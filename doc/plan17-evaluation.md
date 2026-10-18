@@ -415,3 +415,27 @@ Every hint is still in the F1 key overlay. The first versions are blobs
 `003aa380` and `963f5d9d` (full screen), at 80x24, 120x40 and 200x60. Being
 unreachable, they last until git prunes them. This settles the 16 file frames
 that items 5 and 6 left not verified.
+
+## F3 in the dashboard footer (2026-10-18)
+
+The owner asked for F3 in the dashboard's key-hint line, and approved the
+proposal: "F3 Explorer" after the F2 key, since F3 with no file in front
+opens the Explorer. When the whole line does not fit, it leaves out
+"Ctrl+J newline", which B's input shows just above it, so that "Ctrl+Q quit"
+stays visible. The proposal said the 80-column footer would not change, but
+it is a separate, shorter line that fits whole, so it too now has "F3
+Explorer". At 160 columns and up, "Ctrl+J newline" is also left out while
+the line is too long; before this change, the end of that line was already
+cut from 160 to 176 columns.
+
+```text
+Evaluation - Plan 17, F3 in the dashboard footer - 6 criteria: 6 PASS
+PASS "F3 Explorer" in the footer at every layout: compact (80, 99), standard (100 to 159), wide (160 to 200); TestDashboardF3
+PASS "Ctrl+Q quit" whole at 120x40, and from 109 columns (standard) and 174 (wide); "Ctrl+J newline" left out only below 126 and 191; at 80 the compact line fits whole; TestDashboardF3, which fails at 9 widths without the rule
+PASS On an entry that names a file the footer says "F3 file", not "F3 Explorer"; on another entry, neither; TestDashboardF3 at 80, 120 and 200 columns
+PASS Golden frames rewritten: 29 frames changed, each in one line, its last, the footer; the only changes are the 3 footers (14 at 120 columns, 8 at 200, 7 at 80)
+PASS ui-design.md: the three footer samples, and the rule under the standard layout
+PASS go build, go vet clean; gofmt -l prints nothing; go test ./... -count=1: 339 PASS, 1 SKIP, 0 FAIL
+Not verified: the footer in a real terminal (the golden frames are the rendered text).
+Verdict: DONE
+```

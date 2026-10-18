@@ -468,6 +468,12 @@ no trace and is not shown.
   transcript, both copies identical: each of the 12 frames at 80x24, 120x40
   and 200x60 differs in its footer alone, "Esc close" now "Esc back · F3
   close"; the four 79x24 frames are unchanged. This settles the file frames.
+- F3 in the dashboard footer, at the owner's request: 6 criteria, 6 PASS
+  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#f3-in-the-dashboard-footer-2026-10-18)).
+  "F3 Explorer" after the F2 key at every layout; when the line does not
+  fit, "Ctrl+J newline" (shown in B's input) is left out so that "Ctrl+Q
+  quit" stays visible, at 120x40 too. 29 golden frames changed in their
+  footer alone; `go test ./...` 339 PASS, 1 SKIP, 0 FAIL.
 
 ## Closed plans
 

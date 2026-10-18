@@ -37,4 +37,4 @@
 │ 5h ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1%  resets Fri 02:43   7d ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1%  resets Thu 10:30   credits none           │
 │ model gpt-5.6-sol   context 6% of 258.4k   tokens 184.3k (derived)   cost N/A (Codex reports none)   +3 more         │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit
+ Enter send · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

@@ -21,4 +21,4 @@
 ╭─│                                                                          │─╮
 │ │ type to filter · ↑↓ select · Enter open · Esc back · F3 close     1 of 1 │ │
 ╰─╰──────────────────────────────────────────────────────────────────────────╯─╯
- Enter send · Ctrl+J newline · F6 zone · F2 approve · F1 keys
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys
