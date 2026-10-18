@@ -35,6 +35,7 @@ documents:
 | Input editor | our own component, inside the application | n/a | TI 11 item 2: the Bubbles textarea caps at 10,000 lines, renders in O(n) and has no undo (TI 2.4) |
 | Native clipboard | `golang.design/x/clipboard` (MIT, no cgo on Windows) on Windows and macOS; on Linux and WSL, the external tools of TI 5.3 (`wl-copy`, `xclip`, `clip.exe`) | v0.11.0 (commit `d95c794`) | TI 5.2, TI 11 item 4; choosing the MIT library avoids a second notice (ASM-2) |
 | OSC 52 | `x/ansi` (already a Bubble Tea dependency), with its tmux passthrough | as pinned by Bubble Tea | TI 5.3 "Tools for wrapping OSC 52" |
+| File viewer highlighting | Chroma, `github.com/alecthomas/chroma/v2` (MIT, pure Go), with `github.com/dlclark/regexp2/v2` (MIT); its token types coloured from the palette, never a Chroma theme. Zone B's Markdown keeps its own highlighter (ASM-17) | v2.27.0, regexp2 v2.2.1 | plan 17; brief amendment 11, approved by the owner on 2026-10-18 |
 | Codex protocol types | written by hand for the messages the MVP uses, checked against Codex's committed JSON Schema (Apache-2.0) by fixture tests; changed from "generated" at plan 3 | the schema of Codex CLI 0.145.0 (P0 `p0-codex-app-server-schema-v2.json`) | SUM "What plan 2 inherits"; INT 6 |
 | Claude Code protocol | written from the documented messages, with the Python Agent SDK (MIT) as the reference for the control-request wire form | Claude Code 2.1.300 | INT 1; CC-4 way A |
 | tmux | **not used and not a dependency** | n/a | SUM: both CLIs run over pipes on native Windows (P1 to P4, P6b, P7); INT 6: a PTY or tmux yields a screen, not events. The application runs inside tmux like any terminal program (clipboard passthrough, TI 7) |
@@ -348,25 +349,53 @@ agent-command-center [--mock <file>] [--provider <id>] [--project <path>]
 ## Out of scope
 
 Not designed, not built, and no option for them (AM4 "MVP Scope"; AM5).
-Google Antigravity and six of amendment 4's ten exclusions are **[Nice to have]**
+Google Antigravity and five of amendment 4's ten exclusions are **[Nice to have]**
 ([plan.md](../plan.md#nice-to-have)): built only if the owner asks for one
 in a new plan.
 
 - Gemini CLI and Google Antigravity: no adapter, option or test (AM5). The
   research record [research/gemini-cli.md](research/gemini-cli.md) is kept,
   marked out of scope.
-- Automatic VS Code integration; advanced model configuration;
-  cross-provider agent collaboration; provider switching during a session;
-  complex session profiles; advanced orchestration configuration (AM4 X5 to
-  X10).
+- Advanced model configuration; cross-provider agent collaboration;
+  provider switching during a session; complex session profiles; advanced
+  orchestration configuration (AM4 X6 to X10).
 
 Recent project history, project favourites and a project browser (AM4 X1
 to X3) are built on the startup screen since plan 15 (amendment 9;
 ui-design.md, Startup screen).
 Git worktree management (AM4 X4) is built since plan 16 (amendment 10;
 ui-design.md, Worktrees).
+The automatic VS Code integration (AM4 X5) is not built: the owner replaced
+it with a file viewer in the terminal and an Explorer of the project,
+built since plan 17 (amendments 11 and 12; ui-design.md, File viewer and
+Explorer; [File viewer](#file-viewer) below).
 
 The provider interface stays open to another agent CLI later (AGENTS.md).
+
+## File viewer
+
+Plan 17 (amendments 11 and 12; ui-design.md, File viewer and Explorer).
+It only reads; nothing is written anywhere.
+
+| Part | What it does | Where |
+| - | - | - |
+| 5. Input | reads a file and lists the project's files, each in a Bubble Tea command, never in the update loop; refuses a path outside the project (after both paths' links are resolved), a credential file by its name before it is opened, a directory and a file over 32 MiB; a NUL in the first 8 KiB is binary; the listing leaves out `.git`, credential files and anything behind a link, at most 100,000 files. The Explorer's folders are read one at a time, when opened, with the same refusals, at most 10,000 entries; git's markers come from one `git --no-optional-locks status --porcelain=v1 -z --untracked-files=normal --ignored -- .` each time it opens (`GitCLI.Status`, the `Git` interface, so tests use a double) | `internal/input/file.go`, `explorer.go`, `git.go` |
+| 4. Rendering | colours lines with Chroma (pure computation, so the rendering part may use it), the language from the name, else from Chroma's analysis, else "Plain text"; draws the floating window, the quick open and the Explorer over the dashboard, which is drawn behind them as without them; the Explorer's rows and git's markers are computed from what the application holds, a path git reports deleted merged into its folder's listing as a row, a folder deleted whole rebuilt from the paths under it and never read | `internal/render/syntax.go`, `file.go`, `explorer.go` |
+| The application | F3, the windows' keys and mouse (in front: the quick open, then the viewer, then the Explorer; Esc goes back one level, F3 closes them all), the generation numbers that drop a stale read, colouring, search, listing, folder read or git status | `internal/app/file.go`, `explorer.go` |
+
+- **Colouring runs in a command** (`Options.Highlight`, by default
+  `render.Highlight`), never while drawing: a file up to 1 MiB whole, a
+  larger one 1000 lines on either side of the view, again when the view
+  leaves that range ("coloured around the view").
+- **regexp2's clock.** Chroma gives each regexp2 match a 250 ms timeout, and
+  regexp2 checks it against a package-wide clock goroutine, started on first
+  use and stopped only once the last match's deadline has passed (regexp2
+  v2.2.1, `fastclock.go`, `runClock`; Chroma v2.27.0, `regexp.go`). In the application that goroutine is harmless. In a
+  `synctest` bubble it outlives the test and the bubble panics, so the
+  application tests inject a colourer that runs `render.Highlight` on one
+  goroutine started in `TestMain`, outside every bubble
+  (`internal/app/main_test.go`).
+- **The search** runs in a command too, at most 10,000 matches.
 
 ## Build order
 
@@ -596,7 +625,8 @@ ui-design.md, `REL` reliability.md.
 | AM4 F11 | One coherent application | UI Transition |
 | AM4 X1-X3 | Recent projects, favourites, a project browser: built by amendment 9 | UI Startup screen, Projects and Project browser |
 | AM4 X4 | Worktree management: built by amendment 10 | UI Worktrees; ARCH Session context |
-| AM4 X5-X10 | The 6 excluded features left | ARCH Out of scope |
+| AM4 X5 | VS Code integration: replaced by a file viewer in the terminal, amendment 11 | UI File viewer; ARCH File viewer |
+| AM4 X6-X10 | The 5 excluded features left | ARCH Out of scope |
 | AM4 P1-P6 | The six priorities | ARCH Build order |
 | AM4 P7 | One provider end to end first | ARCH Integration strategy; ARCH Build order |
 | AM4 P8 | No function traded for a visual detail | ARCH Build order step 7 |

@@ -46,6 +46,9 @@ type Git interface {
 	// Remove removes the worktree at path, then deletes branch if git finds
 	// it merged; the note says what became of the branch.
 	Remove(main, path, branch string) (note string, err error)
+	// Status is git's markers for the project dir, for the Explorer (plan
+	// 17, amendment 12).
+	Status(dir string) (GitMarks, error)
 }
 
 // ErrNoGit is every call's error when git is not on the PATH.

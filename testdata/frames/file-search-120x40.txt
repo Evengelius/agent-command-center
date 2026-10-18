@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
+╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────── Idle ─╮
+│ claude-haiku-5-5 · orchestrat… ││   ▸ Agent                                                                     mock │
+│ turn 2 · c╭─ viewer.go ────────────────────────────────────────────────────────────────── Go · 58 lines ─╮           │
+│           │ sample/viewer.go · edited by Edit                                                            │ write     │
+│ STAGES  in│ 29          }                                                                                │           │
+│ TURN 1  ✓ │ 30      }                                                                                    │u 11:30:00 │
+│ TURN 2  ✓ │ 31      return Colour{}, false                                                               │u 11:30:00 │
+│   started │ 32  }                                                                                        │           │
+│   └─ ◉ Edi│ 33                                                                                           │d`, and    │
+│           │ 34  // Hex is the colour as "#rrggbb".                                                       │           │
+│           │ 35▌ func (c Colour) Hex() string {                                                           │           │
+│           │ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                   │           │
+│           │ 37▌ }                                                                                        │           │
+│           │ 38                                                                                           │· Esc back │
+│           │ 39  // Names lists the palette's colour names, in order.                                     │────────── │
+│           │ 40  func Names() []string {                                                                  │           │
+│           │ 41      out := make([]string, 0, len(palette))                                               │           │
+│           │ 42      for _, c := range palette {                                                          │           │
+│           │ 43          out = append(out, c.Name)                                                        │l+G editor │
+│           │ 44      }                                                                                    │───────────╯
+│           │ 45      return out                                                                           │ · 1 DONE ─╮
+│           │ 46  }                                                                                        │ 21.5k tok │
+│           │ 47                                                                                           │           │
+│           │ 48  // Brighter is the colour with each channel raised by step, at most 255.                 │           │
+│           │ 49  func (c Colour) Brighter(step uint32) Colour {                                           │           │
+│           │ 50      r, g, b := c.RGB>>16&0xff, c.RGB>>8&0xff, c.RGB&0xff                                 │           │
+│           │ 51      up := func(v uint32) uint32 { return min(v+step, 255) }                              │           │
+│           │ 52      return Colour{c.Name, up(r)<<16 | up(g)<<8 | up(b)}                                  │           │
+│           │ 53  }                                                                                        │           │
+│           │ 54                                                                                           │           │
+│           │ 55  // Describe is one line about the colour, for the details view.                          │           │
+│ ↑↓ move ←→│ 56  func Describe(c Colour) string {                                                         │           │
+╰───────────│ ↑↓ PgUp PgDn · / search · n N · g line · f full · Esc back · F3 close         match 10 of 17 │───────────╯
+╭─ D · QUOTA╰──────────────────────────────────────────────────────────────────────────────────────────────╯ted field ─╮
+│ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00                      │
+│ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 4% of 1M (derived)   +5 more                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter or → full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys

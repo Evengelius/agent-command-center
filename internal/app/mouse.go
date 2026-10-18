@@ -38,6 +38,9 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 	if m.s.Screen != state.ScreenDashboard || m.screen == nil || m.wt != nil {
 		return nil // the Worktrees view takes no mouse: the terminal selects
 	}
+	if render.WindowOpen(m.ui) && !m.ui.Keys {
+		return m.fileMouse(msg) // the window floats over the dashboard (plan 17)
+	}
 	mo := msg.Mouse()
 	switch msg.(type) {
 	case tea.MouseClickMsg:
@@ -98,9 +101,9 @@ func (m *Model) press(mo tea.Mouse) {
 		m.ui.Focus = "C"
 	case 'E':
 		m.ui.Focus = "B"
-	case 'I':
-		// The inspection covers the dashboard: the focus stays the one Esc
-		// returns to.
+	case 'I', 'F':
+		// The inspection or the file viewer covers the dashboard: the focus
+		// stays the one Esc returns to.
 	default:
 		m.ui.Focus = string(p)
 	}

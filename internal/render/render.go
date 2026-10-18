@@ -79,6 +79,12 @@ type UI struct {
 	ConvSeen int       // the entries there were when the view was held
 	MouseOff bool      // mouse capture off: the terminal selects
 
+	// File is the file viewer, Finder the quick open and Explorer the
+	// project's tree, floating over the dashboard (plan 17, amendment 12).
+	File     FileView
+	Finder   FinderView
+	Explorer ExplorerView
+
 	// Wrap keeps the conversation's line breaks between frames; nil wraps
 	// every line each frame, with the same result.
 	Wrap *WrapCache

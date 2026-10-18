@@ -7,7 +7,8 @@ waits for the owner's approval before the next one starts. This file keeps
 the current state only (the owner, 2026-10-18): a closed plan's full text,
 criteria and progress log are in git (`git show 8888f59:plan.md` for plans 1
 to 13, `git show 84d2ad8:plan.md` for plan 14, `git show b047434:plan.md`
-for plan 15), and its results in its evaluation file.
+for plan 15, `git show becfb34:plan.md` for plan 16), and its results in its
+evaluation file.
 
 ## The owner's standing decisions
 
@@ -51,11 +52,12 @@ summary format (the owner, 2026-10-18).
 Items tagged **[Nice to have]** are future improvements: none is built, and
 none is listed as remaining, until the owner asks for one in a new plan
 (the owner, 2026-10-18). Amendment 4 names ten "future improvements"
-(`doc/brief.md`, Amendment 4, "For this phase, do NOT implement"). Six
+(`doc/brief.md`, Amendment 4, "For this phase, do NOT implement"). Five
 remain below. Recent projects, favourites and a project browser were plan 15
-(amendment 9); git worktree management is plan 16 (amendment 10).
+(amendment 9); git worktree management was plan 16 (amendment 10). The
+automatic VS Code integration was replaced by the owner with a file viewer in
+the terminal, plan 17 (amendment 11).
 
-- **[Nice to have]** Automatic VS Code integration.
 - **[Nice to have]** Advanced model configuration.
 - **[Nice to have]** Cross-provider agent collaboration.
 - **[Nice to have]** Provider switching during an active session.
@@ -64,277 +66,415 @@ remain below. Recent projects, favourites and a project browser were plan 15
 - **[Nice to have]** Google Antigravity as an agent CLI, removed from the
   MVP by amendment 5; the provider interface stays open to it.
 
-## Plan 16 - Git worktree management
+## Plan 17 - A file viewer in the terminal
 
-**Approved by the owner on 2026-10-18**: 26 criteria, 26 PASS
-(`doc/plan16-evaluation.md`). The owner's request (2026-10-18, `doc/brief.md`, amendment
-10): the first of amendment 4's other future improvements, with the three
-choices approved there: worktrees beside the repository; create, list,
-diff, merge and remove; at startup and in session. Git runs through
-`os/exec` (no new dependency; `x/sys/windows` is already in the graph). The
-agent CLIs and their configuration are not touched. Nothing is written
-inside the repository except what git itself writes for an operation the
-owner confirmed.
+**Approved by the owner on 2026-10-18; amendment 12, the Explorer, added
+to it the same day before its evaluation was approved: in progress.** The
+owner's request
+(2026-10-18, `doc/brief.md`, amendment 11): instead of the VS Code
+integration, a file shown in a window floating over the dashboard, with
+syntax highlighting of any language. The choices approved there: about 80%
+of the screen, the dashboard updating behind it; Chroma for the
+highlighting; opened from a file the agent read or edited, or by a quick
+search by name; scroll, `/` search, `g` line, `f` full screen, mouse copy,
+Esc; read-only; only project files, credential files refused, binary files
+not shown, very large files coloured around the view.
+
+The one new dependency is `github.com/alecthomas/chroma/v2` v2.27.0 (MIT),
+which brings `github.com/dlclark/regexp2/v2` v2.2.1 (MIT); both approved by
+the owner on 2026-10-18. Nothing is written anywhere: the viewer only reads.
 
 Design:
 
-- **The git layer.** `internal/input/git.go` holds the `Git` interface and
-  `GitCLI`, which finds `git` on the PATH. With none on it, the view says
-  "git not found: worktrees unavailable".
-  - Every call runs `git -C <dir>` with no standard input,
-    `GIT_TERMINAL_PROMPT=0` and `GIT_OPTIONAL_LOCKS=0`, so a read never
-    writes and nothing waits on a prompt.
-  - Every call has a time limit: 15 s for a read, 2 min for an operation.
-  - stderr is kept and shown as git's reason.
-  - The list comes from `git worktree list --porcelain`, the main worktree
-    first. Each row counts its uncommitted changes from `git status
-    --porcelain`, and its commits ahead of the main worktree's branch from
-    `git rev-list --count`.
-  - No call ever passes `--force`, `-f` or `-D`.
-- **Create** (startup only).
-  - The path is `<main>.worktrees\<name>`, beside the main worktree.
-    `<name>` is the branch name's last segment, with every character other
-    than letters, digits, `.`, `_` and `-` replaced by `-`.
-  - The branch name is checked by `git check-ref-format --branch`, and an
-    existing path is refused.
-  - An existing branch is checked out there; a new one starts from the main
-    worktree's HEAD (`git worktree add -b`).
-- **Diff.**
-  - A worktree's diff runs against its merge base with the main branch. It
-    covers committed and uncommitted changes (`git diff --no-color
-    --no-ext-diff --no-textconv <base>`), then names its untracked files.
-  - The main worktree's diff is its uncommitted changes.
-  - At most 5000 lines show, then "… N lines left out".
-- **Merge into main.**
-  - It runs `git merge --no-edit <branch>` in the main worktree, only when
-    both worktrees are clean and the branch is ahead.
-  - If the merge fails and `MERGE_HEAD` is present, `git merge --abort`
-    runs and the view says "conflict: merge aborted, main unchanged".
-- **Remove.**
-  - It runs `git worktree remove <path>`; git refuses a dirty or locked
-    worktree.
-  - Then `git branch -d <branch>` runs. If git refuses to delete an
-    unmerged branch, the view says "branch kept:" with git's reason.
-- **Sessions.** `internal/input/sessions.go` records which worktrees a
-  dashboard session runs in.
-  - Each dashboard session keeps a file open in
-    `%LOCALAPPDATA%\agent-command-center\sessions\` holding its project
-    path.
-  - On Windows, a file another handle holds open is a live session: opening
-    it unshared fails with a sharing violation. A file nobody holds is stale
-    and is deleted.
-  - On other systems the column says N/A.
-  - Documented limit: it knows this dashboard's sessions only, not an agent
-    CLI started in another terminal.
-  - Tests and mock runs register nothing.
-- **The Worktrees view.** Ctrl+W opens it full screen, like the browser.
-  - **Which repository.** At startup, the one holding the project field's
-    directory (the current directory when the field is empty). In session,
-    the session's project; for a mock run, the mock file's directory.
-  - **One row per worktree:**
-    - its branch, or "detached";
-    - its state: "clean", or "+N" uncommitted changes;
-    - "↑N" commits ahead of main;
-    - "this session" or "session" where a dashboard session runs;
-    - its path.
-  - **Keys:**
-    - ↑↓ PgUp PgDn Home End move; Esc closes the view.
-    - At startup, Enter fills the project field with the selected path and
-      starts.
-    - At startup, `n` asks for a branch name and shows the path it will
-      create. Enter creates it and selects it; Esc cancels.
-    - On both screens, `d` shows the diff full screen (↑↓ PgUp PgDn Home
-      End, Esc back).
-    - On both screens, `m` merges into main and `x` removes, each after a
-      y/n question.
-  - **`m` is refused, with the reason said in the view:**
-    - on the main worktree, a detached one, or the one this session runs
-      in;
-    - when either side has changes, or nothing is ahead;
-    - when main is detached;
-    - when another dashboard session runs in main;
-    - when this session runs in main and its turn is not idle.
-  - **`x` is refused:** on the main worktree, this session's, a dirty one,
-    or one where another session runs.
-  - **Git never runs in the update loop.** It runs in a command, with a
-    generation number so a stale result is dropped. While it runs, the view
-    says "reading…" or what it is doing, and keys stay handled.
-  - The startup footers and the key overlay gain Ctrl+W.
+- **Reading a file** (`internal/input/file.go`, the input part). It runs in
+  a command, never in the update loop, with a generation number so a stale
+  result is dropped.
+  - A relative path is taken from the project directory.
+  - **Refused before the file is opened**, with the reason shown in the
+    window:
+    - outside the project, after both paths' symbolic links are resolved:
+      "outside the project: <path>";
+    - a credential file, by its name only: ".credentials.json",
+      "auth.json", "oauth_creds.json", ".git-credentials", ".netrc",
+      "_netrc", ".npmrc", ".pypirc", "id_rsa", "id_dsa", "id_ecdsa",
+      "id_ed25519", ".env" and ".env.*" (except ".env.example",
+      ".env.sample", ".env.template"); the extensions ".pem", ".key",
+      ".p12", ".pfx", ".jks", ".keystore", ".kdbx"; and a name whose stem
+      is "credentials", "secret", "secrets", "token" or "tokens" with no
+      extension or ".json", ".yaml", ".yml", ".toml", ".txt", ".ini",
+      ".conf" or ".cfg": "a credential file: not opened";
+    - a directory: "a directory, not a file";
+    - over 32 MiB: "too large to show: <size> (32 MiB at most)".
+  - A NUL byte in the first 8 KiB makes it binary: "binary file, not shown"
+    and its size.
+  - Lines split at LF, a CR before it dropped; invalid UTF-8 shows as U+FFFD.
+- **Listing the project's files** for the quick open, in a command: every
+  file under the project, relative paths sorted, without `.git` folders,
+  credential files, or anything behind a symbolic link; at most 100,000,
+  then "first 100,000 files".
+- **Highlighting** (`internal/render/syntax.go`; Chroma is pure
+  computation, so the rendering part may use it).
+  - The language comes from the file name, else from Chroma's analysis of
+    the text, else "Plain text".
+  - Chroma's token types are coloured from the palette, not from a Chroma
+    theme: keywords violet and bold, strings green, numbers orange,
+    comments grey and italic, functions and classes light blue, built-ins
+    and types blue, a diff's added lines green and removed lines red,
+    headings in the title colour, anything else in the text colour. Chroma's
+    error tokens are plain text. The 16-colour palette maps the same way.
+  - It runs in a command, never while drawing. A file up to 1 MiB is
+    highlighted whole. A larger one is highlighted 1000 lines on either side
+    of the view, again when the view leaves that range; the window says
+    "coloured around the view", since a comment or string that starts
+    above the range may be coloured wrongly. Until the colours arrive the
+    lines show uncoloured, "colouring…" in the header.
+- **The window** (`internal/render/file.go`).
+  - Floating: `max(W*4/5, min(W-4, 84))` columns by `max(H*4/5, min(H-2,
+    22))` rows, centred over the dashboard, which is drawn and updated
+    behind it: 76x22 at 80x24, 96x32 at 120x40, 160x48 at 200x60. `f`
+    toggles full screen.
+  - A rounded frame in the title colour. The top edge has the file's name
+    on the left and "<language> · <N> lines" on the right; the first row,
+    the path shortened as elsewhere and what opened it ("read by Read",
+    "edited by Edit"…).
+  - Each line: its number right-aligned in grey, then the code. Tabs to the
+    next multiple of 4; long lines cut with "…", ←→ shift the view by 8
+    columns.
+  - The cursor line has zone A's cursor row background. The lines the agent
+    edited are marked: their numbers in the attention colour and "▌" after
+    them.
+  - The footer: the keys on the left; "line <cursor>/<N>" on the right, or
+    the search or go-to-line field while typing it. With an approval
+    pending: "◆ approval waiting · Esc, then F2".
+- **Opening** (`F3`, on the dashboard).
+  - On zone B's entry cursor, or in an entry's full view, on a tool entry
+    that names a file: that file. The entry hint adds "F3 file".
+    - Claude Code's Read: at its `offset`, nothing marked.
+    - Edit and MultiEdit: the lines of the first `new_string` found in the
+      file (else the first `old_string`), marked; Write: line 1.
+    - Codex's fileChange: its first change's path, the first added lines
+      of its diff's first hunk marked.
+    - Any other tool with `file_path`, `notebook_path` or `path`: line 1.
+  - Elsewhere, or on an entry that names no file: the quick open, a window
+    of the same size. Typing filters (case ignored; the letters in order;
+    a name match first, then a path match, then the shortest path); ↑↓
+    PgUp PgDn select; Enter opens; Esc closes.
+- **Keys in the window.** ↑↓ move the cursor line, PgUp PgDn by a page,
+  Home End to the first and last line, ←→ shift sideways; `/` types a
+  search (case ignored unless it has a capital), Enter finds the next match,
+  `n` and `N` the next and previous, matches shown on an amber background
+  with "match <i> of <n>"; `g` types a line number, Enter goes there; `f`
+  full screen; Esc cancels a field, then clears a selection, then closes.
+  F1, F4, F12, Ctrl+C and Ctrl+Q keep their meaning; F2 closes the window
+  and goes to the approval; everything else is taken by the window. The
+  search runs in a command, at most 10,000 matches.
+- **Mouse.** Capture stays on: a drag selects in the window only, and the
+  release copies the file's text it covers, as the other panels do; the
+  wheel over the window scrolls it. The dashboard behind takes no click.
 
-1. **The git layer and the session registry.** Done, 1.1 to 1.7 PASS.
-   `internal/input/git.go` (TestWorktreePath, TestGitWorktrees, TestGitAdd,
-   TestGitMerge, TestGitRemove, TestGitDiff, TestGitMissing) on temporary
-   repositories, git run with an empty global and no system configuration;
-   git lists the linked worktrees by path, after the main one.
-   `internal/input/sessions.go` (TestSessionRegistry: a held file is live,
-   a file nobody holds is deleted at the next read, Release leaves nothing).
-   `go vet ./internal/input`, gofmt clean; `go test ./internal/input` PASS.
-2. **The view at startup.** Done, 2.1 to 2.4 PASS. `internal/app/worktrees.go`
-   and `internal/render/worktrees.go`; Ctrl+W on the startup screen.
-   TestWorktreesStartup, TestWorktreeCreate on a fake git; golden frames
-   `worktrees` and `worktrees-new` at the four sizes; the 18 existing startup
-   frames change in their footer line only (`git diff --stat`: 18 files, 18
-   lines each way); TestFootersFit (render): every startup and Worktrees
-   footer within 79 cells below 100 columns.
-3. **The view in session.** Done, 3.1 to 3.7 PASS. Ctrl+W on the dashboard;
-   the mouse is off while the view is open; a session registers its project
-   (`input.Sessions`) and releases it at Shutdown. TestWorktreesSession,
-   TestWorktreeDiff, TestWorktreeMerge, TestWorktreeRemove,
-   TestWorktreesSlow, TestSessionRegistered, TestKeysListWorktrees; golden
-   frames `worktrees-session`, `worktrees-diff`, `worktrees-confirm` at the
-   four sizes. A diff's tabs are drawn as four spaces, as `wrap` draws them
-   (found on the `worktrees-diff` frame). `go test ./internal/app
-   ./internal/render ./internal/input` PASS.
-4. **Documents and the full check.** Done, 4.1 to 4.8 PASS. Amendment 10,
-   AGENTS.md, architecture.md (ASM-25), ui-design.md (Worktrees, startup
-   keys and footers, Anywhere), reliability.md, evaluation.md.
-   TestKeyOverlayRows now reads 29 rows (Ctrl+W added).
-   - Build, vet (also `-tags live` and `timing`), gofmt: clean.
-   - `go test ./...`: 306 PASS, 1 SKIP, 0 FAIL.
-   - Timing: 4/4 PASS, the worst p95 7.08 ms.
-   - Both checks ran first with `confcheck.go` at HEAD through `-overlay`,
-     because the working copy's uncommitted change broke the build. The
-     owner then approved restoring the file to HEAD, and the plain commands
-     gave the same results (`doc/plan16-evaluation.md`).
-   - Terminal runs: 34/34 PASS maximised and 34/34 at 80x24 (the second
-     80x24 run; the first failed one check on the script's side).
-   - 65 files free of CR, BOM and NUL.
-   - After the commit, at the owner's request: two dashboards and a test
-     double for `claude.exe` ran the two items not verified, a session
-     started on a worktree and another session's "session" mark. 37/37 PASS
-     maximised and at 80x24 (`doc/plan16-evaluation.md`, added section).
-   - Then live, on the owner's quota: a real Claude Code 2.1.302 on Haiku
-     started on a worktree, wrote a file there and named it; a second
-     dashboard marked it "session" until it quit. 80x24: 25/25 PASS;
-     maximised: 24 PASS, configuration NOT-VERIFIED (Claude Code rewrote
-     `known_marketplaces.json` during the turn). Earlier runs failed on the
-     script's side; all are kept (`doc/plan16-evaluation.md`, added section).
-   - After the approval, at the owner's request, the two items left: a real
-     Codex CLI 0.163.0 on gpt-5.6-luna started on a worktree the same way,
-     25/25 PASS maximised and at 80x24; TestDiskListLink run elevated, PASS,
-     and a real symbolic link in the project browser, 11/11 PASS at both
-     sizes. One earlier run of each failed one check on the script's side;
-     both are kept (`doc/plan16-evaluation.md`, added section).
-   - The maximised live Claude Code run rerun once for its configuration
-     check: 25/25 PASS, configuration PASS; run 5's NOT-VERIFIED
-     (`known_marketplaces.json` changed during the turn) stays recorded.
+**Amendment 12, the Explorer** (the owner, 2026-10-18, `doc/brief.md`): F3
+opens the project as a tree, as VS Code's Explorer does; the rules above
+stand except where this changes them.
+
+- **Opening.** F3 on an entry or a request naming a file opens that file,
+  as before; anywhere else it opens the Explorer, a window of the viewer's
+  size titled "Explorer". It opens as it was left in the session (its open
+  folders and cursor), every open folder read again.
+- **Reading a folder** (`input.ListDir`, in a command, a generation number
+  dropping a stale result): only a folder inside the project, its links
+  resolved; its folders, then its files, each sorted without case; without
+  `.git`, credential files (by name, as in the listing) or links; at most
+  10,000 entries, then "first 10,000 entries". A folder is read only when it
+  is opened, so a large `node_modules` costs nothing until then.
+- **Git's markers** (`input.GitCLI.Status`, one call each time the Explorer
+  opens, in a command; `git --no-optional-locks status --porcelain=v1 -z
+  --untracked-files=normal --ignored -- .`, so it writes nothing): `M`
+  modified, `A` added, `R` renamed, `U` untracked, `!` in conflict, at the
+  row's right; "●" on a folder holding any of these or a deleted file; a
+  file or folder git ignores, and all under it, dimmed. Outside a
+  repository, or without git, no marker, and the path row says "not a git
+  repository" or "git not found".
+- **The window.** The top edge: "Explorer", and on the right the project's
+  name and "<N> items", the rows the tree shows. The first row: the cursor's
+  path in the project. Then the rows: two cells of indent a level, "▸" or
+  "▾" before a folder, folders in the title colour and bold, files in the
+  text colour, the marker on the right, the cursor row on zone A's cursor
+  background. Under a folder being read, "reading…"; an empty one, "empty
+  folder"; one that cannot be read, its reason in the attention colour. The
+  footer: the keys, and "<i> of <N>".
+- **Keys in the Explorer.** ↑↓ PgUp PgDn Home End move; → opens a folder,
+  or on an open one goes to its first entry; ← closes an open folder, else
+  goes to the parent folder; Enter opens or closes a folder, or shows a file
+  in the viewer; `/` opens the quick open; F1, F4, F12, Ctrl+C and Ctrl+Q
+  keep their meaning, F2 closes and goes to the approval; everything else is
+  taken. Mouse: the wheel moves the cursor; a click puts the cursor on a
+  row, a click on the cursor row is Enter.
+- **Esc goes back one level, F3 closes** (in place of "Esc closes" above):
+  - in the viewer, Esc cancels a field, then clears a selection, then goes
+    to the Explorer with the file under the cursor, its folders opened (a
+    file opened from an entry too);
+  - in the quick open, Esc goes back to the Explorer;
+  - in the Explorer, Esc closes the folder the cursor is in and puts the
+    cursor on it; at the top level, Esc closes the Explorer;
+  - F3 in any of the three closes them all, back to the dashboard.
+
+1. **Reading and listing.** `internal/input/file.go`; tests on temporary
+   directories.
+2. **Highlighting.** `internal/render/syntax.go`; the palette's syntax
+   styles.
+3. **The window and the quick open.** `internal/render/file.go`,
+   `internal/app/file.go`; keys, mouse, the key overlay, the footers.
+4. **Documents and the full check.** `THIRD_PARTY.md`, AGENTS.md,
+   architecture.md, ui-design.md, reliability.md, evaluation.md; the
+   checks, the terminal runs, `doc/plan17-evaluation.md`.
+5. **The Explorer** (amendment 12). `input.ListDir`, `GitCLI.Status`, the
+   Explorer window and its keys, Esc and F3 changed in the viewer and the
+   quick open; the documents, the full check again, its results added to
+   `doc/plan17-evaluation.md` beside the first ones, which stand.
 
 ### Criteria
 
-Item 1, the git layer and the session registry. The tests run on a
-temporary repository and are skipped where git is not installed.
+Item 1, reading and listing (TestReadFile, TestCredentialName, TestListFiles).
 
-- 1.1 The list (TestGitWorktrees):
-  - the main worktree comes first;
-  - each row has its branch, or detached;
-  - its uncommitted changes and its commits ahead of main are counted;
-  - paths are in Windows form;
-  - a directory outside any repository gives "Not a git repository" and
-    the directory.
-- 1.2 Create:
-  - the path is `<repo>.worktrees\<name>` (TestWorktreePath);
-  - a new branch starts from main's HEAD (TestGitAdd);
-  - an existing branch is checked out (TestGitAdd);
-  - an invalid name, an existing path and a branch checked out elsewhere
-    are refused with the reason, and nothing is created (TestGitAdd).
-- 1.3 Merge (TestGitMerge):
-  - a branch ahead merges;
-  - a conflict is aborted: main's HEAD is unchanged, there is no
-    `MERGE_HEAD`, its status is clean, and the error says "conflict".
-- 1.4 Remove (TestGitRemove, the calls recorded):
-  - a clean worktree goes, and its merged branch is deleted;
-  - an unmerged branch is kept, with git's reason;
-  - a dirty worktree is refused by git and left whole;
-  - no git call in the layer's tests passes `--force`, `-f` or `-D`.
-- 1.5 Diff (TestGitDiff): committed and uncommitted changes against the
-  merge base; the untracked files named; capped with "… N lines left out".
-- 1.6 No git on the PATH (TestGitMissing): every call fails with "git not
-  found".
-- 1.7 The registry (TestSessionRegistry):
-  - a registered session is live for a second reader;
-  - once it is released, its file is stale and is deleted at the next
-    read.
+- 1.1 A file inside the project reads, by absolute and by relative path;
+  CRLF lines come without CR; invalid UTF-8 shows U+FFFD.
+- 1.2 Refused, each with its reason above: a path outside the project, a
+  symbolic link inside it pointing outside (skipped where links cannot be
+  made), a directory, a file over the limit (a lowered limit in the test).
+- 1.3 Every credential name listed above is refused and a credential file
+  that exists is not opened (TestCredentialName covers the names; the check
+  comes before the open in `ReadFile`); "token.go", "secrets.go",
+  ".env.example" and "auth.go" are not refused.
+- 1.4 A file with a NUL in its first 8 KiB is binary.
+- 1.5 The listing is sorted, leaves out `.git`, credential files and links,
+  and stops at its limit (lowered in the test) saying so.
 
-Item 2, the view at startup. The tests use a fake git, no repository.
+Item 2, highlighting (TestHighlight, TestSyntaxPalette).
 
-- 2.1 Opening and closing (TestWorktreesStartup):
-  - Ctrl+W opens the view for the project field's directory, or the
-    current one when the field is empty;
-  - outside a repository it says "Not a git repository";
-  - with no git it says "git not found";
-  - Esc closes it with the field unchanged.
-- 2.2 Enter on a row fills the project field with its path and starts
-  (TestWorktreesStartup).
-- 2.3 Create (TestWorktreeCreate):
-  - `n` shows the branch field and the path it will create;
-  - Enter creates it and selects the new row;
-  - a refusal shows the reason, and the list is unchanged;
-  - Esc cancels.
-- 2.4 Frames:
-  - golden frames `worktrees` and `worktrees-new` at 79x24, 80x24, 120x40
-    and 200x60;
-  - the existing startup frames change in the footer line only;
-  - every footer fits within the width.
+- 2.1 Go, JavaScript, TypeScript, Java, Python, Rust, C#, SQL, YAML, JSON,
+  Markdown and a shell script are recognised by name with their language
+  name; a keyword and a string of each take the keyword and string
+  colours.
+- 2.2 A file with an unknown name and no recognisable content is "Plain
+  text", every run in the text colour.
+- 2.3 The runs of every line, joined, give the line back byte for byte.
+- 2.4 With the 16-colour palette each syntax style uses its ANSI colour.
+- 2.5 A 1 MiB Go file is highlighted whole; a larger one only in the range
+  asked, and its window says "coloured around the view".
 
-Item 3, the view in session. The tests use a fake git.
+Item 3, the window and the quick open (internal/app and internal/render
+tests).
 
-- 3.1 Opening and closing (TestWorktreesSession):
-  - Ctrl+W on the dashboard opens the view for the session's project;
-  - the session's row is marked "this session", and another dashboard
-    session's row "session";
-  - Esc returns to the dashboard;
-  - an event that arrives meanwhile is in the state after Esc.
-- 3.2 The diff (TestWorktreeDiff):
-  - `d` shows the diff coloured, scrolls, and shows the cap line;
-  - Esc returns to the list.
-- 3.3 Merge (TestWorktreeMerge):
-  - `m` asks y/n;
-  - `y` merges, says so, and reads the list again;
-  - `n` cancels;
-  - each refusal of the design gives its reason and calls no git merge;
-  - a conflict says "conflict: merge aborted".
-- 3.4 Remove (TestWorktreeRemove):
-  - `x` asks y/n;
-  - `y` removes and says what became of the branch;
-  - each refusal of the design gives its reason and calls no git removal.
-- 3.5 A slow git (TestWorktreesSlow): the view shows "reading…" or the
-  operation, keys stay handled, and a stale result is dropped.
-- 3.6 Registration (TestSessionRegistered):
-  - a session started from the startup screen registers its project and
-    releases it at the end;
-  - a mock run, or no registry, registers nothing.
-- 3.7 Frames:
-  - golden frames `worktrees-session`, `worktrees-diff` and
-    `worktrees-confirm` at the four sizes;
-  - the key overlay lists Ctrl+W.
+- 3.1 Geometry: 76x22 at 80x24, 96x32 at 120x40, 160x48 at 200x60, centred;
+  full screen fills the screen; the dashboard rows outside the window are
+  the dashboard's own, and an event arriving while it is open changes them.
+- 3.2 Opening from an entry: a Read with offset 40 puts the cursor on line
+  40; an Edit marks the lines of its `new_string`; a Codex fileChange marks
+  its first added lines; F3 on an entry without a file opens the quick
+  open.
+- 3.3 The quick open lists a temporary project's files, filters as
+  described, opens the selection, and says when the listing was cut.
+- 3.4 Keys: each key above does what it says, and every key the window
+  takes leaves the conversation's draft unchanged.
+- 3.5 Refusals and states show in the window: outside the project, a
+  credential file, binary, too large, not found, "reading…", "colouring…".
+- 3.6 A result for an older open, colouring or search is dropped.
+- 3.7 Mouse: a drag across three lines in the window copies exactly those
+  lines' text; a click on the dashboard behind selects nothing; the wheel
+  scrolls the window.
+- 3.8 Golden frames `file`, `file-full`, `file-search` and `file-finder` at
+  the four sizes; the existing frames change only where the entry hint
+  gains "F3 file" (reviewed in the diff).
+- 3.9 The key overlay lists F3 and the window's keys; every footer fits
+  (TestFootersFit).
 
-Item 4, documents and the full check:
+Item 4, documents and the full check.
 
-- 4.1 The documents:
-  - amendment 10 is in `doc/brief.md`;
-  - worktrees leave [Nice to have] in `plan.md` and AGENTS.md;
-  - architecture.md, ui-design.md, reliability.md and `doc/evaluation.md`
-    say what is built.
-- 4.2 `go build ./...` and `go vet ./...` (also `-tags live` and `-tags
-  timing`) exit 0, and `gofmt -l .` prints nothing.
-- 4.3 `go test ./...` gives 0 FAIL, the new tests included.
-- 4.4 The timing step, run alone: every test PASS (p95 <= 16 ms).
-- 4.5 A terminal run in Windows Terminal, maximised:
-  - setup: a temporary repository with two worktrees, a temporary store
-    and home, and no agent CLI on the PATH;
-  - it covers the view, create, diff, a merge, a refused merge, a removal,
-    Esc and Ctrl+Q;
-  - no agent CLI is started.
-- 4.6 The same run at 80x24.
-- 4.7 The changed and new files carry no CR, no BOM and no NUL.
-- 4.8 The summary is in `doc/plan16-evaluation.md` and here.
+- 4.1 `THIRD_PARTY.md` lists Chroma and regexp2 and every module the graph
+  gains; the licence test passes; `go.mod` has Chroma as its fifth direct
+  dependency.
+- 4.2 AGENTS.md, architecture.md, ui-design.md, reliability.md and
+  evaluation.md say what was built.
+- 4.3 `go build ./...`, `go vet ./...` (also with `-tags live` and
+  `timing`) and `gofmt -l .` are clean; the binary's size before and after
+  is recorded.
+- 4.4 `go test ./...`: 0 FAIL.
+- 4.5 The timing step: 4/4 PASS, p95 at most 16 ms.
+- 4.6 A terminal run, maximised, on a mock run in a temporary project with
+  Go, TypeScript, Java and a credential-named file: F3 opens the quick
+  open; typing a name and Enter opens the file in the floating window with
+  line numbers and its language; `g`, `/`, `n`, `f` and Esc work; the
+  credential file is refused; a mouse drag copies a line to the
+  clipboard; screenshots show the colours. No agent CLI starts.
+- 4.7 The same run at 80x24.
+- 4.8 The changed and new files carry no CR, no BOM and no NUL.
+- 4.9 The summary is in `doc/plan17-evaluation.md` and here.
+
+Item 5, the Explorer (amendment 12).
+
+- 5.1 `ListDir` on a temporary project: folders first, then files, each
+  sorted without case; `.git`, credential files and links left out; a path
+  outside the project, or a link inside pointing outside, refused; the
+  limit (lowered in the test) cuts it and says so (TestListDir).
+- 5.2 `Status` parses git's output: `M`, `A`, `R` (both paths), `U`, `!`,
+  ignored files and folders, untracked folders, a project in a subfolder of
+  its repository; on a real temporary repository the markers come out as
+  expected and `.git/index` is not rewritten (TestGitStatus,
+  TestParseStatus). Without a repository: "not a git repository".
+- 5.3 F3 with no file in front opens the Explorer; the root is read, then a
+  folder when → or Enter opens it; Enter on a file shows it in the viewer
+  (TestExplorerOpen).
+- 5.4 Keys: ↑↓ PgUp PgDn Home End, → ← Enter and `/` do what the design
+  says; no key the Explorer takes changes the draft (TestExplorerKeys).
+- 5.5 Esc: viewer → Explorer, the file under the cursor and its folders
+  opened (also for a file opened from an entry); quick open → Explorer;
+  Explorer → the cursor's folder closed, the cursor on it; at the top level
+  → closed. F3 closes the viewer, the quick open and the Explorer, each in
+  one key (TestExplorerBack).
+- 5.6 Markers: a modified file `M`, an untracked one `U`, a folder holding
+  a change "●", an ignored file dimmed, each in its colour; outside a
+  repository "not a git repository" (TestExplorerMarks).
+- 5.7 A folder listing or status for an older opening is dropped; reopening
+  keeps the open folders and the cursor (TestExplorerStale).
+- 5.8 Mouse: the wheel moves the cursor; a click selects a row, a click on
+  the cursor row opens it (TestExplorerMouse).
+- 5.9 Golden frames `explorer` at the four sizes, reviewed; the `file`
+  frames change only in the footer's keys ("Esc back · F3 close"); the key
+  overlay lists the Explorer's keys; every footer fits.
+- 5.10 Documents: brief (amendment 12), AGENTS.md, architecture.md,
+  ui-design.md, reliability.md, evaluation.md say what was built.
+- 5.11 Build, vet (also `-tags live`, `timing`), gofmt clean; `go test
+  ./...` 0 FAIL; the timing step 4/4 PASS, p95 at most 16 ms.
+- 5.12 A terminal run, maximised then at 80x24, on a mock run in a
+  temporary git repository (a modified file, an untracked file, an ignored
+  folder, a credential file): F3 opens the Explorer with its markers; →
+  and Enter open folders; Enter shows a file; Esc returns to the Explorer
+  on that file, then closes folders level by level, then closes; F3 closes
+  from the viewer in one key; `/` opens the quick open and Esc returns;
+  screenshots show the colours. No agent CLI starts; git writes nothing
+  (the repository's status and `.git/index` unchanged).
+- 5.13 The changed and new files carry no CR, no BOM and no NUL; the
+  results are added to `doc/plan17-evaluation.md` and here.
+
+Item 6, deleted files in the Explorer (the owner, 2026-10-18, after the live
+checks showed that `D` could never reach a row). A file git versions and the
+working tree no longer has is still listed, so that a deletion, by the owner
+or by an agent, shows where it happened. A file git never versioned leaves
+no trace and is not shown.
+
+- 6.1 Each path git reports deleted has a row under its folder, named in red
+  with a red `D`, in the folder's order (folders first, then files, without
+  case); a deleted folder is rebuilt from the paths under it, its row a
+  folder with `D`; a name also on the disk is listed once, from the disk
+  (TestExplorerDeleted, render).
+- 6.2 A folder empty on the disk but holding deleted paths lists them, not
+  "empty folder"; the folders above a deletion keep their "●".
+- 6.3 The cursor on a deleted row: the path row reads "<path> · deleted, not
+  on disk"; Enter or a click on a deleted file opens nothing; → and Enter
+  open a deleted folder without reading the disk, ← and Esc close it; the
+  Explorer opened again reads no deleted folder (TestExplorerDeleted, app).
+- 6.4 A real temporary repository with a file deleted at the top level and a
+  folder deleted whole gives those rows (TestGitStatus or a new test, real
+  git); the golden frames `explorer` show a deleted row at the four sizes,
+  reviewed; no other frame changes.
+- 6.5 ui-design.md (Explorer) and architecture.md say what was built.
+- 6.6 Build, vet (also `-tags live`, `timing`), gofmt clean; `go test ./...`
+  0 FAIL; the timing step 4/4 PASS, p95 at most 16 ms.
+- 6.7 A terminal run, maximised then at 80x24, in a temporary git repository
+  with a top-level file and a whole folder deleted: their rows in red with
+  `D` (pixels counted); Enter on the file opens nothing; the folder opens and
+  shows its deleted files; git writes nothing. No agent CLI starts.
+- 6.8 The changed and new files carry no CR, no BOM and no NUL; the results
+  are added to `doc/plan17-evaluation.md` and here.
+
+### Progress
+
+- Step 1 done: `internal/input/file.go`; TestReadFile, TestCredentialName,
+  TestListFiles, TestReadFileJunction pass.
+- Step 2 done: `internal/render/syntax.go`, the palette's syntax styles;
+  TestHighlight, TestSyntaxPalette pass.
+- Step 3 done: the window (`internal/render/file.go`), the app wiring
+  (`internal/app/file.go`, keys, mouse, paste), the key overlay and footers,
+  and the `THIRD_PARTY.md` rows. TestFileRect, TestFileStates, TestToolFile,
+  TestFileFooters (render), TestFileOverDashboard, TestFileFromEntry,
+  TestQuickOpen, TestFilterFiles, TestFileKeys, TestFileStatesApp,
+  TestFileStale, TestFileMouse (app) pass; the golden frames `file`,
+  `file-full`, `file-search` and `file-finder` at the four sizes are
+  reviewed, the existing frames unchanged. The colouring is injected
+  (`Options.Highlight`): the application tests colour outside their synctest
+  bubble (`internal/app/main_test.go`), since regexp2's clock goroutine,
+  started by Chroma's match timeout, would outlive a bubble.
+- Step 4 done: the documents (amendment 11, AGENTS.md, architecture.md,
+  ui-design.md, reliability.md, evaluation.md, `THIRD_PARTY.md`); build, vet
+  and gofmt clean; `go test ./...` 324 PASS, 1 SKIP, 0 FAIL; the timing step
+  4/4 PASS; the terminal runs 29 of 29 PASS maximised and at 80x24.
+- Evaluation: 28 criteria, 28 PASS
+  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md)). Not verified: a
+  real symbolic link in the reading and the listing (a junction is tested),
+  and the viewer opened from a live agent CLI's entry (the runs replay a
+  mock). Amendment 12 was added before the owner approved it.
+- Step 5 done: the Explorer (amendment 12 in `doc/brief.md`, the design and
+  criteria 5.1 to 5.13 above). `ListDir` and git's `Status` in
+  `internal/input/explorer.go` and `git.go`; the window in
+  `internal/render/explorer.go`; the app wiring in `internal/app/explorer.go`
+  (F3, Esc one level back, F3 closing every window, the mouse). A fault found
+  on the way and fixed: a folder left open above a file the viewer went back
+  to was never read. TestListDir, TestGitStatus, TestParseStatus,
+  TestExplorerOpen, TestExplorerKeys, TestExplorerBack, TestExplorerMarks
+  (app and render), TestExplorerStale, TestExplorerMouse, TestExplorerRows,
+  TestExplorerCursor pass; the golden frames `explorer` at the four sizes are
+  reviewed, the 16 `file` frames' footers read "Esc back · F3 close". Build,
+  vet and gofmt clean; `go test ./...` 336 PASS, 1 SKIP, 0 FAIL; the timing
+  step 4/4 PASS; the binary 14,171,136 bytes; the terminal runs 39 of 39 PASS
+  maximised and at 80x24, git writing nothing.
+- Evaluation of amendment 12: 13 criteria, 13 PASS
+  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#amendment-12-the-explorer-2026-10-18)).
+  Not verified: the `!` and `D` markers, "not a git repository" and "git
+  not found" live (unit tests cover them); the 16 `file` frames against
+  their first version (untracked; their footers checked); the Explorer from
+  a live agent CLI (the runs replay a mock); a real symbolic link in
+  `ListDir`.
+- Live and simulated checks, at the owner's request with their quota
+  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#live-and-simulated-checks-2026-10-18)):
+  the `!` marker, "not a git repository" and "git not found" in a real
+  terminal (27 of 27 PASS maximised and at 80x24); the Explorer and the
+  viewer from live Claude Code (Read and Write entries) and live Codex
+  (fileChange entry), 0 FAIL at both sizes, the configuration check PASS.
+  The faults found were in the test scripts, none in the application. Still
+  not verified: a real symbolic link (needs an elevated terminal); the 16
+  `file` frames against their first version (no copy exists); `D` on a row,
+  not reachable since a deleted file has no row.
+- Item 6, deleted files in the Explorer, at the owner's request: 8 criteria,
+  8 PASS
+  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#item-6-deleted-files-in-the-explorer-2026-10-18)).
+  Each path git reports deleted is a red row with a red `D` under its
+  folder, a folder deleted whole rebuilt from git's paths and never read;
+  Enter on a deleted file opens nothing, its path row says "deleted, not on
+  disk". TestExplorerDeleted (render, app) and TestGitStatus (a real
+  repository, a folder deleted whole) pass; the `explorer` frames show a
+  deleted file and folder, no other frame changed; `go test ./...` 338 PASS,
+  1 SKIP, 0 FAIL; timing 4/4 PASS; the terminal runs 21 of 21 PASS
+  maximised and at 80x24, git writing nothing. This settles `D` on a row.
+- A real symbolic link, at the owner's request: 3 criteria, 3 PASS
+  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#a-real-symbolic-link-2026-10-18)).
+  After one UAC prompt, an elevated PowerShell ran only the test binary built
+  from the working copy: TestListDir, TestReadFile and TestListFiles PASS,
+  every link case run, none skipped. This settles the real symbolic link;
+  unelevated, those cases still skip.
+- The 16 file frames against their first version, at the owner's request:
+  4 criteria, 4 PASS
+  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#the-16-file-frames-against-their-first-version-2026-10-18)).
+  The first version, found as unreachable git blobs and in the session's
+  transcript, both copies identical: each of the 12 frames at 80x24, 120x40
+  and 200x60 differs in its footer alone, "Esc close" now "Esc back · F3
+  close"; the four 79x24 frames are unchanged. This settles the file frames.
 
 ## Closed plans
 
 One entry each: what the plan did, its approval, its evaluation file and
 its commits. Their criteria and progress logs: `git show 8888f59:plan.md`
 (plans 1 to 13), `git show 84d2ad8:plan.md` (plan 14), `git show
-b047434:plan.md` (plan 15).
+b047434:plan.md` (plan 15), `git show becfb34:plan.md` (plan 16).
 
 ## Plan 1 - Research
 
@@ -440,3 +580,11 @@ Brief amendment 9: the startup screen's project list (`projects.json`,
 favourites first) and its Ctrl+O browser. Approved on 2026-10-18, 21 PASS
 ([`doc/plan15-evaluation.md`](doc/plan15-evaluation.md)); commits bd9ffa3,
 b047434.
+
+## Plan 16 - Git worktree management
+
+Brief amendment 10: the Worktrees view (Ctrl+W, at startup and in session)
+with create, list, diff, merge and remove, git through `os/exec`. Approved
+on 2026-10-18, 26 PASS
+([`doc/plan16-evaluation.md`](doc/plan16-evaluation.md)); commits ce95ba2,
+fad6d20, 642c5b9, becfb34.

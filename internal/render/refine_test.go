@@ -270,7 +270,8 @@ func runningTool(s *state.State) *state.ToolCall {
 
 // Plan 4, step 8, check 7: the overlay has every row of ui-design.md's
 // "Anywhere" and "A focused panel" tables, and plan 5, item 4, of "B's
-// entries"; plan 12 adds F4, plan 16 Ctrl+W (29 rows); at 80 columns nothing is cut.
+// entries"; plan 12 adds F4, plan 16 Ctrl+W, plan 17 F3, the file viewer and the Explorer
+// (45 rows); at 80 columns nothing is cut.
 func TestKeyOverlayRows(t *testing.T) {
 	doc, err := os.ReadFile(filepath.Join("..", "..", "doc", "ui-design.md"))
 	if err != nil {
@@ -297,8 +298,8 @@ func TestKeyOverlayRows(t *testing.T) {
 			t.Errorf("ui-design.md key %q missing from the overlay", k)
 		}
 	}
-	if n != 29 {
-		t.Errorf("%d rows read from ui-design.md, want 29", n)
+	if n != 45 {
+		t.Errorf("%d rows read from ui-design.md, want 45", n)
 	}
 	for _, l := range strings.Split(texts(keysBody(78)), "\n") {
 		if strings.Contains(l, "…") || textWidth(l) > 78 {

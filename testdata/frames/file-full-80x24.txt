@@ -1,0 +1,24 @@
+╭─ viewer.go ────────────────────────────────────────────────── Go · 58 lines ─╮
+│ sample/viewer.go · edited by Edit                                            │
+│ 29          }                                                                │
+│ 30      }                                                                    │
+│ 31      return Colour{}, false                                               │
+│ 32  }                                                                        │
+│ 33                                                                           │
+│ 34  // Hex is the colour as "#rrggbb".                                       │
+│ 35▌ func (c Colour) Hex() string {                                           │
+│ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                   │
+│ 37▌ }                                                                        │
+│ 38                                                                           │
+│ 39  // Names lists the palette's colour names, in order.                     │
+│ 40  func Names() []string {                                                  │
+│ 41      out := make([]string, 0, len(palette))                               │
+│ 42      for _, c := range palette {                                          │
+│ 43          out = append(out, c.Name)                                        │
+│ 44      }                                                                    │
+│ 45      return out                                                           │
+│ 46  }                                                                        │
+│ 47                                                                           │
+│ 48  // Brighter is the colour with each channel raised by step, at most 255. │
+│ ↑↓ · / search · n N · g line · f full · Esc back · F3 close       line 35/58 │
+╰──────────────────────────────────────────────────────────────────────────────╯

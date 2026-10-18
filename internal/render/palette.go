@@ -61,6 +61,25 @@ var (
 	stCursor, stSelected, stControl, stInferred, stTreeCursor                                          = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 	stMdBullet, stMdEm, stMdCode, stMdLink, stMdLang, stMdKeyword, stMdString, stMdNumber, stMdComment = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 
+	// stSynBuiltin and stSynTag colour the file viewer's built-in names and
+	// markup tags (plan 17, ui-design.md, the file viewer).
+	stSynBuiltin, stSynTag = new(lipgloss.Style), new(lipgloss.Style)
+
+	// The file viewer's frame, its cursor line (each class on zone A's
+	// cursor row background, the line numbers likewise) and its search
+	// matches on an amber background, the current one bold (plan 17, The
+	// window).
+	stFileFrame, stFileRowNum, stFileRowMark, stMatch, stMatchCur = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	// The Explorer's cursor row: a folder's name, a dimmed name and git's
+	// markers on zone A's cursor row background (plan 17, amendment 12).
+	stExpRowDir, stExpRowGrey, stExpRowProgress, stExpRowDone, stExpRowFailed = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	synRow                                                                    = func() (out []*lipgloss.Style) {
+		for range SynHeading + 1 {
+			out = append(out, new(lipgloss.Style))
+		}
+		return out
+	}()
+
 	stMdHeading = stTitle
 	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
 	stMdStrong  = stBold
@@ -106,6 +125,21 @@ func paint() {
 	*stMdString = fg(cString)
 	*stMdNumber = fg(cNumber)
 	*stMdComment = fg(cGrey).Italic(true)
+	*stSynBuiltin = fg(cLink)
+	*stSynTag = fg(cKeyword)
+	*stFileFrame = fg(cTitle)
+	*stFileRowNum = fg(cGrey).Background(cTreeRow.get())
+	*stFileRowMark = fg(cAttention).Background(cTreeRow.get())
+	*stMatch = fg(cInk).Background(cProgress.get())
+	*stMatchCur = stMatch.Bold(true).Underline(true)
+	*stExpRowDir = stTitle.Background(cTreeRow.get())
+	*stExpRowGrey = stGrey.Background(cTreeRow.get())
+	*stExpRowProgress = stProgress.Background(cTreeRow.get())
+	*stExpRowDone = stDone.Background(cTreeRow.get())
+	*stExpRowFailed = stFailed.Background(cTreeRow.get())
+	for c := range synRow {
+		*synRow[c] = SynClass(c).style().Background(cTreeRow.get())
+	}
 
 	for i, m := range modelColours {
 		*modelStyles[i] = fg(m.c)
@@ -126,4 +160,32 @@ func UsePalette(pick lipgloss.CompleteFunc) bool {
 	sixteen = s
 	paint()
 	return true
+}
+
+// style is the shared style of a syntax class, so that a palette change
+// repaints it (plan 17, ui-design.md, the file viewer).
+func (c SynClass) style() *lipgloss.Style {
+	switch c {
+	case SynKeyword:
+		return stMdKeyword
+	case SynString:
+		return stMdString
+	case SynNumber:
+		return stMdNumber
+	case SynComment:
+		return stMdComment
+	case SynFunc, SynAttr:
+		return stMdCode
+	case SynBuiltin:
+		return stSynBuiltin
+	case SynTag:
+		return stSynTag
+	case SynInserted:
+		return stDone
+	case SynDeleted:
+		return stFailed
+	case SynHeading:
+		return stTitle
+	}
+	return stText
 }

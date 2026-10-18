@@ -58,6 +58,8 @@ type Screen struct {
 	// What zone A's tree, C's list and C's preview showed, for scrolling;
 	// zero when not drawn.
 	Tree, List, Preview PaneView
+	// fileLines are the file the viewer shows, for its selection (panel F).
+	fileLines []string
 }
 
 // PaneView is what a pane of zone A or C showed (plan 5, item 5).
@@ -105,6 +107,10 @@ func Draw(s *state.State, ui UI) *Screen {
 			l = ls[i]
 		}
 		sc.lines[i] = l.fit(ui.Width)
+	}
+	if s.Screen == state.ScreenDashboard && WindowOpen(ui) && !ui.Keys && !ui.Worktrees.Open &&
+		ui.Width >= MinWidth && ui.Height >= MinHeight {
+		floatWindow(s, ui, sc)
 	}
 	if !ui.Sel.Empty() && ui.Sel.From.Panel != 'E' {
 		for i, l := range sc.lines {
@@ -343,6 +349,12 @@ func (sc *Screen) Text(s *state.State, sel Selection) string {
 		}
 		return strings.Join(parts, "\n\n")
 	}
+	if f.Panel == 'F' {
+		if len(sc.fileLines) == 0 {
+			return ""
+		}
+		return between(sc.fileLines, f.Item, f.Off, t.Item, t.Off)
+	}
 	var rows []string
 	for i := f.Item; i <= t.Item; i++ {
 		r := sc.source(f.Panel, i)
@@ -392,6 +404,12 @@ func (sc *Screen) LineText(s *state.State, p Pos) string {
 		}
 		return ""
 	}
+	if p.Panel == 'F' {
+		if p.Item >= 0 && p.Item < len(sc.fileLines) {
+			return sc.fileLines[p.Item]
+		}
+		return ""
+	}
 	return sc.source(p.Panel, p.Item)
 }
 
@@ -401,7 +419,7 @@ func (sc *Screen) source(p byte, item int) string {
 		sc.src = map[srcKey]string{}
 		for _, l := range sc.lines {
 			for _, s := range l {
-				if r := s.ref; r.kind == refText && r.panel != 'B' && r.panel != 'E' {
+				if r := s.ref; r.kind == refText && r.panel != 'B' && r.panel != 'E' && r.panel != 'F' {
 					sc.src[srcKey{r.panel, r.item}] += s.text
 				}
 			}

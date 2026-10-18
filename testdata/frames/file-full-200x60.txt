@@ -1,0 +1,60 @@
+╭─ viewer.go ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Go · 58 lines ─╮
+│ sample/viewer.go · edited by Edit                                                                                                                                                                    │
+│  3  package sample                                                                                                                                                                                   │
+│  4                                                                                                                                                                                                   │
+│  5  import (                                                                                                                                                                                         │
+│  6      "fmt"                                                                                                                                                                                        │
+│  7      "strings"                                                                                                                                                                                    │
+│  8  )                                                                                                                                                                                                │
+│  9                                                                                                                                                                                                   │
+│ 10  // Colour is a named colour of the palette.                                                                                                                                                      │
+│ 11  type Colour struct {                                                                                                                                                                             │
+│ 12      Name string                                                                                                                                                                                  │
+│ 13      RGB  uint32                                                                                                                                                                                  │
+│ 14  }                                                                                                                                                                                                │
+│ 15                                                                                                                                                                                                   │
+│ 16  // palette holds the colours the dashboard draws with.                                                                                                                                           │
+│ 17  var palette = []Colour{                                                                                                                                                                          │
+│ 18      {"title", 0x7aa2f7},                                                                                                                                                                         │
+│ 19      {"text", 0xc0caf5},                                                                                                                                                                          │
+│ 20      {"grey", 0x565f89},                                                                                                                                                                          │
+│ 21      {"attention", 0xe0af68},                                                                                                                                                                     │
+│ 22  }                                                                                                                                                                                                │
+│ 23                                                                                                                                                                                                   │
+│ 24  // Find returns the colour called name, and whether there is one.                                                                                                                                │
+│ 25  func Find(name string) (Colour, bool) {                                                                                                                                                          │
+│ 26      for _, c := range palette {                                                                                                                                                                  │
+│ 27          if strings.EqualFold(c.Name, name) {                                                                                                                                                     │
+│ 28              return c, true                                                                                                                                                                       │
+│ 29          }                                                                                                                                                                                        │
+│ 30      }                                                                                                                                                                                            │
+│ 31      return Colour{}, false                                                                                                                                                                       │
+│ 32  }                                                                                                                                                                                                │
+│ 33                                                                                                                                                                                                   │
+│ 34  // Hex is the colour as "#rrggbb".                                                                                                                                                               │
+│ 35▌ func (c Colour) Hex() string {                                                                                                                                                                   │
+│ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                                                                                                                           │
+│ 37▌ }                                                                                                                                                                                                │
+│ 38                                                                                                                                                                                                   │
+│ 39  // Names lists the palette's colour names, in order.                                                                                                                                             │
+│ 40  func Names() []string {                                                                                                                                                                          │
+│ 41      out := make([]string, 0, len(palette))                                                                                                                                                       │
+│ 42      for _, c := range palette {                                                                                                                                                                  │
+│ 43          out = append(out, c.Name)                                                                                                                                                                │
+│ 44      }                                                                                                                                                                                            │
+│ 45      return out                                                                                                                                                                                   │
+│ 46  }                                                                                                                                                                                                │
+│ 47                                                                                                                                                                                                   │
+│ 48  // Brighter is the colour with each channel raised by step, at most 255.                                                                                                                         │
+│ 49  func (c Colour) Brighter(step uint32) Colour {                                                                                                                                                   │
+│ 50      r, g, b := c.RGB>>16&0xff, c.RGB>>8&0xff, c.RGB&0xff                                                                                                                                         │
+│ 51      up := func(v uint32) uint32 { return min(v+step, 255) }                                                                                                                                      │
+│ 52      return Colour{c.Name, up(r)<<16 | up(g)<<8 | up(b)}                                                                                                                                          │
+│ 53  }                                                                                                                                                                                                │
+│ 54                                                                                                                                                                                                   │
+│ 55  // Describe is one line about the colour, for the details view.                                                                                                                                  │
+│ 56  func Describe(c Colour) string {                                                                                                                                                                 │
+│ 57      return fmt.Sprintf("%-10s %s", c.Name, c.Hex())                                                                                                                                              │
+│ 58  }                                                                                                                                                                                                │
+│ ↑↓ PgUp PgDn Home End move · ←→ shift · / search · n N next, previous · g go to line · f full screen · F1 keys · Esc back · F3 close                                                      line 35/58 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯

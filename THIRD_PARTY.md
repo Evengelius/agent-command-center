@@ -1,7 +1,9 @@
 # Third-party modules
 
-Every module of `go list -m all` on 2026-10-16, with Go 1.27.2. The four direct
-dependencies were approved by the owner with plan 3; the others come with them.
+Every module of `go list -m all` on 2026-10-18, with Go 1.27.2. The four first
+direct dependencies were approved by the owner with plan 3, and Chroma, for the
+file viewer's syntax highlighting, with plan 17 (brief amendment 11); the
+others come with them.
 "Built" means linked into the Windows build (`go list -deps ./...`); the other
 modules are only in the module graph and none of their code is in the binary.
 The licence is the one in the module's root licence file, read from the module
@@ -30,6 +32,9 @@ named here. No other third-party source code is copied into this repository.
 | charm.land/bubbletea/v2 | v2.1.0 | yes | yes | MIT |
 | charm.land/lipgloss/v2 | v2.0.6 | yes | yes | MIT |
 | dmitri.shuralyov.com/gpu/mtl | v0.0.0-20221208032759-85de2813cf6b | no | no | BSD-3-Clause |
+| github.com/alecthomas/assert/v2 | v2.11.0 | no | no | MIT |
+| github.com/alecthomas/chroma/v2 | v2.27.0 | yes | yes | MIT |
+| github.com/alecthomas/repr | v0.5.2 | no | no | MIT |
 | github.com/aymanbagabas/go-udiff | v0.4.1 | no | no | BSD-3-Clause |
 | github.com/bits-and-blooms/bitset | v1.24.6 | no | no | BSD-3-Clause |
 | github.com/charmbracelet/colorprofile | v0.4.3 | no | yes | MIT |
@@ -42,8 +47,10 @@ named here. No other third-party source code is copied into this repository.
 | github.com/clipperhouse/displaywidth | v0.11.0 | no | yes | MIT |
 | github.com/clipperhouse/stringish | v0.1.1 | no | no | MIT |
 | github.com/clipperhouse/uax29/v2 | v2.7.0 | no | yes | MIT |
+| github.com/dlclark/regexp2/v2 | v2.2.1 | no | yes | MIT |
 | github.com/ebitengine/purego | v0.10.1 | no | no | Apache-2.0 |
 | github.com/go-gl/glfw/v3.3/glfw | v0.0.0-20231223183121-56fa3ac82ce7 | no | no | BSD-3-Clause |
+| github.com/hexops/gotextdiff | v1.0.3 | no | no | BSD-3-Clause |
 | github.com/jezek/xgb | v1.1.1 | no | no | BSD-3-Clause |
 | github.com/lucasb-eyer/go-colorful | v1.4.1 | no | yes | MIT |
 | github.com/mattn/go-runewidth | v0.0.30 | no | yes | MIT |

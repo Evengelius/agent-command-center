@@ -156,8 +156,10 @@ func wrapped(text string, w int, st *lipgloss.Style, lead string) []line {
 // empty input moves a cursor over the entries B shows in part, and Enter
 // shows the one under it whole, full screen.
 const (
-	entryHint = " Enter full view · ↑↓ entries · Esc back"
-	entryKeys = "Enter or → full view · ↑↓ entries · Esc back to the input · F1 keys"
+	entryHint     = " Enter full view · ↑↓ entries · Esc back"
+	entryFileHint = " Enter full view · F3 file · ↑↓ entries · Esc back"
+	entryKeys     = "Enter or → full view · ↑↓ entries · Esc back to the input · F1 keys"
+	entryFileKeys = "Enter or → full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys"
 )
 
 // Expandable reports whether conversation entry e has more than B shows: a
@@ -205,7 +207,11 @@ func entryViewer(s *state.State, ui UI, i int, sc *Screen) []line {
 			body = append(body, wrapped(l, w-2, stFailed, "")...)
 		}
 	}
-	return fullScreen(s, ui, sc, head.fit(w), body, scrollKeys)
+	keys := scrollKeys
+	if _, ok := EntryFile(s, e); ok {
+		keys = "F3 file · " + scrollKeys // plan 17, Opening
+	}
+	return fullScreen(s, ui, sc, head.fit(w), body, keys)
 }
 
 // toolView is a tool call's head, its status and origin, and its body: the
@@ -240,4 +246,15 @@ func toolView(s *state.State, ui UI, e state.Entry, back span, w int) (line, []l
 		body = append(body, wrapped(l, w, stText, "  ")...)
 	}
 	return head, body
+}
+
+// entryFooter is the key hints while B's entry cursor is on: F3 among them
+// when the entry names a file (plan 17, Opening).
+func entryFooter(s *state.State, ui UI) string {
+	if i := ui.Entry - 1; i < len(s.Conversation) {
+		if _, ok := EntryFile(s, s.Conversation[i]); ok {
+			return entryFileKeys
+		}
+	}
+	return entryKeys
 }

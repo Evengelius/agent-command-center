@@ -21,9 +21,10 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: plan 16, Git worktree management, approved by the owner on
-2026-10-18 (amendment 10).** Plans 1 to 15 (research; architecture and reliability; proposal; the
-MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live; nothing left open; recent projects, favourites and a project browser) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
+**Status: plan 17, a file viewer in the terminal (amendment 11) and an
+Explorer of the project (amendment 12), approved by the owner on
+2026-10-18.** Plans 1 to 16 (research; architecture and reliability; proposal; the
+MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live; nothing left open; recent projects, favourites and a project browser; git worktree management) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
 plan's progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.
 
@@ -144,15 +145,18 @@ and need the owner's approval where it says so. tmux is not used.
   git in the chosen repository only, never with `--force`, and a worktree
   becomes the working directory only by starting a session on it.
 - **MVP scope is fixed** by amendment 4: build none of the features it leaves
-  out (editor integration, model configuration, cross-provider
-  collaboration, provider switching, session profiles, orchestration
-  settings), except recent projects, favourites and a project browser, which
-  the owner asked for in amendment 9 (plan 15), and git worktree management,
-  asked for in amendment 10 (plan 16). The ones left out are
+  out (model configuration, cross-provider collaboration, provider
+  switching, session profiles, orchestration settings), except recent
+  projects, favourites and a project browser, which the owner asked for in
+  amendment 9 (plan 15), git worktree management, asked for in amendment 10
+  (plan 16), and a file viewer in the terminal with an Explorer of the
+  project, which replace the editor integration (amendments 11 and 12,
+  plan 17). The ones left out are
   **[Nice to have]**: future improvements, never listed as remaining, built
   only if the owner asks for one in a new plan (`plan.md`, Nice to have).
 - **Dependencies are fixed** at the four the owner approved on 2026-10-16
-  (Bubble Tea, Lip Gloss, x/clipboard, x/sys, pinned in `go.mod`); another
+  (Bubble Tea, Lip Gloss, x/clipboard, x/sys, pinned in `go.mod`), plus
+  Chroma for the file viewer's highlighting (2026-10-18); another
   direct dependency needs a technical justification and the owner's approval.
 - **Live runs use the owner's quota**: each one (L1 to L4) runs only within its
   approved scope, in a temporary project outside the repository, with the

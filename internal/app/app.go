@@ -88,6 +88,9 @@ type Options struct {
 	Projects *input.Projects
 	// Lister reads directories for the project browser; nil is the disk.
 	Lister input.Lister
+	// Highlight colours a file's lines for the file viewer (plan 17); nil is
+	// render.Highlight.
+	Highlight func(name string, lines []string, from, to int) render.Highlighted
 	// Git runs the Worktrees view's git (plan 16); nil is the git on the PATH.
 	Git input.Git
 	// Sessions records this dashboard's sessions for the Worktrees view;
@@ -153,6 +156,12 @@ type Model struct {
 	// The Worktrees view (worktrees.go): nil when closed.
 	wt    *worktrees
 	wtGen int // the last git result asked for
+	// The file viewer and the quick open (file.go): the generations of the
+	// last read or colouring, search and listing asked for.
+	fileGen, searchGen, finderGen int
+	explorerGen                   int      // the Explorer's (explorer.go), its reads and git
+	fileBytes                     int64    // the file shown, its size on disk
+	finderAll                     []string // the project's files, as listed
 	// This session's registration (plan 16, Sessions): nil when none.
 	lock    *input.SessionLock
 	locking bool
@@ -217,6 +226,9 @@ func New(opt Options) *Model {
 	}
 	if opt.Lister == nil {
 		opt.Lister = input.Disk{}
+	}
+	if opt.Highlight == nil {
+		opt.Highlight = render.Highlight
 	}
 	m := &Model{opt: opt, s: state.New(), detected: map[string]provider.Detection{}}
 	m.env = input.PathEnv{Windows: filepath.Separator == '\\', Home: opt.Home, Cwd: opt.Cwd}
@@ -302,6 +314,18 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.worktreesListed(msg)
 	case wtOpMsg:
 		cmds = append(cmds, m.worktreeDone(msg)...)
+	case fileMsg:
+		cmds = append(cmds, m.fileRead(msg)...)
+	case hlMsg:
+		cmds = append(cmds, m.coloured(msg)...)
+	case searchMsg:
+		cmds = append(cmds, m.searched(msg)...)
+	case filesMsg:
+		m.listed(msg)
+	case dirMsg:
+		cmds = append(cmds, m.dirRead(msg)...)
+	case statusMsg:
+		m.gitRead(msg)
 	case wtDiffMsg:
 		m.worktreeDiffed(msg)
 	case lockMsg:
@@ -711,6 +735,8 @@ func (m *Model) paste(text string) {
 		m.browse.paste(text)
 	case m.s.Screen == state.ScreenStartup && m.ui.Field == 1:
 		m.path.Insert(input.CleanPath(text))
+	case m.s.Screen == state.ScreenDashboard && render.WindowOpen(m.ui):
+		m.filePaste(text) // the window takes it, or drops it
 	case m.s.Screen == state.ScreenDashboard && m.ui.Focus == "B":
 		m.edit.Paste(text) // line breaks as LF, nothing else changed; never submits
 	}

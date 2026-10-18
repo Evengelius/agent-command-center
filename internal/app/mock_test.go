@@ -40,6 +40,9 @@ type harness struct {
 func newHarness(t *testing.T, opt Options) *harness {
 	opt.Now = func() time.Time { return testNow }
 	opt.After = func(time.Duration, tea.Msg) tea.Cmd { return nil } // no timers
+	if opt.Highlight == nil {
+		opt.Highlight = outsideHighlight // main_test.go
+	}
 	h := &harness{t: t, m: New(opt), msgs: make(chan tea.Msg, 4096)}
 	h.exec(h.m.Init())
 	t.Cleanup(func() {

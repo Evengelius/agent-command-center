@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
+╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────── Idle ─╮
+│ claude-haiku-5-5 · orchestrat… ││   what it found.                                                                   │
+│ turn 2 · c╭─ Quick open ─────────────────────────────────────────────────────────────────────── 8 files ─╮      mock │
+│           │ › vi▌                                                                                        │           │
+│ STAGES  in│ ▸ sample/viewer.go                                                                           │ write     │
+│ TURN 1  ✓ │                                                                                              │           │
+│ TURN 2  ✓ │                                                                                              │u 11:30:00 │
+│   started │                                                                                              │u 11:30:00 │
+│           │                                                                                              │           │
+│           │                                                                                              │d`, and    │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │────────── │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │l+G editor │
+│           │                                                                                              │───────────╯
+│           │                                                                                              │ · 1 DONE ─╮
+│           │                                                                                              │ 21.5k tok │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│ ↑↓ move ←→│                                                                                              │           │
+╰───────────│ type to filter · ↑↓ PgUp PgDn select · Enter open · F1 keys · Esc back · F3 close     1 of 1 │───────────╯
+╭─ D · QUOTA╰──────────────────────────────────────────────────────────────────────────────────────────────╯ted field ─╮
+│ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00                      │
+│ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 4% of 1M (derived)   +5 more                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G editor · F6 zone · F2 approvals · F1 keys · Ctrl+Q quit

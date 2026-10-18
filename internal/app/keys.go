@@ -132,9 +132,25 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 			return cmds
 		}
 	}
+	// The window in front, the quick open, the file viewer or the Explorer,
+	// takes every key but the global ones (plan 17, Keys; amendment 12).
+	switch {
+	case m.ui.Finder.Open:
+		if cmds, done := m.finderKey(k); done {
+			return cmds
+		}
+	case m.ui.File.Open:
+		if cmds, done := m.fileKey(k); done {
+			return cmds
+		}
+	case m.ui.Explorer.Open:
+		if cmds, done := m.explorerKey(k); done {
+			return cmds
+		}
+	}
 	// F1 anywhere, ? outside the editor: the key overlay (ui-design.md, Focus
 	// and keys).
-	if k.String() == "f1" || k.Text == "?" && (m.ui.Focus != "B" || m.ui.Card != "" || m.ui.Inspect != "" || m.ui.Details || m.ui.View != "" || m.ui.ViewEntry > 0) {
+	if k.String() == "f1" || k.Text == "?" && (m.ui.Focus != "B" || render.WindowOpen(m.ui) || m.ui.Card != "" || m.ui.Inspect != "" || m.ui.Details || m.ui.View != "" || m.ui.ViewEntry > 0) {
 		m.openOverlay()
 		return nil
 	}
@@ -143,6 +159,11 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 	if k.String() == "f4" {
 		capable := m.sess != nil && m.sess.Capabilities().AutoApprovals
 		return m.do(state.ToggleApprovals{Capable: capable})
+	}
+	// F3: the file the entry or request on screen names, else the Explorer
+	// (plan 17, Opening; amendment 12).
+	if k.String() == "f3" {
+		return m.f3()
 	}
 	if m.ui.View != "" || m.ui.ViewEntry > 0 {
 		if cmds, done := m.viewKey(k); done {
@@ -282,7 +303,9 @@ func (m *Model) closeSession() {
 		m.cancel()
 	}
 	m.sess, m.cancel = nil, nil
-	m.draft = nil // the stored draft stays on disk for the next start
+	m.closeWindows()
+	m.ui.Explorer = render.ExplorerView{} // the next session may be in another project
+	m.draft = nil                         // the stored draft stays on disk for the next start
 	m.edit.Clear()
 }
 

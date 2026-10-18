@@ -705,3 +705,129 @@ What do you mean by that? Give me an example
 ---
 
 Ok this is cool, I want it
+
+## Amendment 11, 2026-10-18: a file viewer in the terminal
+
+The owner's request, word for word, after asking what "Automatic VS Code
+integration" (amendment 4, section 5) meant and seeing examples: they did
+not want it, since it opens another application, and replaced it with their
+own idea, built in plan 17. The owner's screenshot showed a floating editor
+window over VS Code, as an example of "picture in picture", not of the look.
+The choices below are the proposal the owner agreed to, with Chroma as the
+one new dependency, approved the same day. The rest of amendment 4's
+exclusions stand (`plan.md`, Nice to have).
+
+Choices approved:
+
+- **A floating window over the dashboard**, about 80% of the screen, in the
+  dashboard's dark style and colours; the dashboard keeps updating behind
+  it. `f` shows it full screen.
+- **Syntax highlighting of any language** through Chroma
+  (`github.com/alecthomas/chroma/v2`, MIT, pure Go, about 250 languages),
+  with its helper regexp2 (MIT), coloured with a theme matched to the
+  palette.
+- **Opening a file**: a file the agent read or edited, selected in the
+  conversation, opens at the right line; any file of the project opens
+  through a quick search by name.
+- **Inside the window**: scroll, `/` search, `g` go to a line, `f` full
+  screen, a mouse selection copied as in the other panels; Esc closes it.
+  Read-only.
+- **Limits**: only files inside the chosen project open; credential files
+  are refused; a binary file shows "binary file, not shown"; a very large
+  file is coloured only around the visible part, so the window never
+  freezes.
+
+---
+
+Automatic VS Code integration
+What is it ?
+
+---
+
+Your explanations aren't clear, give me example
+
+---
+
+So basically it will open the vscode application to visualize a file ?
+
+---
+
+And if vscoe is not opened what will it do?
+
+---
+
+No I don't want this, because it would mean opening another app while I have already that terminal and I only to work on it
+
+So I have another proposition
+
+---
+
+No you will replace it with my idea if you agree with it, wait i tell you my idea
+
+---
+
+My idea is that instread of opening vscode, which I don't want, we could upon opening the file, visualize it directly in the terminal, in a window, 
+
+Like something similar on my image, like a picture in picture if you know what i mean
+
+But of course it needs to be beautifully rendered, like not in my image, and it must have syntax highlighting, of any programming language, go, javascript, typescript, java, etc.
+
+What do you think of this ? Is it possible ?
+
+---
+
+I agree with everything you said
+
+I approve this also [the paragraph on Chroma, pasted]
+
+You can start
+
+## Amendment 12, 2026-10-18: an Explorer, part of plan 17
+
+The owner's request, word for word, after asking what the quick open lists
+in a real project and seeing a mock-up of a folder tree drawn over the
+dashboard. It goes into plan 17, before its approval, not into a new plan.
+The owner's screenshot showed VS Code's Explorer: the project's folders and
+files as a tree, git's markers beside them.
+
+Choices agreed:
+
+- **F3 opens an Explorer** of the project: folders and subfolders as a tree,
+  opened and closed down to a file; Enter on a file shows it in the viewer.
+  The window is named "Explorer". The quick open stays, behind `/`.
+- **Esc goes back one level**: from a file to the Explorer, the file under
+  the cursor; then each Esc closes the folder the cursor is in, up to the
+  top level, where Esc closes the Explorer. **F3 closes it from anywhere.**
+- Git's markers as in VS Code: a modified file marked, a folder holding
+  changes marked, a file git ignores dimmed; a folder is read only when it
+  is opened.
+
+---
+
+OK VERY INTERESTING
+
+I LIKE THIS
+
+So basically it shows the source tree? Basically the explorer like in vs code ?
+
+---
+
+So basically F3 will open the explorer of the of the project and navigate to in in tree like folder and subfolder until file then open this file on "enter" so we could see what it is in it ?
+
+If yes, show me an image how it would look like here
+
+---
+
+Ok I like this a lot,
+
+However "Files" is not a good name, it should be "Explorer".
+
+Also I noticed once I arrived in a file say Main.java, and then I press "esc", that window is gone, it should go one level down, until main level and once there in main level if I press again "esc" then it closes it
+
+It should be "f3" that closes it directly
+
+you somehow reverse the two keys if I'm not mistaken
+
+---
+
+It goes into 17 plan, let's go

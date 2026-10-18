@@ -31,7 +31,8 @@ func paletteStyles() map[string]*lipgloss.Style {
 		"attentionBold": stAttentionBold, "failedBold": stFailedBold, "cursor": stCursor, "selected": stSelected,
 		"control": stControl, "inferred": stInferred, "treeCursor": stTreeCursor, "mdBullet": stMdBullet,
 		"mdEm": stMdEm, "mdCode": stMdCode, "mdLink": stMdLink, "mdLang": stMdLang, "mdKeyword": stMdKeyword,
-		"mdString": stMdString, "mdNumber": stMdNumber, "mdComment": stMdComment,
+		"mdString": stMdString, "mdNumber": stMdNumber, "mdComment": stMdComment, "synBuiltin": stSynBuiltin,
+		"synTag": stSynTag,
 	}
 	for i, mc := range modelColours {
 		m[mc.family] = modelStyles[i]

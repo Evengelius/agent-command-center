@@ -124,6 +124,34 @@ INT 7):
   command fails visibly ("Codex busy: request refused, try again"), the draft
   is restored, and nothing is retried automatically.
 
+### The file viewer
+
+Plan 17 (ui-design.md, File viewer; architecture.md, File viewer). It only
+reads, in commands, so a slow disk or a large file never freezes the loop.
+
+| Failure | On screen |
+| - | - |
+| the file is missing, unreadable, a directory, over 32 MiB, outside the project, or a credential file | the reason in red in the window, nothing shown of the file |
+| a NUL in its first 8 KiB | "binary file, not shown" and its size |
+| invalid UTF-8 | U+FFFD where the bytes were; the rest exact |
+| colouring not back yet | the lines uncoloured, "colouring…" in the header |
+| a file over 1 MiB | coloured 1000 lines on either side of the view, "coloured around the view": a comment or string opened above that range may be coloured wrongly |
+| Chroma fails, or its runs do not join to the line byte for byte | the lines uncoloured, the text exact |
+| a Chroma pattern over its 250 ms match timeout | Chroma treats it as no match (Chroma v2.27.0, `regexp.go`, `matchRules`); text no pattern matches is an error token, drawn in the text colour |
+| the listing over 100,000 files | "first 100,000 files" |
+| a read, colouring, search or listing for an older open | dropped (generation numbers) |
+| the Explorer: a folder that cannot be read | its reason in the attention colour under it; the rest of the tree shown |
+| the Explorer: a folder over 10,000 entries | "first 10,000 entries" under it |
+| the Explorer: outside a repository, or git not on the PATH | no markers; "not a git repository" or "git not found" in grey on the path row |
+| the Explorer: git fails otherwise | no markers; "git: <its error>" in the attention colour |
+| the Explorer: a folder read or git status for an Explorer since closed | dropped (generation numbers) |
+| the Explorer: copying from it | no drag selection, as in the quick open; F12 gives the terminal's own selection |
+
+The Explorer's git status passes `--no-optional-locks`, so git does not
+refresh its index while answering, and writes nothing in the repository.
+The quick open lists the files git ignores, as the Explorer shows them
+dimmed: ignoring is git's, not a reason to hide a file.
+
 ## Telemetry sources
 
 Every source of [TEL](research/telemetry-sources.md), with its fallback (AM2
@@ -326,7 +354,10 @@ be split without reading it, so a change there is reported, not classified.
   and 13, CX-10 q2; ASM-6).
 - Offers no answer that persists a rule (see [Approvals](#approvals)).
 - Opens no credential file, sets no `ANTHROPIC_BASE_URL`, and reads quota only
-  from the CLI's stream (TEL).
+  from the CLI's stream (TEL). The file viewer refuses a credential file by
+  its name before opening it, lists none in the quick open or the Explorer,
+  opens nothing outside the project, and writes nothing; the Explorer's git
+  status takes no optional lock (plan 17).
 - What the CLIs write by design for each session (Claude Code transcripts,
   Codex rollouts and logs) is theirs; Codex records app-server threads with
   `source: "vscode"`, so they appear among the owner's sessions (INT 5): said

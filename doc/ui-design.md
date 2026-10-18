@@ -930,6 +930,211 @@ Enter on an agent in A or C opens it full screen (AM2 C5, C6, C8, U7; B2.3):
   dashboard with the same focus as before (AM2 C9).
 - The view updates live: inspection is a rendering of the same state.
 
+## File viewer
+
+F3 on the dashboard shows a project file in a window floating over it,
+read-only, with syntax highlighting (plan 17, brief amendment 11;
+architecture.md, File viewer). The dashboard is drawn and updated behind
+it; only the window's cells cover it. Golden frame `file`, 80x24:
+
+```text
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣╭─ viewer.go ────────────────────────────────────────────── Go · 58 lines ─╮l
+ A│ sample/viewer.go · edited by Edit                                        │e
+╭─│ 29          }                                                            │─╮
+│ │ 30      }                                                                │ │
+│ │ 31      return Colour{}, false                                           │ │
+│ │ 32  }                                                                    │ │
+│ │ 33                                                                       │ │
+│ │ 34  // Hex is the colour as "#rrggbb".                                   │ │
+│ │ 35▌ func (c Colour) Hex() string {                                       │ │
+│ │ 36▌     return fmt.Sprintf("#%06x", c.RGB)                               │ │
+│ │ 37▌ }                                                                    │ │
+│ │ 38                                                                       │ │
+│ │ 39  // Names lists the palette's colour names, in order.                 │ │
+╰─│ 40  func Names() []string {                                              │─╯
+╭─│ 41      out := make([]string, 0, len(palette))                           │─╮
+│ │ 42      for _, c := range palette {                                      │ │
+│ │ 43          out = append(out, c.Name)                                    │ │
+│ │ 44      }                                                                │ │
+╰─│ 45      return out                                                       │─╯
+╭─│ 46  }                                                                    │─╮
+│ │ ↑↓ · / search · n N · g line · f full · Esc back · F3 close   line 35/58 │ │
+╰─╰──────────────────────────────────────────────────────────────────────────╯─╯
+ Enter or → full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys
+```
+
+**The window.** `max(W*4/5, min(W-4, 84))` columns by `max(H*4/5,
+min(H-2, 22))` rows, centred: 76x22 at 80x24, 96x32 at 120x40, 160x48 at
+200x60; `f` fills the screen and back. A rounded frame in the title colour;
+on its top edge the file's name on the left, "<language> · <N> lines" on
+the right; the first row, the path shortened as elsewhere and what opened
+it ("read by Read", "edited by Edit", "changed by fileChange", "quick
+open", "Explorer"). Each line: its number right-aligned in grey, then the code, tabs to
+the next multiple of 4, a long line cut with "…" and ←→ shifting it by 8
+columns. The cursor line has zone A's cursor row background; the lines the
+agent edited have their numbers in the attention colour and "▌" after them.
+The footer: the keys on the left, "line <cursor>/<N>" on the right, or
+"match <i> of <n>" after a search, or the field being typed; with an
+approval pending, "◆ approval waiting · Esc, then F2" in amber.
+
+**Colours.** Chroma's token types, coloured from the palette (not a Chroma
+theme): keywords violet and bold, strings green, numbers orange, comments
+grey and italic, functions and classes light blue, built-ins and types
+blue, a diff's added lines green and removed lines red, headings in the
+title colour, everything else (Chroma's error tokens too) in the text
+colour; the 16-colour palette maps the same way. Matches of a search on an
+amber background. The language comes from the name, else from the text,
+else "Plain text".
+
+**States**, in the window instead of the code: "reading…"; "colouring…" in
+the header until the colours arrive, the lines shown uncoloured meanwhile;
+"coloured around the view" for a file over 1 MiB, coloured 1000 lines on
+either side of the view; "empty file". Refused, in red, before the file is
+opened: "outside the project: <path>"; "a credential file: not opened";
+"a directory, not a file"; "too large to show: <size> (32.0 MiB at most)";
+"not found: <path>". A file with a NUL in its first 8 KiB: "binary file,
+not shown · <size>".
+
+**Opening.** F3 on zone B's entry cursor or in an entry's full view, on a
+tool entry that names a file, opens that file (the entry hint shows "F3
+file"):
+
+| Tool | Cursor line | Marked |
+| - | - | - |
+| Read | its `offset` | nothing |
+| Edit, MultiEdit | the first `new_string` found in the file, else the first `old_string` | those lines |
+| Write | line 1 | nothing |
+| Codex's fileChange | the first change's first added line | the first hunk's first added lines |
+| any other with `file_path`, `notebook_path` or `path` | line 1 | nothing |
+
+Anywhere else, or on an entry naming no file, F3 opens the
+[Explorer](#explorer), and `/` there the quick open, a window of the same
+size (golden frame `file-finder`, 80x24, inside the window):
+
+```text
+╭─ Quick open ─────────────────────────────────────────────────── 8 files ─╮
+│ › vi▌                                                                    │
+│ ▸ sample/viewer.go                                                       │
+│                                                                          │
+│ type to filter · ↑↓ select · Enter open · Esc back · F3 close     1 of 1 │
+╰──────────────────────────────────────────────────────────────────────────╯
+```
+
+It lists every file under the project, relative paths sorted, without
+`.git` folders, credential files or anything behind a link; at most
+100,000, then "first 100,000 files". Typing filters, case ignored, the
+query's letters in order: a match in the name first, then in the path,
+then the shortest path. Esc goes back to the Explorer; F3 closes both.
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | the cursor line, a line, a page, the first or last |
+| ← → | shift the code sideways by 8 columns |
+| / | type a search, case ignored unless it has a capital; Enter finds the next match; at most 10,000 |
+| n / N | the next / previous match |
+| g | type a line number; Enter goes there |
+| f | full screen or the window |
+| F2 | close the window and go to the oldest pending approval |
+| Esc | cancel the field, else clear the selection, else back to the Explorer, its cursor on the file and the folders above it open, a file opened from an entry too |
+| F3 | close the viewer and the Explorer, back to the dashboard |
+| F1, F4, F12, Ctrl+C, Ctrl+Q | as on the dashboard |
+
+Every other key is the window's: none reaches the draft. The mouse stays
+captured: a drag selects in the window only and its release copies the
+file's text it covers, as in the other panels; the wheel over the window
+scrolls it; the dashboard behind takes no click. Reading, listing,
+colouring and searching each run in a command with a generation number, so
+a result for an older open is dropped and keys stay handled.
+
+## Explorer
+
+F3 with no file in front shows the project as a tree, as VS Code's Explorer
+does, in a window of the viewer's size (plan 17, brief amendment 12;
+architecture.md, File viewer). Golden frame `explorer`, 80x24, the cursor
+on a modified file, a deleted file and a deleted folder listed below it:
+
+```text
+ ▣╭─ Explorer ───────────────────────────────────────────── mock · 11 items ─╮l
+ A│ sample/viewer.go                                                         │e
+╭─│ ▾ sample                                                              ●  │─╮
+│ │     viewer.go                                                         M  │ │
+│ │     viewer_test.go                                                    D  │ │
+│ │ ▸ tools                                                               D  │ │
+│ │   claude-api-key-context-refused.jsonl                                   │ │
+│ │   claude-subagent-approval.jsonl                                         │ │
+│ │   codex-api-key.jsonl                                                 U  │ │
+│ │   codex-no-5h-window.jsonl                                               │ │
+│ │   codex-plan6-limits.jsonl                                            !  │ │
+│ │   codex-spawn-request.jsonl                                           A  │ │
+│ │   codex-subagents.jsonl                                                  │ │
+⋮
+│ │ Enter view · / find · Esc back · F3 close                        2 of 11 │ │
+╰─╰──────────────────────────────────────────────────────────────────────────╯─╯
+```
+
+**The window.** The viewer's frame and size, never full screen. On its top
+edge "Explorer" on the left, the project's name and "<N> items" (the entry
+rows shown) on the right; the first row, the cursor's path in the project
+(a folder's ending in "/") and, on the right, git's note: "git status…"
+until it answers, "not a git repository", "git not found" in grey, git's
+own error in the attention colour. Each row: two cells of indent a level,
+"▾" before an open folder and "▸" before a closed one in grey, folders in
+the title colour and bold, files in the text colour, git's marker on the
+right; the cursor row on zone A's cursor row background. Under a folder
+being read, "reading…"; an empty one, "empty folder"; one that cannot be
+read, its reason in the attention colour; a listing cut at 10,000 entries,
+"first 10,000 entries". The footer: the keys, and "<i> of <N>".
+
+**Reading.** Each folder is read when it is opened, in a command, inside
+the project only: its folders, then its files, each sorted without case;
+no `.git`, no credential file (by name, as in the quick open), nothing
+behind a link. It opens as it was left in the session, its open folders
+and cursor kept, each open folder read again.
+
+**Deleted files.** A path git versions and the disk no longer has keeps a
+row, so that a deletion, by the owner or by an agent, shows where it
+happened (plan 17, item 6); one git never versioned leaves no trace. Git
+reports each deleted file, never a folder: each one is a row under its
+folder, in the folder's order, its name and its `D` in red; a folder deleted
+whole is rebuilt from the paths under it, a folder row with `D`, never read
+from the disk. A name the disk also has is listed once, from the disk; under
+a listing cut at 10,000 entries no deleted folder is added, since it may be
+past the cut. A folder empty on the disk but holding deleted paths lists
+them. On a deleted row the path row reads "<path> · deleted, not on disk";
+Enter or a click on a deleted file opens nothing.
+
+**Git's markers.** One `git --no-optional-locks status --porcelain=v1 -z
+--untracked-files=normal --ignored -- .` each time it opens, in a command;
+it writes nothing.
+
+| Marker | Meaning | Colour |
+| - | - | - |
+| M | modified | amber |
+| A, R | added, renamed | green |
+| U | untracked; every entry under an untracked folder too | green |
+| ! | in conflict | red |
+| D | deleted: versioned by git, gone from the disk; its name red too | red |
+| ● | a folder on the disk holding any change, a deleted file's too | amber |
+| (dimmed name) | ignored by git, and all under it; still listed | grey |
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | move the cursor over the entries, notes skipped |
+| → | open a folder; on an open one, its first entry |
+| ← | close an open folder; else the folder holding the entry |
+| Enter | open or close a folder; show a file in the [file viewer](#file-viewer); nothing on a deleted file |
+| / | the quick open; Esc there comes back |
+| Esc | close the folder the cursor is in, the cursor on it; at the top level, close |
+| F3 | close, back to the dashboard |
+| F2 | close and go to the oldest pending approval |
+| F1, ?, F4, F12, Ctrl+C, Ctrl+Q | as on the dashboard |
+
+Every other key, and a paste, is the Explorer's: none reaches the draft.
+The mouse: the wheel moves the cursor by 3 entries; a click puts the cursor
+on a row, a click on the cursor's row is Enter. Nothing is selected in it,
+as in the quick open; F12 and the terminal's own selection copy from it.
+
 ## Approvals
 
 The CLI's native approvals, relayed (AM2 B6, I7; AM4 W3; events-and-state.md,
@@ -1151,6 +1356,7 @@ this table as an overlay.
 | Ctrl+O | copy the orchestrator's last message (as Codex does) | TI 6.2; ASM-9 |
 | Ctrl+G | open the draft in `$EDITOR` | TI 8 (both CLIs use Ctrl+G) |
 | F2 | go to the oldest pending approval | ASM-9 |
+| F3 | the file the entry, full view or request in front names, in the [file viewer](#file-viewer); else the [Explorer](#explorer); in either, close back to the dashboard | plan 17; brief amendments 11 and 12 |
 | F4 | approvals Manual ⇄ Auto, from any focus; Manual at every launch, never saved | plan 12; brief amendment 8 |
 | F6 / Shift+F6 | next / previous zone (B, C, A, D) | ASM-9 |
 | Tab / Shift+Tab | next / previous zone, outside the editor (in the editor Tab inserts a tab) | ASM-9 |
@@ -1194,6 +1400,31 @@ the console reads plain VT input after Ctrl+Q.
 | ↑ ↓ | previous / next folded message, tool or failure; ↓ past the last, the input |
 | Enter or → | the whole entry, full screen; Esc back to the cursor |
 | Esc, or typing | back to the input |
+| F3 | the file a tool entry read or changed, in the [file viewer](#file-viewer) |
+
+**The file viewer** ([File viewer](#file-viewer))
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | move the cursor line; the wheel scrolls |
+| ← → | shift the code sideways |
+| / | search, case ignored without a capital; Enter finds |
+| n N | next / previous match |
+| g | go to a line number |
+| f | full screen or the window |
+| Esc | clear the selection, else back to the Explorer, on the file |
+| F3 | close, back to the dashboard |
+
+**The Explorer** (F3 with no file in front, [Explorer](#explorer))
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | move; the wheel too, a click on a row |
+| → ← | open a folder, or its first entry; close it, or go to its folder |
+| Enter | open or close a folder; show a file in the file viewer |
+| / | the quick open: type to narrow, Enter opens, Esc back |
+| Esc | close the folder the cursor is in; at the top, close |
+| F3 | close, back to the dashboard |
 
 **The editor**: see [Input editor](#input-editor).
 

@@ -55,7 +55,8 @@ work is done only when every criterion passes. What only the owner can judge
 | Path validation | table tests: Windows path, `~`, WSL path, relative path, trailing separator, non-existent, a file instead of a directory, no access; each accepted or refused with its message |
 | Working directory | the started CLI's working directory equals the chosen project path, read from the process or the CLI's own output |
 | Startup gate | the dashboard cannot open before both answers are validated |
-| MVP scope | none of the features amendment 4 leaves out exists in the code or the screens, except recent projects, favourites and a project browser (amendment 9) and git worktree management (amendment 10) |
+| MVP scope | none of the features amendment 4 leaves out exists in the code or the screens, except recent projects, favourites and a project browser (amendment 9), git worktree management (amendment 10) and the file viewer and Explorer that replace the VS Code integration (amendments 11 and 12) |
+| File viewer | a file outside the project, a credential name, a directory, a file over the limit and a binary file are refused before any content is shown, each with its reason; the viewer writes nothing; every key it takes leaves the draft unchanged; the Explorer lists no credential file and nothing outside the project, and its git status leaves the repository's status and `.git/index` unchanged (plan 17) |
 | MVP acceptance | plan 4 ends with amendment 4's acceptance criteria, each checked with each agent CLI, or listed under not verified |
 
 A check that cannot fail proves nothing. When you write a new check, run it once

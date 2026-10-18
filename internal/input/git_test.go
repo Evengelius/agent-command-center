@@ -323,7 +323,8 @@ func TestGitMissing(t *testing.T) {
 	_, e3 := g.Diff(dir, "")
 	e4 := g.Merge(dir, "x")
 	_, e5 := g.Remove(dir, filepath.Join(dir, "x"), "x")
-	for i, err := range []error{e1, e2, e3, e4, e5} {
+	_, e6 := g.Status(dir)
+	for i, err := range []error{e1, e2, e3, e4, e5, e6} {
 		if !errors.Is(err, ErrNoGit) || !strings.Contains(err.Error(), "git not found") {
 			t.Errorf("call %d: %v", i+1, err)
 		}

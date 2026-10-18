@@ -70,7 +70,7 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		ls = append(ls, zoneD(s, ui, w, dh, 1)...)
 		hints := "Enter send · Ctrl+J newline · F6 zone · F2 approve · F1 keys"
 		if ui.Entry > 0 && ui.Focus == "B" && ui.Card == "" {
-			hints = entryKeys
+			hints = entryFooter(s, ui)
 		}
 		return append(ls, keyHints(w, ui, hints))
 	}
@@ -96,7 +96,7 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		hints = "Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G editor · F6 / Shift+F6 zone · F2 approvals · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
 	}
 	if ui.Entry > 0 && ui.Focus == "B" && ui.Card == "" {
-		hints = entryKeys
+		hints = entryFooter(s, ui)
 	}
 	return append(ls, keyHints(w, ui, hints))
 }
@@ -490,7 +490,11 @@ func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) [
 			fail := toolFailure(s, i, e)
 			if focused {
 				l := append(append(append(line{deco("  ▸ ", stAttentionBold)}, oneRow(i, e, stText)...), fail...), toolReviewed(s, e)...)
-				return spread(l, decoLine(entryHint, stAttention), w)
+				hint := entryHint
+				if _, ok := EntryFile(s, e); ok {
+					hint = entryFileHint
+				}
+				return spread(l, decoLine(hint, stAttention), w)
 			}
 			lead := deco("  ▸ ", stGrey)
 			if fail != nil {

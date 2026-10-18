@@ -1,0 +1,60 @@
+ >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                             Mock data 2.1.300 · approvals Manual
+╭─ A · ORCHESTRATOR ───────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
+│ claude-haiku-5-5 · orchestrator          ││ YOU  11:30                                                                                                                                               │
+│ turn 2 · completed                       ││   Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into a new file   │
+│                                          ││   named found.txt with the Write tool, and report the names. Then tell me in one line what it found.                                                     │
+│ STAGES  inferred f╭─ viewer.go ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Go · 58 lines ─╮              mock │
+│ TURN 1  ✓ complete│ sample/viewer.go · edited by Edit                                                                                                                            │                   │
+│ TURN 2  ✓ complete│ 15                                                                                                                                                           │                   │
+│   started by the C│ 16  // palette holds the colours the dashboard draws with.                                                                                                   │                   │
+│   └─ ◉ Edit  sampl│ 17  var palette = []Colour{                                                                                                                                  │                   │
+│                   │ 18      {"title", 0x7aa2f7},                                                                                                                                 │                   │
+│                   │ 19      {"text", 0xc0caf5},                                                                                                                                  │`.                 │
+│                   │ 20      {"grey", 0x565f89},                                                                                                                                  │                   │
+│                   │ 21      {"attention", 0xe0af68},                                                                                                                             │                   │
+│                   │ 22  }                                                                                                                                                        │                   │
+│                   │ 23                                                                                                                                                           │entries · Esc back │
+│                   │ 24  // Find returns the colour called name, and whether there is one.                                                                                        │                   │
+│                   │ 25  func Find(name string) (Colour, bool) {                                                                                                                  │                   │
+│                   │ 26      for _, c := range palette {                                                                                                                          │                   │
+│                   │ 27          if strings.EqualFold(c.Name, name) {                                                                                                             │                   │
+│                   │ 28              return c, true                                                                                                                               │                   │
+│                   │ 29          }                                                                                                                                                │                   │
+│                   │ 30      }                                                                                                                                                    │                   │
+│                   │ 31      return Colour{}, false                                                                                                                               │                   │
+│                   │ 32  }                                                                                                                                                        │────────────────── │
+│                   │ 33                                                                                                                                                           │                   │
+│                   │ 34  // Hex is the colour as "#rrggbb".                                                                                                                       │                   │
+│                   │ 35▌ func (c Colour) Hex() string {                                                                                                                           │                   │
+│                   │ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                                                                                   │                   │
+│                   │ 37▌ }                                                                                                                                                        │                   │
+│                   │ 38                                                                                                                                                           │ne · Ctrl+G editor │
+│                   │ 39  // Names lists the palette's colour names, in order.                                                                                                     │───────────────────╯
+│                   │ 40  func Names() []string {                                                                                                                                  │ku-5-5 (reported) ─╮
+│                   │ 41      out := make([]string, 0, len(palette))                                                                                                               │              mock │
+│                   │ 42      for _, c := range palette {                                                                                                                          │                   │
+│                   │ 43          out = append(out, c.Name)                                                                                                                        │                   │
+│                   │ 44      }                                                                                                                                                    │                   │
+│                   │ 45      return out                                                                                                                                           │                   │
+│                   │ 46  }                                                                                                                                                        │                   │
+│                   │ 47                                                                                                                                                           │                   │
+│                   │ 48  // Brighter is the colour with each channel raised by step, at most 255.                                                                                 │                   │
+│                   │ 49  func (c Colour) Brighter(step uint32) Colour {                                                                                                           │                   │
+│                   │ 50      r, g, b := c.RGB>>16&0xff, c.RGB>>8&0xff, c.RGB&0xff                                                                                                 │                   │
+│                   │ 51      up := func(v uint32) uint32 { return min(v+step, 255) }                                                                                              │                   │
+│                   │ 52      return Colour{c.Name, up(r)<<16 | up(g)<<8 | up(b)}                                                                                                  │                   │
+│                   │ 53  }                                                                                                                                                        │                   │
+│                   │ 54                                                                                                                                                           │                   │
+│                   │ 55  // Describe is one line about the colour, for the details view.                                                                                          │                   │
+│                   │ 56  func Describe(c Colour) string {                                                                                                                         │                   │
+│                   │ 57      return fmt.Sprintf("%-10s %s", c.Name, c.Hex())                                                                                                      │                   │
+│ ↑↓ move ←→ fold En│ 58  }                                                                                                                                                        │                   │
+╰───────────────────│ ↑↓ PgUp PgDn Home End move · ←→ shift · / search · n N next, previous · g go to line · f full screen · F1 keys · Esc back · F3 close          match 10 of 17 │───────────────────╯
+╭─ D · QUOTA & TELEM╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ndocumented field ─╮
+│ 5h ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00   plan N/A (not reported)   overage rejected (org_level_disabled)                │
+│ model claude-haiku-5-5   context 4% of 1M (derived)   tokens 159.4k   cost $0.01 API-equiv. estimate   last turn 2s                                                                                  │
+│ agents 0 active / limit N/A (not reported)   time 0s session   errors 0   retries N/A (none reported)   unrecognised events 0                                                                        │
+│                                                                                                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter or → full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys

@@ -31,6 +31,8 @@ type fakeGit struct {
 	removeErr  error
 	removeNote string
 	diff       []string
+	marks      input.GitMarks
+	statusErr  error
 	block      chan struct{}
 	calls      []string
 }
@@ -118,6 +120,14 @@ func (f *fakeGit) Remove(main, path, branch string) (string, error) {
 	}
 	f.rows = slices.DeleteFunc(f.rows, func(r input.Worktree) bool { return r.Path == path })
 	return f.removeNote, nil
+}
+
+func (f *fakeGit) Status(dir string) (input.GitMarks, error) {
+	f.wait()
+	f.record("status " + dir)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.marks, f.statusErr
 }
 
 // repoRows is a main worktree at main and a linked one on feature, two

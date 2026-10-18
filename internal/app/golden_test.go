@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
+	"github.com/Evengelius/agent-command-center/internal/input"
 	"github.com/Evengelius/agent-command-center/internal/provider"
 	"github.com/Evengelius/agent-command-center/internal/render"
 	"github.com/Evengelius/agent-command-center/internal/state"
@@ -53,14 +55,15 @@ func TestGoldenFrames(t *testing.T) {
 		}
 		return h
 	}
-	dash := func(t *testing.T) *harness {
-		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")}})
+	dashGit := func(t *testing.T, git input.Git) *harness {
+		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")}, Git: git})
 		h.settle()
 		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 155 { // 154 and the subagent's model (plan 5, item 7)
 			t.Fatalf("dashboard: screen %q, %d events, want 155", s.Screen, len(s.Log))
 		}
 		return h
 	}
+	dash := func(t *testing.T) *harness { return dashGit(t, nil) }
 	codexDash := func(t *testing.T) *harness {
 		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "codex-subagents.jsonl")}})
 		h.settle()
@@ -140,10 +143,57 @@ func TestGoldenFrames(t *testing.T) {
 			evOf(event.ReviewUpdated, event.Review{ReviewID: "rv1", Command: "go vet ./...", Status: "approved", Risk: "low", Authorization: "high", Rationale: "a read-only check of the project"}))
 		return h
 	}
+	// Plan 17: the file an Edit changed, from its entry in zone B, the lines
+	// it wrote marked; then full screen, a search; the Explorer (amendment
+	// 12), git's markers from a test double, and the quick open from it.
+	file := func(keys ...tea.KeyPressMsg) func(*testing.T) *harness {
+		return func(t *testing.T) *harness {
+			h := dash(t)
+			in, _ := json.Marshal(map[string]string{"file_path": "sample/viewer.go", "old_string": "x",
+				"new_string": "func (c Colour) Hex() string {\n\treturn fmt.Sprintf(\"#%06x\", c.RGB)\n}"})
+			pushEvents(h, "claude-code", evOf(event.ToolStarted, event.Tool{ToolID: "golden-edit", Name: "Edit", Input: in}))
+			h.send(key(tea.KeyUp, 0))
+			h.send(key(tea.KeyF3, 0))
+			if f := h.m.ui.File; !f.Open || f.Rel != "sample/viewer.go" || f.Mark != [2]int{34, 37} || f.Hl.Lang != "Go" {
+				t.Fatalf("the viewer: open %v, %q, mark %v, %q, state %q", f.Open, f.Rel, f.Mark, f.Hl.Lang, f.State)
+			}
+			for _, k := range keys {
+				h.send(k)
+			}
+			return h
+		}
+	}
+	explorerGit := &fakeGit{marks: input.GitMarks{
+		Files: map[string]byte{"sample/viewer.go": 'M', "codex-api-key.jsonl": 'U', "codex-spawn-request.jsonl": 'A', "codex-plan6-limits.jsonl": '!',
+			"sample/viewer_test.go": 'D', "tools/old.jsonl": 'D'},
+		Ignored: map[string]bool{"codex-no-5h-window.jsonl": true},
+	}}
+	explorer := func(t *testing.T) *harness {
+		h := dashGit(t, explorerGit)
+		h.send(key(tea.KeyF3, 0))
+		h.send(key(tea.KeyRight, 0))
+		h.send(key(tea.KeyDown, 0))
+		if v := h.m.ui.Explorer; !v.Open || v.Cursor != "sample/viewer.go" || h.m.ui.File.Open || v.Git.Note != "" {
+			t.Fatalf("the Explorer: open %v, cursor %q, note %q", v.Open, v.Cursor, v.Git.Note)
+		}
+		return h
+	}
+	finder := func(t *testing.T) *harness {
+		h := dashGit(t, explorerGit)
+		h.send(key(tea.KeyF3, 0))
+		h.send(typed('/'))
+		for _, k := range typedText("vi") {
+			h.send(k)
+		}
+		if v := h.m.ui.Finder; !v.Open || len(v.Files) == 0 || v.Files[0] != "sample/viewer.go" {
+			t.Fatalf("the quick open: %+v", v)
+		}
+		return h
+	}
 	for _, sc := range []struct {
 		name string
 		rig  func(*testing.T) *harness
-	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}} {
+	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}} {
 		for _, size := range sizes {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)
