@@ -36,11 +36,15 @@ func TestQuestionDeny(t *testing.T) {
 			if f := frameText(h); !strings.Contains(f, "? QUESTION") || !strings.Contains(f, "Which colour?") {
 				t.Fatalf("no question card:\n%s", f)
 			}
-			// a is not offered, from the card or the full view (criterion 4).
+			// a sends nothing before every question has a choice, from the card or the
+			// full view (criterion 4; plan 14, item 1: a toast says why).
 			h.send(key(tea.KeyF2, 0))
 			h.send(typed('a'))
+			if f := frameText(h); !strings.Contains(f, "choose an option for each question first") {
+				t.Fatalf("no toast after a:\n%s", f)
+			}
 			h.send(key(tea.KeyEnter, 0))
-			if f := frameText(h); !strings.Contains(f, "d deny · c cancel the turn") {
+			if f := frameText(h); !strings.Contains(f, "back (Esc)") {
 				t.Fatalf("no full view:\n%s", f)
 			}
 			h.send(typed('a'))

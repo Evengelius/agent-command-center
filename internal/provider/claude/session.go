@@ -312,13 +312,16 @@ const QuestionDenyMessage = "The user saw these questions in Agent Command Cente
 
 // Answer answers a pending approval: allow echoes the tool's input
 // unchanged, anything else denies; a readable question is denied with
-// QuestionDenyMessage.
+// QuestionDenyMessage, and is answered by AnswerQuestion, never by an allow.
 func (s *Session) Answer(id, decision string) error {
 	s.mu.Lock()
 	req, ok := s.inputs[id]
 	s.mu.Unlock()
 	if !ok {
 		return fmt.Errorf("no pending request %q", id)
+	}
+	if decision == "allow" && req.question {
+		return fmt.Errorf("request %q is a question: it is answered with AnswerQuestion", id)
 	}
 	if decision == "allow" && req.unreadable {
 		return fmt.Errorf("request %q was not readable: only a deny answers it", id)
@@ -400,4 +403,36 @@ func (s *Session) SetApprovalMode(auto bool) error {
 		mode = "auto"
 	}
 	return s.control("set_permission_mode", `"mode":"`+mode+`"`)
+}
+
+// AnswerQuestion answers a pending, readable question request: it allows it
+// with the request's input, every key unchanged, and an "answers" key (question
+// text to answer) added; Claude Code then returns the answers to the model as
+// the tool's result (plan 14, item 1; probe P14a).
+func (s *Session) AnswerQuestion(id string, answers map[string]string) error {
+	s.mu.Lock()
+	req, ok := s.inputs[id]
+	s.mu.Unlock()
+	switch {
+	case !ok:
+		return fmt.Errorf("no pending request %q", id)
+	case !req.question:
+		return fmt.Errorf("request %q is not a question", id)
+	case req.unreadable:
+		return fmt.Errorf("request %q was not readable: only a deny answers it", id)
+	}
+	var in map[string]json.RawMessage
+	if err := json.Unmarshal(req.input, &in); err != nil || in == nil {
+		return fmt.Errorf("the questions of request %q are not readable", id)
+	}
+	var b bytes.Buffer
+	enc := json.NewEncoder(&b)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(answers); err != nil {
+		return err
+	}
+	in["answers"] = json.RawMessage(bytes.TrimRight(b.Bytes(), "\n"))
+	resp := map[string]any{"behavior": "allow", "updatedInput": in}
+	return s.write(map[string]any{"type": "control_response",
+		"response": map[string]any{"subtype": "success", "request_id": id, "response": resp}})
 }

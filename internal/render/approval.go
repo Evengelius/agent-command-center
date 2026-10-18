@@ -43,6 +43,10 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int) []line {
 	}
 	switch ap.Status {
 	case state.Allowed:
+		if ap.Question {
+			out := []line{head("✓ ", stDone, deco("  answered by you "+clockSec(ap.AnsweredAt), stDone))}
+			return append(out, answeredLines(QuestionsOf(ap), ap.Answers, w)...)
+		}
 		if ap.Answer == "acceptForSession" {
 			return []line{head("✓ ", stDone, deco("  allowed for the session by you "+clockSec(ap.AnsweredAt), stDone))}
 		}
@@ -69,6 +73,12 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int) []line {
 	if ap.Summary != "" && ap.Summary != target {
 		out = append(out, indentedDeco(ap.Summary, w, stText)...)
 	}
+	qs := QuestionsOf(ap)
+	focused := ui.Card == ap.ID
+	if len(qs) > 0 {
+		body = nil // the questions are drawn whole, every option, below (plan 14, item 1)
+		out = append(out, questionLines(qs, pickOf(ui, ap, qs), focused, w)...)
+	}
 	for j, l := range body {
 		if j == cardLines {
 			out = append(out, decoLine(fmt.Sprintf("  │ … %s more lines", grouped(len(body)-cardLines)), stGrey))
@@ -76,12 +86,11 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int) []line {
 		}
 		out = append(out, decoLine("  │ "+cut(l, max(w-4, 1)), stGrey))
 	}
-	focused := ui.Card == ap.ID
 	switch {
 	case ap.Status == state.Answering:
 		out = append(out, decoLine("  sending answer…", stProgress))
 	case focused && ap.Question:
-		out = append(out, decoLine("  ▸ d deny, then answer in your next message · c cancel the turn · Enter full view · Esc later", stAttention))
+		out = append(out, decoLine("  ▸ 1-4 choose · ← → question · a send the answers · d deny, then answer in your next message · c cancel the turn · Enter full view · Esc later", stAttention))
 	case focused:
 		out = append(out, decoLine("  ▸ a allow once · "+forSession(ap)+"d deny · c cancel the turn · Enter full view · Esc later · ↑ ↓ other approvals", stAttention))
 	default:

@@ -288,6 +288,18 @@ func (m *Model) viewKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		m.closeView()
 		return nil, false
 	}
+	if ap := m.s.Approvals[m.ui.View]; m.ui.View != "" && ap.Question && ap.Status == state.Pending && m.ui.Card == ap.ID {
+		switch k.String() {
+		case "1", "2", "3", "4", "left", "right":
+			return m.questionKey(ap, k.String())
+		case "a": // refused while a question has no choice: the view stays open
+			if !m.pickComplete(ap) {
+				return m.toast("choose an option for each question first"), true
+			}
+			m.closeView()
+			return m.questionKey(ap, "a")
+		}
+	}
 	switch s := k.String(); s {
 	case "esc":
 		if !m.ui.Sel.Empty() {

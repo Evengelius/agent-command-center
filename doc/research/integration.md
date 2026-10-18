@@ -4,7 +4,9 @@ Plan 1, step 2. For each agent CLI in scope (Claude Code 2.1.300, Codex CLI
 0.145.0; Gemini CLI is out of scope since amendment 5), the 9 research
 questions of amendment 2 (`doc/brief.md`), each answered with its sources, its
 limitations and a realistic fallback. Then the path forms the startup screen
-accepts and validates (amendment 4, question 2).
+accepts and validates (amendment 4, question 2). The limitations are those of
+plan 1; plan 14 gave each an outcome in
+[reliability.md, Not verified](../reliability.md#not-verified).
 
 The detail behind each answer is in the two CLI files; this file gives the
 answer, the decisive evidence and what plan 2 must design around.

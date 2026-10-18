@@ -5,8 +5,8 @@ separated parts, the provider interface with one adapter per agent CLI, the
 session context, the integration strategy, where it runs and how it starts.
 The events and the state are in [events-and-state.md](events-and-state.md),
 the screens in [ui-design.md](ui-design.md), and failures, fallbacks and tests
-in [reliability.md](reliability.md). Nothing here is built or installed before
-the owner approves the proposal (plan 3).
+in [reliability.md](reliability.md). The owner approved it with the proposal of
+plan 3 on 2026-10-16 (commit d5b910e); later plans keep it current.
 
 ## Conventions
 
@@ -201,14 +201,14 @@ configuration is not touched (CC-11; P12c, P12c-switch).
 | Step | Design | Source |
 | - | - | - |
 | Detect | `codex.exe` on the PATH or in `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin`, the `.exe` resolved, not a `.cmd`; `codex --version` (`codex-cli 0.145.0`); `codex login status` for the sign-in kind | CX-2; P0 |
-| Start | `codex app-server` with `cmd.Dir` = project path; `initialize` (`clientInfo`) then `initialized`; `thread/start` with `sandbox`, `approvalPolicy` and `model`, **without `cwd`** until CX-10 q2 shows that this avoids the `trust_level` write | CX-4.1; INT 1; INT shape |
+| Start | `codex app-server` with `cmd.Dir` = project path; `initialize` (`clientInfo`) then `initialized`; `thread/start` with `sandbox`, `approvalPolicy` and `model`, **without `cwd`**: every dashboard run on a new, untrusted project left Codex's configuration identical, so no `trust_level` is written (CX-10 q2, settled in plan 14) | CX-4.1; INT 1; INT shape |
 | Model | the per-session model `gpt-5.6-sol` (the default `model/list` reports) is passed in `thread/start` only when the configured model is refused; the refusal is shown as received | P5, P6, P6b; CX-3.3 |
 | Converse | `turn/start {threadId, input:[{type:"text", text}]}` | CX-4.1; P6b |
 | Approvals | `item/commandExecution/requestApproval` and `item/fileChange/requestApproval` answered `accept`, `acceptForSession`, `decline` or `cancel`; an unknown request method gets a JSON-RPC error | INT 4; P6b, P7 |
 | Interrupt | `turn/interrupt {threadId, turnId}` | INT 5; P6b |
 | Telemetry | notifications; `account/rateLimits/read` at start and after each turn | TEL CX; P6 |
 | Never called | `config/value/write`, `config/batchWrite`, `skills/config/write`, `marketplace/*`, `plugin/*`, `externalAgentConfig/import`, `windowsSandbox/setupStart`, execpolicy and network amendments | CX-3.3; INT 4; INT 9; AGENTS.md |
-| Close | close stdin, then the same timed escalation as Claude Code; mid-turn behaviour is CX-10 q8, not verified | ASM-5 |
+| Close | close stdin, then the same timed escalation as Claude Code; mid-turn, stdin closed exits 0 and a job kill leaves no process (plan 4, L3; CX-10 q8) | ASM-5 |
 
 Sandbox and approval policy: `sandbox: "read-only"` and
 `approvalPolicy: "on-request"`, the combination P6b and P7 ran with the
@@ -334,7 +334,7 @@ agent-command-center [--mock <file>] [--provider <id>] [--project <path>]
 | Item | Reuse or build | Source |
 | - | - | - |
 | The four reference projects | studied, not forked or copied | SUM "Why build from scratch" |
-| Codex protocol types | written by hand for the messages the MVP uses, checked against the Apache-2.0 JSON Schema by fixture tests (changed from "generated" at plan 3, approved 2026-10-16) | INT 6; SUM; proposal.md |
+| Codex protocol types | written by hand for the messages the MVP uses, checked against the Apache-2.0 JSON Schema by fixture tests (changed from "generated" at plan 3, approved 2026-10-16) | INT 6; SUM; plan 3 (d5b910e) |
 | Claude Code wire form | written from the docs; the MIT Python SDK as reference | INT 1 |
 | Codex rules (window labelling by `windowDurationMins`, 12,000-token baseline) | reimplemented from the TUI source (Rust), not copied | INT 6; TEL CX |
 | TUI runtime, layout | Bubble Tea v2, Lip Gloss v2 | TI 11 |
@@ -386,7 +386,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-3 | Rendering at most 30 frames per second, coalescing events per frame | Threads; ui-design.md |
 | ASM-4 | Claude Code runs with `--permission-mode default` | Claude Code adapter |
 | ASM-5 | Codex shutdown uses the same timed escalation as Claude Code | Codex adapter |
-| ASM-6 | Codex runs with `read-only` and `on-request`, every write approved in the dashboard, until CX-10 q2 is settled; Auto's turns run `workspaceWrite`, the owner's choice (plan 12 addendum, brief amendment 8) | Codex adapter |
+| ASM-6 | Codex runs with `read-only` and `on-request`, every write approved in the dashboard (CX-10 q2, settled in plan 14: no `trust_level` written); Auto's turns run `workspaceWrite`, the owner's choice (plan 12 addendum, brief amendment 8) | Codex adapter |
 | ASM-7 | The application's own configuration file path and TOML format | How it starts |
 | ASM-8 | `--provider` and `--project` prefill the startup answers, never skip validation | How it starts |
 | ASM-9 | Default key bindings beyond those TI fixes | ui-design.md |
@@ -395,7 +395,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-12 | The layout geometry: breakpoints at 100 and 160 columns; the 80x24 minimum; A 34 then 44 columns wide, C's agent list 74; B about 60% of the right column | ui-design.md, Layouts |
 | ASM-13 | The colours: the palette hex values, each model family's colour, a quota bar turning red from 90% | ui-design.md |
 | ASM-14 | Codex threads given model "N/A" until a per-thread source appears; from Codex CLI 0.163.0, `subAgentActivity.model` is that source (P7b; plan 5, item 7) | events-and-state.md |
-| ASM-15 | No message is sent while a turn runs; the draft waits (Codex `turn/steer` and Claude Code's queue are not verified) | events-and-state.md, Turn machine |
+| ASM-15 | No message is sent while a turn runs; the draft waits (Codex `turn/steer` and Claude Code's queue are never used; CX-10 q5, closed in plan 14) | events-and-state.md, Turn machine |
 | ASM-16 | The 10 s an interrupt has to end the turn before "force stop" is offered (the 5 s shutdown steps are the Agent SDK's, CC-4; ASM-5 extends them to Codex) | events-and-state.md, Turn machine |
 | ASM-17 | The Markdown renderer: our own, no new dependency (the owner's decision of 2026-10-16, plan 4 step 3, after Glamour v2 measured p95 590 ms re-rendering a streamed 2,000-line message); Markdown styling and syntax highlighting come in the final stage | ui-design.md, Markdown |
 | ASM-18 | Animation rates: spinners and the moving connector dot at 10 frames per second, only while something runs | ui-design.md, Animations |
@@ -403,7 +403,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-20 | The event reader accepts lines up to 64 MiB; a longer line is recorded as an error with its size and skipped | reliability.md, Concurrent output |
 | ASM-21 | Timeouts no source gives: Codex's handshake 60 s, as Claude Code's (CC-4); each CLI's detection 10 s | events-and-state.md, Startup and Session machines; How it starts |
 | ASM-22 | Display defaults: thinking text folded; a sent message over 20 lines folded to its first 5; zone C ordered waiting, running, ended, most recent first; copy on mouse release; the last 50 stderr lines kept for error display | ui-design.md; Threads of execution |
-| ASM-23 | The editor's draft is saved byte for byte at most 1 s after the last change, by atomic rename, to `%LOCALAPPDATA%agent-command-centerdrafts`, one file per project named by the SHA-256 of its path; deleted once the CLI accepts the send, kept if the send fails, offered back on the next start in that project. On quit, crash or panic the dashboard prints the CLI session id and the CLI's own resume command; a panic restores the terminal, saves the draft, closes the CLI and exits with code 2. Not a history file (ASM-11) | reliability.md, Resumption; proposal.md |
+| ASM-23 | The editor's draft is saved byte for byte at most 1 s after the last change, by atomic rename, to `%LOCALAPPDATA%agent-command-centerdrafts`, one file per project named by the SHA-256 of its path; deleted once the CLI accepts the send, kept if the send fails, offered back on the next start in that project. On quit, crash or panic the dashboard prints the CLI session id and the CLI's own resume command; a panic restores the terminal, saves the draft, closes the CLI and exits with code 2. Not a history file (ASM-11) | reliability.md, Resumption; plan 3 (d5b910e) |
 
 ## Coverage of the brief
 

@@ -193,7 +193,7 @@ any SDK** ([P:p6b-codex-app-server.jsonl], [`drivers/codex-driver.mjs`](probes/d
 Limitations and caveats:
 - A read-only PowerShell command (`Get-Content`) ran without an approval
   request under `read-only` + `on-request` (line 56); a command that needs
-  approval was not probed (section 10).
+  approval was not probed (section 10, question 1: recorded since, P8 and P11n).
 - `turn/completed` and `turn/started` carry an empty `items` array; the item
   notifications are the canonical list ([T] README:1446; [P:p6b] line 68).
 - `turn/interrupt` does not stop background terminals
@@ -476,7 +476,7 @@ Codex degrades visibly instead of breaking.
 
 ## 10. Open questions for further probes
 
-Settled by the probes (no longer open): app-server handshake from a non-SDK
+Settled by the probes: app-server handshake from a non-SDK
 client (P6, P6b); file-change approval flow (P6b); `turn/interrupt` (P6b);
 `account/rateLimits/read` without a turn (P6); `thread/tokenUsage/updated`
 shape and timing (P6b); `codex exec --json` sequence, success and failure
@@ -484,53 +484,79 @@ shape and timing (P6b); `codex exec --json` sequence, success and failure
 `turn/completed failed` and is fixed by a per-session model (P5, P6, P6b);
 the installed binary's schema equals the [T] fixture (section 1).
 
-Still open:
+Plan 14 (2026-10-18) gave each question below an outcome: settled with
+evidence, or closed because the dashboard does not depend on the answer. No
+question is left open.
 
-1. **Command approval:** a command that needs approval (e.g. a write under
-   `read-only`): the exact `item/commandExecution/requestApproval` params on
-   Windows (`command`, `cwd`, `commandActions`, `availableDecisions`), and the
-   item and turn outcome after `decline` and `cancel`.
-2. **Trust write:** with `workspace-write` on an untrusted project, does
-   omitting `cwd` from `thread/start` (process cwd = project) avoid the
-   `config.toml` write, and what effective `sandbox` does the response report
-   on Windows with no `windows.sandbox` set (downgrade to read-only?). Needs a
-   config hash before/after.
-3. **Subagents:** settled by P7 (section 5), except whether
-   `turn/interrupt` on the parent stops the children, and whether
-   `collabAgentToolCall` `spawnAgent` ever appears (another backend or
-   version). P7c (0.163.0, the orchestrator asked to pass a model and an
-   effort): no `spawnAgent` item; the child's `subAgentActivity`
-   `kind:"started"` carries the model and effort asked for (`gpt-6-luna`,
-   `low`) [P:p7c-codex-spawn-model.jsonl]. `spawnAgent` appears on the
-   multi-agent v1 backend, which the model catalogue decides: 0.163.0
-   takes the catalogue's `multi_agent_version` unless the MultiAgentV2
-   feature forces v2 (`core/src/config/mod.rs` 1637-1664), so
-   `features.multi_agent_v2=false` leaves `gpt-6-sol` on v2; of the
-   catalogue's models only `gpt-5.6-luna` declares v1
-   (`models-manager/models.json`). P9a (0.163.0, orchestrator on
-   `gpt-5.6-luna`): one `collabAgentToolCall` `spawnAgent`, started with
-   empty `receiverThreadIds`, completed with the child's thread id, both
-   with `model:"gpt-5.6-luna"`, `reasoningEffort:"low"`; no
-   `subAgentActivity` [P:p9a-codex-spawn-request.jsonl]. The call's
-   `prompt` is then the only text that names the child; the dashboard
-   labels the child with it (plan 10, item 1).
-4. **Resume across processes:** a new app-server process, `thread/resume`
+Settled:
+
+1. **Command approval.** `item/commandExecution/requestApproval` carries
+   `availableDecisions` (`accept`, `acceptWithExecpolicyAmendment`, `cancel`
+   in P8 and P11n) even though 0.163.0's generated schema does not list it
+   (section 4): the recordings decide, and the dashboard offers only the
+   decisions the request lists (`internal/provider/codex/mapper.go`). Outcome
+   (plan 4, L3, 2026-10-16): `decline` completed the turn with the file
+   absent; `cancel` interrupted the turn 8 ms after the answer.
+2. **Trust write.** The adapter omits `cwd` from `thread/start` (the process
+   cwd is the project) and starts read-only; Auto turns send
+   `sandboxPolicy:{type:"workspaceWrite"}` (plan 12). Every dashboard run on
+   a new, untrusted temporary project (L3, L4, P11n, plan 12's Auto runs,
+   plan 13's two Codex attempts) left the configuration files identical, so
+   no `config.toml` trust entry is written; plan 12's one `config.toml`
+   change came from starting Codex's own terminal UI, not the dashboard. The
+   effective sandbox is the one the response reports: `workspaceWrite` when
+   asked on this machine (P12x-sandbox2), shown as it is reported.
+4. **Resume across processes.** A new app-server process, `thread/resume`
    on P6b's thread: returned `turns`, replayed `thread/tokenUsage/updated`.
-5. **`turn/steer`** mid-turn and a second `turn/start` while one is running
-   (expected `ActiveTurnNotSteerable`/error).
-6. **Clarification questions:** whether `item/tool/requestUserInput` appears
-   in Plan collaboration mode with `experimentalApi`, or the MVP treats
-   questions as plain agent text (Default mode has it disabled:
-   `default_mode_request_user_input` is under development, [T]
-   `codex-rs/features/src/lib.rs:1240-1245`).
-7. **Context window before the first turn:** any stable source (`config/read`,
-   `model/list`) for `modelContextWindow`.
-8. **Shutdown:** behaviour when the dashboard closes stdin or kills the
-   process mid-turn on Windows (orphaned shells, rollout state).
-9. **Retries:** whether `error.willRetry:true` appears on transient network
-   errors behind the corporate proxy, to drive the retry counter.
-10. **API-key sessions:** `account/rateLimits/read` error text, to show N/A
-    cleanly (needs an API-key login, so likely untested).
+   Live in plan 4: L3 recalled its code word after a resume, and L4 run 3
+   resumed with Ctrl+R after a `taskkill` crash and answered "LANTERN-73"
+   (`TestCodexCrashAndResume` replays it).
+7. **Context window before the first turn.** No stable source gives it
+   before a model call: zone D shows the window as "no model call yet" until
+   `thread/tokenUsage/updated` reports `modelContextWindow`
+   (`internal/render/telemetry.go`), real values or N/A.
+8. **Shutdown.** Killed mid-turn by its job object: exit code 1, 24 ms after
+   the kill, all 9 processes it had started gone (plan 4, L3,
+   `internal/provider/codex/live_test.go`); a resume after such a kill
+   works (L4 run 3, item 4). Stdin closed: exit 0 in 3.768 s, 6 processes
+   gone (L3). Ctrl+Q during a turn first cancels pending approvals and
+   interrupts the turn, then closes (`TestQuitDuringTurn`); the job object
+   kills the whole tree if the dashboard itself dies
+   (`TestJobKillsTreeWithDashboard`).
+
+Closed, the dashboard does not depend on the answer:
+
+3. **Subagents.** Settled by P7 (section 5), and the spawn naming by P7c
+   and P9a: on the multi-agent v1 backend (`gpt-5.6-luna` in the catalogue)
+   a `collabAgentToolCall` `spawnAgent` starts with empty
+   `receiverThreadIds` and completes with the child's thread id; on v2 no
+   `spawnAgent` appears and the child's `subAgentActivity`
+   `kind:"started"` carries its model and effort
+   [P:p7c-codex-spawn-model.jsonl, P:p9a-codex-spawn-request.jsonl]; the
+   dashboard labels the child with the call's `prompt` (plan 10, item 1).
+   Whether `turn/interrupt` on the parent stops the children: the
+   dashboard sends the interrupt Codex documents for the turn and shows
+   each child's status from that child's own events, so zone C reports
+   whatever Codex does. Further spawn checks (a launch naming its model or
+   effort, Codex's default subagent limit) were closed by the owner on
+   2026-10-18 ("Won't do").
+5. **`turn/steer`.** The dashboard never sends it: the state refuses a
+   message while a turn runs (`internal/state/actions.go`), so only
+   `turn/start` is sent.
+6. **Clarification questions.** `item/tool/requestUserInput` is under
+   development and off in Default mode; if it arrives, the adapter answers
+   it as an unsupported method (-32601) and the request is shown as
+   unrecognised (`internal/provider/codex/session.go`, `mapper.go`), never
+   silently dropped. Codex's questions otherwise reach zone B as the
+   model's text.
+9. **Retries.** The mapper reads `error.willRetry` when Codex sends it;
+   none was seen in any recording, and zone D shows "retries N/A (none
+   reported)" until one is (`internal/render/telemetry.go`).
+10. **API-key sessions.** "chatgpt authentication required" maps to "API
+    key: ChatGPT sign-in needed" and the quota fields to N/A
+    (`internal/provider/codex/mapper.go`, `testdata/mock/codex-api-key.jsonl`).
+    A live API-key run was closed by the owner on 2026-10-18 (plan 14,
+    item 3).
 
 ## 11. The auto-review reviewer (plan 12, 2026-10-18)
 

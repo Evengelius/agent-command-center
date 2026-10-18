@@ -808,7 +808,9 @@ Windows Terminal default keys (actions page):
 - The behaviour of conhost (QuickEdit, OSC 52 and bracketed paste per Windows
   build) is unverified.
 
-**Open questions (unverified):**
+**Open questions (unverified at plan 1; each one's outcome is in
+[reliability.md, Not verified](../reliability.md#not-verified), plan 14;
+conhost and the VS Code terminal are out of scope, brief amendments 6 and 7):**
 - **Windows:** WT 1.25 Kitty protocol through ConPTY; WT honouring a 9001
   request from the app; `trimPaste` semantics; which Windows 11 build ships
   conhost bracketed paste and OSC 52; the conhost mouse bypass; the

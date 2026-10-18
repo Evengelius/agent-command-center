@@ -311,11 +311,13 @@ func step(list []string, cur string, forward bool) string {
 // keys that keep their usual meaning (Ctrl+Q, F6, ...).
 func (m *Model) cardKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	ap := m.s.Approvals[m.ui.Card]
+	if ap.Question && ap.Status == state.Pending {
+		if cmds, done := m.questionKey(ap, k.String()); done {
+			return cmds, true
+		}
+	}
 	switch k.String() {
 	case "a":
-		if ap.Question { // allowing would echo the unanswered questions (CC-10 q3)
-			return nil, true // not offered: nothing sent (plan 5, item 10)
-		}
 		return m.do(state.Answer{ID: ap.ID, Decision: m.decision(true)}), true
 	case "d":
 		return m.do(state.Answer{ID: ap.ID, Decision: m.decision(false)}), true
@@ -393,4 +395,59 @@ func (m *Model) settleCard() {
 	if ap := m.s.Approvals[m.ui.Card]; ap == nil || ap.Status.Final() {
 		m.ui.Card = ""
 	}
+}
+
+// questionKey handles the keys of a pending question card, on the card and in
+// its full view alike (plan 14, item 1): 1-4 choose an option of the selected
+// question, ← → select a question, a sends the answers once every question has
+// a choice. done is false for the keys it does not take.
+func (m *Model) questionKey(ap *state.Approval, key string) (cmds []tea.Cmd, done bool) {
+	qs := render.QuestionsOf(ap)
+	if len(qs) == 0 {
+		return nil, false
+	}
+	if !m.ui.Pick.Valid(ap.ID, qs) { // another approval's pick, or none yet
+		m.ui.Pick = render.NewPick(ap.ID, qs)
+	}
+	p := &m.ui.Pick
+	switch key {
+	case "1", "2", "3", "4":
+		q, j := qs[p.At], int(key[0]-'1')
+		if j >= len(q.Options) {
+			return nil, true // no such option: nothing happens
+		}
+		if q.Multi {
+			p.Chosen[p.At][j] = !p.Chosen[p.At][j]
+			return nil, true
+		}
+		for i := range p.Chosen[p.At] {
+			p.Chosen[p.At][i] = i == j
+		}
+		if p.At+1 < len(qs) {
+			p.At++
+		}
+	case "left":
+		p.At = max(p.At-1, 0)
+	case "right":
+		p.At = min(p.At+1, len(qs)-1)
+	case "a":
+		answers, ok := p.Answers(qs)
+		if !ok {
+			return m.toast("choose an option for each question first"), true
+		}
+		return m.do(state.Answer{ID: ap.ID, Decision: "allow", Answers: answers}), true
+	default:
+		return nil, false
+	}
+	return nil, true
+}
+
+// pickComplete says whether every question of ap has a choice.
+func (m *Model) pickComplete(ap *state.Approval) bool {
+	qs := render.QuestionsOf(ap)
+	if !m.ui.Pick.Valid(ap.ID, qs) {
+		return false
+	}
+	_, ok := m.ui.Pick.Answers(qs)
+	return ok
 }

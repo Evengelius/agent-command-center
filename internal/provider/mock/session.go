@@ -128,6 +128,11 @@ func (s *Session) Answer(id, decision string) error {
 	return nil
 }
 
+// AnswerQuestion records the answer as an allow; no CLI receives it.
+func (s *Session) AnswerQuestion(id string, answers map[string]string) error {
+	return s.Answer(id, "allow")
+}
+
 // Interrupt ends the running turn as interrupted.
 func (s *Session) Interrupt() error {
 	if !s.emit(event.Event{Kind: event.TurnCompleted, Payload: event.TurnEnd{Outcome: "interrupted", Subtype: "mock"}}) {

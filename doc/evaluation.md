@@ -69,7 +69,7 @@ timing step on the real clock run on its own (owner, 2026-10-16). Timed under
 and missed the target from load alone (plan 4, step 4: 2 of 6 suites; step 5,
 check 8), with no change in the app's per-key cost. This replaces the earlier
 procedure of the same day, which reran them alone after a full-suite miss; the
-results it produced stay recorded in `plan.md`.
+results it produced stay recorded in plan 4's log (`git show 8888f59:plan.md`).
 
 **The guard, in `go test ./...`.** `TestKeystrokeAllocs` (`internal/app`)
 types, moves, deletes and selects in a 10,000-line draft, at its top and at its
@@ -114,6 +114,62 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
 - A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
   profile, the same test on the last commit) and report it as the loop above
   says.
+
+## The race detector
+
+`go test -race ./... -count=1` needs cgo, so a C compiler; the owner approved
+a portable one under the user profile (plan 4, the fixes before L2 and
+step 5, 2026-10-16): WinLibs GCC 16.2.0
+with MinGW-w64 14.0.0 UCRT r2, the GitHub release
+`16.2.0posix-14.0.0-ucrt-r2` of brechtsanders/winlibs_mingw, unzipped to
+`%LOCALAPPDATA%\Programs\winlibs-gcc-16.2.0-ucrt-r2`. Its SHA-256
+(`d5dbafc4…5276a`) matched the author's `.sha256` file and GitHub's asset
+digest; the zip is not signed.
+
+- No installer, no administrator right, no PATH change: only the race run's
+  own shell puts the compiler's `bin` first on `PATH` and sets
+  `CGO_ENABLED=1`.
+- Go's race detector on Windows needs the MinGW-w64 runtime 8 or later, with
+  `libsynchronization.a` (go.dev, the race detector article;
+  golang.org/issue/61916); `gcc -print-file-name=libsynchronization.a` must
+  resolve it.
+- The expected result is 0 data races in every package.
+- Timing targets are not judged under `-race`, which slows code several times
+  over: in a `-race` build, `raceBuild` (`internal/app/race_on_test.go`,
+  `race_off_test.go`) makes `overTarget` log the timing instead of failing.
+
+## After a CLI update
+
+The dashboard depends on each CLI's documented interfaces and on a few
+undocumented fields, each labelled where it is used. A new CLI version can
+change either without notice, so an update is never silent.
+
+**At session start**, the agent compares `claude --version` and
+`codex --version` with the last probed versions, the "Last probed" line of
+[the probes README](research/probes/README.md). If one is newer, it tells the
+owner and proposes the re-check below; nothing runs before the owner
+approves. The dashboard says the same: its project bar adds "newer than
+tested" when the session's CLI is newer than the version its adapter names
+(`TestedVersion` in `internal/provider/claude` and `internal/provider/codex`).
+
+**The re-check**, for the updated CLI only, on the owner's quota, each run in
+a temporary project outside the repository with the configuration check
+before and after:
+
+1. The live gate: `go test -tags live -count=1 -v -run TestLiveGate` in
+   `./internal/provider/claude` or `./internal/provider/codex`, with
+   `ACC_LIVE_PROJECT` set as the test's comment says.
+2. The probe drivers of `doc/research/probes/drivers` the dashboard's
+   features rest on (a conversation, a subagent, an approval, a question for
+   Claude Code; a conversation, a subagent, an approval for Codex),
+   recorded and sanitized as the probes README says.
+3. Every new recording added to the replay tests (`internal/state`
+   `TestReplayDeterministic`; Codex's `TestEveryLineMaps`), which must show
+   no unrecognised event; a difference is investigated, never accepted by
+   changing a test.
+4. Once every check passes: the "Last probed" line and the adapter's
+   `TestedVersion` updated together (`TestTestedVersion` compares them), and
+   the result reported in the summary format.
 
 ## Summary format
 

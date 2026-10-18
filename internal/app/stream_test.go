@@ -52,6 +52,8 @@ type scriptSession struct {
 	mu         sync.Mutex
 	sent       []string
 	answers    []string
+	questions  []string            // AnswerQuestion calls: the approval ids
+	qanswers   []map[string]string // and their answers
 	interrupts int
 	auto       bool   // Capabilities().AutoApprovals
 	modes      []bool // the SetApprovalMode calls, in order
@@ -70,6 +72,13 @@ func (s *scriptSession) Answer(id, decision string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.answers = append(s.answers, id+" "+decision)
+	return nil
+}
+func (s *scriptSession) AnswerQuestion(id string, answers map[string]string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.questions = append(s.questions, id)
+	s.qanswers = append(s.qanswers, answers)
 	return nil
 }
 func (s *scriptSession) Interrupt() error {

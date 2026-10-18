@@ -21,10 +21,11 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: plan 13, a reviewer's refusal live, approved by the owner on
-2026-10-18.** Plans 1 to 12 (research; architecture and reliability; proposal; the
-MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the step reached and its test
-evidence.
+**Status: plan 14, nothing left open, done and awaiting the owner's
+approval.** Plans 1 to 13 (research; architecture and reliability; proposal; the
+MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
+plan's progress and test evidence; each closed plan's results are in its
+evaluation file, and its full record in git.
 
 ## Delegation: highest priority
 
@@ -64,12 +65,12 @@ none.
 AGENTS.md                      this brief, read by Claude Code (via CLAUDE.md) and Codex CLI
 CLAUDE.md                      includes it, plus Claude Code's development setup
 .claude\agents\                Claude Code development subagents, at the owner's request
-plan.md                        the active plan and the ones after it
+plan.md                        the active plan, standing decisions, one entry per closed plan
 doc\brief.md                   the owner's request, word for word, and its amendments
 doc\reference-design.md        the references: style (screen, video) and layout (mock-up)
 doc\evaluation.md              how every change is checked and reported
 doc\research\                  plan 1's findings, one file per reference
-doc\architecture.md ...        plan 2's design; doc\proposal.md, plan 3's roadmap
+doc\architecture.md ...        the design, kept current; doc\planN-evaluation.md, each plan's results
 cmd\                           the application and the confcheck tool
 internal\                      the packages (doc\architecture.md, The five parts)
 testdata\                      probe recordings, mock files, golden frames
@@ -193,7 +194,13 @@ and need the owner's approval where it says so. tmux is not used.
   step finishes, and decisions and verified findings in `doc\`. After a context
   compaction or at session start, read `plan.md` and check the files on disk
   before resuming; never redo finished work. Prefer a focused lookup (headings,
-  a search) to rereading whole documents.
+  a search) to rereading whole documents. Documents hold the latest state;
+  git holds the history.
+- **Check the CLI versions at session start.** Compare `claude --version` and
+  `codex --version` with the last probed versions
+  (`doc\research\probes\README.md`); if one is newer, tell the owner and
+  propose the re-check of `doc\evaluation.md`, After a CLI update, which runs
+  only once the owner approves it.
 - **Evaluate.** Before starting, state how the result will be checked: yes/no
   criteria with exact expected values. Afterwards, check each one and report as
   the [evaluation guide](doc/evaluation.md) shows, listing what could not be

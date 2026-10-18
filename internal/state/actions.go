@@ -1,7 +1,9 @@
 package state
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -33,13 +35,16 @@ type (
 	Interrupt        struct{}
 	InterruptTimeout struct{}
 	ForceStop        struct{}
-	Answer           struct{ ID, Decision string }
-	AnswerFailed     struct{ ID, Message string }
-	CancelTurn       struct{ ID string }      // c on an approval card: cancel it, then interrupt the turn
-	ToggleApprovals  struct{ Capable bool }   // F4: switch between Manual and Auto approvals; Capable is the session's AutoApprovals
-	ApprovalFailed   struct{ Message string } // the request for another mode could not be written
-	CloseTimeout     struct{}
-	Tick             struct{ At time.Time }
+	Answer           struct {
+		ID, Decision string
+		Answers      map[string]string // a question's answers: question text to answer (plan 14, item 1)
+	}
+	AnswerFailed    struct{ ID, Message string }
+	CancelTurn      struct{ ID string }      // c on an approval card: cancel it, then interrupt the turn
+	ToggleApprovals struct{ Capable bool }   // F4: switch between Manual and Auto approvals; Capable is the session's AutoApprovals
+	ApprovalFailed  struct{ Message string } // the request for another mode could not be written
+	CloseTimeout    struct{}
+	Tick            struct{ At time.Time }
 )
 
 func (Launch) action()           {}
@@ -339,11 +344,21 @@ func (s *State) answer(a Answer) []Command {
 		s.doNote("second answer ignored: " + a.ID)
 		return nil
 	}
+	if ap.Question && a.Decision == "allow" {
+		if why := missingAnswer(ap, a.Answers); why != "" {
+			s.doNote("answer refused: " + why)
+			return nil
+		}
+	}
 	if s.Session.Phase != Ready {
 		s.Turn.Notice = "not answered: the session is " + string(s.Session.Phase)
 		return nil
 	}
 	ap.Status = Answering
+	if ap.Question && a.Decision == "allow" {
+		ap.Answers = a.Answers
+		return []Command{{Kind: CmdAnswer, ID: a.ID, Decision: a.Decision, Answers: a.Answers}}
+	}
 	return []Command{{Kind: CmdAnswer, ID: a.ID, Decision: a.Decision}}
 }
 
@@ -443,4 +458,23 @@ func (s *State) toggleApprovals(a ToggleApprovals) []Command {
 	}
 	s.Turn.Notice = ""
 	return []Command{{Kind: CmdSetApprovals, Decision: target}}
+}
+
+// missingAnswer says why answers do not answer the question request ap: one
+// of its questions has no non-empty answer; "" when all do (plan 14, item 1).
+func missingAnswer(ap *Approval, answers map[string]string) string {
+	var in struct {
+		Questions []struct {
+			Question string `json:"question"`
+		} `json:"questions"`
+	}
+	if json.Unmarshal(ap.Input, &in) != nil || len(in.Questions) == 0 {
+		return "the questions of " + ap.ID + " are not readable"
+	}
+	for _, q := range in.Questions {
+		if answers[q.Question] == "" {
+			return "no answer for the question " + strconv.Quote(q.Question)
+		}
+	}
+	return ""
 }

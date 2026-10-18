@@ -45,9 +45,9 @@ the terminal is restored (alternate screen, mouse and keyboard modes reset),
 the CLI is closed with the normal escalation, and the panic is printed after
 the terminal is restored. On Windows each CLI process is started in a job
 object that kills it when the dashboard's process ends, so no CLI is left
-orphaned if the dashboard is killed (ASM-19). Whether Codex leaves shell
-processes behind when its app-server is killed mid-turn is CX-10 q8: Not
-verified.
+orphaned if the dashboard is killed (ASM-19). Codex killed mid-turn by its
+job object leaves no process behind: all 9 were gone 24 ms after the kill
+(plan 4, L3; CX-10 q8).
 
 ## Fallbacks for every source
 
@@ -92,7 +92,7 @@ fails](#when-a-whole-integration-fails)).
 | - | - | - |
 | 1. Controlling a session | stream-json over stdio (way A); fallback way B (`-p --resume` per turn) or C (SDK sidecar) | `codex app-server`; fallback `codex exec --json` + `exec resume` |
 | 2. Streaming | `stream_event` deltas; fallback whole `assistant` messages | `item/agentMessage/delta`; fallback `item/completed` |
-| 3. Subagents and tools | task messages and `agent_id`; fallback hooks through `initialize` (CC-10 q5, Not verified) or transcript files (undocumented, labelled) | `subAgentActivity` and per-thread events; fallback `thread/list` + `thread/read`, then inferred agents |
+| 3. Subagents and tools | task messages and `agent_id`; fallback hooks through `initialize` (CC-10 q5, closed: not needed) or transcript files (undocumented, labelled) | `subAgentActivity` and per-thread events; fallback `thread/list` + `thread/read`, then inferred agents |
 | 4. Approvals | `can_use_tool` (`stdio` is **U**); fallback way D, an MCP permission tool; an unreadable request is denied and shown | `requestApproval` requests; an unreadable request is declined, an unknown method gets a JSON-RPC error, both shown |
 | 5. Persistence, cancel, resume | `interrupt`, `--resume`; fallback transcript file (labelled undocumented), then close stdin and end the process | `turn/interrupt`, `thread/resume`; fallback `thread/read`, `codex exec resume`, rollout file (labelled undocumented) |
 | 6. Reusing the TUI | not reused; escape hatch `claude --resume <id>` in another terminal (outside the MVP) | not reused; escape hatch `codex resume <id>` (outside the MVP) |
@@ -118,8 +118,8 @@ INT 7):
   parse error.
 - The queue between the reader and the forwarder is unbounded, so a paused
   loop (`$EDITOR`) never blocks the CLI's pipe (architecture.md, Threads of
-  execution). Memory over a long session is Not verified; the test plan
-  replays a long fixture to measure it.
+  execution). Memory over a long session is measured by test 11
+  (`TestLongSession`), which replays a long generated session.
 - Codex can refuse a request with `-32001` when overloaded (INT 1): the
   command fails visibly ("Codex busy: request refused, try again"), the draft
   is restored, and nothing is retried automatically.
@@ -136,7 +136,7 @@ reset shown N/A.
 | Way | Use | When unavailable |
 | - | - | - |
 | stream-json messages and control responses | primary | the session cannot start: StartFailed (see [When a whole integration fails](#when-a-whole-integration-fails)) |
-| `/usage` sent as a prompt | not used in the MVP: unprobed over stream-json (CC-10 q9), and it could cost a model call | nothing lost: `rate_limit_event` is the quota source |
+| `/usage` sent as a prompt | not used: the dashboard never sends it (CC-10 q9, closed as not depended on) | nothing lost: `rate_limit_event` is the quota source |
 | Status line JSON | not available to a `-p` session (CC-6) | nothing lost; its field names guide D |
 | OpenTelemetry | not used: no quota metric, duplicates the stream | nothing lost |
 | Hooks | not used for telemetry | nothing lost |
@@ -189,9 +189,8 @@ reset shown N/A.
 
 **Refresh policy** (TEL "Open points"): quota and context are read on
 events, plus one read at session start (Codex `account/rateLimits/read`) and
-one after each turn (Claude Code `get_context_usage`, whose cost is CC-10
-q10, Not verified; if it turns out to cost a model call, the derived value is
-used instead). No timer polls a CLI ([events-and-state.md,
+one after each turn (Claude Code `get_context_usage`, which costs no model
+call: P14a, CC-10 q10). No timer polls a CLI ([events-and-state.md,
 Polling](events-and-state.md#polling)).
 
 ## When a whole integration fails
@@ -241,14 +240,14 @@ Approval machine):
 
 ## Interruption and cancellation
 
-| Action | Claude Code | Codex | Not verified |
+| Action | Claude Code | Codex | Edge cases (plan 14 outcome) |
 | - | - | - | - |
-| Interrupt the turn (Ctrl+C) | `interrupt` control request: receipt `{"still_queued":[]}`, then `result` `error_during_execution` (P2) | `turn/interrupt`, then `turn/completed` `interrupted` (P6b) | interrupt during a running Bash command or a pending approval (CC-10 q4); whether the parent's interrupt stops Codex children (CX-10 q3); Codex background terminals are not stopped by `turn/interrupt` ([T] README:1014) |
-| Cancel from an approval (c) | deny the request, then interrupt | answer `cancel` | the outcome of `decline` and `cancel` (CX-10 q1) |
+| Interrupt the turn (Ctrl+C) | `interrupt` control request: receipt `{"still_queued":[]}`, then `result` `error_during_execution` (P2) | `turn/interrupt`, then `turn/completed` `interrupted` (P6b) | settled: during a running Bash command and with an approval pending, `error_during_execution` 3.3 s and 66 ms after (plan 4, L1; CC-10 q4); Codex children report their own status, whatever the parent's interrupt does (CX-10 q3, not depended on); Codex background terminals are not stopped by `turn/interrupt` ([T] README:1014) |
+| Cancel from an approval (c) | deny the request, then interrupt | answer `cancel` | settled: `decline` completed the turn, `cancel` interrupted it 8 ms later (plan 4, L3; CX-10 q1) |
 | No end 10 s after an interrupt | "the turn did not stop · F force stop (ends the session)" (ASM-16) | same | |
 | Force stop | close the session (below); the turn ends `interrupted`, open tools `Unfinished` | same | |
 | Quit (Ctrl+Q) | confirmation if a turn or an agent runs ("2 agents still running will be stopped"); then close | same | |
-| Close | close stdin, wait 5 s, terminate, wait 5 s, kill (INT 9: no POSIX signals on Windows) | same escalation (ASM-5) | P2 exited with code 1 after stdin closed (CC-10 q13); Codex mid-turn shutdown (CX-10 q8) |
+| Close | close stdin, wait 5 s, terminate, wait 5 s, kill (INT 9: no POSIX signals on Windows) | same escalation (ASM-5) | settled: Claude Code exits 0 in 1.4 s after stdin closes (P2's code 1 followed its interrupt's error) and ends 41 ms after a job kill mid-turn (CC-10 q13); Codex killed mid-turn ends in 24 ms with every process gone (CX-10 q8) |
 
 After an interrupt the session stays `Ready` and the next message continues
 it (P2: a third turn after the interrupt). Background Claude Code agents
@@ -270,16 +269,17 @@ Without losing the session (B3.4):
   (events-and-state.md, Session machine). Resume starts a new process on the
   same CLI session: Claude Code `claude -p --resume <session_id>` with the
   same flags (P4); Codex a new `app-server` and `thread/resume` (CX-10 q4,
-  Not verified). On success the record continues below a dashboard notice
-  "reconnected: same session, earlier messages from the dashboard's record";
-  on failure the error is shown and the record stays.
+  settled live in plan 4). On success the record continues below a dashboard
+  notice "reconnected: same session, earlier messages from the dashboard's
+  record"; on failure the error is shown and the record stays.
 - **What a resume cannot bring back**: the turn that was running (it ended
   `failed`, open tools `Unfinished`), pending approvals (`Expired`), and
   Claude Code background agents, which ended with the process (P3).
 - **History is the dashboard's**: Claude Code's `--resume` does not replay
   earlier messages (P4), so the record is what shows them. Codex's
-  `thread/resume` returns the turns ([T] README:321-377, not probed); the
-  record is still what is shown, so both CLIs behave the same.
+  `thread/resume` returns the turns ([T] README:321-377, not checked: the
+  dashboard does not depend on it); the record is still what is shown, so
+  both CLIs behave the same.
 - **Across dashboard runs**: not in the MVP. The record lives in memory
   (ASM-11) and no history file is written; reopening an older session would
   be a "recent projects" style feature, which AM4 excludes. The CLIs' own
@@ -289,8 +289,8 @@ Without losing the session (B3.4):
   project; a panic restores the terminal, saves the draft and closes the CLI
   through its input before exiting with code 2; on quit, crash and panic the
   session id and the CLI's own resume command are printed. The job object
-  ends the CLI when the dashboard dies (ASM-19); whether a turn killed that
-  way leaves a resumable transcript is checked live in plan 4 (CC-10 q13).
+  ends the CLI when the dashboard dies (ASM-19); a turn killed that way
+  leaves a resumable transcript (plan 4, L1 (g); CC-10 q13).
 
 ## Configuration untouched
 
@@ -311,11 +311,13 @@ be split without reading it, so a change there is reported, not classified.
 - Writes no file under `~/.claude`, `~/.codex`, `~/.claude.json`, or the
   project's `.claude\` or `.codex\`. Its own files (configuration, ASM-7) live
   in its own folder.
-- Sends no request that writes configuration: no Claude Code `set_model` or
-  `set_permission_mode` (whether they write is CC-10 q11, Not verified), no
-  `--settings` with hooks; no Codex `config/write`, `config/batchWrite`, or
-  `windowsSandbox/setupStart`; no `workspace-write` thread until CX-10 q2
-  shows it does not write `trust_level` (ASM-6).
+- Sends no request that writes configuration: no Claude Code `set_model`, no
+  `--settings` with hooks; `set_permission_mode` only when the owner switches
+  Manual or Auto (plan 12), and it writes no settings file (P12c-switch,
+  CC-10 q11). No Codex `config/write`, `config/batchWrite`, or
+  `windowsSandbox/setupStart`; threads start read-only, and Auto turns ask
+  for `workspaceWrite` per turn, which writes no `trust_level` (plans 12
+  and 13, CX-10 q2; ASM-6).
 - Offers no answer that persists a rule (see [Approvals](#approvals)).
 - Opens no credential file, sets no `ANTHROPIC_BASE_URL`, and reads quota only
   from the CLI's stream (TEL).
@@ -443,82 +445,86 @@ provider):
 
 ## Not verified
 
-Every limitation still open from plan 1, with the probe or test that would
-settle it (the owner's instruction 6). "Probe" means a live run that uses the
-owner's quota and needs approval under [evaluation.md](evaluation.md);
-"manual" means a check by hand in plan 4, with no model call.
+Every limitation left open by plan 1, and how it was resolved. Until plan 14
+the right-hand column named the probe or test that would settle each one (the
+owner's instruction 6). Plan 14 (2026-10-18) recorded an outcome for every
+row: settled, with its evidence; closed by the owner; or closed because the
+dashboard does not depend on the answer. No row is left open. CC-10 and CX-10
+are the numbered questions in section 10 of
+[claude-code.md](research/claude-code.md) and
+[codex-cli.md](research/codex-cli.md), which give the details.
 
 **Claude Code**
 
-| Limitation | Settles it |
+| Limitation | Outcome |
 | - | - |
-| The models subagents actually use; the Explore override (plan 1, not verified) | probe: one turn spawning an Explore subagent, read `message.model` of its forwarded messages |
-| The concurrency limit in effect | nothing reports it; it stays "N/A" (TEL) |
-| Compaction: when it triggers and its events (`system/compact_boundary`, **D**) | probe: a long session, or recorded from a real one |
-| Interrupt during a running Bash command and a pending approval (CC-10 q4) | probe: interrupt in both situations |
-| `AskUserQuestion` round trip (CC-10 q3) | probe: a prompt asking the model to ask a question |
-| Hook callbacks from a raw client (CC-10 q5) | probe; needed only for the INT 3 fallback |
-| Two parallel subagents; volume without `--forward-subagent-text` (CC-10 q6) | probe: a turn spawning two subagents |
-| Workflows under `-p` (CC-10 q7) | probe; the MVP shows a `local_workflow` task as one node meanwhile |
-| `/usage` over stream-json (CC-10 q9) | probe; not used in the MVP meanwhile |
-| Whether `get_context_usage` costs anything (CC-10 q10) | probe: compare `rate_limit_event` and usage before and after a run of requests |
-| Whether `set_model` and `set_permission_mode` write settings (CC-10 q11) | probe with the configuration check; not sent meanwhile |
-| Windows process handling: exit code 1 after stdin closes, `TerminateProcess` mid-turn, CRLF and UTF-8 through Go pipes (CC-10 q13) | test with a fake CLI for the pipes; probe for the real exit behaviour |
-| The status line never runs under `-p` (CC-10 q14) | probe; nothing depends on it |
-| A raw client skipping `initialize`, and an allow without `updatedInput` (CC-10 q2, the untried part) | not needed: the adapter always sends `initialize` and echoes `updatedInput` (P2, P3b); a fixture test keeps both in the adapter |
-| `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS` (events-and-state.md, `turn.started`) | probe; `turn.started` stays inferred meanwhile |
-| The `stdio` value of `--permission-prompt-tool` (**U**) keeps working | the recorded-fixture tests on each new CLI version, plus one live smoke test |
+| The models subagents actually use; the Explore override (plan 1, not verified) | settled (plan 5, item 7): a subagent's forwarded `assistant` lines carry `message.model` with its `agent_id` (P3, P3b: "claude-haiku-5-5"); zone C shows each subagent's observed model, whichever model Claude Code picks |
+| The concurrency limit in effect | closed, no source reports it: shown as "N/A" (TEL), never guessed |
+| Compaction: when it triggers and its events (`system/compact_boundary`, **D**) | closed, not depended on: Claude Code decides when to compact; `compact_boundary` maps to the status "compacted" (`TestCompactBoundary`), and the threshold comes from `get_context_usage` (`context.compact_at`) |
+| Interrupt during a running Bash command and a pending approval (CC-10 q4) | settled (plan 4, L1 (c) and (d)): `error_during_execution` 3.3 s and 66 ms after the interrupt, nothing left running, the pending write never made |
+| `AskUserQuestion` round trip (CC-10 q3) | settled (plan 14, P14a): an allow whose `updatedInput` adds `answers` gives a non-error tool result holding them; the question card sends it |
+| Hook callbacks from a raw client (CC-10 q5) | closed, not depended on: `initialize` sends no hooks; subagents come from the `task_*` events |
+| Two parallel subagents; volume without `--forward-subagent-text` (CC-10 q6) | settled: four parallel subagents in plan 4, two in plan 5's L1; the flag is always passed |
+| Workflows under `-p` (CC-10 q7) | closed, not depended on: the dashboard starts none; a `local_workflow` task shows in zone C as agent type "workflow" |
+| `/usage` over stream-json (CC-10 q9) | closed, not depended on: never sent; quota from `rate_limit_event`, context from `get_context_usage` |
+| Whether `get_context_usage` costs anything (CC-10 q10) | settled (P14a): answered in 914 ms with no `assistant` message, `result` or `rate_limit_event` after it |
+| Whether `set_model` and `set_permission_mode` write settings (CC-10 q11) | settled for `set_permission_mode` (P12c-switch, settings identical); `set_model` closed, never sent (model configuration is outside the MVP, amendment 4) |
+| Windows process handling: exit code 1 after stdin closes, `TerminateProcess` mid-turn, CRLF and UTF-8 through Go pipes (CC-10 q13) | settled: stdin closed exits 0 in 1.4 s, a job kill mid-turn ends in 41 ms with exit code 1 and resumes (plan 4, L1 (e), (g)); UTF-8 and CRLF byte for byte live (P14a) and by `TestEchoUnicode` (a fake CLI through the real pipes) |
+| The status line never runs under `-p` (CC-10 q14) | closed, not depended on: zone D reads the stream |
+| A raw client skipping `initialize`, and an allow without `updatedInput` (CC-10 q2, the untried part) | closed, not needed: the adapter always sends `initialize` and echoes `updatedInput` (P2, P3b); a fixture test keeps both in the adapter |
+| `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS` (events-and-state.md, `turn.started`) | settled: the adapter sets it unless the environment already does (`internal/provider/claude/session.go`), and the dashboard's live recording P13c carries `system/session_state_changed` `running` then `idle` (the probe drivers, which do not set it, recorded none) |
+| The `stdio` value of `--permission-prompt-tool` (**U**) keeps working | settled on each version used live, 2.1.300 (plan 4) to 2.1.302 (plans 13 and 14): every `can_use_tool` reached the client; the recorded-fixture tests replay it |
 
 **Codex**
 
-| Limitation | Settles it |
+| Limitation | Outcome |
 | - | - |
-| Command approval parameters on Windows; `decline` and `cancel` outcomes (CX-10 q1) | probe: a command needing approval under `read-only` |
-| The `trust_level` write with `workspace-write`; the effective Windows sandbox (CX-10 q2) | probe with the configuration check; `read-only` meanwhile (ASM-6) |
-| Parent interrupt stopping children; `spawnAgent` appearing (CX-10 q3) | probe: interrupt during P7's scenario |
-| Resume across app-server processes (CX-10 q4) | probe: `thread/resume` from a new process |
-| `turn/steer` and a second `turn/start` mid-turn (CX-10 q5) | probe; the MVP refuses sending while a turn runs (ASM-15) |
-| `item/tool/requestUserInput` (CX-10 q6) | probe in Plan mode; questions are plain text meanwhile |
-| The context window before the first turn (CX-10 q7) | probe of `config/read` and `model/list` (no model call) |
-| Shutdown mid-turn on Windows: orphaned shells, rollout state (CX-10 q8) | probe |
-| `error.willRetry` behind the corporate proxy (CX-10 q9) | observed when it happens; "N/A" meanwhile |
-| The rate-limit error text with an API key (CX-10 q10) | needs an API-key login; likely never tested; a synthetic fixture covers the display |
+| Command approval parameters on Windows; `decline` and `cancel` outcomes (CX-10 q1) | settled: `availableDecisions` recorded (P8, P11n); `decline` completed with the file absent, `cancel` interrupted 8 ms later (plan 4, L3) |
+| The `trust_level` write with `workspace-write`; the effective Windows sandbox (CX-10 q2) | settled: no `cwd` in `thread/start`; every dashboard run on a new, untrusted project left the configuration files identical, Auto turns with `workspaceWrite` included (plans 12, 13); the reported sandbox is shown (P12x-sandbox2: `workspaceWrite`) |
+| Parent interrupt stopping children; `spawnAgent` appearing (CX-10 q3) | `spawnAgent` settled (P9a, on the v1 backend); the children's stop closed, not depended on: zone C shows each child's own events |
+| Resume across app-server processes (CX-10 q4) | settled: P6b's thread resumed; live in plan 4 (L3, and L4 run 3 after a `taskkill` crash) |
+| `turn/steer` and a second `turn/start` mid-turn (CX-10 q5) | closed, not depended on: never sent; the state refuses sending while a turn runs (ASM-15) |
+| `item/tool/requestUserInput` (CX-10 q6) | closed, not depended on: off in Default mode; if it arrives it is answered -32601 and shown as unrecognised |
+| The context window before the first turn (CX-10 q7) | settled, not available before a model call: zone D reads "no model call yet" until `thread/tokenUsage/updated` |
+| Shutdown mid-turn on Windows: orphaned shells, rollout state (CX-10 q8) | settled (plan 4, L3): a job kill mid-turn ends in 24 ms, all 9 processes gone; resume after a crash works (L4 run 3) |
+| `error.willRetry` behind the corporate proxy (CX-10 q9) | closed, not depended on: read when sent, never seen; "retries N/A (none reported)" meanwhile |
+| The rate-limit error text with an API key (CX-10 q10) | closed by the owner (plan 14, item 3); the fixture `codex-api-key.jsonl` covers the display |
 | Whether `config/read` reports `agents.max_threads` when unset | answered, probe 2026-10-17, Codex CLI 0.163.0: unset, `config` has no `agents` key; set, the key is `agents.max_concurrent_threads_per_session` (alias `max_threads`) |
-| Codex's `alternate_screen` option (TI open question) | not needed: the MVP never runs Codex's TUI (INT 6); manual if the escape hatch `codex resume` is ever offered inside the dashboard |
+| Codex's `alternate_screen` option (TI open question) | not needed: the MVP never runs Codex's TUI (INT 6) |
 
 **Terminals and input** (TI, "Open questions")
 
-| Limitation | Settles it |
+| Limitation | Outcome |
 | - | - |
 | WT 1.25 Kitty keyboard protocol through ConPTY | not needed: Shift+Enter works through win32-input-mode |
 | WT honouring a win32-input-mode (9001) request from the application | settled 2026-10-16: honoured by WT 1.23, measured ([ui-design.md, Focus and keys](ui-design.md#focus-and-keys)) |
-| `trimPaste` and its effect on byte-for-byte paste | manual: paste trailing spaces and tabs in WT |
-| tmux: the effective `extended-keys` default; re-wrapping outer pastes | manual under WSL |
-| OSC 52 size limits beyond kitty and WT; block selection per terminal | manual where available |
-| Which console reader path Bubble Tea v2 takes on Windows | read the code at the version pinned in plan 4, then manual |
+| `trimPaste` and its effect on byte-for-byte paste | closed, not depended on: a Windows Terminal setting applied before the bytes reach the dashboard, which keeps what it receives byte for byte (the editor's paste tests); the owner closed the checks by hand (plan 14, item 3) |
+| tmux: the effective `extended-keys` default; re-wrapping outer pastes | closed, not depended on: tmux is not used (AGENTS.md); OSC 52's tmux wrapping stays tested |
+| OSC 52 size limits beyond kitty and WT; block selection per terminal | closed, not depended on: the native clipboard is the primary path (x/clipboard), OSC 52 a second copy; Windows Terminal is the terminal the application targets |
+| Which console reader path Bubble Tea v2 takes on Windows | settled by use: every live run in Windows Terminal read the keys, Shift+Enter and Ctrl+C included, through win32-input-mode |
 | Whether Bubble Tea v2 wraps frames in synchronized output (mode 2026) | settled 2026-10-17: yes once the terminal reports it supported, as WT 1.23 does; measured, and tested offline with WT's recorded answer ([ui-design.md, Rendering](ui-design.md#rendering)) |
 | Lip Gloss v2 colour downsampling on 256- and 16-colour terminals | settled 2026-10-17 (plan 5, item 13): measured; an explicit 16-colour palette replaces the downsampling, which merged roles ([ui-design.md, Colours and symbols](ui-design.md#colours-and-symbols)) |
-| Notepad as `$EDITOR`: does it block | manual |
-| `EDITOR`/`VISUAL` usually unset on Windows; Git for Windows' default editor | manual on this machine |
-| atotto's WSL clipboard path speed; `clip.exe` code page | not used (ASM-2); manual if the WSL build is tried |
+| Notepad as `$EDITOR`: does it block | closed, not depended on: whichever way Notepad behaves, an editor that returns at once is detected and the status line says "the editor returned immediately: add --wait (or your editor's blocking flag)", the draft kept (the editing tests); the owner closed the checks by hand (plan 14, item 3) |
+| `EDITOR`/`VISUAL` usually unset on Windows; Git for Windows' default editor | settled on this machine (2026-10-18): `VISUAL`, `EDITOR` and Git's `core.editor` are all unset; the dashboard then uses a detected editor and names it ("no $VISUAL or $EDITOR: using code --wait", `TestEditorCommand`) |
+| atotto's WSL clipboard path speed; `clip.exe` code page | closed, not used (ASM-2) |
 
 **Platforms and paths**
 
-| Limitation | Settles it |
+| Limitation | Outcome |
 | - | - |
-| A UNC working directory (`\\server\share`, `\\wsl$\…`) for a native CLI | probe, one per CLI; warned, not blocked, meanwhile |
-| Piping through `wsl.exe` to a CLI inside WSL | probe; outside the MVP meanwhile |
-| Linux and macOS builds | build and run on those systems; the MVP targets Windows 11 |
-| External URLs cited in plan 1 (not re-fetched) | re-fetch when a decision depends on one |
+| A UNC working directory (`\\server\share`, `\\wsl$\…`) for a native CLI | closed, not depended on: the startup screen warns ("a network share can be slow or disappear", `internal/input/path.go`, tested) and leaves the choice to the owner |
+| Piping through `wsl.exe` to a CLI inside WSL | closed, not depended on: outside the MVP, which runs the Windows CLIs |
+| Linux and macOS builds | closed by the owner (plan 14, item 3): the application targets Windows 11 |
+| External URLs cited in plan 1 (not re-fetched) | closed: no open decision depends on one; a later decision re-fetches its source |
 
 **This design**
 
-| Limitation | Settles it |
+| Limitation | Outcome |
 | - | - |
-| Glamour's cost when re-rendering a long streamed message (ASM-17) | benchmark in plan 4: render a 2,000-line message, 1 delta per frame |
-| Memory over a long session (unbounded queue and record) | test 11 below |
-| Whether a run changed a setting inside `~/.claude.json` or `known_marketplaces.json`, when the CLI also rewrote its own state there | not settled by any permitted check (opaque hashing only); each such run lists the file as "changed, not classified (contents not inspected)" |
-| The `plugins` field of `system/init` (JEV detection): observed in P1, its documentation not checked | read the SDK reference in plan 4 |
+| Glamour's cost when re-rendering a long streamed message (ASM-17) | closed, not used: Glamour is not a dependency; the cost of a long streamed session is measured by `TestLongSession` in the timing step |
+| Memory over a long session (unbounded queue and record) | settled by test 11 (`TestLongSession`) |
+| Whether a run changed a setting inside `~/.claude.json` or `known_marketplaces.json`, when the CLI also rewrote its own state there | settled for `~/.claude.json` by the key-level diff the owner approved (plan 5, F4; see [The check](#the-check)): the runs of plans 13 and 14 changed only Claude Code's cache-state keys; `known_marketplaces.json` stays hash-only, and a change there makes a run NOT-VERIFIED, never PASS: it was identical in those runs |
+| The `plugins` field of `system/init` (JEV detection): observed in P1, its documentation not checked | settled by the recordings: every `system/init` in the nine Claude Code recordings, P1 to P14a, carries it; the adapter reads its names (`Started.Plugins`) |
 
 ## Test plan
 

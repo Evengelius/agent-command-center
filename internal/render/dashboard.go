@@ -161,6 +161,9 @@ func projectBar(s *state.State, ui UI) line {
 	if s.Session.Version != "" {
 		name += " " + s.Session.Version
 	}
+	// A CLI newer than its adapter was probed with (doc/evaluation.md, After
+	// a CLI update): the dashboard may meet events it does not know.
+	newer := s.NewerThanTested()
 	// Codex's own settings, dropped from the right one when the bar is too
 	// narrow; the approvals mode never is (plan 12, item 2).
 	var extras []string
@@ -176,7 +179,11 @@ func projectBar(s *state.State, ui UI) line {
 		if short {
 			return approvalsSpans(s)
 		}
-		r := plain(name+strings.Join(append([]string{""}, extras...), " · ")+" · ", stText)
+		rest := strings.Join(append([]string{""}, extras...), " · ") + " · "
+		r := plain(name+rest, stText)
+		if newer {
+			r = line{sp(name, stText), sp(" newer than tested", stAttention), sp(rest, stText)}
+		}
 		return append(r, approvalsSpans(s)...)
 	}
 	for len(extras) > 0 && withBranch().width()+right().width() >= ui.Width {

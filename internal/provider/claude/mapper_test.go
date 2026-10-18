@@ -31,7 +31,7 @@ func count(evs []event.Event, k event.Kind) int {
 // Every line of every Claude recording maps to at least one event, and no
 // line is unreadable (proposal step 0, item 6: 0 lines dropped).
 func TestEveryLineMaps(t *testing.T) {
-	for _, name := range []string{"p1-claude-stream.jsonl", "p2-claude-conversation.jsonl", "p3-claude-subagent.jsonl", "p3b-claude-subagent-approval.jsonl", "p4-claude-resume.jsonl", "p12c-claude-auto.jsonl", "p12c-switch-claude-default-to-auto.jsonl", "p13c-claude-auto-classifier-deny.jsonl"} {
+	for _, name := range []string{"p1-claude-stream.jsonl", "p2-claude-conversation.jsonl", "p3-claude-subagent.jsonl", "p3b-claude-subagent-approval.jsonl", "p4-claude-resume.jsonl", "p12c-claude-auto.jsonl", "p12c-switch-claude-default-to-auto.jsonl", "p13c-claude-auto-classifier-deny.jsonl", "p14a-claude-question-answer.jsonl"} {
 		recs, per := replay(t, name)
 		for i, evs := range per {
 			if len(evs) == 0 {
@@ -194,6 +194,20 @@ func TestMalformedApprovalHasProblem(t *testing.T) {
 	}
 }
 
+// TestCompactBoundary: a compaction's system/compact_boundary (the Agent
+// SDK's SDKCompactBoundaryMessage shape) is one observed status "compacted"
+// (reliability.md, Not verified: compaction is Claude Code's, not depended on).
+func TestCompactBoundary(t *testing.T) {
+	m := NewMapper()
+	evs := m.Out([]byte(`{"type":"system","subtype":"compact_boundary","session_id":"s1","compact_metadata":{"trigger":"auto","pre_tokens":150000}}`))
+	if len(evs) != 1 || evs[0].Kind != event.StatusChanged || evs[0].Origin != event.Observed {
+		t.Fatalf("got %+v, want one observed status change", evs)
+	}
+	if st, ok := evs[0].Payload.(event.Status); !ok || st.Status != "compacted" {
+		t.Errorf("payload %+v, want status \"compacted\"", evs[0].Payload)
+	}
+}
+
 // A tool_result with is_error completes its call as an error, its content as
 // the output (plan 5, item 6: B marks the call ✗ with that output's first
 // line). P3's only one, a subagent's.
@@ -298,9 +312,68 @@ func TestVerdictsOnlyForTheClassifier(t *testing.T) {
 		want   int
 	}{{"classifier", 1}, {"mode", 0}, {"user_reject", 0}} {
 		m := NewMapper()
-		evs := m.Out([]byte(`{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":"ok"}]},"tool_result_meta":[{"tool_use_id":"toolu_1","permission_decision":{"decision":"accept","reason_type":"` + c.reason + `"}}]}`))
+		evs := m.Out([]byte(`{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":"ok"}]},"tool_result_meta":[{"id":"toolu_1","permission_decision":{"decision":"accept","reason_type":"` + c.reason + `"}}]}`))
 		if n := count(evs, event.ToolDecision); n != c.want {
 			t.Errorf("reason_type %q: %d decisions, want %d", c.reason, n, c.want)
 		}
 	}
+}
+
+// Plan 14, item 6: a tool result without tool_result_meta's
+// permission_decision, a shape 2.1.300 to 2.1.302 always give, is one
+// unrecognised event naming the field; the classifier's verdicts still map.
+func TestToolResultWithoutPermissionDecision(t *testing.T) {
+	const result = `{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":"ok"}]}`
+	for name, c := range map[string]struct {
+		line               string
+		missing, decisions int
+	}{
+		"no meta":            {result + `}`, 1, 0},
+		"meta, no decision":  {result + `,"tool_result_meta":[{"id":"toolu_1"}]}`, 1, 0},
+		"another result's":   {result + `,"tool_result_meta":[{"id":"toolu_2","permission_decision":{"decision":"accept","reason_type":"classifier"}}]}`, 1, 1},
+		"another shape":      {result + `,"tool_result_meta":{"id":"toolu_1"}}`, 1, 0},
+		"decision":           {result + `,"tool_result_meta":[{"id":"toolu_1","permission_decision":{"decision":"accept","reason_type":"mode"}}]}`, 0, 0},
+		"classifier verdict": {result + `,"tool_result_meta":[{"id":"toolu_1","permission_decision":{"decision":"reject","reason_type":"classifier"}}]}`, 0, 1},
+	} {
+		evs := NewMapper().Out([]byte(c.line))
+		n := 0
+		for _, e := range evs {
+			if u, ok := e.Payload.(event.Unknown); ok && e.Kind == event.Unrecognised && u.Type == "user/tool_result_meta" {
+				n++
+				if !strings.Contains(u.Reason, "permission_decision") {
+					t.Errorf("%s: reason %q does not name the field", name, u.Reason)
+				}
+			}
+		}
+		if n != c.missing || count(evs, event.ToolDecision) != c.decisions {
+			t.Errorf("%s: %d unrecognised, %d decisions; want %d, %d", name, n, count(evs, event.ToolDecision), c.missing, c.decisions)
+		}
+	}
+}
+
+// Every Claude recording carries permission_decision on each tool result:
+// none replays with the shape check's unrecognised event.
+func TestRecordingsHavePermissionDecision(t *testing.T) {
+	names, err := filepath.Glob("../../../testdata/probes/p*-claude-*.jsonl")
+	if err != nil || len(names) == 0 {
+		t.Fatalf("no recordings: %v", err)
+	}
+	results := 0
+	for _, path := range names {
+		recs, per := replay(t, filepath.Base(path))
+		for _, r := range recs {
+			results += strings.Count(string(r.Msg), `"type":"tool_result"`)
+		}
+		for i, evs := range per {
+			for _, e := range evs {
+				if u, ok := e.Payload.(event.Unknown); ok && u.Type == "user/tool_result_meta" {
+					t.Errorf("%s line %d: %s", filepath.Base(path), i+1, u.Reason)
+				}
+			}
+		}
+	}
+	if results == 0 {
+		t.Error("no tool result in the recordings")
+	}
+	t.Logf("%d recordings, %d tool results", len(names), results)
 }

@@ -221,7 +221,10 @@ One line under the title (AM4 W1; architecture.md, Session context):
   run);
 - **middle**: the resolved absolute path, shortened from the left with "…"
   when it does not fit, and dropped below 100 columns;
-- **right**: the provider's name and version; for Codex also the model,
+- **right**: the provider's name and version, followed by "newer than
+  tested" in the attention colour when the CLI is newer than the version its
+  adapter was last probed with ([evaluation.md](evaluation.md), After a CLI
+  update; plan 14, item 6); for Codex also the model,
   sandbox and approval policy reported by `thread/start` (P6b), because
   they decide what the agent may do; last, "approvals Manual" or
   "approvals Auto" (Auto in the attention colour), with "→ Auto …" while
@@ -750,16 +753,23 @@ the agent that asked, and marks that agent "!" in A and C.
 - After the answer, the card shrinks to one line: "✓ allowed by you
   14:03:20" or "✗ denied by you", observed as sent. An approval that
   expires (turn ended, CLI resolved it) shows "expired, not answered".
-- **Questions** (`AskUserQuestion`, Claude Code): shown as a card with the
-  questions and options; until the round trip is verified (CC-10 q3) the
-  answer is typed as the next message, as events-and-state.md describes.
-  Only `d` and `c` answer one: `d` denies it with "The user saw these
+- **Questions** (`AskUserQuestion`, Claude Code): shown as a card with
+  every question and every option, numbered, nothing cut; the selected
+  question is marked ▸ while the card has the focus (plan 14, item 1; the
+  round trip settled by P14a, CC-10 q3). Its keys, on the card and in its
+  full view: `1`-`4` choose an option of the selected question (a single
+  choice moves on to the next question; a multiple choice toggles `[x]`),
+  ← → select a question, `a` sends the answers once every question has a
+  choice (otherwise the toast "choose an option for each question first"
+  and nothing is sent). The card then reads "✓ answered by you 14:03:20",
+  with one grey line per question, "<question> → <answer>"; the full view's
+  title reads "✓ ANSWERED". `d` denies it with "The user saw these
   questions in Agent Command Center, which cannot answer them here, and
   will answer them in their next message. Wait for that message; do not ask
   them again.", and the card reads "✗ … denied by you 14:03:20 · answer in
-  your next message"; `c` (or Ctrl+C, or quitting) cancels it with the
-  usual deny message and card line; `a` sends nothing, as allowing would
-  echo the unanswered questions (plan 5, item 10).
+  your next message", for an answer the options do not hold; `c` (or
+  Ctrl+C, or quitting) cancels it with the usual deny message and card line
+  (plan 5, item 10).
 
 ## States
 
@@ -1066,7 +1076,8 @@ Ctrl+G, as in both CLIs (TI 8; AM3 M8):
    `ExecProcess`; read the file back byte for byte; delete it.
 4. A GUI editor without its blocking flag returns at once; the status line
    warns "the editor returned immediately: add --wait (or your editor's
-   blocking flag)". Notepad's behaviour is Not verified (TI 8).
+   blocking flag)". Notepad's behaviour is not checked: that warning covers
+   it, and the owner closed the checks by hand (plan 14, item 3; TI 8).
 5. If the editor fails or is not found, show the error; **the draft is
    never discarded**.
 6. While the editor runs, the tea loop is blocked; CLI events are buffered
@@ -1144,8 +1155,10 @@ out of scope (brief, amendments 6 and 7).
 | `$EDITOR` | `code --wait`; Notepad Not verified | `nvim` | same | `$EDITOR` |
 
 The MVP's target is the first column (AGENTS.md: one Windows 11 machine,
-architecture.md, Where it runs); the others are designed for and checked by
-hand when available. Linux and macOS builds are Not verified.
+architecture.md, Where it runs). The other columns are design notes, not
+checked: plan 14 closed them (WSL and tmux are not used, and the dashboard
+does not depend on them; the owner closed Linux and macOS and the checks by
+hand, item 3), and the "Not verified" cells above are closed the same way.
 
 ## Departures
 

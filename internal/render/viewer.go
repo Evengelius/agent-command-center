@@ -17,7 +17,7 @@ import (
 // act as on the card.
 const (
 	viewKeys         = "a allow once · d deny · c cancel the turn · ↑↓ PgUp PgDn Home End scroll · Esc back to the card"
-	viewQuestionKeys = "d deny · c cancel the turn · ↑↓ PgUp PgDn Home End scroll · Esc back to the card"
+	viewQuestionKeys = "1-4 choose · ← → question · a send the answers · d deny · c cancel the turn · ↑↓ PgUp PgDn Home End scroll · Esc back to the card"
 )
 
 // viewer draws approval ap whole; sc records the body's scrolling, as for an
@@ -35,6 +35,10 @@ func viewer(s *state.State, ui UI, ap *state.Approval, sc *Screen) []line {
 	var outcome line
 	switch ap.Status {
 	case state.Allowed:
+		if ap.Question {
+			label, st, outcome = "✓ ANSWERED", stDone, decoLine("answered by you "+clockSec(ap.AnsweredAt)+" ", stDone)
+			break
+		}
 		by := "allowed by you "
 		if ap.Answer == "acceptForSession" {
 			by = "allowed for the session by you "
@@ -58,12 +62,17 @@ func viewer(s *state.State, ui UI, ap *state.Approval, sc *Screen) []line {
 		keys = scrollKeys
 	}
 	head := spread(line{deco(" ◀ back (Esc)   ", stTitle), deco(label, st), deco("  "+approvalWho(s, ap)+" · "+ap.Tool, stBold)}, outcome, w)
-	return fullScreen(s, ui, sc, head, viewerBody(s, ap, w-2), keys)
+	return fullScreen(s, ui, sc, head, viewerBodyFor(s, ui, ap, w-2), keys)
 }
 
 // viewerBody is the request: its target and summary, then its file changes
 // as a coloured diff, else every line the card shows the first of.
 func viewerBody(s *state.State, ap *state.Approval, w int) []line {
+	return viewerBodyFor(s, UI{}, ap, w)
+}
+
+// viewerBodyFor is viewerBody with the owner's choices of a question.
+func viewerBodyFor(s *state.State, ui UI, ap *state.Approval, w int) []line {
 	target, _, body := approvalDetail(ap)
 	var out []line
 	if target != "" {
@@ -95,6 +104,15 @@ func viewerBody(s *state.State, ap *state.Approval, w int) []line {
 			}
 		}
 		return out
+	}
+	if qs := QuestionsOf(ap); len(qs) > 0 {
+		if len(out) > 0 {
+			out = append(out, line{})
+		}
+		if ap.Status == state.Allowed || ap.Answers != nil {
+			return append(out, answeredLines(qs, ap.Answers, w)...)
+		}
+		return append(out, questionLines(qs, pickOf(ui, ap, qs), ap.Status == state.Pending, w)...)
 	}
 	if len(body) > 0 && len(out) > 0 {
 		out = append(out, line{})

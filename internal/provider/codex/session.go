@@ -597,3 +597,9 @@ func (s *Session) SetApprovalMode(auto bool) error {
 	}
 	return nil
 }
+
+// AnswerQuestion: Codex has no question request here (Capabilities.Questions
+// is false).
+func (s *Session) AnswerQuestion(id string, answers map[string]string) error {
+	return fmt.Errorf("Codex does not take answers to questions (request %q)", id)
+}

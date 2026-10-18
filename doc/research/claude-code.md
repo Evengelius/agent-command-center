@@ -4,8 +4,8 @@ Plan 1, step 1. Subject: how `agent-command-center` (Go, Bubble Tea) can drive
 and observe Claude Code, installed here as version 2.1.300. The research
 itself never ran `claude`. The owner-approved probes of plan 1, step 3
 (`doc/research/probes/`, recorded 2026-10-15 against 2.1.300) are cited as
-evidence where they settle a point; section 10 lists what they settled and
-what is still open.
+evidence where they settle a point; section 10 gives the outcome of every
+question (plan 14: settled, or closed with the reason).
 
 Conventions used below:
 
@@ -661,9 +661,11 @@ from Anthropic's servers, the second is a client-side estimate at list price
 ## 10. Open questions after the probes
 
 The probes of 2026-10-15 (`doc/research/probes/README.md`, P1 to P4 and P3b)
-settled some of the questions; the rest stay open for plan 2. Each new probe
-runs in a temporary folder outside the repository, changes no configuration,
-and uses the owner's quota (AGENTS.md).
+settled some of the questions. Plan 14 (2026-10-18) gave each remaining one an
+outcome: settled with evidence, or closed because the dashboard does not depend
+on the answer. No question is left open. Each probe runs in a temporary folder
+outside the repository, changes no configuration, and uses the owner's quota
+(AGENTS.md).
 
 Settled:
 
@@ -671,58 +673,85 @@ Settled:
    `rate_limit_event`, `stream_event` deltas, the complete `assistant`
    message, `result` (P1 with `-p`; P2 without `-p`, as the SDK runs it,
    same event types plus `control_response`).
-2. **Control protocol from a non-SDK client.** Partly: `initialize` first,
+2. **Control protocol from a non-SDK client.** `initialize` first,
    then user messages, works; `can_use_tool` arrives with `tool_name`,
    `display_name`, `input`, `description`, `permission_suggestions`,
    `tool_use_id`, and an allow that echoes `updatedInput` runs the tool (P2,
-   P3b). Not tried: no `initialize`, and an allow without `updatedInput`.
-4. **Interrupt during streaming text.** Receipt `{"still_queued":[]}`, a user
+   P3b). The two variants not tried (no `initialize`, an allow without
+   `updatedInput`) are closed as not depended on: the adapter always sends
+   `initialize` first and always echoes `updatedInput`
+   (`internal/provider/claude/session.go`).
+3. **AskUserQuestion round trip** (plan 14, P14a, Claude Code 2.1.302, Haiku).
+   The request is a `can_use_tool` with `tool_name:"AskUserQuestion"`,
+   `input.questions[]` (each `question`, `header`, `options[]` of `label` and
+   `description`, `multiSelect`), a UUID `request_id`, and a new field
+   `requires_user_interaction:true`. The answer is an allow whose
+   `updatedInput` keeps `questions` unchanged and adds `answers`, keyed by the
+   question text; a multiSelect answer is its labels joined by ", ". The tool
+   result is not an error and reads `Your questions have been answered:
+   "Which colour?"="Rouge café ✓", "Which days?"="Monday, Tuesday". You can now
+   continue with these answers in mind.`; the `user` line's `tool_use_result`
+   holds `{questions, answers}`, and the model's next text used both answers
+   [P:p14a-claude-question-answer.jsonl]. A deny still works as plan 5 found
+   (L9): the model asks in text instead.
+4. **Interrupt.** During streaming text: receipt `{"still_queued":[]}`, a user
    message "[Request interrupted by user]", `result` subtype
-   `error_during_execution` (P2). Still open: during a running Bash command
-   and while a permission prompt is pending.
-6. **Subagent events.** Partly, with one backgrounded subagent
+   `error_during_execution` (P2). During a running Bash command: the turn
+   ended `error_during_execution` 3.3 s after the interrupt and no `PING.EXE`
+   was left running (plan 4, L1 (c), `TestLiveBashInterrupt`). With a
+   permission prompt pending: `error_during_execution` 66 ms later, the
+   pending write never made (plan 4, L1 (d)).
+6. **Subagent events.** With one backgrounded subagent
    (`is_backgrounded: true`, `spawn_depth: 1`): `task_started`,
    `task_progress`, `task_updated`, `task_notification`,
    `background_tasks_changed`; no `tool_progress`; the subagent's
    `can_use_tool` carries its `agent_id` (P3, P3b). The host must keep stdin
-   open while background tasks run (P3). Still open: two parallel subagents,
-   and the volume without `--forward-subagent-text`.
+   open while background tasks run (P3). Parallel subagents: four parallel
+   Explore subagents in plan 4 and two in plan 5's L1, each its own row in
+   zone C. The volume without `--forward-subagent-text` is closed as not
+   depended on: the adapter always passes that flag.
 8. **Rate-limit events.** Not every turn: 2 events for 3 turns in P2, 1 for
    2 turns in P3b, 2 for P1's single turn. `unifiedWindows.five_hour` and
    `.seven_day` both appear, with `utilization` and `resetsAt`.
 10. **Context usage.** `get_context_usage` from a raw client returns
     `totalTokens`, `maxTokens`, `percentage`, `model`, `categories`,
-    `autoCompactThreshold` (P2). Not measured: whether it costs anything.
+    `autoCompactThreshold` (P2). It costs no model call: in P14a it was
+    answered 914 ms after it was sent, with no `assistant` message, `result`
+    or `rate_limit_event` after it, only `system/commands_changed`
+    [P:p14a-claude-question-answer.jsonl].
+11. **Configuration safety.** `set_permission_mode` writes no settings file
+    (P12c-switch, settings files identical, section 11). `set_model` is closed
+    as not depended on: the dashboard never sends it (model configuration is
+    outside the MVP, amendment 4).
 12. **Resume.** History is not re-emitted: a `--resume` run outputs only
     `system/init`, `assistant`, `rate_limit_event`, `result` (P4). The
     dashboard keeps its own record of the conversation, or reads the
     transcript (internal format) to show an earlier session.
+13. **Windows process handling.** Stdin closed: exit code 0 in 1.4 s (plan 4,
+    L1 (e)). A process killed by its job object mid-turn ended 41 ms after,
+    exit code 1, and a `--resume` in a new process answered (L1 (g)). Ctrl+Q
+    quits with exit code 0 in 1.152 s (plan 4, L2d). P3b's subagent ran Bash
+    without `CLAUDE_CODE_GIT_BASH_PATH`. UTF-8 and CRLF through Go pipes:
+    P14a carried "Rouge café ✓" both ways live, and `TestEchoUnicode`
+    sends and reads back "café ✓ — 日本\r\nline 2\n" byte for byte.
 15. **Partial messages and subagents.** `stream_event` never carried a
     non-null `parent_tool_use_id`: 0 of 230 across P1 to P3b.
 
-Still open:
+Closed, the dashboard does not depend on the answer:
 
-3. **AskUserQuestion round trip.** Request shape, and whether `updatedInput:
-   {questions, answers}` produces the expected tool result.
-5. **Hook callbacks.** Does `initialize.hooks` with `hookCallbackIds` for
-   `SubagentStart`, `SubagentStop`, `PreToolUse`, `PostToolUse` produce
-   `hook_callback` requests to a raw client? Answer `{}`: does the turn
-   continue? Does `--settings '{"hooks": ...}'` also work for one session?
-7. **Workflows under `-p`.** Does the `Workflow` tool run (plan gating: Pro
-   needs `/config`), what task messages and phase information reach the
-   stream, and how a run ends.
-9. **`/usage` over stream-json.** Does sending `/usage` return an assistant
-   message with `usage_report` for this account, without a model call or
-   cost, and how often can it be sent before the usage endpoint rate-limits?
-11. **Configuration safety.** Do `set_model` and `set_permission_mode` control
-    requests write any settings file? (Hash the owner's settings files before
-    and after, without reading them, as `probes/drivers/hash-config.sh` does.)
-13. **Windows process handling.** P2 exited with code 1 after stdin closed
-    (its last result was the interrupt's error); P3b's subagent ran Bash
-    without `CLAUDE_CODE_GIT_BASH_PATH`. Still open: `TerminateProcess`
-    mid-turn, CRLF and UTF-8 through Go pipes.
-14. **Status line under `-p`.** Confirm it never runs (expected), so zone D
-    relies on items 8 and 9.
+5. **Hook callbacks.** The adapter's `initialize` sends `"hooks":null`;
+   subagents come from the stream's `task_*` events (item 6), so no hook is
+   needed, and adding one to the owner's settings is forbidden without their
+   request (AGENTS.md).
+7. **Workflows under `-p`.** The dashboard starts none; if Claude Code runs
+   one, its `local_workflow` task maps to the agent type "workflow" in zone C
+   (`internal/provider/claude/mapper.go`), like any other task.
+9. **`/usage` over stream-json.** The dashboard never sends it; zone D's quota
+   comes from `rate_limit_event` (item 8) and its context from
+   `get_context_usage` (item 10). A `/usage` the owner types is an ordinary
+   message, shown as Claude Code answers it (plan 4, the owner's live run).
+14. **Status line under `-p`.** Zone D reads the stream (items 8 and 10), not
+    the status line, whether or not it runs.
 
 ## 11. Auto mode through stream-json (plan 12, 2026-10-18)
 
@@ -768,6 +797,11 @@ with only `--permission-mode` changed (`probes/README.md`):
   write was refused by the model without a tool call
   [P:p12c-block-claude-auto-boundary-edit.jsonl,
   P:p12c-block2-claude-auto-boundary-shell.jsonl].)
+- **Auto falling back to a prompt** after repeated classifier blocks:
+  closed by the owner on 2026-10-18 (plan 14, item 3), not provoked. It is
+  Claude Code's own mechanism, which the dashboard follows rather than
+  imitates: a fallback arrives as a `can_use_tool`, and every
+  `can_use_tool` is already a card.
 - **`system`/`permission_check_status` (undocumented, new):** a tool's
   permission check is bracketed by `{type:"system",
   subtype:"permission_check_status", tool_use_id, status:"checking"}` then

@@ -3,7 +3,8 @@
 Plan 1, step 4. For each agent CLI in scope (Claude Code 2.1.300, Codex CLI
 0.145.0), every way found to get zone D's values, documented or not, with its
 source, and what is simply unavailable, shown as "N/A". Gemini CLI is out of
-scope since amendment 5.
+scope since amendment 5. What plan 1 left unprobed has its outcome in
+[reliability.md, Not verified](../reliability.md#not-verified) (plan 14).
 
 Conventions are those of [`integration.md`](integration.md): **CC-n** and
 **CX-n** are sections of [`claude-code.md`](claude-code.md) and

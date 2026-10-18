@@ -412,12 +412,12 @@ func (m *Model) command(c state.Command) tea.Cmd {
 			return nil
 		}, actionMsg{state.WriteFailed{Message: "too many writes waiting"}}))
 	case state.CmdAnswer:
-		sess, id, d := m.sess, c.ID, c.Decision
+		sess, id, d, answers := m.sess, c.ID, c.Decision, c.Answers
 		return m.write(func() tea.Msg {
 			if sess == nil {
 				return actionMsg{state.AnswerFailed{ID: id, Message: "no session"}}
 			}
-			if err := sess.Answer(id, d); err != nil {
+			if err := sendAnswer(sess, id, d, answers); err != nil {
 				return actionMsg{state.AnswerFailed{ID: id, Message: err.Error()}}
 			}
 			return nil
@@ -513,7 +513,7 @@ func (m *Model) detectionDone(found []provider.Detection) []tea.Cmd {
 			continue
 		}
 		m.detected[c.id] = d
-		clis = append(clis, state.CLI{ID: c.id, Name: c.name, Version: d.Version, Path: d.Path, Installed: d.Installed, Problem: d.Problem})
+		clis = append(clis, state.CLI{ID: c.id, Name: c.name, Version: d.Version, Tested: d.Tested, Path: d.Path, Installed: d.Installed, Problem: d.Problem})
 		if d.Installed {
 			installed = append(installed, c.id)
 		}
@@ -656,4 +656,13 @@ func contains(list []string, v string) bool {
 		}
 	}
 	return false
+}
+
+// sendAnswer sends an approval's answer: a question's answers when it has some,
+// else the decision (plan 14, item 1).
+func sendAnswer(sess provider.Session, id, decision string, answers map[string]string) error {
+	if answers != nil {
+		return sess.AnswerQuestion(id, answers)
+	}
+	return sess.Answer(id, decision)
 }

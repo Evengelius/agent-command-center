@@ -7,6 +7,8 @@ package state
 
 import (
 	"encoding/json"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
@@ -124,6 +126,7 @@ type Context struct {
 // CLI is one agent CLI as detection found it.
 type CLI struct {
 	ID, Name, Version, Path string
+	Tested                  string // the last version probed, "" when unknown
 	Installed               bool
 	Problem                 string // why it is not installed or not usable
 }
@@ -240,7 +243,8 @@ type Approval struct {
 	Raw         string
 	Status      ApprovalStatus
 	Answer      string
-	Cancelled   bool // answered by a cancel (c, Ctrl+C, quitting), not by d (plan 5, item 10)
+	Answers     map[string]string // a question answered: question text to answer, set when sent
+	Cancelled   bool              // answered by a cancel (c, Ctrl+C, quitting), not by d (plan 5, item 10)
 	RequestedAt time.Time
 	AnsweredAt  time.Time
 }
@@ -371,6 +375,45 @@ func (s *State) CLI() string {
 	return ""
 }
 
+// NewerThanTested reports whether the session's CLI is newer than the last
+// version its adapter was probed with (doc/evaluation.md, After a CLI
+// update). It is false in mock mode, and when either version is unknown or
+// unparsable.
+func (s *State) NewerThanTested() bool {
+	if s.Context.Mock {
+		return false
+	}
+	for _, c := range s.Startup.CLIs {
+		if c.ID == s.Context.Provider {
+			return newerVersion(s.Session.Version, c.Tested)
+		}
+	}
+	return false
+}
+
+// versionRe reads the leading major.minor.patch of a CLI version.
+var versionRe = regexp.MustCompile(`^\s*v?([0-9]+)\.([0-9]+)\.([0-9]+)`)
+
+// newerVersion compares the leading major.minor.patch of v and tested; a
+// suffix after them is ignored.
+func newerVersion(v, tested string) bool {
+	a, b := versionRe.FindStringSubmatch(v), versionRe.FindStringSubmatch(tested)
+	if a == nil || b == nil {
+		return false
+	}
+	for i := 1; i <= 3; i++ {
+		x, errX := strconv.Atoi(a[i])
+		y, errY := strconv.Atoi(b[i])
+		if errX != nil || errY != nil {
+			return false
+		}
+		if x != y {
+			return x > y
+		}
+	}
+	return false
+}
+
 // CommandKind is an effect the reducer asks the application to carry out.
 type CommandKind string
 
@@ -402,6 +445,7 @@ type Command struct {
 	ID       string
 	Text     string
 	Decision string
+	Answers  map[string]string // CmdAnswer of a question: question text to answer
 }
 
 // Mode is the approval mode in force; Manual until the CLI reports another.

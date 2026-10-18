@@ -484,6 +484,9 @@ at all.
 
 ## 10. Open questions for a run (CLI not installed)
 
+Closed: Gemini CLI is out of scope since amendment 5, so none of these will
+be run; they are kept as plan 1's record (plan 14).
+
 1. Does the owner's Google account still get service after 2026-06-18 (Code
    Assist Standard/Enterprise or paid API key), or does `session/new` fail?
 2. Exact `gemini.cmd`/`gemini.ps1` names and whether spawning the `.cmd` from Go

@@ -15,6 +15,11 @@ import (
 // Name is the adapter's display name.
 const Name = "OpenAI Codex"
 
+// TestedVersion is the last Codex CLI version probed; it matches the
+// "Last probed" line of doc/research/probes/README.md (doc/evaluation.md,
+// After a CLI update).
+const TestedVersion = "0.163.0"
+
 // VersionTimeout bounds `codex --version`. No source gives one; it is
 // inferred, within the 10 s detection bound (ASM-21).
 const VersionTimeout = 5 * time.Second
@@ -46,7 +51,7 @@ func (p *Provider) DisplayName() string { return Name }
 func (p *Provider) Detect(ctx context.Context) (d provider.Detection) {
 	start := time.Now()
 	h := p.Host
-	d = provider.Detection{ID: ProviderID, Name: Name}
+	d = provider.Detection{ID: ProviderID, Name: Name, Tested: TestedVersion}
 	defer func() { d.ElapsedTime = time.Since(start) }()
 
 	names := []string{"codex"}

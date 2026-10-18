@@ -43,6 +43,7 @@ type UI struct {
 	Editor   EditorView
 	Selected string // the agent selected in zone C
 	Card     string // the approval card with the focus: it takes a, d, c (ui-design.md, Approvals)
+	Pick     Pick   // the owner's choices on the focused question card (plan 14, item 1)
 	Spinner  int    // the spinner's frame
 	Toast    string // replaces the key hints for a moment (ui-design.md, Clipboard)
 

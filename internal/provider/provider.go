@@ -17,6 +17,7 @@ type Detection struct {
 	Installed   bool
 	Path        string // the executable
 	Version     string
+	Tested      string // the last version probed (doc/evaluation.md, After a CLI update)
 	SignIn      string // the sign-in kind the CLI reports, never a credential
 	Problem     string // why it is not usable, when it is not
 	ElapsedTime time.Duration
@@ -65,6 +66,10 @@ type Session interface {
 	Events() <-chan event.Event
 	Send(text string) error
 	Answer(approvalID, decision string) error
+	// AnswerQuestion answers a pending question request with the answer to each
+	// question, by its text (plan 14, item 1); Capabilities.Questions says whether
+	// the provider takes it.
+	AnswerQuestion(approvalID string, answers map[string]string) error
 	Interrupt() error
 	Refresh() error
 	// SetApprovalMode asks for Auto (true) or Manual (false) approvals; the mode

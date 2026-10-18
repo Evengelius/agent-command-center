@@ -15,6 +15,11 @@ import (
 // Name is the adapter's display name.
 const Name = "Claude Code"
 
+// TestedVersion is the last Claude Code version probed; it matches the
+// "Last probed" line of doc/research/probes/README.md (doc/evaluation.md,
+// After a CLI update).
+const TestedVersion = "2.1.302"
+
 // VersionTimeout is the Python SDK's bound on `claude -v` (CC-2, rule 3).
 const VersionTimeout = 2 * time.Second
 
@@ -42,7 +47,7 @@ func (p *Provider) DisplayName() string { return Name }
 func (p *Provider) Detect(ctx context.Context) (d provider.Detection) {
 	start := time.Now()
 	h := p.Host
-	d = provider.Detection{ID: ProviderID, Name: Name}
+	d = provider.Detection{ID: ProviderID, Name: Name, Tested: TestedVersion}
 	defer func() { d.ElapsedTime = time.Since(start) }()
 
 	names, local := []string{"claude"}, filepath.Join(h.Home, ".local", "bin", "claude")

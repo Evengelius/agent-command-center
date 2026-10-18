@@ -56,6 +56,23 @@ func fake(mode string) {
 	case "ready": // answers the handshake, then reads
 		ready()
 	case "silent": // never answers the handshake
+	case "echo": // reads one user message, answers with an assistant message holding its content (CC-10 q13)
+		ready()
+		var msg struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		}
+		if json.Unmarshal(next(), &msg) != nil {
+			os.Exit(2)
+		}
+		out(init)
+		out(`{"type":"assistant","message":{"id":"msg_echo","type":"message","role":"assistant","model":"claude-haiku-4-5","content":[{"type":"text","text":` + quote(msg.Message.Content) + `}]},"parent_tool_use_id":null,"session_id":"0f5e2a64-0000-4000-8000-000000000001"}`)
+	case "question": // reads one user message, then asks the questions of probe P14a
+		ready()
+		next()
+		out(init)
+		out(`{"type":"control_request","request_id":"q14","request":{"subtype":"can_use_tool","tool_name":"AskUserQuestion","input":{"questions":[{"question":"Which colour?","header":"Colour","options":[{"label":"Rouge café ✓","description":"Select this colour."},{"label":"Blue","description":"Select this colour."}],"multiSelect":false},{"question":"Which days?","header":"Days","options":[{"label":"Monday","description":"Select Monday."},{"label":"Tuesday","description":"Select Tuesday."}],"multiSelect":true}],"metadata":{"source":"x"}},"tool_use_id":"toolu_q14"}}`)
 	case "midturn":
 		ready()
 		next()

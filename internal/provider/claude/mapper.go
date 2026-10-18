@@ -429,9 +429,11 @@ func (m *Mapper) user(l line, agent string, raw []byte) []event.Event {
 		return []event.Event{m.ev(event.StatusChanged, event.Observed, agent, raw, event.Status{Status: "notice", Detail: contentText(msg.Content)})}
 	}
 	var out []event.Event
+	var results []string
 	for _, b := range blocks {
 		switch b.Type {
 		case "tool_result":
+			results = append(results, b.ToolUseID)
 			st := "completed"
 			if b.IsError {
 				st = "failed"
@@ -443,7 +445,7 @@ func (m *Mapper) user(l line, agent string, raw []byte) []event.Event {
 			out = append(out, m.ev(event.StatusChanged, event.Observed, agent, raw, event.Status{Status: "notice", Detail: b.Text}))
 		}
 	}
-	out = append(out, m.verdicts(l, agent, raw)...)
+	out = append(out, m.verdicts(l, agent, raw, results)...)
 	if len(out) == 0 {
 		out = append(out, m.unknown(raw, "user", "empty"))
 	}
@@ -463,8 +465,12 @@ func approvalMode(mode string) string {
 }
 
 // verdicts reads the line's tool_result_meta (undocumented): a decision the
-// classifier made is a tool.decision; any other reason adds nothing.
-func (m *Mapper) verdicts(l line, agent string, raw []byte) []event.Event {
+// classifier made is a tool.decision; any other reason adds nothing. Every
+// recording from 2.1.300 to 2.1.302 gives each tool result its
+// permission_decision, so one without it counts as unrecognised: a CLI update
+// that drops or renames the field shows in zone D instead of silently hiding
+// the classifier's verdicts (doc/evaluation.md, After a CLI update).
+func (m *Mapper) verdicts(l line, agent string, raw []byte, results []string) []event.Event {
 	var metas []struct {
 		ID       string `json:"id"`
 		Decision struct {
@@ -472,10 +478,17 @@ func (m *Mapper) verdicts(l line, agent string, raw []byte) []event.Event {
 			ReasonType string `json:"reason_type"`
 		} `json:"permission_decision"`
 	}
-	if json.Unmarshal(l.ToolResultMeta, &metas) != nil {
-		return nil
-	}
+	_ = json.Unmarshal(l.ToolResultMeta, &metas) // absent or another shape: no entry
 	var out []event.Event
+	for _, id := range results {
+		found := false
+		for _, x := range metas {
+			found = found || (x.ID == id && x.Decision.Decision != "")
+		}
+		if !found {
+			out = append(out, m.ev(event.Unrecognised, event.Observed, "", raw, event.Unknown{Type: "user/tool_result_meta", Reason: "tool result without tool_result_meta permission_decision (undocumented)"}))
+		}
+	}
 	for _, x := range metas {
 		if x.Decision.ReasonType != "classifier" {
 			continue
