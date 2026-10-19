@@ -1,20 +1,29 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
 ╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────── Idle ─╮
-│ claude-haiku-5-5 · orchestrat… ││   what it found.                                                                   │
-│ turn 2 · c╭─ Explorer ───────────────────────────────────────────────────────────────── mock · 11 items ─╮      mock │
-│           │ sample/viewer.go                                                                             │           │
-│ STAGES  in│ ▾ sample                                                                                  ●  │ write     │
+│ claude-haiku-5-5 · orchestrat… ││ YOU  11:30                                                                         │
+│ turn 2 · c╭─ Explorer ───────────────────────────────────────────────────────────────── mock · 11 items ─╮sk: list   │
+│           │ sample/viewer.go                                                                             │named      │
+│ STAGES  in│ ▾ sample                                                                                  ●  │ne line    │
 │ TURN 1  ✓ │     viewer.go                                                                             M  │           │
-│ TURN 2  ✓ │     viewer_test.go                                                                        D  │u 11:30:00 │
-│   started │ ▸ tools                                                                                   D  │u 11:30:00 │
-│           │   claude-api-key-context-refused.jsonl                                                       │           │
-│           │   claude-subagent-approval.jsonl                                                             │d`, and    │
-│           │   codex-api-key.jsonl                                                                     U  │           │
-│           │   codex-no-5h-window.jsonl                                                                   │           │
+│ TURN 2  ✓ │     viewer_test.go                                                                        D  │      mock │
+│   started │ ▸ tools                                                                                   D  │           │
+│           │   claude-api-key-context-refused.jsonl                                                       │ write     │
+│           │   claude-subagent-approval.jsonl                                                             │           │
+│           │   codex-api-key.jsonl                                                                     U  │u 11:30:00 │
+│           │   codex-no-5h-window.jsonl                                                                   │u 11:30:00 │
 │           │   codex-plan6-limits.jsonl                                                                !  │           │
-│           │   codex-spawn-request.jsonl                                                               A  │           │
-│           │   codex-subagents.jsonl                                                                      │────────── │
+│           │   codex-spawn-request.jsonl                                                               A  │d`, and    │
+│           │   codex-subagents.jsonl                                                                      │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │────────── │
 │           │                                                                                              │           │
 │           │                                                                                              │           │
 │           │                                                                                              │           │
@@ -22,15 +31,6 @@
 │           │                                                                                              │───────────╯
 │           │                                                                                              │ · 1 DONE ─╮
 │           │                                                                                              │ 21.5k tok │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
 │ ↑↓ move ←→│                                                                                              │           │
 ╰───────────│ ↑↓ move · → open · ← close · Enter view · / quick open · Esc back · F3 close         2 of 11 │───────────╯
 ╭─ D · QUOTA╰──────────────────────────────────────────────────────────────────────────────────────────────╯ted field ─╮

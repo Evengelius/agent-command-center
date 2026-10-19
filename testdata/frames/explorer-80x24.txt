@@ -12,9 +12,9 @@
 │ │   codex-plan6-limits.jsonl                                            !  │ │
 │ │   codex-spawn-request.jsonl                                           A  │ │
 │ │   codex-subagents.jsonl                                                  │ │
+│ │                                                                          │ │
 ╰─│                                                                          │─╯
 ╭─│                                                                          │─╮
-│ │                                                                          │ │
 │ │                                                                          │ │
 │ │                                                                          │ │
 ╰─│                                                                          │─╯

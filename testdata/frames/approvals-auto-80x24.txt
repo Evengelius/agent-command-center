@@ -2,6 +2,7 @@
  ▣ claude-subagent-approval.jsonl            Mock data 2.1.300 · approvals Auto
  A ✓ Turn 2                                               (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
+│ CLAUDE  claude-haiku-5-5                                                     │
 │   The subagent found two files in the directory, `alpha.txt` and `beta.md`,  │
 │   and wrote them into `<probe-root>\probe-work\p3b\found.txt`.               │
 │                                                                              │
@@ -15,8 +16,7 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
 │  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
-│                                                                              │
-│                                                                              │
+│ ↑↓ select · Enter inspect · z zoom · F6 next zone                            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
 │ 5h ▰▰▱▱▱ 35%†   7d ▰▰▱▱▱ 47%†   ctx 4%   tok 159.4k   $0.01 est.   errors 0  │

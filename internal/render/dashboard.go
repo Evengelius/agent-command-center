@@ -19,6 +19,12 @@ const (
 	zoneAStandard = 34
 	zoneAWide     = 44
 	listWide      = 74
+	// Zone C's strip while no agent is in play (plan 18): its title and two
+	// agent rows from the standard width, one row under it; with agents in
+	// play at wide width, at least previewRows for the preview beside it.
+	compactC       = 4
+	compactCNarrow = 3
+	previewRows    = 8
 )
 
 // dashboard draws the working screen at the layout the width selects.
@@ -57,7 +63,10 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 
 	if w < standardWidth {
 		ls = append(ls, zoneALine(s, w))
-		dh, ch := 3, 5
+		dh, ch := 3, compactCNarrow
+		if n := s.AgentsInPlay(); n > 0 { // plan 18: the rows its agents need, up to 5
+			ch = min(max(n+3, compactCNarrow), 5)
+		}
 		bh := h - len(ls) - ch - dh - 1
 		if ui.Focus == "A" { // the tree takes B's and C's place until F6 leaves it
 			ls = append(ls, zoneA(s, ui, w, bh+ch, sc)...)
@@ -75,19 +84,32 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		return append(ls, keyHints(w, ui, hints))
 	}
 
-	aw, dh, rows := zoneAStandard, 4, 2
+	aw, dh, rows, minB := zoneAStandard, 4, 2, 12
 	if wide {
-		aw, dh, rows = zoneAWide, 6, 3
+		aw, dh, rows, minB = zoneAWide, 6, 3, 14
 	}
 	mid := h - len(ls) - dh - 1
-	bh := (mid*3 + 2) / 5
+	// Plan 18 (brief amendment 14): C is a strip until agents are in play,
+	// then as tall as they need, its title, a row each, its key hint and its
+	// border, with room for the preview at wide width; at most half the
+	// column, B keeping room for its input.
+	inPlay := s.AgentsInPlay()
+	ch := compactC
+	if inPlay > 0 {
+		need := inPlay + 3
+		if wide {
+			need = max(need, previewRows)
+		}
+		ch = min(max(need, compactC), max(min(mid/2, mid-minB), compactC))
+	}
+	bh := mid - ch
 	rw := w - aw
 	right := zoneB(s, ui, rw, bh, 3+2*boolInt(wide), sc)
 	sc.Conv.Y = len(ls) + 1
-	if wide {
-		right = append(right, beside(zoneC(s, ui, listWide, mid-bh, sc), preview(s, ui, rw-listWide, mid-bh, sc))...)
+	if wide && inPlay > 0 { // the strip has no room for the selected agent's preview
+		right = append(right, beside(zoneC(s, ui, listWide, ch, sc), preview(s, ui, rw-listWide, ch, sc))...)
 	} else {
-		right = append(right, zoneC(s, ui, rw, mid-bh, sc)...)
+		right = append(right, zoneC(s, ui, rw, ch, sc)...)
 	}
 	ls = append(ls, beside(zoneA(s, ui, aw, mid, sc), right)...)
 	ls = append(ls, zoneD(s, ui, w, dh, rows)...)
@@ -784,12 +806,13 @@ func editorStatus(s *state.State) string {
 	return "turn running: the draft waits · Ctrl+C interrupt"
 }
 
-// agentsByActivity are the agents in zone C's order (ui-design.md, Zone C;
-// ASM-22): waiting for an approval, then running, then ended; most recent
-// first within each group.
+// agentsByActivity are zone C's agents, those in play (plan 18: each new
+// prompt clears the others, which zone A's tree keeps), in its order
+// (ui-design.md, Zone C; ASM-22): waiting for an approval, then running, then
+// ended; most recent first within each group.
 func agentsByActivity(s *state.State) []*state.Agent {
 	out := make([]*state.Agent, 0, len(s.Order))
-	for _, k := range s.Order {
+	for _, k := range s.InPlay() {
 		if a := s.Agents[k]; a != nil {
 			out = append(out, a)
 		}
@@ -832,10 +855,19 @@ func AgentOrder(s *state.State) []string {
 	return out
 }
 
-// activeAgents counts the agents running or waiting for an approval, and
-// those ended; an agent only announced is neither.
+// activeAgents counts the session's agents running or waiting for an
+// approval, and those ended; an agent only announced is neither.
 func activeAgents(s *state.State) (active, done int) {
+	all := make([]*state.Agent, 0, len(s.Agents))
 	for _, a := range s.Agents {
+		all = append(all, a)
+	}
+	return agentCounts(all)
+}
+
+// agentCounts counts agents as activeAgents does.
+func agentCounts(agents []*state.Agent) (active, done int) {
+	for _, a := range agents {
 		switch {
 		case a.Status == state.AgentRunning || a.Status == state.AgentWaiting:
 			active++
@@ -849,7 +881,7 @@ func activeAgents(s *state.State) (active, done int) {
 // zoneC is the live agents list.
 func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	agents := agentsByActivity(s)
-	active, done := activeAgents(s)
+	active, done := agentCounts(agents) // the agents it shows (plan 18)
 	right := plain(fmt.Sprintf("%d ACTIVE · %d DONE", active, done), stText)
 	cols := agentCols{label: 14} // over every agent, so the columns hold while scrolling
 	for _, a := range agents {
@@ -869,8 +901,11 @@ func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	if len(agents) == 0 {
 		body = append(body, plain("no agents yet: they appear as the CLI starts them", stGrey))
 	}
+	// The key hint takes the last row from 4 body rows, or when the agents
+	// leave a row free, as in a box sized to them (plan 18).
+	hinted := h-2 >= 4 || len(agents) > 0 && len(agents) < h-2
 	room := h - 2
-	if room >= 4 {
+	if hinted {
 		room--
 	}
 	from := 0 // the selected agent stays in view
@@ -887,7 +922,7 @@ func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	for _, a := range agents[from:min(from+max(room, 0), len(agents))] { // only the rows the box can show
 		body = append(body, agentRow(a, ui, w-4, cols))
 	}
-	if h-2 >= 4 {
+	if hinted {
 		for len(body) < h-3 {
 			body = append(body, line{})
 		}

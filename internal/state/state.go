@@ -222,6 +222,7 @@ type Agent struct {
 	Retries      int
 	Error        string
 	Stage        int    // the last stage when it appeared, 1-based; 0 before any turn
+	EndStage     int    // the stage when it last ended; 0 while it runs (plan 18)
 	Seq          uint64 // the event that created it, for ordering in zone A
 	// LabelRequested marks Label as a spawn request's, which the agent's own
 	// label replaces (plan 10, item 1).
@@ -374,6 +375,31 @@ func (s *State) CLI() string {
 	}
 	return ""
 }
+
+// InPlay lists, in their order of creation, the agents zone C shows and is
+// sized for (plan 18, brief amendment 14): those that run, or appeared or
+// ended in the stage of the owner's last prompt or after it, so that each new
+// prompt clears the others, which zone A's tree keeps. A stage the CLI opens
+// by itself, such as Claude Code's for a background agent's notification, is
+// not a prompt. Before any prompt, every agent is in play.
+func (s *State) InPlay() []string {
+	from := 0
+	for _, st := range s.Stages {
+		if !st.ByCLI {
+			from = st.N
+		}
+	}
+	var keys []string
+	for _, k := range s.Order {
+		if a := s.Agents[k]; a != nil && (!a.Status.Final() || a.Stage >= from || a.EndStage >= from) {
+			keys = append(keys, k)
+		}
+	}
+	return keys
+}
+
+// AgentsInPlay counts the agents in play; with none, zone C is an empty strip.
+func (s *State) AgentsInPlay() int { return len(s.InPlay()) }
 
 // NewerThanTested reports whether the session's CLI is newer than the last
 // version its adapter was probed with (doc/evaluation.md, After a CLI

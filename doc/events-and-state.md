@@ -167,6 +167,22 @@ age a value.
   previous spawn label, and the agent's own label replaces it, in either
   order (plan 10, item 1).
 
+### Zone C's height
+
+Zone C lists the agents in play and is sized by them (`State.InPlay`, their
+keys, and `State.AgentsInPlay`, their count; plan 18, brief amendment 14),
+an empty strip with none ([ui-design.md](ui-design.md#zone-c)); so each
+prompt the owner submits clears it of the earlier agents, which zone A's
+tree keeps. Each agent keeps the stage it
+appeared in and, once it ends, the stage it ended in (`Stage`, `EndStage`;
+0 while it runs). An agent is in play when it runs, or appeared or ended in
+the stage of the owner's last prompt or a later one. A stage the CLI opens
+by itself, such as Claude Code's for a background agent's notification
+(`ByCLI`), is not a prompt, so it changes nothing either way; before any
+prompt, as a replay can start, every agent counts. An agent still running
+when the owner sends a prompt stays in play through that turn, also once it
+ends; the next prompt resets the count.
+
 ## State machines
 
 For each machine: its states, every transition with its trigger and which

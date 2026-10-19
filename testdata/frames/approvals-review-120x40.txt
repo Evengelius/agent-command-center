@@ -14,6 +14,14 @@
 │                                ││   ◈ auto-review approved · risk low · authorization high: a read-only check of the │
 │                                ││     project                                                                        │
 │                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
 │                                ││ ────────────────────────────────────────────────────────────────────────────────── │
 │                                ││ >  Ask Mock data anything…                                                         │
 │                                ││                                                                                    │
@@ -23,14 +31,6 @@
 │                                │╭─ C · LIVE AGENTS ────────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
 │                                ││  ✓ /root/create_found model N/A   completed                         0s   77.3k tok │
 │                                ││  ✓ /root/list_files   model N/A   completed                         0s   30.5k tok │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
 │ ↑↓ move ←→ fold Enter inspect  ││ ↑↓ select · Enter inspect · z zoom · F6 next zone                                  │
 ╰────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────────── quota updated 0s ago · † undocumented field ─╮

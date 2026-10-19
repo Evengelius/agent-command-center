@@ -323,7 +323,7 @@ func (s *State) crash(ev event.Event, reason string, close bool) []Command {
 func (s *State) endAll(ev event.Event) {
 	for _, k := range s.Order {
 		if a := s.Agents[k]; !a.Status.Final() {
-			a.Status, a.StatusOrigin, a.EndedAt = AgentEnded, event.Inferred, ev.At
+			a.Status, a.StatusOrigin, a.EndedAt, a.EndStage = AgentEnded, event.Inferred, ev.At, s.stage()
 		}
 	}
 	for _, id := range s.Queue {
@@ -511,7 +511,7 @@ func (s *State) agent(ev event.Event, p event.Agent) []Command {
 			return nil
 		}
 		a.Runs++
-		a.Status, a.StatusOrigin, a.EndedAt = AgentRunning, ev.Origin, time.Time{}
+		a.Status, a.StatusOrigin, a.EndedAt, a.EndStage = AgentRunning, ev.Origin, time.Time{}, 0
 		if p.Type == "thread" {
 			a.Status = AgentAnnounced
 		}
@@ -546,7 +546,7 @@ func (s *State) agent(ev event.Event, p event.Agent) []Command {
 			s.Agents[key] = a
 			s.Order = append(s.Order, key)
 			s.update(a, p)
-			a.Status, a.StatusOrigin, a.EndedAt = st, event.Inferred, ev.At
+			a.Status, a.StatusOrigin, a.EndedAt, a.EndStage = st, event.Inferred, ev.At, s.stage()
 			return nil
 		}
 		s.update(a, p)
@@ -559,7 +559,7 @@ func (s *State) agent(ev event.Event, p event.Agent) []Command {
 }
 
 func (s *State) finishAgent(a *Agent, st AgentStatus, ev event.Event) {
-	a.Status, a.StatusOrigin, a.EndedAt = st, ev.Origin, ev.At
+	a.Status, a.StatusOrigin, a.EndedAt, a.EndStage = st, ev.Origin, ev.At, s.stage()
 	for _, id := range a.Tools {
 		if t := s.Tools[id]; t != nil && !t.Status.Final() {
 			t.Status, t.Origin, t.EndedAt = ToolUnfinished, event.Inferred, ev.At
@@ -732,7 +732,7 @@ func (s *State) turnStarted(ev event.Event) []Command {
 			a.Status, a.StatusOrigin = AgentRunning, ev.Origin
 		case a.Status.Final():
 			a.Runs++
-			a.Status, a.StatusOrigin, a.EndedAt = AgentRunning, ev.Origin, time.Time{}
+			a.Status, a.StatusOrigin, a.EndedAt, a.EndStage = AgentRunning, ev.Origin, time.Time{}, 0
 		}
 		return nil
 	}

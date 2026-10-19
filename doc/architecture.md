@@ -431,7 +431,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-9 | Default key bindings beyond those TI fixes | ui-design.md |
 | ASM-10 | The editor budget: a keystroke drawn within 16 ms with a 10,000-line buffer; a 50,000-line paste inserted and drawn within 100 ms | ui-design.md, reliability.md |
 | ASM-11 | The dashboard's own session record, kept in memory for the session; no history file written in the MVP | reliability.md |
-| ASM-12 | The layout geometry: breakpoints at 100 and 160 columns; the 80x24 minimum; A 34 then 44 columns wide, C's agent list 74; B about 60% of the right column | ui-design.md, Layouts |
+| ASM-12 | The layout geometry: breakpoints at 100 and 160 columns; the 80x24 minimum; A 34 then 44 columns wide, C's agent list 74; C a 4-row strip (3 at narrow width) until agents are in play, then the rows they need, up to half the right column (5 rows at narrow width, at least 8 at wide width for the preview), B keeping at least 12 rows (14 at wide width; plan 18) | ui-design.md, Layouts |
 | ASM-13 | The colours: the palette hex values, each model family's colour, a quota bar turning red from 90% | ui-design.md |
 | ASM-14 | Codex threads given model "N/A" until a per-thread source appears; from Codex CLI 0.163.0, `subAgentActivity.model` is that source (P7b; plan 5, item 7) | events-and-state.md |
 | ASM-15 | No message is sent while a turn runs; the draft waits (Codex `turn/steer` and Claude Code's queue are never used; CX-10 q5, closed in plan 14) | events-and-state.md, Turn machine |

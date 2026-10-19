@@ -21,10 +21,9 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: plan 17, a file viewer in the terminal (amendment 11), an
-Explorer of the project (amendment 12) and the draft in a window
-(amendment 13), approved by the owner on 2026-10-19.** Plans 1 to 16 (research; architecture and reliability; proposal; the
-MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live; nothing left open; recent projects, favourites and a project browser; git worktree management) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
+**Status: plan 18, an adaptive layout (amendment 14), approved by the
+owner on 2026-10-19.** Plans 1 to 17 (research; architecture and reliability; proposal; the
+MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live; nothing left open; recent projects, favourites and a project browser; git worktree management; a file viewer, an Explorer and the draft in a window) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
 plan's progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.
 

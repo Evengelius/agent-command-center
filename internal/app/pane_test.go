@@ -16,31 +16,62 @@ import (
 
 // Plan 5, item 5: zone A's tree, zone C's list and C's preview scroll.
 
-// busy adds n turns to h's session, each a stage with one agent, p<from> to
-// p<from+n-1>; the first of them says msgs messages of its own, for the
-// preview.
-func busy(h *harness, from, n, msgs int) {
+// feed sends h's session the events build adds, after its last event.
+func feed(h *harness, build func(add func(k event.Kind, agent string, p any))) {
 	s := h.m.State()
 	at, seq := s.Log[len(s.Log)-1].At, s.Log[len(s.Log)-1].Seq
 	var evs []event.Event
-	add := func(k event.Kind, agent string, p any) {
+	build(func(k event.Kind, agent string, p any) {
 		seq++
 		evs = append(evs, event.Event{Seq: seq, At: at.Add(time.Duration(len(evs)+1) * time.Second), Provider: s.CLI(), Kind: k, Origin: event.Observed, Agent: agent, Payload: p})
-	}
-	for i := from; i < from+n; i++ {
-		key := fmt.Sprintf("p%d", i)
-		add(event.UserMessage, "", event.User{Text: fmt.Sprintf("turn %d", i)})
-		add(event.TurnStarted, "", nil)
-		add(event.AgentStarted, "", event.Agent{Key: key, Label: fmt.Sprintf("agent%d", i), Type: "subagent", Description: "scan"})
-		for j := 0; j < msgs && i == from; j++ {
-			id := fmt.Sprintf("%s-m%d", key, j)
-			add(event.MessageDelta, key, event.Delta{MessageID: id, Block: "text", Text: fmt.Sprintf("message %d", j)})
-			add(event.MessageCompleted, key, event.Completed{MessageID: id})
-		}
-		add(event.AgentCompleted, "", event.Agent{Key: key, Status: "completed", Summary: "done"})
-		add(event.TurnCompleted, "", event.TurnEnd{Outcome: "completed", DurationMS: 1000})
-	}
+	})
 	h.send(eventsMsg{sess: h.m.sess, evs: evs, closed: true})
+}
+
+// agentRun adds agent key's start, msgs messages of its own and its end.
+func agentRun(add func(k event.Kind, agent string, p any), key, label string, msgs int) {
+	add(event.AgentStarted, "", event.Agent{Key: key, Label: label, Type: "subagent", Description: "scan"})
+	for j := 0; j < msgs; j++ {
+		id := fmt.Sprintf("%s-m%d", key, j)
+		add(event.MessageDelta, key, event.Delta{MessageID: id, Block: "text", Text: fmt.Sprintf("message %d", j)})
+		add(event.MessageCompleted, key, event.Completed{MessageID: id})
+	}
+	add(event.AgentCompleted, "", event.Agent{Key: key, Status: "completed", Summary: "done"})
+}
+
+// busy adds n turns of the owner's to h's session, each a stage with one
+// agent, p<from> to p<from+n-1>; the first of them says msgs messages of its
+// own, for the preview. Each turn clears zone C of the earlier ones (plan 18).
+func busy(h *harness, from, n, msgs int) {
+	feed(h, func(add func(k event.Kind, agent string, p any)) {
+		for i := from; i < from+n; i++ {
+			said := 0
+			if i == from {
+				said = msgs
+			}
+			add(event.UserMessage, "", event.User{Text: fmt.Sprintf("turn %d", i)})
+			add(event.TurnStarted, "", nil)
+			agentRun(add, fmt.Sprintf("p%d", i), fmt.Sprintf("agent%d", i), said)
+			add(event.TurnCompleted, "", event.TurnEnd{Outcome: "completed", DurationMS: 1000})
+		}
+	})
+}
+
+// crowd adds one turn of the owner's that deploys n agents, c00 to c<n-1>,
+// so that zone C lists them all (plan 18); the first says msgs messages.
+func crowd(h *harness, n, msgs int) {
+	feed(h, func(add func(k event.Kind, agent string, p any)) {
+		add(event.UserMessage, "", event.User{Text: "crowd"})
+		add(event.TurnStarted, "", nil)
+		for i := 0; i < n; i++ {
+			said := 0
+			if i == 0 {
+				said = msgs
+			}
+			agentRun(add, fmt.Sprintf("c%02d", i), fmt.Sprintf("crowd%02d", i), said)
+		}
+		add(event.TurnCompleted, "", event.TurnEnd{Outcome: "completed", DurationMS: 1000})
+	})
 }
 
 // cellOf is a cell of panel p in the last frame.
@@ -156,6 +187,7 @@ func TestPaneScroll(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			h := paneDash(t, 120, 40, 0)
+			crowd(h, 30, 0)             // a list longer than C
 			h.draw(key(tea.KeyPgUp, 0)) // B held
 			if !h.m.ui.ConvHold {
 				t.Skip("B fits: nothing to hold")
@@ -212,16 +244,17 @@ func TestPaneScroll(t *testing.T) {
 	// agent.
 	t.Run("wheel", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
-			h := paneDash(t, 170, 50, 30)
+			h := paneDash(t, 170, 50, 0)
+			crowd(h, 30, 30) // c00 says 30 messages, for the preview
 			focusZone(t, h, "C")
 			for range len(h.m.screen.List.IDs) {
-				if h.m.ui.Selected == "p0" {
+				if h.m.ui.Selected == "c00" {
 					break
 				}
 				h.draw(key(tea.KeyDown, 0))
 			}
 			h.draw(key(tea.KeyEscape, 0))
-			if h.m.ui.Selected != "p0" || h.m.ui.Focus != "B" {
+			if h.m.ui.Selected != "c00" || h.m.ui.Focus != "B" {
 				t.Fatalf("selected %q focus %q", h.m.ui.Selected, h.m.ui.Focus)
 			}
 			for _, p := range []byte{'A', 'C', 'P'} {
@@ -245,7 +278,13 @@ func TestPaneScroll(t *testing.T) {
 				t.Errorf("held hints:\n%s", f)
 			}
 			top := h.m.screen.Preview.Top
-			busy(h, 63, 1, 0)
+			// Events while held: a turn the CLI opens, with an agent of its
+			// own, which leaves zone C's list in place (plan 18).
+			feed(h, func(add func(k event.Kind, agent string, p any)) {
+				add(event.TurnStarted, "", nil)
+				agentRun(add, "c99", "crowd99", 0)
+				add(event.TurnCompleted, "", event.TurnEnd{Outcome: "completed", DurationMS: 1000})
+			})
 			h.m.View()
 			if h.m.screen.Preview.Top != top {
 				t.Errorf("the held preview moved: %d, was %d", h.m.screen.Preview.Top, top)
@@ -258,7 +297,7 @@ func TestPaneScroll(t *testing.T) {
 			wheel(h, x, y, true)
 			focusZone(t, h, "C")
 			h.draw(key(tea.KeyDown, 0))
-			if h.m.ui.Selected == "p0" || h.m.ui.Preview != (render.Pane{}) {
+			if h.m.ui.Selected == "c00" || h.m.ui.Preview != (render.Pane{}) {
 				t.Errorf("another agent: selected %q preview %+v, want its tail", h.m.ui.Selected, h.m.ui.Preview)
 			}
 		})
@@ -282,6 +321,7 @@ func TestPaneScroll(t *testing.T) {
 			t.Run(c.name, func(t *testing.T) {
 				synctest.Test(t, func(t *testing.T) {
 					h := paneDash(t, c.w, c.h, 0)
+					crowd(h, 60, 0) // a list longer than C, zoomed too
 					focusZone(t, h, c.zone)
 					if c.zoom {
 						h.draw(typed('z'))

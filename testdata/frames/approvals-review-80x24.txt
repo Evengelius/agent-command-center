@@ -16,7 +16,7 @@
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
 │  ✓ /root/create_found model N/A   completed                   0s   77.3k tok │
 │  ✓ /root/list_files   model N/A   completed                   0s   30.5k tok │
-│                                                                              │
+│ ↑↓ select · Enter inspect · z zoom · F6 next zone                            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
 │ 5h ▱▱▱▱▱ 1%   7d ▱▱▱▱▱ 1%   ctx 6%   tok 184.3k   cost N/A   errors 0        │

@@ -1,19 +1,28 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
 ╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ───────────────────────────────────────────────── Interrupting… ─╮
-│ claude-haiku-5-5 · orchestrat… ││   ▸ Write                                                                 observed │
-│ turn 3 · interrupting 9h 29m   ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
+│ claude-haiku-5-5 · orchestrat… ││ YOU  02:00                                                                         │
+│ turn 3 · interrupting 9h 29m   ││   Create a file named hello.txt in the current directory containing the single     │
+│                                ││   word hello. Use the Write tool, then reply with the word done.                   │
+│ STAGES  inferred from activity ││   ▸ Write                                                                 observed │
+│ TURN 1  ✓ completed · 4s       ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
+│ TURN 2  ✓ completed · 1s       ││ CLAUDE  claude-haiku-5-5                                                           │
+│ TURN 3  ◉ interrupting · 9h 2… ││   done                                                                             │
+│   Count from 1 to 300, one nu… ││ YOU  02:00                                                                         │
+│   •─ ○ (more as events arrive) ││   Reply with the single word: again                                                │
 │                                ││ CLAUDE  claude-haiku-5-5                                                           │
-│ STAGES  inferred from activity ││   done                                                                             │
-│ TURN 1  ✓ completed · 4s       ││ YOU  02:00                                                                         │
-│ TURN 2  ✓ completed · 1s       ││   Reply with the single word: again                                                │
-│ TURN 3  ◉ interrupting · 9h 2… ││ CLAUDE  claude-haiku-5-5                                                           │
-│   Count from 1 to 300, one nu… ││   again                                                                            │
-│   •─ ○ (more as events arrive) ││ YOU  02:00                                                                         │
+│                                ││   again                                                                            │
+│                                ││ YOU  02:00                                                                         │
 │                                ││   Count from 1 to 300, one number per line, nothing else.                          │
 │                                ││ CLAUDE  claude-haiku-5-5                                                           │
 │                                ││   1▌                                                                               │
 │                                ││   ∴ thinking                                                                       │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
+│                                ││                                                                                    │
 │                                ││ ────────────────────────────────────────────────────────────────────────────────── │
 │                                ││ > a draft                                                                          │
 │                                ││       kept as typed                                                                │
@@ -22,16 +31,7 @@
 │                                │╰────────────────────────────────────────────────────────────────────────────────────╯
 │                                │╭─ C · LIVE AGENTS ────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │                                ││ no agents yet: they appear as the CLI starts them                                  │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│ ↑↓ move ←→ fold Enter inspect  ││ ↑↓ select · Enter inspect · z zoom · F6 next zone                                  │
+│ ↑↓ move ←→ fold Enter inspect  ││                                                                                    │
 ╰────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────── quota updated 9h 29m ago · † undocumented field ─╮
 │ 5h ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 25%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 46%†  resets Sat 08:00                      │

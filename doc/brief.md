@@ -869,3 +869,58 @@ I don't want any vscode
 ---
 
 Yes
+
+## Amendment 14, 2026-10-19: an adaptive layout, for plan 18
+
+The owner's request, word for word, the first of the improvements the owner
+gives one by one after plan 17; plan 18 is proposed once they are all given.
+The owner's mock-up, "Proposed adaptive layouts" ("Conceptual proportions;
+not a pixel-accurate rendering of the current application"), keeps the four
+zones in place. With no agents ("Conversation gets more space"), B takes
+about three quarters of the right column and C a short strip, "C · No
+agents". With agents present ("Monitoring gets more space"), B and C share
+the right column about evenly. A on the left and D at the bottom are
+unchanged. The owner's second message answers the question whether zone C,
+expanded with a single agent and mostly empty rows, should keep half the
+column: its height follows the agents deployed. The third, after plan 18's
+first review, clears zone C of the earlier agents at each new prompt.
+
+Choices agreed (plan 18, approved by the owner on 2026-10-19):
+
+- **The agents in play:** those running, and those that appeared or ended
+  since the owner's last prompt; a turn the CLI opens by itself, such as
+  Claude Code's for a background agent's notification, is not a prompt.
+- **Zone C lists only them:** each new prompt clears it, back to the empty
+  strip; an agent still running from the previous turn stays, as it can
+  still ask for approvals ("Yes it's ok", the owner, 2026-10-19). The earlier
+  agents stay in zone A's tree, which inspects them.
+- **The empty strip:** 4 rows from 100 columns, 3 under 100.
+- **With agents in play:** the rows they need, the title, a row each, the
+  key hint and the border, at most half the right column, B keeping at least
+  12 rows (14 from 160 columns, where C keeps 8 rows for the preview); at
+  most 5 rows under 100 columns.
+
+---
+
+1. Preserve the four-zone architecture, but make it adaptive
+Your current architecture is one of the strongest aspects of the application.
+
+What changes? When there are no agents, the conversation gets more room. When agents start working, Zone C expands to provide better visibility.
+
+Zone C is useful even with 0 active agents and 1 completed agent. Completed agents should remain accessible, so the panel shouldn't automatically disappear just because no agent is currently running.
+
+I would preserve the existing structure and let the space allocation respond to activity.
+
+Zone C expands when subagents appear, remains expanded after completion, and resets to its compact layout only when a new user prompt is submitted. If the new turn launches subagents, it expands again.
+
+---
+
+Actually yes, there are too much space for 1 agent, the space should adapt based on the deployed agent
+
+---
+
+One improvement to this : after writing the next prompt to the agent, the zone c must be cleared, back to empty. It isn't the case.
+
+Why? Because it is a new prompt, no need to keep the history
+
+It must reset EMPTY to its compact layout only when a new user prompt is submitted

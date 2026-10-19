@@ -23,6 +23,18 @@
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
 │                                          ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │                                          ││ >  Ask Mock data anything…                                                                                                                               │
 │                                          ││                                                                                                                                                          │
@@ -34,18 +46,6 @@
 │                                          │╭─ C · LIVE AGENTS ────────────────────────────────── 0 ACTIVE · 2 DONE ─╮╭─ /root/create_found · LIVE ───────────────────────── model N/A (not reported) ─╮
 │                                          ││  ✓ /root/create_found model N/A   completed             0s   77.3k tok ││ 11:30:00  assistant  I’ll create `found.txt` with exactly the requested c…mock │
 │                                          ││  ✓ /root/list_files   model N/A   completed             0s   30.5k tok ││ 11:30:00  assistant  Created and verified `found.txt` containing `found`. mock │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
 │                                          ││                                                                        ││                                                                                │
 │                                          ││                                                                        ││                                                                                │
 │                                          ││                                                                        ││                                                                                │

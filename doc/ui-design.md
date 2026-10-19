@@ -451,8 +451,16 @@ One line under the title (AM4 W1; architecture.md, Session context):
 Three layouts, chosen by the terminal's width: narrow below 100 columns,
 standard from 100 to 159, wide from 160; widths and splits below are ASM-12. The layout is recomputed on
 every resize message; the state does not change. Panel heights share what
-the fixed lines leave: B takes about 60% of the right column, C the rest; at
-narrow width C has 3 rows and D 1.
+the fixed lines leave, and zone C's follows the agents (plan 18, brief
+amendment 14): with no agent in play, C is an empty strip of 4 rows, its
+title and "no agents yet" (3 rows at narrow width); with agents in play, as
+many rows as they need, its title, a row each, its key hint and its border,
+at most half the right column, B taking the odd row and keeping at least 12
+rows (14 at wide width, where C also keeps 8 rows for the preview), and at
+most 5 rows at narrow width. B takes the rest; D has 1 row at narrow width.
+The agents in play are the state's list
+([events-and-state.md](events-and-state.md#zone-cs-height)): those running,
+or that appeared or ended since the owner's last prompt; C lists only them.
 
 ### Narrow, 80x24
 
@@ -834,8 +842,14 @@ label and syntax highlighting.
 The live subagents (AM2 C1-C11; AM4 D3).
 
 - **Header**: "C · LIVE AGENTS", then "N ACTIVE · M DONE" on the right,
-  counts derived from the agent machines (`Running` and `WaitingApproval`
-  are active).
+  counts of the agents it lists, derived from the agent machines (`Running`
+  and `WaitingApproval` are active).
+- **The agents in play only** (plan 18, brief amendment 14, the owner's
+  third message): each prompt the owner submits clears C of the agents of
+  earlier prompts, back to "0 ACTIVE · 0 DONE" and "no agents yet"; an agent
+  still running stays, and so do the agents of turns the CLI opens by itself
+  for a background agent's notification. The earlier agents stay in zone A's
+  tree, from which they can be inspected.
 - **One row per agent**: status symbol, label (Claude Code's description or
   `agent_id`; Codex `agentPath`; else, for a Codex agent its spawn request
   alone names, "task: " and the first line of the request's `prompt`, cut
@@ -869,6 +883,16 @@ The live subagents (AM2 C1-C11; AM4 D3).
   does not fit, it drops the effort, then the source, keeping the model
   whole, and only then nothing (plan 7, item 2); it follows the selection, and the wheel
   scrolls it.
+- **Height** (plan 18, brief amendment 14): an empty strip while no agent is
+  in play, 4 rows (3 at narrow width), the title with "0 ACTIVE · 0 DONE"
+  and "no agents yet". As soon as the turn deploys agents, C grows to the
+  rows they need, a row each with the title, the key hint and the border, up
+  to half the right column (5 rows at narrow width), the list scrolling with
+  the selection past that, and keeps that height after they finish, until
+  the owner's next prompt clears it; a turn the CLI opens by itself does not.
+  The key hint shows from 4 body rows, or when the agents leave a row for
+  it. At wide width the strip spans the right column without the preview;
+  with agents in play C keeps 8 rows for the preview beside the list.
 - **Keys** when focused: ↑ ↓ select, Enter inspects, z zooms; PgUp, PgDn,
   Home and End scroll the list, the selection kept.
 - Background agents that outlive their turn stay listed and running (P3,

@@ -7,8 +7,8 @@ waits for the owner's approval before the next one starts. This file keeps
 the current state only (the owner, 2026-10-18): a closed plan's full text,
 criteria and progress log are in git (`git show 8888f59:plan.md` for plans 1
 to 13, `git show 84d2ad8:plan.md` for plan 14, `git show b047434:plan.md`
-for plan 15, `git show becfb34:plan.md` for plan 16), and its results in its
-evaluation file.
+for plan 15, `git show becfb34:plan.md` for plan 16, `git show f00c2d8:plan.md`
+for plan 17), and its results in its evaluation file.
 
 ## The owner's standing decisions
 
@@ -69,435 +69,191 @@ the terminal, plan 17 (amendment 11).
 - **[Nice to have]** Advanced orchestration configuration.
 - **[Nice to have]** Google Antigravity as an agent CLI, removed from the
   MVP by amendment 5; the provider interface stays open to it.
+- **[Nice to have]** Starting it like an app (the owner, 2026-10-19): a built
+  `agent-command-center.exe` started from a Start-menu shortcut, pinnable to
+  the taskbar, whose target is `wt.exe -d <projects folder> <path to the
+  .exe>`, so that it always opens in Windows Terminal (the only supported
+  terminal, amendments 6 and 7) with the project field at that folder; the
+  `.exe` is rebuilt after each code change.
 
-## Plan 17 - A file viewer in the terminal
+## Plan 18 - An adaptive layout
 
-**Approved by the owner on 2026-10-18; amendment 12, the Explorer, added
-to it the same day, and amendment 13, the draft window, on 2026-10-19.
-Done and approved by the owner on 2026-10-19**: every evaluation in
-`doc/plan17-evaluation.md` PASS, nothing left not verified. The
-owner's request
-(2026-10-18, `doc/brief.md`, amendment 11): instead of the VS Code
-integration, a file shown in a window floating over the dashboard, with
-syntax highlighting of any language. The choices approved there: about 80%
-of the screen, the dashboard updating behind it; Chroma for the
-highlighting; opened from a file the agent read or edited, or by a quick
-search by name; scroll, `/` search, `g` line, `f` full screen, mouse copy,
-Esc; read-only; only project files, credential files refused, binary files
-not shown, very large files coloured around the view.
+**Approved by the owner on 2026-10-19** ("Do this first, we will tackle
+sequentially"); done the same day, 16 PASS, then zone C cleared at each
+prompt at the owner's review, 6 PASS
+([`doc/plan18-evaluation.md`](doc/plan18-evaluation.md)). **Done and
+approved by the owner on 2026-10-19**, its choices recorded in brief.md,
+amendment 14. The first of the improvements the owner gives one by one
+after plan 17, brief amendment 14. The four zones keep their places; only
+how the right column's height is shared between B and C follows the
+agents' activity.
 
-The one new dependency is `github.com/alecthomas/chroma/v2` v2.27.0 (MIT),
-which brings `github.com/dlclark/regexp2/v2` v2.2.1 (MIT); both approved by
-the owner on 2026-10-18. Nothing is written anywhere: the viewer only reads.
+The choices it is built with, shown to the owner at review:
 
-Design:
-
-- **Reading a file** (`internal/input/file.go`, the input part). It runs in
-  a command, never in the update loop, with a generation number so a stale
-  result is dropped.
-  - A relative path is taken from the project directory.
-  - **Refused before the file is opened**, with the reason shown in the
-    window:
-    - outside the project, after both paths' symbolic links are resolved:
-      "outside the project: <path>";
-    - a credential file, by its name only: ".credentials.json",
-      "auth.json", "oauth_creds.json", ".git-credentials", ".netrc",
-      "_netrc", ".npmrc", ".pypirc", "id_rsa", "id_dsa", "id_ecdsa",
-      "id_ed25519", ".env" and ".env.*" (except ".env.example",
-      ".env.sample", ".env.template"); the extensions ".pem", ".key",
-      ".p12", ".pfx", ".jks", ".keystore", ".kdbx"; and a name whose stem
-      is "credentials", "secret", "secrets", "token" or "tokens" with no
-      extension or ".json", ".yaml", ".yml", ".toml", ".txt", ".ini",
-      ".conf" or ".cfg": "a credential file: not opened";
-    - a directory: "a directory, not a file";
-    - over 32 MiB: "too large to show: <size> (32 MiB at most)".
-  - A NUL byte in the first 8 KiB makes it binary: "binary file, not shown"
-    and its size.
-  - Lines split at LF, a CR before it dropped; invalid UTF-8 shows as U+FFFD.
-- **Listing the project's files** for the quick open, in a command: every
-  file under the project, relative paths sorted, without `.git` folders,
-  credential files, or anything behind a symbolic link; at most 100,000,
-  then "first 100,000 files".
-- **Highlighting** (`internal/render/syntax.go`; Chroma is pure
-  computation, so the rendering part may use it).
-  - The language comes from the file name, else from Chroma's analysis of
-    the text, else "Plain text".
-  - Chroma's token types are coloured from the palette, not from a Chroma
-    theme: keywords violet and bold, strings green, numbers orange,
-    comments grey and italic, functions and classes light blue, built-ins
-    and types blue, a diff's added lines green and removed lines red,
-    headings in the title colour, anything else in the text colour. Chroma's
-    error tokens are plain text. The 16-colour palette maps the same way.
-  - It runs in a command, never while drawing. A file up to 1 MiB is
-    highlighted whole. A larger one is highlighted 1000 lines on either side
-    of the view, again when the view leaves that range; the window says
-    "coloured around the view", since a comment or string that starts
-    above the range may be coloured wrongly. Until the colours arrive the
-    lines show uncoloured, "colouring…" in the header.
-- **The window** (`internal/render/file.go`).
-  - Floating: `max(W*4/5, min(W-4, 84))` columns by `max(H*4/5, min(H-2,
-    22))` rows, centred over the dashboard, which is drawn and updated
-    behind it: 76x22 at 80x24, 96x32 at 120x40, 160x48 at 200x60. `f`
-    toggles full screen.
-  - A rounded frame in the title colour. The top edge has the file's name
-    on the left and "<language> · <N> lines" on the right; the first row,
-    the path shortened as elsewhere and what opened it ("read by Read",
-    "edited by Edit"…).
-  - Each line: its number right-aligned in grey, then the code. Tabs to the
-    next multiple of 4; long lines cut with "…", ←→ shift the view by 8
-    columns.
-  - The cursor line has zone A's cursor row background. The lines the agent
-    edited are marked: their numbers in the attention colour and "▌" after
-    them.
-  - The footer: the keys on the left; "line <cursor>/<N>" on the right, or
-    the search or go-to-line field while typing it. With an approval
-    pending: "◆ approval waiting · Esc, then F2".
-- **Opening** (`F3`, on the dashboard).
-  - On zone B's entry cursor, or in an entry's full view, on a tool entry
-    that names a file: that file. The entry hint adds "F3 file".
-    - Claude Code's Read: at its `offset`, nothing marked.
-    - Edit and MultiEdit: the lines of the first `new_string` found in the
-      file (else the first `old_string`), marked; Write: line 1.
-    - Codex's fileChange: its first change's path, the first added lines
-      of its diff's first hunk marked.
-    - Any other tool with `file_path`, `notebook_path` or `path`: line 1.
-  - Elsewhere, or on an entry that names no file: the quick open, a window
-    of the same size. Typing filters (case ignored; the letters in order;
-    a name match first, then a path match, then the shortest path); ↑↓
-    PgUp PgDn select; Enter opens; Esc closes.
-- **Keys in the window.** ↑↓ move the cursor line, PgUp PgDn by a page,
-  Home End to the first and last line, ←→ shift sideways; `/` types a
-  search (case ignored unless it has a capital), Enter finds the next match,
-  `n` and `N` the next and previous, matches shown on an amber background
-  with "match <i> of <n>"; `g` types a line number, Enter goes there; `f`
-  full screen; Esc cancels a field, then clears a selection, then closes.
-  F1, F4, F12, Ctrl+C and Ctrl+Q keep their meaning; F2 closes the window
-  and goes to the approval; everything else is taken by the window. The
-  search runs in a command, at most 10,000 matches.
-- **Mouse.** Capture stays on: a drag selects in the window only, and the
-  release copies the file's text it covers, as the other panels do; the
-  wheel over the window scrolls it. The dashboard behind takes no click.
-
-**Amendment 12, the Explorer** (the owner, 2026-10-18, `doc/brief.md`): F3
-opens the project as a tree, as VS Code's Explorer does; the rules above
-stand except where this changes them.
-
-- **Opening.** F3 on an entry or a request naming a file opens that file,
-  as before; anywhere else it opens the Explorer, a window of the viewer's
-  size titled "Explorer". It opens as it was left in the session (its open
-  folders and cursor), every open folder read again.
-- **Reading a folder** (`input.ListDir`, in a command, a generation number
-  dropping a stale result): only a folder inside the project, its links
-  resolved; its folders, then its files, each sorted without case; without
-  `.git`, credential files (by name, as in the listing) or links; at most
-  10,000 entries, then "first 10,000 entries". A folder is read only when it
-  is opened, so a large `node_modules` costs nothing until then.
-- **Git's markers** (`input.GitCLI.Status`, one call each time the Explorer
-  opens, in a command; `git --no-optional-locks status --porcelain=v1 -z
-  --untracked-files=normal --ignored -- .`, so it writes nothing): `M`
-  modified, `A` added, `R` renamed, `U` untracked, `!` in conflict, at the
-  row's right; "●" on a folder holding any of these or a deleted file; a
-  file or folder git ignores, and all under it, dimmed. Outside a
-  repository, or without git, no marker, and the path row says "not a git
-  repository" or "git not found".
-- **The window.** The top edge: "Explorer", and on the right the project's
-  name and "<N> items", the rows the tree shows. The first row: the cursor's
-  path in the project. Then the rows: two cells of indent a level, "▸" or
-  "▾" before a folder, folders in the title colour and bold, files in the
-  text colour, the marker on the right, the cursor row on zone A's cursor
-  background. Under a folder being read, "reading…"; an empty one, "empty
-  folder"; one that cannot be read, its reason in the attention colour. The
-  footer: the keys, and "<i> of <N>".
-- **Keys in the Explorer.** ↑↓ PgUp PgDn Home End move; → opens a folder,
-  or on an open one goes to its first entry; ← closes an open folder, else
-  goes to the parent folder; Enter opens or closes a folder, or shows a file
-  in the viewer; `/` opens the quick open; F1, F4, F12, Ctrl+C and Ctrl+Q
-  keep their meaning, F2 closes and goes to the approval; everything else is
-  taken. Mouse: the wheel moves the cursor; a click puts the cursor on a
-  row, a click on the cursor row is Enter.
-- **Esc goes back one level, F3 closes** (in place of "Esc closes" above):
-  - in the viewer, Esc cancels a field, then clears a selection, then goes
-    to the Explorer with the file under the cursor, its folders opened (a
-    file opened from an entry too);
-  - in the quick open, Esc goes back to the Explorer;
-  - in the Explorer, Esc closes the folder the cursor is in and puts the
-    cursor on it; at the top level, Esc closes the Explorer;
-  - F3 in any of the three closes them all, back to the dashboard.
-
-1. **Reading and listing.** `internal/input/file.go`; tests on temporary
-   directories.
-2. **Highlighting.** `internal/render/syntax.go`; the palette's syntax
-   styles.
-3. **The window and the quick open.** `internal/render/file.go`,
-   `internal/app/file.go`; keys, mouse, the key overlay, the footers.
-4. **Documents and the full check.** `THIRD_PARTY.md`, AGENTS.md,
-   architecture.md, ui-design.md, reliability.md, evaluation.md; the
-   checks, the terminal runs, `doc/plan17-evaluation.md`.
-5. **The Explorer** (amendment 12). `input.ListDir`, `GitCLI.Status`, the
-   Explorer window and its keys, Esc and F3 changed in the viewer and the
-   quick open; the documents, the full check again, its results added to
-   `doc/plan17-evaluation.md` beside the first ones, which stand.
+- **The agents in play** (`State.InPlay`, their keys, and
+  `State.AgentsInPlay`, their count): those running, and those that appeared
+  or ended in the turn of the owner's last prompt or later. A prompt the
+  owner submits starts that turn; a turn the CLI opens by itself, such as
+  Claude Code's for a background agent's notification, does not. Before any
+  prompt, every agent counts.
+- **C lists only them,** the owner's third message ("It must reset EMPTY to
+  its compact layout only when a new user prompt is submitted"): each new
+  prompt clears C of the earlier agents, its counts back to 0, "no agents
+  yet"; an agent still running stays. The earlier agents stay in zone A's
+  tree, from which they are inspected; ↑ ↓ in C and [ ] in an inspection go
+  through C's list.
+- **None in play:** C is an empty strip of 4 rows from 100 columns, 3 under
+  100 columns. B takes the rest of the column.
+- **Agents in play:** C is as tall as they need, the owner's answer of
+  2026-10-19 ("the space should adapt based on the deployed agent"): its
+  title, a row per agent, its key hint and its border, at least the strip;
+  at most half the right column, B taking the odd row and keeping at least
+  12 rows (14 from 160 columns, where its input is taller); at most 5 rows
+  under 100 columns. C's key hint now also shows when the agents leave a
+  row for it.
+- **From 160 columns,** with agents in play, C keeps at least 8 rows for the
+  selected agent's preview beside the list; the strip has no preview.
+- **Unchanged:** `z` zoom on C, F6 and every key, the selection, zones A and
+  D, and every window. (The second build sized a focused C for every agent
+  it listed; with C cleared at each prompt that rule went.)
 
 ### Criteria
 
-Item 1, reading and listing (TestReadFile, TestCredentialName, TestListFiles).
+Item 1, the rule (TestAgentsInPlay, `internal/state`).
 
-- 1.1 A file inside the project reads, by absolute and by relative path;
-  CRLF lines come without CR; invalid UTF-8 shows U+FFFD.
-- 1.2 Refused, each with its reason above: a path outside the project, a
-  symbolic link inside it pointing outside (skipped where links cannot be
-  made), a directory, a file over the limit (a lowered limit in the test).
-- 1.3 Every credential name listed above is refused and a credential file
-  that exists is not opened (TestCredentialName covers the names; the check
-  comes before the open in `ReadFile`); "token.go", "secrets.go",
-  ".env.example" and "auth.go" are not refused.
-- 1.4 A file with a NUL in its first 8 KiB is binary.
-- 1.5 The listing is sorted, leaves out `.git`, credential files and links,
-  and stops at its limit (lowered in the test) saying so.
+- 1.1 No agent: 0. Two agents start in the owner's turn: 2; they complete:
+  still 2.
+- 1.2 The owner submits the next prompt, every agent done: 0; an agent
+  starting in that turn: 1.
+- 1.3 A turn the CLI opens by itself after the owner's turn changes nothing,
+  with agents in play or none.
+- 1.4 An agent still running when the owner submits a prompt: 1; with an
+  agent of the new turn: 2; both end in it: still 2; the next prompt: 0.
+- 1.5 Before any prompt, in a replay that starts with an agent: 1.
 
-Item 2, highlighting (TestHighlight, TestSyntaxPalette).
+Item 2, the heights (TestAdaptiveLayout, `internal/render`), from P2 (no
+agent), P3b (one) and P3b with more agents added running.
 
-- 2.1 Go, JavaScript, TypeScript, Java, Python, Rust, C#, SQL, YAML, JSON,
-  Markdown and a shell script are recognised by name with their language
-  name; a keyword and a string of each take the keyword and string
-  colours.
-- 2.2 A file with an unknown name and no recognisable content is "Plain
-  text", every run in the text colour.
-- 2.3 The runs of every line, joined, give the line back byte for byte.
-- 2.4 With the 16-colour palette each syntax style uses its ANSI colour.
-- 2.5 A 1 MiB Go file is highlighted whole; a larger one only in the range
-  asked, and its window says "coloured around the view".
+- 2.1 At 120x40: no agent, C 4 rows and B 29; one agent, C 4 (its row and
+  the key hint); six, C 9 and B 24; twenty, C 16 and B 17 (half); P3b's
+  agent after a new prompt, C 4 with the agent listed (now cleared: 5.2).
+- 2.2 At 200x60: no agent, C 4 and B 47, no preview; one agent, C 8 with the
+  preview; twenty, C 23; forty, C 25 and B 26 (half); after a new prompt, C
+  4 without the preview.
+- 2.3 At 80x24: no agent, C 3 and B 14; one agent, C 4 with the key hint;
+  six, C 5 and B 12.
+- 2.4 At 100x24: twenty agents, B keeps 12 rows and C takes 5; no agent, C
+  4 and B 13.
+- 2.5 Twenty agents done before a new prompt: a strip of 4 rows; focused, C
+  16 at 120x40, 23 at 200x60, 5 at 80x24; no agent focused, the strip (now
+  cleared, focused or not: 5.2).
+- 2.6 `z` zoom on C and F6 as before: the existing tests pass unchanged,
+  TestPaneScroll included.
 
-Item 3, the window and the quick open (internal/app and internal/render
-tests).
+Item 3, frames and checks.
 
-- 3.1 Geometry: 76x22 at 80x24, 96x32 at 120x40, 160x48 at 200x60, centred;
-  full screen fills the screen; the dashboard rows outside the window are
-  the dashboard's own, and an event arriving while it is open changes them.
-- 3.2 Opening from an entry: a Read with offset 40 puts the cursor on line
-  40; an Edit marks the lines of its `new_string`; a Codex fileChange marks
-  its first added lines; F3 on an entry without a file opens the quick
-  open.
-- 3.3 The quick open lists a temporary project's files, filters as
-  described, opens the selection, and says when the listing was cut.
-- 3.4 Keys: each key above does what it says, and every key the window
-  takes leaves the conversation's draft unchanged.
-- 3.5 Refusals and states show in the window: outside the project, a
-  credential file, binary, too large, not found, "reading…", "colouring…".
-- 3.6 A result for an older open, colouring or search is dropped.
-- 3.7 Mouse: a drag across three lines in the window copies exactly those
-  lines' text; a click on the dashboard behind selects nothing; the wheel
-  scrolls the window.
-- 3.8 Golden frames `file`, `file-full`, `file-search` and `file-finder` at
-  the four sizes; the existing frames change only where the entry hint
-  gains "F3 file" (reviewed in the diff).
-- 3.9 The key overlay lists F3 and the window's keys; every footer fits
-  (TestFootersFit).
+- 3.1 TestGoldenFrames rewritten with `-update`; every changed frame differs
+  only where B and C meet (B's extra rows, or C's strip or larger list),
+  reviewed frame by frame.
+- 3.2 `go build ./...`, `go vet ./...` exit 0, `gofmt -l .` empty;
+  `go test ./...` with 0 FAIL and only the unelevated TestDiskListLink
+  skipped; the timing step 4/4 PASS.
+- 3.3 ui-design.md (Layouts at three sizes, zone C), events-and-state.md
+  (Zone C's height), architecture.md (ASM-12) and AGENTS.md (status) say
+  what was built; brief.md holds the request (amendment 14), and the
+  choices joined it once the owner agreed them.
 
-Item 4, documents and the full check.
+Item 4, in a real Windows Terminal, maximised first and then 80x24, with
+the plan 17 harness (UI Automation, the screen read as text).
 
-- 4.1 `THIRD_PARTY.md` lists Chroma and regexp2 and every module the graph
-  gains; the licence test passes; `go.mod` has Chroma as its fifth direct
-  dependency.
-- 4.2 AGENTS.md, architecture.md, ui-design.md, reliability.md and
-  evaluation.md say what was built.
-- 4.3 `go build ./...`, `go vet ./...` (also with `-tags live` and
-  `timing`) and `gofmt -l .` are clean; the binary's size before and after
-  is recorded.
-- 4.4 `go test ./...`: 0 FAIL.
-- 4.5 The timing step: 4/4 PASS, p95 at most 16 ms.
-- 4.6 A terminal run, maximised, on a mock run in a temporary project with
-  Go, TypeScript, Java and a credential-named file: F3 opens the quick
-  open; typing a name and Enter opens the file in the floating window with
-  line numbers and its language; `g`, `/`, `n`, `f` and Esc work; the
-  credential file is refused; a mouse drag copies a line to the
-  clipboard; screenshots show the colours. No agent CLI starts.
-- 4.7 The same run at 80x24.
-- 4.8 The changed and new files carry no CR, no BOM and no NUL.
-- 4.9 The summary is in `doc/plan17-evaluation.md` and here.
+- 4.1 The mock `claude-subagent-approval.jsonl` (one agent): C the strip
+  before its agent, then its row and the key hint, kept after it completes;
+  the mock `codex-subagents.jsonl` (two agents): the strip, one agent's
+  height, then two agents', kept after both complete.
+- 4.2 The reset on a new prompt, live: Claude Code on Haiku in a temporary
+  project, a prompt that launches two subagents, then "Reply with the single
+  word ok"; C sized for two agents after the first, the strip after the
+  second. About USD 0.05 of the owner's quota; it runs once the owner
+  approves it.
 
-Item 5, the Explorer (amendment 12).
+Item 5, zone C cleared at each prompt, the owner's third message at review.
 
-- 5.1 `ListDir` on a temporary project: folders first, then files, each
-  sorted without case; `.git`, credential files and links left out; a path
-  outside the project, or a link inside pointing outside, refused; the
-  limit (lowered in the test) cuts it and says so (TestListDir).
-- 5.2 `Status` parses git's output: `M`, `A`, `R` (both paths), `U`, `!`,
-  ignored files and folders, untracked folders, a project in a subfolder of
-  its repository; on a real temporary repository the markers come out as
-  expected and `.git/index` is not rewritten (TestGitStatus,
-  TestParseStatus). Without a repository: "not a git repository".
-- 5.3 F3 with no file in front opens the Explorer; the root is read, then a
-  folder when → or Enter opens it; Enter on a file shows it in the viewer
-  (TestExplorerOpen).
-- 5.4 Keys: ↑↓ PgUp PgDn Home End, → ← Enter and `/` do what the design
-  says; no key the Explorer takes changes the draft (TestExplorerKeys).
-- 5.5 Esc: viewer → Explorer, the file under the cursor and its folders
-  opened (also for a file opened from an entry); quick open → Explorer;
-  Explorer → the cursor's folder closed, the cursor on it; at the top level
-  → closed. F3 closes the viewer, the quick open and the Explorer, each in
-  one key (TestExplorerBack).
-- 5.6 Markers: a modified file `M`, an untracked one `U`, a folder holding
-  a change "●", an ignored file dimmed, each in its colour; outside a
-  repository "not a git repository" (TestExplorerMarks).
-- 5.7 A folder listing or status for an older opening is dropped; reopening
-  keeps the open folders and the cursor (TestExplorerStale).
-- 5.8 Mouse: the wheel moves the cursor; a click selects a row, a click on
-  the cursor row opens it (TestExplorerMouse).
-- 5.9 Golden frames `explorer` at the four sizes, reviewed; the `file`
-  frames change only in the footer's keys ("Esc back · F3 close"); the key
-  overlay lists the Explorer's keys; every footer fits.
-- 5.10 Documents: brief (amendment 12), AGENTS.md, architecture.md,
-  ui-design.md, reliability.md, evaluation.md say what was built.
-- 5.11 Build, vet (also `-tags live`, `timing`), gofmt clean; `go test
-  ./...` 0 FAIL; the timing step 4/4 PASS, p95 at most 16 ms.
-- 5.12 A terminal run, maximised then at 80x24, on a mock run in a
-  temporary git repository (a modified file, an untracked file, an ignored
-  folder, a credential file): F3 opens the Explorer with its markers; →
-  and Enter open folders; Enter shows a file; Esc returns to the Explorer
-  on that file, then closes folders level by level, then closes; F3 closes
-  from the viewer in one key; `/` opens the quick open and Esc returns;
-  screenshots show the colours. No agent CLI starts; git writes nothing
-  (the repository's status and `.git/index` unchanged).
-- 5.13 The changed and new files carry no CR, no BOM and no NUL; the
-  results are added to `doc/plan17-evaluation.md` and here.
-
-Item 6, deleted files in the Explorer (the owner, 2026-10-18, after the live
-checks showed that `D` could never reach a row). A file git versions and the
-working tree no longer has is still listed, so that a deletion, by the owner
-or by an agent, shows where it happened. A file git never versioned leaves
-no trace and is not shown.
-
-- 6.1 Each path git reports deleted has a row under its folder, named in red
-  with a red `D`, in the folder's order (folders first, then files, without
-  case); a deleted folder is rebuilt from the paths under it, its row a
-  folder with `D`; a name also on the disk is listed once, from the disk
-  (TestExplorerDeleted, render).
-- 6.2 A folder empty on the disk but holding deleted paths lists them, not
-  "empty folder"; the folders above a deletion keep their "●".
-- 6.3 The cursor on a deleted row: the path row reads "<path> · deleted, not
-  on disk"; Enter or a click on a deleted file opens nothing; → and Enter
-  open a deleted folder without reading the disk, ← and Esc close it; the
-  Explorer opened again reads no deleted folder (TestExplorerDeleted, app).
-- 6.4 A real temporary repository with a file deleted at the top level and a
-  folder deleted whole gives those rows (TestGitStatus or a new test, real
-  git); the golden frames `explorer` show a deleted row at the four sizes,
-  reviewed; no other frame changes.
-- 6.5 ui-design.md (Explorer) and architecture.md say what was built.
-- 6.6 Build, vet (also `-tags live`, `timing`), gofmt clean; `go test ./...`
-  0 FAIL; the timing step 4/4 PASS, p95 at most 16 ms.
-- 6.7 A terminal run, maximised then at 80x24, in a temporary git repository
-  with a top-level file and a whole folder deleted: their rows in red with
-  `D` (pixels counted); Enter on the file opens nothing; the folder opens and
-  shows its deleted files; git writes nothing. No agent CLI starts.
-- 6.8 The changed and new files carry no CR, no BOM and no NUL; the results
-  are added to `doc/plan17-evaluation.md` and here.
+- 5.1 `State.InPlay` lists the agents in play, the earlier turns' cleared:
+  "bg,new" at the end of 1.4's turn (TestAgentsInPlay).
+- 5.2 After a new prompt, every agent done: C the empty strip, "0 ACTIVE ·
+  0 DONE" and "no agents yet", 4 rows and B 29 at 120x40, 4 and no preview
+  at 200x60, 3 at 80x24, focused or not; six agents in play, focused: as
+  unfocused, C 9 (TestAdaptiveLayout).
+- 5.3 In every case of TestAdaptiveLayout, C is empty exactly when no agent
+  is in play.
+- 5.4 TestPaneScroll's C subtests on a prompt that deploys 30 agents (60
+  for the zoomed list), their assertions unchanged, all PASS.
+- 5.5 Item 3 again: no golden frame changed by the clearing; build, vet,
+  gofmt, `go test ./...` and the timing step as in 3.2; ui-design.md and
+  events-and-state.md say what was built.
+- 5.6 In a real Windows Terminal, maximised and 80x24: the four mocks as in
+  4.1; live, C cleared from prompt 2's submission, "0 ACTIVE · 0 DONE" and
+  "no agents yet", and after it.
 
 ### Progress
 
-- Step 1 done: `internal/input/file.go`; TestReadFile, TestCredentialName,
-  TestListFiles, TestReadFileJunction pass.
-- Step 2 done: `internal/render/syntax.go`, the palette's syntax styles;
-  TestHighlight, TestSyntaxPalette pass.
-- Step 3 done: the window (`internal/render/file.go`), the app wiring
-  (`internal/app/file.go`, keys, mouse, paste), the key overlay and footers,
-  and the `THIRD_PARTY.md` rows. TestFileRect, TestFileStates, TestToolFile,
-  TestFileFooters (render), TestFileOverDashboard, TestFileFromEntry,
-  TestQuickOpen, TestFilterFiles, TestFileKeys, TestFileStatesApp,
-  TestFileStale, TestFileMouse (app) pass; the golden frames `file`,
-  `file-full`, `file-search` and `file-finder` at the four sizes are
-  reviewed, the existing frames unchanged. The colouring is injected
-  (`Options.Highlight`): the application tests colour outside their synctest
-  bubble (`internal/app/main_test.go`), since regexp2's clock goroutine,
-  started by Chroma's match timeout, would outlive a bubble.
-- Step 4 done: the documents (amendment 11, AGENTS.md, architecture.md,
-  ui-design.md, reliability.md, evaluation.md, `THIRD_PARTY.md`); build, vet
-  and gofmt clean; `go test ./...` 324 PASS, 1 SKIP, 0 FAIL; the timing step
-  4/4 PASS; the terminal runs 29 of 29 PASS maximised and at 80x24.
-- Evaluation: 28 criteria, 28 PASS
-  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md)). Not verified: a
-  real symbolic link in the reading and the listing (a junction is tested),
-  and the viewer opened from a live agent CLI's entry (the runs replay a
-  mock). Amendment 12 was added before the owner approved it.
-- Step 5 done: the Explorer (amendment 12 in `doc/brief.md`, the design and
-  criteria 5.1 to 5.13 above). `ListDir` and git's `Status` in
-  `internal/input/explorer.go` and `git.go`; the window in
-  `internal/render/explorer.go`; the app wiring in `internal/app/explorer.go`
-  (F3, Esc one level back, F3 closing every window, the mouse). A fault found
-  on the way and fixed: a folder left open above a file the viewer went back
-  to was never read. TestListDir, TestGitStatus, TestParseStatus,
-  TestExplorerOpen, TestExplorerKeys, TestExplorerBack, TestExplorerMarks
-  (app and render), TestExplorerStale, TestExplorerMouse, TestExplorerRows,
-  TestExplorerCursor pass; the golden frames `explorer` at the four sizes are
-  reviewed, the 16 `file` frames' footers read "Esc back · F3 close". Build,
-  vet and gofmt clean; `go test ./...` 336 PASS, 1 SKIP, 0 FAIL; the timing
-  step 4/4 PASS; the binary 14,171,136 bytes; the terminal runs 39 of 39 PASS
-  maximised and at 80x24, git writing nothing.
-- Evaluation of amendment 12: 13 criteria, 13 PASS
-  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#amendment-12-the-explorer-2026-10-18)).
-  Not verified: the `!` and `D` markers, "not a git repository" and "git
-  not found" live (unit tests cover them); the 16 `file` frames against
-  their first version (untracked; their footers checked); the Explorer from
-  a live agent CLI (the runs replay a mock); a real symbolic link in
-  `ListDir`.
-- Live and simulated checks, at the owner's request with their quota
-  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#live-and-simulated-checks-2026-10-18)):
-  the `!` marker, "not a git repository" and "git not found" in a real
-  terminal (27 of 27 PASS maximised and at 80x24); the Explorer and the
-  viewer from live Claude Code (Read and Write entries) and live Codex
-  (fileChange entry), 0 FAIL at both sizes, the configuration check PASS.
-  The faults found were in the test scripts, none in the application. Still
-  not verified: a real symbolic link (needs an elevated terminal); the 16
-  `file` frames against their first version (no copy exists); `D` on a row,
-  not reachable since a deleted file has no row.
-- Item 6, deleted files in the Explorer, at the owner's request: 8 criteria,
-  8 PASS
-  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#item-6-deleted-files-in-the-explorer-2026-10-18)).
-  Each path git reports deleted is a red row with a red `D` under its
-  folder, a folder deleted whole rebuilt from git's paths and never read;
-  Enter on a deleted file opens nothing, its path row says "deleted, not on
-  disk". TestExplorerDeleted (render, app) and TestGitStatus (a real
-  repository, a folder deleted whole) pass; the `explorer` frames show a
-  deleted file and folder, no other frame changed; `go test ./...` 338 PASS,
-  1 SKIP, 0 FAIL; timing 4/4 PASS; the terminal runs 21 of 21 PASS
-  maximised and at 80x24, git writing nothing. This settles `D` on a row.
-- A real symbolic link, at the owner's request: 3 criteria, 3 PASS
-  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#a-real-symbolic-link-2026-10-18)).
-  After one UAC prompt, an elevated PowerShell ran only the test binary built
-  from the working copy: TestListDir, TestReadFile and TestListFiles PASS,
-  every link case run, none skipped. This settles the real symbolic link;
-  unelevated, those cases still skip.
-- The 16 file frames against their first version, at the owner's request:
-  4 criteria, 4 PASS
-  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#the-16-file-frames-against-their-first-version-2026-10-18)).
-  The first version, found as unreachable git blobs and in the session's
-  transcript, both copies identical: each of the 12 frames at 80x24, 120x40
-  and 200x60 differs in its footer alone, "Esc close" now "Esc back · F3
-  close"; the four 79x24 frames are unchanged. This settles the file frames.
-- F3 in the dashboard footer, at the owner's request: 6 criteria, 6 PASS
-  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#f3-in-the-dashboard-footer-2026-10-18)).
-  "F3 Explorer" after the F2 key at every layout; when the line does not
-  fit, "Ctrl+J newline" (shown in B's input) is left out so that "Ctrl+Q
-  quit" stays visible, at 120x40 too. 29 golden frames changed in their
-  footer alone; `go test ./...` 339 PASS, 1 SKIP, 0 FAIL.
-- The draft window, at the owner's request (brief amendment 13): 12
-  criteria, 12 PASS
-  ([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md#the-draft-window-2026-10-19)).
-  Ctrl+G opens the same draft in a window "Draft" over the dashboard, placed
-  as the file viewer, Ctrl+F full screen (`f` types a letter), Esc back with
-  the draft kept; the external editor is removed. A 10,000-line draft stays
-  byte for byte; the window's keystroke allocations are under the unchanged
-  bound (998); `go test ./...` 341 PASS, 1 SKIP, 0 FAIL; timing 4/4 PASS.
-  In a real Windows Terminal, maximised and 80x24: 16 checks PASS at each
-  size, Ctrl+F included, a real paste, mouse copy and wheel
-  ([the terminal run](doc/plan17-evaluation.md#the-draft-window-in-a-real-terminal-2026-10-19)).
+- First build (2026-10-19), C half the column with any agent in play: items
+  1 to 3 and 4.1 passed (maximised, C 4 then 18 rows; 80x24, 3 then 5). The
+  owner then saw one agent leave C mostly empty and asked for its height to
+  follow the agents (amendment 14, second message): rebuilt as above.
+- Items 1 to 3 done (2026-10-19): `State.AgentsInPlay` counts, with
+  `Agent.EndStage` set wherever an agent ends; TestAgentsInPlay PASS, and in
+  the first build it failed when the rule counted the CLI's own stages as
+  prompts (1.3) or forgot when an agent ended (1.4). The heights in
+  `internal/render/dashboard.go`; TestAdaptiveLayout PASS, 20 cases.
+  TestPaneScroll failed on the first agent-sized build, its scroll position
+  hint missing from a 4-row strip when C is focused: focus now sizes C for
+  every agent, and the test passes unchanged. 38 golden frames rewritten and
+  reviewed: in each, the two top rows, zone A and zone D unchanged; C 4 rows
+  with one agent (8 at 200x60, with the preview) and 5 with two, B the rest;
+  the P2 frames C 4 and B 29; the window scenes changed only behind the
+  window. `go test ./...` 343 PASS, 1 SKIP (TestDiskListLink), 0 FAIL; vet,
+  build and gofmt clean; the timing step 4/4 PASS.
+- Item 3.3 done: ui-design.md, events-and-state.md and architecture.md say
+  what was built; AGENTS.md's status names plan 18.
+- Item 4.1 done again (2026-10-19, `p18mock.ps1`, the plan 17 harness: a
+  Windows Terminal window driven by UI Automation, a temporary project,
+  store and home, a PATH of System32 only), four runs, 0 FAIL. Maximised,
+  156x44: the Claude mock C 4 rows before its agent, with it running, done
+  and at the end (B 33); the Codex mock C 4 before, 4 with one agent, 5
+  with two, 5 with one and then both done, and at the end (B 32). 80x24:
+  the Claude mock C 3, then 4 (B 13) at the same points; the Codex mock C 3,
+  4, then 5 (B 12). Each run: the window closed, no agent CLI started (the
+  Claude desktop app's processes left aside), nothing written.
+- Item 4.2 done (2026-10-19, `p18live.ps1`, approved by the owner): the
+  dashboard on Claude Code 2.1.303 and Haiku. Maximised, the strip, 5 rows
+  for prompt 1's two agents, the strip from prompt 2's submission; 80x24, 3,
+  5, 3. Both runs 0 FAIL, configuration PASS. Two earlier maximised runs
+  failed on the script (a variable name, an end of turn read from a lagging
+  log) and on Claude Code's own caches in the configuration check; every
+  height was right ([`doc/plan18-evaluation.md`](doc/plan18-evaluation.md)).
+- Done: 16 criteria, 16 PASS.
+- Item 5 done (2026-10-19), after the owner's review asked for C to be
+  cleared at each prompt: `State.InPlay`, zone C's list and counts from it,
+  ↑ ↓ and [ ] through it, the focus rule removed. TestAdaptiveLayout's
+  after-a-prompt cases now expect C empty; TestPaneScroll's C subtests,
+  which listed the agents of 60 earlier prompts, use a helper deploying 30
+  in one prompt, their assertions unchanged. No golden frame changed. `go
+  test ./...` 343 PASS, 1 SKIP, 0 FAIL; vet, build, gofmt clean; timing 4/4.
+  The four mocks again 0 FAIL; live (Haiku), maximised C 4, 5, then cleared
+  from prompt 2's submission, 80x24 3, 5, then cleared (its agents in the
+  background that time, the CLI's turns for their notifications leaving C
+  as it was); both 0 FAIL, configuration PASS, about USD 0.03.
+- Done: 6 more criteria, 6 PASS. The owner kept a running agent in C at a
+  new prompt ("Yes it's ok") and approved plan 18 on 2026-10-19.
 
 ## Closed plans
 
 One entry each: what the plan did, its approval, its evaluation file and
 its commits. Their criteria and progress logs: `git show 8888f59:plan.md`
 (plans 1 to 13), `git show 84d2ad8:plan.md` (plan 14), `git show
-b047434:plan.md` (plan 15), `git show becfb34:plan.md` (plan 16).
+b047434:plan.md` (plan 15), `git show becfb34:plan.md` (plan 16), `git show
+f00c2d8:plan.md` (plan 17).
 
 ## Plan 1 - Research
 
@@ -611,3 +367,11 @@ with create, list, diff, merge and remove, git through `os/exec`. Approved
 on 2026-10-18, 26 PASS
 ([`doc/plan16-evaluation.md`](doc/plan16-evaluation.md)); commits ce95ba2,
 fad6d20, 642c5b9, becfb34.
+
+## Plan 17 - A file viewer in the terminal
+
+Brief amendments 11, 12 and 13: a file viewer in the terminal with Chroma's
+highlighting, an Explorer of the project (F3) and the draft in a window
+(Ctrl+G), with no external editor. Approved on 2026-10-19, 91 PASS
+([`doc/plan17-evaluation.md`](doc/plan17-evaluation.md)); commits 1748808,
+10c3e74, 904f9a6, 749cef4.
