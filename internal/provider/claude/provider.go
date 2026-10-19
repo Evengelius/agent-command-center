@@ -18,7 +18,7 @@ const Name = "Claude Code"
 // TestedVersion is the last Claude Code version probed; it matches the
 // "Last probed" line of doc/research/probes/README.md (doc/evaluation.md,
 // After a CLI update).
-const TestedVersion = "2.1.302"
+const TestedVersion = "2.1.303"
 
 // VersionTimeout is the Python SDK's bound on `claude -v` (CC-2, rule 3).
 const VersionTimeout = 2 * time.Second

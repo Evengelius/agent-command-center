@@ -31,6 +31,11 @@ func TestFixturesMatchRecordings(t *testing.T) {
 		"p12x-switch-codex-user-to-auto-review.jsonl":   180,
 		"p13c-claude-auto-classifier-deny.jsonl":        260,
 		"p14a-claude-question-answer.jsonl":             68,
+		"p303a-claude-conversation.jsonl":               79,
+		"p303b-claude-subagent-approval.jsonl":          198,
+		"p303c-claude-default-to-auto.jsonl":            259,
+		"p303d-claude-question-answer.jsonl":            62,
+		"p303e-claude-interrupt-tool.jsonl":             88,
 	}
 	copies, _ := filepath.Glob("../../testdata/probes/*.jsonl")
 	if len(copies) != len(want) {

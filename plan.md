@@ -45,7 +45,11 @@ summary format (the owner, 2026-10-18).
   `doc/research/probes/README.md`; a newer one is told to the owner with the
   re-check proposed (`doc/evaluation.md`, After a CLI update), which runs
   only once the owner approves it. The dashboard's project bar shows
-  "newer than tested" meanwhile.
+  "newer than tested" meanwhile. Last occurrence: Claude Code 2.1.303 on
+  2026-10-19, approved, every check PASS (P303a to P303d in
+  `doc/research/probes/README.md`); it found that plan 14's shape check
+  counted an interrupted tool use as unrecognised, fixed the same day at the
+  owner's request (P303e).
 
 ## Nice to have
 

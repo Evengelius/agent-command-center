@@ -31,7 +31,7 @@ func count(evs []event.Event, k event.Kind) int {
 // Every line of every Claude recording maps to at least one event, and no
 // line is unreadable (proposal step 0, item 6: 0 lines dropped).
 func TestEveryLineMaps(t *testing.T) {
-	for _, name := range []string{"p1-claude-stream.jsonl", "p2-claude-conversation.jsonl", "p3-claude-subagent.jsonl", "p3b-claude-subagent-approval.jsonl", "p4-claude-resume.jsonl", "p12c-claude-auto.jsonl", "p12c-switch-claude-default-to-auto.jsonl", "p13c-claude-auto-classifier-deny.jsonl", "p14a-claude-question-answer.jsonl"} {
+	for _, name := range []string{"p1-claude-stream.jsonl", "p2-claude-conversation.jsonl", "p3-claude-subagent.jsonl", "p3b-claude-subagent-approval.jsonl", "p4-claude-resume.jsonl", "p12c-claude-auto.jsonl", "p12c-switch-claude-default-to-auto.jsonl", "p13c-claude-auto-classifier-deny.jsonl", "p14a-claude-question-answer.jsonl", "p303a-claude-conversation.jsonl", "p303b-claude-subagent-approval.jsonl", "p303c-claude-default-to-auto.jsonl", "p303d-claude-question-answer.jsonl", "p303e-claude-interrupt-tool.jsonl"} {
 		recs, per := replay(t, name)
 		for i, evs := range per {
 			if len(evs) == 0 {
@@ -320,20 +320,24 @@ func TestVerdictsOnlyForTheClassifier(t *testing.T) {
 }
 
 // Plan 14, item 6: a tool result without tool_result_meta's
-// permission_decision, a shape 2.1.300 to 2.1.302 always give, is one
-// unrecognised event naming the field; the classifier's verdicts still map.
+// permission_decision is one unrecognised event naming the field, unless its
+// entry marks a tool use an interrupt rejected (non_execution_kind
+// "user-rejected", P303e); the classifier's verdicts still map.
 func TestToolResultWithoutPermissionDecision(t *testing.T) {
 	const result = `{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":"ok"}]}`
 	for name, c := range map[string]struct {
 		line               string
 		missing, decisions int
 	}{
-		"no meta":            {result + `}`, 1, 0},
-		"meta, no decision":  {result + `,"tool_result_meta":[{"id":"toolu_1"}]}`, 1, 0},
-		"another result's":   {result + `,"tool_result_meta":[{"id":"toolu_2","permission_decision":{"decision":"accept","reason_type":"classifier"}}]}`, 1, 1},
-		"another shape":      {result + `,"tool_result_meta":{"id":"toolu_1"}}`, 1, 0},
-		"decision":           {result + `,"tool_result_meta":[{"id":"toolu_1","permission_decision":{"decision":"accept","reason_type":"mode"}}]}`, 0, 0},
-		"classifier verdict": {result + `,"tool_result_meta":[{"id":"toolu_1","permission_decision":{"decision":"reject","reason_type":"classifier"}}]}`, 0, 1},
+		"no meta":                    {result + `}`, 1, 0},
+		"meta, no decision":          {result + `,"tool_result_meta":[{"id":"toolu_1"}]}`, 1, 0},
+		"another result's":           {result + `,"tool_result_meta":[{"id":"toolu_2","permission_decision":{"decision":"accept","reason_type":"classifier"}}]}`, 1, 1},
+		"another shape":              {result + `,"tool_result_meta":{"id":"toolu_1"}}`, 1, 0},
+		"decision":                   {result + `,"tool_result_meta":[{"id":"toolu_1","permission_decision":{"decision":"accept","reason_type":"mode"}}]}`, 0, 0},
+		"classifier verdict":         {result + `,"tool_result_meta":[{"id":"toolu_1","permission_decision":{"decision":"reject","reason_type":"classifier"}}]}`, 0, 1},
+		"interrupted":                {result + `,"tool_result_meta":[{"id":"toolu_1","non_execution_kind":"user-rejected"}]}`, 0, 0},
+		"another result interrupted": {result + `,"tool_result_meta":[{"id":"toolu_2","non_execution_kind":"user-rejected"}]}`, 1, 0},
+		"another kind, no decision":  {result + `,"tool_result_meta":[{"id":"toolu_1","non_execution_kind":"permission-rule"}]}`, 1, 0},
 	} {
 		evs := NewMapper().Out([]byte(c.line))
 		n := 0
@@ -351,8 +355,9 @@ func TestToolResultWithoutPermissionDecision(t *testing.T) {
 	}
 }
 
-// Every Claude recording carries permission_decision on each tool result:
-// none replays with the shape check's unrecognised event.
+// Every Claude recording carries permission_decision on each tool result, or
+// marks it rejected by an interrupt (P303e): none replays with the shape
+// check's unrecognised event.
 func TestRecordingsHavePermissionDecision(t *testing.T) {
 	names, err := filepath.Glob("../../../testdata/probes/p*-claude-*.jsonl")
 	if err != nil || len(names) == 0 {

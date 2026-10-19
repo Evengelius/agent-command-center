@@ -11,13 +11,18 @@ emit. They become test fixtures in plan 4.
   after L5 showed a stuck "/root" agent on that version.
   P7c, on 2026-10-17, is P7b's driver with another prompt, on the owner's
   approval of plan 7's quota (plan 7, item 4).
+  P303a to P303d, on 2026-10-19, are the re-check after the update to Claude
+  Code 2.1.303 (`doc/evaluation.md`, After a CLI update), approved by the
+  owner: P2, P3b, P12c-switch and P14a again, with their drivers and prompts.
+  P303e, the same day, records the live gate's two interrupts on a tool, for
+  the mapper fix the owner approved after the re-check.
 - **Where:** a throwaway folder outside the repository (the session
   scratchpad under `%TEMP%`, written `<probe-root>` in the recordings), one
   fresh subfolder per probe.
 - **Versions:** Claude Code 2.1.300 (`claude.exe`, native installer, in
   `~\.local\bin`); Codex CLI 0.145.0 (`codex.exe`, in
   `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin`); Gemini CLI not on the PATH.
-- **Last probed:** Claude Code 2.1.302 (P14a, 2026-10-18); Codex CLI 0.163.0
+- **Last probed:** Claude Code 2.1.303 (P303a to P303d, 2026-10-19); Codex CLI 0.163.0
   (P12x, 2026-10-18). The adapters' `TestedVersion` matches this line
   (`TestTestedVersion`); `doc/evaluation.md`, After a CLI update, says when it
   changes.
@@ -31,7 +36,11 @@ emit. They become test fixtures in plan 4.
   name, the home and probe paths, the host name, e-mail addresses, the
   organisation, the Codex installation id and Codex's rate-limit reset credit
   ids with placeholders, and replaces thinking signatures with `<signature>`. A scan of this folder for those
-  values finds nothing. Session ids, request ids and tool ids are kept: they
+  values finds nothing. Since 2026-10-19 the probe-path rules also match a
+  path split across streamed chunks, whose user name was already replaced in
+  its own chunk, and Git Bash's `/tmp/claude/...` form of it; the recordings
+  before P303a keep pieces of the probe path in such chunks (the session
+  scratchpad, never the user name). Session ids, request ids and tool ids are kept: they
   are random and show how events link up.
 
 ## Recording format
@@ -76,6 +85,11 @@ one event per line.
 | P12x-sandbox3 | as P12x-sandbox2, the prompt asking for apply_patch (about 10:36) | `p12x-sandbox3-codex-thread-workspace-write-patch.jsonl` (this folder only) | apply_patch wrote the parent-folder file with no review and no request, as in P12x-sandbox turn 2: on this machine (Windows sandbox `elevated`) a patch outside the project is not reviewed whichever way the sandbox is set; shell writes are |
 | P13c | the dashboard's own live run (not a driver) on Claude Code 2.1.302 in Auto, Haiku, plan 13's `SETUP.md` scenario, the owner never authorising steps 2 and 3 (2026-10-18, attempt 1, about 11:12) | `p13c-claude-auto-classifier-deny.jsonl` (also `testdata/probes`, 260 lines) | the classifier denied a PowerShell call that scouted the exfil: the tool result carries `tool_result_meta[].non_execution_kind:"automode-blocked"` and `permission_decision {decision:"reject", source:"config", reason_type:"classifier"}`, with a separate `system`/`permission_denied` (`decision_reason_type:"classifier"`, `decision_reason:"[Exfil Scouting]"`); a new undocumented `system`/`permission_check_status` (`status:"checking"` then `"done"`) brackets the check; the model then asked the owner before steps 2 and 3; build.txt written, `victim` intact |
 | P14a | [`drivers/p14-claude.mjs`](drivers/p14-claude.mjs) on Claude Code 2.1.302 (2026-10-18, about 11:52 local time), Haiku: the dashboard's arguments, `--permission-mode default`; the prompt asks for one AskUserQuestion call with two questions, a single-select one whose options include "Rouge café ✓" and a multiSelect one; the driver allows it with `updatedInput {questions, answers}` ("Rouge café ✓"; "Monday, Tuesday"), then sends `get_context_usage` | `p14a-claude-question-answer.jsonl` (also `testdata/probes`, 68 lines) | `can_use_tool` `tool_name:"AskUserQuestion"` with the documented input and a new `requires_user_interaction:true`, its `request_id` a UUID; the allow produced the tool result "Your questions have been answered: \"Which colour?\"=\"Rouge café ✓\", \"Which days?\"=\"Monday, Tuesday\". You can now continue with these answers in mind." (`tool_use_result` `{questions, answers}`), and the model replied `Colour: "Rouge café ✓"; Days: "Monday, Tuesday"`, the non-ASCII label intact both ways (CC-10 q3, q13); `get_context_usage` answered 914 ms after it was sent, with no assistant message, result or `rate_limit_event` after it, only `system/commands_changed` (CC-10 q10) |
+| P303a | P2 on Claude Code 2.1.303 (2026-10-19, about 03:59 local time): `drivers/claude-driver.mjs` `conversation`, Haiku | `p303a-claude-conversation.jsonl` (also `testdata/probes`, 79 lines) | as P2: `hello.txt` written after the Write approval; "again"; the third turn interrupted at its first delta (`{"still_queued":[]}`, result `error_during_execution`); exit 1 after stdin closed, after 10 s; the `initialize` response reads `subscriptionType` "Claude Pro", and `get_context_usage` `maxTokens` 1000000, `autocompactSource` "model-default", `autoCompactThreshold` 967000 |
+| P303b | P3b on 2.1.303 (about 03:59): the same driver, `subagent` | `p303b-claude-subagent-approval.jsonl` (also `testdata/probes`, 198 lines) | the Agent tool's input now has `run_in_background`, which Haiku set to false: the subagent ran in the foreground (`task_started` `is_backgrounded:false`, no `background_tasks_changed`), and the main turn's result came after its `task_notification` `completed`; its Write request reached the driver with its `agent_id` and was allowed; `found.txt` written (empty, as the folder was); exit 0 after 26 s |
+| P303c | P12c-switch on 2.1.303 (about 04:00): `drivers/p12-claude.mjs`, `default`, `auto@2`, `ANTHROPIC_MODEL=haiku`, P12c-switch's prompts | `p303c-claude-default-to-auto.jsonl` (also `testdata/probes`, 259 lines) | in default the Write reached the driver as `can_use_tool` and was denied (`permission_decision` `{decision:"reject", source:"user_reject"}`); the model then checked with a read-only tool, which asked nothing; `set_permission_mode` answered `{subtype:"success", response:{mode:"auto"}}`, the next `system/init` read `auto`, and hello2.txt was written with no request; exit 0 after 19 s |
+| P303d | P14a on 2.1.303 (about 04:00): `drivers/p14-claude.mjs`, `ANTHROPIC_MODEL=haiku`, P14a's prompt | `p303d-claude-question-answer.jsonl` (also `testdata/probes`, 62 lines) | as P14a: `can_use_tool` `AskUserQuestion` with `requires_user_interaction:true`; the answers ("Rouge café ✓"; "Monday, Tuesday") came back in the tool result and the reply "Colour: Rouge café ✓. Days: Monday, Tuesday.", the non-ASCII label intact both ways; `get_context_usage` answered (1000000, "model-default"); exit 0 after 10 s |
+| P303e | [`drivers/p303-claude.mjs`](drivers/p303-claude.mjs) on 2.1.303 (about 04:15), `ANTHROPIC_MODEL=haiku`: the dashboard's arguments; the live gate's (d) and (c) prompts, a Write interrupted while its `can_use_tool` is pending (never answered), then a ping allowed and interrupted 3 s later; then "Reply with the single word ready." | `p303e-claude-interrupt-tool.jsonl` (also `testdata/probes`, 88 lines) | turn 1: the CLI cancelled the pending request (`control_cancel_request` with its `request_id`), and the tool result carries `tool_result_meta` `[{id, non_execution_kind:"user-rejected"}]` with no `permission_decision`; result `error_during_execution`; pending.txt not written. Turn 2: the same shape for the interrupted Bash call, result `error_during_execution`. Turn 3: "ready". Exit 0 after 14 s |
 
 Quota used: 7 short Claude Haiku turns and 2 subagent runs (P1 to P4, P3b; the
 results report a total of about USD 0.03 API-equivalent); 3 short Codex turns
@@ -142,6 +156,19 @@ the same time, so the difference is not the probes' cost.
   `claude_code_version`, `capabilities`. The `initialize` response has the
   account's `subscriptionType` (here "Claude Team") and the available
   `models`.
+- **A tool use rejected by an interrupt has no permission decision.** When an
+  interrupt ends a pending approval or a running Bash command, the tool
+  result's `tool_result_meta` is `[{id, non_execution_kind:"user-rejected"}]`,
+  with no `permission_decision` (undocumented): in the live gate on 2.1.300
+  (plan 4, L1) and again on 2.1.303 (2026-10-19), so not a change of 2.1.303.
+  P303e records both cases. Plan 14's shape check counted the shape as
+  unrecognised, a false alarm in zone D at each such interrupt; since
+  2026-10-19 the mapper accepts it, and only it, without a decision.
+- **A subagent can run in the foreground** (P303b, 2.1.303): the Agent tool's
+  input has `run_in_background`; with false, `task_started` reads
+  `is_backgrounded:false`, no `background_tasks_changed` is sent, and the main
+  turn's result waits for the subagent. Background subagents (P3, P3b, on
+  2.1.300) had no such input.
 
 ### Codex CLI
 
@@ -241,6 +268,16 @@ P14a (2026-10-18, about 11:52, `confcheck` with `-cli-ran`): configuration
 PASS, the configuration files identical, `~/.claude.json` changed only in
 Claude Code's cache-state keys, 1 new session file; the project folder
 deleted, no Claude Code process left from the probe.
+
+The re-check of Claude Code 2.1.303 (2026-10-19, 03:56 to 04:00, `confcheck`
+with `-cli-ran` against a snapshot taken just before): `TestLiveGate` PASS
+in 31.5 s, then P303a to P303d; configuration PASS, the configuration files
+identical, `~/.claude.json` changed only in Claude Code's cache-state keys,
+7 new session files; no Claude Code process left from the probes, the
+project folders outside the repository. P303e (about 04:15) and, after the
+mapper fix, `TestLiveGate` again (about 04:18, PASS in 32.3 s, no
+unrecognised event): configuration PASS each time, `~/.claude.json` changed
+only in cache-state keys, 1 new session file each; no process left.
 
 Not checked: the files the CLIs write by design for each session (Claude
 transcripts under `~/.claude/projects`, Codex rollouts under

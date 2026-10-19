@@ -35,6 +35,11 @@ var recordings = []struct {
 	{"p12x-switch-codex-user-to-auto-review.jsonl", codex.ProviderID, func() fixture.Mapper { return codex.NewMapper() }},
 	{"p13c-claude-auto-classifier-deny.jsonl", claude.ProviderID, func() fixture.Mapper { return claude.NewMapper() }},
 	{"p14a-claude-question-answer.jsonl", claude.ProviderID, func() fixture.Mapper { return claude.NewMapper() }},
+	{"p303a-claude-conversation.jsonl", claude.ProviderID, func() fixture.Mapper { return claude.NewMapper() }},
+	{"p303b-claude-subagent-approval.jsonl", claude.ProviderID, func() fixture.Mapper { return claude.NewMapper() }},
+	{"p303c-claude-default-to-auto.jsonl", claude.ProviderID, func() fixture.Mapper { return claude.NewMapper() }},
+	{"p303d-claude-question-answer.jsonl", claude.ProviderID, func() fixture.Mapper { return claude.NewMapper() }},
+	{"p303e-claude-interrupt-tool.jsonl", claude.ProviderID, func() fixture.Mapper { return claude.NewMapper() }},
 }
 
 func replayEvents(t *testing.T, name, provider string, m fixture.Mapper) []event.Event {

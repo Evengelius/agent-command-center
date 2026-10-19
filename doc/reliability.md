@@ -510,7 +510,7 @@ are the numbered questions in section 10 of
 | The status line never runs under `-p` (CC-10 q14) | closed, not depended on: zone D reads the stream |
 | A raw client skipping `initialize`, and an allow without `updatedInput` (CC-10 q2, the untried part) | closed, not needed: the adapter always sends `initialize` and echoes `updatedInput` (P2, P3b); a fixture test keeps both in the adapter |
 | `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS` (events-and-state.md, `turn.started`) | settled: the adapter sets it unless the environment already does (`internal/provider/claude/session.go`), and the dashboard's live recording P13c carries `system/session_state_changed` `running` then `idle` (the probe drivers, which do not set it, recorded none) |
-| The `stdio` value of `--permission-prompt-tool` (**U**) keeps working | settled on each version used live, 2.1.300 (plan 4) to 2.1.302 (plans 13 and 14): every `can_use_tool` reached the client; the recorded-fixture tests replay it |
+| The `stdio` value of `--permission-prompt-tool` (**U**) keeps working | settled on each version used live, 2.1.300 (plan 4) to 2.1.303 (plans 13 and 14, the re-check of 2026-10-19): every `can_use_tool` reached the client; the recorded-fixture tests replay it |
 
 **Codex**
 

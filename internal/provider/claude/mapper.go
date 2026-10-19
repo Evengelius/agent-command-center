@@ -466,14 +466,18 @@ func approvalMode(mode string) string {
 
 // verdicts reads the line's tool_result_meta (undocumented): a decision the
 // classifier made is a tool.decision; any other reason adds nothing. Every
-// recording from 2.1.300 to 2.1.302 gives each tool result its
-// permission_decision, so one without it counts as unrecognised: a CLI update
-// that drops or renames the field shows in zone D instead of silently hiding
-// the classifier's verdicts (doc/evaluation.md, After a CLI update).
+// recording from 2.1.300 to 2.1.303 gives each tool result its
+// permission_decision, except a tool use an interrupt rejected, whose entry
+// has non_execution_kind "user-rejected" and no decision (P303e; the live
+// gate on 2.1.300 and 2.1.303). Any other result without a decision counts
+// as unrecognised: a CLI update that drops or renames the field shows in
+// zone D instead of silently hiding the classifier's verdicts
+// (doc/evaluation.md, After a CLI update).
 func (m *Mapper) verdicts(l line, agent string, raw []byte, results []string) []event.Event {
 	var metas []struct {
-		ID       string `json:"id"`
-		Decision struct {
+		ID           string `json:"id"`
+		NonExecution string `json:"non_execution_kind"`
+		Decision     struct {
 			Decision   string `json:"decision"`
 			ReasonType string `json:"reason_type"`
 		} `json:"permission_decision"`
@@ -483,7 +487,7 @@ func (m *Mapper) verdicts(l line, agent string, raw []byte, results []string) []
 	for _, id := range results {
 		found := false
 		for _, x := range metas {
-			found = found || (x.ID == id && x.Decision.Decision != "")
+			found = found || (x.ID == id && (x.Decision.Decision != "" || x.NonExecution == "user-rejected"))
 		}
 		if !found {
 			out = append(out, m.ev(event.Unrecognised, event.Observed, "", raw, event.Unknown{Type: "user/tool_result_meta", Reason: "tool result without tool_result_meta permission_decision (undocumented)"}))

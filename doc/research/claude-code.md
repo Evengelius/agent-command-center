@@ -771,7 +771,12 @@ with only `--permission-mode` changed (`probes/README.md`):
   mode `{decision:"reject", source:"user_reject"}` for a denied
   `can_use_tool`. Earlier recordings also show `source:"user_temporary"`,
   `reason_type:"subcommandResults"` and `{decision:"reject",
-  source:"config", reason_type:"other"}`.
+  source:"config", reason_type:"other"}`. A tool use an interrupt rejected,
+  while its approval was pending or while it ran, has no decision: its entry
+  is `{id, non_execution_kind:"user-rejected"}`, and a pending `can_use_tool`
+  is first withdrawn by `control_cancel_request`
+  [P:p303e-claude-interrupt-tool.jsonl] (2.1.303; the same on 2.1.300 in the
+  live gate).
 - **Switching mid-session:** the control request `{subtype:
   "set_permission_mode", mode:"auto"}` is answered `{subtype:"success",
   response:{mode:"auto"}}` in 4 ms, followed by `system/status` with

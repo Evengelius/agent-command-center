@@ -9,11 +9,16 @@ if (!U || !H || !G) throw new Error("set PROBE_USER, PROBE_HOST and PROBE_ORG");
 const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const SEP = "(?:\\\\+|/)+";
 const REDACT_KEYS = new Set(["email", "organization", "installationId", "serverName", "accountId"]);
+// Each string is cleaned before a stream's chunks are joined, so in a joined
+// path the user name may already be "<user>", or the home "<HOME>".
+const WHO = `(?:${esc(U)}|<user>)`;
+const ROOT = `claude${SEP}c--javadev-projets-agent-command-center${SEP}[0-9a-f-]{36}${SEP}scratchpad`;
 
 const rules = [
-  [new RegExp(`C:${SEP}Users${SEP}${esc(U)}${SEP}AppData${SEP}Local${SEP}Temp${SEP}claude${SEP}c--javadev-projets-agent-command-center${SEP}[0-9a-f-]{36}${SEP}scratchpad`, "gi"), "<probe-root>"],
-  [new RegExp(`C--Users-${esc(U)}-AppData-Local-Temp-claude-c--javadev-projets-agent-command-center-[0-9a-f-]{36}-scratchpad`, "g"), "<probe-root-slug>"],
-  [new RegExp(`(?:/c|C:)${SEP}Users${SEP}${esc(U)}`, "gi"), "<HOME>"],
+  [new RegExp(`(?:C:${SEP}Users${SEP}${WHO}|<HOME>)${SEP}AppData${SEP}Local${SEP}Temp${SEP}${ROOT}`, "gi"), "<probe-root>"],
+  [new RegExp(`/tmp${SEP}${ROOT}`, "g"), "<probe-root>"], // Git Bash's name for %TEMP%
+  [new RegExp(`C--Users-${WHO}-AppData-Local-Temp-claude-c--javadev-projets-agent-command-center-[0-9a-f-]{36}-scratchpad`, "g"), "<probe-root-slug>"],
+  [new RegExp(`(?:/c|C:)${SEP}Users${SEP}${WHO}`, "gi"), "<HOME>"],
   [new RegExp(esc(U), "gi"), "<user>"],
   [new RegExp(esc(H), "g"), "<host>"],
   [/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,}/g, "<email>"],
