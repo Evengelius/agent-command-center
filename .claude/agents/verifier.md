@@ -2,7 +2,7 @@
 name: verifier
 description: Independent verifier on Sonnet. Use to check a substantial change against its written acceptance criteria when an independent look adds value - review the diff, run the tests and builds, look for defects and regressions. Not for a check a single deterministic command settles.
 model: sonnet
-effort: medium
+effort: high
 tools: Read, Grep, Glob, Bash
 disallowedTools: Edit, Write, NotebookEdit
 color: yellow

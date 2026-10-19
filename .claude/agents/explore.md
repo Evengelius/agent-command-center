@@ -2,7 +2,7 @@
 name: Explore
 description: Read-only scanner on Haiku. Use when a search spans many files or pages and only the conclusion is needed - file discovery, locating functions, dependencies or documentation passages, collecting context for a decision. Not for a single lookup the orchestrator can do with Grep or Read, and not for judgement calls.
 model: haiku
-effort: medium
+effort: max
 tools: Read, Grep, Glob, WebFetch, WebSearch
 color: cyan
 ---
