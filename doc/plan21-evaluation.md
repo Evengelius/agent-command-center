@@ -141,3 +141,9 @@ Teams, Windows Terminal, Settings.
 TestLongSession's frames during the session: first tenth p95 1.79 ms, last
 tenth p95 3.54 ms (16.55 ms before the fix): a frame no longer grows with
 the session's turns times its agents.
+
+## The owner's review
+
+On 2026-10-20 the owner looked at the three screenshots of 6.4 and asked
+for no change ("push, and I looked at the screenshots"). Their look,
+listed as not verified in both blocks above, has been seen by the owner.

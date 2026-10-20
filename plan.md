@@ -538,7 +538,11 @@ Item 6, regressions and checks.
   5.391 ms; TestKeystrokeCost 220 µs and 556 µs a key; TestLongSession
   2.0002 ms, 3.9032 ms, 5.1539 ms (last tenth 3.54 ms); TestPasteToFrame
   p50 1.0041 ms, max 1.1631 ms; TestStreamToFrame 1.5154 ms, 3.515 ms,
-  15.5502 ms. Committed; not pushed.
+  15.5502 ms. Committed (bdc4250).
+- 2026-10-20: the owner looked at the three Windows Terminal screenshots
+  and asked for no change ("push, and I looked at the screenshots"); 6.4's
+  look recorded as seen (`doc/plan21-evaluation.md`, The owner's review).
+  Pushed to origin.
 
 ## Closed plans
 
