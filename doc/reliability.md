@@ -179,7 +179,7 @@ reset shown N/A.
 | Overage | `overageStatus` and related | "N/A (not reported)", shown apart from quota |
 | Model | `system/init`, per message | a subagent whose text is not forwarded: "model N/A" |
 | Agent reasoning effort | none: no event reports a subagent's effort | always "effort N/A (not reported)" in the inspection header (plan 6, item 6) |
-| Context | `get_context_usage` (undocumented at CLI level, marked †) or derived from usage | if the request fails or is refused: derived, labelled "derived"; before the first turn without a reply: "N/A (no turn yet)" |
+| Context | `get_context_usage` (undocumented at CLI level, marked †), read after each turn end, or derived from usage | if the request fails or is refused: derived, labelled "derived"; before the first turn: "N/A (no turn yet)"; while the first turn runs, before its result: "N/A (no result yet)" (plan 20, the owner's live review) |
 | Tokens | latest `result.modelUsage` | "N/A" before the first `result` |
 | API-equivalent cost | `result.total_cost_usd` | "N/A" before the first `result`; always labelled "API-equiv. estimate" |
 | Agent count | derived from task messages | "N/A" until the stream is up, then a real count |

@@ -54,8 +54,10 @@ var KeyTable = []keyGroup{
 		{"Esc", "later: back to the input, still pending"},
 	}},
 	{"B'S ENTRIES (↑ from an empty input)", [][2]string{
-		{"↑ ↓", "previous / next folded message, tool or failure; ↓ past the last, the input"},
-		{"Enter or →", "the whole entry, full screen; Esc back to the cursor"},
+		{"↑ ↓", "previous / next folded message, tool, failure or run of tool events; ↓ past the last, the input"},
+		{"Enter", "the whole entry, full screen; Esc back to the cursor; on a run of tool events, expand it (a click too)"},
+		{"→", "on a run of tool events, expand it; it opens nothing"},
+		{"←", "on a call of an expanded run, fold the run again (a click on its row too)"},
 		{"Esc, or typing", "back to the input"},
 		{"F3", "the file a tool entry read or changed"},
 	}},

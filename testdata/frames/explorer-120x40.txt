@@ -1,37 +1,37 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
-╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────── Idle ─╮
-│ claude-haiku-5-5 · orchestrat… ││ YOU  11:30                                                                         │
-│ turn 2 · c╭─ Explorer ───────────────────────────────────────────────────────────────── mock · 11 items ─╮sk: list   │
-│           │ sample/viewer.go                                                                             │named      │
-│ STAGES  in│ ▾ sample                                                                                  ●  │ne line    │
+╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────────────── Idle ─╮
+│ claude-haiku-5-5 · or… ││ ▎ YOU  11:30                                                                               │
+│ turn 2 · c╭─ Explorer ───────────────────────────────────────────────────────────────── mock · 11 items ─╮ the       │
+│           │ sample/viewer.go                                                                             │txt with   │
+│ STAGES  in│ ▾ sample                                                                                  ●  │           │
 │ TURN 1  ✓ │     viewer.go                                                                             M  │           │
-│ TURN 2  ✓ │     viewer_test.go                                                                        D  │      mock │
+│ TURN 2  ✓ │     viewer_test.go                                                                        D  │────────── │
 │   started │ ▸ tools                                                                                   D  │           │
-│           │   claude-api-key-context-refused.jsonl                                                       │ write     │
-│           │   claude-subagent-approval.jsonl                                                             │           │
-│           │   codex-api-key.jsonl                                                                     U  │u 11:30:00 │
-│           │   codex-no-5h-window.jsonl                                                                   │u 11:30:00 │
+│           │   claude-api-key-context-refused.jsonl                                                       │           │
+│           │   claude-subagent-approval.jsonl                                                             │    mock   │
+│           │   codex-api-key.jsonl                                                                     U  │           │
+│           │   codex-no-5h-window.jsonl                                                                   │           │
 │           │   codex-plan6-limits.jsonl                                                                !  │           │
-│           │   codex-spawn-request.jsonl                                                               A  │d`, and    │
-│           │   codex-subagents.jsonl                                                                      │           │
+│           │   codex-spawn-request.jsonl                                                               A  │           │
+│           │   codex-subagents.jsonl                                                                      │    mock   │
+│           │                                                                                              │    mock   │
 │           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
+│           │                                                                                              │─────────╮ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │wrote    │ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │─────────╯ │
 │           │                                                                                              │           │
 │           │                                                                                              │────────── │
 │           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │aft window │
-│           │                                                                                              │───────────╯
-│           │                                                                                              │ · 1 DONE ─╮
-│           │                                                                                              │ 21.5k tok │
-│ ↑↓ move ←→│                                                                                              │           │
+│ ↑↓ move ←→│                                                                                              │aft window │
+╰───────────│                                                                                              │───────────╯
+╭─ C · LIVE │                                                                                              │ · 1 DONE ─╮
+│  ✓  genera│                                                                                              │           │
+│     00:00 │                                                                                              │           │
 ╰───────────│ ↑↓ move · → open · ← close · Enter view · / quick open · Esc back · F3 close         2 of 11 │───────────╯
 ╭─ D · QUOTA╰──────────────────────────────────────────────────────────────────────────────────────────────╯ted field ─╮
 │ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00                      │

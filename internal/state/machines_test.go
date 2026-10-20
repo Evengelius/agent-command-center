@@ -527,6 +527,17 @@ var transitions = []machineCase{
 		d.ev(event.TurnStarted, "", nil)
 		d.eq("not before Ready", d.s.Turn.Phase, Idle)
 	}},
+	{"Turn", "`Idle` | a prompt the dashboard did not send", func(b *bench) {
+		// A mock file's prompt opens the next turn as sending one does: the
+		// CLI's turn's notice goes (plan 20, the input's status row).
+		b.ready().ev(event.MessageMarker, "", event.Marker{MessageID: "m1", Name: "message_start"})
+		b.eq("notice", b.s.Turn.Notice, "turn started by the CLI")
+		b.turnEnd("", "completed")
+		b.ev(event.UserMessage, "", event.User{Text: "Reply with only the word ok."})
+		b.eq("submitted", b.s.Turn.Phase, Submitted)
+		b.eq("owner's turn", b.s.Turn.ByCLI, false)
+		b.eq("notice gone", b.s.Turn.Notice, "")
+	}},
 	{"Turn", "`Running` | turn end, success", func(b *bench) {
 		b.running().turnEnd("", "completed")
 		b.eq("turn", b.s.Turn.Phase, Idle)

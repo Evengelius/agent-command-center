@@ -1,38 +1,38 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
-╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────── Idle ─╮
-│ claude-haiku-5-5 · orchestrat… ││ YOU  02:00                                                                         │
-│ turn 1 · completed             ││   Create a file named hello.txt in the current directory containing the single     │
-│                                ││   word hello. Use the Write tool, then reply with the word done.                   │
-│ STAGES  inferred from activity ││   ▸ Write                                                                 observed │
-│ TURN 1  ✓ completed · 4s       ││ ✓ orchestrator · Write  …be-root>\probe-work\p2\hello.txt  allowed by you 02:00:09 │
-│   Create a file named hello.t… ││ CLAUDE  claude-haiku-5-5                                                           │
-│   └─ ✓ Write  <probe… observed ││   done                                                                             │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││ ────────────────────────────────────────────────────────────────────────────────── │
-│                                ││ >  Ask Claude Code anything…                                                       │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││   Enter send · Ctrl+J newline                         1 line · Ctrl+G draft window │
-│                                │╰────────────────────────────────────────────────────────────────────────────────────╯
-│                                │╭─ C · LIVE AGENTS ────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
-│                                ││ no agents yet: they appear as the CLI starts them                                  │
-│ ↑↓ move ←→ fold Enter inspect  ││                                                                                    │
-╰────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
+╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────────────── Idle ─╮
+│ claude-haiku-5-5 · or… ││                                                                                            │
+│ turn 1 · completed     ││ ▎ YOU  02:00                                                                               │
+│                        ││ ▎ Create a file named hello.txt in the current directory containing the single word        │
+│ STAGES  inferred from… ││ ▎ hello. Use the Write tool, then reply with the word done.                                │
+│ TURN 1  ✓ completed ·… ││                                                                                            │
+│   Create a file named… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
+│   └─ ✓ Write… observed ││                                                                                            │
+│                        ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                 │
+│                        ││ ▎  ✓ Write  <probe-root>\probe-work\p2\hello.txt                      02:00:09  observed   │
+│                        ││ ▎  ✓ orchestrator · Write  …\probe-work\p2\hello.txt   allowed by you 02:00:09  observed   │
+│                        ││                                                                                            │
+│                        ││ ╭────────────────────────────────────────────────────────────────────────────────────────╮ │
+│                        ││ │ RESULT  02:00                                                                          │ │
+│                        ││ │ done                                                                                   │ │
+│                        ││ ╰────────────────────────────────────────────────────────────────────────────────────────╯ │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
+│                        ││ >  Ask Claude Code anything…                                                               │
+│ ↑↓ move ←→ fold Enter… ││   Enter send · Ctrl+J newline                                 1 line · Ctrl+G draft window │
+╰────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+│ no agents yet: they appear as the CLI starts them                                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────── quota updated 9h 29m ago · † undocumented field ─╮
 │ 5h ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 25%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 46%†  resets Sat 08:00                      │
 │ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 3% of 1M (derived)   tokens 61.1k   +4 more │

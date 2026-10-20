@@ -32,9 +32,15 @@ func (s *State) Apply(ev event.Event) []Command {
 		s.Turn.Phase, s.Turn.Outcome, s.Turn.ByCLI = Running, "", true
 		s.Turn.Notice = "turn started by the CLI"
 	}
+	n := len(s.Conversation)
 	s.syncStage(ev.At)
 	cmds = append(cmds, s.apply(ev)...)
 	s.syncStage(ev.At)
+	// After the stage the event may open: a prompt belongs to the turn it
+	// opens (Entry.Stage).
+	for i := n; i < len(s.Conversation); i++ {
+		s.Conversation[i].Stage = s.stage()
+	}
 	return cmds
 }
 
@@ -124,7 +130,9 @@ func (s *State) apply(ev event.Event) []Command {
 	case event.User:
 		s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "user", Text: p.Text, Origin: ev.Origin, At: ev.At})
 		if s.Turn.Phase == Idle {
-			s.Turn.Phase, s.Turn.Count, s.Turn.ByCLI = Submitted, s.Turn.Count+1, false
+			// A prompt the dashboard did not send, a mock file's: it opens the
+			// turn as Send does, the last turn's notice gone.
+			s.Turn.Phase, s.Turn.Count, s.Turn.ByCLI, s.Turn.Notice = Submitted, s.Turn.Count+1, false, ""
 		}
 		return nil
 	case event.Write:

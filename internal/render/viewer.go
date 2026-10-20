@@ -158,8 +158,8 @@ func wrapped(text string, w int, st *lipgloss.Style, lead string) []line {
 const (
 	entryHint     = " Enter full view · ↑↓ entries · Esc back"
 	entryFileHint = " Enter full view · F3 file · ↑↓ entries · Esc back"
-	entryKeys     = "Enter or → full view · ↑↓ entries · Esc back to the input · F1 keys"
-	entryFileKeys = "Enter or → full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys"
+	entryKeys     = "Enter full view · ↑↓ entries · Esc back to the input · F1 keys"
+	entryFileKeys = "Enter full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys"
 )
 
 // Expandable reports whether conversation entry e has more than B shows: a
@@ -251,6 +251,18 @@ func toolView(s *state.State, ui UI, e state.Entry, back span, w int) (line, []l
 // entryFooter is the key hints while B's entry cursor is on: F3 among them
 // when the entry names a file (plan 17, Opening).
 func entryFooter(s *state.State, ui UI) string {
+	// On a run of calls: its row expands it, the calls of an expanded one
+	// fold it (plan 19).
+	if _, _, open, folded, ok := FoldOf(s, ui, ui.Entry); folded {
+		return "Enter or → expand · ↑↓ entries · Esc back to the input · F1 keys"
+	} else if ok && open {
+		return strings.Replace(entryFooterFor(s, ui), "↑↓ entries", "← fold · ↑↓ entries", 1)
+	}
+	return entryFooterFor(s, ui)
+}
+
+// entryFooterFor is the key hints for the entry under the cursor.
+func entryFooterFor(s *state.State, ui UI) string {
 	if i := ui.Entry - 1; i < len(s.Conversation) {
 		if _, ok := EntryFile(s, s.Conversation[i]); ok {
 			return entryFileKeys

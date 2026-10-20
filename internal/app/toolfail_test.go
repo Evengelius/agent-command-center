@@ -57,7 +57,7 @@ func TestFailedToolRow(t *testing.T) {
 			r, _, _ := rig(t)
 			h := r.h
 			h.draw(key(tea.KeyUp, 0))
-			if f := h.frame(); !rowWith(f, "▸ Bash · "+errLine, "Enter full view") {
+			if f := h.frame(); !rowWith(f, "▸ ✗ Bash · "+errLine, "Enter full view") {
 				t.Fatalf("↑: the failed row is not marked:\n%s", f)
 			}
 			h.draw(key(tea.KeyEnter, 0))

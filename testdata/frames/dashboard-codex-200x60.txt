@@ -1,18 +1,22 @@
  >_ AGENT COMMAND CENTER     ■ gpt-5.6-sol                                                                                                                                  ◆ MOCK — not a live session
  ▣ codex-subagents.jsonl   ..\..\testdata\mock\codex-subagents.jsonl                                                                                               Mock data 0.145.0 · approvals Manual
 ╭─ A · ORCHESTRATOR ───────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
-│ gpt-5.6-sol · orchestrator               ││ YOU  11:30                                                                                                                                               │
-│ turn 1 · completed                       ││   Spawn two subagents in parallel. The first lists the files in the current directory. The second creates a file named found.txt in the current          │
-│                                          ││   directory containing the single word found. Wait for both, then reply with the single word done.                                                       │
-│ STAGES  inferred from activity           ││   ▸ collabAgent:wait                                                                                                                                mock │
-│ TURN 1  ✓ completed · 0s                 ││ ✓ /root/create_found · fileChange  allowed by you 11:30:00                                                                                               │
-│   Spawn two subagents in parallel. The … ││   ▸ collabAgent:wait                                                                                                                                mock │
-│   ├─ ✓ child  /root/list_files      mock ││ CODEX  gpt-5.6-sol                                                                                                                                       │
-│   ├─ ✓ child  /root/create_found    mock ││   done                                                                                                                                                   │
-│   ├─ ✓ collabAgent:wait             mock ││                                                                                                                                                          │
-│   └─ ✓ collabAgent:wait             mock ││                                                                                                                                                          │
+│ gpt-5.6-sol · orchestrator               ││                                                                                                                                                          │
+│ turn 1 · completed                       ││ ▎ YOU  11:30                                                                                                                                             │
+│                                          ││ ▎ Spawn two subagents in parallel. The first lists the files in the current directory. The second creates a file named found.txt in the current          │
+│ STAGES  inferred from activity           ││ ▎ directory containing the single word found. Wait for both, then reply with the single word done.                                                       │
+│ TURN 1  ✓ completed · 0s                 ││                                                                                                                                                          │
+│   Spawn two subagents in parallel. The … ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│   ├─ ✓ child  /root/list_files      mock ││                                                                                                                                                          │
+│   ├─ ✓ child  /root/create_found    mock ││ ▎ CODEX  gpt-5.6-sol  11:30                                                                                                                              │
+│   ├─ ✓ collabAgent:wait             mock ││ ▎  ✓ collabAgent:wait                                                                                                               11:30:00      mock   │
+│   └─ ✓ collabAgent:wait             mock ││ ▎  ✓ /root/create_found · fileChange                                                                                 allowed by you 11:30:00      mock   │
+│                                          ││ ▎  ✓ collabAgent:wait                                                                                                               11:30:00      mock   │
 │                                          ││                                                                                                                                                          │
-│                                          ││                                                                                                                                                          │
+│                                          ││ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ │
+│                                          ││ │ RESULT  11:30                                                                                                                                        │ │
+│                                          ││ │ done                                                                                                                                                 │ │
+│                                          ││ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
 │                                          ││                                                                                                                                                          │
@@ -37,20 +41,16 @@
 │                                          ││                                                                                                                                                          │
 │                                          ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │                                          ││ >  Ask Mock data anything…                                                                                                                               │
-│                                          ││                                                                                                                                                          │
-│                                          ││                                                                                                                                                          │
-│                                          ││                                                                                                                                                          │
-│                                          ││                                                                                                                                                          │
-│                                          ││   Enter send · Ctrl+J newline                                                                                               1 line · Ctrl+G draft window │
-│                                          │╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-│                                          │╭─ C · LIVE AGENTS ────────────────────────────────── 0 ACTIVE · 2 DONE ─╮╭─ /root/create_found · LIVE ───────────────────────── model N/A (not reported) ─╮
-│                                          ││  ✓ /root/create_found model N/A   completed             0s   77.3k tok ││ 11:30:00  assistant  I’ll create `found.txt` with exactly the requested c…mock │
-│                                          ││  ✓ /root/list_files   model N/A   completed             0s   30.5k tok ││ 11:30:00  assistant  Created and verified `found.txt` containing `found`. mock │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│ ↑↓ move ←→ fold Enter inspect            ││ ↑↓ select · Enter inspect · z zoom · F6 next zone                      ││ Enter full screen · [ ] previous / next agent                                  │
-╰──────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────╯
+│ ↑↓ move ←→ fold Enter inspect            ││   Enter send · Ctrl+J newline                                                                                               1 line · Ctrl+G draft window │
+╰──────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
+│  ✓  /root/create_found   model N/A   completed                         │ /root/create_found · LIVE                                                                          model N/A (not reported) │
+│     00:00   77.3k tok   tool: commandExecution ✓                       │ 11:30:00  assistant  I’ll create `found.txt` with exactly the requested content, then verify its bytes.                mock │
+│  ✓  /root/list_files     model N/A   completed                         │ 11:30:00  assistant  Created and verified `found.txt` containing `found`.                                              mock │
+│     00:00   30.5k tok   tool: commandExecution ✓                       │                                                                                                                             │
+│                                                                        │                                                                                                                             │
+│                                                                        │                                                                                                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── quota updated 0s ago · † undocumented field ─╮
 │ 5h ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1%  resets Fri 02:43   7d ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1%  resets Thu 10:30   plan plus   credits none                                                           │
 │ model gpt-5.6-sol   context 6% of 258.4k   tokens 184.3k (derived)   cost N/A (Codex reports none)   last turn 23s                                                                                   │

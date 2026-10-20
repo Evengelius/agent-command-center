@@ -339,13 +339,20 @@ func (m *Model) closeView() {
 }
 
 // entryKey handles a key while zone B's entry cursor is on (ui-design.md,
-// Zone B, Expanding): ↑ ↓ move it, Enter or → shows its entry whole, Esc
-// returns to the input. done is false for the keys that keep their meaning;
-// any other key leaves the cursor and reaches the input, so typing types.
+// Zone B, Expanding): ↑ ↓ move it, Enter shows its entry whole, → expands a
+// folded run and opens nothing, Esc returns to the input. done is false for
+// the keys that keep their meaning; any other key leaves the cursor and
+// reaches the input, so typing types.
 func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	if m.ui.Entry > len(m.s.Conversation) || m.ui.Focus != "B" || m.ui.Card != "" {
 		m.ui.Entry = 0
 		return nil, false
+	}
+	// On a folded call, the cursor is its run's row: the run's first entry,
+	// also when the call was folded after the cursor came to it (plan 19).
+	key, first, open, folded, inRun := render.FoldOf(m.s, m.ui, m.ui.Entry)
+	if folded {
+		m.ui.Entry = first
 	}
 	switch k.String() {
 	case "up":
@@ -354,8 +361,27 @@ func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		if !m.moveEntry(m.ui.Entry+1, 1) {
 			m.ui.Entry = 0 // past the newest: the input
 		}
-	case "enter", "right":
+	case "enter":
+		if folded {
+			m.unfold(key, true)
+			break
+		}
 		m.openView("", m.ui.Entry)
+	case "right":
+		// → unfolds, as in zone A's tree; only Enter opens (the owner's live
+		// review, 2026-10-20: → opening an entry, as Enter does, confused it
+		// with unfolding).
+		if folded {
+			m.unfold(key, true)
+		}
+	case "left":
+		if !inRun || !open {
+			m.ui.Entry = 0
+			return nil, false
+		}
+		m.unfold(key, false)
+		m.ui.Entry = first
+		m.reveal(first)
 	case "esc":
 		if !m.ui.Sel.Empty() {
 			m.ui.Sel = render.Selection{} // Esc clears a selection first
@@ -372,16 +398,35 @@ func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 }
 
 // moveEntry puts the entry cursor on the first expandable entry from n
-// (1-based) in direction d, and scrolls B to it; false if there is none.
+// (1-based) in direction d, and scrolls B to it; false if there is none. A
+// folded run's row is one; the calls it folds are not (plan 19).
 func (m *Model) moveEntry(n, d int) bool {
+	targets := render.Targets(m.s, m.ui)
 	for ; n >= 1 && n <= len(m.s.Conversation); n += d {
-		if render.Expandable(m.s.Conversation[n-1]) {
+		if targets[n-1] {
 			m.ui.Entry = n
 			m.reveal(n)
 			return true
 		}
 	}
 	return false
+}
+
+// unfold expands zone B's run of calls key, or folds it again (plan 19).
+// Expanding holds B's view where it is, so the calls open under the run's
+// row instead of pushing it up out of view while B follows its end.
+func (m *Model) unfold(key string, open bool) {
+	if m.ui.Unfolded == nil {
+		m.ui.Unfolded = map[string]bool{}
+	}
+	if !open {
+		delete(m.ui.Unfolded, key)
+		return
+	}
+	m.ui.Unfolded[key] = true
+	if m.screen != nil && !m.ui.ConvHold {
+		m.ui.ConvHold, m.ui.ConvTop, m.ui.ConvSeen = true, m.screen.Conv.Top, len(m.s.Conversation)
+	}
 }
 
 // reveal scrolls B the least that shows entry n (1-based) whole, its end

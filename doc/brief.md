@@ -924,3 +924,1447 @@ One improvement to this : after writing the next prompt to the agent, the zone c
 Why? Because it is a new prompt, no need to keep the history
 
 It must reset EMPTY to its compact layout only when a new user prompt is submitted
+
+## Amendment 15, 2026-10-20: zone B as the centerpiece, for plan 19
+
+The owner's request, word for word, the second of the improvements given
+one by one, after plan 18's approval. The owner's two images, quoted:
+
+- **"1. My proposed Zone B design"**, "Visual concept based on your recorded
+  subagent scenario. This uses compact terminal-style elements rather than
+  large chat bubbles": "B · CONVERSATION" with "Idle" on the right; a
+  "YOU" label behind a purple bar over the prompt, inline code shown as
+  code; a rule; a "CLAUDE" label behind a blue bar with the model, "Haiku
+  5.5", over the reply; a compact block of tool rows on a slightly darker
+  ground, "Agent general-purpose started", "✓ Bash Listed project files",
+  "✓ Write found.txt · Allowed by you" in green; "RESULT" with a completion
+  icon over the final answer; the input box below.
+- **"2. The visual language I recommend"**, a table: YOU, purple accent,
+  brighter text, "Immediately identify your prompts"; CLAUDE / CODEX, blue
+  accent, model label, "Identify which AI is speaking"; Tool execution,
+  compact, slightly muted rows, "Show activity without overwhelming the
+  transcript"; Approval, green success text after approval, "Clearly
+  distinguish authorized actions"; Final result, subtle emphasis,
+  completion icon, "Make the outcome easy to find". Then: "Importantly, an
+  approval still waiting for your decision must remain visually distinct
+  from an approval already accepted or denied. Status colors should
+  represent actual outcomes."
+- **"3. What happens with longer conversations?"**: "I would avoid showing
+  every tool event as a full-width message." A mock-up with "CLAUDE · OPUS
+  5.5", three tool rows ("✓ Read auth.ts", "✓ Edit auth.ts", "✓ Bash Tests
+  passed") and "› 3 more tool events · Expand", then RESULT. "This would
+  keep the default conversation compact while preserving access to every
+  underlying tool event. One important distinction: the transcript should
+  preserve execution order. Grouping or collapsing events must not hide
+  which agent performed an action, or obscure a pending approval."
+
+---
+
+Onto the next one
+
+1. Make Zone B the centerpiece of the experience
+The conversation is where the user spends most of their time. It carries prompts, Claude's reasoning output, tool calls, approval results, and final responses.
+
+At present, those elements have relatively similar visual weight.
+
+The aim isn't to make every message into a large card. That would waste precious terminal space.
+
+Instead, I'd introduce a consistent visual language: user messages stand apart, assistant messages remain readable, tool actions are compact, approvals are easy to recognize, and results receive subtle emphasis.
+
+----
+
+Check images for better understanding
+
+## Amendment 16, 2026-10-20: strict conformance to two approved templates, for plan 20
+
+The owner's request, word for word, after reviewing plan 19 in a demo
+("Yes you can the demo": the demo could be deleted). It came with two
+images, "the two attached, approved design templates", both drawn over the
+demo's replay (`plan19-demo.jsonl` in their project bar). The brief keeps
+no images; they are described here:
+
+- **Template 1, a multi-turn conversation, completed.** Zone A at about a
+  fifth of the width beside B, both ending on the same row; C full width
+  below them, compact: "no agents yet: they appear as the CLI starts them"
+  and "0 ACTIVE · 0 DONE"; D full width; the key footer. In B, each message
+  is a card on a slightly lighter ground with a coloured left edge: "YOU
+  01:54" in violet with the prompt beside the label; "CLAUDE Haiku 5.5
+  01:54" in blue with its narration below, then a darker inset group of tool
+  rows, "general-purpose · Bash ls -P "<probe-root>/probe-work/p3b" | grep
+  -v '/$' allowed by you 01:54:35 mock" and "general-purpose · Write
+  <probe-root>/probe-work/p3b/found.txt allowed by you 01:54:43 mock";
+  "RESULT 01:54" in a green-bordered card with the answer beside the label;
+  a second exchange whose rows read "Read C:\work\demo\src\f00.go failed
+  01:54:59 mock", two Read rows "allowed by you 01:55:02 mock" and "▶ +9
+  more Read calls (f12.go … f21.go) mock"; a last "YOU 01:55 Reply with only
+  the word ok."; the input "> Ask Mock data anything…" with "1 line ·
+  Ctrl+G draft window" on its right. Some of it does not match the replay
+  it was drawn from (the failed file was f03.go, of twelve, f00 to f11; no
+  Read call was approved by the owner); the owner's text says the real
+  events decide such content.
+- **Template 2, a subagent's Write waiting for approval.** The same
+  geometry. In B: "YOU 01:55" over the prompt, a rule, "CLAUDE Haiku 5.5
+  01:55" over the narration; "▶ subagent general-purpose List directory and
+  write found.txt mock" in a box; "▶ tool Bash ls -p
+  "<probe-root>/probe-work/p3b" | grep -v '/$' allowed by you 01:56:02" in a
+  box with a green edge; then a pink-bordered card: "APPROVAL
+  general-purpose Write <probe-root>/probe-work/p3b/found.txt 01:56 mock",
+  a nested "Preview of found.txt (2 lines)" with numbered lines "1
+  alpha.txt" and "2 beta.md", "This will create or overwrite the file at
+  `<probe-root>/probe-work/p3b/found.txt` with the above content.", and a
+  pink "F2 to answer" button. Zone A's tree shows the agent with "tool Bash
+  ✓ allowed" and "approval Write ○ pending"; C one agent on two rows, "●
+  general-purpose haiku-5-5 waiting: approval" and "01:11 21.2k tok tool:
+  Bash ✓ next: Write (approval pending)", "1 ACTIVE · 0 DONE".
+
+---
+
+Yes you can the demo.
+
+----
+
+New massive update :
+
+````markdown
+# Agent Command Center — Strict UI Design Conformance
+
+## Mission
+
+Reimplement the Agent Command Center interface to conform as faithfully as technically possible to the **two attached, approved design templates**.
+
+These templates represent the target design. They are **not inspiration, optional suggestions, or alternative concepts**.
+
+The task now involves:
+
+1. A structural layout correction affecting Zones A, B, and C.
+2. A comprehensive redesign of Zone B's visual presentation.
+3. A full-width, adaptive Zone C.
+4. Preservation of Zone D and the existing application functionality.
+5. Thorough visual, functional, and regression verification.
+
+**Do not consider the task finished merely because the interface looks better than before. It must demonstrably conform to the supplied templates.**
+
+---
+
+# 1. Authoritative Design References
+
+I am attaching two approved visual templates.
+
+### Template 1 — Multi-turn conversation
+
+This template represents the completed-conversation state:
+
+- Multiple user and assistant turns.
+- Tool execution and completed approvals.
+- A completed result.
+- Collapsed tool history, including failed operations.
+- An empty, compact Zone C.
+- The revised full-width dashboard structure.
+
+### Template 2 — Pending subagent approval
+
+This template represents an active execution state:
+
+- A user prompt launching a subagent.
+- Assistant narration.
+- Observed tool activity.
+- A pending Write approval.
+- A file-content preview.
+- A prominent approval interaction.
+- One active agent in Zone C.
+- The same full-width dashboard structure.
+
+Both templates must be implemented as **one consistent design system**, not as two independently styled screens.
+
+### Reference precedence
+
+Apply the following precedence:
+
+1. Actual CLI events, safety requirements, and execution state determine factual content and behavior.
+2. The two attached templates determine the intended layout and visual presentation.
+3. Existing project requirements determine functional and compatibility constraints.
+4. Existing UI styling applies only where it does not conflict with the approved templates.
+
+For example, if a generated template illustrates a completed operation but the real provider reports that operation as pending, the application must show the true pending state using the template's styling conventions.
+
+Never invent events, approvals, model information, or successful outcomes to imitate a screenshot.
+
+---
+
+# 2. Mandatory Dashboard Layout Change
+
+**This is a fundamental requirement. The task is not limited to Zone B.**
+
+The current dashboard places Zone C beneath Zone B while Zone A continues vertically beside it.
+
+The approved templates change this structure.
+
+## 2.1 Required layout
+
+Implement this hierarchy:
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│ AGENT COMMAND CENTER · SESSION HEADER                    │
+├─────────────────┬────────────────────────────────────────┤
+│                 │                                        │
+│ A               │ B                                      │
+│ ORCHESTRATOR    │ CONVERSATION                           │
+│                 │                                        │
+│                 │                                        │
+│                 │                                        │
+│                 │                                        │
+├─────────────────┴────────────────────────────────────────┤
+│ C · LIVE AGENTS                                          │
+│ Full width — adaptive height                             │
+├──────────────────────────────────────────────────────────┤
+│ D · QUOTA & TELEMETRY                                    │
+├──────────────────────────────────────────────────────────┤
+│ GLOBAL KEYBOARD SHORTCUTS                                │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Non-negotiable geometry
+
+- Zones A and B share the same upper horizontal row.
+- Their bottom boundaries must align.
+- Zone C starts below both zones, not just below B.
+- Zone C spans the entire available dashboard width.
+- Zone D remains full width beneath C.
+- The global keyboard shortcut footer remains full width.
+- Zone C must never be constrained to Zone B's column width.
+
+This requirement must be enforced in the application's actual layout calculations, not simulated through a screenshot-specific rendering hack.
+
+## 2.2 Horizontal proportions
+
+Follow the templates' approximate proportions:
+
+- Zone A: approximately 20–23% of the available dashboard width.
+- Zone B: the remaining approximately 77–80%.
+- Zone C: 100% of the available dashboard width.
+- Zone D: 100% of the available dashboard width.
+
+Treat these percentages as proportions, not fixed pixel measurements.
+
+Use terminal-cell calculations and respect panel borders, minimum widths, and available content space.
+
+Do not introduce overlapping borders, clipped headings, or mismatched boundaries.
+
+## 2.3 Responsive layouts
+
+Verify the layout at different terminal sizes, including:
+
+- 80 × 24.
+- 120 × 40.
+- 160 × 45 or a comparable standard Windows Terminal size.
+- 200 × 60.
+
+Use the approved templates as the primary reference at desktop-sized terminal dimensions.
+
+Where the available terminal dimensions require a fallback, preserve functionality, focus, and readability without corrupting the layout.
+
+Do not silently abandon the full-width Zone C requirement at ordinary supported sizes.
+
+---
+
+# 3. Zone C — Full-Width Adaptive Agent Monitoring
+
+This is one of the most important architectural changes.
+
+The approved templates show Zone C spanning beneath both the orchestrator and conversation panels.
+
+**Implement that arrangement exactly.**
+
+## 3.1 Compact state
+
+When no agents have appeared for the current user prompt:
+
+- Zone C remains visible.
+- It spans the full dashboard width.
+- It occupies minimal vertical space.
+- Its heading remains `C · LIVE AGENTS`.
+- Its active/completed counts remain visible.
+- Its empty-state message remains concise.
+
+This compact state gives additional vertical space to Zones A and B.
+
+Do not reserve a large empty rectangle for agent activity.
+
+## 3.2 Expanded state
+
+When the current prompt launches one or more subagents:
+
+- Zone C expands vertically as needed.
+- It continues spanning the full width.
+- Relevant agent rows become visible.
+- Each agent retains its identity, model, status, and available metadata.
+- The agent list remains selectable and inspectable.
+
+The second template illustrates the expected presentation.
+
+Example:
+
+```text
+C · LIVE AGENTS                           1 ACTIVE · 0 DONE
+● general-purpose · haiku-5-5 · waiting: approval
+  01:11 · 21.2k tokens · Bash ✓ · Write pending
+```
+
+This illustrates the information hierarchy, not hardcoded content.
+
+Use actual event data.
+
+## 3.3 Important: Zone C must not collapse automatically when agents complete
+
+This behavior is already approved and must be preserved.
+
+**Zone C must not return to its compact state merely because the active-agent count becomes zero.**
+
+The intended lifecycle is:
+
+1. A new user prompt is submitted: Zone C resets to compact presentation.
+2. A subagent starts: Zone C expands.
+3. Subagents continue executing: Zone C remains expanded.
+4. All subagents finish: Zone C remains expanded and displays completed agents.
+5. The user submits another prompt: Zone C resets to compact presentation.
+6. New subagents appear: Zone C expands again.
+
+Resetting the presentation must not delete historical agent activity.
+
+Completed agents from previous turns must remain accessible through existing history or inspection mechanisms.
+
+Do not collapse Zone C on unrelated events such as:
+
+- An agent changing from Running to Waiting.
+- The active-agent count reaching zero.
+- A provider-generated continuation turn.
+- The session temporarily becoming Idle.
+- A subagent's completion event.
+
+**The reset trigger is a new user-submitted prompt.**
+
+## 3.4 Layout stability
+
+When Zone C changes height:
+
+- Zones A and B must resize coherently.
+- Their bottom boundaries must remain aligned.
+- The conversation must preserve its meaningful scroll position.
+- Keyboard focus must not be lost.
+- The input editor and unsent drafts must remain intact.
+- Agent inspection must continue functioning.
+- Unnecessary flickering or layout jumping must be avoided.
+
+Keep the expansion proportional to the information that needs to be displayed. Do not allow Zone C to consume the entire available screen merely because many agents exist.
+
+Use scrolling or the existing inspection mechanisms for larger agent lists.
+
+---
+
+# 4. Zone B — Approved Conversation Design
+
+Zone B must closely reproduce the visual hierarchy and component styling shown in both templates.
+
+The objective is a polished, information-dense, terminal-native interface.
+
+The conversation must be the primary visual focus.
+
+## 4.1 Conversation header
+
+Required elements:
+
+- `B · CONVERSATION` prominently displayed at the top-left.
+- Current session state at the top-right.
+- Thin, appropriately colored borders or separators.
+- Consistent alignment with the Zone A boundary.
+- The purple-accented panel identity shown in the templates.
+
+The session state must reflect actual provider state.
+
+Do not display activity that has already finished.
+
+## 4.2 User messages
+
+Follow the approved purple visual language.
+
+Required:
+
+- A subtle lavender/purple accent along the message's left edge.
+- Clearly identifiable `YOU` label.
+- Timestamp when available.
+- User text presented directly below or beside the label according to available width.
+- Clear separation from surrounding assistant messages.
+- Consistent indentation and wrapping.
+
+The templates use compact message groups rather than oversized chat bubbles.
+
+Reproduce that approach.
+
+User messages must be identifiable immediately when scanning a long conversation.
+
+## 4.3 Assistant messages
+
+Follow the approved blue visual language.
+
+Required:
+
+- Blue accent marker or border.
+- Clearly identifiable `CLAUDE` or `CODEX` label.
+- Actual model identification when available.
+- Timestamp when available.
+- Readable assistant narration.
+- Consistent alignment with tool activity and result sections.
+
+Example:
+
+```text
+CLAUDE · Haiku 5.5
+
+I'll launch the subagent in the background to
+inspect the directory and write found.txt.
+```
+
+Do not make assistant narration visually indistinguishable from tool output.
+
+Do not invent model names when the provider has not supplied them.
+
+## 4.4 Tool activity
+
+The templates use compact grouped rows with subtle dark-blue backgrounds.
+
+Reproduce this styling.
+
+Tool activity must be nested visually under the corresponding assistant or agent activity.
+
+Each row should clearly distinguish:
+
+- Status indicator.
+- Agent identity, when applicable.
+- Tool type.
+- Operation or target.
+- Approval outcome, when applicable.
+- Timestamp and mock metadata, when available.
+
+Use consistent colors:
+
+- Blue for tool names and related identity.
+- Green for successful operations and confirmed allowed decisions.
+- Red for failures.
+- Muted gray for secondary metadata.
+- Magenta/pink for pending approval requests.
+
+Important: executing a tool is not automatically equivalent to the user approving it. Display `allowed by you` only when supported by actual approval evidence.
+
+Preserve the exact execution ordering.
+
+## 4.5 Compact grouping
+
+Tool rows must feel like a coherent activity group, as shown in the templates.
+
+Use:
+
+- Subtle background differentiation.
+- Compact padding.
+- Consistent column alignment.
+- Readable filename and command summaries.
+- Controlled truncation for long paths.
+- Small separators where useful.
+
+Do not recreate the old appearance of raw, disconnected terminal log lines.
+
+Do not make the highlighted blocks excessively bright or visually dominant.
+
+The conversation content remains the focus.
+
+## 4.6 Collapsed tool histories
+
+Follow the compact expandable-summary pattern.
+
+Examples:
+
+```text
+▸ 3 more tool events · Expand
+
+▸ 9 earlier tool events · 1 failed · Expand
+```
+
+Required behavior:
+
+- The summary must accurately reflect hidden event counts.
+- Failed events must remain discoverable.
+- Expansion must preserve chronological ordering.
+- Child-agent attribution must remain correct.
+- Expanding or collapsing must not affect unrelated transcript content.
+- Existing keyboard navigation must continue functioning.
+
+Do not hide critical pending approvals inside collapsed history.
+
+---
+
+# 5. Pending Approvals — Template 2
+
+The second template establishes the approved presentation for a pending approval.
+
+This is a distinct, high-priority UI state.
+
+## 5.1 Visual treatment
+
+A pending approval must use a clearly recognizable magenta/pink accent.
+
+Reproduce the template's:
+
+- Approval heading.
+- Prominent but controlled border.
+- Agent identity.
+- Tool name.
+- Operation target.
+- Timestamp.
+- Request details.
+- Content preview.
+- Action hint.
+
+The approval must stand apart from ordinary tool activity.
+
+## 5.2 Content hierarchy
+
+For the recorded Write scenario, the intended structure is:
+
+```text
+! APPROVAL · general-purpose · Write
+  <probe-root>/probe-work/p3b/found.txt
+
+  Preview of found.txt (2 lines)
+
+  1 │ alpha.txt
+  2 │ beta.md
+
+  File creation or overwrite requires approval.
+
+  F2 to answer
+```
+
+Match the second template's visual hierarchy and spacing as closely as terminal constraints allow.
+
+The content must be derived from the real approval request, not hardcoded to this example.
+
+## 5.3 Approval-state correctness
+
+Distinguish:
+
+- Pending.
+- Allowed.
+- Denied.
+- Expired.
+- Cancelled or otherwise unresolved, where applicable.
+
+Do not display a green success state before confirmation.
+
+Do not label a pending operation as completed.
+
+Preserve the real approval response controls and existing safety behavior.
+
+The visual redesign must not change what operation is being approved or broaden its scope.
+
+---
+
+# 6. Results — Correct Semantic Classification
+
+Results follow the approved green visual language.
+
+The first template demonstrates the completed-result treatment.
+
+Required:
+
+- Green accent.
+- Clear `RESULT` label.
+- Strong but restrained separation from tool activity.
+- Readable result body.
+- Consistent presentation across completed turns.
+
+The templates show that a meaningful result deserves more emphasis than ordinary assistant narration, but not an oversized card.
+
+## 6.1 Result classification
+
+This is a functional correctness requirement.
+
+A message such as:
+
+"I've launched the subagent and will report its findings."
+
+must not automatically be treated as the final result of the overall task.
+
+Differentiate:
+
+- Intermediate assistant narration.
+- Completion of the current assistant turn.
+- Completion of an asynchronous subagent task.
+- Final response or final outcome of the requested work.
+
+Use authoritative provider events and recorded execution state.
+
+Do not use text heuristics such as checking whether the message contains "done", "finished", or "result".
+
+Where the provider does not provide enough evidence to determine a final outcome, use neutral presentation instead of inventing successful completion.
+
+## 6.2 Avoid excessive green emphasis
+
+A green result border may be appropriate, as illustrated in Template 1.
+
+However, don't surround every assistant response with a green box.
+
+The intended design uses visual emphasis selectively.
+
+---
+
+# 7. Conversation Spacing, Typography, and Colors
+
+The two templates must share one consistent design system.
+
+## 7.1 Color roles
+
+Use the templates' existing palette as the reference:
+
+| Role | Color family |
+|---|---|
+| User identity | Lavender / soft purple |
+| Assistant identity | Soft blue |
+| Successful actions | Green |
+| Completed results | Restrained green |
+| Pending approvals | Magenta / pink |
+| Failures | Red |
+| Mock mode | Amber / yellow |
+| Secondary metadata | Muted gray |
+| Primary text | High-contrast neutral |
+| Tool backgrounds | Subtle dark blue / slate |
+
+Avoid unnecessary additional colors.
+
+## 7.2 Contrast
+
+Important information must remain readable against the dark background.
+
+Do not reproduce the current problem where tool descriptions become so dim that their highlighted backgrounds attract more attention than their text.
+
+Keep:
+
+- Tool names clear.
+- Filenames readable.
+- Approval outcomes legible.
+- Model names identifiable.
+- Secondary timestamps subdued but still readable.
+
+## 7.3 Spacing
+
+Match the templates' relative spacing.
+
+Create separation between:
+
+- Different user turns.
+- User and assistant content.
+- Assistant narration and tool groups.
+- Tool groups and final results.
+- Transcript content and the input editor.
+
+Avoid adding excessive blank lines.
+
+The application must remain practical for long conversations.
+
+## 7.4 Terminal-specific rendering
+
+The templates are visual mockups. Windows Terminal renders a character-cell grid.
+
+Translate the design into terminal-compatible equivalents using:
+
+- ANSI foreground and background colors.
+- Terminal attributes.
+- Unicode or box-drawing characters.
+- Consistent character-cell padding.
+- Terminal-compatible borders.
+- Controlled clipping and wrapping.
+
+Subtle rounded corners, gradients, shadows, and proportional typography cannot always be reproduced literally.
+
+Use the closest faithful terminal representation without replacing the design with an unrelated one.
+
+Any such deviation must be documented and justified.
+
+---
+
+# 8. Zone A — Preserve Functionality, Adapt Geometry
+
+Zone A remains the orchestrator and execution-tree panel.
+
+Do not unnecessarily redesign its contents.
+
+However, its geometry must change to match the approved templates.
+
+Required:
+
+- Zone A occupies only the upper dashboard row.
+- Its bottom boundary aligns with Zone B.
+- Zone C begins beneath it.
+- Existing turn and stage hierarchy remains available.
+- Tree navigation and inspection remain functional.
+- Agent status and approval state remain accurate.
+- Content scrolls or truncates safely when vertical space decreases.
+
+The templates show slightly improved alignment and hierarchy in Zone A. You may apply those refinements where needed for fidelity.
+
+Do not change the underlying orchestration model merely for visual consistency.
+
+---
+
+# 9. Zone D — Preserve Full-Width Telemetry
+
+Zone D must continue spanning the entire dashboard width beneath Zone C.
+
+Preserve:
+
+- Quota-window status.
+- Model information.
+- Context usage.
+- Token usage.
+- Cost estimates.
+- Error information.
+- Existing telemetry caveats.
+
+Keep the visual hierarchy broadly consistent with the attached templates.
+
+Do not spend this task building an unrelated telemetry redesign.
+
+Maintain the distinction between actual, estimated, derived, and unavailable data.
+
+---
+
+# 10. Input Editor and Global Keyboard Footer
+
+The input editor stays inside Zone B.
+
+The templates show:
+
+- A clear separation between transcript and input.
+- A purple prompt marker.
+- Muted placeholder text.
+- Compact keyboard hints.
+- Correct left/right alignment.
+
+Preserve:
+
+- Enter to submit.
+- Ctrl+J newline.
+- Draft-window interaction.
+- Selection and copying.
+- Multiline pasting.
+- Scroll position.
+- Input focus.
+- Existing keyboard shortcuts.
+
+The global shortcut footer remains below Zone D and spans the dashboard width.
+
+Do not lose editor content during layout changes.
+
+---
+
+# 11. Thinking Indicator — Separate Future Work
+
+Do not implement the separately planned dynamic thinking interface as part of this redesign.
+
+The upcoming feature will include:
+
+- Live thinking duration.
+- Thinking-token consumption when reliably available.
+- Animated expressions.
+- Completed thinking summaries.
+
+That work will be handled separately.
+
+For this task, only ensure that an old `thinking` indicator does not misleadingly appear as an active state after the corresponding activity has finished.
+
+Preserve actual thinking events and historical data.
+
+---
+
+# 12. Required Verification Scenarios
+
+Implement and verify the design using the existing mock fixtures and recorded events.
+
+At minimum, verify these scenarios.
+
+### Scenario A — Multi-turn conversation
+
+Use Template 1.
+
+Verify:
+
+- Correct dashboard geometry.
+- Purple user messages.
+- Blue assistant messages.
+- Grouped tool activity.
+- Successful and failed tool statuses.
+- Collapsed histories.
+- Final-result presentation.
+- Compact, full-width Zone C.
+- Correct input and footer placement.
+
+### Scenario B — Pending approval
+
+Use Template 2.
+
+Verify:
+
+- Correct dashboard geometry.
+- Active subagent visible in Zone C.
+- Zone C spanning beneath both A and B.
+- Correct pending-approval styling.
+- Accurate file-content preview.
+- F2 interaction guidance.
+- No premature RESULT classification.
+- Correct agent status.
+- Correct preservation of pending approvals.
+
+### Scenario C — Completed subagent
+
+Verify:
+
+- Agent transitions to Completed.
+- Completion remains visible.
+- Zone C stays expanded.
+- Transcript and result styling remain correct.
+- No automatic Zone C collapse when active-agent count becomes zero.
+
+### Scenario D — Next user prompt
+
+Verify:
+
+- Zone C resets to compact presentation upon a new user-submitted prompt.
+- Conversation history remains intact.
+- Previous agents remain inspectable.
+- The new prompt appears correctly.
+- Zone C expands again if the new turn launches subagents.
+
+### Scenario E — Long conversation
+
+Verify:
+
+- Multiple user and assistant turns.
+- Large volumes of tool activity.
+- Collapsed groups.
+- Long Windows paths.
+- Long model responses.
+- Scrolling.
+- Text selection and copying.
+- Correct rendering after terminal resize.
+
+---
+
+# 13. Automated Tests and Visual Verification
+
+Do not rely exclusively on plain-text golden frames.
+
+Tests must cover:
+
+1. Layout geometry and full-width Zone C.
+2. Zone A/B vertical alignment.
+3. Compact-to-expanded Zone C transitions.
+4. Persistence of expanded Zone C after completion.
+5. Reset on a new user-submitted prompt.
+6. Preservation of historical agent data.
+7. ANSI colors and background styling.
+8. Message hierarchy.
+9. Tool grouping and collapsing.
+10. Pending and completed approval states.
+11. Result classification.
+12. Input and keyboard behavior.
+13. Terminal resizing.
+14. Existing application performance requirements.
+
+Run the existing build, formatting, vetting, and regression checks.
+
+Preserve the established timing targets.
+
+Use mocks and deterministic fixtures wherever practical.
+
+Do not consume live Claude Code or Codex quota without the applicable approval.
+
+## Screenshot requirements
+
+Capture actual rendered Windows Terminal screenshots showing:
+
+1. The Template 1 multi-turn conversation.
+2. The Template 2 pending-approval state.
+3. An agent-completed state with Zone C still expanded.
+4. A new-prompt state where Zone C has returned to compact height.
+
+**These must be screenshots of the implemented application, not newly generated concept images.**
+
+Compare them visually with the two approved templates.
+
+Do not merely regenerate golden files and call the visual work complete.
+
+---
+
+# 14. Strict Design-Conformance Review
+
+After implementation, conduct a requirement-by-requirement review.
+
+Use this evaluation structure:
+
+| Requirement | Required verdict |
+|---|---|
+| A/B upper-row geometry | PASS / FAIL |
+| Full-width Zone C | PASS / FAIL |
+| Adaptive Zone C lifecycle | PASS / FAIL |
+| Zone C history preservation | PASS / FAIL |
+| Zone D placement | PASS / FAIL |
+| Zone B header | PASS / FAIL |
+| User-message hierarchy | PASS / FAIL |
+| Assistant-message hierarchy | PASS / FAIL |
+| Tool styling and grouping | PASS / FAIL |
+| Collapsed tool history | PASS / FAIL |
+| Pending approval styling | PASS / FAIL |
+| Approval-state correctness | PASS / FAIL |
+| Result styling | PASS / FAIL |
+| Result semantic correctness | PASS / FAIL |
+| Input/footer presentation | PASS / FAIL |
+| Responsive terminal behavior | PASS / FAIL |
+| Visual screenshot comparison | PASS / FAIL |
+| Functional regression tests | PASS / FAIL |
+| Performance regression tests | PASS / FAIL |
+
+For each criterion:
+
+- Provide evidence.
+- Identify any deviations.
+- Correct failures.
+- Revalidate after corrections.
+- Preserve the evaluation history.
+
+Do not mark a visual requirement PASS merely because a corresponding component exists.
+
+Visual conformance requires examining its actual appearance.
+
+---
+
+# 15. Iterative Correction Until Conformance
+
+This is not a one-pass styling exercise.
+
+Follow this development cycle:
+
+1. Inspect the current implementation.
+2. Identify deviations from both approved templates.
+3. Update the layout and rendering.
+4. Run deterministic tests.
+5. Capture actual application screenshots.
+6. Compare the results against the templates.
+7. Identify remaining discrepancies.
+8. Correct them.
+9. Repeat verification.
+
+Continue iterating while there are actionable discrepancies.
+
+Do not stop at "good enough", "visually similar", or "most criteria passed".
+
+Do not weaken acceptance criteria to obtain a passing result.
+
+If a requirement genuinely cannot be reproduced because of Windows Terminal limitations, document the specific technical constraint and show the closest achievable equivalent. Do not conceal the limitation or claim literal pixel-level equivalence.
+
+---
+
+# 16. Delivery and Approval
+
+Before reporting completion, provide:
+
+1. A summary of the layout and design changes.
+2. A list of modified files.
+3. A requirement-by-requirement conformance report.
+4. Actual Windows Terminal screenshots for all required scenarios.
+5. Regression and performance test results.
+6. Any documented terminal-specific deviations.
+7. Any remaining limitations.
+
+**Do not commit these design changes until I have reviewed and approved the final screenshots.**
+
+You may implement, correct, refactor, and verify safe in-scope changes autonomously.
+
+Retain all existing project safety requirements.
+
+## Final instruction
+
+**The two attached templates are the approved target design for Agent Command Center.**
+
+The work is not limited to Zone B.
+
+It includes the new dashboard geometry, full-width Zone C, adaptive agent monitoring behavior, conversation hierarchy, approval presentation, results, and consistent terminal-native styling.
+
+Do not recreate the old layout.
+
+Do not improvise an unrelated alternative.
+
+Do not claim complete conformance while known, actionable differences remain.
+
+**The objective is a faithful, fully functioning implementation of the supplied design—not merely a better-looking version of the existing application.**
+````
+
+## Amendment 17, 2026-10-20: the owner's live review, for plan 20
+
+The owner ran plan 20's scenarios live, on Claude Code, and sent the
+screenshots one by one, for each to be corrected where it needed it
+(`doc/plan20-evaluation.md`, The owner's live review). Two requests came
+with them, word for word.
+
+Before scenario 3, with a screenshot of zone B's entry cursor on a Read
+call:
+
+> Check my image, on in zone b I noticed that right arrow can open a file, I don't want it, because it's confusing since right arrow is also used to unfold, open a file should be just enter, what do you think?
+
+After scenario 3, with an image of the target. The brief keeps no images;
+it is described here. Zone B alone, its border rounded: "B · CONVERSATION"
+in violet at the top left, "Idle" in grey at the right, a thin rule under
+them across the zone. Then, after some space, the owner's message: a thin
+violet bar at its left spanning its two rows, "YOU" in violet bold and
+"14:29" small and grey on the first, "Reply with only the word ok." on the
+second, from the same column. A thin grey rule across the zone. The
+assistant's message: a thin blue bar spanning its two rows, "CLAUDE" in blue
+bold, "Opus 5.5" in grey and "14:29" small and grey on the first, "ok" on
+the second. No background behind the messages: the zone's own dark ground.
+
+> I actually don't like  how the chat conversation is rendered
+>
+> Look at my image, it must be rendered like that strictly
+>
+> So follow my following instruction strictly :
+
+````markdown
+# Agent Command Center — Zone B Message Layout & Separator Correction
+
+The latest Windows Terminal screenshots reveal that the current Zone B implementation still does not conform to the approved design templates.
+
+The colors and speaker labels are partially implemented, but the **message structure, background styling, alignment, and horizontal separators are incorrect or incomplete**.
+
+This is a strict design-conformance correction. Do not reinterpret the approved visual design.
+
+I am attaching the current implementation and the approved target design for comparison.
+
+## 1. Critical: Correct the Message Layout
+
+The current rendering places the speaker label, model, timestamp, and message body in a layout resembling a two-column terminal log.
+
+**This is incorrect.**
+
+Every message must be organized vertically:
+
+1. A narrow vertical accent bar on the left.
+2. A speaker header containing the speaker, model where applicable, and timestamp.
+3. The message body beginning on the next line.
+4. Consistent indentation between the header and body.
+5. A horizontal separator between distinct conversation messages.
+
+The body must never begin after a fixed-width speaker or metadata column.
+
+### Required structure
+
+For the exact test conversation:
+
+User: `Reply with only the word ok.`
+
+Assistant: `ok`
+
+The layout must follow this hierarchy:
+
+```text
+B · CONVERSATION ─────────────────────────── Idle
+
+│ YOU  14:29
+│ Reply with only the word ok.
+
+────────────────────────────────────────────
+
+│ CLAUDE  Opus 5.5  14:29
+│ ok
+
+────────────────────────────────────────────
+❯ Ask Claude Code anything...
+```
+
+This illustrates the structure. The vertical bars and separator lines must use the appropriate terminal styling and alignment from the reference images.
+
+**The body must be placed below its header, never on the same line.**
+
+Apply this rule consistently to every user and assistant message, including one-word responses.
+
+---
+
+## 2. Mandatory Horizontal Separators (`hr`)
+
+This requirement is especially important.
+
+The approved templates include subtle **full-width horizontal rules separating conversation messages**.
+
+These horizontal separators are essential to the intended visual hierarchy.
+
+They must be implemented explicitly, not left to incidental spacing.
+
+### 2.1 Placement
+
+Render a horizontal separator:
+
+- Between a user message and the following assistant message.
+- Between an assistant message and the next user message.
+- Between distinct consecutive assistant messages when they represent separate logical message blocks.
+- Between completed conversation groups where the templates show separation.
+- Above the input editor, as the dedicated transcript/editor boundary.
+
+The separator must appear even when a message contains only a single word.
+
+**For example, the user message `Reply with only the word ok.` must be followed by a visible horizontal rule before the `CLAUDE` header.**
+
+Do not rely solely on blank lines to establish message boundaries.
+
+### 2.2 Appearance
+
+Match the horizontal separators shown in the approved templates.
+
+Required characteristics:
+
+- A thin, continuous horizontal line.
+- Subtle muted gray/slate color.
+- One terminal-cell row in height.
+- Extending across the usable inner width of Zone B, respecting panel padding.
+- Consistent left and right margins.
+- Clear but restrained separation from the text above and below.
+- No bright white, blue, or purple separators dominating the conversation.
+
+Use terminal-compatible line-drawing characters and ANSI styling.
+
+The separator must read as a visual boundary, not ordinary transcript text.
+
+### 2.3 Spacing
+
+Maintain consistent spacing around each separator.
+
+The layout should follow this rhythm:
+
+**Message header → message body → spacing → horizontal rule → spacing → next message header.**
+
+Do not place the separator immediately against a text line without sufficient breathing room.
+
+Do not introduce excessive empty rows either. Preserve the compact appearance of the original templates.
+
+At ordinary desktop terminal sizes, a single blank row of separation where needed should be sufficient.
+
+### 2.4 Important distinction: Message separators versus internal content
+
+Do not insert a full-width conversation separator:
+
+- Between a message header and its body.
+- Between assistant narration and a tool group belonging to the same message.
+- Between individual tool rows.
+- Between an approval request and the supporting details of that same approval.
+- Between a RESULT label and its result body.
+
+These elements belong together.
+
+Internal tool groups may use their own subtle row separators, as shown in the templates, but those must remain visually subordinate to the conversation-level horizontal rules.
+
+**The horizontal rules must identify message boundaries, not arbitrarily divide related content.**
+
+### 2.5 No duplicated separators
+
+Avoid:
+
+- Two consecutive horizontal rules.
+- Overlapping borders.
+- A conversation separator immediately duplicated by an identical editor separator.
+- Separators inserted into the middle of streamed content.
+- Unnecessary rules at the start of an empty transcript.
+
+Use one coherent separator system.
+
+A completed message immediately before the editor should use the editor boundary without drawing an additional redundant rule.
+
+---
+
+## 3. Vertical Message Accent Bars
+
+The vertical accent bars are another defining feature of the approved design.
+
+### User messages
+
+- Narrow lavender/purple accent.
+- Positioned at the left edge of the message group.
+- Aligned consistently across conversation turns.
+- Visually associated with both the speaker header and message body.
+
+### Assistant messages
+
+- Narrow soft-blue accent.
+- Same dimensions and alignment system as the user accent.
+- Associated with the `CLAUDE` or `CODEX` header and its body.
+
+The accents should not be merely decorative characters placed before a label.
+
+They must establish the visual identity of the entire message block.
+
+Reproduce the reference templates' narrow accent treatment using terminal-compatible background colors or vertical line characters.
+
+Do not let the accent bar interfere with text selection or copying.
+
+---
+
+## 4. Correct Header and Body Alignment
+
+### Speaker headers
+
+The speaker header appears on its own row.
+
+Examples:
+
+- `YOU  14:29`
+- `CLAUDE  Opus 5.5  14:29`
+- `CODEX  [actual model]  14:29`
+
+The model identifier and timestamp are secondary metadata.
+
+### Message bodies
+
+The message body starts immediately below the header, aligned with the message content area.
+
+It must not start after a reserved label column.
+
+Use a consistent left margin across user and assistant messages.
+
+Long text must wrap within the available message content width, accounting for the vertical accent and indentation.
+
+The same alignment rules must apply to:
+
+- One-word replies.
+- Single-line messages.
+- Multiline responses.
+- Markdown content.
+- Streaming text.
+- Messages containing Unicode.
+- Long prompts.
+
+**Do not special-case the provided test conversation to make its screenshot pass. Fix the shared message renderer.**
+
+---
+
+## 5. Remove the Incorrect Full-Width Header Backgrounds
+
+The current implementation displays wide purple and blue tinted strips behind speaker headers.
+
+This does not match the approved design.
+
+Replace these with:
+
+- A primarily clean dark conversation background.
+- Narrow colored accent bars.
+- Colored speaker labels.
+- Muted model and timestamp metadata.
+- Subtle horizontal separators between messages.
+
+Reserve shaded backgrounds for components that need distinct grouping, particularly:
+
+- Tool activity.
+- Collapsed tool histories.
+- Approval requests.
+- Other explicitly grouped execution information.
+
+Do not wrap ordinary user and assistant messages in large, heavily tinted full-width bands.
+
+---
+
+## 6. Preserve the Approved Conversation Components
+
+The changes above must coexist with the already approved Zone B design.
+
+Preserve and refine:
+
+**Tool activity**
+- Compact grouped rows.
+- Subtle dark-blue backgrounds.
+- Readable tool names and target paths.
+- Accurate success and failure indicators.
+- Collapsible histories.
+
+**Approvals**
+- Clearly differentiated pending requests.
+- Magenta/pink emphasis for outstanding decisions.
+- Accurate approved, denied, cancelled, and expired states.
+- Existing F2 approval interactions.
+
+**Results**
+- Subtle green `RESULT` treatment.
+- Distinct from ordinary assistant narration.
+- Displayed only when justified by actual provider events and lifecycle state.
+
+These components must remain visually nested within the correct conversation context.
+
+Do not insert message-level separators inside a tool group or result block.
+
+---
+
+## 7. Rendering Architecture Requirements
+
+Inspect the shared Zone B rendering implementation.
+
+Correct the underlying layout calculations rather than applying superficial text replacements.
+
+Specifically verify:
+
+- Speaker-header layout.
+- Body layout.
+- Fixed-width columns.
+- Message indentation.
+- Accent-bar width and height.
+- Horizontal-rule generation.
+- ANSI foreground and background styling.
+- Width calculations.
+- Wrapping.
+- Terminal resizing.
+- Transcript scrolling.
+- Streaming updates.
+
+The horizontal separators must adapt to the current Zone B content width.
+
+They must not overflow, truncate incorrectly, or overwrite panel borders.
+
+Streaming must update the current message without inserting unstable separators or causing flickering.
+
+When a new message arrives, the appropriate separator must be inserted consistently.
+
+Keep the layout compatible with the already approved four-zone architecture and full-width adaptive Zone C.
+
+---
+
+## 8. Mandatory Acceptance Tests
+
+Add or update tests covering these requirements.
+
+### Message structure
+
+- Header and body occupy separate rows.
+- Body starts at the correct left indentation.
+- Speaker metadata does not shift the body.
+- Single-line and multiline messages follow the same layout.
+- Vertical accent bars are correctly aligned.
+
+### Horizontal separators
+
+- A separator exists between consecutive user and assistant messages.
+- A separator exists between completed assistant content and the next user message.
+- Short messages receive the same separators as long ones.
+- No duplicated or missing separators.
+- No conversation-level separator divides related tool content.
+- No redundant separator appears immediately before the editor boundary.
+- Separator width adjusts correctly when Zone B resizes.
+- ANSI color and line-drawing characters match the approved styling.
+
+### Regression coverage
+
+Verify:
+
+- Multiple conversation turns.
+- Long messages and wrapping.
+- Streaming responses.
+- Tool grouping and expansion.
+- Pending approvals.
+- Final results.
+- Keyboard interactions.
+- Selection and copy/paste.
+- Narrow and wide terminal sizes.
+- Existing performance requirements.
+
+Preserve all existing functional behavior.
+
+---
+
+## 9. Required Windows Terminal Visual Evidence
+
+Do not rely solely on plain-text golden frames.
+
+Capture actual Windows Terminal screenshots of the implemented application.
+
+### Screenshot 1 — Minimal conversation
+
+User: `Reply with only the word ok.`
+
+Assistant: `ok`
+
+This must demonstrate:
+
+- Purple YOU header.
+- Blue CLAUDE header.
+- Body text below each header.
+- Correct vertical accents.
+- A visible muted horizontal rule separating the two messages.
+- Correct spacing and alignment.
+- No oversized colored header backgrounds.
+
+### Screenshot 2 — Longer conversation
+
+Use a recorded scenario containing:
+
+- A multiline user prompt.
+- Assistant narration.
+- Tool activity.
+- A completed result.
+- A subsequent user message.
+
+Verify the horizontal rules between conversation messages and the correct nesting of tool and result content.
+
+### Screenshot 3 — Pending approval
+
+Use the existing approval fixture.
+
+Verify that conversation separators remain correct while the approval request and its details stay grouped together.
+
+### Visual review
+
+Compare these screenshots directly against the approved design templates.
+
+Inspect both the geometry and the actual ANSI colors/backgrounds.
+
+Do not merely regenerate golden frames and accept them without review.
+
+---
+
+## 10. Completion Requirements
+
+Before declaring this correction complete:
+
+1. Identify the current layout defects and their causes.
+2. Correct the shared renderer.
+3. Implement the horizontal-rule system.
+4. Verify vertical accent consistency.
+5. Remove the incorrect broad header backgrounds.
+6. Run all relevant regression and performance tests.
+7. Capture the required real Windows Terminal screenshots.
+8. Compare them against the approved design.
+9. Correct any remaining actionable discrepancies.
+10. Report the final verification results.
+
+Do not mark a requirement PASS merely because its code exists. Verify its actual rendered appearance.
+
+Keep iterating where discrepancies remain.
+
+If literal visual reproduction is impossible because of Windows Terminal character-cell limitations, explain the specific constraint and implement the closest faithful equivalent.
+
+Do not commit until I review the updated screenshots.
+
+## Final Instruction
+
+**The approved design requires all three elements together:**
+
+- **Vertical purple/blue accent bars** identifying the speaker.
+- **Vertically stacked speaker headers and message bodies**, with consistent indentation.
+- **Thin horizontal separators (`hr`) between distinct conversation messages.**
+
+These are mandatory design requirements.
+
+Implement them faithfully and consistently throughout Zone B, while preserving the rest of the approved Agent Command Center design.
+
+**The objective is strict visual and structural conformance, not a partial approximation.**
+````

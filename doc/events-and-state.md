@@ -135,6 +135,24 @@ age a value.
 - Deltas append to the open `Streaming` entry of the same message id; the
   `completed` event replaces its text with the complete content (the
   complete message wins if they differ, and the difference is logged).
+- Each entry records the turn it belongs to, `Entry.Stage` (the stage of
+  zone A's tree, 1-based): the one open when it came, for the owner's
+  prompt the one it opens, after a turn ended that turn, 0 before any
+  (plan 19). Zone B reads it for RESULT: an exchange's last message is a
+  result only once the turn that ended the exchange completed and every
+  agent whose `Stage` falls in the exchange's stages is `Completed` (plan
+  20, the owner's section 6.1: one running, failed or stopped leaves the
+  message neutral, so "I've launched the subagent…" never reads as the
+  result), and only after other activity; never from the text
+  ([ui-design.md, Zone B](ui-design.md#zone-b)). The labels, the cards,
+  RESULT and the folds are drawn from the record, the turn machine and the
+  agent machines each frame; nothing of them is stored, except the runs of
+  calls the owner expanded, a choice of the interface.
+- A thinking block is kept as its entry (`Entry.Thinking`, no text) and
+  drawn only while it streams with no text yet; once it ends, zone B does
+  not draw it (plan 20, the owner's section 11), so a finished one never
+  looks active. The record keeps it for the thinking display the owner
+  plans separately.
 - The record lives in memory for the session (ASM-11). Claude Code's
   `--resume` does not replay history (P4), so the dashboard's record is the
   only source of earlier turns in one dashboard session
@@ -264,6 +282,7 @@ then `Idle` with the last outcome `completed`, `failed` or `interrupted`.
 | `WaitingApproval` | turn end reported | `Idle` with that outcome; its pending approvals `Expired` | **D** `result` | **D** `turn/completed`, then `serverRequest/resolved` |
 | `Idle` | approval from a background agent | stays `Idle`; the agent goes `WaitingApproval` and the approval is queued | **D** (background agents outlive the turn, P3) | **D** (a child's own turn) |
 | `Idle` | the CLI starts a turn itself: `message_start` or `turn/started` with no message sent, session `Ready` | `Running`, marked "started by the CLI"; no draft is accepted | **P** after a background agent's `task_notification` (P3 lines 80-98, P3b; found in plan 4) | **D** not observed |
+| `Idle` | a prompt the dashboard did not send: a mock file's `conversation.user` | `Submitted`, the owner's turn, as sending opens it: the last turn's notice ("started by the CLI") cleared (plan 20) | dash (mock mode) | dash (mock mode) |
 | `Running` | turn end, success | `Idle`, outcome `completed` | **P** `result success` | **P** `turn/completed completed` |
 | `Running` | turn end, error | `Idle`, outcome `failed` | **D** `result is_error` | **P** `turn/completed failed` (P6) |
 | any | session `Crashed` | `Idle`, outcome `failed` | dash | dash |

@@ -119,7 +119,8 @@ func TestPaneScroll(t *testing.T) {
 			if g := h.m.screen.Tree.Top; g != bottom-page || !h.m.ui.Tree.Hold {
 				t.Fatalf("PgUp: top %d hold %v, want %d held", g, h.m.ui.Tree.Hold, bottom-page)
 			}
-			if f := h.frame(); !strings.Contains(f, fmt.Sprintf("↑ %d ↓ %d · End follows", bottom-page, page)) {
+			// "· End follows" is left out where zone A is too narrow (plan 20).
+			if f := h.frame(); !strings.Contains(f, fmt.Sprintf("↑ %d ↓ %d", bottom-page, page)) {
 				t.Errorf("held hint missing:\n%s", f)
 			}
 			h.draw(key(tea.KeyPgDown, 0))
@@ -203,7 +204,8 @@ func TestPaneScroll(t *testing.T) {
 			if g := h.m.screen.List.Top; g != page || !h.m.ui.List.Hold {
 				t.Fatalf("PgDn: top %d, want %d held", g, page)
 			}
-			if f := h.frame(); !strings.Contains(f, fmt.Sprintf("↑ %d ↓ %d · Home top", page, bottom-page)) {
+			// In C's top border since plan 20, its hint row gone.
+			if f := h.frame(); !strings.Contains(f, fmt.Sprintf("↑ %d above · ↓ %d below", page, bottom-page)) {
 				t.Errorf("held hint missing:\n%s", f)
 			}
 			h.draw(key(tea.KeyEnd, 0))
@@ -274,7 +276,8 @@ func TestPaneScroll(t *testing.T) {
 					t.Errorf("wheel over %c: top %d hold %v focus %q, want %d held, B", p, v.Top, ui.Hold, h.m.ui.Focus, want)
 				}
 			}
-			if f := h.frame(); !strings.Contains(f, "scroll to the end follows") || !strings.Contains(f, "End follows") || !strings.Contains(f, "Home top") {
+			// A's and the preview's "End follows", C's "above" (plan 20).
+			if f := h.frame(); strings.Count(f, "End follows") < 2 || !strings.Contains(f, " above") {
 				t.Errorf("held hints:\n%s", f)
 			}
 			top := h.m.screen.Preview.Top
@@ -314,7 +317,7 @@ func TestPaneScroll(t *testing.T) {
 			hint string
 		}{
 			{"zoomed A", 120, 40, "A", true, 'A', "End follows"},
-			{"zoomed C", 170, 50, "C", true, 'C', "Home top"},
+			{"zoomed C", 170, 50, "C", true, 'C', " above · "},
 			{"80x24 A", 80, 24, "A", false, 'A', "End follows"},
 			{"80x24 C", 80, 24, "C", false, 'C', ""},
 		} {

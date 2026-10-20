@@ -334,7 +334,7 @@ func TestCodexApprovalCards(t *testing.T) {
 					t.Fatalf("approval %+v, turn %q; want pending, waiting", s.Approvals["0"], s.Turn.Phase)
 				}
 				f := frameText(h)
-				for _, want := range []string{"! APPROVAL orchestrator · fileChange", "hello.txt", "F2 to answer"} {
+				for _, want := range []string{"! APPROVAL · orchestrator · fileChange", "hello.txt", "F2 to answer"} {
 					if !strings.Contains(f, want) {
 						t.Errorf("pending card lacks %q:\n%s", want, f)
 					}
@@ -376,7 +376,7 @@ func TestCodexChildApproval(t *testing.T) {
 			t.Fatalf("approval %+v; want pending, from %s", ap, p7Child)
 		}
 		label := s.Agents[p7Child].Label
-		if f := frameText(h); label == "" || !strings.Contains(f, "! APPROVAL "+label) {
+		if f := frameText(h); label == "" || !strings.Contains(f, "! APPROVAL · "+label) {
 			t.Errorf("card not labelled %q:\n%s", label, f)
 		}
 		before := len(w.written(0))

@@ -133,6 +133,15 @@ func (m *Model) press(mo tea.Mouse) {
 	}
 	m.click.at, m.click.x, m.click.y = now, mo.X, mo.Y
 
+	// A click on a run's fold row expands it, or folds it again (plan 19).
+	if c := m.screen.Conv; p == 'B' && m.click.n == 1 {
+		if key, ok := c.Folds[mo.Y-c.Y]; ok {
+			m.unfold(key, !m.ui.Unfolded[key])
+			m.ui.Sel = render.Selection{}
+			return
+		}
+	}
+
 	start, end, ok := m.screen.HitIn(p, mo.X, mo.Y, false)
 	if !ok {
 		m.ui.Sel = render.Selection{}

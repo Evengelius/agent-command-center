@@ -119,6 +119,13 @@ Its palette fits the first reference: dark background, thin rounded frames,
 pale violet panel titles, green for done, amber for in progress, grey for
 waiting, and a violet and an amber bar for the two quotas.
 
+Since plan 20 the owner's two approved templates (brief, amendment 16,
+which describes them) are the target design for the dashboard's geometry
+and zone B: A and B side by side in the upper row, ending on the same row,
+C and D the whole width under them, and zone B's cards. They replace this
+mock-up's right-column split; its zones and palette stay
+([ui-design.md, Layouts](ui-design.md#layouts-at-three-sizes)).
+
 ## Screen sequence
 
 From amendment 4: the application opens on a startup screen (image 1), then

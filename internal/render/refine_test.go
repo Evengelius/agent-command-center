@@ -188,7 +188,7 @@ func TestTreeAnimation(t *testing.T) {
 			tree := func(f int) []string {
 				ui := UI{Width: 120, Height: 40, Now: now, Spinner: f}
 				var out []string
-				for _, r := range treeRows(s, ui, zoneAStandard) {
+				for _, r := range treeRows(s, ui, 44) { // wide enough for the names (A is 26 at 120 since plan 20)
 					out = append(out, strings.TrimSuffix(texts([]line{r.l}), "\n"))
 				}
 				return out
@@ -298,8 +298,8 @@ func TestKeyOverlayRows(t *testing.T) {
 			t.Errorf("ui-design.md key %q missing from the overlay", k)
 		}
 	}
-	if n != 45 {
-		t.Errorf("%d rows read from ui-design.md, want 45", n)
+	if n != 47 { // B's entries: Enter, → and ← apart since the owner's live review
+		t.Errorf("%d rows read from ui-design.md, want 47", n)
 	}
 	for _, l := range strings.Split(texts(keysBody(78)), "\n") {
 		if strings.Contains(l, "…") || textWidth(l) > 78 {

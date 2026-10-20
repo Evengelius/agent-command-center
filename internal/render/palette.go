@@ -35,6 +35,10 @@ var (
 	cCode      = colour{"#93C5FD", "6"}  //
 	cLink      = colour{"#60A5FA", "12"} // as Haiku
 	cTreeText  = colour{"#E5E7EB", "15"} // text on zone A's cursor row
+	cBright    = colour{"#F9FAFB", "15"} // the owner's prompts in zone B (plan 19)
+	cGround    = colour{"#1E2133", ""}   // zone B's tool rows; no ground on 16 colours (plan 19)
+	cMuted     = colour{"#A1A9C0", "7"}  // a tool row's target, readable on its ground (plan 20)
+	cPill      = colour{"#3B1531", ""}   // the "F2 to answer" pill (plan 20)
 )
 
 // modelColours colours a model by its family; any other model is text.
@@ -65,6 +69,15 @@ var (
 	// stSynBuiltin and stSynTag colour the file viewer's built-in names and
 	// markup tags (plan 17, ui-design.md, the file viewer).
 	stSynBuiltin, stSynTag = new(lipgloss.Style), new(lipgloss.Style)
+
+	// Zone B's labels and the owner's prompts (plan 19, ui-design.md, Zone
+	// B): YOU violet, the CLI's speaker blue, RESULT green, each led by a
+	// bar of its colour.
+	stBright, stYou, stSpeaker, stResult = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+
+	// A tool row's name and target, the fold row's triangle, and the pink
+	// pill of a pending approval (plan 20, ui-design.md, Zone B).
+	stToolName, stMuted, stFoldMark, stPill, stPillEnd = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 
 	// The file viewer's frame, its cursor line (each class on zone A's
 	// cursor row background, the line numbers likewise) and its search
@@ -143,10 +156,63 @@ func paint() {
 		paintStyle(synRow[c], SynClass(c).style().Background(cTreeRow.get()))
 	}
 
+	paintStyle(stBright, fg(cBright))
+	paintStyle(stYou, fg(cKeyword).Bold(true))
+	paintStyle(stSpeaker, fg(cLink).Bold(true))
+	paintStyle(stResult, fg(cDone).Bold(true))
+	paintStyle(stToolName, fg(cCode).Bold(true))
+	paintStyle(stMuted, fg(cMuted))
+	paintStyle(stFoldMark, fg(cLink))
+	if sixteen { // no ground to spare: the pill is its bold pink text
+		paintStyle(stPill, stAttentionBold.Background(lipgloss.NoColor{}))
+		paintStyle(stPillEnd, lipgloss.NewStyle())
+	} else {
+		paintStyle(stPill, stAttentionBold.Background(cPill.get()))
+		paintStyle(stPillEnd, fg(cPill))
+	}
+
 	for i, m := range modelColours {
 		paintStyle(modelStyles[i], fg(m.c))
 	}
+	for _, g := range grounds {
+		for base, t := range g.tints {
+			if !sixteen { // unused there: on gives the base style
+				paintStyle(t, base.Background(g.c.get()))
+			}
+		}
+	}
 }
+
+// A ground is a background zone B draws on, with the shared styles on it,
+// by the style each one grounds; paint repaints them: the tool rows' (plan
+// 19) and the cards' (plan 20).
+type ground struct {
+	c     colour
+	tints map[*lipgloss.Style]*lipgloss.Style
+}
+
+var (
+	toolGround = &ground{c: cGround, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	grounds    = []*ground{toolGround}
+)
+
+// on is st on the ground, made on first use; st itself on a 16-colour
+// terminal, which has no ground to spare.
+func (g *ground) on(st *lipgloss.Style) *lipgloss.Style {
+	if sixteen {
+		return st
+	}
+	if t := g.tints[st]; t != nil {
+		return t
+	}
+	t := new(lipgloss.Style)
+	paintStyle(t, st.Background(g.c.get()))
+	g.tints[st] = t
+	return t
+}
+
+// tint is st on the tool rows' ground (plan 19).
+func tint(st *lipgloss.Style) *lipgloss.Style { return toolGround.on(st) }
 
 // wraps is each shared style's escape codes before and after a span's text,
 // for line.String: what Lip Gloss's Render gives a single line without tabs,

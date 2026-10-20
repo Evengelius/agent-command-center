@@ -195,22 +195,24 @@ type WrapCache struct {
 }
 
 // entryCount is how many rows a finished entry takes at width w: a function of
-// these fields alone, so an entry that moved still finds a right count.
+// these fields alone, so an entry that moved still finds a right count. shape
+// is what its look adds (plan 19): the labels above it, or folded away.
 type entryCount struct {
 	text, role string
 	w          int
 	thinking   bool
+	shape      uint16
 	n          int
 }
 
 // rowCount is entry i's row count, from count when not cached. Streaming
 // entries and approval cards change between frames and are always counted.
-func (c *WrapCache) rowCount(i int, e state.Entry, w int, count func() int) int {
+func (c *WrapCache) rowCount(i int, e state.Entry, w int, shape uint16, count func() int) int {
 	if c == nil || e.Streaming || e.Role == "approval" {
 		return count()
 	}
 	if i < len(c.counts) {
-		if k := c.counts[i]; k.text == e.Text && k.role == e.Role && k.w == w && k.thinking == e.Thinking {
+		if k := c.counts[i]; k.text == e.Text && k.role == e.Role && k.w == w && k.thinking == e.Thinking && k.shape == shape {
 			return k.n
 		}
 	}
@@ -218,7 +220,7 @@ func (c *WrapCache) rowCount(i int, e state.Entry, w int, count func() int) int 
 	for len(c.counts) <= i {
 		c.counts = append(c.counts, entryCount{w: -1})
 	}
-	c.counts[i] = entryCount{e.Text, e.Role, w, e.Thinking, n}
+	c.counts[i] = entryCount{e.Text, e.Role, w, e.Thinking, shape, n}
 	return n
 }
 
@@ -305,24 +307,45 @@ func cellSpans(src string, cs []cell, at ref, st *lipgloss.Style, runs []styleRu
 // lipgloss.Style is hundreds of bytes, and a long answer has thousands of
 // rows each frame.
 type crow struct {
-	l     line
-	src   string
-	r     rowRange
-	line  int  // the source line, in the entry
-	first bool // the source line's first row
-	p     *rowStyle
-	fn    func() line // a row drawn only when shown
+	l      line
+	src    string
+	r      rowRange
+	line   int  // the source line, in the entry
+	first  bool // the source line's first row
+	p      *rowStyle
+	fn     func() line // a row drawn only when shown
+	fold   string      // a fold row's run (plan 19)
+	fr     *frame      // the card it is drawn in; nil for none (plan 20)
+	cursor bool        // the entry cursor's row: ▸ in the card's margin
+	sep    bool        // the rule between two messages (amendment 17)
 }
 
-// rowStyle is what the rows of one entry share.
+// solid says the row shows something: text, a block's bar, a rule; not a
+// blank row between messages.
+func (c crow) solid() bool {
+	return c.fn != nil || c.p != nil || c.fr != nil || c.l.width() > 0
+}
+
+// rowStyle is what the rows of one entry share. lead0 and lead have the
+// same width: a label beside the text, then its column (plan 20).
 type rowStyle struct {
-	lead0, lead span
+	lead0, lead line
 	at          ref
 	st          *lipgloss.Style
 	md          []mdLine // the lines' Markdown kinds; nil draws them plain
 }
 
+// draw is the row as shown: its content, in its card.
 func (c crow) draw() line {
+	l := c.content()
+	if c.fr != nil {
+		l = c.fr.wrap(l, c.cursor)
+	}
+	return l
+}
+
+// content is the row without its card.
+func (c crow) content() line {
 	if c.fn != nil {
 		return c.fn()
 	}
@@ -338,7 +361,7 @@ func (c crow) draw() line {
 	if c.line < len(c.p.md) {
 		rs = mdRuns(c.src, c.p.md[c.line]) // the whole source line: a span may cross the wrap
 	}
-	return append(line{lead}, rowLine(c.src, c.r, at, c.p.st, rs)...)
+	return append(append(line{}, lead...), rowLine(c.src, c.r, at, c.p.st, rs)...)
 }
 
 // drawn adds rows already drawn.
@@ -362,7 +385,7 @@ func sourceRows(out []crow, wc *WrapCache, p *rowStyle, j int, src string, first
 // contentRows adds entry i's lines, each wrapped to w cells after an indent
 // of two; markdown styles them as Markdown (ui-design.md, Markdown).
 func contentRows(out []crow, wc *WrapCache, i int, lines []string, w int, st *lipgloss.Style, markdown bool) []crow {
-	lead := deco("  ", st)
+	lead := line{deco("  ", st)}
 	p := &rowStyle{lead0: lead, lead: lead, at: ref{panel: 'B', item: i}, st: st}
 	if markdown && markdownOn {
 		p.md = mdLines(lines)

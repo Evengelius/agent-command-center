@@ -32,7 +32,7 @@ type treeRow struct {
 // left out: what ↑ and ↓ move through.
 func Tree(s *state.State, ui UI) []Node {
 	var out []Node
-	for _, r := range treeRows(s, ui, zoneAStandard) {
+	for _, r := range treeRows(s, ui, zoneAMin) { // the nodes, whatever the width
 		if r.node.ID != "" {
 			out = append(out, r.node)
 		}
@@ -223,10 +223,19 @@ func movingDot(rows []treeRow, col, frame int) {
 	r.l = append(l, r.l[1:]...)
 }
 
-// toolRow is "✓ Write found.txt", observed.
+// toolRow is "✓ Write found.txt", observed. A path too long for the row
+// keeps its file name, cut at its left end (the owner's live review,
+// 2026-10-20: twelve Read rows all read "C:\User…").
 func toolRow(s *state.State, ui UI, tc *state.ToolCall, prefix string, w int) line {
 	l := line{deco(prefix, stFrame), toolSymbol(s, tc, running(s, ui)), sp(" "+tc.Name, stText)}
 	if t := toolTarget(tc.Input); t != "" {
+		if _, path, _ := approvalDetail(&state.Approval{Input: tc.Input}); path {
+			room := w - l.width() - 2
+			if o := originLabel(tc.Origin); o != "" {
+				room -= textWidth(" " + o)
+			}
+			t = elidePath(t, max(room, 1))
+		}
 		l = append(l, sp("  "+t, stGrey))
 	}
 	return withOrigin(l, originLabel(tc.Origin), w)
@@ -399,9 +408,10 @@ func paneTop(p Pane, rows, room, rest int) int {
 	return min(max(p.Top, 0), max(rows-room, 0))
 }
 
-// heldHint is a held pane's hint row: the rows out of view, then the key
-// that returns it to where it rests.
-func heldHint(above, below int, back string) line {
+// heldHint is a held pane's hint row, w cells at most: the rows out of view,
+// then the key that returns it to where it rests, left out where it does
+// not fit (plan 20: zone A is narrower, 26 columns at 120).
+func heldHint(above, below int, back string, w int) line {
 	var parts []string
 	if above > 0 {
 		parts = append(parts, fmt.Sprintf("↑ %d", above))
@@ -409,7 +419,11 @@ func heldHint(above, below int, back string) line {
 	if below > 0 {
 		parts = append(parts, fmt.Sprintf("↓ %d", below))
 	}
-	return decoLine(strings.Join(parts, " ")+" · "+back, stProgress)
+	text := strings.Join(parts, " ")
+	if full := text + " · " + back; textWidth(full) <= w {
+		text = full
+	}
+	return decoLine(text, stProgress)
 }
 
 // cursorLine restyles a row's content for the cursor; symbols keep their

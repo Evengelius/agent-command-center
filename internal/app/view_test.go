@@ -231,7 +231,8 @@ func entryAt(s *state.State, ok func(e state.Entry) bool) int {
 }
 
 // TestEntryViewer is plan 5, item 4: ↑ from an empty input puts a cursor on
-// B's entries shown in part, Enter or → shows one whole, full screen.
+// B's entries shown in part, Enter shows one whole, full screen; → opens
+// nothing (the owner's live review, 2026-10-20).
 func TestEntryViewer(t *testing.T) {
 	t.Run("cursor, view, back", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
@@ -259,7 +260,7 @@ func TestEntryViewer(t *testing.T) {
 
 			h.draw(key(tea.KeyUp, 0))
 			f := h.frame()
-			if h.m.ui.Entry != p || !strings.Contains(f, "▸ … 195 more lines") || !strings.Contains(f, "Enter full view · ↑↓ entries · Esc back") {
+			if h.m.ui.Entry != p || !rowWith(f, "▎▸", "… 195 more lines", "Enter full view · ↑↓ entries · Esc back") { // the cursor in the card's margin (plan 20)
 				t.Fatalf("↑: entry %d, want %d:\n%s", h.m.ui.Entry, p, f)
 			}
 			if h.m.screen.Conv.Rows != rows {
@@ -270,7 +271,7 @@ func TestEntryViewer(t *testing.T) {
 				t.Fatalf("↑↑: entry %d, want the failure at %d:\n%s", h.m.ui.Entry, fail, f)
 			}
 			h.draw(key(tea.KeyUp, 0))
-			if f := h.frame(); h.m.ui.Entry != tool || !rowWith(f, "▸ Write", "Enter full view") {
+			if f := h.frame(); h.m.ui.Entry != tool || !rowWith(f, "▸ ✓ Write", "Enter full view") {
 				t.Fatalf("↑↑↑: entry %d, want the Write at %d:\n%s", h.m.ui.Entry, tool, f)
 			}
 			h.draw(key(tea.KeyUp, 0)) // nothing older to expand: it stays
@@ -336,11 +337,10 @@ func TestEntryViewer(t *testing.T) {
 			}
 
 			h.draw(key(tea.KeyUp, 0))
-			h.draw(key(tea.KeyRight, 0))
-			if h.m.ui.ViewEntry != p {
-				t.Errorf("→: view %d, want %d", h.m.ui.ViewEntry, p)
+			h.draw(key(tea.KeyRight, 0)) // → unfolds, it opens nothing (the owner's live review)
+			if h.m.ui.ViewEntry != 0 || h.m.ui.Entry != p {
+				t.Errorf("→: view %d, entry %d; want no view, the cursor kept on %d", h.m.ui.ViewEntry, h.m.ui.Entry, p)
 			}
-			h.draw(key(tea.KeyEscape, 0))
 			h.draw(key(tea.KeyUp, 0)) // the failure, then the Write
 			h.draw(key(tea.KeyUp, 0))
 			h.draw(key(tea.KeyEnter, 0))
@@ -375,7 +375,7 @@ func TestEntryViewer(t *testing.T) {
 			}
 			for k := n; k >= 1; k-- {
 				h.draw(key(tea.KeyUp, 0))
-				if f := h.frame(); !rowWith(f, fmt.Sprintf("▸ … %d more lines", 16+k), "Enter full view") {
+				if f := h.frame(); !rowWith(f, "▎▸", fmt.Sprintf("… %d more lines", 16+k), "Enter full view") {
 					t.Fatalf("↑ to message %d: not in view:\n%s", k, f)
 				}
 			}
@@ -384,13 +384,13 @@ func TestEntryViewer(t *testing.T) {
 				t.Fatalf("↑ to the failure: not in view:\n%s", f)
 			}
 			h.draw(key(tea.KeyUp, 0))
-			if f := h.frame(); !rowWith(f, "▸ Write", "Enter full view") {
+			if f := h.frame(); !rowWith(f, "▸ ✓ Write", "Enter full view") {
 				t.Fatalf("↑ to the Write: not in view:\n%s", f)
 			}
 			h.draw(key(tea.KeyDown, 0)) // back over the failure
 			for k := 1; k <= n; k++ {
 				h.draw(key(tea.KeyDown, 0))
-				if f := h.frame(); !rowWith(f, fmt.Sprintf("▸ … %d more lines", 16+k), "Enter full view") {
+				if f := h.frame(); !rowWith(f, "▎▸", fmt.Sprintf("… %d more lines", 16+k), "Enter full view") {
 					t.Fatalf("↓ to message %d: not in view:\n%s", k, f)
 				}
 			}

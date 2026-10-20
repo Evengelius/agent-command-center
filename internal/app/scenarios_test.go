@@ -31,7 +31,9 @@ func TestSyntheticScenarios(t *testing.T) {
 		// exit code (item 1); the requested model, and N/A without one (item
 		// 4), marked "*" with its footnote (item 5), with its effort (item 6).
 		{"codex-plan6-limits.jsonl",
-			[]string{"✗ commandExecution · exit 1 · fatal: No configured push destination.", "/root/list_files  gpt-6-mini* low completed", "/root/create_fou… model N/A       completed", "* requested model · 0 ACTIVE · 2 DONE", "errors 0"},
+			// The failed command's row: its command, cut, then its error (the
+			// owner's live review: a failed row names what failed).
+			[]string{"✗ commandExecution  \"C:", "… · exit 1 · fatal: No configured push destination.", "/root/list_files     gpt-6-mini* low completed", "/root/create_found   model N/A       completed", "* requested model · 0 ACTIVE · 2 DONE", "errors 0"},
 			[]string{"commandExecution · On branch main", "commandExecution · exit 1 · On branch", "model N/A*"}},
 	} {
 		t.Run(c.file, func(t *testing.T) {
@@ -72,8 +74,8 @@ func TestSpawnRequestLabel(t *testing.T) {
 			w, h int
 			row  string
 		}{
-			{120, 40, "✓ task: Count the files in the… gpt-5.6-luna* low completed"},
-			{200, 60, "✓ task: Count the … gpt-5.6-luna* low completed"},
+			{120, 40, "✓  task: Count the files in the c…   gpt-5.6-luna* low completed"},
+			{200, 60, "✓  task: Count the files in the c…   gpt-5.6-luna* low completed"},
 		} {
 			h.send(tea.WindowSizeMsg{Width: c.w, Height: c.h})
 			f := h.frame()

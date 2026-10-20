@@ -197,6 +197,13 @@ func missing(s *state.State, ui UI, name string, v state.Value, f func(state.Val
 		if codex {
 			return "no model call yet"
 		}
+		// Claude Code's comes with a turn's result, or the get_context_usage
+		// reply read after it: once a turn has started, what is missing is
+		// that result (the owner's live review, 2026-10-20: "no turn yet"
+		// read on through the first turn).
+		if s.Turn.Count > 0 || s.Turn.Phase != state.Idle {
+			return "no result yet"
+		}
 		return "no turn yet"
 	case "tokens.session":
 		if codex {

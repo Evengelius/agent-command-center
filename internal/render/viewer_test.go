@@ -264,7 +264,8 @@ func TestEntryCursor(t *testing.T) {
 				if a, b := texts(base.lines[i:i+1]), texts(sc.lines[i:i+1]); a != b {
 					diff = append(diff, b)
 					for _, sp := range l {
-						attention = attention || sp.st == stAttention && strings.Contains(sp.text, "Enter full view")
+						// A tool row's hint is on the tool rows' ground (plan 19).
+						attention = attention || (sp.st == stAttention || sp.st == tint(stAttention)) && strings.Contains(sp.text, "Enter full view")
 					}
 				}
 			}
@@ -272,7 +273,7 @@ func TestEntryCursor(t *testing.T) {
 				t.Errorf("%v, entry %d: the hint is not in the attention colour", size, n)
 			}
 			// The marked row, and the key hints at the bottom.
-			if len(diff) != 2 || !strings.Contains(diff[0], "Enter full view · ↑↓ entries · Esc back") || !strings.Contains(diff[1], "Enter or → full view · ↑↓ entries · Esc back to the input") {
+			if len(diff) != 2 || !strings.Contains(diff[0], "Enter full view · ↑↓ entries · Esc back") || !strings.Contains(diff[1], "Enter full view · ↑↓ entries · Esc back to the input") {
 				t.Errorf("%v, entry %d: changed rows %q", size, n, diff)
 			}
 			for _, focus := range []string{"A", "C", "D"} {

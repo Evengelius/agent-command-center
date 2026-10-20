@@ -295,7 +295,7 @@ func (s *State) send(a Send) []Command {
 		// app-server the text would reach the model as a message (L5). It is
 		// held back once, with a note of the dashboard's; the draft stays.
 		s.Turn.SlashHeld = a.Text
-		s.Conversation = append(s.Conversation, Entry{Seq: s.lastSeq(), Role: "dashboard", Text: slashNote(cmd)})
+		s.Conversation = append(s.Conversation, Entry{Seq: s.lastSeq(), Role: "dashboard", Text: slashNote(cmd), Stage: s.stage()})
 		return nil
 	}
 	s.Turn.SlashHeld = ""

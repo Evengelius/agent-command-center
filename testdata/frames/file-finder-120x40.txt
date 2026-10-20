@@ -1,37 +1,37 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
-╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────── Idle ─╮
-│ claude-haiku-5-5 · orchestrat… ││ YOU  11:30                                                                         │
-│ turn 2 · c╭─ Quick open ─────────────────────────────────────────────────────────────────────── 8 files ─╮sk: list   │
-│           │ › vi▌                                                                                        │named      │
-│ STAGES  in│ ▸ sample/viewer.go                                                                           │ne line    │
+╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────────────── Idle ─╮
+│ claude-haiku-5-5 · or… ││ ▎ YOU  11:30                                                                               │
+│ turn 2 · c╭─ Quick open ─────────────────────────────────────────────────────────────────────── 8 files ─╮ the       │
+│           │ › vi▌                                                                                        │txt with   │
+│ STAGES  in│ ▸ sample/viewer.go                                                                           │           │
 │ TURN 1  ✓ │                                                                                              │           │
-│ TURN 2  ✓ │                                                                                              │      mock │
+│ TURN 2  ✓ │                                                                                              │────────── │
 │   started │                                                                                              │           │
-│           │                                                                                              │ write     │
 │           │                                                                                              │           │
-│           │                                                                                              │u 11:30:00 │
-│           │                                                                                              │u 11:30:00 │
-│           │                                                                                              │           │
-│           │                                                                                              │d`, and    │
+│           │                                                                                              │    mock   │
 │           │                                                                                              │           │
 │           │                                                                                              │           │
 │           │                                                                                              │           │
 │           │                                                                                              │           │
+│           │                                                                                              │    mock   │
+│           │                                                                                              │    mock   │
 │           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
+│           │                                                                                              │─────────╮ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │wrote    │ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │─────────╯ │
 │           │                                                                                              │           │
 │           │                                                                                              │────────── │
 │           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │aft window │
-│           │                                                                                              │───────────╯
-│           │                                                                                              │ · 1 DONE ─╮
-│           │                                                                                              │ 21.5k tok │
-│ ↑↓ move ←→│                                                                                              │           │
+│ ↑↓ move ←→│                                                                                              │aft window │
+╰───────────│                                                                                              │───────────╯
+╭─ C · LIVE │                                                                                              │ · 1 DONE ─╮
+│  ✓  genera│                                                                                              │           │
+│     00:00 │                                                                                              │           │
 ╰───────────│ type to filter · ↑↓ PgUp PgDn select · Enter open · F1 keys · Esc back · F3 close     1 of 1 │───────────╯
 ╭─ D · QUOTA╰──────────────────────────────────────────────────────────────────────────────────────────────╯ted field ─╮
 │ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00                      │

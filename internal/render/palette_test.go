@@ -32,7 +32,11 @@ func paletteStyles() map[string]*lipgloss.Style {
 		"control": stControl, "inferred": stInferred, "treeCursor": stTreeCursor, "mdBullet": stMdBullet,
 		"mdEm": stMdEm, "mdCode": stMdCode, "mdLink": stMdLink, "mdLang": stMdLang, "mdKeyword": stMdKeyword,
 		"mdString": stMdString, "mdNumber": stMdNumber, "mdComment": stMdComment, "synBuiltin": stSynBuiltin,
-		"synTag": stSynTag,
+		"synTag": stSynTag, "bright": stBright, "you": stYou, "speaker": stSpeaker, "result": stResult,
+		"ground": tint(stText),
+		// Plan 20: a target's muted text, the tool's name, the fold's mark,
+		// the pill (its ends are its ground's colour).
+		"muted": stMuted, "toolName": stToolName, "foldMark": stFoldMark, "pill": stPill,
 	}
 	for i, mc := range modelColours {
 		m[mc.family] = modelStyles[i]
@@ -164,8 +168,8 @@ func TestPalette256(t *testing.T) {
 			n++
 		}
 	}
-	if n != 4 { // the button, the editor's cursor and selection, the tree's cursor
-		t.Errorf("%d backgrounds drawn, want 4", n)
+	if n != 6 { // the button, the editor's cursor and selection, the tree's cursor, zone B's tool rows, the pill (plan 20)
+		t.Errorf("%d backgrounds drawn, want 6", n)
 	}
 	for _, pair := range [][2]map[string]string{{tcF, f256}, {tcB, b256}} {
 		to := map[string]string{}
@@ -247,7 +251,7 @@ func teaOut(t *testing.T, env, frame string) string {
 	defer cancel()
 	var buf bytes.Buffer
 	_, err := tea.NewProgram(frameModel{frame}, tea.WithContext(ctx), tea.WithInput(nil), tea.WithOutput(&buf),
-		tea.WithEnvironment([]string{"TTY_FORCE=1", env}), tea.WithWindowSize(60, 40), tea.WithoutSignals()).Run()
+		tea.WithEnvironment([]string{"TTY_FORCE=1", env}), tea.WithWindowSize(60, 80), tea.WithoutSignals()).Run()
 	if err != nil {
 		t.Fatalf("%s: %v", env, err)
 	}

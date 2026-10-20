@@ -38,11 +38,15 @@ func TestAgentModelColumn(t *testing.T) {
 			}
 		}
 		for _, c := range []struct{ label, model string }{{"explore", "haiku-5-5"}, {"/root/scan", "gpt-6-sol"}, {"review", "model N/A"}} {
-			l, _ := rowOf(t, sc, "◉ "+padTo(c.label, 14)+padTo(c.model, 12))
+			l, _ := rowOf(t, sc, agentLead(size[0], "◉", c.label, 14)+padTo(c.model, 12))
 			if st := styleOf(l, c.model); st != modelStyle(c.model) {
 				t.Errorf("%v: %s's model %q in style %p, want %p", size, c.label, c.model, st, modelStyle(c.model))
 			}
-			if txt := texts([]line{l}); strings.Contains(txt, "claude-haiku") {
+			txt := texts([]line{l})
+			if i := strings.Index(txt, " │ "); i >= 0 { // the list's part: the preview shares the row (plan 20)
+				txt = txt[:i]
+			}
+			if strings.Contains(txt, "claude-haiku") {
 				t.Errorf("%v: row %q keeps the prefix", size, txt)
 			}
 		}
@@ -88,7 +92,7 @@ func TestAgentSourceAndEffort(t *testing.T) {
 		for _, c := range []struct{ label, model, mark, effort string }{
 			{"/root/a", "gpt-6-sol", "", "high"}, {"/root/b", "gpt-6-mini", "*", "low"}, {"/root/c", "model N/A", "", ""},
 		} {
-			l, _ := rowOf(t, sc, "◉ "+padTo(c.label, 14)+padTo(c.model+c.mark, 12)+padTo(c.effort, 5)+"announced")
+			l, _ := rowOf(t, sc, agentLead(size[0], "◉", c.label, 14)+padTo(c.model+c.mark, 12)+padTo(c.effort, 5)+"announced")
 			for _, x := range []string{c.effort, c.mark} {
 				if x != "" && styleOf(l, x) != stGrey {
 					t.Errorf("%v: %s's %q not grey", size, c.label, x)
@@ -120,7 +124,7 @@ func TestAgentSourceAndEffort(t *testing.T) {
 	s.Agents["k1"].Effort, s.Agents["k2"].Effort = state.Value{}, state.Value{}
 	s.Agents["k2"].Model.Source = "agent model"
 	sc := Draw(s, UI{Width: 120, Height: 40, Focus: "C"})
-	rowOf(t, sc, "◉ "+padTo("/root/b", 14)+padTo("gpt-6-mini", 12)+"announced")
+	rowOf(t, sc, agentLead(120, "◉", "/root/b", 14)+padTo("gpt-6-mini", 12)+"announced")
 	if l, _ := rowOf(t, sc, "C · LIVE AGENTS"); strings.Contains(texts([]line{l}), "requested") {
 		t.Errorf("C header %q", texts([]line{l}))
 	}
@@ -147,9 +151,13 @@ func TestAgentLabelColumn(t *testing.T) {
 
 	for _, size := range [][2]int{{120, 40}, {160, 50}, {200, 60}} {
 		sc := Draw(s, UI{Width: size[0], Height: size[1], Focus: "C"})
-		row := func(model string) string { // C's row, not the preview's header
+		row := func(model string) string { // C's list part of the row (plan 20: the preview is in C, after " │ ")
 			for _, l := range sc.lines {
-				if txt := texts([]line{l}); strings.Contains(txt, model+" ") && !strings.Contains(txt, "· LIVE") {
+				txt := texts([]line{l})
+				if i := strings.Index(txt, " │ "); i >= 0 {
+					txt = txt[:i]
+				}
+				if strings.Contains(txt, model+" ") && !strings.Contains(txt, "· LIVE") {
 					return txt
 				}
 			}
@@ -167,12 +175,18 @@ func TestAgentLabelColumn(t *testing.T) {
 				t.Errorf("%v: %s's model at cell %d, the first row's at %d:\n%s", size, labels[i], c, col, txt)
 			}
 		}
-		// The running agent's activity keeps at least 12 cells.
-		if txt := row("mod-2"); !strings.Contains(txt, "abcdefghijk") {
-			t.Errorf("%v: activity cut under 12 cells: %q", size, txt)
+		// The running agent's activity keeps at least 12 cells: since plan 20,
+		// on its second row ("tool: …").
+		if txt := texts(sc.lines); !strings.Contains(txt, "tool: abcdefghijk") {
+			t.Errorf("%v: activity cut under 12 cells:\n%s", size, txt)
 		}
-		// The 40-cell label is cut with "…" in C, and only when it must be.
-		if txt := row("mod-4"); strings.Contains(txt, long) || !strings.Contains(txt, "…") {
+		// The 40-cell label is cut with "…" in C, and only when it must be:
+		// from 100 columns an agent's time and tokens are on its second row
+		// (plan 20), so it fits whole at 120 columns; from 160 the list
+		// shares C with the preview, 70 cells, and the card's gaps take 3
+		// (Template 2): it is cut, whole in the preview's heading; at 80
+		// columns, below, it is cut.
+		if txt := row("mod-4"); size[0] < wideWidth && (!strings.Contains(txt, long) || strings.Contains(txt, "…")) || size[0] >= wideWidth && !strings.Contains(txt, "…") {
 			t.Errorf("%v: long label %q", size, txt)
 		}
 		if txt := row("mod-3"); !strings.Contains(txt, "/root/create_found") && size[0] < 160 {
@@ -183,12 +197,35 @@ func TestAgentLabelColumn(t *testing.T) {
 			t.Errorf("%v: inspection header %q lacks the whole label", size, h)
 		}
 	}
+	// At 80 columns, one row an agent: the long label is cut, the running
+	// agent's activity keeps its 12 cells.
+	narrow := Draw(s, UI{Width: 80, Height: 24, Focus: "C"})
+	for _, l := range narrow.lines {
+		txt := texts([]line{l})
+		if strings.Contains(txt, "mod-4") && (strings.Contains(txt, long) || !strings.Contains(txt, "…")) {
+			t.Errorf("80x24: long label %q", txt)
+		}
+		if strings.Contains(txt, "mod-2") && !strings.Contains(txt, "abcdefghijk") {
+			t.Errorf("80x24: activity cut under 12 cells: %q", txt)
+		}
+	}
 	// Labels that fit in 13 cells keep today's 14-cell column.
 	short := state.New()
 	short.Screen = state.ScreenDashboard
 	short.Apply(event.Event{Seq: 1, At: at, Kind: event.AgentStarted, Origin: event.Observed, Agent: "k1",
 		Payload: event.Agent{Key: "k1", Type: "thread", Label: "/root/abcdefg", Model: "mod-1"}})
-	rowOf(t, Draw(short, UI{Width: 120, Height: 40}), "◉ "+padTo("/root/abcdefg", 14)+"mod-1")
+	rowOf(t, Draw(short, UI{Width: 120, Height: 40}), agentLead(120, "◉", "/root/abcdefg", 14)+"mod-1")
+}
+
+// agentLead is the start of an agent's row in zone C, w columns wide, with
+// a label column col cells wide: from 100 columns the card's, two cells
+// after the symbol and three after the column's longest label (plan 20,
+// Template 2); under 100 the single row's.
+func agentLead(w int, sym, label string, col int) string {
+	if w >= standardWidth {
+		return sym + "  " + padTo(label, col+2)
+	}
+	return sym + " " + padTo(label, col)
 }
 
 // TestPreviewHeaderFallback is plan 7, item 2: the preview's right-hand
@@ -215,34 +252,40 @@ func TestPreviewHeaderFallback(t *testing.T) {
 		"k2": {"gpt-6-sol (reported) · effort high (reported)", "gpt-6-sol (reported)", "gpt-6-sol"},
 		"k3": {"model N/A (not reported)", "model N/A"},
 	}
+	// Plan 20 widened the preview (C spans the screen): from 160 columns
+	// every form fits beside these labels, so the fallback is checked on
+	// previewRight itself, at every room from 0 to 80 cells, and the
+	// dashboard's sweep below only for the forms it reaches.
+	for k, want := range forms {
+		a := s.Agents[k]
+		for room := 0; room <= 80; room++ {
+			got := texts([]line{previewRight(a, room)})
+			best := ""
+			for _, f := range want {
+				if lipgloss.Width(f) <= room {
+					best = f
+					break
+				}
+			}
+			if strings.TrimSuffix(got, "\n") != best {
+				t.Errorf("%s in %d cells: %q, want %q", k, room, strings.TrimSuffix(got, "\n"), best)
+			}
+		}
+	}
 	seen := map[string]bool{}
 	for k, want := range forms {
+		want = want[:1] // the whole form fits from 160 columns since plan 20
 		label := s.Agents[k].Label
 		for w := 160; w <= 220; w++ {
 			sc := Draw(s, UI{Width: w, Height: 50, Focus: "C", Selected: k})
+			// The preview's heading is its first row inside C (plan 20): the
+			// label, then the right-hand header at the row's end.
 			l, _ := rowOf(t, sc, label+" · LIVE")
-			row := texts([]line{l})
-			top := strings.TrimSuffix(row[strings.LastIndex(row, "╭─ "):], "\n")
-			rest := strings.TrimPrefix(top, "╭─ "+label+" · LIVE ")
-			if rest == top {
-				t.Fatalf("%s at %d: preview title cut: %q", k, w, top)
-			}
-			dashes := strings.TrimLeft(rest, "─")
-			fill := lipgloss.Width(rest) - lipgloss.Width(dashes)
-			right := strings.TrimSuffix(strings.TrimPrefix(dashes, " "), " ─╮")
-			var next string // the next longer form, which must not fit
-			room := fill + lipgloss.Width(right) - 1
-			switch i := index(want, right); {
-			case dashes == "╮": // no right-hand header: "╭─ title ────╮"
-				next, room = want[len(want)-1], fill-4
-			case i < 0:
-				t.Fatalf("%s at %d: right-hand header %q is none of %q", k, w, right, want)
-			case i > 0:
-				next = want[i-1]
-			}
-			seen[k+"|"+right] = true
-			if next != "" && lipgloss.Width(next) <= room {
-				t.Errorf("%s at %d: %q drawn where %q fits (%d cells)", k, w, right, next, room)
+			head := strings.TrimRight(strings.TrimSuffix(strings.TrimRight(texts([]line{l}), " \n"), "│"), " ")
+			for _, f := range want {
+				if strings.HasSuffix(head, f) {
+					seen[k+"|"+f] = true
+				}
 			}
 		}
 		for _, f := range want { // every form is reached between 160 and 220

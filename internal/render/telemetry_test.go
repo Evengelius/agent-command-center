@@ -201,9 +201,12 @@ func TestTelemetryNA(t *testing.T) {
 		{name: "claude context before the first turn", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(p2(t), 3) },
 			want: []string{"context N/A (no turn yet)"}},
+		{name: "claude context while the first turn runs", provider: "claude-code",
+			recs: func(t *testing.T) []fixture.Record { return upTo(p2(t), 5) }, // the prompt sent, no reply yet
+			want: []string{"context N/A (no result yet)"}},
 		{name: "claude context refused, before the first result", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(refused(t), 8) },
-			want: []string{"context N/A (no turn yet)", "errors 1"}, errors: 1},
+			want: []string{"context N/A (no result yet)", "errors 1"}, errors: 1},
 		{name: "claude context refused, derived after the result", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(refused(t), 48) },
 			want: []string{"context 3% of 1M (derived)", "errors 1"}, errors: 1},

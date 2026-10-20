@@ -98,6 +98,8 @@ func TestMarkdownSameText(t *testing.T) {
 				{"def", stMdKeyword},           // in the unclosed fence
 				{"# note", stMdComment},
 			} {
+				// Each style on the card ground: the fixture's answers are in
+				// the CLI's card (plan 20).
 				if got := spanStyle(md, c.text); got != c.st {
 					t.Errorf("%q styled %v, want %v", c.text, got, c.st)
 				}

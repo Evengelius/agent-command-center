@@ -31,23 +31,71 @@ func TestApprovalLineKeepsOutcome(t *testing.T) {
 		{"pending command", "Bash", bash, state.Pending, clock(at), "  ping -n 30"},
 	}
 	for _, tt := range tests {
-		for w := 60; w <= 200; w += 7 {
+		// An answered request is a row of the tool block, three cells in, its
+		// ground to the edge (plan 19): from 63 it has the room 60 gave it.
+		from := 60
+		if tt.status != state.Pending {
+			from = 63
+		}
+		for w := from; w <= 200; w += 7 {
 			ap := &state.Approval{ID: "r1", Tool: tt.tool, Input: tt.input, Status: tt.status, RequestedAt: at, AnsweredAt: at}
 			s := &state.State{Approvals: map[string]*state.Approval{"r1": ap}}
 			e := state.Entry{Role: "approval", Text: tt.tool, MessageID: "r1"}
-			l := approvalCard(s, UI{}, 0, e, w)[0]
+			// A pending request is a box since plan 20: its heading is its
+			// second row, between the box's edges.
+			ls := approvalCard(s, UI{}, 0, e, w, look{})
+			l := ls[0]
+			target := l
+			if tt.status == state.Pending { // the heading, then the target on its own row (section 5.2)
+				l, target = ls[1], ls[2]
+			}
 			got := ""
 			for _, sp := range l {
 				got += sp.text
 			}
-			if !strings.HasSuffix(got, tt.tail) || !strings.Contains(got, tt.keep) || l.width() > w {
+			if tt.status == state.Pending {
+				got = strings.TrimSuffix(strings.TrimPrefix(got, "│ "), " │")
+			}
+			got = strings.TrimRight(got, " ")
+			kept := texts([]line{target})
+			if !strings.HasSuffix(got, tt.tail) || !strings.Contains(kept, strings.TrimSpace(tt.keep)) || l.width() > w || target.width() > w {
 				t.Errorf("%s, w %d: %q (%d wide); want it to end with %q, keep %q and fit", tt.name, w, got, l.width(), tt.tail, tt.keep)
 			}
-			if strings.Contains(got, "……") {
-				t.Errorf("%s, w %d: a doubled ellipsis: %q", tt.name, w, got)
+			if strings.Contains(got, "……") || strings.Contains(kept, "……") {
+				t.Errorf("%s, w %d: a doubled ellipsis: %q %q", tt.name, w, got, kept)
 			}
-			if strings.Contains(got, "someone") {
-				t.Errorf("%s, w %d: the user folder shows: %q", tt.name, w, got)
+			if strings.Contains(got, "someone") || strings.Contains(kept, "someone") {
+				t.Errorf("%s, w %d: the user folder shows: %q %q", tt.name, w, got, kept)
+			}
+		}
+	}
+}
+
+// TestApprovalEffect checks a pending card's sentence on what allowing does
+// (plan 20, Template 2's "This will create or overwrite the file at …"):
+// only for Claude Code's Write and Edit, whose effect its tools reference
+// documents, from the request's own target; none for another tool or CLI.
+func TestApprovalEffect(t *testing.T) {
+	at := time.Date(2026, 10, 20, 1, 56, 0, 0, time.Local)
+	for _, c := range []struct {
+		cli, tool, input, want string
+	}{
+		{"claude-code", "Write", `{"file_path":"C:\\work\\found.txt","content":"alpha.txt\nbeta.md\n"}`, "This will create or overwrite the file at `C:\\work\\found.txt` with the above content."},
+		{"claude-code", "Write", `{"file_path":"C:\\work\\empty.txt","content":""}`, "This will create or overwrite the file at `C:\\work\\empty.txt`, leaving it empty."},
+		{"claude-code", "Edit", `{"file_path":"C:\\work\\a.go","old_string":"x := 1","new_string":"x := 2"}`, "This will replace the text marked - with the text marked + in `C:\\work\\a.go`."},
+		{"claude-code", "Edit", `{"file_path":"C:\\work\\a.go","old_string":"x","new_string":"y","replace_all":true}`, "This will replace every occurrence of the text marked - with the text marked + in `C:\\work\\a.go`."},
+		{"claude-code", "Bash", `{"command":"ls -p"}`, ""},
+		{"claude-code", "mcp__fs__write", `{"file_path":"C:\\work\\found.txt","content":"x"}`, ""},
+		{"codex", "fileChange", `{"file_path":"C:\\work\\found.txt","content":"x"}`, ""},
+	} {
+		ap := &state.Approval{ID: "r1", Tool: c.tool, Input: json.RawMessage(c.input), Status: state.Pending, RequestedAt: at}
+		s := &state.State{Approvals: map[string]*state.Approval{"r1": ap}, Context: state.Context{Provider: c.cli}}
+		e := state.Entry{Role: "approval", Text: c.tool, MessageID: "r1"}
+		for _, w := range []int{97, 160} {
+			// The card's text, its edges out, its rows joined: the sentence wraps.
+			got := strings.Join(strings.Fields(strings.ReplaceAll(texts(approvalCard(s, UI{}, 0, e, w, look{})), "│", "")), " ")
+			if c.want == "" && strings.Contains(got, "This will") || c.want != "" && !strings.Contains(got, c.want) {
+				t.Errorf("%s %s at %d: %q; want the sentence %q", c.cli, c.tool, w, got, c.want)
 			}
 		}
 	}

@@ -2,21 +2,21 @@
  ▣ codex-subagents.jsonl                   Mock data 0.145.0 · approvals Manual
  A ✓ Turn 1 › ✓ /root/list_files › ✓ /root/create_found   (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
-│   ▸ collabAgent:wait                                                    mock │
-│ ✓ /root/create_found · fileChange  allowed by you 11:30:00                   │
-│   ▸ collabAgent:wait                                                    mock │
-│ CODEX  gpt-5.6-sol                                                           │
-│   done                                                                       │
+│ ▎  ✓ /root/create_found · fileChange     allowed by you 11:30:00      mock   │
+│ ▎  ✓ collabAgent:wait                                   11:30:00      mock   │
+│                                                                              │
+│ ╭──────────────────────────────────────────────────────────────────────────╮ │
+│ │ RESULT  11:30                                                            │ │
+│ │ done                                                                     │ │
+│ ╰──────────────────────────────────────────────────────────────────────────╯ │
+│                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Ask Mock data anything…                                                   │
-│                                                                              │
-│                                                                              │
 │   Enter send · Ctrl+J newline                   1 line · Ctrl+G draft window │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
 │  ✓ /root/create_found model N/A   completed                   0s   77.3k tok │
 │  ✓ /root/list_files   model N/A   completed                   0s   30.5k tok │
-│ ↑↓ select · Enter inspect · z zoom · F6 next zone                            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
 │ 5h ▱▱▱▱▱ 1%   7d ▱▱▱▱▱ 1%   ctx 6%   tok 184.3k   cost N/A   errors 0        │

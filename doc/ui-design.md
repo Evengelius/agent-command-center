@@ -418,13 +418,31 @@ the [layout mock-up](reference-design.md#layout-mock-up):
 | - | - | - |
 | Title "AGENT COMMAND CENTER" and "● LIVE" badge | Same; "◆ MOCK — not a live session" replaces "● LIVE" in mock mode | AM4; B3.6 |
 | Project bar: folder name, branch, agent CLI on the right; path below | One line at 100+ columns: name, branch, path, then provider and version on the right; the path drops at 80 columns | AM4 W1 |
-| A left, full height: orchestrator, model, stage tree with agents indented, a status symbol per line | Same; the tree is labelled with its origin | AM2 A1-A4; [Origins on screen](#origins-on-screen) |
+| A left, full height: orchestrator, model, stage tree with agents indented, a status symbol per line | Same content; since plan 20 A is the upper row's left, beside B, both ending on one row, as the owner's two templates draw it; the tree is labelled with its origin | AM2 A1-A4; brief amendment 16; [Origins on screen](#origins-on-screen) |
 | B upper right: "Streaming" badge, YOU and CLAUDE labelled, an in-progress line, the input at the bottom | Same, with a multiline editor, approval cards inline, and tool lines | AM2 B1-B6 |
-| C lower right: one line per agent (model, task, status), an active count, "select agent to inspect" | Same, adding elapsed time and tokens; at 160+ columns a live preview of the selected agent beside the list | AM2 C1-C3, C11 |
+| C lower right: one line per agent (model, task, status), an active count, "select agent to inspect" | Since plan 20 the whole width under A and B, two rows an agent from 100 columns (Template 2), adding elapsed time and tokens; at 160+ columns a live preview of the selected agent inside C, right of the list | AM2 C1-C3, C11; brief amendment 16 |
 | D bottom, full width: two quota bars with percentages, agents, context, tokens | Same, plus resets, model, cost, time, errors and retries; every missing value "N/A" with its reason | AM2 D1-D9 |
 | Mock-up figures (42%, "Agents 4/16") | Real values or "N/A" | AGENTS.md; RD "Layout mock-up" |
 | Image 2's empty state: "Waiting for instructions", "Ready to work on this project." | Same texts in the ready state | AM4 D2 |
 | A one-line status bar (first reference) | A key-hint line; the essentials live in D | RD "What the owner wants from it" |
+
+Against the owner's two templates (plan 20, brief amendment 16: Template 1,
+a completed multi-turn conversation; Template 2, a subagent's Write waiting
+for approval), the CLI's real events decide what is shown, the templates
+how:
+
+| Template | Here | Why |
+| - | - | - |
+| YOU and CLAUDE cards outlined by thin borders between rows (Template 1) | A narrow bar `▎` on each row of a message, on no ground; a thin rule between messages, a blank row on each side; RESULT and a pending request keep full borders | The owner's amendment 17 and image: the bar, the header over the body, the rule; a border takes a whole row |
+| The prompt beside "YOU" (Template 1), under it with a rule after it (Template 2) | Under its header at every width, the rule between messages | The owner's amendment 17: a body never beside its label |
+| "APPROVAL general-purpose Write <path>" on one row (Template 2) | "! APPROVAL · general-purpose · Write", the path on its own row | The owner's section 5.2; a long path would push the time off the row |
+| A thin pink outlined "F2 to answer" button | A one-row pill, pink bold on a dark pink ground, half-block ends | An outline needs three rows |
+| "allowed by you" on plain Read calls; "f00.go failed"; "+9 more Read calls (f12.go … f21.go)" (Template 1) | The real outcomes, files and counts; "▸ 9 earlier tool events · 1 failed · Expand" (the owner's section 4.6) | Nothing invented: no Read call was approved by the owner, the failed file was f03.go of twelve |
+| "▶ subagent" and "▶ tool" kinds, the narration before the Agent call (Template 2) | The real tool's name ("Agent", "Bash") and the agent's identity; the events' order | The real events decide the content |
+| Turns 2 to 4 "○ pending" and the agent's tool history in zone A (Template 2) | The real stages; A's content unchanged | Nothing invented; the owner's section 8 keeps A's model |
+| A wrench on approved rows, a circled "!" on a failed one (Template 1) | ✓ and ✗ | No single-cell glyph in Windows Terminal's font; the status symbols of [Colours and symbols](#colours-and-symbols) |
+| "1 line · Ctrl+G draft window" on the input row, no status row (Template 1) | The status row under the input (Template 2's) | It carries the editor's messages ("turn running: the draft waits", quit confirmations) |
+| A failed call's path, "failed" at the right (Template 1) | Its path, then its error, "failed" and the time at the right | The error is what needs a look, copyable (plan 5, item 6); it keeps half the row (the owner's live review, 2026-10-20) |
 
 ## Project bar
 
@@ -449,109 +467,131 @@ One line under the title (AM4 W1; architecture.md, Session context):
 ## Layouts at three sizes
 
 Three layouts, chosen by the terminal's width: narrow below 100 columns,
-standard from 100 to 159, wide from 160; widths and splits below are ASM-12. The layout is recomputed on
-every resize message; the state does not change. Panel heights share what
-the fixed lines leave, and zone C's follows the agents (plan 18, brief
-amendment 14): with no agent in play, C is an empty strip of 4 rows, its
-title and "no agents yet" (3 rows at narrow width); with agents in play, as
-many rows as they need, its title, a row each, its key hint and its border,
-at most half the right column, B taking the odd row and keeping at least 12
-rows (14 at wide width, where C also keeps 8 rows for the preview), and at
-most 5 rows at narrow width. B takes the rest; D has 1 row at narrow width.
-The agents in play are the state's list
-([events-and-state.md](events-and-state.md#zone-cs-height)): those running,
-or that appeared or ended since the owner's last prompt; C lists only them.
+standard from 100 to 159, wide from 160; widths and splits below are
+ASM-12, as plan 20 set them after the owner's two templates (brief,
+amendment 16). The layout is recomputed on every resize message; the state
+does not change.
+
+From 100 columns A and B share the upper row: the same height, their top
+borders on the row under the project bar, their bottom borders on one row.
+A takes 22% of the width, rounded, at least 24 columns (26 at 120, 34 at
+156, 35 at 160, 44 at 200), B the rest. C spans the whole width under them,
+D the whole width under C, and the key footer is the last row. Under 100
+columns A is one row under the project bar, F6 opening its tree, and B, C
+and D are full width.
+
+C's height follows the agents in play (plan 18, kept by plan 20;
+[events-and-state.md](events-and-state.md#zone-cs-height)): with none, 3
+rows, its title and counts in its top border and "no agents yet: they
+appear as the CLI starts them"; with agents in play, two rows each from 100
+columns and one under 100, with its borders, at most half the rows A, B and
+C share (B keeping 12 rows, 14 from 160 columns) and at most 5 rows under
+100 columns; from 160 columns, with agents in play, at least 8 rows, for the
+selected agent's preview inside C, right of the list. Agents that finish
+keep their rows; only the owner's next prompt clears C. D has 1 row at
+narrow width, 2 at standard, 3 at wide; B takes the rest.
+
+The frames below are the renderer's own, drawn from the recorded P3b
+session in mock mode stopped at the subagent's Write request, Template 2's
+state (`testdata\mock\claude-subagent-approval.jsonl`; the golden frames
+hold more states).
 
 ### Narrow, 80x24
 
 ```text
- >_ AGENT COMMAND CENTER                                                 ● LIVE 
- ▣ agent-command-center  branch main                                Claude Code 
- A ✓ Turn 1 › ◉ Turn 2: scan-routes ◉ write-tests !   (inferred)   F6: tree     
-╭─ B · CONVERSATION ───────────────────────────────────────────── ◉ Streaming ─╮
-│ YOU  Refactor the auth module and add tests for the token refresh.           │
-│ CLAUDE  I'll read the current module first, then split the refresh           │
-│   logic out of `middleware.go` and cover it with table tests.                │
-│   ▸ Read src/auth/middleware.go                                     observed │
-│ ! APPROVAL write-tests: Edit refresh_test.go +12  a allow  d deny            │
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session 
+ ▣ mock.jsonl                              Mock data 2.1.300 · approvals Manual 
+ A ✓ Turn 1 › ! general-purpose                           (inferred)   F6: tree 
+╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
+│ ▎ │   <probe-root>\probe-work\p3b\found.txt                               │  │
+│ ▎ │ ▸ Preview of found.txt (2 lines)                                      │  │
+│ ▎ │  1 │ alpha.txt                                                        │  │
+│ ▎ │  2 │ beta.md                                                          │  │
+│ ▎ │ This will create or overwrite the file at                             │  │
+│ ▎ │ `<probe-root>\probe-work\p3b\found.txt` with the above content.       │  │
+│ ▎ │ ▐ F2 to answer ▌                                                      │  │
+│ ▎ ╰───────────────────────────────────────────────────────────────────────╯  │
+│                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│ > Also check the logout path█                                                │
-│                                                                              │
-│                                                                              │
-│   turn running · Ctrl+C interrupt                               1 line       │
+│ >  Ask Mock data anything…                                                   │
+│   Enter send · Ctrl+J newline                   1 line · Ctrl+G draft window │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ C · AGENTS ────────────────────────────────────────────────────── 2 ACTIVE ─╮
-│ ◉ scan-routes  sonnet-5-5  Bash go test ./auth           41s   12.1k         │
-│ ! write-tests  sonnet-5-5  waiting: approval             18s   6.4k          │
-│ ✓ explore-1    haiku-5-5   completed                     9s    3.0k          │
+╭─ C · AGENTS ───────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
+│  ● general-purpose haiku-5-5   waiting: approval             20s   21.2k tok │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ D ──────────────────────────────────────────────────────────────────────────╮
-│ 5h ▰▰▰▱▱▱▱▱▱▱ 23%† 7d ▰▰▰▰▰▱▱▱▱▱ 45%† ctx 12%  tok 41.2k  $0.42 est.  err 0  │
+╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
+│ 5h N/A   7d N/A   ctx 3%   tok 61.9k   $0.00 est.   errors 0                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys     
 ```
 
-- A collapses to one line, the current path through the stage tree with a
-  status symbol per step. Focusing A (F6) opens the full tree as an overlay
-  over B and C; Esc closes it.
-- B keeps every function at reduced size: messages, tool lines, a one-line
-  approval card, the editor (3 visible rows; it grows to half the screen as
-  lines are added, then scrolls).
-- C shows three agents, most recently active first; more are reached by
-  scrolling or zoom.
-- D is one line: both quotas, context, tokens, cost, errors; the rest is in
+- A is one row: the current path through the stage tree, a status symbol
+  per step. Focusing A (F6) opens the full tree over B and C; Esc closes
+  it.
+- B keeps every function at reduced size: each message under its header,
+  a thin rule between messages, the tool rows, a pending request's box
+  with its preview's rows straight in it (under 90 cells), the editor (one
+  row, growing with the draft to half the screen, then scrolling). Here the
+  box fills B; the narration above it is a scroll away.
+- C is one row an agent, at most 5 rows; more are reached by scrolling or
+  zoom.
+- D is one row: both quotas, context, tokens, cost, errors; the rest is in
   the key overlay's "telemetry" page and in the zoomed D panel.
 
 ### Standard, 120x40
 
 ```text
- >_ AGENT COMMAND CENTER                                                                                         ● LIVE 
- ▣ agent-command-center   branch main   C:\javadev\projets\agent-command-center                     Claude Code 2.1.300 
-╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────── ◉ Streaming ─╮
-│ claude-opus-5-5 · orchestrator ││ YOU  14:02                                                                         │
-│ turn 2 · running 1m 12s        ││   Refactor the auth module and add tests for the token refresh.                    │
-│                                ││ CLAUDE  claude-opus-5-5                                                            │
-│ STAGES  inferred from activity ││   I'll read the current module first, then split the refresh logic                 │
-│ ✓ Turn 1  Explain auth flow    ││   out of `middleware.go` and cover it with table tests.                            │
-│ ◉ Turn 2  Refactor auth        ││   ▸ Read src/auth/middleware.go · 212 lines                               observed │
-│   ├─ ✓ Read  src/auth/*.ts     ││   ▸ Agent scan-routes started                                             observed │
-│   ├─ ◉ agent  scan-routes      ││   ┌ go ───────────────────────────────────                                         │
-│   │  └─ ◉ Bash go test ./auth  ││   │ func refresh(ctx context.Context, t Token) (Token, error) {▌                   │
-│   ├─ ◉ agent  write-tests      ││ ╭ APPROVAL · write-tests · Edit src/auth/refresh_test.go ────────────────────────╮ │
-│   │  └─ ! approval Edit        ││ │ +12 −0   F2 focus, then a allow · d deny · c cancel turn · Enter diff          │ │
-│   └─ ○ (more as events arrive) ││ ╰────────────────────────────────────────────────────────────────────────────────╯ │
-│                                ││ ────────────────────────────────────────────────────────────────────────────────── │
-│                                ││ > Also check the logout path█                                                      │
-│                                ││                                                                                    │
-│                                ││   turn running: the draft waits · Ctrl+C interrupt    1 line · Ctrl+G draft window │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                │╰────────────────────────────────────────────────────────────────────────────────────╯
-│                                │╭─ C · LIVE AGENTS ────────────────────────────────────────────── 2 ACTIVE · 1 DONE ─╮
-│                                ││ ◉ scan-routes   sonnet-5-5    Bash go test ./auth              41s     12.1k tok   │
-│                                ││ ! write-tests   sonnet-5-5    waiting: approval Edit           18s     6.4k tok    │
-│                                ││ ✓ explore-1     haiku-5-5     completed · 3 files read         9s      3.0k tok    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│                                ││                                                                                    │
-│ ↑↓ move ←→ fold Enter inspect  ││ Enter inspect · z zoom · F6 next zone                                              │
-╰────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────╯
-╭─ D · QUOTA & TELEMETRY ────────────────────────────────────────────────────── † undocumented field · updated 4s ago ─╮
-│ 5h ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 23%†  resets 16:40   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 45%†  resets Mon 09:00   model claude-opus-5-5  │
-│ context 12% of 1M   tokens 41.2k   cost $0.42 API-equiv. estimate   agents 2 / limit N/A   time 3m 05s   errors 0    │
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session 
+ ▣ mock.jsonl   C:\work\demo\mock.jsonl                                            Mock data 2.1.300 · approvals Manual 
+╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────────────── Idle ─╮
+│ claude-haiku-5-5 · or… ││                                                                                            │
+│ turn 1 · completed     ││ ────────────────────────────────────────────────────────────────────────────────────────── │
+│                        ││                                                                                            │
+│ STAGES  inferred from… ││ ▎ CLAUDE  Haiku 5.5  01:55                                                                 │
+│ TURN 1  ✓ completed ·… ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt      01:55:06      mock   │
+│   Use the Agent tool … ││ ▎                                                                                          │
+│   ├─ ! agent  ge… mock ││ ▎ I've launched the subagent in the background to list the directory and write             │
+│   │  └─ ! approval Wr… ││ ▎ `found.txt`. I'll report its result when it finishes.                                    │
+│   └─ ✓ Agent  Li… mock ││ ▎                                                                                          │
+│                        ││ ▎  ✓ general-purpose · Bash  ls -p "<probe-root>/pro…  allowed by you 01:55:08      mock   │
+│                        ││ ▎                                                                                          │
+│                        ││ ▎ ╭─────────────────────────────────────────────────────────────────────────────────────╮  │
+│                        ││ ▎ │ ! APPROVAL · general-purpose · Write                                    01:55  mock │  │
+│                        ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                                             │  │
+│                        ││ ▎ │ ╭─────────────────────────────────────────────────────────────────────────────────╮ │  │
+│                        ││ ▎ │ │ ▸ Preview of found.txt (2 lines)                                                │ │  │
+│                        ││ ▎ │ │  1 │ alpha.txt                                                                  │ │  │
+│                        ││ ▎ │ │  2 │ beta.md                                                                    │ │  │
+│                        ││ ▎ │ ╰─────────────────────────────────────────────────────────────────────────────────╯ │  │
+│                        ││ ▎ │ This will create or overwrite the file at `<probe-root>\probe-work\p3b\found.txt`   │  │
+│                        ││ ▎ │ with the above content.                                                             │  │
+│                        ││ ▎ │ ▐ F2 to answer ▌                                                                    │  │
+│                        ││ ▎ ╰─────────────────────────────────────────────────────────────────────────────────────╯  │
+│                        ││                                                                                            │
+│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
+│                        ││ >  Ask Mock data anything…                                                                 │
+│ ↑↓ move ←→ fold Enter… ││   Enter send · Ctrl+J newline                                 1 line · Ctrl+G draft window │
+╰────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
+│  ●  general-purpose   haiku-5-5   waiting: approval                                                                  │
+│     00:20   21.2k tok   tool: Bash ✓   next: Write (approval pending)                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ D · QUOTA & TELEMETRY ─────────────────────────────────────────────── quota updated 21s ago · † undocumented field ─╮
+│ 5h N/A (window reset; waiting for the next report)   7d N/A (window reset; waiting for the next report)              │
+│ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 3% of 1M (derived)   tokens 61.9k   +4 more │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit            
 ```
 
-- A is a 34-column column, full height: orchestrator, model, turn and its
-  elapsed time, then the stage tree.
-- B above C on the right, as in the layout mock-up. B's input area sits at
-  B's bottom edge, separated by a rule.
-- D is two lines.
+- A, 26 columns here, and B end on the same row: the orchestrator, its
+  model, the turn, then the stage tree, rows too long ending in "…".
+- B is the conversation ([Zone B](#zone-b)): each message a block, a
+  narrow bar of its colour, its header on its own row and its body under it,
+  a thin rule between messages (amendment 17); the input sits at B's
+  bottom edge under its rule.
+- C is full width, two rows an agent (Template 2): its status, label, model
+  and state, then its time, tokens, last tool and the request it waits on.
+- D is two rows.
 - The footer names F3 at every size: "F3 Explorer", the Explorer F3 opens
   when no file is in front ("F3 file" while B's entry cursor is on an entry
   that names one). When the whole line does not fit, as at 120 columns, it
@@ -562,74 +602,73 @@ or that appeared or ended since the owner's last prompt; C lists only them.
 ### Wide, 200x60
 
 ```text
- >_ AGENT COMMAND CENTER     ■ gpt-5.6-sol                                                                                                                                                       ● LIVE 
- ▣ agent-command-center   branch main   C:\javadev\projets\agent-command-center                                           OpenAI Codex 0.145.0 · gpt-5.6-sol · sandbox read-only · approvals on-request 
-╭─ A · ORCHESTRATOR ───────────────────────╮╭─ B · CONVERSATION ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ◉ Streaming ─╮
-│ gpt-5.6-sol · orchestrator thread        ││ YOU  14:02                                                                                                                                               │
-│ turn 2 · running 2m 40s                  ││   Refactor the auth module and add tests for the token refresh.                                                                                          │
+ >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session 
+ ▣ mock.jsonl   C:\work\demo\mock.jsonl                                                                                                                            Mock data 2.1.300 · approvals Manual 
+╭─ A · ORCHESTRATOR ───────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
+│ claude-haiku-5-5 · orchestrator          ││                                                                                                                                                          │
+│ turn 1 · completed                       ││ ▎ YOU  01:55                                                                                                                                             │
+│                                          ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into a new file   │
+│ STAGES  inferred from activity           ││ ▎ named found.txt with the Write tool, and report the names. Then tell me in one line what it found.                                                     │
+│ TURN 1  ✓ completed · 4s                 ││                                                                                                                                                          │
+│   Use the Agent tool to launch one gene… ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│   ├─ ! agent  general-purpose       mock ││                                                                                                                                                          │
+│   │  └─ ! approval Write                 ││ ▎ CLAUDE  Haiku 5.5  01:55                                                                                                                               │
+│   └─ ✓ Agent  List directory and w… mock ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                                                                    01:55:06      mock   │
+│                                          ││ ▎                                                                                                                                                        │
+│                                          ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it finishes.                     │
+│                                          ││ ▎                                                                                                                                                        │
+│                                          ││ ▎  ✓ general-purpose · Bash  ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'                                      allowed by you 01:55:08      mock   │
+│                                          ││ ▎                                                                                                                                                        │
+│                                          ││ ▎ ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  │
+│                                          ││ ▎ │ ! APPROVAL · general-purpose · Write                                                                                                  01:55  mock │  │
+│                                          ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                                                                                                           │  │
+│                                          ││ ▎ │ ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ │  │
+│                                          ││ ▎ │ │ ▸ Preview of found.txt (2 lines)                                                                                                              │ │  │
+│                                          ││ ▎ │ │  1 │ alpha.txt                                                                                                                                │ │  │
+│                                          ││ ▎ │ │  2 │ beta.md                                                                                                                                  │ │  │
+│                                          ││ ▎ │ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │  │
+│                                          ││ ▎ │ This will create or overwrite the file at `<probe-root>\probe-work\p3b\found.txt` with the above content.                                         │  │
+│                                          ││ ▎ │ ▐ F2 to answer ▌                                                                                                                                  │  │
+│                                          ││ ▎ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  │
 │                                          ││                                                                                                                                                          │
-│ PLAN  observed (turn/plan/updated)       ││ CODEX  gpt-5.6-sol                                                                                                                                       │
-│ ✓ 1 Inspect the auth module              ││   The refresh logic lives in `middleware.go` and is called from two routes. Plan:                                                                        │
-│ ◉ 2 Split refresh logic                  ││   1. move `refresh` into its own file;                                                                                                                   │
-│   ├─ ✓ commandExecution  rg refresh      ││   2. add table tests for expired, revoked and valid tokens;                                                                                              │
-│   ├─ ◉ fileChange  src/auth/refresh.go   ││   3. run `go test ./...`.                                                                                                                                │
-│   │    └─ ! approval pending             ││   ▸ commandExecution  rg -n refresh src/auth          exit 0 · 0.4s                                                                             observed │
-│   ├─ ◉ child  /root/scan                 ││   ▸ child /root/scan started                                                                                                                    observed │
-│   │    └─ ◉ commandExecution  go vet     ││   ▸ child /root/docs started · completed 22s                                                                                                    observed │
-│   └─ ✓ child  /root/docs                 ││   Moving the function now.▌                                                                                                                              │
-│ ○ 3 Add table tests                      ││                                                                                                                                                          │
-│ ○ 4 Run the test suite                   ││ ╭ APPROVAL · orchestrator · fileChange src/auth/refresh.go (new file, +48) ────────────────────────────────────────────────────────────────────────────╮ │
-│                                          ││ │ @@ -0,0 +1,48 @@                                                                                                                                     │ │
-│ TURN 1  ✓ completed · 31s                ││ │ +package auth                                                                                                                                        │ │
-│   ✓ Explain the auth flow                ││ │ +func refresh(ctx context.Context, t Token) (Token, error) {                                                                                         │ │
-│                                          ││ │ …  45 more lines · Enter full diff                                                                                                                   │ │
-│                                          ││ │ a allow once   s allow for session   d decline   c cancel turn   Esc later                                                                           │ │
-│                                          ││ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
 │                                          ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
-│                                          ││ > Also check the logout path, and keep the old                                                                                                           │
-│                                          ││   function name as a deprecated alias█                                                                                                                   │
-│                                          ││                                                                                                                                                          │
-│                                          ││                                                                                                                                                          │
-│                                          ││                                                                                                                                                          │
-│                                          ││   turn running: the draft waits until the turn ends · Ctrl+C interrupt                             2 lines · Ctrl+G draft window                         │
-│                                          ││                                                                                                                                                          │
-│                                          ││                                                                                                                                                          │
-│                                          │╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-│                                          │╭─ C · LIVE AGENTS ────────────────────────────────── 1 ACTIVE · 1 DONE ─╮╭─ /root/scan · LIVE ───────────────────────────────── model N/A (not reported) ─╮
-│                                          ││ ◉ /root/scan   model N/A   commandExecution go vet   55s    30.4k tok  ││ 14:03:10  item/started  commandExecution  go vet ./src/auth            observed│
-│                                          ││ ✓ /root/docs   model N/A   completed                 22s    77.3k tok  ││ 14:03:11  agent  Checking the callers of refresh before the move…            ai│
-│                                          ││                                                                        ││ 14:03:12  item/completed  commandExecution  exit 0 · 1.2s              observed│
-│                                          ││                                                                        ││ 14:03:12  tokens  30,455 total · context 12% of 258.4k                 observed│
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││                                                                        ││                                                                                │
-│                                          ││ ↑↓ select · Enter inspect · z zoom                                     ││ Enter full screen · [ ] previous / next agent                                  │
-│ ↑↓ move  ←→ fold  Enter inspect  z zoom  ││                                                                        ││                                                                                │
-╰──────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────╯
-╭─ D · QUOTA & TELEMETRY ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── quota read 14:03:12 · pushed ─╮
-│ 5-hour  ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 21%  resets 16:40          7-day  ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 38%  resets Mon 09:00          plan plus · credits N/A                                       │
-│ model gpt-5.6-sol   context 30% of 258.4k (orchestrator)   tokens 184.3k session (derived: sum of 3 threads)   cost N/A (Codex reports none)                                                         │
-│ agents 1 active (derived) / limit N/A (not set; default not reported)   time 2m 40s turn · 5m 12s session   errors 0   retries 0   unrecognised events 0                                                │
+│                                          ││ >  Ask Mock data anything…                                                                                                                               │
+│ ↑↓ move ←→ fold Enter inspect            ││   Enter send · Ctrl+J newline                                                                                               1 line · Ctrl+G draft window │
+╰──────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
+│  ●  general-purpose   haiku-5-5   waiting: approval                    │ general-purpose · LIVE                                                                          claude-haiku-5-5 (reported) │
+│     00:20   21.2k tok   tool: Bash ✓   next: Write (approval pending)  │ no activity yet                                                                                                             │
+│                                                                        │                                                                                                                             │
+│                                                                        │                                                                                                                             │
+│                                                                        │                                                                                                                             │
+│                                                                        │                                                                                                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ D · QUOTA & TELEMETRY ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── quota updated 21s ago · † undocumented field ─╮
+│ 5h N/A (window reset; waiting for the next report)   7d N/A (window reset; waiting for the next report)   plan N/A (not reported)   overage rejected (org_level_disabled)                            │
+│ model claude-haiku-5-5   context 3% of 1M (derived)   tokens 61.9k   cost $0.00 API-equiv. estimate   last turn 3s                                                                                   │
+│ agents 1 active / limit N/A (not reported)   time 27s session   errors 0   retries N/A (none reported)   unrecognised events 0                                                                       │
 │                                                                                                                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit                           
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit          
 ```
 
-- A grows to 44 columns, with turn history below the current plan.
-- C splits into the agent list (74 columns) and a live preview of the
-  selected agent's last events, so several agents can be watched while the
+- A grows to 44 columns.
+- C holds the agent list, 70 columns, and right of a rule the selected
+  agent's live preview, so several agents can be watched while the
   orchestrator talks (AM2 C11).
-- D is three lines and names each source's time ("quota read 14:03:12 ·
-  pushed").
+- D is three rows and says when the quota was last updated.
 
 ### Below 80x24
 
@@ -692,7 +731,9 @@ The orchestrator and its workflow tree (AM2 A1-A6; AM4 D3; B2.2).
     stage's status derived from its children (CC-10 q7).
   - Under a stage: tools (`✓ Read src/auth/*.ts`), agents (`◉ agent
     scan-routes`) and, under each agent, its current tool or pending
-    approval, with `├─ └─ │` connectors.
+    approval, with `├─ └─ │` connectors. A path too long for the row keeps
+    its file name, cut at its left end, `✓ Read  …\f03.go` (the owner's
+    live review, 2026-10-20: twelve Read rows read "C:\User…" alike).
   - A last grey line "○ (more as events arrive)" while the turn runs: the
     tree never pretends to know future steps.
 - **Previous turns** fold to one line each ("TURN 1 ✓ completed · 31s"),
@@ -714,17 +755,98 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   thinking), the spinner turning in both (plan 4, step 8); "! Waiting for
   approval", "Interrupting…", and "Idle" when the session is ready with no
   turn.
+- **The visual language** (plan 20; brief amendments 16 and 17, the
+  owner's templates and image): each message is a block. An *exchange* is
+  a prompt and all that follows it up to the next prompt, the turns the CLI
+  opens by itself included; it draws as the owner's message, then the CLI's
+  under its header, then a RESULT box when it has a result. A block is a
+  narrow bar `▎` of its colour on each of its rows, its header on its own
+  row ("YOU  14:29", "CLAUDE  Opus 5.5  14:29"), and its body under the
+  header from the same column, on the zone's own dark background: no tinted
+  band behind a message, a ground only behind tool rows, a fold's row and a
+  request's preview. A thin rule in the frames' colour (`#3B3F51`), across
+  B's inner width, separates two messages, a blank row on each side: before
+  each of the owner's messages but the first, and between the owner's
+  message and the CLI's part. Never inside a message: between narration, a
+  group of tool rows and a request waiting in its box, a row of the block,
+  its bar (the owner's section 7.3); before the RESULT box, a blank row. A
+  blank row opens the conversation under B's border and one ends it above
+  the input's rule, which is the last message's: no rule of its own there,
+  none at the start, never two together; scrolled, a rule at the window's
+  edge, the message beyond it out of view, is a blank row, so it never
+  doubles B's border or the input's rule (the owner's live review). The
+  same layout at every width.
+
+  ```text
+  ▎ YOU  14:29                                       violet bar and label, the time muted
+  ▎ Read the twelve files src\f00.go to src\f11.go…   the prompt under its header
+
+  ──────────────────────────────────────────────     the rule between two messages
+
+  ▎ CLAUDE  Opus 5.5  14:29                          blue, once per exchange; the model muted
+  ▎ I'll read the twelve files one by one.           narration under the header
+  ▎
+  ▎  ▸ 9 earlier tool events · 1 failed · Expand     tool rows on their ground
+  ▎  ✓ Read  …\src\f09.go              12:15:23  observed
+
+  ╭────────────────────────────────────────────╮
+  │ RESULT  12:15                              │   green box, the answer under its label
+  │ I read 11 of the 12 files.                 │
+  ╰────────────────────────────────────────────╯
+  ```
 - **Entries**:
-  - **YOU** with the time: the message as sent, byte for byte (a long
-    paste is shown folded, below);
-  - **CLAUDE** or **CODEX** with the model: the AI text, streamed, rendered
-    as Markdown;
-  - tool lines `▸ Read src/auth/middleware.go · 212 lines`, with,
-    right-aligned, the origin label `observed`; a failed call reads
-    `✗ Bash · exit status 1: FAIL pkg/a`, its output's first non-blank
-    line in red (plan 5, item 6), `✗ Grep · failed` when it wrote nothing,
-    and a call denied at its approval `✗ Edit · denied`. The error is
-    content: a selection copies the name and the error as two lines;
+  - **YOU** with the time, violet (`#A78BFA`), on its own row; under it
+    the message as sent, byte for byte, in a brighter text colour
+    (`#F9FAFB`; a long paste is shown folded, below);
+  - **CLAUDE** or **CODEX** with the model and the time, the label blue
+    (`#60A5FA`), the model and the time muted, once per exchange, above its
+    first message or tool call: under it the AI text, streamed, rendered as
+    Markdown; the exchange's later messages carry no label. The model reads
+    `<Family> <major>.<minor>` for a `claude-<family>-<major>-<minor>` id,
+    dated or not (`Haiku 5.5`, as the owner drew it), any other id as the
+    CLI gives it, none while the CLI has given none; zones A, C and D keep
+    the id;
+  - **RESULT**, green (`#4ADE80`), a rounded box, "RESULT  01:54" on its
+    own row and the answer under it, holds the exchange's last message once
+    the exchange is over (no turn running), its last turn completed, not
+    failed or interrupted, every agent started in the exchange completed,
+    and a tool call, an approval, a review or another message came before
+    it. An agent still running, failed or stopped leaves the message in the
+    CLI's block ("I've launched the subagent…" is never a result, the
+    owner's section 6.1), and so does a lone answer. When the CLI opens a
+    turn of its own after the owner's, for a background agent's report,
+    RESULT moves to that turn's last message once it completes. It is
+    decided from the turn machine, the agents' machines and the turn each
+    entry belongs to (events-and-state.md, Conversation record), never from
+    the text;
+  - tool rows: one per call, inside the CLI's card, from column 2 on the
+    tool ground (`#1E2133`, lighter than the card's; none on a 16-colour
+    terminal): the status symbol (✓ done, ✗ failed or denied, the spinner
+    while it runs in a running turn, ◉ otherwise, ! waiting for the owner,
+    ○ unfinished); on a subagent's request, who asked ("general-purpose ·
+    "); the tool's name in light blue (`#93C5FD`), bold; its target in a
+    readable muted text (`#A1A9C0`): a path, its left end elided at one of
+    its elements (`…\Local\Temp\demo\src\f00.go`, never cut inside one), a
+    command's first line, a pattern, a URL, for an agent its type in blue
+    and its description, the targets of one group in one column. At the
+    right, how it ended and when, then the origin: "allowed by you
+    01:54:35" in green only for an answered approval, "denied by you …" in
+    red, "failed 01:54:59" in red, "approved by auto-review" in green or
+    "denied by auto-review" in red when the CLI's reviewer decided (shown
+    while the call runs too), "running 4s" in amber, "waiting for you" in
+    pink, a completed call's end time in grey; then `observed` or
+    `mock`. Running a tool is never shown as the owner's approval. A
+    failed call names what failed, as Template 1's row does, then its
+    error, its output's first non-blank line in red (plan 5, item 6):
+    `✗ Read  …\src\f03.go · File does not exist.`, or `✗ Bash · exit
+    status 1: FAIL pkg/a` without a target. The error keeps half the room,
+    or its whole width when less, the target the rest, and both are cut to
+    the room the outcome leaves (plan 13, item 1: the verdict stays; the
+    owner's live review of 2026-10-20). A call that failed with no output
+    reads "failed" in its outcome column, one denied at its approval
+    "denied". The name and the error are content (the target and the
+    symbols are decoration): a selection copies the name and the error as
+    two lines;
     **a Codex command** (`commandExecution`) that exited non-zero reads
     `✗ commandExecution · exit 2 · <last non-blank line>`, or
     `✗ commandExecution · exit 2` when its output is blank (plan 6, item 1).
@@ -735,12 +857,20 @@ events (events-and-state.md, Conversation record); nothing is simulated.
     `exitCode`, never parsed from the text, and a failing command most often
     ends with its error. Enter still shows the whole output; Claude Code's
     failures and Codex's without an exit code keep the first-line rule;
-  - agent lines `▸ Agent scan-routes started` (the agent's own text stays in
-    C and in inspection: subagent text is not streamed by Claude Code,
-    events-and-state.md, `conversation.message.delta`);
-  - approval cards ([Approvals](#approvals));
-  - dashboard notices in grey italics, marked "dashboard": "interrupted by
-    you", "turn failed: …", "send refused: session not ready".
+  - an agent's launch is its Agent call's row, `✓ Agent  general-purpose ·
+    <description>` (the agent's own text and calls stay in C and in
+    inspection: subagent text is not streamed by Claude Code,
+    events-and-state.md, `conversation.message.delta`); only the
+    orchestrator's calls are B's;
+  - a thinking block that ended is not drawn, the record keeping it; only
+    one streaming with no text yet shows `∴ thinking`, so a finished one
+    never looks active (the owner's section 11; the thinking display is a
+    separate plan);
+  - approval cards ([Approvals](#approvals)): a pending one in its pink
+    box, Template 2's; an answered one is one row among the tool rows, on
+    their ground, who asked kept, its outcome in its colour;
+  - dashboard notices in grey, marked "dashboard": "interrupted by you",
+    "turn failed: …", "send refused: session not ready".
   - **Slash commands on Codex**: Codex runs `/status`, `/model` and the rest
     in its own terminal only; through `app-server` the text would reach the
     model as a message (plan 4, L5). A message whose first word is a slash
@@ -756,17 +886,34 @@ events (events-and-state.md, Conversation record); nothing is simulated.
 - **Long pasted messages**: a sent message over 20 lines shows its first 5 (ASM-22)
   and "… 9,995 more lines" (the CLIs fold large pastes the
   same way, TI 3.4); the record keeps the full text.
+- **Runs of tool calls** (plan 19; the owner's section 4.6): consecutive
+  calls, with the thinking marks between them, form a run. A run of 5 calls
+  or more shows its last 3 and, where the others were, one row on the
+  ground: `▸ 9 earlier tool events · 1 failed · Expand`, the `▸` blue,
+  the count in the muted text, then how many of them failed (red), run
+  (amber) or wait for the owner (pink). Enter on it, or a click, expands
+  the run under the row `▾ 9 earlier tool events · Fold`; ← on one of its
+  calls, or a click on that row, folds it again; the owner's choice holds
+  for the session. Messages, approvals, reviews, notices and errors end a
+  run and are never folded, so a pending approval is never hidden, and the
+  order of events is kept. Only the orchestrator's calls are in B, so a
+  fold never hides which agent acted. A selection copies the conversation
+  as before, the folded calls' names included.
 - **Expanding** (plan 5, item 4): B has an entry cursor. ↑ from an empty
   input puts it on the newest entry B shows in part: a folded message, a
   tool line (one row, its output not shown), a failure (one row, cut to the
-  width). Its row turns to the attention colour, `▸` in front and
-  "Enter full view · ↑↓ entries · Esc back" on the right, without changing
-  B's height; the bottom hints say the same. ↑ ↓ move between such
-  entries, B scrolling to keep the marked row in view; ↓ past the newest,
-  Esc or a typed character return to the input (the character is typed
-  there). With a draft, ↑ moves in the draft as before. A mouse click is not
-  used: a click on a row starts a selection. Enter or → shows the entry
-  whole, full screen, as the approval's full view does: a message with
+  width), a folded run's row (plan 19), never a call the run folds. Its row
+  gets `▸` in the attention colour in its card's margin, right of the
+  bar and "Enter full view · ↑↓ entries · Esc back" on the right
+  ("Enter expands" on a run's row, "← fold" added on a call of an expanded
+  run), without changing B's height; the bottom hints say the same. ↑ ↓
+  move between such entries, B scrolling to keep the marked row in view; ↓
+  past the newest, Esc or a typed character return to the input (the
+  character is typed there). With a draft, ↑ moves in the draft as before.
+  A mouse click is not used, except on a run's row (plan 19): a click on a
+  row starts a selection. Enter shows the entry
+  whole, full screen (→ only expands a folded run, as it unfolds in zone
+  A: it opens nothing; the owner's live review, 2026-10-20), as the approval's full view does: a message with
   its time and line count, every line; a tool with its name, status,
   elapsed time, origin, its input (a diff coloured, a command, else the raw
   input) and its whole output, or "no output", updated live while it runs;
@@ -839,62 +986,83 @@ label and syntax highlighting.
 
 ## Zone C
 
-The live subagents (AM2 C1-C11; AM4 D3).
+The live subagents (AM2 C1-C11; AM4 D3), the whole width under A and B
+since plan 20 (brief amendment 16, the owner's two templates).
 
-- **Header**: "C · LIVE AGENTS", then "N ACTIVE · M DONE" on the right,
-  counts of the agents it lists, derived from the agent machines (`Running`
-  and `WaitingApproval` are active).
+- **Header**: "C · LIVE AGENTS" ("C · AGENTS" under 100 columns), then "N
+  ACTIVE · M DONE" on the right, counts of the agents it lists, derived
+  from the agent machines (`Running` and `WaitingApproval` are active);
+  before them, in amber, how many agents are out of view, "↑ 2 above · ↓ 5
+  below".
 - **The agents in play only** (plan 18, brief amendment 14, the owner's
   third message): each prompt the owner submits clears C of the agents of
   earlier prompts, back to "0 ACTIVE · 0 DONE" and "no agents yet"; an agent
   still running stays, and so do the agents of turns the CLI opens by itself
   for a background agent's notification. The earlier agents stay in zone A's
   tree, from which they can be inspected.
-- **One row per agent**: status symbol, label (Claude Code's description or
-  `agent_id`; Codex `agentPath`; else, for a Codex agent its spawn request
-  alone names, "task: " and the first line of the request's `prompt`, cut
-  at 24 characters with "…", replaced by the agent's own label when one
-  comes, the whole prompt in the inspection; plan 10, item 1; a column as wide as the longest label
-  and a space, at least 14 cells, so every model starts at the same cell;
-  never so wide that the task keeps fewer than 12 cells, a longer label
-  ending in "…", whole in the preview and the inspection; plan 7, item 1),
-  the agent's own model in its colour
-  (Claude Code: its forwarded messages' `message.model`, shown without the
-  "claude-" prefix to fit the column, in full in the preview and the
-  inspection; Codex: `subAgentActivity.model`, from Codex CLI 0.163.0, else the
-  model its `spawnAgent` call requested, `collabAgentToolCall.model` for each
-  of its `receiverThreadIds`, source "spawn request": the agent's own report
+- **Two rows an agent** from 100 columns (Template 2), one under 100:
+
+  ```text
+   ●  general-purpose   haiku-5-5   waiting: approval
+      01:11   21.2k tok   tool: Bash ✓   next: Write (approval pending)
+  ```
+
+  The first row: the status symbol (a pink `●` for an agent waiting for
+  the owner, where zone A keeps its `!`), two cells, then the label
+  (Claude Code's description or `agent_id`; Codex `agentPath`; else, for
+  a Codex agent its spawn request alone names, "task: " and the first line
+  of the request's `prompt`, cut at 24 characters with "…", replaced by
+  the agent's own label when one comes, the whole prompt in the inspection;
+  plan 10, item 1; a column as wide as the longest label and a space, at
+  least 14 cells, and three cells after it, so every model starts at the
+  same cell; never so wide that the state keeps fewer than 12 cells, a
+  longer label ending in "…", whole in the preview and the inspection; plan
+  7, item 1), the agent's own model in its colour (Claude Code: its
+  forwarded messages' `message.model`, shown without the "claude-" prefix
+  to fit the column, in full in the preview and the inspection; Codex:
+  `subAgentActivity.model`, from Codex CLI 0.163.0, else the model its
+  `spawnAgent` call requested, `collabAgentToolCall.model` for each of its
+  `receiverThreadIds`, source "spawn request": the agent's own report
   always wins, in either order; plan 6, item 4, from the generated schema;
-  recorded by P9a on the multi-agent v1 backend, plan 9) or
-  "model N/A" (older Codex children, ASM-14; plan 5, item 7); a requested
-  model is followed by a grey "*", footnoted "* requested model" in the
-  header, as D's "†" (plan 6, item 5); then, when any listed agent has one,
-  its reasoning effort in grey, a column as wide as the longest (Codex
+  recorded by P9a on the multi-agent v1 backend, plan 9) or "model N/A"
+  (older Codex children, ASM-14; plan 5, item 7); a requested model is
+  followed by a grey "*", footnoted "* requested model" in the header, as
+  D's "†" (plan 6, item 5); then, when any listed agent has one, its
+  reasoning effort in grey, a column as wide as the longest (Codex
   `subAgentActivity.reasoningEffort`, else the spawn request's, by the
-  model's rule; plan 6, item 6), current task
-  (last tool and its target, or "waiting: approval Edit", or "completed · 3
-  files read"), elapsed time, tokens. A retry shows "↻ 2" after the time
+  model's rule; plan 6, item 6); then its state: "waiting: approval" in
+  grey, its running word in amber, "completed · " and its summary's first
+  line, "failed · " and its error's. The second row, under the label: the
+  elapsed time as a clock ("01:11"), the tokens, its last call that is not
+  waiting for the owner with its status ("tool: Bash ✓"), and a request
+  waiting for the owner ("next: Write (approval pending)", grey). Under 100
+  columns the one row keeps plan 18's layout: symbol, label, model, state,
+  then the time and tokens at the right. A retry shows "↻ 2" after the time
   (AM2 C7). Rows are ordered: waiting for approval, running, then ended,
   most recent first (ASM-22).
-- **Preview** (wide only): the selected agent's last events, timestamped,
-  each with its origin label; its header shows the model with its source,
+- **Preview** (from 160 columns, with agents in play): inside C, right of
+  the list (70 cells) and a rule, the selected agent's last events,
+  timestamped, each with its origin label, under a heading "general-purpose
+  · LIVE"; the heading's right shows the model with its source,
   "(reported)" or "(requested)", and the effort when there is one, "·
-  effort high (reported)" (plan 6, items 5 and 6); where the whole header
+  effort high (reported)" (plan 6, items 5 and 6); where the whole of it
   does not fit, it drops the effort, then the source, keeping the model
-  whole, and only then nothing (plan 7, item 2); it follows the selection, and the wheel
-  scrolls it.
-- **Height** (plan 18, brief amendment 14): an empty strip while no agent is
-  in play, 4 rows (3 at narrow width), the title with "0 ACTIVE · 0 DONE"
-  and "no agents yet". As soon as the turn deploys agents, C grows to the
-  rows they need, a row each with the title, the key hint and the border, up
-  to half the right column (5 rows at narrow width), the list scrolling with
-  the selection past that, and keeps that height after they finish, until
-  the owner's next prompt clears it; a turn the CLI opens by itself does not.
-  The key hint shows from 4 body rows, or when the agents leave a row for
-  it. At wide width the strip spans the right column without the preview;
-  with agents in play C keeps 8 rows for the preview beside the list.
+  whole, and only then nothing (plan 7, item 2); held away from its tail,
+  the heading's right reads the rows out of view instead, "↑ 4 ↓ 2 · End
+  follows". It follows the selection, and the wheel scrolls it.
+- **Height** (plan 18, kept by plan 20): 3 rows while no agent is in play,
+  "0 ACTIVE · 0 DONE" and "no agents yet". As soon as the turn deploys
+  agents, C grows to the rows they need, two an agent (one under 100
+  columns) and its borders, up to half the rows A, B and C share (5 rows
+  under 100 columns), the list scrolling with the selection past that, and
+  keeps that height after they finish, until the owner's next prompt clears
+  it; a turn the CLI opens by itself does not. From 160 columns, with agents
+  in play, C keeps 8 rows for the preview.
 - **Keys** when focused: ↑ ↓ select, Enter inspects, z zooms; PgUp, PgDn,
-  Home and End scroll the list, the selection kept.
+  Home and End scroll the list, the selection kept. C has no key hint row
+  since plan 20: while C has the focus the footer reads "↑↓ select · Enter
+  inspect · z zoom · PgUp PgDn Home End scroll · F6 zone · Esc back to the
+  input · F1 keys".
 - Background agents that outlive their turn stay listed and running (P3,
   P3b): the agent machine, not the turn, decides their status.
 
@@ -991,7 +1159,7 @@ it; only the window's cells cover it. Golden frame `file`, 80x24:
 ╭─│ 46  }                                                                    │─╮
 │ │ ↑↓ · / search · n N · g line · f full · Esc back · F3 close   line 35/58 │ │
 ╰─╰──────────────────────────────────────────────────────────────────────────╯─╯
- Enter or → full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys
+ Enter full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys
 ```
 
 **The window.** `max(W*4/5, min(W-4, 84))` columns by `max(H*4/5,
@@ -1169,11 +1337,50 @@ as in the quick open; F12 and the terminal's own selection copy from it.
 
 The CLI's native approvals, relayed (AM2 B6, I7; AM4 W3; events-and-state.md,
 Approval machine). An approval request appears as a card in B, attached to
-the agent that asked, and marks that agent "!" in A and C.
+the agent that asked, and marks that agent "!" in A and a pink "●" in C.
 
-- **The card**: who asks (orchestrator or agent label), the tool and its
-  target, a summary (`+12 −0`, the command line), and the first lines of the
-  diff or command; the available answers as keys.
+- **The card** (plan 20, Template 2, the owner's section 5.2): a pink
+  rounded box inside the CLI's card, never folded, never green:
+
+  ```text
+  ╭─────────────────────────────────────────────────────────────────────────────────────╮
+  │ ! APPROVAL · general-purpose · Write                                    01:55  mock │
+  │   <probe-root>\probe-work\p3b\found.txt                                             │
+  │ ╭─────────────────────────────────────────────────────────────────────────────────╮ │
+  │ │ ▸ Preview of found.txt (2 lines)                                                │ │
+  │ │  1 │ alpha.txt                                                                  │ │
+  │ │  2 │ beta.md                                                                    │ │
+  │ ╰─────────────────────────────────────────────────────────────────────────────────╯ │
+  │ This will create or overwrite the file at `<probe-root>\probe-work\p3b\found.txt`   │
+  │ with the above content.                                                             │
+  │ ▐ F2 to answer ▌                                                                    │
+  ╰─────────────────────────────────────────────────────────────────────────────────────╯
+  ```
+
+  Its heading, "! APPROVAL" bold pink (a question's "? QUESTION"), who asks
+  (orchestrator or the agent's label) and the tool, bold pink, with the
+  request's time and origin at the right; the target on its own row (a path
+  losing its left end, a command its right end, only when the box is too
+  narrow); then the questions, or a preview of what the request would do,
+  on the tool rows' ground: a file's content numbered ("Preview of
+  found.txt (2 lines)"), a change's lines removed and added ("Change to
+  a.go"), a command's lines ("Command"), at most 6 lines then "… N more
+  lines". From zone B's 90 cells the preview has its own grey box, as
+  Template 2 draws it; narrower, its rows go straight in the card. Then the
+  request's own description, when it says more than the target; then, for
+  the tools whose effect Claude Code documents, one sentence on what
+  allowing does, from the request's own tool and target (its tools
+  reference, code.claude.com/docs/en/tools-reference.md, read on
+  2026-10-20: Write "creates a new file or overwrites an existing one with
+  the full content provided", Edit "performs exact string replacement"):
+  "This will create or overwrite the file at `<path>` with the above
+  content." (Template 2's), "…, leaving it empty." for empty content, "This
+  will replace the text marked - with the text marked + in `<path>`."
+  ("every occurrence of" with `replace_all`); no sentence for another
+  tool or for Codex, nothing invented. Last, the pill "F2 to answer", pink
+  bold on a dark pink ground with half-block ends (in brackets on a
+  16-colour terminal); once F2 gives the card the focus, its keys in its
+  place.
 - **Answers** (keys act only when the card has focus; F2 gives it focus,
   oldest pending first; ↑ ↓ move between pending cards):
 
@@ -1190,7 +1397,8 @@ the agent that asked, and marks that agent "!" in A and C.
   request the CLI sends is a card. In Auto, the CLI's own reviewer decides
   what it can (Claude Code's classifier, Codex's auto-review) and only what
   it escalates is a card, exactly as in Manual. A call Claude Code's
-  classifier decided reads "▸ Write · approved by auto-review" in B; a
+  classifier decided reads "✓ Write  <path> · approved by auto-review" in
+  B, the verdict green, red when it denied (plan 19); a
   Codex review is a "◈ auto-review approved · risk low · …" entry, its
   inspector marked [UNSTABLE]. Codex's Auto is its "Approve for me", so
   the bar's "sandbox" reads workspaceWrite once an Auto turn is sent, and
@@ -1203,6 +1411,10 @@ the agent that asked, and marks that agent "!" in A and C.
 - After the answer, the card shrinks to one line: "✓ allowed by you
   14:03:20" or "✗ denied by you", observed as sent. An approval that
   expires (turn ended, CLI resolved it) shows "expired, not answered".
+  Since plan 19 that line is a row among B's tool rows, indented to them
+  and on their ground, the outcome green, red or grey; a pending card stays
+  apart from them, never on the ground and never folded, so a request
+  waiting for the owner never looks like one already answered.
 - **Questions** (`AskUserQuestion`, Claude Code): shown as a card with
   every question and every option, numbered, nothing cut; the selected
   question is marked ▸ while the card has the focus (plan 14, item 1; the
@@ -1230,7 +1442,7 @@ How each state looks, wherever it occurs (B3.3; AM2 D9):
 | Loading | a restrained spinner and what is awaited: "detecting…", "starting Claude Code…", "waiting for the session" |
 | Streaming | "⠋ Streaming", its spinner turning, in B's header; the cursor `▌` at the end of the open entry |
 | Running a tool | the tool line with ◉; in C, the agent's task |
-| Waiting for approval | "!" in the colour of attention, on the agent in A and C, the card in B, "! Waiting for approval" in B's header |
+| Waiting for approval | "!" in the colour of attention on the agent in A, a pink "●" in C, the pink card in B, "! Waiting for approval" in B's header |
 | Interrupting | "Interrupting…" in B's header; after 10 s, "the turn did not stop · F to force stop (ends the session)" (ASM-16) |
 | Interrupted, cancelled | a notice "interrupted by you" in B; open tools end "unfinished" (inferred) |
 | No data | "N/A" in grey with its reason; never a zero, never a blank |
@@ -1269,9 +1481,14 @@ rounded frames, pale violet panel titles (RD "Layout mock-up").
 | ◉ | in progress | amber |
 | ○ | waiting, queued | grey |
 | ! | needs the owner (approval, question) | pink |
+| ● | an agent waiting for the owner, in zone C (plan 20, Template 2) | pink |
 | ✗ | failed, denied | red |
 | ↻ n | retries | amber |
-| ▸ | a tool or agent event line | grey |
+| ▸ | the entry cursor in B, in its card's margin (attention); a call with no record (grey) | |
+| ▎ | a message's bar in B, on each of its rows: YOU, CLAUDE or CODEX (plan 20, amendment 17) | violet, blue |
+| ─ | the rule between two messages in B, and B's input under its own | the frames' |
+| ▸ ▾ | a run of tool events in B, folded or expanded (plan 19); a pending request's preview | blue; grey |
+| ▐ ▌ | the ends of the "F2 to answer" pill (plan 20) | dark pink |
 
 Model colours, after RD's legend (one colour per model family, ASM-13):
 Opus violet, Sonnet orange, Haiku blue, OpenAI GPT models teal, any other
@@ -1303,6 +1520,15 @@ the application's own configuration file (ASM-7).
 | Text on a title-coloured button or cursor | `#111827` | 234 | 0 black |
 | Editor selection, background | `#4C4F6B` | 240 | 4 blue |
 | Zone A cursor row, background (text `#E5E7EB`) | `#2E3247` | 23 | 8 bright black (text 15) |
+| Zone B: YOU's bar and label (plan 19) | `#A78BFA`, bold | 141 | 5 magenta |
+| Zone B: the owner's prompts | `#F9FAFB` | 231 | 15 bright white |
+| Zone B: CLAUDE's or CODEX's bar and label | `#60A5FA`, bold | 75 | 12 bright blue |
+| Zone B: RESULT's box and label | `#4ADE80`, bold | 78 | 10 bright green |
+| Zone B: tool rows' ground, background | `#1E2133` | 17 | none |
+| Zone B: a tool's name (plan 20) | `#93C5FD`, bold | 117 | 6 cyan |
+| Zone B: a tool's target, a fold's count, the model in a message's header, an agent's state in C (plan 20) | `#A1A9C0` | 145 | 7 white |
+| Zone B: a fold's mark, an agent's type (plan 20) | `#60A5FA` | 75 | 12 bright blue |
+| Zone B: the pill's ground, background (plan 20) | `#3B1531` | 53 | none (in brackets) |
 
 The application draws the true colours whatever the terminal, except on a
 16-colour one (plan 5, item 13). Bubble Tea detects the terminal's colour
@@ -1310,8 +1536,9 @@ profile and sends it at startup, and again when the terminal reports RGB
 support; its renderer then writes each true colour as is, maps it to the
 nearest of the 256, or drops every colour when the output is no terminal.
 The 256 column is that mapping as measured (`internal\render\palette_test.go`,
-TestPalette256): one index per colour, no two colours on the same index; the
-zone A cursor row comes out a dark teal. On a 16-colour profile the renderer's
+TestPalette256): one index per colour, no two foregrounds and no two
+backgrounds on the same index; the zone A cursor row comes out a dark
+teal. On a 16-colour profile the renderer's
 own mapping folds the roles together (done, GPT and strings on one green;
 in progress, attention, failed and Sonnet on one red; title, text, Opus, Haiku
 and code on one blue), so the application switches to the explicit palette of
@@ -1428,7 +1655,9 @@ the console reads plain VT input after Ctrl+Q.
 | Key | Action |
 | - | - |
 | ↑ ↓ | previous / next folded message, tool or failure; ↓ past the last, the input |
-| Enter or → | the whole entry, full screen; Esc back to the cursor |
+| Enter | the whole entry, full screen; Esc back to the cursor; on a run of tool events, expand it |
+| → | on a run of tool events, expand it; it opens nothing |
+| ← | on a call of an expanded run, fold the run again |
 | Esc, or typing | back to the input |
 | F3 | the file a tool entry read or changed, in the [file viewer](#file-viewer) |
 
@@ -1471,15 +1700,16 @@ AM2 U4, U5, U7.
 - Zone A's tree and C's preview rest at their tail; zone C's list at its
   top, the selection in view (plan 5, item 5). Scrolled, a pane is held:
   rows coming and going do not move it, ↑ ↓ keep the cursor or selection
-  in view with the least move, and its hint row says so in amber, the rows
-  out of view, then the way back: "↑ 12 ↓ 25 · End follows" (A), "· Home
-  top" (C), "· scroll to the end follows" (the preview). A and the preview
-  follow again at their end; the preview also for another agent. End in A
-  with the cursor above the tail shows the tail and keeps following it. A
-  three-row C (80x24) has no hint row. Zoomed panes scroll the same way.
+  in view with the least move, and the pane says so in amber, the rows out
+  of view, then the way back: A on its hint row, "↑ 12 ↓ 25 · End follows";
+  the preview in its heading, "↑ 4 ↓ 2 · End follows"; C, which has no
+  hint row since plan 20, in its top border, "↑ 2 above · ↓ 5 below". A and
+  the preview follow again at their end; the preview also for another
+  agent. End in A with the cursor above the tail shows the tail and keeps
+  following it. Zoomed panes scroll the same way.
 - Collapsing: tree nodes and previous turns in A, unfolded with ← →; in B,
   long pastes (first lines and "… N more lines"), tool lines and failures
-  (one row), each shown whole with Enter or → on B's entry cursor
+  (one row), each shown whole with Enter on B's entry cursor
   ([Zone B](#zone-b), Expanding).
 - Full screen: z zooms the focused panel; Enter on an agent opens
   inspection; Enter on an approval card shows the whole diff; Enter on B's
@@ -1501,9 +1731,11 @@ provider: it has no provider code and sends a string to part 5's caller
   terminal sends a raw Ctrl+V key, the editor reads the native clipboard and
   inserts it as a paste. Mouse: click places the cursor, drag selects,
   double-click a word, triple-click a line.
-- **Size**: it grows with its content up to half of B, then scrolls; the
-  status line shows the line count and the newline key that works in the
-  detected terminal (TI 4.3, "On screen").
+- **Size**: one row when empty or on one line, under the rule, then the
+  status line, no empty row between them (plan 20, the owner's templates);
+  it grows with its content up to half of B, then scrolls; the status line
+  shows the line count and the newline key that works in the detected
+  terminal (TI 4.3, "On screen").
 - **While a turn runs**: editable, not sendable; "turn running: the draft
   waits · Ctrl+C interrupt" (ASM-15). Enter then does nothing but flash that
   line.
@@ -1690,8 +1922,7 @@ what is not built).
 | This design | The MVP | Why |
 | - | - | - |
 | Approval card: s allows for the session | Never for Claude Code; for Codex unless the request's `availableDecisions` omits `acceptForSession`. Codex CLI 0.163.0 sends no list with a file-change request, so it is offered there; a command request lists accept, the amendment and cancel (probe P8), so it is not | Claude Code: CC-4; Codex: plan 5, item 8; plan 8 |
-| Tool lines in B carry a status symbol, and a failed one `✗` with its error | `✗` and the error for a failed or denied call; `▸` for the others, their status in A and the viewer | Only the calls that need a look are marked in B (plan 5, item 6) |
-| Thinking text folded under the message, "thinking · 312 tokens", unfoldable | "∴ thinking" marks a message that had a thinking block; nothing unfolds | The conversation record keeps that a thinking block arrived (`Entry.Thinking`), not its text (found in plan 5, item 4) |
+| Thinking text folded under the message, "thinking · 312 tokens", unfoldable | "∴ thinking" only while a thinking block streams with no text yet; one that ended is not drawn (plan 20); nothing unfolds | The conversation record keeps that a thinking block arrived (`Entry.Thinking`), not its text (found in plan 5, item 4); the thinking display is the owner's separate plan (brief amendment 16, section 11) |
 
 ## Assumptions used here
 

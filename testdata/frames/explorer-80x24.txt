@@ -13,9 +13,9 @@
 │ │   codex-spawn-request.jsonl                                           A  │ │
 │ │   codex-subagents.jsonl                                                  │ │
 │ │                                                                          │ │
+│ │                                                                          │ │
 ╰─│                                                                          │─╯
 ╭─│                                                                          │─╮
-│ │                                                                          │ │
 │ │                                                                          │ │
 ╰─│                                                                          │─╯
 ╭─│                                                                          │─╮

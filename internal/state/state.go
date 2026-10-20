@@ -194,6 +194,10 @@ type Entry struct {
 	// Status is a review entry's status as reported (inProgress, approved,
 	// denied, timedOut, aborted); "" for any other entry (plan 12, item 2).
 	Status string
+	// Stage is the turn the entry belongs to, Stages[Stage-1]: the one open
+	// when it came, for a prompt the one it opens; after a turn ended, that
+	// turn; 0 before any (plan 19, zone B's RESULT).
+	Stage int
 }
 
 // Agent is one node of the agent tree.

@@ -1,23 +1,23 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
-╭─ A · ORCHESTRATOR ─────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────── Idle ─╮
-│ claude-haiku-5-5 · orchestrat… ││ YOU  11:30                                                                         │
-│ turn 2 · c╭─ Draft ──────────────────────────────────────────────────────────────────────────── 7 lines ─╮sk: list   │
-│           │ > Review the colour palette in sample/viewer.go:                                             │named      │
-│ STAGES  in│                                                                                              │ne line    │
+╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────────────── Idle ─╮
+│ claude-haiku-5-5 · or… ││                                                                                            │
+│ turn 2 · c╭─ Draft ──────────────────────────────────────────────────────────────────────────── 7 lines ─╮           │
+│           │ > Review the colour palette in sample/viewer.go:                                             │    mock   │
+│ STAGES  in│                                                                                              │           │
 │ TURN 1  ✓ │   1. keep the five accents of the reference screen;                                          │           │
-│ TURN 2  ✓ │   2. check each one against the dark background;                                             │      mock │
+│ TURN 2  ✓ │   2. check each one against the dark background;                                             │           │
 │   started │   3. report any pair under 4.5:1, with its hex values.                                       │           │
-│           │                                                                                              │ write     │
-│           │   Do not change the file yet.                                                                │           │
-│           │                                                                                              │u 11:30:00 │
-│           │                                                                                              │u 11:30:00 │
+│           │                                                                                              │    mock   │
+│           │   Do not change the file yet.                                                                │    mock   │
 │           │                                                                                              │           │
-│           │                                                                                              │d`, and    │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
+│           │                                                                                              │─────────╮ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │wrote    │ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │         │ │
+│           │                                                                                              │─────────╯ │
 │           │                                                                                              │           │
 │           │                                                                                              │────────── │
 │           │                                                                                              │           │
@@ -27,11 +27,11 @@
 │           │                                                                                              │           │
 │           │                                                                                              │           │
 │           │                                                                                              │           │
-│           │                                                                                              │aft window │
-│           │                                                                                              │───────────╯
-│           │                                                                                              │ · 1 DONE ─╮
-│           │                                                                                              │ 21.5k tok │
-│ ↑↓ move ←→│                                                                                              │           │
+│ ↑↓ move ←→│                                                                                              │aft window │
+╰───────────│                                                                                              │───────────╯
+╭─ C · LIVE │                                                                                              │ · 1 DONE ─╮
+│  ✓  genera│                                                                                              │           │
+│     00:00 │                                                                                              │           │
 ╰───────────│ Enter send · Ctrl+J newline · Ctrl+F full screen · Esc back          turn started by the CLI │───────────╯
 ╭─ D · QUOTA╰──────────────────────────────────────────────────────────────────────────────────────────────╯ted field ─╮
 │ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00                      │

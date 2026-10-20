@@ -265,8 +265,8 @@ func TestClassifierDenialInZoneB(t *testing.T) {
 		f := h.frame()
 		var row string
 		for _, l := range strings.Split(f, "\n") {
-			if strings.Contains(l, "✗ PowerShell") {
-				row = l
+			if _, b, ok := strings.Cut(l, "││"); ok && strings.Contains(b, "✗ PowerShell") { // B's row, not zone A's tree
+				row = b
 			}
 		}
 		if !strings.Contains(row, "denied by auto-review") {

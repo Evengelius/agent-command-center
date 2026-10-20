@@ -16,16 +16,41 @@ import (
 const (
 	standardWidth = 100
 	wideWidth     = 160
-	zoneAStandard = 34
-	zoneAWide     = 44
 	listWide      = 74
-	// Zone C's strip while no agent is in play (plan 18): its title and two
-	// agent rows from the standard width, one row under it; with agents in
-	// play at wide width, at least previewRows for the preview beside it.
-	compactC       = 4
-	compactCNarrow = 3
-	previewRows    = 8
+	// Zone A's share of the width from 100 columns, in percent, and its
+	// least width (plan 20: the templates draw it at about a fifth).
+	zoneAShare = 22
+	zoneAMin   = 24
+	// Zone C while no agent is in play (plan 18, plan 20): its borders and
+	// one row; with agents in play at wide width, at least previewRows for
+	// the preview beside the list; at most narrowC under 100 columns.
+	compactC    = 3
+	previewRows = 8
+	narrowC     = 5
 )
+
+// zoneAWidth is zone A's width at w columns from 100 (plan 20): 22% of
+// it, rounded, at least 24.
+func zoneAWidth(w int) int { return max((w*zoneAShare+50)/100, zoneAMin) }
+
+// cHeight is zone C's height (plan 18, plan 20): compactC while no agent is
+// in play; else its borders and the rows its n agents need, two each from
+// 100 columns, one each under it (at most narrowC rows there); from 160
+// columns at least previewRows; at most half the rows it shares with A and
+// B, which keep minB.
+func cHeight(n, region, minB int, narrow, wide bool) int {
+	if n == 0 {
+		return compactC
+	}
+	if narrow {
+		return min(max(2+n, compactC), narrowC)
+	}
+	need := 2 + 2*n
+	if wide {
+		need = max(need, previewRows)
+	}
+	return min(max(need, compactC), max(min(region/2, region-minB), compactC))
+}
 
 // dashboard draws the working screen at the layout the width selects.
 func dashboard(s *state.State, ui UI, sc *Screen) []line {
@@ -50,68 +75,46 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 			ls = append(ls, zoneA(s, ui, w, zh, sc)...)
 		case "C":
 			keys = "↑↓ select · Enter inspect"
-			if wide {
-				ls = append(ls, beside(zoneC(s, ui, listWide, zh, sc), preview(s, ui, w-listWide, zh, sc))...)
-			} else {
-				ls = append(ls, zoneC(s, ui, w, zh, sc)...)
-			}
+			ls = append(ls, zoneC(s, ui, w, zh, sc)...) // its preview inside from 160 columns
 		case "D":
 			ls = append(ls, zoneD(s, ui, w, zh, zh-2)...)
 		}
 		return append(ls, keyHints(w, ui, "z or Esc restore · "+keys+" · F6 zone · F1 keys"))
 	}
 
+	// Plan 20 (brief amendment 16): A and B share the upper row, their bottom
+	// borders on one row; C spans the whole width under both, then D. C is
+	// sized by the agents in play (plan 18).
+	inPlay := s.AgentsInPlay()
 	if w < standardWidth {
+		// The fallback under 100 columns: A as one row, B, C and D full width.
 		ls = append(ls, zoneALine(s, w))
-		dh, ch := 3, compactCNarrow
-		if n := s.AgentsInPlay(); n > 0 { // plan 18: the rows its agents need, up to 5
-			ch = min(max(n+3, compactCNarrow), 5)
-		}
-		bh := h - len(ls) - ch - dh - 1
+		dh := 3
+		region := h - len(ls) - dh - 1
+		ch := cHeight(inPlay, region, 0, true, false)
+		bh := region - ch
 		if ui.Focus == "A" { // the tree takes B's and C's place until F6 leaves it
 			ls = append(ls, zoneA(s, ui, w, bh+ch, sc)...)
 			ls = append(ls, zoneD(s, ui, w, dh, 1)...)
 			return append(ls, keyHints(w, ui, "↑↓ move · ←→ fold · Enter inspect · F6 zone · Esc back to the input"))
 		}
 		sc.Conv.Y = len(ls) + 1
-		ls = append(ls, zoneB(s, ui, w, bh, 3, sc)...)
+		ls = append(ls, zoneB(s, ui, w, bh, editorMinRows, sc)...)
 		ls = append(ls, zoneC(s, ui, w, ch, sc)...)
 		ls = append(ls, zoneD(s, ui, w, dh, 1)...)
-		hints := "Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys"
-		if ui.Entry > 0 && ui.Focus == "B" && ui.Card == "" {
-			hints = entryFooter(s, ui)
-		}
-		return append(ls, keyHints(w, ui, hints))
+		return append(ls, keyHints(w, ui, footer(s, ui, "Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys")))
 	}
 
-	aw, dh, rows, minB := zoneAStandard, 4, 2, 12
+	aw, dh, rows, minB := zoneAWidth(w), 4, 2, 12
 	if wide {
-		aw, dh, rows, minB = zoneAWide, 6, 3, 14
+		dh, rows, minB = 6, 3, 14
 	}
-	mid := h - len(ls) - dh - 1
-	// Plan 18 (brief amendment 14): C is a strip until agents are in play,
-	// then as tall as they need, its title, a row each, its key hint and its
-	// border, with room for the preview at wide width; at most half the
-	// column, B keeping room for its input.
-	inPlay := s.AgentsInPlay()
-	ch := compactC
-	if inPlay > 0 {
-		need := inPlay + 3
-		if wide {
-			need = max(need, previewRows)
-		}
-		ch = min(max(need, compactC), max(min(mid/2, mid-minB), compactC))
-	}
-	bh := mid - ch
-	rw := w - aw
-	right := zoneB(s, ui, rw, bh, 3+2*boolInt(wide), sc)
+	region := h - len(ls) - dh - 1 // A and B, then C
+	ch := cHeight(inPlay, region, minB, false, wide)
+	top := region - ch
 	sc.Conv.Y = len(ls) + 1
-	if wide && inPlay > 0 { // the strip has no room for the selected agent's preview
-		right = append(right, beside(zoneC(s, ui, listWide, ch, sc), preview(s, ui, rw-listWide, ch, sc))...)
-	} else {
-		right = append(right, zoneC(s, ui, rw, ch, sc)...)
-	}
-	ls = append(ls, beside(zoneA(s, ui, aw, mid, sc), right)...)
+	ls = append(ls, beside(zoneA(s, ui, aw, top, sc), zoneB(s, ui, w-aw, top, editorMinRows, sc))...)
+	ls = append(ls, zoneC(s, ui, w, ch, sc)...) // the whole width, its preview inside from 160 columns
 	ls = append(ls, zoneD(s, ui, w, dh, rows)...)
 	hints := "Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit"
 	if wide {
@@ -122,10 +125,24 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		// of the line, Ctrl+Q quit (plan 17, F3 in the footer).
 		hints = strings.Replace(hints, "Ctrl+J newline · ", "", 1)
 	}
-	if ui.Entry > 0 && ui.Focus == "B" && ui.Card == "" {
-		hints = entryFooter(s, ui)
+	return append(ls, keyHints(w, ui, footer(s, ui, hints)))
+}
+
+// editorMinRows is the input's least height: one row under the rule, then
+// the status row (plan 20, the templates' compact input).
+const editorMinRows = 1
+
+// footer is the bottom line's key hints: B's entry cursor's while it is on,
+// C's while C has the focus (plan 20: C has no hint row of its own), else
+// the dashboard's.
+func footer(s *state.State, ui UI, hints string) string {
+	switch {
+	case ui.Entry > 0 && ui.Focus == "B" && ui.Card == "":
+		return entryFooter(s, ui)
+	case ui.Focus == "C":
+		return "↑↓ select · Enter inspect · z zoom · PgUp PgDn Home End scroll · F6 zone · Esc back to the input · F1 keys"
 	}
-	return append(ls, keyHints(w, ui, hints))
+	return hints
 }
 
 func boolInt(b bool) int {
@@ -354,7 +371,7 @@ func zoneA(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	}
 	hint := decoLine("↑↓ move ←→ fold Enter inspect", stGrey)
 	if ui.Tree.Hold && top < len(rows)-room { // held away from the tail
-		hint = heldHint(top, len(rows)-top-room, "End follows")
+		hint = heldHint(top, len(rows)-top-room, "End follows", w-4)
 	}
 	body = append(body[:max(h-3, 0)], hint)
 	return box('A', zoneTitle("A · ORCHESTRATOR", ui.Focus == "A"), nil, body, w, h, borderFor(ui.Focus == "A"))
@@ -410,8 +427,15 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	room := max(h-2-len(editor), 0)
 	conv, rows, top, starts := conversation(s, ui, inner, room)
 	var shown []line // only the rows shown are drawn
-	for _, c := range conv {
+	var folds map[int]string
+	for j, c := range conv {
 		shown = append(shown, c.draw())
+		if c.fold != "" {
+			if folds == nil {
+				folds = map[int]string{}
+			}
+			folds[j] = c.fold
+		}
 	}
 	if len(shown) < room {
 		shown = append(shown, blank(0, room-len(shown))...)
@@ -422,7 +446,7 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 		shown[room-1] = spread(trimTail(shown[room-1]), decoLine(fmt.Sprintf("↓ %d new", n), stProgress), inner)
 	}
 	if sc != nil {
-		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold, Starts: starts}
+		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold, Starts: starts, Folds: folds}
 	}
 	body := append(shown, editor...)
 	focused := ui.Focus == "B" || ui.Focus == ""
@@ -434,9 +458,10 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 // the end unless the owner scrolled up. Only the entries in view are drawn;
 // the others are counted, from the cache once finished (test 11).
 func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top int, starts []int) {
+	lk := looks(s, ui)
 	starts = make([]int, len(s.Conversation)+1)
 	for i, e := range s.Conversation {
-		rows += ui.Wrap.rowCount(i, e, w, func() int { return len(entryRows(s, ui, nil, i, e, w)) })
+		rows += ui.Wrap.rowCount(i, e, w, lk[i].shape(), func() int { return len(entryRows(s, ui, nil, i, e, w, lk[i])) })
 		starts[i+1] = rows
 	}
 	counts := func(i int) int { return starts[i+1] - starts[i] }
@@ -452,7 +477,7 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 			break
 		}
 		if at+counts(i) > top {
-			rs := entryRows(s, ui, nil, i, e, w)
+			rs := entryRows(s, ui, nil, i, e, w, lk[i])
 			view = append(view, rs[min(max(top-at, 0), len(rs)):min(end-at, len(rs))]...)
 		}
 		at += counts(i)
@@ -463,127 +488,31 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 		}
 		at++
 	}
+	// A rule between two messages shows only with something of both in
+	// view: at the window's edge, scrolled, it would sit against B's border
+	// or the input's rule as a second line (amendment 17, 2.5). Its row
+	// stays, blank, so nothing moves.
+	for _, edge := range []int{firstSolid(view, 1), firstSolid(view, -1)} {
+		if edge >= 0 && view[edge].sep {
+			view[edge] = crow{l: line{}}
+		}
+	}
 	return view, rows, top, starts
 }
 
-// entryRows adds the rows of conversation entry i. Content comes from
-// entryLines; everything else on these rows is decoration.
-func entryRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int) []crow {
-	wc := ui.Wrap
-	who := providerLabel(s)
-	// Its row shows the entry cursor, its rows as many as without it.
-	focused := ui.Entry == i+1 && ui.Card == "" && (ui.Focus == "B" || ui.Focus == "")
-	switch e.Role {
-	case "user":
-		out = drawn(out, line{deco("YOU", stAttentionBold), deco("  "+clock(e.At), stGrey)})
-		ls := entryLines(s, e)
-		if len(ls) > foldOver {
-			out = contentRows(out, wc, i, ls[:foldShow], w, stText, false)
-			more := fmt.Sprintf("… %s more lines", grouped(len(ls)-foldShow))
-			if focused {
-				out = drawn(out, spread(decoLine("  ▸ "+more, stAttentionBold), decoLine(entryHint, stAttention), w))
-				break
-			}
-			out = drawn(out, decoLine("  "+more, stGrey))
-			break
-		}
-		out = contentRows(out, wc, i, ls, w, stText, false)
-	case "assistant":
-		// Thinking marks a message that had a thinking block; its text is
-		// the answer. The thinking is folded under it, without a token
-		// count the state does not keep (ui-design.md, Markdown, Thinking).
-		if e.Text != "" || !e.Thinking {
-			head := line{deco(who, stTitle)}
-			if m := model(s); m != "" {
-				head = append(head, deco("  "+m, modelStyle(m)))
-			}
-			out = drawn(out, head)
-			out = contentRows(out, wc, i, entryLines(s, e), w, stText, true)
-			if e.Streaming {
-				if last := out[len(out)-1].draw(); last.width() < w {
-					out[len(out)-1] = crow{l: append(last, deco("▌", stText))}
-				} else {
-					out = drawn(out, decoLine("  ▌", stText))
-				}
-			}
-		}
-		if e.Thinking {
-			out = drawn(out, decoLine("  ∴ thinking", stGrey))
-		}
-	case "tool":
-		// Drawn only when shown: a long session has thousands (test 11). A
-		// failed or denied call is marked ✗, with its error (plan 5, item 6).
-		out = append(out, crow{fn: func() line {
-			fail := toolFailure(s, i, e)
-			if focused {
-				l := append(append(append(line{deco("  ▸ ", stAttentionBold)}, oneRow(i, e, stText)...), fail...), toolReviewed(s, e)...)
-				hint := entryHint
-				if _, ok := EntryFile(s, e); ok {
-					hint = entryFileHint
-				}
-				return spread(l, decoLine(hint, stAttention), w)
-			}
-			lead := deco("  ▸ ", stGrey)
-			if fail != nil {
-				lead = deco("  ✗ ", stFailed)
-			}
-			// The reviewer's verdict before the error: a refusal's error text
-			// is long and would push it off the row (plan 13, item 1).
-			l := append(append(append(line{lead}, oneRow(i, e, stGrey)...), toolReviewed(s, e)...), fail...)
-			return spread(l, decoLine(originLabel(e.Origin), stGrey), w)
-		}})
-	case "review":
-		// An auto-review's entry, the reviewer's own, observed; a verdict other
-		// than approved is shown as a failure (plan 12, item 2).
-		st := stProgress
-		switch e.Status {
-		case "inProgress", "approved":
-		default:
-			st = stFailed
-		}
-		p := &rowStyle{lead0: deco("  ◈ ", st), lead: deco("    ", st), at: ref{panel: 'B', item: i}, st: st}
-		for j, l := range entryLines(s, e) {
-			out = sourceRows(out, wc, p, j, l, w-4, w-4)
-		}
-	case "approval":
-		out = drawn(out, approvalCard(s, ui, i, e, w)...)
-	case "error":
-		// The error's first line, as received; Enter on D shows it
-		// whole (ui-design.md, States: Error).
-		out = append(out, crow{fn: func() line {
-			l := append(line{deco("✗ turn failed: ", stFailedBold)}, oneRow(i, e, stFailed)...)
-			if focused {
-				return spread(l, decoLine(entryHint, stAttention), w)
-			}
-			return l.fit(w)
-		}})
-	case "dashboard":
-		// The dashboard's own note, grey, never the CLI's (AGENTS.md: shown
-		// distinctly); every row under the first's text.
-		p := &rowStyle{lead0: deco("  · ", stGrey), lead: deco("    ", stGrey), at: ref{panel: 'B', item: i}, st: stGrey}
-		for j, l := range entryLines(s, e) {
-			out = sourceRows(out, wc, p, j, l, w-4, w-4)
-		}
-	default:
-		p := &rowStyle{lead0: deco("  · ", stProgress), lead: deco("  ", stProgress), at: ref{panel: 'B', item: i}, st: stProgress}
-		for j, l := range entryLines(s, e) {
-			out = sourceRows(out, wc, p, j, l, w-4, w-2)
+// firstSolid is the index of the first row of view that shows something,
+// from its start (d 1) or its end (d -1); -1 for none.
+func firstSolid(view []crow, d int) int {
+	i := 0
+	if d < 0 {
+		i = len(view) - 1
+	}
+	for ; i >= 0 && i < len(view); i += d {
+		if view[i].solid() {
+			return i
 		}
 	}
-	return out
-}
-
-// toolReviewed marks a call the CLI says an auto-review decided: approved or
-// denied by it (plan 12, item 2).
-func toolReviewed(s *state.State, e state.Entry) line {
-	tc := s.Tools[e.MessageID]
-	if tc == nil || tc.Reviewed == "" {
-		return nil
-	}
-	if tc.Status == state.ToolDenied || strings.HasPrefix(tc.Reviewed, "denied") {
-		return line{deco(" · "+tc.Reviewed, stFailed)}
-	}
-	return line{deco(" · "+tc.Reviewed, stAttention)}
+	return -1
 }
 
 // toolFailure is what follows a failed or denied call's name in B: its error,
@@ -878,11 +807,18 @@ func agentCounts(agents []*state.Agent) (active, done int) {
 	return active, done
 }
 
-// zoneC is the live agents list.
+// zoneC is the live agents list, w cells wide: the whole screen's width
+// (plan 20). From 160 columns with agents in play, the selected agent's
+// preview shares its box, right of the list.
 func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	agents := agentsByActivity(s)
 	active, done := agentCounts(agents) // the agents it shows (plan 18)
 	right := plain(fmt.Sprintf("%d ACTIVE · %d DONE", active, done), stText)
+	withPreview := ui.Width >= wideWidth && len(agents) > 0
+	lw := w - 4 // the list's cells
+	if withPreview {
+		lw = listWide - 4
+	}
 	cols := agentCols{label: 14} // over every agent, so the columns hold while scrolling
 	for _, a := range agents {
 		cols.label = max(cols.label, textWidth(a.Label)+1)
@@ -892,8 +828,14 @@ func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 		cols.requested = cols.requested || requested(a.Model)
 	}
 	// The label column never leaves the activity under 12 cells: "▸✓ ",
-	// the model's 12, the effort's, and the right part's 21 (plan 7, item 1).
-	cols.label = min(cols.label, max(14, w-4-3-12-cols.effort-21-12))
+	// the model's 12, the effort's, and the right part's 21 (plan 7, item
+	// 1); from 100 columns the right part is on the agent's second row, and
+	// the card's wider gaps take 3 cells (plan 20, Template 2).
+	right21 := 21
+	if ui.Width >= standardWidth {
+		right21 = 3
+	}
+	cols.label = min(cols.label, max(14, lw-3-12-cols.effort-right21-12))
 	if cols.requested { // the footnote, as D's "†"
 		right = append(line{sp("* requested model · ", stGrey)}, right...)
 	}
@@ -901,42 +843,143 @@ func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	if len(agents) == 0 {
 		body = append(body, plain("no agents yet: they appear as the CLI starts them", stGrey))
 	}
-	// The key hint takes the last row from 4 body rows, or when the agents
-	// leave a row free, as in a box sized to them (plan 18).
-	hinted := h-2 >= 4 || len(agents) > 0 && len(agents) < h-2
-	room := h - 2
-	if hinted {
-		room--
+	// Two rows an agent from 100 columns, one under it (plan 20, Template
+	// 2); no key hint row: the footer shows C's keys while C has the focus.
+	per := 2
+	if ui.Width < standardWidth { // the screen's layout, not the zone's width
+		per = 1
 	}
-	from := 0 // the selected agent stays in view
+	room := max((h-2)/per, 0) // agents in view
+	from := 0                 // the selected agent stays in view
 	for i, a := range agents {
 		if a.Key == ui.Selected && i >= room {
 			from = i - room + 1
 		}
 	}
-	from = paneTop(ui.List, len(agents), max(room, 0), from)
-	sc.List = PaneView{Rows: len(agents), Room: max(room, 0), Top: from}
+	from = paneTop(ui.List, len(agents), room, from)
+	sc.List = PaneView{Rows: len(agents), Room: room, Top: from}
 	for _, a := range agents {
 		sc.List.IDs = append(sc.List.IDs, a.Key)
 	}
-	for _, a := range agents[from:min(from+max(room, 0), len(agents))] { // only the rows the box can show
-		body = append(body, agentRow(a, ui, w-4, cols))
+	for _, a := range agents[from:min(from+room, len(agents))] { // only the rows the box can show
+		if per == 2 {
+			body = append(body, agentCard(s, a, ui, lw, cols)...)
+		} else {
+			body = append(body, agentRow(a, ui, lw, cols))
+		}
 	}
-	if hinted {
-		for len(body) < h-3 {
+	if withPreview {
+		pv := previewBody(s, ui, w-4-lw-3, h-2, sc)
+		for len(body) < len(pv) {
 			body = append(body, line{})
 		}
-		hint := decoLine("↑↓ select · Enter inspect · z zoom · F6 next zone", stGrey)
-		if ui.List.Hold && from > 0 { // held away from the top
-			hint = heldHint(from, len(agents)-from-room, "Home top")
+		for i := range pv {
+			body[i] = append(append(body[i].fit(lw), deco(" │ ", stFrame)), pv[i]...)
 		}
-		body = append(body[:h-3], hint)
+	}
+	// The agents out of view, before the counts (plan 20: C's hint row is
+	// gone, and with it plan 5's held hint).
+	var out []string
+	if from > 0 {
+		out = append(out, fmt.Sprintf("↑ %d above", from))
+	}
+	if below := len(agents) - from - room; below > 0 {
+		out = append(out, fmt.Sprintf("↓ %d below", below))
+	}
+	if len(out) > 0 {
+		right = append(line{sp(strings.Join(out, " · ")+" · ", stProgress)}, right...)
 	}
 	title := "C · LIVE AGENTS"
-	if ui.Width < standardWidth { // the screen's layout, not the zone's width
+	if ui.Width < standardWidth {
 		title = "C · AGENTS"
 	}
 	return box('C', zoneTitle(title, ui.Focus == "C"), right, body, w, h, borderFor(ui.Focus == "C"))
+}
+
+// agentCard is an agent's two rows from 100 columns (plan 20, Template 2):
+// its status, label, model and state, then its elapsed time, tokens, last
+// tool with its status, and an approval waiting for the owner.
+func agentCard(s *state.State, a *state.Agent, ui UI, w int, cols agentCols) []line {
+	sel := " "
+	if ui.Selected == a.Key {
+		sel = "▸"
+	}
+	m := "model N/A"
+	if a.Model.Present {
+		m = strings.TrimPrefix(a.Model.Text, "claude-") // the mock-up's "haiku-5-5" (plan 7)
+	}
+	// Template 2's spacing: two cells after the dot, three after the
+	// longest label; the second row starts under the label.
+	first := line{deco(sel, stTitle), listSymbol(a.Status), sp("  "+padTo(fitLabel(a.Label, cols.label-1), cols.label+2), stText), sp(m, modelStyle(m))}
+	mark := ""
+	if requested(a.Model) {
+		mark = "*"
+	}
+	first = append(first, sp(padTo(mark, max(12-textWidth(m), 2)), stGrey))
+	if cols.effort > 0 {
+		first = append(first, sp(padTo(a.Effort.Text, cols.effort), stGrey))
+	}
+	switch word := strings.ToLower(string(a.Status)); {
+	case a.Status == state.AgentWaiting:
+		first = append(first, sp("waiting: approval", stMuted)) // grey, the dot pink (Template 2)
+	case !a.Status.Final():
+		first = append(first, sp(word, stProgress))
+	case a.Status == state.AgentCompleted && a.Summary != "":
+		first = append(first, sp(word, stDone), sp(" · "+firstLine(a.Summary), stGrey))
+	case a.Status == state.AgentCompleted:
+		first = append(first, sp(word, stDone))
+	case a.Error != "":
+		first = append(first, sp(word, stFailed), sp(" · "+firstLine(a.Error), stGrey))
+	default:
+		first = append(first, sp(word, stFailed))
+	}
+	tok := "tok N/A"
+	if a.Tokens.Present {
+		tok = count(a.Tokens.V) + " tok"
+	}
+	second := line{deco("    ", stNone), sp(clockElapsed(a.StartedAt, a.EndedAt, ui.Now), stGrey), sp("   "+tok, stGrey)}
+	// Its last call that is not waiting for the owner, then the one that is,
+	// as "next" (Template 2: "tool: Bash ✓   next: Write (approval pending)").
+	var next string
+	for _, id := range s.Queue {
+		if ap := s.Approvals[id]; ap != nil && ap.Agent == a.Key && !ap.Status.Final() {
+			next = ap.Tool
+			break
+		}
+	}
+	tools := agentTools(s, a.Key)
+	for len(tools) > 0 && pending(s, tools[len(tools)-1].ID) {
+		tools = tools[:len(tools)-1]
+	}
+	if len(tools) > 0 {
+		tc := tools[len(tools)-1]
+		second = append(second, sp("   tool: ", stGrey), sp(tc.Name+" ", stText), toolSymbol(s, tc, running(s, ui)))
+	} else if a.LastTool != "" { // reported by the CLI, no call recorded (plan 7, item 1)
+		second = append(second, sp("   tool: ", stGrey), sp(a.LastTool, stText))
+	}
+	if next != "" {
+		second = append(second, sp("   next: "+next+" (approval pending)", stMuted))
+	}
+	return []line{first.fit(w), second.fit(w)}
+}
+
+// clockElapsed is from start to end, or to now while running, as a clock:
+// 01:11, 1:02:03 (plan 20, Template 2's agent rows).
+func clockElapsed(start, end, now time.Time) string {
+	if start.IsZero() {
+		return "--:--"
+	}
+	if end.IsZero() {
+		end = now
+	}
+	if end.IsZero() || end.Before(start) {
+		return "--:--"
+	}
+	d := int(end.Sub(start).Round(time.Second).Seconds())
+	if d >= 3600 {
+		return fmt.Sprintf("%d:%02d:%02d", d/3600, d/60%60, d%60)
+	}
+	return fmt.Sprintf("%02d:%02d", d/60, d%60)
 }
 
 // agentCols are zone C's columns over every agent: the label's width, the
@@ -987,7 +1030,7 @@ func agentRow(a *state.Agent, ui UI, w int, cols agentCols) line {
 		tok = count(a.Tokens.V) + " tok"
 	}
 	right := plain(fmt.Sprintf("  %7s  %10s", elapsed(a.StartedAt, a.EndedAt, ui.Now), tok), stGrey)
-	left := line{deco(sel, stTitle), agentSymbol(a.Status), sp(" "+padTo(fitLabel(a.Label, cols.label-1), cols.label), stText), sp(m, modelStyle(m))}
+	left := line{deco(sel, stTitle), listSymbol(a.Status), sp(" "+padTo(fitLabel(a.Label, cols.label-1), cols.label), stText), sp(m, modelStyle(m))}
 	mark := ""
 	if requested(a.Model) {
 		mark = "*"
@@ -1000,6 +1043,15 @@ func agentRow(a *state.Agent, ui UI, w int, cols agentCols) line {
 	return spread(left, right, w)
 }
 
+// listSymbol is an agent's status in zone C: zone A's, except Template 2's
+// pink dot for an agent waiting for the owner, where zone A keeps its "!".
+func listSymbol(st state.AgentStatus) span {
+	if st == state.AgentWaiting {
+		return deco("●", stAttention)
+	}
+	return agentSymbol(st)
+}
+
 // fitLabel cuts a label longer than w cells with "…"; the preview and the
 // inspection show it whole (plan 7, item 1).
 func fitLabel(s string, w int) string {
@@ -1009,21 +1061,25 @@ func fitLabel(s string, w int) string {
 	return cut(s, w-1) + "…"
 }
 
-// preview is the selected agent's last events, at wide width.
-func preview(s *state.State, ui UI, w, h int, sc *Screen) []line {
+// previewBody is the selected agent's last events, w cells wide and h rows
+// tall, inside zone C right of its list from 160 columns (plan 20): its
+// heading, the agent's label and its model, then the events, the newest
+// last; the rows are panel P's, which the wheel scrolls.
+func previewBody(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	a := s.Agents[ui.Selected]
 	if a == nil {
 		if ag := agentsByActivity(s); len(ag) > 0 {
 			a = ag[0]
 		}
 	}
-	if a == nil {
-		return box('P', plain("PREVIEW", stBold), nil, []line{plain("select an agent to preview its activity", stGrey)}, w, h, stFrame)
+	if a == nil || h < 1 {
+		return nil
 	}
+	title := line{sp(a.Label+" · ", stBold), sp("LIVE", stDone)}
 	var body []line
 	for _, e := range a.Messages {
 		l := line{sp(clockSec(e.At)+"  ", stGrey), sp(e.Role+"  ", stGrey), sp(firstLine(e.Text), stText)}
-		body = append(body, spread(l, plain(originLabel(e.Origin), stGrey), w-4))
+		body = append(body, spread(l, plain(originLabel(e.Origin), stGrey), w))
 	}
 	for _, hline := range a.History {
 		body = append(body, plain(hline, stGrey))
@@ -1031,20 +1087,24 @@ func preview(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	if len(body) == 0 {
 		body = append(body, plain("no activity yet", stGrey))
 	}
-	room := max(h-3, 0)
+	room := max(h-1, 0)
 	top := paneTop(ui.Preview, len(body), room, max(len(body)-room, 0))
 	sc.Preview = PaneView{Rows: len(body), Room: room, Top: top}
-	body = body[top:min(top+room, len(body))]
-	for len(body) < h-3 {
-		body = append(body, line{})
+	// The heading's right part: the model, or while the preview is held
+	// away from its tail, the rows out of view (its hint row is gone).
+	right := previewRight(a, w-title.width()-2)
+	if ui.Preview.Hold && top < len(body)-room {
+		right = heldHint(top, len(body)-top-room, "End follows", w-title.width()-2)
 	}
-	hint := decoLine("Enter full screen · [ ] previous / next agent", stGrey)
-	if ui.Preview.Hold && top < sc.Preview.Rows-room { // held away from the tail
-		hint = heldHint(top, sc.Preview.Rows-top-room, "scroll to the end follows")
+	out := []line{spread(title, right, w)}
+	out = append(out, body[top:min(top+room, len(body))]...)
+	for len(out) < h {
+		out = append(out, line{})
 	}
-	body = append(body, hint)
-	title := line{sp(a.Label+" · ", stBold), sp("LIVE", stDone)}
-	return box('P', title, previewRight(a, w-9-title.width()), body, w, h, stFrame)
+	for i := range out {
+		out[i] = out[i].fit(w)
+	}
+	return in('P', out)
 }
 
 // previewRight is the preview's right-hand header in room cells: the first

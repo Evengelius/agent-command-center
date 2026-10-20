@@ -287,7 +287,7 @@ func TestApprovalCards(t *testing.T) {
 				t.Fatalf("approval %+v, turn %q; want pending, waiting", s.Approvals[id], s.Turn.Phase)
 			}
 			f := frameText(h)
-			for _, want := range []string{"! APPROVAL orchestrator · Write", "hello.txt", "│ hello", "F2 to answer", "! Waiting for approval"} {
+			for _, want := range []string{"! APPROVAL · orchestrator · Write", "hello.txt", "1 │ hello", "F2 to answer", "! Waiting for approval"} {
 				if !strings.Contains(f, want) {
 					t.Errorf("pending card lacks %q:\n%s", want, f)
 				}
@@ -346,7 +346,7 @@ func TestApprovalCards(t *testing.T) {
 			}
 			who := approvalLabel(s, ap)
 			f := frameText(h)
-			for _, want := range []string{"! APPROVAL " + who + " · Write", "found.txt", "waiting: approval"} {
+			for _, want := range []string{"! APPROVAL · " + who + " · Write", "found.txt", "waiting: approval"} {
 				if !strings.Contains(f, want) {
 					t.Errorf("subagent card lacks %q:\n%s", want, f)
 				}
