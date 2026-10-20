@@ -18,7 +18,6 @@ type Detection struct {
 	Path        string // the executable
 	Version     string
 	Tested      string // the last version probed (doc/evaluation.md, After a CLI update)
-	SignIn      string // the sign-in kind the CLI reports, never a credential
 	Problem     string // why it is not usable, when it is not
 	ElapsedTime time.Duration
 }

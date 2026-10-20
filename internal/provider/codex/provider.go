@@ -47,7 +47,9 @@ func (p *Provider) DisplayName() string { return Name }
 // %LOCALAPPDATA%\Programs\OpenAI\Codex\bin, and reads its version. The npm
 // shims (codex.cmd, codex.ps1) are never run; resolving the native binary
 // inside an npm install is not built in the MVP and is reported as such
-// (CX-2, "Recommendation"). The sign-in kind is not read yet.
+// (CX-2, "Recommendation"). Only the version is read: the session's
+// account/rateLimits/read tells a ChatGPT sign-in from an API key
+// (architecture.md, Codex adapter, Detect; plan 21, item 5.2).
 func (p *Provider) Detect(ctx context.Context) (d provider.Detection) {
 	start := time.Now()
 	h := p.Host

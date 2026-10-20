@@ -166,9 +166,12 @@ func codexWire(t *testing.T, w *wireCodex, opt Options) *harness {
 
 // codexRig is the input tests' rig on the real Codex adapter (proposal
 // step 3, item 8; step 5, check 7): each message is a turn/start line.
-func codexRig(t *testing.T) inputRig {
+func codexRig(t *testing.T) inputRig { return codexRigWith(t, Options{}) }
+
+// codexRigWith is codexRig with the given options.
+func codexRigWith(t *testing.T, opt Options) inputRig {
 	w := &wireCodex{thread: "th-input", auto: true}
-	h := codexWire(t, w, Options{})
+	h := codexWire(t, w, opt)
 	texts := func() []map[string]any {
 		var out []map[string]any
 		for _, l := range w.method("turn/start") {

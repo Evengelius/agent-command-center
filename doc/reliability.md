@@ -614,14 +614,23 @@ those marked live.
    before it is measured. The same tests run with the Claude Code, Codex and mock
    providers attached: the results must not differ, since the editor has no
    provider code.
-7. **Separation** (B3.1): a test reads the package graph (`go list -deps`)
-   and fails if rendering imports an adapter or process package, if the
-   editor imports a provider package, or if the reducer imports an I/O,
-   process, network or clock package.
+7. **Separation** (B3.1): a test parses the module's sources with
+   `go/parser` (`internal/arch/separation_test.go`; non-test files, whatever
+   their build tags) and follows each package's imports through the
+   module. It fails if rendering or the editor reaches an adapter, process
+   or application package; if the reducer reaches one of those or
+   rendering; if any package the reducer reaches imports an I/O, process or
+   network package (`os`, `io`, `bufio`, `net`, `syscall`, `path/filepath`,
+   `golang.org/x/sys` and the like); or if it calls the clock (`time.Now`,
+   `time.Since`, `time.After`, timers and the like; `time`'s types are
+   allowed). Planted faults show it fails (TestSeparationCatchesPlantedFaults;
+   plan 21, item 5.5).
 8. **Mock isolation**: a mock run spawns no process (checked with a fake
    spawner that fails the test if called); every event in a mock run has
-   origin `mock` even when the file says otherwise; every screen's golden
-   frame contains "◆ MOCK — not a live session"; `--mock` combined with
+   origin `mock` even when the file says otherwise; every golden frame of a
+   mock session contains "◆ MOCK — not a live session", the file viewer and
+   the draft window at full screen included, and TestGoldenFrames fails one
+   that does not (plan 21, item 5.7); `--mock` combined with
    `--provider` or `--project`, and `--provider mock`, are refused at start.
 9. **Rendering**: golden frames at 80x24, 120x40 and 200x60 from mock
    fixtures, for the startup screen, the dashboard and inspection; "terminal

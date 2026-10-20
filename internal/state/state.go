@@ -346,6 +346,8 @@ type State struct {
 	Errors           []ErrorEntry
 	Retries          int
 	Log              []event.Event // the last MaxLog events, for the inspection view
+	Applied          int           // events applied; the first one's time is FirstAt
+	FirstAt          time.Time     // the session time counts from it, kept when Log drops events and on a resume (plan 21, item 1)
 	Unrecognised     int
 	UnrecognisedLast []string
 	Notes            []string // anomalies logged by the reducer (invalid transitions)

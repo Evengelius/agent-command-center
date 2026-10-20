@@ -23,23 +23,31 @@ type (
 // editorKey handles a key in zone B's editor (ui-design.md, Input editor).
 func (m *Model) editorKey(k tea.KeyPressMsg) []tea.Cmd {
 	e := &m.edit
-	switch k.String() {
-	case "enter":
+	name := k.String()
+	// The send and newline keys are the configured lists (plan 21, item 5.1);
+	// a key in neither falls through to the fixed ones below.
+	switch {
+	case m.opt.Keys.IsSend(name):
 		switch {
 		case m.pasting:
 			// The paste's end marker never came: no key submits
 			// (ui-design.md, Paste).
 			e.Newline()
 		case !e.HasSelection() && strings.HasSuffix(e.Text()[:e.Cursor()], `\`):
-			// `\` then Enter: a newline, as in Claude Code (ui-design.md, Keys).
+			// `\` then a send key: a newline, as in Claude Code (ui-design.md, Keys).
 			e.Backspace()
 			e.Newline()
 		case strings.TrimSpace(e.Text()) != "":
-			m.follow() // sending shows the end of the conversation
+			m.follow()            // sending shows the end of the conversation
+			m.ui.KeysProblem = "" // a mock run's status row shows the configuration's problem until now
 			return m.do(state.Send{Text: e.Text()})
 		}
-	case "ctrl+j", "shift+enter", "alt+enter":
+		return nil
+	case m.opt.Keys.IsNewline(name):
 		e.Newline()
+		return nil
+	}
+	switch name {
 	case "tab":
 		e.Insert("\t")
 	case "ctrl+a":
@@ -193,7 +201,7 @@ func (m *Model) draftWinKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	m.ui.Focus = "B"
 	draft := m.edit.Text() != ""
 	cmds = m.editorKey(k)
-	if k.String() == "enter" && draft && m.edit.Text() == "" {
+	if m.opt.Keys.IsSend(k.String()) && draft && m.edit.Text() == "" {
 		m.ui.DraftWin = render.DraftWindow{} // sent: back to the dashboard
 	}
 	return cmds, true

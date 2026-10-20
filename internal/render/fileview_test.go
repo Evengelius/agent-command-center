@@ -30,8 +30,9 @@ func TestFileRect(t *testing.T) {
 		if x, y, ww, hh := FileRect(c.w, c.h, false); x != c.x || y != c.y || ww != c.ww || hh != c.hh {
 			t.Errorf("%dx%d: window %dx%d at %d,%d, want %dx%d at %d,%d", c.w, c.h, ww, hh, x, y, c.ww, c.hh, c.x, c.y)
 		}
-		if x, y, ww, hh := FileRect(c.w, c.h, true); x != 0 || y != 0 || ww != c.w || hh != c.h {
-			t.Errorf("%dx%d full screen: %dx%d at %d,%d", c.w, c.h, ww, hh, x, y)
+		// Full screen: under the title bar (plan 21, item 5.7).
+		if x, y, ww, hh := FileRect(c.w, c.h, true); x != 0 || y != 1 || ww != c.w || hh != c.h-1 {
+			t.Errorf("%dx%d full screen: %dx%d at %d,%d, want %dx%d at 0,1", c.w, c.h, ww, hh, x, y, c.w, c.h-1)
 		}
 
 		s := state.New()
@@ -62,10 +63,12 @@ func TestFileRect(t *testing.T) {
 		if row := got[c.y+2]; !strings.Contains(row, "  1  // line 1") {
 			t.Errorf("%dx%d: the first code row %q", c.w, c.h, row)
 		}
+		// Full screen: the title bar kept on the first row, the window under
+		// it to the last (plan 21, item 5.7).
 		ui.File.Full = true
 		full := strings.Split(texts(Draw(s, ui).lines), "\n")
-		if !strings.HasPrefix(full[0], "╭") || !strings.HasPrefix(full[c.h-1], "╰") {
-			t.Errorf("%dx%d full screen: rows %q and %q", c.w, c.h, full[0], full[c.h-1])
+		if full[0] != base[0] || !strings.Contains(full[0], "AGENT COMMAND CENTER") || !strings.HasPrefix(full[1], "╭") || !strings.HasPrefix(full[c.h-1], "╰") {
+			t.Errorf("%dx%d full screen: rows %q, %q and %q", c.w, c.h, full[0], full[1], full[c.h-1])
 		}
 	}
 }

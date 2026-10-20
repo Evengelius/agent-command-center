@@ -115,11 +115,13 @@ Rules that keep them apart:
   unbounded in-memory queue (part 2 decodes there), so the CLI's pipe never
   blocks, however slowly the event loop drains it. A stderr reader keeps
   the last 50 lines for error display (ASM-22).
-- **One forwarder** takes normalised events from the queue and hands them to
-  the Bubble Tea program as messages, coalescing high-rate kinds (text deltas
-  per message, rate-limit pushes, token updates) to at most one state update
-  per frame (INT 7: 11 rate-limit pushes in one P7 turn; ASM-3 for the frame
-  rate in [ui-design.md](ui-design.md#animations)).
+- **One forwarder** takes normalised events from the queue, in order, and
+  hands them to the Bubble Tea program: each message carries the first event
+  waiting and whatever else is already waiting, at most 512 (`maxDrain`,
+  `internal/app/app.go`), applied as one update, so a burst (INT 7: 11
+  rate-limit pushes in one P7 turn) is one screen update. Events are not
+  coalesced by kind; every one is applied. Bubble Tea draws at most 60 frames
+  per second, its default (ASM-3; [ui-design.md](ui-design.md#rendering)).
 - **The Bubble Tea loop** runs the reducer and the view. A command (send,
   approve) is handed to part 1, which writes to stdin from its own goroutine,
   so a slow pipe never freezes input.
@@ -130,14 +132,16 @@ Rules that keep them apart:
 ## Provider interface
 
 One interface; each agent CLI is one adapter behind it; nothing outside an
-adapter names a CLI (AM4 S4, S5). It follows the concepts both CLIs share
-(INT shape).
+adapter speaks a CLI's protocol (AM4 S4, S5), and the few places the rest of
+the application tells one CLI from the other by its provider id are listed
+under `Capabilities` below. It follows the concepts both CLIs share (INT
+shape).
 
 ```text
 Provider
   ID() string                       "claude-code" | "codex" | "mock"
   DisplayName() string              "Claude Code" | "OpenAI Codex" | "Mock data"
-  Detect(ctx) Detection             installed?, executable path, version, sign-in kind, problems
+  Detect(ctx) Detection             installed?, executable path, version, problems
   Start(ctx, SessionContext) (Session, error)
                                     spawn in SessionContext.Path, handshake, first state
 
@@ -154,19 +158,37 @@ Session
   Close(ctx) error                  graceful, then forced (reliability.md)
 ```
 
-`Capabilities` is a set of flags each adapter fills from detection and from
-the handshake, so the interface never pretends both CLIs are the same (AM4
-D6 "Do not force all providers to expose identical telemetry"): streaming of
-subagent text, per-subagent model, quota without a turn, API-equivalent cost,
-clarification questions, plan steps, resume with history, allow-for-session,
-Manual or Auto approvals.
-The UI shows "N/A" or hides an action when a flag is off.
+`Capabilities` is a set of flags each adapter returns, so the interface never
+pretends both CLIs are the same (AM4 D6 "Do not force all providers to
+expose identical telemetry"): streaming of subagent text, per-subagent model,
+quota without a turn, API-equivalent cost, clarification questions, plan
+steps, resume with history, allow-for-session, Manual or Auto approvals. They
+are fixed per adapter (`internal/provider/claude/session.go`,
+`internal/provider/codex/session.go`, `internal/provider/mock/session.go`),
+not read from detection or the handshake, and one is read:
+`AutoApprovals`, which F4 needs to ask for Manual or Auto approvals
+(`internal/app/keys.go`). A value no event gives stays "N/A" with its reason,
+whatever the flags. The other differences come from the provider id
+(plan 21, item 5.3; rewiring them to the flags would change nothing on
+screen):
+
+| What differs | Where |
+| - | - |
+| the answer's words: accept and decline for Codex, allow and deny for Claude Code (`decision`) | `internal/app/keys.go` |
+| the word an unreadable request is refused with (`requested`) | `internal/state/reduce.go` |
+| Codex's slash commands held back once (`send`) | `internal/state/actions.go` |
+| the CLI's own resume command printed at the end (`ResumeCommand`) | `internal/app/run.go` |
+| the two supported CLIs, their flags and their startup rows | `internal/app/app.go`, `internal/render/startup.go` |
+| the project bar: Codex's model, sandbox and policy; "(next turn)" for Codex's mode change | `internal/render/dashboard.go` |
+| zone B's speaker label, CLAUDE or CODEX (`providerLabel`) | `internal/render/dashboard.go` |
+| the Write and Edit sentence on a pending Claude Code request (`effect`) | `internal/render/approval.go` |
+| zone D: Codex's credits or Claude Code's overage, the concurrency limit's reason, the N/A reasons each CLI never reports | `internal/render/telemetry.go` |
 
 ### Claude Code adapter
 
 | Step | Design | Source |
 | - | - | - |
-| Detect | `claude` on the PATH, accepting only `claude.exe`, else `%USERPROFILE%\.local\bin\claude.exe`; never a `.cmd` shim. Version from `claude -v` with a 2 s timeout; sign-in kind from `claude auth status` (`authMethod`), never from credential files | CC-2; INT 1 limitations; AGENTS.md (credentials) |
+| Detect | `claude` on the PATH, accepting only `claude.exe`, else `%USERPROFILE%\.local\bin\claude.exe`; never a `.cmd` shim. Version from `claude -v` with a 2 s timeout; nothing else runs and no status command is used. A subscription is told from an API key by the session's own report, `system/init` `apiKeySource`, which makes the quota "N/A (API key: no subscription window)"; never from credential files (plan 21, item 5.2) | CC-2; INT 1 limitations; AGENTS.md (credentials) |
 | Start | `claude -p --input-format stream-json --output-format stream-json --verbose --include-partial-messages --forward-subagent-text --permission-prompt-tool stdio --permission-mode <mode>`; `cmd.Dir` = project path; never `--bare`, never `--system-prompt ""`; `CLAUDE_CODE_GIT_BASH_PATH` set in the child's environment only when Git Bash is found at its default path and not on the PATH; `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS=1` in the child's environment | CC-4 way A; CC-3; CC-8; INT 9 |
 | Handshake | `initialize` control request first, 60 s timeout; its response completes the handshake. `system/init` comes only after the first user message (P2 lines 5 and 7, found in plan 4) and gives `session_id`, `model`, `cwd`, `permissionMode`, `capabilities`; the reducer then checks `cwd` equals the project path and closes the session on a mismatch | CC-4; P2 |
 | Converse | user messages as stream-json lines on stdin; stdin stays open for the life of the session (background tasks die if it closes) | INT 1; P3, P3b |
@@ -200,7 +222,7 @@ configuration is not touched (CC-11; P12c, P12c-switch).
 
 | Step | Design | Source |
 | - | - | - |
-| Detect | `codex.exe` on the PATH or in `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin`, the `.exe` resolved, not a `.cmd`; `codex --version` (`codex-cli 0.145.0`); `codex login status` for the sign-in kind | CX-2; P0 |
+| Detect | `codex.exe` on the PATH or in `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin`, the `.exe` resolved, not a `.cmd`; `codex --version` (`codex-cli 0.145.0`), with a 5 s timeout; no status command is used. A ChatGPT sign-in is told from an API key by the session's `account/rateLimits/read`, refused without a ChatGPT sign-in, which makes the quota "N/A (API key: ChatGPT sign-in needed)" (plan 21, item 5.2) | CX-2; P0 |
 | Start | `codex app-server` with `cmd.Dir` = project path; `initialize` (`clientInfo`) then `initialized`; `thread/start` with `sandbox`, `approvalPolicy` and `model`, **without `cwd`**: every dashboard run on a new, untrusted project left Codex's configuration identical, so no `trust_level` is written (CX-10 q2, settled in plan 14) | CX-4.1; INT 1; INT shape |
 | Model | the per-session model `gpt-5.6-sol` (the default `model/list` reports) is passed in `thread/start` only when the configured model is refused; the refusal is shown as received | P5, P6, P6b; CX-3.3 |
 | Converse | `turn/start {threadId, input:[{type:"text", text}]}` | CX-4.1; P6b |
@@ -309,9 +331,12 @@ and the VS Code extension use; INT 1). Codex: `codex app-server` over stdio
 agent-command-center [--mock <file>] [--provider <id>] [--project <path>]
 ```
 
-1. Read the application's own configuration (key bindings, colours), if
-   present, from `%APPDATA%\agent-command-center\config.toml` (ASM-7). Never
-   a CLI's configuration.
+1. Read the application's own configuration, if present:
+   `%APPDATA%\agent-command-center\config.json`, the editor's send keys and
+   newline keys (ASM-7; plan 21, item 5.1). Every other key and every colour
+   is fixed in the code (ASM-9, ASM-13). A file that cannot be used is named
+   on the first screen with its problem, and the default keys apply. It is
+   only read, and never a CLI's configuration.
 2. Run `Detect` for Claude Code and Codex in parallel, each with a 10 s timeout (ASM-21)
    (AM4 S2).
 3. Show the startup screen: the agent CLI question (detected ones selectable,
@@ -422,17 +447,17 @@ confirmed in plan 3 or measured in plan 4.
 | - | - | - |
 | ASM-1 | Go's current stable release when plan 4 starts | Stack |
 | ASM-2 | `golang.design/x/clipboard` rather than atotto (both fit TI 5.2; MIT needs no extra notice handling) | Stack |
-| ASM-3 | Rendering at most 30 frames per second, coalescing events per frame | Threads; ui-design.md |
+| ASM-3 | Rendering at most 60 frames per second, Bubble Tea v2's default (`defaultFPS`, its `renderer.go`; no `tea.WithFPS` is passed); the events waiting, at most 512, applied as one update, none coalesced by kind. Every live review ran at this rate, where a key waits at most 17 ms for its frame (plan 21, item 5.4) | Threads; ui-design.md |
 | ASM-4 | Claude Code runs with `--permission-mode default` | Claude Code adapter |
 | ASM-5 | Codex shutdown uses the same timed escalation as Claude Code | Codex adapter |
 | ASM-6 | Codex runs with `read-only` and `on-request`, every write approved in the dashboard (CX-10 q2, settled in plan 14: no `trust_level` written); Auto's turns run `workspaceWrite`, the owner's choice (plan 12 addendum, brief amendment 8) | Codex adapter |
-| ASM-7 | The application's own configuration file path and TOML format | How it starts |
+| ASM-7 | The application's own configuration file: `%APPDATA%\agent-command-center\config.json` (`os.UserConfigDir`), holding the send keys and the newline keys only; JSON, which Go's standard library reads, where TOML would need a new dependency (plan 21, item 5.1) | How it starts |
 | ASM-8 | `--provider` and `--project` prefill the startup answers, never skip validation | How it starts |
-| ASM-9 | Default key bindings beyond those TI fixes | ui-design.md |
+| ASM-9 | Default key bindings beyond those TI fixes; only the send and newline keys are configurable (ASM-7), the others fixed in the code | ui-design.md |
 | ASM-10 | The editor budget: a keystroke drawn within 16 ms with a 10,000-line buffer; a 50,000-line paste inserted and drawn within 100 ms | ui-design.md, reliability.md |
 | ASM-11 | The dashboard's own session record, kept in memory for the session; no history file written in the MVP | reliability.md |
-| ASM-12 | The layout geometry: breakpoints at 100 and 160 columns; the 80x24 minimum; from 100 columns A and B side by side in the upper row, their bottoms on one row, A 22% of the width, at least 24 columns (26 at 120, 44 at 200), C and D the whole width under them (plan 20, the owner's two templates); C 3 rows until agents are in play, then two rows an agent (one under 100 columns), up to half the rows A, B and C share (5 rows under 100 columns; at least 8 from 160 columns, for the preview inside C, right of a 70-cell list), B keeping at least 12 rows (14 from 160 columns); zone B's labels beside their text from 90 cells inside B (plans 18 and 20) | ui-design.md, Layouts |
-| ASM-13 | The colours: the palette hex values, each model family's colour, a quota bar turning red from 90% | ui-design.md |
+| ASM-12 | The layout geometry: breakpoints at 100 and 160 columns; the 80x24 minimum; from 100 columns A and B side by side in the upper row, their bottoms on one row, A 22% of the width, at least 24 columns (26 at 120, 44 at 200), C and D the whole width under them (plan 20, the owner's two templates); C 3 rows until agents are in play, then two rows an agent (one under 100 columns), up to half the rows A, B and C share (5 rows under 100 columns; at least 8 from 160 columns, for the preview inside C, right of a 70-cell list), B keeping at least 12 rows (14 from 160 columns), except that with an agent in play C keeps one agent's two rows, 4 rows from 100 columns, A and B giving the rows (at 160x24 to 160x26, A and B 11 to 13 rows; plan 21, item 4); zone B's labels beside their text from 90 cells inside B (plans 18 and 20) | ui-design.md, Layouts |
+| ASM-13 | The colours: the palette hex values, each model family's colour, a quota bar turning red from 90%; fixed in the code, not configurable (plan 21, item 5.1) | ui-design.md |
 | ASM-14 | Codex threads given model "N/A" until a per-thread source appears; from Codex CLI 0.163.0, `subAgentActivity.model` is that source (P7b; plan 5, item 7) | events-and-state.md |
 | ASM-15 | No message is sent while a turn runs; the draft waits (Codex `turn/steer` and Claude Code's queue are never used; CX-10 q5, closed in plan 14) | events-and-state.md, Turn machine |
 | ASM-16 | The 10 s an interrupt has to end the turn before "force stop" is offered (the 5 s shutdown steps are the Agent SDK's, CC-4; ASM-5 extends them to Codex) | events-and-state.md, Turn machine |
@@ -442,7 +467,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-20 | The event reader accepts lines up to 64 MiB; a longer line is recorded as an error with its size and skipped | reliability.md, Concurrent output |
 | ASM-21 | Timeouts no source gives: Codex's handshake 60 s, as Claude Code's (CC-4); each CLI's detection 10 s | events-and-state.md, Startup and Session machines; How it starts |
 | ASM-22 | Display defaults: thinking text folded; a sent message over 20 lines folded to its first 5; zone C ordered waiting, running, ended, most recent first; copy on mouse release; the last 50 stderr lines kept for error display | ui-design.md; Threads of execution |
-| ASM-23 | The editor's draft is saved byte for byte at most 1 s after the last change, by atomic rename, to `%LOCALAPPDATA%agent-command-centerdrafts`, one file per project named by the SHA-256 of its path; deleted once the CLI accepts the send, kept if the send fails, offered back on the next start in that project. On quit, crash or panic the dashboard prints the CLI session id and the CLI's own resume command; a panic restores the terminal, saves the draft, closes the CLI and exits with code 2. Not a history file (ASM-11) | reliability.md, Resumption; plan 3 (d5b910e) |
+| ASM-23 | The editor's draft is saved byte for byte at most 1 s after the last change, by atomic rename, to `%LOCALAPPDATA%\agent-command-center\drafts`, one file per project named by the SHA-256 of its path; deleted once the CLI accepts the send, kept if the send fails, offered back on the next start in that project. On quit, crash or panic the dashboard prints the CLI session id and the CLI's own resume command; a panic restores the terminal, saves the draft, closes the CLI and exits with code 2. Not a history file (ASM-11) | reliability.md, Resumption; plan 3 (d5b910e) |
 | ASM-24 | The startup screen's project store is `projects.json` in `%LOCALAPPDATA%\agent-command-center\`, written by atomic rename: per project its validated path, its last start and whether it is a favourite; at most 10 recent projects, favourites never dropped; paths compared without case on Windows. No conversation data (ASM-11). A store that cannot be read or written is said so on screen; a mock run uses none | ui-design.md, Projects; plan 15 |
 | ASM-25 | The Worktrees view: git calls time out after 15 s for a read and 2 min for an operation (a merge may run hooks); a diff is capped at 5000 lines, the rest counted. Sessions are registered in `%LOCALAPPDATA%\agent-command-center\sessions\`, one file per dashboard session holding its project path, kept open until the session ends; a file nobody holds is a session that ended and is deleted at the next read. It knows the dashboard's own sessions only, not an agent CLI started in another terminal, and is "N/A" outside Windows, where an open file cannot be told from a closed one; a mock run registers none | ui-design.md, Worktrees; plan 16 |
 

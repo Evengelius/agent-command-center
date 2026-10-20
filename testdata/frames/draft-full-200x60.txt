@@ -1,3 +1,4 @@
+ >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session
 ╭─ Draft ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 7 lines ─╮
 │ > Review the colour palette in sample/viewer.go:                                                                                                                                                     │
 │                                                                                                                                                                                                      │
@@ -6,7 +7,6 @@
 │   3. report any pair under 4.5:1, with its hex values.                                                                                                                                               │
 │                                                                                                                                                                                                      │
 │   Do not change the file yet.                                                                                                                                                                        │
-│                                                                                                                                                                                                      │
 │                                                                                                                                                                                                      │
 │                                                                                                                                                                                                      │
 │                                                                                                                                                                                                      │

@@ -870,6 +870,10 @@ func (s *State) status(ev event.Event, p event.Status) {
 }
 
 func (s *State) log(ev event.Event) {
+	if s.Applied == 0 {
+		s.FirstAt = ev.At
+	}
+	s.Applied++
 	s.Log = appendBounded(s.Log, ev, MaxLog)
 }
 

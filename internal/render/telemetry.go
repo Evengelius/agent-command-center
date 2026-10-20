@@ -399,11 +399,14 @@ func retries(s *state.State) string {
 	return fmt.Sprintf("retries %d", s.Retries)
 }
 
+// sessionTime counts from the first event the state applied, not from the
+// oldest the log keeps, which moves once MaxLog events were applied (plan
+// 21, item 1).
 func sessionTime(s *state.State, ui UI) string {
-	if len(s.Log) == 0 || ui.Now.IsZero() {
+	if s.Applied == 0 || ui.Now.IsZero() {
 		return "N/A (" + naReason(s) + ")"
 	}
-	return elapsed(s.Log[0].At, time.Time{}, ui.Now) + " session"
+	return elapsed(s.FirstAt, time.Time{}, ui.Now) + " session"
 }
 
 // details is zone D full screen, from Enter on D: the last errors, newest

@@ -27,6 +27,10 @@ const (
 	compactC    = 3
 	previewRows = 8
 	narrowC     = 5
+	// From 100 columns, with an agent in play, C never has less than one
+	// agent's two rows and its borders, A and B giving the rows (plan 21,
+	// item 4: B's 14 rows left C 3 at 160x24 to 160x26, and no agent shown).
+	agentC = 4
 )
 
 // zoneAWidth is zone A's width at w columns from 100 (plan 20): 22% of
@@ -37,7 +41,7 @@ func zoneAWidth(w int) int { return max((w*zoneAShare+50)/100, zoneAMin) }
 // in play; else its borders and the rows its n agents need, two each from
 // 100 columns, one each under it (at most narrowC rows there); from 160
 // columns at least previewRows; at most half the rows it shares with A and
-// B, which keep minB.
+// B, which keep minB; never less than agentC (plan 21, item 4).
 func cHeight(n, region, minB int, narrow, wide bool) int {
 	if n == 0 {
 		return compactC
@@ -49,7 +53,7 @@ func cHeight(n, region, minB int, narrow, wide bool) int {
 	if wide {
 		need = max(need, previewRows)
 	}
-	return min(max(need, compactC), max(min(region/2, region-minB), compactC))
+	return min(max(need, compactC), max(min(region/2, region-minB), agentC))
 }
 
 // dashboard draws the working screen at the layout the width selects.
@@ -102,7 +106,7 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		ls = append(ls, zoneB(s, ui, w, bh, editorMinRows, sc)...)
 		ls = append(ls, zoneC(s, ui, w, ch, sc)...)
 		ls = append(ls, zoneD(s, ui, w, dh, 1)...)
-		return append(ls, keyHints(w, ui, footer(s, ui, "Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys")))
+		return append(ls, keyHints(w, ui, footer(s, ui, sendNewline(ui)+" · F6 zone · F2 approve · F3 Explorer · F1 keys")))
 	}
 
 	aw, dh, rows, minB := zoneAWidth(w), 4, 2, 12
@@ -116,14 +120,14 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	ls = append(ls, beside(zoneA(s, ui, aw, top, sc), zoneB(s, ui, w-aw, top, editorMinRows, sc))...)
 	ls = append(ls, zoneC(s, ui, w, ch, sc)...) // the whole width, its preview inside from 160 columns
 	ls = append(ls, zoneD(s, ui, w, dh, rows)...)
-	hints := "Enter send · Ctrl+J newline · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit"
+	hints := sendNewline(ui) + " · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit"
 	if wide {
-		hints = "Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
+		hints = sendNewline(ui) + " · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
 	}
 	if lipgloss.Width(hints)+1 > w {
-		// Zone B's input shows Ctrl+J above: the room goes to the end
-		// of the line, Ctrl+Q quit (plan 17, F3 in the footer).
-		hints = strings.Replace(hints, "Ctrl+J newline · ", "", 1)
+		// Zone B's input shows the newline key above: the room goes to the
+		// end of the line, Ctrl+Q quit (plan 17, F3 in the footer).
+		hints = strings.Replace(hints, ui.newlineKeys()[0]+" newline · ", "", 1)
 	}
 	return append(ls, keyHints(w, ui, footer(s, ui, hints)))
 }
@@ -708,10 +712,7 @@ func placeholder(s *state.State) string {
 	return ""
 }
 
-// idleHint is the editor's status while Enter sends.
-const idleHint = "Enter send · Ctrl+J newline"
-
-func editorStatus(s *state.State) string {
+func editorStatus(s *state.State, ui UI) string {
 	switch {
 	case s.QuitAsked:
 		// From the state now: a turn that ended since is no longer named.
@@ -719,6 +720,8 @@ func editorStatus(s *state.State) string {
 			return "quit? " + w + " will be stopped · Ctrl+Q again to quit · Esc to stay"
 		}
 		return "quit? nothing runs now · Ctrl+Q again to quit · Esc to stay"
+	case keysProblemShown(s, ui):
+		return ui.KeysProblem // a mock run has no startup screen (plan 21, item 5.1)
 	case s.Turn.Notice != "":
 		return s.Turn.Notice
 	case s.Session.Notice != "":
@@ -728,7 +731,7 @@ func editorStatus(s *state.State) string {
 	case s.Session.Phase != state.Ready:
 		return "the session is " + strings.ToLower(string(s.Session.Phase)) + ": nothing can be sent"
 	case s.Turn.Phase == state.Idle:
-		return idleHint
+		return idleStatus(s, ui)
 	case s.Turn.Phase == state.Interrupting:
 		return "interrupting…"
 	}
@@ -937,7 +940,8 @@ func agentCard(s *state.State, a *state.Agent, ui UI, w int, cols agentCols) []l
 	if a.Tokens.Present {
 		tok = count(a.Tokens.V) + " tok"
 	}
-	second := line{deco("    ", stNone), sp(clockElapsed(a.StartedAt, a.EndedAt, ui.Now), stGrey), sp("   "+tok, stGrey)}
+	second := line{deco("    ", stNone), sp(clockElapsed(a.StartedAt, a.EndedAt, ui.Now), stGrey)}
+	second = append(append(second, agentRetries(a)...), sp("   "+tok, stGrey))
 	// Its last call that is not waiting for the owner, then the one that is,
 	// as "next" (Template 2: "tool: Bash ✓   next: Write (approval pending)").
 	var next string
@@ -961,6 +965,17 @@ func agentCard(s *state.State, a *state.Agent, ui UI, w int, cols agentCols) []l
 		second = append(second, sp("   next: "+next+" (approval pending)", stMuted))
 	}
 	return []line{first.fit(w), second.fit(w)}
+}
+
+// agentRetries is an agent's retry count after its time in C, "↻ 2" in amber, and
+// nothing while it has none (ui-design.md, Zone C; AM2 C7; plan 21, item
+// 5.6a). Codex reports a thread's retries; Claude Code's are the
+// orchestrator's, counted in D.
+func agentRetries(a *state.Agent) line {
+	if a.Retries < 1 {
+		return nil
+	}
+	return line{sp(fmt.Sprintf("  ↻ %d", a.Retries), stProgress)}
 }
 
 // clockElapsed is from start to end, or to now while running, as a clock:
@@ -1029,7 +1044,8 @@ func agentRow(a *state.Agent, ui UI, w int, cols agentCols) line {
 	if a.Tokens.Present {
 		tok = count(a.Tokens.V) + " tok"
 	}
-	right := plain(fmt.Sprintf("  %7s  %10s", elapsed(a.StartedAt, a.EndedAt, ui.Now), tok), stGrey)
+	right := append(append(plain(fmt.Sprintf("  %7s", elapsed(a.StartedAt, a.EndedAt, ui.Now)), stGrey), agentRetries(a)...),
+		sp(fmt.Sprintf("  %10s", tok), stGrey))
 	left := line{deco(sel, stTitle), listSymbol(a.Status), sp(" "+padTo(fitLabel(a.Label, cols.label-1), cols.label), stText), sp(m, modelStyle(m))}
 	mark := ""
 	if requested(a.Model) {

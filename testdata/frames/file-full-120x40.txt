@@ -1,6 +1,6 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
 ╭─ viewer.go ────────────────────────────────────────────────────────────────────────────────────────── Go · 58 lines ─╮
 │ sample/viewer.go · edited by Edit                                                                                    │
-│ 23                                                                                                                   │
 │ 24  // Find returns the colour called name, and whether there is one.                                                │
 │ 25  func Find(name string) (Colour, bool) {                                                                          │
 │ 26      for _, c := range palette {                                                                                  │

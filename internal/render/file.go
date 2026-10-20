@@ -61,10 +61,12 @@ type FinderView struct {
 }
 
 // FileRect is the window's place on a w by h screen: about 80% of it,
-// centred, or all of it full screen (plan 17, The window).
+// centred, or full screen all of it under the title bar, as the inspection
+// is, so the title bar and its MOCK badge stay on screen (plan 17, The
+// window; plan 21, item 5.7).
 func FileRect(w, h int, full bool) (x, y, ww, hh int) {
 	if full {
-		return 0, 0, w, h
+		return 0, 1, w, h - 1
 	}
 	ww, hh = min(max(w*4/5, min(w-4, 84)), w), min(max(h*4/5, min(h-2, 22)), h)
 	return (w - ww) / 2, (h - hh) / 2, ww, hh

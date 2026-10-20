@@ -52,6 +52,13 @@ type UI struct {
 	Pick     Pick   // the owner's choices on the focused question card (plan 14, item 1)
 	Spinner  int    // the spinner's frame
 	Toast    string // replaces the key hints for a moment (ui-design.md, Clipboard)
+	// The editor's send and newline keys in force, as the screen names them
+	// ("Ctrl+Enter"), in the configuration file's order (plan 21, item 5.1);
+	// none is the defaults. KeysProblem is why the file's keys were not used,
+	// "" when there is no problem: the startup screen shows it, and a mock
+	// run's editor status row until the first message is sent.
+	SendKeys, NewlineKeys []string
+	KeysProblem           string
 
 	// Zone A's tree and agent inspection (ui-design.md, Zone A; Agent
 	// inspection).

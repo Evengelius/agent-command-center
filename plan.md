@@ -8,8 +8,8 @@ the current state only (the owner, 2026-10-18): a closed plan's full text,
 criteria and progress log are in git (`git show 8888f59:plan.md` for plans 1
 to 13, `git show 84d2ad8:plan.md` for plan 14, `git show b047434:plan.md`
 for plan 15, `git show becfb34:plan.md` for plan 16, `git show f00c2d8:plan.md`
-for plan 17, `git show 8b3b16b:plan.md` for plan 18), and its results in its
-evaluation file.
+for plan 17, `git show 8b3b16b:plan.md` for plan 18, `git show
+d84e5d4:plan.md` for plan 20), and its results in its evaluation file.
 
 ## The owner's standing decisions
 
@@ -77,324 +77,468 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 20 - Strict conformance to the approved templates
+## Plan 21 - What the review of d84e5d4 found
 
-**Done and approved by the owner on 2026-10-20**, after the live review of
-amendment 17 ("Yes you can commit, and push, I approve"): every criterion
-PASS ([`doc/plan20-evaluation.md`](doc/plan20-evaluation.md)), committed
-together with plan 19.
+**Done on 2026-10-20 and committed at the owner's request** ("Apply the
+speed fix, then commit"). Approved with the recommended choices ("I
+approve plan 21 with the recommended choices"): 2 (a), 4 (a), 5.1 build,
+5.2 to 5.5 correct, 5.6a build, 5.6b to 5.6d correct, 5.7 build, 5.8
+correct. Its evaluation, [`doc/plan21-evaluation.md`](doc/plan21-evaluation.md):
+38 PASS and 2 FAIL, the long session's frame time, a cost plan 20's
+RESULT rule added; then the proposed fix, approved by the owner: 6 PASS,
+the timing step 6 of 6.
 
-The owner's request of 2026-10-20, brief amendment 16, with its two
-templates: Template 1, a completed multi-turn conversation, and Template 2,
-a subagent's Write waiting for approval. They are the target design, to be
-implemented as one design system: a new dashboard geometry (A and B in one
-upper row, C full width under both), a full-width adaptive zone C, and zone
-B's conversation as the templates draw it. Built on plan 19's logic (one
-speaker label per exchange, RESULT, the folds, `Entry.Stage`), whose look
-it replaces. Precedence, the owner's: the CLI's real events decide what is
-shown, the templates how; nothing is invented to match a picture.
+The source: a read-only review of commit d84e5d4 on 2026-10-20, plan 20
+closed and approved, no plan active. At d84e5d4, `go build ./...` and `go
+vet ./...` exit 0, `gofmt -l .` prints nothing and `go test ./... -count=1`
+exits 0 (14 packages ok); Claude Code 2.1.303 and Codex 0.163.0 are the last
+probed versions. Each finding below was checked in the code at its file and
+line; items 1 and 4 were reproduced with a throwaway test in a scratch copy
+outside the repository. No live run is needed: deterministic tests and a
+mock run in Windows Terminal settle every criterion, so the plan uses no
+quota.
 
-The design, in terminal cells (each choice checked against both templates):
+### The owner's decisions
 
-- **Geometry, from 100 columns.** Title and project bar; then A beside B,
-  the same height, their bottom borders on the same row; then C at the full
-  width; then D at the full width; then the key footer. A takes 22% of the
-  width, rounded, at least 24 columns: 26 at 120, 34 at 156, 35 at 160, 44
-  at 200 (the templates draw about 20 to 22%). Under 100 columns the
-  existing fallback stays: A as one row under the project bar (F6 opens its
-  tree), B, C and D at the full width.
-- **Zone C.** No agent in play: 3 rows, its title and counts in the top
-  border, "no agents yet: they appear as the CLI starts them". With agents
-  in play, two rows each (Template 2): the status, label, model and state
-  ("waiting: approval", "running", "completed · …", "failed · …"), then the
-  elapsed time (01:11), tokens, the last tool and its status ("tool: Bash
-  ✓"), and an approval waiting for the owner ("next: Write (approval
-  pending)"); one row each under 100 columns. As tall as its agents need, at
-  most half the rows under the title, B keeping 12 rows (14 from 160
-  columns); from 160 columns, with agents in play, at least 8 rows, the
-  selected agent's preview inside C, right of a 70-cell list and a rule.
-  Template 2's spacing: a pink "●" for an agent waiting for the owner (zone
-  A keeps its "!"), two cells after it, three after the longest label, the
-  state and "next: …" in grey. Plan 18's lifecycle is kept: a new prompt
-  clears C; finishing agents, CLI turns and idle never do. No key hint row
-  in C: the footer shows C's keys while C has the focus, and C's top border
-  how many agents are out of view.
-- **Zone B, messages.** As built first: each message group a card, a bar
-  `▍` and a card ground (`#13162A`), labels beside their text from 90
-  cells. Since the owner's amendment 17 and image (2026-10-20): each
-  message is a block, a narrow bar `▎` of its colour on each of its rows,
-  on no ground; its header on its own row, YOU (violet `#A78BFA`) "YOU
-  14:29", CLAUDE or CODEX (blue `#60A5FA`) once per exchange "CLAUDE  Opus
-  5.5  14:29", the model and the time muted; its body under the header from
-  the same column, at every width; the prompt's text `#F9FAFB`. A thin
-  rule in the frames' colour across B's width between two messages, a
-  blank row on each side: before each of the owner's messages but the
-  first, and between the owner's message and the CLI's part; a blank row
-  under B's border and one above the input's rule, no rule at the start,
-  none before the input, never two together. Inside the CLI's part, a row
-  of the block, its bar, separates narration, a group of tool rows and a
-  request's box (the owner's section 7.3); a blank row before the RESULT
-  box.
-- **Tool rows.** Inside the CLAUDE card, from column 2 on the tool ground
-  (`#1E2133`): the status symbol; the agent ("general-purpose · ") on a
-  subagent's request; the tool's name in light blue, bold; its target in a
-  readable muted text (`#A1A9C0`, not plan 19's dim grey, which the owner
-  found too faint); at the right, the outcome and its time ("allowed by
-  you 01:54:35" green only for an answered approval, "denied by you …"
-  red, "failed 01:54:59" red, "approved by auto-review" green, a completed
-  call its end time in grey, a running one "running 4s" amber, one waiting
-  for the owner "waiting for you" pink) and the origin ("mock",
-  "observed"). An agent's launch reads "Agent  general-purpose · List
-  directory and write found.txt". A failed call shows its target, then its
-  error in red, the error keeping half the room (since the owner's live
-  review; first, its error in the target's place).
-- **Folds.** As plan 19, the row now "▸ 9 earlier tool events · 1 failed ·
-  Expand", the triangle blue; expanded "▾ … · Fold".
-- **A pending approval.** A pink rounded box inside the CLAUDE card
-  (Template 2), in the structure of the owner's section 5.2: "! APPROVAL ·
-  general-purpose · Write" with its time and the origin at the right, the
-  target on its own row; "▸ Preview of found.txt (2 lines)" and the lines
-  numbered in a gutter on an inset ground (a diff for an edit, the command
-  for a shell, at most 6 lines then "… N more lines"), in its own grey box
-  from 90 cells inside B (Template 2), straight in the card below; the
-  request's own description when it says more than the target; for Claude
-  Code's Write and Edit, Template 2's sentence, "This will create or
-  overwrite the file at `<path>` with the above content.", from the
-  request's own tool and target and the CLI's documented behaviour (its
-  tools reference, code.claude.com/docs/en/tools-reference.md, read on
-  2026-10-20: Write "creates a new file or overwrites an existing one with
-  the full content provided", Edit "performs exact string replacement"),
-  none for another tool or for Codex; then a pink "F2 to answer" pill, or
-  the card's keys once F2 gives it the focus. Never folded, never green.
-  Answered, it becomes a tool row with its outcome, as above.
-- **RESULT.** A green rounded box (Template 1) holding "RESULT  01:54" and
-  the answer beside it from 90 cells, else under it. Plan 19's rule, with
-  the owner's correction (6.1): the exchange's last message, once no turn
-  runs, its last turn completed, and every agent started in it completed;
-  an agent still running, failed or stopped leaves it neutral, in the
-  CLAUDE card. Never from the text.
-- **Thinking.** "∴ thinking" only while a thinking block streams with no
-  text yet; a finished one is not drawn (the record keeps it, for the
-  thinking display the owner plans separately).
-- **Editor.** The rule, one input row (it grows with the draft), the status
-  row: no empty rows under the prompt.
-- **Unchanged:** zone D, the footer's place, every key, the selection and
-  its copy, the draft and its window, the inspection, the folds' keys and
-  click.
+Each choice is the owner's; the recommended one is in the middle column.
 
-Deviations from the templates, for terminal reasons or the real events:
+| Item | Recommended | The other choice |
+| - | - | - |
+| 2 Two timed tests | (a) their time judged in the timing step only | (b) evaluation.md corrected: judged in every run |
+| 4 Zone C at 160x24 to 160x26 | (a) the floor raised: C always shows one agent | (b) a minimum of 27 rows documented |
+| 5.1 Configuration file | build the send and newline keys only, in JSON | correct the documents |
+| 5.2 Sign-in kind | correct the documents | build |
+| 5.3 Capabilities flags | correct the documents | build |
+| 5.4 Frame rate | correct the documents (60 fps) | build (30 fps) |
+| 5.5 Separation test | correct the document | none |
+| 5.6a "↻ n" retries in zone C | build | correct the document |
+| 5.6b "ai" origin label | correct the document | build |
+| 5.6c B's dashboard notices | correct the document | build |
+| 5.6d Markdown cache | correct the document | build |
+| 5.7 MOCK badge at full screen | build | correct the documents |
+| 5.8 ASM-23's path | correct the document | none |
 
-- Template 1 outlines every card with thin borders between the rows; a
-  terminal border takes a whole row, so YOU and CLAUDE cards are a ground
-  with a bar and no border rows; RESULT and a pending approval keep full
-  borders, the two emphasized states.
-- Template 2's sentence under the preview is not in Claude Code's request
-  (it carries the tool, its input, a description such as "found.txt", and
-  its suggestions): it is drawn for the tools whose effect the CLI
-  documents, Write and Edit, from the request's tool and target; another
-  tool, and Codex, get none, nothing invented. The owner's example "File
-  creation or overwrite requires approval." gives way to Template 2's
-  sentence, which names the target.
-- Template 2 draws the path on the heading row; section 5.2's structure,
-  the path on its own row, is followed: a long path would push the time off
-  the row.
-- Template 2's outlined "F2 to answer" button: a one-row pill, pink on a
-  dark pink ground with half-block ends; an outline takes three rows.
-- Template 1's wrench on approved rows and circled "!" on a failed one: ✓
-  and ✗, single-cell glyphs of the terminal's font.
-- Template 1's failed row shows its file and "failed": a failed call shows
-  its file too, then its error (plan 5, item 6), "failed" and the time at
-  the right.
-- Template 2's zone A lists the agent's tool history ("tool Bash ✓
-  allowed"): zone A's content is unchanged (the owner's section 8).
-- The templates' "allowed by you" on plain Read calls, "f00.go failed" and
-  "+9 more Read calls (f12.go … f21.go)" are not what the replay holds; the
-  rows show the real outcomes and counts.
-- Template 2's "▶ subagent" and "▶ tool" kinds: the row names the real tool
-  ("Agent", "Bash"), the agent's identity in its place.
-- Template 1's input row carries "1 line · Ctrl+G draft window" at its
-  right and no status row; the status row stays, Template 2's layout, as it
-  carries the editor's messages ("turn running: the draft waits", quit
-  confirmations).
-- Template 2's turns "TURN 2 ○ pending" to "TURN 4" do not exist in the
-  session; zone A shows the real stages.
+### Item 1 - Zone D's session time, wrong after 2,000 events
+
+`sessionTime` (`internal/render/telemetry.go:402-407`) counts from
+`s.Log[0].At`, but the state keeps only the last `MaxLog` = 2,000 events
+(`internal/state/state.go:324`, `reduce.go:873`), and each streamed text
+delta is one event. Past 2,000 events, zone D's "time … session" counts from
+the oldest event kept: 6,000 events over 1 h 40 min read "33m 20s session".
+A wrong value with no sign of it, which AGENTS.md says to fix. The fix: the
+state keeps the time of the first event it applied (where `log` appends to
+`Log`), through the log's trimming and a resume, and zone D counts from it.
+The value is today's while fewer than 2,000 events were applied, so no
+golden frame changes. (`provider.SessionContext.StartedAt` exists, but
+never reaches the state.)
+
+### Item 2 - Two timed tests outside the timing step
+
+`internal/app/perf_test.go` has no build tag: `TestPasteToFrame` (a
+50,000-line paste, max ≤ 100 ms) and `TestStreamToFrame` (p95 ≤ 16 ms) judge
+their targets through `overTarget` in every `go test ./...`, while
+`doc/evaluation.md:86-87` says "The timed tests carry the `timing` build
+tag, so `go test ./...` never runs them": the owner's rule of 2026-10-16,
+after the keystroke tests missed their target from load alone (plan 4).
+Besides the time, they check what no other test of the ordinary run does: a
+50,000-line paste kept byte for byte, and a 2,000-line streamed answer kept
+as one entry and drawn to its end.
+
+- **(a) Recommended.** Their time judged only in the timing step, as
+  `raceBuild` does under `-race`: a `timingBuild` constant (two files, the
+  `timing` tag and its negation) makes `overTarget` log the time outside
+  the timing step; both tests keep running in `go test ./...` for their
+  other checks. The timing step runs six tests, and the command in AGENTS.md
+  and evaluation.md names them.
+- **(b)** evaluation.md corrected instead: these two are judged in every
+  `go test ./...`; the timing step keeps its four tests.
+
+### Item 3 - An undocumented field, unlabelled and without a fallback
+
+`stream` (`internal/provider/claude/mapper.go:328`) merges Claude Code's
+deltas into one message by the line's top-level `api_message_id`
+(`mapper.go:48`). The documented `SDKPartialAssistantMessage` has `type`,
+`event`, `parent_tool_use_id`, `uuid`, `session_id`, `ttft_ms`,
+`user_message_uuid`, `user_message_uuids` and `resume_reason`, and no
+`api_message_id` (code.claude.com/docs/en/agent-sdk/typescript, read on
+2026-10-20); `doc/research/claude-code.md:423` does not list it, and the
+code does not label it. Without it each delta becomes its own entry
+(`internal/state/reduce.go:376-398`; `entry` returns nil for an empty id),
+against AGENTS.md: "Anything undocumented is labelled so wherever it is
+used, and the dashboard keeps working without it." In the 13 Claude Code
+recordings (P1 to P303e), all 1,237 `stream_event` lines carry it, and each
+equals the id of the same agent's last `message_start` (checked by script
+on 2026-10-20). The fix, documented source first: a delta's message id is
+the id of its agent's last `message_start` (the `event` field is the
+Anthropic raw stream event, documented); `api_message_id` only when no
+`message_start` came first, labelled undocumented in the mapper and in
+claude-code.md's `stream_event` row. The live check `oneEntryPerMessage`
+(`internal/app/livecheck_test.go:175-189`) stays.
+
+### Item 4 - Zone C empty at 160 columns and 24 to 26 rows
+
+From 160 columns with an agent in play, `cHeight`
+(`internal/render/dashboard.go:41-53`) caps C at `max(min(region/2,
+region-14), 3)`. At 160x24 to 160x26 the rows A, B and C share are 15 to 17,
+so C gets 3 rows, `room` = (3-2)/2 = 0 agents (`dashboard.go:852`), and C
+draws no agent: a blank list row, the preview's heading beside it, "↓ 1
+below" in its border. Reproduced with P3b's agent at 160x24 and 160x26; from
+27 rows C has 4 rows and the agent's two rows show. No size under 160
+columns is affected.
+
+- **(a) Recommended.** The floor raised: with an agent in play, C keeps one
+  agent's rows (4 from 100 columns), A and B giving the rows: at 160x24,
+  160x25 and 160x26, C 4 rows, A and B 11, 12 and 13 rows; from 27 rows, as
+  today.
+- **(b)** A minimum documented instead: ui-design.md (Zone C) and ASM-12 say
+  that from 160 columns an agent's rows need 27 rows, and a test holds
+  today's 3 rows at 160x24 to 160x26.
+
+### Item 5 - Documents that promise what the code does not do
+
+For each, the owner chooses: **build** the feature, or **correct** the
+document to what is built.
+
+- **5.1 The application's own configuration file.** architecture.md, How
+  it starts, step 1 (`architecture.md:312-314`), with ASM-7 (its path and
+  TOML format) and ASM-9; ui-design.md: "Colours are configurable in the
+  application's own configuration file" (`ui-design.md:1497-1498`) and
+  "Bindings are lists, configurable" (`:1597-1598`); and brief amendment 3,
+  "Implement configurable Enter-to-send and newline shortcuts"
+  (`doc/brief.md:296`, AM3 M7). Nothing reads such a file: key bindings and
+  colours are fixed in the code, and no evaluation records the gap.
+  Recommended, **build the two shortcuts only**, since amendment 3 asks for
+  them and AGENTS.md makes its input MVP-essential: the send keys and the
+  newline keys, each a list, read at start from
+  `%APPDATA%\agent-command-center\config.json`. JSON, not ASM-7's TOML: Go's
+  standard library reads JSON, and a TOML parser would be a new dependency,
+  which needs the owner's approval. A file that cannot be read, an unknown
+  key name, an empty list or a key in both lists: the first screen names
+  the file and the problem, and the default keys apply. The other bindings
+  and the colours stay fixed, and the documents say so. Or correct: the
+  documents say keys and colours are fixed in the code, and amendment 3's
+  shortcuts go under Nice to have by the owner's decision.
+- **5.2 The sign-in kind.** architecture.md's Detect rows read it with
+  `claude auth status` (`authMethod`) and `codex login status`
+  (`architecture.md:169`, `:203`); both adapters say "The sign-in kind is
+  not read yet" (`internal/provider/claude/provider.go:46`,
+  `internal/provider/codex/provider.go:50`), and `Detection.SignIn`
+  (`internal/provider/provider.go:21`) is never set or shown. Recommended,
+  **correct**: the dashboard tells a subscription from an API key by the
+  session's own reports, Claude Code's `system/init` `apiKeySource`
+  (`claude/mapper.go:152-169`, the quota's N/A reason) and Codex's
+  `account/rateLimits/read`, refused without a ChatGPT sign-in; the unused
+  field and the two comments go. Building it would start two more processes
+  at detection to show nothing the screen lacks.
+- **5.3 The Capabilities flags.** architecture.md (`:157-163`): each adapter
+  fills them from detection and the handshake, and "The UI shows "N/A" or
+  hides an action when a flag is off". They are constants
+  (`claude/session.go:352-353`, `codex/session.go:522-523`,
+  `mock/session.go:153`), and only `AutoApprovals` is read
+  (`internal/app/keys.go:165`, F4); the other per-CLI differences come from
+  the provider id (`keys.go:422` `decision`, `state/reduce.go:665`,
+  `state/actions.go:293`, `render/dashboard.go:214`) and from the events
+  each CLI sends. Recommended, **correct**: rewiring working code to the
+  flags would change nothing on screen (AGENTS.md: change what fails, not
+  what works).
+- **5.4 The frame rate.** ASM-3, "Rendering at most 30 frames per second,
+  coalescing events per frame" (`architecture.md:425`), with
+  architecture.md's Threads (`:118-122`), ui-design.md's Rendering
+  (`:1570-1573`) and Assumptions (`:1929`), and events-and-state.md's
+  Pipeline (`:15`). No `tea.WithFPS` is passed
+  (`cmd/agent-command-center/main.go:37`, `internal/app/run.go:34`), so
+  Bubble Tea v2.1.0's default of 60 applies (its `renderer.go:13`,
+  `defaultFPS = 60`), and events are not coalesced by kind: `listen`
+  (`internal/app/app.go:657-683`) hands over what is waiting, at most
+  `maxDrain` = 512 events per update (`app.go:111`). Recommended,
+  **correct**: every live review ran at 60; at 30, a key could wait up to
+  33 ms for its frame, against up to 17 ms at 60.
+- **5.5 The separation test.** reliability.md's test 7 "reads the package
+  graph (`go list -deps`)" (`reliability.md:617-620`); the test parses the
+  sources with `go/parser` (`internal/arch/separation_test.go:7`, `:53`).
+  **Correct**: the test works, and its planted faults fail it.
+- **5.6 ui-design.md's promises.**
+  - a. A retry count "↻ n" on an agent's row (`ui-design.md:1040-1041`, the
+    symbols' table `:1486`): amendment 2's "Retry information" in zone C
+    (`doc/brief.md:151`, AM2 C7; `architecture.md:517`). The state counts
+    each agent's retries (`internal/state/reduce.go:195-200`,
+    `Agent.Retries`), and zone C draws none. Recommended, **build**: "↻ n"
+    in amber after the agent's time when n ≥ 1, at every width. Codex gives
+    an agent's retries (a thread's `error` with `willRetry`,
+    `codex/mapper.go:459-465`); Claude Code's `system/api_retry` is the
+    orchestrator's (`claude/mapper.go:200`), so a Claude Code agent shows
+    none, and ui-design.md says so. Mapping Claude Code's documented
+    `tool_progress` `subagent_retry` (claude-code.md:405) is left out: no
+    recording holds one, so it could not be checked without a live retry.
+  - b. The "ai" label, right-aligned "in lists and previews"
+    (`ui-design.md:1462`); `originLabel` returns "" for AI
+    (`internal/render/dashboard.go:690-695`). Recommended, **correct**: AI
+    text is the text without a label, under the model's header in B; every
+    other origin keeps its label, so AI messages stay distinct, as the
+    owner reviewed them in plans 19 and 20.
+  - c. The notices "interrupted by you", "turn failed: …" and "send refused:
+    session not ready", grey, marked "dashboard" (`ui-design.md:872-873`;
+    the States table, `:1447`). The code writes no such entry: a refused
+    send says "not sent: the session is <phase>; the draft is kept" on the
+    editor's status row (`internal/state/actions.go:286`), and an
+    interrupted turn's stage in zone A reads "○ interrupted"
+    (`internal/render/tree.go:130-131`). Recommended, **correct**:
+    ui-design.md names what the code shows, and where.
+  - d. "wrapping, Markdown and highlighting are cached per entry and width"
+    (`ui-design.md:1591-1592`). The wrap is cached per source line and
+    widths (`WrapCache.ranges`, `internal/render/content.go:235`), a
+    finished entry's row count per entry, width and shape (`rowCount`,
+    `content.go:210`); Markdown is classified again for each entry drawn
+    (`mdLines`, `render/cards.go:135`, `content.go:391`). Recommended,
+    **correct**: the stream's frame time is within its target
+    (`TestStreamToFrame`) without that cache.
+- **5.7 The MOCK badge on two full screens.** In a mock run, the file
+  viewer full screen (f) and the draft window full screen (Ctrl+F) fill the
+  terminal (`FileRect`, `internal/render/file.go:65-71`), so their frames
+  have no title bar and no "◆ MOCK — not a live session"
+  (`testdata/frames/file-full-*.txt` and `draft-full-*.txt` at 80x24,
+  120x40 and 200x60), against reliability.md (`:472-475`, the title bar of
+  every screen; test 8, `:621-625`) and evaluation.md's standing check
+  (`:47`, "in mock mode every screen shows that it is mock data"). The
+  inspection and zone D's details keep the title bar at full screen.
+  Recommended, **build**: these two full screens start under the title
+  bar, as the inspection does, live and mock; the golden test fails a
+  mock-session frame without the badge.
+- **5.8 ASM-23's path** (`architecture.md:445`) reads
+  `%LOCALAPPDATA%agent-command-centerdrafts`, its backslashes lost.
+  **Correct** to `%LOCALAPPDATA%\agent-command-center\drafts`
+  (`internal/input/draft.go:23-25`, `os.UserCacheDir`).
 
 ### Criteria
 
-Item 1, geometry (TestDashboardGeometry, `internal/render`).
+Each criterion of items 2, 4 and 5 applies to the choice the owner makes:
+"(a)", "(b)", "Build" or "Correct" marks it.
 
-- 1.1 At 120x40, 156x44, 160x45 and 200x60: A's and B's top borders on row
-  3 and their bottom borders on the same row; A 26, 34, 35, 44 columns
-  wide, B the rest, A's right border next to B's left one.
-- 1.2 C's top border on the row under A's and B's bottom, from column 1 to
-  the last; D's under C's, full width; the footer last; no row wider than
-  the screen.
-- 1.3 At 80x24: the A row, then B, C, D full width; C compact 3 rows.
+Item 1, the session time (a test in `internal/render`).
 
-Item 2, zone C (TestAdaptiveLayout, `internal/render`; TestPaneScroll).
+- 1.1 6,000 events one second apart from t0, the frame at t0 + 6,000 s:
+  zone D reads "time 1h 40m session"; today's code reads "33m 20s session"
+  (the check run once on it, and failing).
+- 1.2 1,999 events: the value today's code gives; no event: "N/A (…)", as
+  TestTelemetryNA checks today.
+- 1.3 A resume after a crash, past 2,000 events: the time still counts from
+  the first event.
+- 1.4 No golden frame changes; events-and-state.md's State names what is
+  kept.
 
-- 2.1 No agent in play: C 3 rows at every size, "no agents yet" and "0
-  ACTIVE · 0 DONE".
-- 2.2 One agent at 120x40: C 4 rows, its two rows; six: 14; twenty: half
-  the rows under the title; at 200x60 with one agent, 8 rows and the
-  preview; at 80x24, one row per agent, at most 5 rows.
-- 2.3 Its agents done: the same height; a new prompt: 3 rows, the agents
-  still in A's tree and inspectable; agents of the new turn: it grows
-  again; a turn the CLI opens: unchanged.
-- 2.4 Two rows of the Template 2 agent: "waiting: approval", "tool: Bash
-  ✓", "next: Write (approval pending)", from a state built from P3b's
-  events.
-- 2.5 C focused: the footer reads C's keys; agents out of view: C's top
-  border says how many; the existing scroll and zoom tests pass.
-- 2.6 (added on 2026-10-20, after comparing the first screenshots with
-  Template 2) C's first row in Template 2's spacing, "●  general-purpose
-  haiku-5-5   waiting: approval", the dot pink, the state and "next: …"
-  grey; under 100 columns the one row with the same dot
-  (TestAgentCardTemplate2; the column tests of plans 6, 7 and 10).
+Item 2, the timed tests.
 
-Item 3, zone B (TestConversationLook, TestToolFold, `internal/render`).
+- 2.1 (a) With both targets set to 1 ns, a mutation reverted after: `go
+  test ./internal/app -run '^(TestPasteToFrame|TestStreamToFrame)$'`
+  passes, each test logging its time as not judged; with `-tags timing`
+  both fail.
+- 2.2 (a) Both tests still run in `go test ./... -v` and pass, their checks
+  besides time unchanged.
+- 2.3 (a) The timing step runs the six tests, each within its target, its
+  p50, p95 and maximum recorded in plan.md with the conditions
+  (evaluation.md, Keystroke timing).
+- 2.4 (a) AGENTS.md (Commands) and evaluation.md (Keystroke timing) give the
+  six-test command, and evaluation.md says what the code does.
+- 2.1 (b) evaluation.md says these two are judged in `go test ./...`, the
+  four others in the timing step; the timing step 4 of 4 within its
+  targets.
 
-- 3.1 A YOU card: the violet bar `▍` on each of its rows, the card ground
-  on each cell from column 0 to the edge, "YOU" violet bold, the time grey,
-  the text `#F9FAFB`; beside the label from 90 cells (text at column 14),
-  under it below 90.
-- 3.2 A CLAUDE card: "CLAUDE  Haiku 5.5  <time>" once per exchange, the
-  blue bar on every row of the exchange's AI part, the narration at
-  column 14 (beside) or 2.
-- 3.3 A blank row between two cards; none inside one.
-- 3.4 Tool rows: the tool ground from column 2 to one cell before the
-  card's edge; name `#93C5FD` bold; target `#A1A9C0`; outcomes and times as
-  listed above, right-aligned; "allowed by you" only on an answered
-  approval; the subagent's identity on its rows.
-- 3.5 Folds: "▸ 9 earlier tool events · 1 failed · Expand", the counts in
-  their colours; expanded "▾ … · Fold"; plan 19's keys and click
-  (TestToolFoldKeys).
-- 3.6 A pending approval: the pink box's corners and edges; its header,
-  "▸ Preview of found.txt (2 lines)", " 1 │ alpha.txt", " 2 │ beta.md", the
-  "F2 to answer" pill; with the focus, its keys; no green in it.
-- 3.7 Answered: allowed green, denied red, expired grey, each one row.
-- 3.8 RESULT: the green box, "RESULT  <time>" and the answer; over the
-  last message of a completed exchange; none while it runs, after a failed
-  or interrupted turn, for a lone answer, or while an agent of the exchange
-  runs ("I've launched the subagent…" stays narration); after the agent
-  completes and the CLI's turn ends, on its message; an agent failed:
-  none.
-- 3.9 Thinking: "∴ thinking" while a thinking block streams without text;
-  none once it ends.
-- 3.10 The editor: the rule, one input row, the status row; a 3-line draft,
-  three input rows (TestCompactEditor).
-- 3.11 (added likewise) A pending Write from 90 cells inside B: its preview
-  in its own grey box; "This will create or overwrite the file at `<path>`
-  with the above content." for Claude Code's Write, ", leaving it empty."
-  without content, the Edit sentence with and without `replace_all`; none
-  for Bash, an MCP tool or Codex (TestConversationLook 3.6,
-  TestApprovalEffect).
-- 3.12 (added likewise) Inside the CLI's card, a row of the card between
-  narration and tool rows and before a request's box (TestConversationLook
-  3.1 to 3.4).
-- 3.13 (added for amendment 17) Each message's header on its own row and
-  its body under it from the same column at 60, 76, 100 and 160 cells;
-  the bar `▎` on every row of the message, violet or blue, no ground behind
-  it; the model muted; a rule of `─` in the frames' colour across B's
-  width between two messages, a blank row on each side, none inside a
-  message, at the start or before the input, never two in a row; a long
-  prompt wrapping at the content column (TestConversationLook 3.1 to 3.4,
-  3.1 the same layout at every width, 3.3 the rules between messages).
+Item 3, a delta's message id (`internal/provider/claude`).
 
-Item 4, regressions and checks.
+- 3.1 In each of the 13 Claude Code recordings, every `stream_event` line
+  maps to the id of its agent's last `message_start`, equal to its
+  `api_message_id`: 1,237 of 1,237 lines (a test over
+  `testdata/probes`).
+- 3.2 Each recording replayed with `api_message_id` removed from every line
+  gives the same conversation as replayed as is (roles, message ids,
+  texts), one entry per message (`oneEntryPerMessage` on each replay).
+- 3.3 A delta with no `message_start` before it takes its `api_message_id`.
+- 3.4 The code that reads `api_message_id` says it is undocumented; so does
+  claude-code.md's `stream_event` row, with the recordings that show it.
+- 3.5 Checked by mutation: a mapper that reads neither id fails 3.2.
 
-- 4.1 Every golden frame rewritten and reviewed: the geometry of item 1 in
-  each; the window scenes changed only around their window.
-- 4.2 `go build ./...`, `go vet ./...` exit 0, `gofmt -l .` empty; `go
-  test ./...` with 0 FAIL and only TestDiskListLink skipped; the timing
-  step 4/4 within its targets.
-- 4.3 ui-design.md (Layouts, Zone B, Zone C, Approvals, Colours),
-  events-and-state.md (RESULT with agents), architecture.md (ASM-12) and
-  AGENTS.md say what was built; brief.md holds amendment 16.
-- 4.4 (added) The owner's scenario E: eight exchanges of seven calls, each
-  run folded with its failure counted, deep paths keeping their file names,
-  PgUp to the first prompt and PgDn back, a selection copying a narration's
-  text alone, five resizes keeping the geometry (TestLongConversation).
-- 4.5 (added) A mock file's prompt in an idle session clears the CLI
-  turn's notice, as sending does (TestStateMachines, its row in
-  events-and-state.md's Turn machine).
-- 4.6 (added) The new colours on 256 colours, none on another of its kind's
-  index (TestPalette256).
+Item 4, zone C (TestAdaptiveLayout, `internal/render`).
 
-Item 5, a real Windows Terminal, maximised, then 120x40, 200x60 and 80x24,
-screenshots compared with the templates (the four scenarios of the owner's
-section 13 maximised; the other sizes checked as text).
+- 4.1 (a) P3b's agent at 160x24, 160x25 and 160x26: C 4 rows, the agent's
+  label "general-purpose" on C's first row inside its border, left of the
+  rule, the preview's heading right of it; A's and B's bottom borders on
+  one row, A and B 11, 12 and 13 rows; no row wider than the screen.
+- 4.2 (a) At 160x27, and at every size TestAdaptiveLayout and
+  TestDashboardGeometry check today, the heights of today.
+- 4.3 (a) ASM-12 and ui-design.md (Zone C) state the floor.
+- 4.1 (b) ASM-12 and ui-design.md (Zone C) state the 27-row minimum; a
+  TestAdaptiveLayout case holds C at 3 rows with "↓ 1 below" in its border
+  at 160x24 to 160x26.
 
-- 5.1 Template 1: a replay of the demo's three exchanges (the recorded
-  subagent session, twelve Read calls with one failed, "ok"); its
-  screenshot beside Template 1, each difference listed and either fixed or
-  a documented deviation.
-- 5.2 Template 2: the recorded session stopped at the Write approval; the
-  same comparison with Template 2.
-- 5.3 The agent completed: C still two rows for it, "0 ACTIVE · 1 DONE".
-- 5.4 A new prompt: C back to 3 rows, the earlier agent in A's tree.
-- 5.5 At 120x40, 200x60 and 80x24: the geometry of item 1 read from the
-  screen, nothing cut.
+Item 5, per the owner's choice for each.
+
+- 5.1 Build: (i) no file: Enter sends, Ctrl+J and Shift+Enter add a newline,
+  and the existing input tests pass unchanged; (ii) `{"keys": {"send":
+  ["ctrl+enter"], "newline": ["enter"]}}`: Ctrl+Enter sends, Enter adds a
+  newline, Ctrl+J and Shift+Enter neither send nor add a newline; (iii) the
+  footer and the F1 page show the keys in force; (iv) a bracketed paste
+  ending with a newline never sends, with either file
+  (TestPasteNeverSubmits); (v) invalid JSON, an unknown key name, an empty
+  list, a key in both lists: a message naming `config.json` and the
+  problem on the first screen (the startup screen; the editor's status row
+  in a mock run), and the default keys apply; (vi) the same input tests
+  pass with the Claude Code, Codex and mock adapters; (vii) the file is
+  only read, nothing else in it is used, `go.mod` unchanged; (viii)
+  architecture.md (How it starts, ASM-7, ASM-9) and ui-design.md (Focus
+  and keys, Colours) say what is built. Correct: those passages say keys
+  and colours are fixed in the code, and plan.md's Nice to have lists
+  amendment 3's configurable shortcuts with the owner's decision.
+- 5.2 Correct: architecture.md's Detect rows name no status command and say
+  which reports tell a subscription from an API key; `SignIn` and the two
+  "not read yet" comments gone; `go build ./...` exit 0.
+- 5.3 Correct: architecture.md's Capabilities paragraph names the one flag
+  read and the provider-id checks, each with its file.
+- 5.4 Correct: architecture.md (Threads, ASM-3), ui-design.md (Rendering,
+  Assumptions) and events-and-state.md (Pipeline) say 60 frames per second,
+  Bubble Tea's default, and a burst of at most 512 events applied as one
+  update; none of them says 30 frames per second.
+- 5.5 Correct: reliability.md's test 7 says the test parses the sources
+  with `go/parser`.
+- 5.6a Build: an agent with 2 retries shows "↻ 2" in amber after its time
+  at 120x40, 200x60 and 80x24, none with 0 (a test from a Codex thread's
+  `error` with `willRetry`); ui-design.md says why a Claude Code agent
+  shows none. Correct: ui-design.md has no "↻ n", and says retries are
+  counted in zone D only.
+- 5.6b Correct: ui-design.md's Origins table says AI text carries no label.
+  Build: "ai" right-aligned on the AI rows of C's preview and the
+  inspection, their golden frames rewritten.
+- 5.6c Correct: ui-design.md names the texts shown for a refused send, an
+  interrupted turn and a failed one, each found in the code, and no longer
+  promises "interrupted by you" or "send refused". Build: the three notices
+  as entries in B, marked "dashboard", a test for each.
+- 5.6d Correct: ui-design.md's Rendering says what is cached and what is
+  not.
+- 5.7 Build: the six frames `file-full-*` and `draft-full-*` at 80x24,
+  120x40 and 200x60 begin with the title bar and "◆ MOCK — not a live
+  session", each window one row shorter; TestGoldenFrames fails any frame
+  of a mock session without the badge (run once on today's frames: those
+  six fail); the viewer's and the draft window's tests pass. Correct:
+  reliability.md and evaluation.md name the two exceptions.
+- 5.8 ASM-23 reads `%LOCALAPPDATA%\agent-command-center\drafts`, checked
+  from the bytes.
+
+Item 6, regressions and checks.
+
+- 6.1 `go build ./...` and `go vet ./...` exit 0; `gofmt -l .` empty; `go
+  test ./...` 0 FAIL, only TestDiskListLink skipped; `go.mod` and `go.sum`
+  unchanged.
+- 6.2 The timing step within its targets: 6 of 6 under 2 (a), 4 of 4 under
+  2 (b).
+- 6.3 Only the golden frames the chosen items change, each diff reviewed:
+  the six full-screen frames under 5.7's build; none for items 1 to 4.
+- 6.4 A mock run in Windows Terminal, maximised: the file viewer and the
+  draft window at full screen with the badge (5.7); then a 160x24 grid,
+  P3b's agent's rows in C (item 4); screenshots for the owner, the look
+  listed as not verified until the owner has seen them.
+- 6.5 AGENTS.md's status line names plan 21; plan.md holds the progress;
+  `doc/plan21-evaluation.md` the summary; every changed file UTF-8 without
+  BOM, LF only, checked from the bytes.
+- 6.6 `git status` lists only the intended files; no commit before the
+  owner's approval.
 
 ### Progress
 
-- Started on 2026-10-20: the request recorded as brief amendment 16; this
-  plan written.
-- Built on 2026-10-20: the geometry (`dashboard.go`: `zoneAWidth`,
-  `cHeight`, C and D full width, the preview inside C, the footer with C's
-  keys); the cards (`cards.go`: the frame, the labels, the RESULT box, the
-  tool rows' columns and outcomes, the fold row; `look.go`: the card kinds,
-  the gaps, the name column, RESULT with the agents); the pending box
-  (`approval.go`); C's two rows (`agentCard`); the compact editor; the
-  colours (`palette.go`: the card ground, the muted text, the pill).
-- Then, after the first screenshots against both templates: the preview's
-  own box and the documented sentence on the pending card; the card's rows
-  between narration, tool rows and a request; C's dot, grey state and wider
-  gaps; a failed call's error cut before the verdict, never the verdict
-  (plan 13); a mock file's prompt clearing the CLI turn's notice
-  (`reduce.go`). The tests of earlier plans updated to the new look, their
-  intent kept; new: TestAgentCardTemplate2, TestApprovalEffect,
-  TestCompactEditor, TestLongConversation, a Turn row of TestStateMachines.
-- Checked: `go build`, `go vet`, `gofmt -l .` empty; `go test ./...`
-  0 FAIL, TestDiskListLink skipped; the timing step 4/4; 38 golden frames
-  rewritten and checked by script (the geometry in each dashboard frame;
-  every window's rectangle unchanged); Windows Terminal: the four scenarios
-  maximised, 120x40, 80x24 and a 208x59 grid, their geometry read from the
-  screen. Results in `doc/plan20-evaluation.md`.
-- The owner's live review, from 2026-10-20, screenshot by screenshot.
-  Scenario 1 (Claude Code 2.1.303, Opus 5.5): drawn as designed; one
-  correction, zone D's context reading "N/A (no turn yet)" through the
-  first turn, now "N/A (no result yet)" once a turn has started
-  (`telemetry.go`; TestTelemetryNA's new case; reliability.md).
-  Scenario 2 (twelve Reads, one failing): three corrections. The failed
-  row named no file: it now shows its target, then its error, the error
-  keeping half the room. A path was cut inside an element ("…rs\…\AppData")
-  on the entry cursor's row: paths in tool rows are now cut at an element
-  (`elidePath`). Zone A's twelve Read rows all read "C:\User…": a path
-  there keeps its file name. Tests: TestFailedRowNamesItsTarget,
-  TestElidePath; TestSyntheticScenarios updated (the failed Codex command
-  now shows its command, cut, before its error); three golden frames
-  rewritten (the cleaner path cuts).
-  Then, on the owner's request: → on B's entry cursor no longer opens
-  the full view, as Enter does; it only expands a folded run, as it
-  unfolds in zone A, so → never opens and Enter is the one key that does
-  (`inspect.go`, the footers and the keys page; TestEntryViewer and
-  TestToolFoldKeys).
-  Then the owner's amendment 17, Zone B's message layout and separators,
-  with an image of the target: each message a block, its bar, its header
-  on its own row and its body under it, a thin rule between messages, no
-  ground behind them (`cards.go`: the frame, `entryRows` and `entryBody`,
-  `messageRule`; `look.go`: `sep`, `top` and `tail`; the card ground
-  removed from `palette.go`). The tests of plans 5 to 20 that read B's rows
-  updated to the blocks, their intent kept; new: 3.13; 38 golden frames
-  rewritten; Windows Terminal: the minimal conversation, the longer one and
-  the pending approval, maximised, and the minimal one at 80x24.
-  The owner's live run of scenarios 1, 2 and 4 in one session, on the new
-  layout: drawn as designed; one correction, a rule at the scrolled
-  window's edge, its next message out of view, sat one blank row above the
-  input's rule as a second line: such a rule is now a blank row
-  (`conversation` in `dashboard.go`; TestConversationLook "3.3 no rule at
-  the window's edges").
+- 2026-10-20: proposed from the review of d84e5d4. Each finding checked
+  again at its file and line; the Agent SDK's `SDKPartialAssistantMessage`
+  read; the 1,237 `stream_event` lines of the recordings checked by
+  script; `go test ./... -count=1` exit 0 at d84e5d4. Waiting for the
+  owner's approval and decisions.
+- 2026-10-20: approved with the recommended choices; built the same day.
+  Item 3 and item 5.1 by an implementer agent each (Sonnet), reviewed and
+  rerun here; the rest here.
+  - Item 1: `State.Applied` and `State.FirstAt` (`internal/state`), set
+    where `log` appends; `sessionTime` counts from `FirstAt`.
+    TestSessionTimeKeepsFirstEvent (`internal/render`): run once on the old
+    code, it failed with "time 33m 20s session" for 6,000 events over
+    1 h 40 min and "34m 55s session" after a resume; now 1.1, 1.2
+    ("33m 19s session" for 1,999 events, as before; N/A with no event) and
+    1.3 ("1h 00m session") pass.
+  - Item 2 (a): `timingBuild` (`timing_on_test.go`, `timing_off_test.go`);
+    `overTarget` logs outside the timing step. Mutation, both targets
+    1 ns: `go test ./internal/app -run '^(TestPasteToFrame|TestStreamToFrame)$'`
+    ok, each logging "not judged outside the timing step"; with `-tags
+    timing` both FAIL ("max 2.9571ms over the 1ns target", "p95 5.986ms
+    over the 1ns target"); targets restored.
+  - Item 3: the mapper takes a delta's id from its agent's last
+    `message_start`, `api_message_id` (labelled undocumented) only before
+    one. TestStreamEventsTakeTheMessageStartID: 1,237 lines in 13 of 14
+    recordings (p4 has none); TestConversationDoesNotNeedAPIMessageID: the
+    14 recordings replayed with and without the field, equal, one entry per
+    message; TestStreamEventWithoutMessageStartFallsBack; mutation (the
+    mapper reading neither id): both tests fail ("assistant entry with
+    message id \"\" (empty or repeated)").
+  - Item 4 (a): `agentC` = 4, the floor in `cHeight`. TestZoneCFloor: on
+    the old code C 3 and no agent at 160x24 to 160x26; now C 4, A and B 11,
+    12, 13, the label left of the preview's rule; 160x27 as before.
+  - Item 5.1: `internal/input/config.go` (`LoadKeys`, `NormaliseKey`),
+    read in `main.go`; `editorKey` and `draftWinKey` use the lists; the
+    footer, status row, draft window and F1 page show the keys in force
+    (`internal/render/keyset.go`). Tests: TestLoadKeys* (`internal/input`),
+    TestConfiguredKeys, TestPasteNeverSubmitsConfigured,
+    TestConfiguredKeysShown, TestConfiguredDraftWindow,
+    TestKeysProblemOnStartup, TestKeysProblemInMockRun (`internal/app`).
+  - Item 5.6a: "↻ n" in amber after the agent's time (`agentRetries`).
+    TestAgentRetries, from two `error` notifications with `willRetry` on a
+    child thread of P7 through Codex's mapper, at 120x40, 200x60, 80x24;
+    mutation (no count drawn): it fails at the three sizes.
+  - Item 5.7: `FileRect` full screen under the title bar. The new check in
+    TestGoldenFrames, run once with the old layout: exactly the six
+    `file-full-*` and `draft-full-*` frames failed it; frames rewritten,
+    those six only, each the title bar added and the window one row
+    shorter. TestFileRect, TestDraftWindow and TestFileKeys updated to the
+    new full screen.
+  - Documents: architecture.md (Provider interface, Capabilities, the two
+    Detect rows, Threads, How it starts, ASM-3, ASM-7, ASM-9, ASM-12,
+    ASM-13, ASM-23), ui-design.md (Zone B's notices, Zone C, States,
+    Origins, Colours, Rendering, Focus and keys, File viewer, Draft
+    window, Assumptions), events-and-state.md (Pipeline, State, Polling),
+    reliability.md (test 7, test 8), evaluation.md (Keystroke timing),
+    claude-code.md (`stream_event`), AGENTS.md (status, timing command).
+  - Checks: `go build ./...`, `go vet ./...` exit 0; `gofmt -l .` empty;
+    `go test ./... -count=1 -v` exit 0, 0 FAIL, only TestDiskListLink
+    skipped, TestPasteToFrame and TestStreamToFrame run and pass; `go.mod`
+    and `go.sum` unchanged; 48 changed or new files UTF-8, no BOM, no CR.
+  - Windows Terminal, the P3b mock (`scratchpad\term\p21shot.ps1`,
+    plan 20's harness): maximised 156x44, the file viewer and the draft
+    window full screen, each under the title bar with "◆ MOCK — not a live
+    session"; a 160x24 grid (147x22 and one Ctrl+minus): C 4 rows, the
+    agent's two rows left of the preview, A and B 11 rows. Screenshots for
+    the owner.
+  - The timing step (2.3, 6.2), not run on battery (status 1, 37% then
+    34%), evaluation.md requiring mains power; run alone at 19:40 once on
+    mains (status 2, 30%), the CPU at 37%, the usual applications open:
+    TestKeystrokeToFrame p50 0 s, p95 1.0062 ms, max 1.9993 ms (draft
+    window 503.4 µs, 1.3271 ms, 9.5393 ms); TestDraftKeystrokes 1.034 ms,
+    3.0566 ms, 41.7277 ms; TestKeystrokeCost 524 µs and 1.27 ms a key;
+    TestPasteToFrame p50 3.5169 ms, max 4.2555 ms; TestStreamToFrame
+    3.0111 ms, 8.9818 ms, 21.9225 ms; **TestLongSession FAIL**, p50
+    10.6808 ms, p95 16.6898 ms over 16 ms, max 22.169 ms. 5 of 6.
+  - The miss investigated, not rerun: d84e5d4 (plan 20, committed) p95
+    16.10 ms, FAIL; 8b3b16b (plan 18) p95 2.65 ms, PASS; a CPU profile:
+    `agentsDone` (plan 20's RESULT rule, `internal/render/look.go`) 32%,
+    walking every agent for every exchange each frame. Proposed, tried in
+    a scratch copy only: prefix sums of each stage's agents not completed,
+    once a frame; TestLongSession p95 4.19 ms, render tests and golden
+    frames unchanged. Waiting for the owner's approval
+    (`doc/plan21-evaluation.md`: 38 PASS, 2 FAIL, the same miss).
+- 2026-10-20: the owner approved the fix and the commit ("Apply the speed
+  fix, then commit"). `undoneByStage` and the new `agentsDone`
+  (`internal/render/look.go`); TestAgentsDoneCounts: the rule's answer for
+  every pair of turns in P3b, P7 and a synthetic session, two mutations
+  each failing it. `go test ./... -count=1` 0 FAIL, TestDiskListLink
+  skipped, no golden frame changed by the fix. The timing step, alone, at
+  20:00 on mains (status 2, 53%), the CPU at 29%: 6 of 6;
+  TestKeystrokeToFrame p50 0 s, p95 1.0415 ms, max 2.0003 ms (draft window
+  0 s, 1.1376 ms, 2.1069 ms); TestDraftKeystrokes 1.0121 ms, 3.0418 ms,
+  5.391 ms; TestKeystrokeCost 220 µs and 556 µs a key; TestLongSession
+  2.0002 ms, 3.9032 ms, 5.1539 ms (last tenth 3.54 ms); TestPasteToFrame
+  p50 1.0041 ms, max 1.1631 ms; TestStreamToFrame 1.5154 ms, 3.515 ms,
+  15.5502 ms. Committed; not pushed.
 
 ## Closed plans
 
@@ -402,7 +546,8 @@ One entry each: what the plan did, its approval, its evaluation file and
 its commits. Their criteria and progress logs: `git show 8888f59:plan.md`
 (plans 1 to 13), `git show 84d2ad8:plan.md` (plan 14), `git show
 b047434:plan.md` (plan 15), `git show becfb34:plan.md` (plan 16), `git show
-f00c2d8:plan.md` (plan 17), `git show 8b3b16b:plan.md` (plan 18).
+f00c2d8:plan.md` (plan 17), `git show 8b3b16b:plan.md` (plan 18), `git show
+d84e5d4:plan.md` (plan 20).
 
 ## Plan 1 - Research
 
@@ -540,4 +685,15 @@ entry's turn (`Entry.Stage`). Done on 2026-10-20, 19 PASS
 ([`doc/plan19-evaluation.md`](doc/plan19-evaluation.md)). The owner
 reviewed it in a demo the same day and asked for plan 20 (amendment 16),
 which keeps its logic and replaces its look; not committed on its own, it
-was committed with plan 20 once the owner approved that, on 2026-10-20.
+was committed with plan 20 once the owner approved that, on 2026-10-20;
+commit d84e5d4.
+
+## Plan 20 - Strict conformance to the approved templates
+
+Brief amendments 16 and 17: the owner's two templates as one design
+system, A and B in one upper row and C full width under them, zone B's
+messages as blocks with a rule between them, the tool rows, the folds, the
+pending approval's pink box and RESULT. Approved on 2026-10-20 after the
+owner's live review, 32 of 32 PASS
+([`doc/plan20-evaluation.md`](doc/plan20-evaluation.md)); commit d84e5d4,
+with plan 19.

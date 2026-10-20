@@ -12,8 +12,10 @@ so wherever it is used.
 
 ```text
 CLI stdout line ──> frame (JSONL) ──> decode (typed, unknown fields kept)
-   ──> map (adapter-specific) ──> Event{...} ──> queue ──> coalesce per frame
-   ──> reducer: apply(state, event) ──> state ──> view(state, ui) ──> frame
+   ──> map (adapter-specific) ──> Event{...} ──> queue ──> what is waiting,
+   at most 512 events, as one update ──> reducer: apply(state, event), each
+   ──> state ──> view(state, ui) ──> frame, at most 60 per second
+   (architecture.md, Threads of execution)
 ```
 
 Each normalised event carries one envelope:
@@ -104,7 +106,8 @@ State
   Tools            map[ToolID]ToolCall
   Telemetry        Telemetry
   Errors           []ErrorEntry        bounded list shown in zone D
-  Log              ring of Event       raw events for the inspection view
+  Log              ring of Event       raw events for the inspection view, the last 2,000
+  Applied, FirstAt count, time         the events applied and the first one's time
   Unrecognised     count, last N raw lines
 
 Entry        {Seq, Role: user|assistant|tool|notice|approval, Agent, Text,
@@ -124,7 +127,11 @@ Value        {Present bool, V, Unit, Origin, Source, ReceivedAt, ResetsAt,
 `Value.Present == false` renders "N/A" with its `Reason`; a `Value` whose
 `ResetsAt` has passed is cleared to N/A by the clock tick (TEL rules). Ages
 are computed at render time from `ReceivedAt`, so no event is needed to
-age a value.
+age a value. Zone D's session time counts from `FirstAt`, the time of the
+first event applied: the log keeps only the last 2,000 events (`MaxLog`),
+and a long session's text deltas pass that in a few turns, so its oldest
+kept event is not the session's start. `FirstAt` stays through a resume;
+only going back from a failed start resets the state (plan 21, item 1).
 
 ### Conversation record
 
@@ -399,7 +406,7 @@ The few reads it makes, each once and on a trigger:
 | Claude Code `get_context_usage` | after each `result` | context is not pushed; the derived value from `usage` lacks the auto-compact threshold | TEL CC; P2 lines 4-6; no model call: answered in 914 ms with no `assistant` message, `result` or `rate_limit_event` after it (P14a, CC-10 q10) |
 | Claude Code `/usage` | **not used**: never sent (CC-10 q9, closed in plan 14) | it is a prompt in the conversation, may cost, and the endpoint can rate-limit | TEL CC |
 | Git branch | once at startup, from `.git/HEAD` | display only; no git events exist | architecture.md, Session context |
-| Detection (`-v`, `--version`, auth status) | once at startup | no other source | CC-2; CX-2 |
+| Detection (`claude -v`, `codex --version`; no status command, plan 21, item 5.2) | once at startup | no other source | CC-2; CX-2 |
 
 The only timer is the local clock tick, which advances animations and value
 ages and expires values past their reset time; it reads no external source.

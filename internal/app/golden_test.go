@@ -243,6 +243,12 @@ func TestGoldenFrames(t *testing.T) {
 							t.Errorf("the Start button is not whole above the footer")
 						}
 					}
+					// A mock session's every frame says it is mock data, full
+					// screens included (reliability.md, Mock mode; plan 21,
+					// item 5.7).
+					if h.m.State().Context.Mock && !strings.Contains(text, render.MockBadge) {
+						t.Errorf("a mock session's frame without %q", render.MockBadge)
+					}
 					golden(t, name, text)
 				})
 			})

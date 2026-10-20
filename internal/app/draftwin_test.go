@@ -100,10 +100,10 @@ func TestDraftWindow(t *testing.T) {
 		}
 		h.send(key(tea.KeyRight, 0))
 
-		// Ctrl+F: full screen, and back.
+		// Ctrl+F: full screen under the title bar (plan 21, item 5.7), and back.
 		h.send(key('f', tea.ModCtrl))
-		if top := strings.Split(h.frame(), "\n")[0]; !h.m.ui.DraftWin.Full || !strings.HasPrefix(top, "╭─ Draft ") {
-			t.Errorf("Ctrl+F: full %v, first row %q", h.m.ui.DraftWin.Full, top)
+		if rows := strings.Split(h.frame(), "\n"); !h.m.ui.DraftWin.Full || !strings.Contains(rows[0], "AGENT COMMAND CENTER") || !strings.HasPrefix(rows[1], "╭─ Draft ") {
+			t.Errorf("Ctrl+F: full %v, first rows %q and %q", h.m.ui.DraftWin.Full, rows[0], rows[1])
 		}
 		h.send(key('f', tea.ModCtrl))
 		if h.m.ui.DraftWin.Full {

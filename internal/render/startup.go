@@ -96,6 +96,10 @@ func startup(s *state.State, ui UI) []line {
 		ls = append(ls, sub(plain("→ type a directory", stGrey)))
 	}
 	ls = append(ls, sub(plain("Type a full path; ~ and /mnt/c/… are expanded. Default: current dir.", stGrey)))
+	if ui.KeysProblem != "" {
+		// The configuration file's problem (plan 21, item 5.1): the default keys apply.
+		ls = append(ls, note("✗ ", hideUser(ui.KeysProblem), stFailed)...)
+	}
 
 	// The project list (plan 15), shown when it has a row or a problem.
 	var head, rows []line

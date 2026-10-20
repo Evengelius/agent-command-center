@@ -97,6 +97,13 @@ type Options struct {
 	Sessions *input.Sessions
 	// DetectTimeout bounds each adapter's detection; 0 is DetectTimeout.
 	DetectTimeout time.Duration
+	// Keys are the editor's send and newline keys read from the configuration
+	// file (plan 21, item 5.1); a zero list is its default, so a run that
+	// gives none has today's keys. KeysProblem is why the file's keys were not
+	// used, "" when there is none: the startup screen shows it, and a mock
+	// run's editor status row until the first message is sent.
+	Keys        input.Keys
+	KeysProblem string
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -229,9 +236,12 @@ func New(opt Options) *Model {
 	if opt.Highlight == nil {
 		opt.Highlight = render.Highlight
 	}
+	opt.Keys = opt.Keys.WithDefaults()
 	m := &Model{opt: opt, s: state.New(), detected: map[string]provider.Detection{}}
 	m.env = input.PathEnv{Windows: filepath.Separator == '\\', Home: opt.Home, Cwd: opt.Cwd}
-	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache()}
+	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache(),
+		KeysProblem: opt.KeysProblem}
+	m.ui.SendKeys, m.ui.NewlineKeys = opt.Keys.Display()
 	project := opt.Project
 	if project == "" {
 		project = opt.Cwd

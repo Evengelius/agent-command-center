@@ -305,8 +305,9 @@ func TestFileKeys(t *testing.T) {
 			t.Errorf("Esc in the field: field %q, query %q, open %v", f.Field, f.Query, f.Open)
 		}
 		h.send(typed('f'))
-		if !f.Full || !strings.HasPrefix(plainText(h.m.View().Content), "╭") {
-			t.Error("f: not full screen")
+		// Full screen under the title bar (plan 21, item 5.7).
+		if rows := strings.Split(plainText(h.m.View().Content), "\n"); !f.Full || !strings.Contains(rows[0], "AGENT COMMAND CENTER") || !strings.HasPrefix(rows[1], "╭") {
+			t.Error("f: not full screen under the title bar")
 		}
 		h.send(typed('f'))
 		if f.Full {

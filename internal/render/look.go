@@ -93,9 +93,10 @@ func looks(s *state.State, ui UI) []look {
 	}
 	// Exchanges: a prompt and all that follows it up to the next prompt.
 	from := 0
+	undone := undoneByStage(s)
 	for i := 1; i <= len(conv); i++ {
 		if i == len(conv) || conv[i].Role == "user" {
-			exchange(s, out, from, i)
+			exchange(s, out, from, i, undone)
 			from = i
 		}
 	}
@@ -110,8 +111,8 @@ func looks(s *state.State, ui UI) []look {
 // it completed, when a call, an approval, a review or another message came
 // before it: a lone answer keeps the speaker's label. An agent still
 // running, failed or stopped leaves it narration (plan 20, the owner's
-// section 6.1).
-func exchange(s *state.State, out []look, a, b int) {
+// section 6.1). undone is undoneByStage's, counted once a frame.
+func exchange(s *state.State, out []look, a, b int, undone []int) {
 	conv := s.Conversation
 	if conv[a].Role == "user" {
 		out[a].card = cardYou
@@ -130,7 +131,7 @@ func exchange(s *state.State, out []look, a, b int) {
 		return
 	}
 	last, over := lastTurn(s, a, b, msg)
-	result := msg >= 0 && !conv[msg].Streaming && over && agentsDone(s, conv[a].Stage, last)
+	result := msg >= 0 && !conv[msg].Streaming && over && agentsDone(undone, conv[a].Stage, last)
 	if result {
 		result = false
 		for k := a; k < msg; k++ {
@@ -173,14 +174,37 @@ func lastTurn(s *state.State, a, b, msg int) (int, bool) {
 	return n, n >= 1 && n <= len(s.Stages) && !s.Stages[n-1].Open && s.Stages[n-1].Outcome == "completed"
 }
 
-// agentsDone says every agent started in turns from to last completed.
-func agentsDone(s *state.State, from, last int) bool {
+// undoneByStage counts, for each stage i from 0 to the last, the agents not
+// completed whose stage is at most i. One pass over the agents a frame:
+// agentsDone walked every agent for every exchange, so a frame's cost grew
+// with exchanges times agents, past the 16 ms target in the long session
+// (plan 21, evaluation: TestLongSession p95 16.69 ms, then 4.19 ms).
+func undoneByStage(s *state.State) []int {
+	n := len(s.Stages)
+	c := make([]int, n+1)
 	for _, k := range s.Order {
-		if a := s.Agents[k]; a != nil && a.Stage >= from && a.Stage <= last && a.Status != state.AgentCompleted {
-			return false
+		if a := s.Agents[k]; a != nil && a.Status != state.AgentCompleted {
+			c[min(max(a.Stage, 0), n)]++
 		}
 	}
-	return true
+	for i := 1; i <= n; i++ {
+		c[i] += c[i-1]
+	}
+	return c
+}
+
+// agentsDone says every agent started in turns from to last completed: none
+// of them is counted in undone between the two.
+func agentsDone(undone []int, from, last int) bool {
+	last = min(last, len(undone)-1)
+	if last < 0 || last < from {
+		return true
+	}
+	below := 0
+	if from > 0 {
+		below = undone[from-1]
+	}
+	return undone[last]-below == 0
 }
 
 // cards marks where a card starts, for the blank row above it, and gives

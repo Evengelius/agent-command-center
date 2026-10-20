@@ -43,7 +43,9 @@ func (p *Provider) DisplayName() string { return Name }
 // Detect finds claude.exe on the PATH, else at the native installer's
 // %USERPROFILE%\.local\bin\claude.exe, and reads its version. A .cmd or .bat
 // shim is never used: Windows re-parses its arguments through cmd.exe (CC-2,
-// rules 1 and 2). The sign-in kind is not read yet.
+// rules 1 and 2). Only the version is read: the session's system/init tells
+// a subscription from an API key (architecture.md, Claude Code adapter,
+// Detect; plan 21, item 5.2).
 func (p *Provider) Detect(ctx context.Context) (d provider.Detection) {
 	start := time.Now()
 	h := p.Host

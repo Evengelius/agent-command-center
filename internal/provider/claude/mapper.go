@@ -30,11 +30,15 @@ type Mapper struct {
 	lastModel   string
 	lastContext float64
 	models      map[string]string // each subagent's last model sent (plan 5, item 7)
+	// Each agent's last message_start id, by agent key ("" for the main
+	// thread): the id the agent's following stream events take (plan 21,
+	// item 3).
+	streamIDs map[string]string
 }
 
 // NewMapper returns an empty mapper.
 func NewMapper() *Mapper {
-	return &Mapper{pending: map[string]string{}, models: map[string]string{}}
+	return &Mapper{pending: map[string]string{}, models: map[string]string{}, streamIDs: map[string]string{}}
 }
 
 type line struct {
@@ -325,7 +329,22 @@ func (m *Mapper) stream(l line, agent string, raw []byte) []event.Event {
 	if err := json.Unmarshal(l.Event, &se); err != nil {
 		return []event.Event{m.unknown(raw, l.Type, "")}
 	}
-	id := l.APIMessageID
+	// The message a stream event belongs to: the id of its agent's last
+	// message_start (event.message.id, the Anthropic raw stream event carried
+	// by the documented SDKPartialAssistantMessage.event). The line's
+	// top-level api_message_id is UNDOCUMENTED: it is not in
+	// SDKPartialAssistantMessage (code.claude.com/docs/en/agent-sdk/typescript,
+	// read 2026-10-20), though present in every recording P1 to P303e and equal
+	// there to the last message_start's id (claude-code.md, stream_event). It is
+	// used only when no message_start came first for this agent (plan 21,
+	// item 3).
+	if se.Type == "message_start" {
+		m.streamIDs[agent] = se.Message.ID // an empty id drops a stale one
+	}
+	id := m.streamIDs[agent]
+	if id == "" {
+		id = l.APIMessageID
+	}
 	switch se.Type {
 	case "content_block_delta":
 		d := event.Delta{MessageID: id, Index: se.Index}
@@ -343,9 +362,6 @@ func (m *Mapper) stream(l line, agent string, raw []byte) []event.Event {
 		}
 		return []event.Event{m.ev(event.MessageDelta, event.AI, agent, raw, d)}
 	case "message_start":
-		if se.Message.ID != "" {
-			id = se.Message.ID
-		}
 		return []event.Event{m.ev(event.MessageMarker, event.Observed, agent, raw, event.Marker{MessageID: id, Name: se.Type, Model: se.Message.Model})}
 	case "content_block_start", "content_block_stop", "message_stop":
 		return []event.Event{m.ev(event.MessageMarker, event.Observed, agent, raw, event.Marker{MessageID: id, Name: se.Type, Block: se.ContentBlock.Type})}

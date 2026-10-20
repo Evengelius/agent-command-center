@@ -131,10 +131,14 @@ type inputRig struct {
 	emit   func(k event.Kind, p any)
 }
 
-func claudeRig(t *testing.T) inputRig {
+func claudeRig(t *testing.T) inputRig { return claudeRigWith(t, Options{}) }
+
+// claudeRigWith is claudeRig with the given options (the keys of plan 21, item 5.1).
+func claudeRigWith(t *testing.T, opt Options) inputRig {
 	f := &fakeClaude{}
 	cli := installedClaude{&claude.Provider{Spawner: f, Now: func() time.Time { return testNow }}}
-	h := newHarness(t, Options{Providers: []provider.Provider{cli}, Cwd: t.TempDir()})
+	opt.Providers, opt.Cwd = []provider.Provider{cli}, t.TempDir()
+	h := newHarness(t, opt)
 	h.settle()
 	h.m.ui.Choice = claude.ProviderID
 	h.send(key(tea.KeyEnter, 0))
@@ -205,12 +209,13 @@ func scriptRig(t *testing.T, id string) inputRig {
 	}
 }
 
-func mockRig(t *testing.T) inputRig {
-	h := newHarness(t, Options{
-		Config:    Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")},
-		Providers: []provider.Provider{spawnTrap{t}},
-		Cwd:       t.TempDir(),
-	})
+func mockRig(t *testing.T) inputRig { return mockRigWith(t, Options{}) }
+
+// mockRigWith is mockRig with the given options.
+func mockRigWith(t *testing.T, opt Options) inputRig {
+	opt.Config = Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")}
+	opt.Providers, opt.Cwd = []provider.Provider{spawnTrap{t}}, t.TempDir()
+	h := newHarness(t, opt)
 	h.send(tea.WindowSizeMsg{Width: 120, Height: 40})
 	base := len(h.m.State().Log)
 	return inputRig{
@@ -233,6 +238,15 @@ func rigs() map[string]func(*testing.T) inputRig {
 		"claude-code": claudeRig,
 		"codex":       codexRig,
 		"mock":        mockRig,
+	}
+}
+
+// rigsWith are the three rigs with the given options.
+func rigsWith(opt Options) map[string]func(*testing.T) inputRig {
+	return map[string]func(*testing.T) inputRig{
+		"claude-code": func(t *testing.T) inputRig { return claudeRigWith(t, opt) },
+		"codex":       func(t *testing.T) inputRig { return codexRigWith(t, opt) },
+		"mock":        func(t *testing.T) inputRig { return mockRigWith(t, opt) },
 	}
 }
 

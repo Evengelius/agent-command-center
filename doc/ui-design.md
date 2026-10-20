@@ -869,8 +869,17 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   - approval cards ([Approvals](#approvals)): a pending one in its pink
     box, Template 2's; an answered one is one row among the tool rows, on
     their ground, who asked kept, its outcome in its colour;
-  - dashboard notices in grey, marked "dashboard": "interrupted by you",
-    "turn failed: …", "send refused: session not ready".
+  - what the code shows around a turn (plan 21, item 5.6c): a failed
+    turn, the error as received, "✗ turn failed: " and its first line, in
+    red (`internal/render/cards.go`; D's errors list holds it whole); an
+    interrupted turn, no entry of the dashboard's: the CLI's own note, such
+    as Claude Code's "[Request interrupted by user]", in amber with "· "
+    (observed), zone A's stage "○ interrupted" (`internal/render/tree.go`),
+    its open tools "unfinished"; a refused send, no entry either: the
+    editor's status row reads "not sent: the session is <phase>; the draft
+    is kept", or "turn running: wait, or interrupt" while a turn runs
+    (`internal/state/actions.go`). The one note of the dashboard's own in B
+    is the Codex slash command held back, below, in grey with "· ".
   - **Slash commands on Codex**: Codex runs `/status`, `/model` and the rest
     in its own terminal only; through `app-server` the text would reach the
     model as a message (plan 4, L5). A message whose first word is a slash
@@ -1037,9 +1046,14 @@ since plan 20 (brief amendment 16, the owner's two templates).
   waiting for the owner with its status ("tool: Bash ✓"), and a request
   waiting for the owner ("next: Write (approval pending)", grey). Under 100
   columns the one row keeps plan 18's layout: symbol, label, model, state,
-  then the time and tokens at the right. A retry shows "↻ 2" after the time
-  (AM2 C7). Rows are ordered: waiting for approval, running, then ended,
-  most recent first (ASM-22).
+  then the time and tokens at the right. An agent's retries show as "↻ 2"
+  in amber after its time, at every width, none while it has none (AM2 C7;
+  plan 21, item 5.6a). Codex reports an agent's retries, a thread's `error`
+  with `willRetry`; Claude Code's `system/api_retry` is the orchestrator's,
+  counted in D, so a Claude Code agent shows none: its documented
+  `tool_progress` `subagent_retry` (claude-code.md) is not mapped, since no
+  recording holds one to check it against. Rows are ordered: waiting for
+  approval, running, then ended, most recent first (ASM-22).
 - **Preview** (from 160 columns, with agents in play): inside C, right of
   the list (70 cells) and a rule, the selected agent's last events,
   timestamped, each with its origin label, under a heading "general-purpose
@@ -1057,7 +1071,10 @@ since plan 20 (brief amendment 16, the owner's two templates).
   under 100 columns), the list scrolling with the selection past that, and
   keeps that height after they finish, until the owner's next prompt clears
   it; a turn the CLI opens by itself does not. From 160 columns, with agents
-  in play, C keeps 8 rows for the preview.
+  in play, C keeps 8 rows for the preview. With an agent in play, C never
+  has fewer than one agent's rows, 4 from 100 columns, A and B giving the
+  rows: at 160x24 to 160x26, where B's 14 rows would leave C 3, C has 4 and
+  A and B 11 to 13 (plan 21, item 4).
 - **Keys** when focused: ↑ ↓ select, Enter inspects, z zooms; PgUp, PgDn,
   Home and End scroll the list, the selection kept. C has no key hint row
   since plan 20: while C has the focus the footer reads "↑↓ select · Enter
@@ -1164,7 +1181,9 @@ it; only the window's cells cover it. Golden frame `file`, 80x24:
 
 **The window.** `max(W*4/5, min(W-4, 84))` columns by `max(H*4/5,
 min(H-2, 22))` rows, centred: 76x22 at 80x24, 96x32 at 120x40, 160x48 at
-200x60; `f` fills the screen and back. A rounded frame in the title colour;
+200x60; `f` fills the screen under the title bar, as the inspection does,
+so the title bar and a mock run's "◆ MOCK — not a live session" stay on
+screen (plan 21, item 5.7), and back. A rounded frame in the title colour;
 on its top edge the file's name on the left, "<language> · <N> lines" on
 the right; the first row, the path shortened as elsewhere and what opened
 it ("read by Read", "edited by Edit", "changed by fileChange", "quick
@@ -1443,8 +1462,8 @@ How each state looks, wherever it occurs (B3.3; AM2 D9):
 | Streaming | "⠋ Streaming", its spinner turning, in B's header; the cursor `▌` at the end of the open entry |
 | Running a tool | the tool line with ◉; in C, the agent's task |
 | Waiting for approval | "!" in the colour of attention on the agent in A, a pink "●" in C, the pink card in B, "! Waiting for approval" in B's header |
-| Interrupting | "Interrupting…" in B's header; after 10 s, "the turn did not stop · F to force stop (ends the session)" (ASM-16) |
-| Interrupted, cancelled | a notice "interrupted by you" in B; open tools end "unfinished" (inferred) |
+| Interrupting | "Interrupting…" in B's header; after 10 s, the editor's status row reads "no turn end after the interrupt: force stop closes the session", and F force-stops (ASM-16; `internal/state/actions.go`) |
+| Interrupted, cancelled | the CLI's own note in B when it sends one (Claude Code's "[Request interrupted by user]", amber, observed); zone A's stage "○ interrupted"; open tools end "unfinished" (inferred); no notice of the dashboard's (plan 21, item 5.6c) |
 | No data | "N/A" in grey with its reason; never a zero, never a blank |
 | Error | ✗ in red with the first line of the error; the full error in inspection or in D's error list |
 | Session crashed | B shows the exit code and stderr tail; send is disabled; "Ctrl+R resume · Ctrl+Q quit" (resume only once the session had reached Ready; earlier, the StartFailed card); the draft is kept; nothing restarts without the key ([reliability.md, Resumption](reliability.md#resumption)) |
@@ -1459,7 +1478,7 @@ U9; TEL rules):
 
 | Origin | Look |
 | - | - |
-| `ai` | normal text, under the model's label; in lists and previews, right-aligned "ai" |
+| `ai` | normal text with no label, under the model's header in B (CLAUDE or CODEX, the model, the time); in C's preview the row's role, "assistant", and no origin label; in the inspection no label. AI text is the text without a label, every other origin keeping its own (`originLabel`, `internal/render/dashboard.go`; plan 21, item 5.6b) |
 | `observed` | right-aligned grey "observed" on event lines; values plain |
 | `derived` | right-aligned "derived", and the rule in the zoomed panel ("sum of 3 threads") |
 | `inferred` | italic, with "inferred" (the stage tree's heading says "inferred from activity") |
@@ -1483,7 +1502,7 @@ rounded frames, pale violet panel titles (RD "Layout mock-up").
 | ! | needs the owner (approval, question) | pink |
 | ● | an agent waiting for the owner, in zone C (plan 20, Template 2) | pink |
 | ✗ | failed, denied | red |
-| ↻ n | retries | amber |
+| ↻ n | an agent's retries, after its time in C (plan 21, item 5.6a) | amber |
 | ▸ | the entry cursor in B, in its card's margin (attention); a call with no record (grey) | |
 | ▎ | a message's bar in B, on each of its rows: YOU, CLAUDE or CODEX (plan 20, amendment 17) | violet, blue |
 | ─ | the rule between two messages in B, and B's input under its own | the frames' |
@@ -1494,8 +1513,9 @@ Model colours, after RD's legend (one colour per model family, ASM-13):
 Opus violet, Sonnet orange, Haiku blue, OpenAI GPT models teal, any other
 model in the text colour. The model name is always written next to its colour, and every
 status has its symbol, so nothing depends on colour alone (a 16-colour
-terminal or `NO_COLOR` still reads correctly). Colours are configurable in
-the application's own configuration file (ASM-7).
+terminal or `NO_COLOR` still reads correctly). The colours are fixed in the
+code (`internal/render/palette.go`): the application's own configuration
+file holds the send and newline keys only (ASM-7; plan 21, item 5.1).
 
 | Role | Value (ASM-13) | 256 colours | 16 colours |
 | - | - | - | - |
@@ -1567,10 +1587,12 @@ connectors").
 
 ### Rendering
 
-- Events are coalesced: the forwarder hands the state at most one batch per
-  frame, at most 30 frames per second (ASM-3; architecture.md, Threads of
-  execution). Typing is not delayed by the batch: a key is applied and drawn
-  in the next frame.
+- Events come in bursts, not coalesced by kind: each message to the
+  program carries the events waiting, at most 512 (`maxDrain`), applied as
+  one update, so a burst is one screen update; Bubble Tea draws at most 60
+  frames per second, its default (ASM-3; architecture.md, Threads of
+  execution; plan 21, item 5.4). Typing is not delayed by a burst: a key is
+  applied and drawn in the next frame.
 - Bubble Tea v2's cell renderer redraws only the cells that changed
   (`cursed_renderer.go`, TI 2.2), so streaming text does not repaint the
   screen and does not flicker (AM2 U8). It also wraps each frame in
@@ -1588,16 +1610,38 @@ connectors").
   wrapped, and with no answer or another one no frame is.
 - Claude Code documents stale fragments on WT through ConPTY in its
   alternate screen (TI 6.2); if seen, an option forces full repaints.
-- The renderer never computes text: wrapping, Markdown and highlighting are
-  cached per entry and width, and only visible rows are drawn.
+- What is cached across frames (`internal/render/content.go`): each source
+  line's wrap, by the line and the widths (`WrapCache`), and a finished
+  entry's row count, by the entry, the width and its shape (`rowCount`); a
+  streaming entry and an approval are counted afresh. Markdown is
+  classified again for each entry drawn and styled for each row drawn
+  (`mdLines`, `internal/render/cards.go`), with no cache; only the rows in
+  view are built, and the stream's frame time is within its target without
+  one (`TestStreamToFrame`; plan 21, item 5.6d). The file viewer's
+  colouring runs in a command, never while drawing (File viewer).
 
 ## Focus and keys
 
 The input in B has the focus by default (AM4 D4; AM2 U10); Esc always
-returns to it. Bindings are lists, configurable in the application's own
-configuration, never a CLI's (TI 4.3; ASM-7, ASM-9). The defaults avoid the
-keys Windows Terminal takes (TI 9). F1 or `?` (outside the editor) shows
-this table as an overlay.
+returns to it. The editor's send keys and newline keys are lists,
+configurable in the application's own file, never a CLI's (TI 4.3; ASM-7;
+plan 21, item 5.1); every other binding is fixed in the code (ASM-9). The
+defaults avoid the keys Windows Terminal takes (TI 9). F1 or `?` (outside
+the editor) shows this table as an overlay, with the keys in force.
+
+The file is `%APPDATA%\agent-command-center\config.json`, read once at
+start and never written: `{"keys": {"send": ["ctrl+enter"], "newline":
+["enter"]}}` makes Ctrl+Enter send and Enter add a newline. A list left out
+keeps its default, Enter to send and Ctrl+J, Shift+Enter and Alt+Enter for a
+newline. A key is Enter with any of Ctrl, Alt and Shift, or Ctrl+J; the
+modifiers are written in any order and case. A file that cannot be read or
+is not JSON, an unknown setting, another key, an empty list, or a key in
+both lists or twice in one: the first screen names `config.json` and the
+problem, the startup screen under its project field, a mock run's editor
+status row in red (only a quit question goes before it) until a message
+is sent, and the default keys apply. The footer, the editor's status row, the draft
+window's hints and this overlay show the keys in force; a send key keeps
+Enter's rules: never inside a paste, and after `\` a newline.
 
 **Anywhere**
 
@@ -1809,13 +1853,15 @@ for the draft (brief amendment 13). At 80x24:
 
 - **The window**: the file viewer's place and size (FileRect, [File
   viewer](#file-viewer)): 76x22 at 80x24, 96x32 at 120x40, 160x48 at
-  200x60, centred; **Ctrl+F** fills the screen and back (`f` types a letter
+  200x60, centred; **Ctrl+F** fills the screen under the title bar, as the
+  file viewer's `f` does (plan 21, item 5.7), and back (`f` types a letter
   in a draft). The dashboard keeps updating behind it. On the top edge,
   "Draft" on the left, the line count on the right.
 - **The same draft, the same editor**: the window shows `m.edit`, the input
-  box's buffer, with every key of the [Input editor](#input-editor):
-  Enter sends and closes the window (on an empty draft it does nothing and
-  the window stays), Ctrl+J and the other newline keys add a line, Ctrl+C
+  box's buffer, with every key of the [Input editor](#input-editor): a
+  send key, Enter by default, sends and closes the window (on an empty
+  draft it does nothing and the window stays), Ctrl+J and the other newline
+  keys add a line (the keys in force, [Focus and keys](#focus-and-keys)), Ctrl+C
   copies a selection, Ctrl+Z and Ctrl+Y undo and redo, a paste is kept byte
   for byte. While a turn runs, Enter does not send, as in the input box.
 - **Esc** clears a selection first, then goes back to the input box with the
@@ -1926,7 +1972,7 @@ what is not built).
 
 ## Assumptions used here
 
-ASM-3 (30 fps), ASM-7 (own configuration file), ASM-8 (prefill flags),
+ASM-3 (60 fps, Bubble Tea's default), ASM-7 (own configuration file, the send and newline keys), ASM-8 (prefill flags),
 ASM-9 (default keys), ASM-10 (editor budget), ASM-12 (layout geometry), ASM-13
 (colours), ASM-14 (Codex child model N/A before 0.163.0), ASM-15 (no send
 while a turn runs), ASM-16 (interrupt timeout), ASM-17 (Markdown renderer),

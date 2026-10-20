@@ -14,15 +14,20 @@ import (
 )
 
 // Test 6's targets (proposal step 3, item 3): over target is a FAIL.
-// overTarget fails the test for a missed timing target, except under -race:
-// the work still runs there, for the race detector, and the time is logged.
+// overTarget fails the test for a missed timing target in the timing step
+// only (-tags timing; doc/evaluation.md, Keystroke timing). Under -race, and
+// in an ordinary go test, the work still runs, for the race detector and
+// for the tests' other checks, and the time is logged (plan 21, item 2).
 func overTarget(t *testing.T, format string, args ...any) {
 	t.Helper()
-	if raceBuild {
+	switch {
+	case raceBuild:
 		t.Logf("not judged under -race: "+format, args...)
-		return
+	case !timingBuild:
+		t.Logf("not judged outside the timing step: "+format, args...)
+	default:
+		t.Errorf(format, args...)
 	}
-	t.Errorf(format, args...)
 }
 
 const (

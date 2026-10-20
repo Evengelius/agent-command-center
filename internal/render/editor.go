@@ -134,11 +134,16 @@ func (v EditorView) selected(line, off int) bool {
 func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 	v := ui.Editor
 	out := append([]line{rule(w)}, draftRows(s, ui, w, minRows, maxRows)...)
-	status := editorStatus(s)
+	status := editorStatus(s, ui)
 	if v.Pasting {
 		status = "pasting…"
 	}
-	out = append(out, spread(plain("  "+status, stGrey), plain(lineCount(v)+" · Ctrl+G draft window", stGrey), w))
+	if keysProblemShown(s, ui) && status == ui.KeysProblem {
+		// The configuration file's problem is long: the row is its alone (plan 21, item 5.1).
+		out = append(out, plain("  "+status, stFailed))
+	} else {
+		out = append(out, spread(plain("  "+status, stGrey), plain(lineCount(v)+" · Ctrl+G draft window", stGrey), w))
+	}
 	for i := range out {
 		out[i] = out[i].fit(w) // the padding is the editor's: a click on it goes to the editor
 	}
@@ -195,10 +200,13 @@ type DraftWindow struct {
 }
 
 // draftKeys are the draft window's key hints, the longest first.
-var draftKeys = []string{
-	"Enter send · Ctrl+J newline · Ctrl+F full screen · Ctrl+C copy · F1 keys · Esc back",
-	"Enter send · Ctrl+J newline · Ctrl+F full screen · Esc back",
-	"Enter send · Ctrl+J newline · Esc back",
+func draftKeys(ui UI) []string {
+	sn := sendNewline(ui)
+	return []string{
+		sn + " · Ctrl+F full screen · Ctrl+C copy · F1 keys · Esc back",
+		sn + " · Ctrl+F full screen · Esc back",
+		sn + " · Esc back",
+	}
 }
 
 // DraftRect is the draft window's place on a w by h screen: the file
@@ -214,14 +222,14 @@ func draftWindow(s *state.State, ui UI, ww, hh int) []line {
 	rows := max(hh-3, 1)
 	body := draftRows(s, ui, inner, rows, rows)
 	right := decoLine(fmt.Sprintf("line %s/%s", grouped(v.Line+1), grouped(max(v.Total, 1))), stGrey)
-	switch st := editorStatus(s); {
+	switch st := editorStatus(s, ui); {
 	case v.Pasting:
 		right = decoLine("pasting…", stProgress)
-	case st != idleHint:
+	case st != idleStatus(s, ui):
 		right = decoLine(st, stProgress)
 	}
 	room := inner - right.width() - 1
-	body = append(body, spread(windowLeft(s, ui, draftKeys, room), right, inner))
+	body = append(body, spread(windowLeft(s, ui, draftKeys(ui), room), right, inner))
 	for i := range body {
 		body[i] = body[i].fit(inner)
 	}

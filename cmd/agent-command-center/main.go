@@ -23,16 +23,27 @@ func main() {
 	// Both adapters detect their CLI; their sessions arrive in steps 2
 	// (Claude Code) and 5 (Codex), and until then Start reports it.
 	host := provider.SystemHost()
+	// The application's own configuration file: the editor's send and newline
+	// keys, read once, here (plan 21, item 5.1). A problem is shown on the
+	// first screen and the default keys apply.
+	keys, problem := input.DefaultKeys(), ""
+	if path, err := input.ConfigFile(); err != nil {
+		problem = "config.json: no configuration folder (" + err.Error() + "); default keys used"
+	} else {
+		keys, problem = input.LoadKeys(path)
+	}
 	m := app.New(app.Options{
-		Config:    cfg,
-		Providers: []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host}},
-		Now:       time.Now,
-		Clipboard: input.System{},
-		MockSpeed: 1,
-		Drafts:    &input.Drafts{},
-		Projects:  &input.Projects{},
-		Git:       input.GitCLI{},
-		Sessions:  &input.Sessions{},
+		Keys:        keys,
+		KeysProblem: problem,
+		Config:      cfg,
+		Providers:   []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host}},
+		Now:         time.Now,
+		Clipboard:   input.System{},
+		MockSpeed:   1,
+		Drafts:      &input.Drafts{},
+		Projects:    &input.Projects{},
+		Git:         input.GitCLI{},
+		Sessions:    &input.Sessions{},
 	})
 	code, out := app.Run(m)
 	for _, l := range out {

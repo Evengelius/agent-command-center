@@ -1,3 +1,4 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
 ╭─ viewer.go ────────────────────────────────────────────────── Go · 58 lines ─╮
 │ sample/viewer.go · edited by Edit                                            │
 │ 29          }                                                                │
@@ -19,6 +20,5 @@
 │ 45      return out                                                           │
 │ 46  }                                                                        │
 │ 47                                                                           │
-│ 48  // Brighter is the colour with each channel raised by step, at most 255. │
 │ ↑↓ · / search · n N · g line · f full · Esc back · F3 close       line 35/58 │
 ╰──────────────────────────────────────────────────────────────────────────────╯

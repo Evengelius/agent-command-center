@@ -83,13 +83,20 @@ cell breaks it (each checked by mutation). `TestFrameReuse` checks that a
 frame built from the one before it equals the frame drawn afresh, escape codes
 included.
 
-**The timing step, on its own.** The timed tests carry the `timing` build tag,
-so `go test ./...` never runs them. They run as a separate step, under the
+**The timing step, on its own.** A time is judged against its target only in
+the timing step, built with the `timing` tag. Four timed tests carry the tag,
+so `go test ./...` never runs them. Two more, `TestPasteToFrame` and
+`TestStreamToFrame` (`internal/app/perf_test.go`), run in `go test ./...` too,
+for their other checks: a 50,000-line paste kept byte for byte, and a
+2,000-line streamed answer kept as one entry and drawn to its end. There
+`overTarget` logs their time as "not judged outside the timing step", as it
+does under `-race` (`timingBuild`, `timing_on_test.go` and
+`timing_off_test.go`; plan 21, item 2). The step runs the six, under the
 owner's normal working conditions (owner, 2026-10-16), since the target is
 about real use:
 
 ```text
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestPasteToFrame|TestStreamToFrame)$' -count=1 -v
 ```
 
 - Allowed: the owner's usual applications open and idle (VS Code, browsers,
@@ -112,6 +119,10 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   generated events applied at speed, then 400 answer deltas each timed to
   its frame at 200x60; the same 16 ms target at p95 (`streamTarget`). It
   reports the heap and the sizes of the lists the state keeps.
+- `TestPasteToFrame` pastes 50,000 lines into the editor, ten times, each to
+  its frame: the worst within 100 ms (`pasteTarget`, ASM-10).
+  `TestStreamToFrame` streams a 2,000-line answer, each delta timed to its
+  frame: p95 within 16 ms (`streamTarget`).
 - A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
   profile, the same test on the last commit) and report it as the loop above
   says.

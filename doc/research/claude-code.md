@@ -420,7 +420,7 @@ activity counts (doc `#sdktaskstartedmessage`).
 | `type` / `subtype` | Key fields | Use |
 | - | - | - |
 | `system/init` | `session_id`, `model`, `cwd`, `tools`, `mcp_servers`, `permissionMode`, `slash_commands`, `agents`, `skills`, `plugins`, `claude_code_version`, `capabilities` | Session header, zone A orchestrator model |
-| `stream_event` | `event` (Anthropic raw stream event), `ttft_ms` | Token deltas, zone B |
+| `stream_event` | `event` (Anthropic raw stream event), `ttft_ms`; also `api_message_id`, **undocumented** (not in `SDKPartialAssistantMessage`, code.claude.com/docs/en/agent-sdk/typescript, read 2026-10-20), seen on every `stream_event` line of P1 to P303e (1,237 lines in 13 recordings) and equal to the id of the same agent's last `message_start` | Token deltas, zone B: the dashboard takes a delta's message id from its agent's last `message_start` (`event.message.id`) first, and from `api_message_id` only when no `message_start` came before (plan 21, item 3) |
 | `assistant` | `message` (id, model, content, usage, stop_reason), `parent_tool_use_id`, `agent_id`, `error`, `aborted`, `usage_report`, `context_usage` | Completed blocks, tool calls, tokens |
 | `user` | tool results (`tool_use_result` structured output), replays with `--replay-user-messages` | Tool completion |
 | `result` | `subtype` (`success`, `error_max_turns`, `error_during_execution`, `error_max_budget_usd`, ...), `is_error`, `duration_ms`, `duration_api_ms`, `num_turns`, `total_cost_usd`, `usage`, `modelUsage`, `permission_denials`, `terminal_reason` | Turn end, cost, errors |

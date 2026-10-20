@@ -1,6 +1,6 @@
+ >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session
 ╭─ viewer.go ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Go · 58 lines ─╮
 │ sample/viewer.go · edited by Edit                                                                                                                                                                    │
-│  3  package sample                                                                                                                                                                                   │
 │  4                                                                                                                                                                                                   │
 │  5  import (                                                                                                                                                                                         │
 │  6      "fmt"                                                                                                                                                                                        │
