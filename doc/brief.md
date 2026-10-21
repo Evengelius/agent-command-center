@@ -2939,3 +2939,31 @@ the owner took both:
 ````text
 Yes, take up both proposals from the live checks: send summary auto to Codex with the details as described, and map Claude Code's hook_started, hook_response and post_turn_summary as known events. Start with the criteria in plan.md.
 ````
+
+## Amendment 21, 2026-10-21: the acc launcher in the project, at its own font size, for plan 23
+
+The owner ran the dashboard on Codex in Windows Terminal and zoomed out three
+times with Ctrl+minus (from the default 12 pt to 9 pt). The first message
+came with a screenshot of the dashboard at that size: a grid of 208 columns
+by 59 rows, maximised. The size was first set for the whole terminal, then
+for a profile and the owner's `acc` function, both outside the repository.
+The owner, in four messages, word for word:
+
+````text
+Ok, then I want this zoom on my image to be the default one, I did ctrl - 3 times, and i have the terminal opened if it can help you, I prefer that because now the zooming was too big
+
+In fact I would like that to be only applied the moment we run that acc app, not that it apply on the whole terminal
+
+It works fine, however is it linked to this project, meaning if i use a new computer, and clone this project it will still work ?
+
+Then you need to undo the changes, and make it work in this project, so that it is committed and pushed.
+
+And it doesn't need to work after cloning, i want it to work everytime i run this project, and for the moment it is through terminal
+
+So basically :
+
+Cloning to local computer
+cd to the project in terminal
+acc
+it opens it automatically with my desired size automatically.
+````

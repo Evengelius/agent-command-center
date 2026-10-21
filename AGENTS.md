@@ -21,8 +21,8 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-21, when the owner approved plan
-22, a live thinking indicator in zone B (brief amendments 18 to 20).** Plans 1 to 22 (research; architecture and reliability; proposal; the
+**Status: plan 23, the acc launcher in the project (brief amendment 21),
+done and committed at the owner's request on 2026-10-21.** Plans 1 to 22 (research; architecture and reliability; proposal; the
 MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live; nothing left open; recent projects, favourites and a project browser; git worktree management; a file viewer, an Explorer and the draft in a window; an adaptive layout; zone B as the centerpiece; strict conformance to the owner's two approved templates; what the review of d84e5d4 found; a live thinking indicator in zone B) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
 plan's progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.
@@ -72,6 +72,7 @@ doc\evaluation.md              how every change is checked and reported
 doc\research\                  plan 1's findings, one file per reference
 doc\architecture.md ...        the design, kept current; doc\planN-evaluation.md, each plan's results
 cmd\                           the application and the confcheck tool
+acc.cmd, scripts\acc.ps1       the launcher: .\acc starts the dashboard (plan 23)
 internal\                      the packages (doc\architecture.md, The five parts)
 testdata\                      probe recordings, mock files, golden frames
 THIRD_PARTY.md                 every module in the graph, its version and licence
@@ -99,6 +100,9 @@ go test ./internal/app -run TestGoldenFrames -update     rewrite golden frames; 
 go test ./internal/provider/mock -run TestMockFiles -update  rewrite testdata\mock from the probes
 go run ./cmd/agent-command-center --mock testdata/mock/claude-subagent-approval.jsonl
 go run ./cmd/agent-command-center [--provider claude-code|codex] [--project <dir>]
+.\acc [--provider claude-code|codex] [--mock <file>]
+                                               the same, its project the current folder; in Windows
+                                               Terminal in a tab of its own, at a 9 pt font (plan 23)
 ```
 
 Tests never start an agent CLI; live runs (L1 to L4) follow `doc\evaluation.md`
