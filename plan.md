@@ -518,6 +518,86 @@ P22s (18:52):
   `post_turn_summary` as known events with nothing drawn. Today each session
   adds 2 to zone D's "unrecognised events", and each turn 1.
 
+### Amendment 19: Codex through the local proxy
+
+The owner's request during this plan (doc/brief.md, amendment 19). It is
+built, not yet committed, and is to be committed apart from the thinking
+indicator:
+- its own files: `internal/input/config.go` and `config_test.go`;
+  `internal/provider/codex/provider.go`, `session.go` and `proxy_test.go`;
+  `cmd/agent-command-center/main.go`; `internal/render/startup.go`;
+  `internal/app/codexproxy_test.go`;
+- its documentation: `doc/brief.md` amendment 19, and parts of
+  `ui-design.md`, `architecture.md`, `reliability.md`, `AGENTS.md` and
+  this file;
+- `internal/app/app.go` and `internal/render/render.go` hold hunks of both:
+  stage those by hunk with a filtered patch (`git apply --cached`), or
+  commit plan 22 first.
+
+**Design.**
+- `config.json` (ASM-7) gains one setting, `{"codex": {"proxy": "<URL>"}}`.
+  The URL is `http://` or `https://` with a host, for example
+  `http://127.0.0.1:3128` for Px.
+- When it is set, the dashboard starts Codex with `HTTPS_PROXY` and
+  `HTTP_PROXY` set to it:
+  - every inherited value of either name, in any case, is replaced;
+  - every other variable is inherited as today;
+  - the commands Codex runs inherit them too.
+- Claude Code is unchanged: the dashboard gives it no proxy. Its
+  environment and `~/.claude/settings.json` both carry Px since 2026-10-21
+  (AGENTS.md, Environment).
+- Absent, it changes nothing: Codex inherits the dashboard's environment.
+- `input.LoadCodexProxy` reads the same file, only reads it, and is
+  independent of the keys:
+  - A problem in `codex` (a wrong type, an unknown setting in it, a value
+    that is not such a URL, or a URL with credentials) sets no proxy and
+    is named on the startup screen, under the keys' problem: `config.json:
+    …; no proxy for Codex`.
+  - A problem with the file as a whole (unreadable, not JSON, an unknown
+    setting at its top level) is already named by the keys' problem, and
+    it sets no proxy.
+  - The startup screen shows the proxy in force on a grey line: "Codex
+    through the proxy http://127.0.0.1:3128 (config.json)".
+- A resume after a crash starts Codex the same way.
+
+**Criteria.**
+- 19.1 With `{"codex":{"proxy":"http://127.0.0.1:3128"}}`, Codex's spawn
+  environment equals the dashboard's environment:
+  - every `HTTPS_PROXY` and `HTTP_PROXY` entry is removed, in any case;
+  - `HTTPS_PROXY=http://127.0.0.1:3128` and
+    `HTTP_PROXY=http://127.0.0.1:3128` are appended;
+  - every other entry is unchanged and in the same order.
+- 19.2 No file, no `codex`, or no `proxy`: no environment is given
+  (inherited), as today. Existing tests and golden frames are unchanged.
+- 19.3 Claude Code's spawn environment is unchanged with the setting.
+- 19.4 These values are refused, each with no proxy and one problem naming
+  `codex.proxy`, or `codex` for the last two:
+  - `""`, `"127.0.0.1:3128"`, `"socks5://127.0.0.1:1080"`, `"http://"`;
+  - `"http://user:secret@127.0.0.1:3128"`, where the message never shows
+    `secret`;
+  - a number or a list as the value;
+  - `"codex": "x"`, and an unknown setting inside `codex`.
+
+  The keys still load from that file.
+- 19.5 A problem with the whole file gives no proxy and no second problem
+  line; the keys' problem stays as in plan 21.
+- 19.6 The startup screen shows the `codex` problem as a ✗ line under the
+  keys' problem, and the proxy in force as a grey line.
+- 19.7 A resume after a crash spawns Codex with the same environment.
+- 19.8 The file is only read: none is created or changed.
+- 19.9 The documentation states all this, kept current:
+  - ui-design.md, the `config.json` paragraph;
+  - architecture.md, the start's step 1, ASM-7 and the Codex adapter;
+  - reliability.md, a proxy that does not answer (Codex's own errors in
+    zone B, nothing hidden).
+- 19.10 Checks:
+  - `go build ./...`, `go vet ./...` and `gofmt -l .` pass;
+  - `go test ./...` passes twice, and `-race` passes;
+  - the golden frames are unchanged.
+- 19.11 Live check, with the owner's approval: the owner's `config.json`
+  set, Px running, the dashboard started with Codex on a temporary
+  project, and no turn. Codex's connections go only to 127.0.0.1:3128.
+
 ### Corrections C1 to C12
 
 The owner's decision of 2026-10-21 on the investigation
@@ -700,6 +780,96 @@ Then re-verify, including the demonstrations the corrections change."
     with 0 races.
   - Corrections C1 to C13 wait for the owner's approval. Nothing in the
     application changed; no commit.
+- 2026-10-21: amendment 19, Codex through the local proxy.
+  - Built by an implementer agent (Sonnet) and reviewed here.
+    - `input.LoadCodexProxy` reads `config.json`'s `codex.proxy`.
+    - `codex.Provider.Proxy` gives the Codex it starts `HTTPS_PROXY` and
+      `HTTP_PROXY`; with no setting there is no environment, as before.
+    - The startup screen shows a red problem line and a grey proxy line.
+  - Checks: gofmt clean; build and vet exit 0; `go test ./...` 14 ok,
+    twice by the agent and once here; `-race` 14 ok with 0 races; the timing
+    step 7 of 7; the golden frames unchanged.
+  - Criteria 19.1 to 19.8 and 19.10 PASS. 15 faults put in by the agent
+    and 2 put in here each failed a test.
+  - 19.9: the documentation (ui-design.md, architecture.md, reliability.md,
+    AGENTS.md's environment).
+  - The owner's own setup, outside the repository:
+    - Px's upstream in `%APPDATA%\px\px.ini`;
+    - `~/.claude/settings.json` with the four proxy keys and a
+      `SessionStart` hook that starts `pxw`;
+    - the global CLAUDE.md's Px section rewritten without the company's
+      name;
+    - `config.json` created with `codex.proxy`, at the owner's request.
+  - 19.11 PASS, live, with the owner's approval. A throwaway test with the
+    `live` tag, in a scratch copy, started Codex 0.163.0 the dashboard's
+    way: the proxy read from the owner's real `config.json` by
+    `input.LoadCodexProxy`, in an empty temporary project outside the
+    repository, with no turn.
+    - The spawn carried `HTTPS_PROXY` and `HTTP_PROXY` set to
+      `http://127.0.0.1:3128`.
+    - The handshake took 2.6 s. The rate limits came back through Px 4.4 s
+      after the start.
+    - netstat saw `codex.exe` connect only to 127.0.0.1:3128, and nowhere
+      else.
+    - Codex closed with exit 0, and its 6 processes were gone.
+    - confcheck PASS: every configuration file identical, 0 new session
+      files.
+  - No commit.
+- 2026-10-21: the check after Claude Code's restart, from a new Claude
+  Desktop session, read-only.
+  - This session's Claude Code (Claude Desktop's own, 2.1.304) connected to
+    the corporate proxy directly during 150 s of sampling, and never to Px.
+  - Its tool shells carry `HTTPS_PROXY` and `HTTP_PROXY` equal to the
+    Windows user variables, not the settings' four keys; Internet Options
+    sets no proxy. In a Claude Desktop session the keys do not take effect.
+  - Px runs (`pxw`, started at 14:17, before this session) and listens on
+    127.0.0.1:3128 only.
+  - The owner approved the global setup, applied the same day:
+    - `setx` pointed the Windows user variables `HTTPS_PROXY` and
+      `HTTP_PROXY` at `http://127.0.0.1:3128`; `NO_PROXY` is unchanged
+      (the same hash before and after);
+    - `px --install` added Px's logon start, `pxw.exe` with `--config` set
+      to `%APPDATA%\px\px.ini`, naming no proxy;
+    - the `SessionStart` hook is kept as a safety net;
+    - the global CLAUDE.md's Px section and AGENTS.md's Environment are
+      rewritten to match, with no company name.
+  - Left to check once Claude Desktop is quit and reopened: from a new
+    session, its Claude Code connects to 127.0.0.1:3128 only. Done: the
+    next entry.
+- 2026-10-21: that check, from a new Claude Desktop session after the
+  restart, read-only: PASS.
+  - Claude Desktop, now the Microsoft Store app 3.1623.0.0, restarted at
+    15:38. This session's Claude Code is the app's own CLI 2.1.304 (PID
+    29068, started at 15:39), found as the parent of the tool shells. It
+    runs from `%LOCALAPPDATA%\Claude-Data\claude_pzs8sxrjxfjjc\claude-code\2.1.304\`;
+    `%APPDATA%\Claude\claude-code` does not exist.
+  - The shells carry `HTTPS_PROXY` and `HTTP_PROXY` equal to
+    `http://127.0.0.1:3128`, as do the Windows user variables.
+  - Sampled for 251 s, 15:51:43 to 15:55:54, while it worked: turns, a
+    WebFetch, a call to a remote MCP connector, 21 s idle. Two samplers
+    ran side by side:
+    - the TCP and UDP tables, IPv4 and IPv6, every 65 ms: 3,855 samples;
+    - the documented `Get-NetTCPConnection -OwningProcess 29068`: 152
+      snapshots.
+  - Every connection went to 127.0.0.1:3128, and none anywhere else:
+    - 18 connections, one open since 15:39:06 and 17 of 0.3 to 0.7 s;
+    - connected to Px in 3,855 samples of 3,855; no UDP socket;
+    - the cmdlet's 159 `Bound` rows have no remote end: each is the local
+      port of one of these connections.
+  - Px held the other end of each, in every sample: its server
+    `pythonw.exe` (PID 21352, a child of `pxw.exe`). Px opened one
+    connection to the corporate proxy for each, 18, and none elsewhere.
+    The script matched the address against `px.ini`'s `server` line and
+    never printed it.
+  - The session's children opened no connection: the tool shells, git, a
+    child `claude.exe`, and the `rea` MCP server (`npx`, then `node`). A
+    corporate alert client was left out: it predates the session, and its
+    stale parent PID had been reused by that `npx`.
+  - Not verified: a connection shorter than the poll (no ETW trace without
+    elevation); paths the window did not use, such as a sign-in refresh.
+  - The global CLAUDE.md's Check named `%APPDATA%\Claude\claude-code` for a
+    Desktop session's `claude.exe`. At the owner's request it now names the
+    Store app's path.
 - 2026-10-21: the session-start checks after the restart, read-only.
   - The handoff written before the restart was acted on and deleted at
     15:11 by the session that ran the first Px check. Its open points are

@@ -69,6 +69,12 @@ type UI struct {
 	// run's editor status row until the first message is sent.
 	SendKeys, NewlineKeys []string
 	KeysProblem           string
+	// CodexProxy is the proxy Codex is started through, config.json's
+	// codex.proxy (plan 22, amendment 19), "" when there is none; the startup
+	// screen shows it on a grey line. CodexProxyProblem is why the codex section
+	// was not used, "" when there is none: the startup screen shows it, under
+	// KeysProblem, as a red line.
+	CodexProxy, CodexProxyProblem string
 
 	// Zone A's tree and agent inspection (ui-design.md, Zone A; Agent
 	// inspection).

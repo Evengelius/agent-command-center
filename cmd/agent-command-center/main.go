@@ -27,23 +27,30 @@ func main() {
 	// keys, read once, here (plan 21, item 5.1). A problem is shown on the
 	// first screen and the default keys apply.
 	keys, problem := input.DefaultKeys(), ""
+	// The same file names the proxy Codex is started through (plan 22,
+	// amendment 19), read next to the keys: without a configuration folder the
+	// keys' problem already says so, and Codex gets no proxy.
+	proxy, proxyProblem := "", ""
 	if path, err := input.ConfigFile(); err != nil {
 		problem = "config.json: no configuration folder (" + err.Error() + "); default keys used"
 	} else {
 		keys, problem = input.LoadKeys(path)
+		proxy, proxyProblem = input.LoadCodexProxy(path)
 	}
 	m := app.New(app.Options{
-		Keys:        keys,
-		KeysProblem: problem,
-		Config:      cfg,
-		Providers:   []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host}},
-		Now:         time.Now,
-		Clipboard:   input.System{},
-		MockSpeed:   1,
-		Drafts:      &input.Drafts{},
-		Projects:    &input.Projects{},
-		Git:         input.GitCLI{},
-		Sessions:    &input.Sessions{},
+		Keys:              keys,
+		KeysProblem:       problem,
+		CodexProxy:        proxy,
+		CodexProxyProblem: proxyProblem,
+		Config:            cfg,
+		Providers:         []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host, Proxy: proxy}},
+		Now:               time.Now,
+		Clipboard:         input.System{},
+		MockSpeed:         1,
+		Drafts:            &input.Drafts{},
+		Projects:          &input.Projects{},
+		Git:               input.GitCLI{},
+		Sessions:          &input.Sessions{},
 	})
 	code, out := app.Run(m)
 	for _, l := range out {

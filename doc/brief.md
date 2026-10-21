@@ -2904,3 +2904,22 @@ It must appear elegantly, respond visibly to real token updates, and disappear t
 The objective is a smooth, technically accurate, visually distinctive experience for both Claude Code and Codex.
 Do not deliver merely a changing token number beside a static bar. Implement the complete animated interaction shown in the attached design reference.
 ````
+
+## Amendment 19, 2026-10-21: Codex through the local proxy, during plan 22
+
+The owner's request, word for word, in plan 22's investigation of the
+proxy cuts. This desktop session's Claude Code reached the corporate
+proxy directly and was cut about every 15 minutes. The owner's
+`~/.claude/settings.json` was changed at the owner's request so that Claude
+Code goes through Px, the local proxy that signs in for the owner. Codex
+has no setting for its own proxy. The dashboard starts Codex itself, so it
+can give Codex the proxy's address, read from the application's own
+configuration file. The owner, in three messages:
+
+````text
+=> Yes codex must have a settings.json or something where we could replicate this
+
+What do you mean? With the acc codex could take account of this px ?
+
+I actually love that, let's implement it because it will matter for the dashboard if I want to use it with codex. standalone I juse Claude, but with Dashboard I could use Codex
+````

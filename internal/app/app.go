@@ -104,6 +104,14 @@ type Options struct {
 	// run's editor status row until the first message is sent.
 	Keys        input.Keys
 	KeysProblem string
+	// CodexProxy is the proxy Codex is started through, config.json's
+	// codex.proxy (plan 22, amendment 19), "" when there is none; the startup
+	// screen shows it on a grey line. CodexProxyProblem is why the codex section
+	// was not used, "" when there is none: the startup screen shows it under
+	// KeysProblem. The adapter is given the proxy by the caller
+	// (codex.Provider.Proxy); the application only shows it.
+	CodexProxy        string
+	CodexProxyProblem string
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -243,7 +251,7 @@ func New(opt Options) *Model {
 	m := &Model{opt: opt, s: state.New(), detected: map[string]provider.Detection{}}
 	m.env = input.PathEnv{Windows: filepath.Separator == '\\', Home: opt.Home, Cwd: opt.Cwd}
 	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache(),
-		KeysProblem: opt.KeysProblem}
+		KeysProblem: opt.KeysProblem, CodexProxy: opt.CodexProxy, CodexProxyProblem: opt.CodexProxyProblem}
 	m.ui.SendKeys, m.ui.NewlineKeys = opt.Keys.Display()
 	project := opt.Project
 	if project == "" {

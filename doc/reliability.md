@@ -99,6 +99,7 @@ fails](#when-a-whole-integration-fails)).
 | 7. Concurrent output | route by `agent_id`, `task_id`, `parent_tool_use_id`; fallback "unattributed" on the orchestrator | route by `threadId`; fallback `optOutNotificationMethods`, per-thread `thread/read` |
 | 8. Quota | `rate_limit_event`; fallback last value with its age, "N/A" before the first | `account/rateLimits/read` and pushes; fallback "N/A" with the reason, last pushed value with its age |
 | 9. Platform limits | Windows native, Git Bash for the Bash tool; fallback its PowerShell tool, the reported shell shown | Windows native; the effective sandbox from `thread/start` shown, so a downgrade is visible |
+| Network path | the proxy from Claude Code's own settings, never set by the dashboard | the dashboard's environment. The proxy comes from `config.json`'s `codex.proxy` when set (plan 22, amendment 19), shown on the startup screen. If it does not answer, Codex's own errors and retries appear in zone B as received: nothing is hidden, and nothing switches proxy |
 | Path forms (INT paths) | the validation steps and messages of [ui-design.md, Validation and messages](ui-design.md#validation-and-messages); a failed `Stat` after a WSL translation names the mount root as the likely cause | same |
 
 ### Concurrent output
@@ -356,6 +357,9 @@ be split without reading it, so a change there is reported, not classified.
   for `workspaceWrite` per turn, which writes no `trust_level` (plans 12
   and 13, CX-10 q2; ASM-6).
 - Offers no answer that persists a rule (see [Approvals](#approvals)).
+- Writes no proxy into a CLI's configuration. Codex's proxy, when
+  `config.json` names one, goes only into the environment of the Codex
+  process the dashboard starts (plan 22, amendment 19).
 - Opens no credential file, sets no `ANTHROPIC_BASE_URL`, and reads quota only
   from the CLI's stream (TEL). The file viewer refuses a credential file by
   its name before opening it, lists none in the quick open or the Explorer,

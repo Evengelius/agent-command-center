@@ -100,6 +100,15 @@ func startup(s *state.State, ui UI) []line {
 		// The configuration file's problem (plan 21, item 5.1): the default keys apply.
 		ls = append(ls, note("✗ ", hideUser(ui.KeysProblem), stFailed)...)
 	}
+	if ui.CodexProxyProblem != "" {
+		// The codex section's problem (plan 22, amendment 19), under the keys':
+		// Codex gets no proxy.
+		ls = append(ls, note("✗ ", hideUser(ui.CodexProxyProblem), stFailed)...)
+	}
+	if ui.CodexProxy != "" {
+		// The proxy Codex is started through, whichever agent CLI is chosen.
+		ls = append(ls, note("", "Codex through the proxy "+ui.CodexProxy+" (config.json)", stGrey)...)
+	}
 
 	// The project list (plan 15), shown when it has a row or a problem.
 	var head, rows []line

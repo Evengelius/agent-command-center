@@ -223,7 +223,7 @@ configuration is not touched (CC-11; P12c, P12c-switch).
 | Step | Design | Source |
 | - | - | - |
 | Detect | `codex.exe` on the PATH or in `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin`, the `.exe` resolved, not a `.cmd`; `codex --version` (`codex-cli 0.145.0`), with a 5 s timeout; no status command is used. A ChatGPT sign-in is told from an API key by the session's `account/rateLimits/read`, refused without a ChatGPT sign-in, which makes the quota "N/A (API key: ChatGPT sign-in needed)" (plan 21, item 5.2) | CX-2; P0 |
-| Start | `codex app-server` with `cmd.Dir` = project path; `initialize` (`clientInfo`) then `initialized`; `thread/start` with `sandbox`, `approvalPolicy` and `model`, **without `cwd`**: every dashboard run on a new, untrusted project left Codex's configuration identical, so no `trust_level` is written (CX-10 q2, settled in plan 14) | CX-4.1; INT 1; INT shape |
+| Start | `codex app-server` with `cmd.Dir` = project path, in the dashboard's environment. With `config.json`'s `codex.proxy` set, `HTTPS_PROXY` and `HTTP_PROXY` carry that address instead of any inherited value (plan 22, amendment 19). Then `initialize` (`clientInfo`) and `initialized`; `thread/start` with `sandbox`, `approvalPolicy` and `model`, **without `cwd`**: every dashboard run on a new, untrusted project left Codex's configuration identical, so no `trust_level` is written (CX-10 q2, settled in plan 14) | CX-4.1; INT 1; INT shape |
 | Model | the per-session model `gpt-5.6-sol` (the default `model/list` reports) is passed in `thread/start` only when the configured model is refused; the refusal is shown as received | P5, P6, P6b; CX-3.3 |
 | Converse | `turn/start {threadId, input:[{type:"text", text}]}` | CX-4.1; P6b |
 | Approvals | `item/commandExecution/requestApproval` and `item/fileChange/requestApproval` answered `accept`, `acceptForSession`, `decline` or `cancel`; an unknown request method gets a JSON-RPC error | INT 4; P6b, P7 |
@@ -332,11 +332,15 @@ agent-command-center [--mock <file>] [--provider <id>] [--project <path>]
 ```
 
 1. Read the application's own configuration, if present:
-   `%APPDATA%\agent-command-center\config.json`, the editor's send keys and
-   newline keys (ASM-7; plan 21, item 5.1). Every other key and every colour
-   is fixed in the code (ASM-9, ASM-13). A file that cannot be used is named
-   on the first screen with its problem, and the default keys apply. It is
-   only read, and never a CLI's configuration.
+   `%APPDATA%\agent-command-center\config.json`. It holds the editor's send
+   keys and newline keys (ASM-7; plan 21, item 5.1), and Codex's proxy
+   (plan 22, amendment 19). Every other key and every colour is fixed in
+   the code (ASM-9, ASM-13).
+   - A file that cannot be used is named on the first screen with its
+     problem; the default keys apply, and Codex gets no proxy.
+   - A problem in the `codex` setting alone is named on its own line, and
+     sets no proxy.
+   - The file is only read, and it is never a CLI's configuration.
 2. Run `Detect` for Claude Code and Codex in parallel, each with a 10 s timeout (ASM-21)
    (AM4 S2).
 3. Show the startup screen: the agent CLI question (detected ones selectable,
@@ -451,7 +455,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-4 | Claude Code runs with `--permission-mode default` | Claude Code adapter |
 | ASM-5 | Codex shutdown uses the same timed escalation as Claude Code | Codex adapter |
 | ASM-6 | Codex runs with `read-only` and `on-request`, every write approved in the dashboard (CX-10 q2, settled in plan 14: no `trust_level` written); Auto's turns run `workspaceWrite`, the owner's choice (plan 12 addendum, brief amendment 8) | Codex adapter |
-| ASM-7 | The application's own configuration file: `%APPDATA%\agent-command-center\config.json` (`os.UserConfigDir`), holding the send keys and the newline keys only; JSON, which Go's standard library reads, where TOML would need a new dependency (plan 21, item 5.1) | How it starts |
+| ASM-7 | The application's own configuration file: `%APPDATA%\agent-command-center\config.json` (`os.UserConfigDir`), holding the send keys and the newline keys (plan 21, item 5.1) and Codex's proxy (plan 22, amendment 19) only; JSON, which Go's standard library reads, where TOML would need a new dependency | How it starts |
 | ASM-8 | `--provider` and `--project` prefill the startup answers, never skip validation | How it starts |
 | ASM-9 | Default key bindings beyond those TI fixes; only the send and newline keys are configurable (ASM-7), the others fixed in the code | ui-design.md |
 | ASM-10 | The editor budget: a keystroke drawn within 16 ms with a 10,000-line buffer; a 50,000-line paste inserted and drawn within 100 ms | ui-design.md, reliability.md |

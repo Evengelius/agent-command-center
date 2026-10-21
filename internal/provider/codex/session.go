@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -106,13 +107,36 @@ type pendingReq struct {
 	unreadable bool
 }
 
+// proxyEnv is base, the dashboard's environment, with the proxy given to the
+// CLI (plan 22, amendment 19): every HTTPS_PROXY and HTTP_PROXY entry, in any
+// case, is dropped, then HTTPS_PROXY=proxy and HTTP_PROXY=proxy are appended.
+// Every other entry stays as it is and in its place, so the commands the CLI
+// runs inherit the same variables. base is not changed.
+func proxyEnv(base []string, proxy string) []string {
+	env := make([]string, 0, len(base)+2)
+	for _, kv := range base {
+		if name, _, _ := strings.Cut(kv, "="); strings.EqualFold(name, "HTTPS_PROXY") || strings.EqualFold(name, "HTTP_PROXY") {
+			continue
+		}
+		env = append(env, kv)
+	}
+	return append(env, "HTTPS_PROXY="+proxy, "HTTP_PROXY="+proxy)
+}
+
 func (p *Provider) start(ctx context.Context, sc provider.SessionContext) (*Session, error) {
 	sp := p.Spawner
 	if sp == nil {
 		sp = proc.Exec{}
 	}
 	argv := append([]string{"app-server"}, p.Args...)
-	pr, err := sp.Spawn(proc.Spec{Path: sc.Executable, Args: argv, Dir: sc.ProjectPath})
+	spec := proc.Spec{Path: sc.Executable, Args: argv, Dir: sc.ProjectPath}
+	if p.Proxy != "" {
+		// A start and a resume after a crash alike: the same provider, the same
+		// environment. Without a proxy Env stays nil and the CLI inherits the
+		// dashboard's, as before.
+		spec.Env = proxyEnv(os.Environ(), p.Proxy)
+	}
+	pr, err := sp.Spawn(spec)
 	if err != nil {
 		return nil, fmt.Errorf("Codex did not start: %w", err)
 	}

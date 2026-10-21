@@ -35,6 +35,11 @@ type Provider struct {
 	Args      []string
 	CloseStep time.Duration    // CloseStep when 0
 	Now       func() time.Time // time.Now when nil
+	// Proxy is config.json's codex.proxy (plan 22, amendment 19): an http:// or
+	// https:// address that every start, and a resume after a crash, gives the
+	// CLI as HTTPS_PROXY and HTTP_PROXY, in place of the dashboard's own. "" is
+	// no setting: the CLI inherits the dashboard's environment, as before.
+	Proxy string
 
 	mu    sync.Mutex
 	model string // the fallback model, kept for a resume after a crash

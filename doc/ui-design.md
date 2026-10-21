@@ -1794,6 +1794,28 @@ is sent, and the default keys apply. The footer, the editor's status row, the dr
 window's hints and this overlay show the keys in force; a send key keeps
 Enter's rules: never inside a paste, and after `\` a newline.
 
+The same file can name Codex's proxy (plan 22, amendment 19).
+- **Setting.** `{"codex": {"proxy": "http://127.0.0.1:3128"}}` starts
+  Codex with `HTTPS_PROXY` and `HTTP_PROXY` set to that address.
+  - It is meant for a local proxy that signs in for the owner, such as Px.
+  - The commands Codex runs inherit it.
+  - Claude Code takes its proxy from its own settings, so the setting
+    leaves it alone.
+- **Startup screen.** It shows the address in force on a grey line,
+  "Codex through the proxy http://127.0.0.1:3128 (config.json)".
+- **Refused values.** The address must be `http://` or `https://` with a
+  host, no user name or password, no query or fragment, and no path beyond
+  a trailing slash. A user name or password is never repeated in a message. The startup screen names
+  each problem as a red line under the keys' problem: `config.json: …; no
+  proxy for Codex`. A problem is any of:
+  - an address that does not fit those rules;
+  - a value that is not a string;
+  - an unknown setting under `codex`.
+- **Independence.** A problem in `codex` leaves the keys in force, and
+  Codex inherits the dashboard's environment as it does with no setting. A
+  file that cannot be used as a whole gives no proxy; the keys' problem
+  already names it.
+
 **Anywhere**
 
 | Key | Action | Source |
