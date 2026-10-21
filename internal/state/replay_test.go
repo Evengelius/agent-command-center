@@ -30,6 +30,7 @@ var recordings = []struct {
 	{"p7-codex-subagents.jsonl", codex.ProviderID, func() fixture.Mapper { return codex.NewMapper() }},
 	{"p7b-codex-subagents.jsonl", codex.ProviderID, func() fixture.Mapper { return codex.NewMapper() }},
 	{"p12c-claude-auto.jsonl", claude.ProviderID, func() fixture.Mapper { return claude.NewMapper() }},
+	{"p12c-block-claude-auto-boundary-edit.jsonl", claude.ProviderID, func() fixture.Mapper { return claude.NewMapper() }}, // plan 22: four thinking blocks and the live estimates
 	{"p12c-switch-claude-default-to-auto.jsonl", claude.ProviderID, func() fixture.Mapper { return claude.NewMapper() }},
 	{"p12x-codex-auto-review.jsonl", codex.ProviderID, func() fixture.Mapper { return codex.NewMapper() }},
 	{"p12x-switch-codex-user-to-auto-review.jsonl", codex.ProviderID, func() fixture.Mapper { return codex.NewMapper() }},

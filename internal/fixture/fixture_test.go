@@ -24,6 +24,7 @@ func TestFixturesMatchRecordings(t *testing.T) {
 		"p7b-codex-subagents.jsonl":                     215,
 		"p7c-codex-spawn-model.jsonl":                   108,
 		"p9a-codex-spawn-request.jsonl":                 63,
+		"p12c-block-claude-auto-boundary-edit.jsonl":    208,
 		"p12c-claude-auto.jsonl":                        99,
 		"p12c-switch-claude-default-to-auto.jsonl":      211,
 		"p12x-codex-auto-review.jsonl":                  167,

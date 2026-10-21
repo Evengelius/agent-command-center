@@ -4,7 +4,7 @@
 │ claude-haiku-5-5 · orchestrator          ││                                                                                                                                                          │
 │ turn 2 · completed                       ││ ▎ YOU  11:30                                                                                                                                             │
 │                                          ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into a new file   │
-│ STAGES  inferred f╭─ Explorer ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── mock · 11 items ─╮                   │
+│ STAGES  inferred f╭─ Explorer ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── mock · 13 items ─╮                   │
 │ TURN 1  ✓ complete│ sample/viewer.go                                                                                                                                             │                   │
 │ TURN 2  ✓ complete│ ▾ sample                                                                                                                                                  ●  │────────────────── │
 │   started by the C│     viewer.go                                                                                                                                             M  │                   │
@@ -12,17 +12,17 @@
 │                   │ ▸ tools                                                                                                                                                   D  │:30:00      mock   │
 │                   │   claude-api-key-context-refused.jsonl                                                                                                                       │                   │
 │                   │   claude-subagent-approval.jsonl                                                                                                                             │                   │
-│                   │   codex-api-key.jsonl                                                                                                                                     U  │                   │
+│                   │   claude-thinking-subagent.jsonl                                                                                                                             │                   │
+│                   │   claude-thinking.jsonl                                                                                                                                      │:30:00      mock   │
+│                   │   codex-api-key.jsonl                                                                                                                                     U  │:30:00      mock   │
 │                   │   codex-no-5h-window.jsonl                                                                                                                                   │:30:00      mock   │
-│                   │   codex-plan6-limits.jsonl                                                                                                                                !  │:30:00      mock   │
-│                   │   codex-spawn-request.jsonl                                                                                                                               A  │                   │
-│                   │   codex-subagents.jsonl                                                                                                                                      │─────────────────╮ │
-│                   │                                                                                                                                                              │                 │ │
+│                   │   codex-plan6-limits.jsonl                                                                                                                                !  │                   │
+│                   │   codex-spawn-request.jsonl                                                                                                                               A  │─────────────────╮ │
+│                   │   codex-subagents.jsonl                                                                                                                                      │                 │ │
 │                   │                                                                                                                                                              │`.               │ │
 │                   │                                                                                                                                                              │                 │ │
 │                   │                                                                                                                                                              │                 │ │
 │                   │                                                                                                                                                              │─────────────────╯ │
-│                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
@@ -50,7 +50,7 @@
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
-╰───────────────────│ ↑↓ PgUp PgDn Home End move · → open · ← close · Enter view file · / quick open · F1 keys · Esc back · F3 close                                       2 of 11 │───────────────────╯
+╰───────────────────│ ↑↓ PgUp PgDn Home End move · → open · ← close · Enter view file · / quick open · F1 keys · Esc back · F3 close                                       2 of 13 │───────────────────╯
 ╭─ D · QUOTA & TELEM╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ndocumented field ─╮
 │ 5h ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00   plan N/A (not reported)   overage rejected (org_level_disabled)                │
 │ model claude-haiku-5-5   context 4% of 1M (derived)   tokens 159.4k   cost $0.01 API-equiv. estimate   last turn 2s                                                                                  │

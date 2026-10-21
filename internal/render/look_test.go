@@ -612,8 +612,9 @@ func TestConversationLook(t *testing.T) {
 		b := newConvBench("claude-code", "claude-haiku-5-5")
 		b.prompt("go")
 		b.ev(event.MessageDelta, event.Delta{MessageID: "m1", Block: "thinking"})
-		if got := strings.Join(rowTexts(bRows(b.s, UI{}, w)), "\n"); !strings.Contains(got, "∴ thinking") {
-			t.Errorf("a thinking block streaming: no mark in\n%s", got)
+		// Plan 22: no mark; the thinking entry's card draws the phase.
+		if got := strings.Join(rowTexts(bRows(b.s, UI{}, w)), "\n"); strings.Contains(got, "∴") {
+			t.Errorf("a thinking block streaming: a mark in\n%s", got)
 		}
 		b.ev(event.MessageDelta, event.Delta{MessageID: "m1", Block: "text", Text: "Done"})
 		if got := strings.Join(rowTexts(bRows(b.s, UI{}, w)), "\n"); strings.Contains(got, "∴ thinking") {

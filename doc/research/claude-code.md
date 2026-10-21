@@ -433,7 +433,7 @@ activity counts (doc `#sdktaskstartedmessage`).
 | `system/task_*`, `system/background_tasks_changed`, `tool_progress` | section 5 | Zone C |
 | `system/hook_started`, `hook_progress`, `hook_response` | hook name, output (with `--include-hook-events`) | Hook activity |
 | `system/session_state_changed` | `state`: `idle` / `running` / `requires_action` (needs `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS=1`) | Orchestrator state |
-| `system/thinking_tokens` | `estimated_tokens`, `estimated_tokens_delta` | Thinking progress |
+| `system/thinking_tokens` | `estimated_tokens`, `estimated_tokens_delta`; documented as `SDKThinkingTokensMessage`, Claude Code 2.1.153 or later (read 2026-10-21) | Thinking progress: a running estimate (section 12) |
 | `rate_limit_event` | `rate_limit_info {status, resetsAt, utilization, rateLimitType, overageStatus, ...}` | Zone D quota |
 | `tool_use_summary`, `prompt_suggestion`, `conversation_reset`, `files_persisted`, `local_command_output`, `commands_changed`, `auth_status`, `worker_shutting_down`, `plugin_install` | as named | Secondary |
 
@@ -828,3 +828,114 @@ with only `--permission-mode` changed (`probes/README.md`):
   `reason_type:"classifier"` accepts). The interactive start in a new
   folder shows the workspace trust dialog, which writes a `projects` entry
   to `~/.claude.json`; `-p` mode does not show it.
+
+## 12. Thinking through stream-json (plan 22, 2026-10-21)
+
+What Claude Code reports about thinking, for zone B's thinking indicator
+(brief amendment 18). Read by script from every recording in
+`doc/research/probes` (33 thinking blocks in 14 recordings, Claude Code
+2.1.300 to 2.1.303, all Haiku 5.5), then checked by an independent agent
+over the same recordings; the documentation read on 2026-10-21.
+
+- **A phase's start and end, observed.** A thinking block's
+  `stream_event` `content_block_start` (`content_block.type` `thinking`)
+  and the `content_block_stop` of its index, main thread only (no stream
+  event carries a `parent_tool_use_id`): one per API message, always at
+  index 0 and first; no `redacted_thinking`
+  [P:p12c-block-claude-auto-boundary-edit.jsonl] lines 8 and 21. Its text
+  is always empty, in the block, the 101 `thinking_delta` lines and the
+  `assistant` lines: the CLI sends no thinking text. 22 of the 55 messages
+  have no thinking block. Documented: the Anthropic stream events inside
+  `SDKPartialAssistantMessage.event` (doc `agent-sdk/typescript`); an empty
+  `thinking_delta` under `display: "omitted"`
+  (https://platform.claude.com/docs/en/build-with-claude/thinking).
+- **A live estimate.** `{"type":"system","subtype":"thinking_tokens",
+  "estimated_tokens":N,"estimated_tokens_delta":D}`: 90 lines, each the
+  previous plus its delta, starting at 50 in each block 0.15 to 0.4 s
+  after its start, then a step about every 1 to 1.9 s, and a last uneven
+  value at the block's stop when there is a remainder (21 of 27 blocks);
+  none for 4 blocks under 0.3 s; no agent field, and never outside an open
+  main-thread block. Documented (Agent SDK TypeScript reference,
+  `SDKThinkingTokensMessage`, "a running estimate of the thinking tokens
+  generated so far in the current block", Claude Code 2.1.153 or later,
+  https://code.claude.com/docs/en/agent-sdk/typescript, read 2026-10-21).
+  Against the exact count below, a block's last estimate runs from 14%
+  under (1,050 for 1,218, [P:p12c-block2-claude-auto-boundary-shell.jsonl]
+  lines 120 and 168) to nearly four times over (198 for 52,
+  [P:p12c-risk-claude-auto-rm.jsonl] lines 93 and 128): short blocks over,
+  long ones a little under. The dashboard shows it as an estimate.
+- **Where the estimate comes from** (plan 22's investigation, section
+  1.1). The CLI asks the API for `display: "updates"`, so each
+  `thinking_delta` of a block carries an `estimated_tokens` increment, a
+  multiple of 50: the first, 50, 146 to 392 ms after the block's start,
+  then 100 to 350 tokens every 1.0 to 1.9 s. 0 to 4 ms before it forwards
+  each delta, the CLI sends `system/thinking_tokens` with their running sum
+  (69 of 69 lines: the sum of the increments, never lower). The
+  increments are undocumented: the API's streaming page describes an
+  omitted block as one empty `thinking_delta`, then its `signature_delta`
+  (https://platform.claude.com/docs/en/build-with-claude/streaming, read
+  2026-10-21).
+- **The last value.** A closing `thinking_delta` carries
+  `estimated_tokens` null. In 21 of the 32 blocks with one, a last
+  `system/thinking_tokens` follows 0 to 2 ms before the `signature_delta`,
+  its increment uneven (20 to 328 tokens), and it fits the block's exact
+  count E closely: 153 + 0.78 × E (R² 0.993, standard error 17 tokens), as
+  if computed from the whole block, likely its signature (inferred: the
+  recordings scrub the signatures). It is missing from 6 blocks of 719
+  tokens or more, from 4 under 50 tokens (which have no estimate at all),
+  and from the interrupted one.
+- **The exact count, per API message.** The `message_delta` event's
+  `usage.output_tokens_details.thinking_tokens`, in 55 of 55 messages (0
+  with no thinking), after the message's last block, 0 to 2.4 s (median
+  0.6 s) after its thinking ended [P:p303b-claude-subagent-approval.jsonl]
+  lines 82, 146 and 195: 719, 281, 268. One thinking block per message, so
+  it is that phase's count. Documented ("When streaming, this breakdown
+  appears only on the final `message_delta` event",
+  https://platform.claude.com/docs/en/build-with-claude/extended-thinking).
+- **The turn's total.** The `result` line's
+  `usage.output_tokens_details.thinking_tokens`, the sum of the turn's
+  main-thread messages' in 31 of 31 results ([P:p303b-claude-subagent-approval.jsonl]
+  line 197: 1,268; its subagent's 180, line 104, not included).
+  `modelUsage.<model>.thinkingTokens` is the session's, subagents and side
+  calls included (line 197: 2,305): never a phase's.
+- **Subagents.** With `--forward-subagent-text`, a subagent's thinking
+  comes only in `assistant` lines with `parent_tool_use_id` set, empty, no
+  stream event and no estimate ([P:p303b-claude-subagent-approval.jsonl]
+  lines 84, 88, 93, 100); a foreground Agent call's result carries the
+  subagent's usage with its thinking count (line 104).
+- **An interrupted message.** On an interrupt the CLI closes the stream
+  itself. Its `message_delta` has `stop_reason` null and the usage of its
+  `message_start` (`output_tokens` 7, `thinking_tokens` 0 by default), not
+  a count of the thinking, and the result's usage is zeroed
+  ([P:p303a-claude-conversation.jsonl] lines 70 to 78; P2 line 76). The
+  dashboard shows no exact count for such a phase (plan 22, correction
+  C1).
+- **Opus 5.5 (P22o, 2026-10-21) thinks as Haiku does.** One turn,
+  `ANTHROPIC_MODEL=claude-opus-5-5`, with the dashboard's arguments, on
+  Claude Code 2.1.303 ([P:p22o-claude-opus-thinking.jsonl]).
+  - One main-thread thinking block of 8.0 s (2,796 to 10,807 ms).
+    `"thinking_display":"updates"` is on 8 of its 10 lines, as on Haiku's
+    (13 of 19 in P303b, 24 of 32 in P12c-block).
+  - The increments of its `thinking_delta` lines are 50, 150, 150, 150, 200
+    and 150, then null at its close. Six `system/thinking_tokens` give 50 to
+    850: the first 508 ms into the block (Haiku: 146 to 392 ms), then every
+    1.0 to 1.6 s, each step a multiple of 50.
+  - No last, uneven value follows the close, as in Haiku's long blocks. The
+    last estimate, 850, is 8.4% under the exact count.
+  - The exact count, 928, is in the final `message_delta`, 967 ms after the
+    block's stop, and in the result's usage.
+  - Replayed through the adapter and the reducer, it is one observed phase
+    with the estimate 850 and the count 928: "Thought for 8.0s · 928 thinking
+    tokens".
+- **Not thinking, from the same run:** the owner's `SessionStart` hook makes
+  the CLI send `system/hook_started` and `system/hook_response`, and the turn
+  ends with a `system/post_turn_summary`. No earlier recording has them, and
+  the adapter counts all three as unrecognised.
+- **Not used, undocumented:** the `thinking_display` field (`"updates"`) on
+  `stream_event` lines and the `estimated_tokens` field of a
+  `thinking_delta` (the Messages API's `ThinkingDelta` has `thinking` and
+  `type` only). No thinking budget is reported. A resume replays no
+  history (P4).
+- **Not verified:** Sonnet (every recording but P22o runs Haiku, and P22o
+  runs Opus); a resume of a session that thought, with partial messages; a
+  subagent thinking while the orchestrator thinks.

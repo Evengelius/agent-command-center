@@ -39,6 +39,17 @@ var (
 	cGround    = colour{"#1E2133", ""}   // zone B's tool rows; no ground on 16 colours (plan 19)
 	cMuted     = colour{"#A1A9C0", "7"}  // a tool row's target, readable on its ground (plan 20)
 	cPill      = colour{"#3B1531", ""}   // the "F2 to answer" pill (plan 20)
+
+	// The violet of thinking (plan 22, design 2): the live card's border, its
+	// bar's fill, the fill's lit leading edge, the mid shade (and the
+	// expressions' lavender), the dim shade of the entrance and the exit, and
+	// the bar's track.
+	cThinkBorder = colour{"#7C6BB3", "5"}
+	cThinkFill   = colour{"#A78BFA", "5"}
+	cThinkEdge   = colour{"#EDE9FE", "15"}
+	cThinkMid    = colour{"#C4B5FD", "13"}
+	cThinkDim    = colour{"#4C4470", "8"}
+	cThinkTrack  = colour{"#2E2A47", "8"}
 )
 
 // modelColours colours a model by its family; any other model is text.
@@ -78,6 +89,12 @@ var (
 	// A tool row's name and target, the fold row's triangle, and the pink
 	// pill of a pending approval (plan 20, ui-design.md, Zone B).
 	stToolName, stMuted, stFoldMark, stPill, stPillEnd = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+
+	// Zone B's thinking (plan 22): the card's border, the bar's fill, track,
+	// lit edge and mid shade, the dim shade, the expression in lavender bold
+	// (dim for a new one's first 200 ms), a count in bright bold or lit.
+	stThinkBorder, stThinkFill, stThinkTrack, stThinkEdge, stThinkMid, stThinkDim = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	stThinkWord, stThinkWordDim, stThinkLit, stBrightBold                         = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 
 	// The file viewer's frame, its cursor line (each class on zone A's
 	// cursor row background, the line numbers likewise) and its search
@@ -163,6 +180,16 @@ func paint() {
 	paintStyle(stToolName, fg(cCode).Bold(true))
 	paintStyle(stMuted, fg(cMuted))
 	paintStyle(stFoldMark, fg(cLink))
+	paintStyle(stThinkBorder, fg(cThinkBorder))
+	paintStyle(stThinkFill, fg(cThinkFill))
+	paintStyle(stThinkTrack, fg(cThinkTrack))
+	paintStyle(stThinkEdge, fg(cThinkEdge))
+	paintStyle(stThinkMid, fg(cThinkMid))
+	paintStyle(stThinkDim, fg(cThinkDim))
+	paintStyle(stThinkWord, fg(cThinkMid).Bold(true))
+	paintStyle(stThinkWordDim, fg(cThinkDim).Bold(true))
+	paintStyle(stThinkLit, fg(cThinkEdge).Bold(true))
+	paintStyle(stBrightBold, fg(cBright).Bold(true))
 	if sixteen { // no ground to spare: the pill is its bold pink text
 		paintStyle(stPill, stAttentionBold.Background(lipgloss.NoColor{}))
 		paintStyle(stPillEnd, lipgloss.NewStyle())

@@ -9,7 +9,8 @@ criteria and progress log are in git (`git show 8888f59:plan.md` for plans 1
 to 13, `git show 84d2ad8:plan.md` for plan 14, `git show b047434:plan.md`
 for plan 15, `git show becfb34:plan.md` for plan 16, `git show f00c2d8:plan.md`
 for plan 17, `git show 8b3b16b:plan.md` for plan 18, `git show
-d84e5d4:plan.md` for plan 20), and its results in its evaluation file.
+d84e5d4:plan.md` for plan 20, `git show f939d96:plan.md` for plan 21), and
+its results in its evaluation file.
 
 ## The owner's standing decisions
 
@@ -77,472 +78,708 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 21 - What the review of d84e5d4 found
+## Plan 22 - A live thinking indicator
 
-**Done on 2026-10-20 and committed at the owner's request** ("Apply the
-speed fix, then commit"). Approved with the recommended choices ("I
-approve plan 21 with the recommended choices"): 2 (a), 4 (a), 5.1 build,
-5.2 to 5.5 correct, 5.6a build, 5.6b to 5.6d correct, 5.7 build, 5.8
-correct. Its evaluation, [`doc/plan21-evaluation.md`](doc/plan21-evaluation.md):
-38 PASS and 2 FAIL, the long session's frame time, a cost plan 20's
-RESULT rule added; then the proposed fix, approved by the owner: 6 PASS,
-the timing step 6 of 6.
+**Started on 2026-10-21** at the owner's request ("Ok onto the next one."),
+recorded word for word as brief amendment 18, its three images described.
+Zone B gets a live thinking card with its animations, a summary row for
+each thinking phase that opens on its details, and an activity line while
+the turn works, for Claude Code and Codex, from what each CLI reports.
+Zones A, C and D do not change. No commit before the owner has reviewed
+the Windows Terminal demonstrations (amendment 18, section 13). No live
+run: the recordings settle what each CLI reports and the demonstrations
+replay them; the live checks this leaves open are proposed at the end, not
+run.
 
-The source: a read-only review of commit d84e5d4 on 2026-10-20, plan 20
-closed and approved, no plan active. At d84e5d4, `go build ./...` and `go
-vet ./...` exit 0, `gofmt -l .` prints nothing and `go test ./... -count=1`
-exits 0 (14 packages ok); Claude Code 2.1.303 and Codex 0.163.0 are the last
-probed versions. Each finding below was checked in the code at its file and
-line; items 1 and 4 were reproduced with a throwaway test in a scratch copy
-outside the repository. No live run is needed: deterministic tests and a
-mock run in Windows Terminal settle every criterion, so the plan uses no
-quota.
+### What the CLIs report
 
-### The owner's decisions
+Read from every recording in `doc/research/probes` with two scripts (each
+thinking block or reasoning item, its times, the estimates and counts
+around it); then an independent agent tried to refute each claim over all
+recordings (7 held as written, 7 reworded below, 1 not recorded), and the
+documentation was checked (sources in `doc/research/claude-code.md` and
+`doc/research/codex-cli.md`). `testdata/probes` holds byte-identical
+copies.
 
-Each choice is the owner's; the recommended one is in the middle column.
+Claude Code: 2.1.300 to 2.1.303, the four 2.1.303 recordings P303a to
+P303d among them; every one runs Haiku 5.5 (the standing decision: live
+runs use Haiku).
 
-| Item | Recommended | The other choice |
-| - | - | - |
-| 2 Two timed tests | (a) their time judged in the timing step only | (b) evaluation.md corrected: judged in every run |
-| 4 Zone C at 160x24 to 160x26 | (a) the floor raised: C always shows one agent | (b) a minimum of 27 rows documented |
-| 5.1 Configuration file | build the send and newline keys only, in JSON | correct the documents |
-| 5.2 Sign-in kind | correct the documents | build |
-| 5.3 Capabilities flags | correct the documents | build |
-| 5.4 Frame rate | correct the documents (60 fps) | build (30 fps) |
-| 5.5 Separation test | correct the document | none |
-| 5.6a "↻ n" retries in zone C | build | correct the document |
-| 5.6b "ai" origin label | correct the document | build |
-| 5.6c B's dashboard notices | correct the document | build |
-| 5.6d Markdown cache | correct the document | build |
-| 5.7 MOCK badge at full screen | build | correct the documents |
-| 5.8 ASM-23's path | correct the document | none |
+- **C1 Start and end, observed.** A `stream_event` `content_block_start`
+  of type `thinking` and the `content_block_stop` of its index: 33 blocks
+  in 14 recordings, main thread only, one per API message, always at index
+  0 and first; no `redacted_thinking`. The text is always empty (101
+  `thinking_delta` lines) and the lines carry `"thinking_display":
+  "updates"`: the CLI sends no thinking text. 22 of the 55 messages have no
+  thinking block.
+- **C2 A live estimate, not a count.** `system` `thinking_tokens`, 90
+  lines: `estimated_tokens` cumulative, the previous plus
+  `estimated_tokens_delta`, strictly increasing, starting at 50 in each
+  block 0.15 to 0.4 s after its start, then a step about every 1 to 1.9 s;
+  a last, uneven value at the block's stop when there is a remainder (21
+  of 27 blocks); none for 4 blocks under 0.3 s; no agent field, and never
+  outside an open main-thread block. P12c-block's second phase: 50, 350,
+  650, 850, 1,100, 1,450, 1,700, 1,950, 2,200, 2,450, 2,700 over 13.9 s.
+  Documented: the Agent SDK's `SDKThinkingTokensMessage`, "a running
+  estimate of the thinking tokens generated so far in the current block"
+  (zone D's † on it is out of date). The undocumented `thinking_display`
+  and a `thinking_delta`'s `estimated_tokens` are not used.
+- **C3 The exact count, per API message.** The `message_delta` event's
+  `usage.output_tokens_details.thinking_tokens`, in 55 of 55 messages (0
+  with no thinking), after the message's last block, 0 to 2.4 s (median
+  0.6 s) after its thinking ended. One thinking block per message: the
+  exact count of that phase (P303b: 719, 281, 268). Documented: "When
+  streaming, this breakdown appears only on the final `message_delta`
+  event" (the Messages API's extended-thinking page).
+- **C4 The turn's total.** The `result` line's
+  `usage.output_tokens_details.thinking_tokens`, the sum of the turn's
+  main-thread messages' in 31 of 31 results (P303b: 1,268 = 719 + 281 +
+  268; its subagent's 180 not included). `modelUsage`'s `thinkingTokens`
+  is the session's, subagents included: never a phase's.
+- **C5 The estimate against the count.** A block's last estimate is from
+  14% under (1,050 for 1,218) to nearly four times (198 for 52) the exact
+  count: short blocks over, long ones a little under.
+- **C6 Subagents.** With `--forward-subagent-text` (the adapter's), their
+  thinking comes only in `assistant` lines with `parent_tool_use_id`, no
+  stream event and no estimate: not zone B's.
+- **C7 An interrupted message.** `message_delta` with `stop_reason` null
+  and `thinking_tokens` 0 (P303a line 76; P2 line 76); the turn's result
+  zero.
+- **C8 No thinking budget** is reported. A resume replays no history (P4).
 
-### Item 1 - Zone D's session time, wrong after 2,000 events
+Codex CLI 0.163.0 (11 recordings) and 0.145.0 (P6, P6b, P7); gpt-6-sol,
+reasoning effort high, reasoning summaries not asked for.
 
-`sessionTime` (`internal/render/telemetry.go:402-407`) counts from
-`s.Log[0].At`, but the state keeps only the last `MaxLog` = 2,000 events
-(`internal/state/state.go:324`, `reduce.go:873`), and each streamed text
-delta is one event. Past 2,000 events, zone D's "time … session" counts from
-the oldest event kept: 6,000 events over 1 h 40 min read "33m 20s session".
-A wrong value with no sign of it, which AGENTS.md says to fix. The fix: the
-state keeps the time of the first event it applied (where `log` appends to
-`Log`), through the log's trimming and a resume, and zone D counts from it.
-The value is today's while fewer than 2,000 events were applied, so no
-golden frame changes. (`provider.SessionContext.StartedAt` exists, but
-never reaches the state.)
+- **X1 No live thinking.** 48 reasoning items: each `item/started` and
+  `item/completed` 0 to 10 ms apart, `startedAtMs` and `completedAtMs`
+  within 3 ms, `summary` and `content` empty; no `item/reasoning/*`
+  notification. The item says the model reasoned in its step; it does not
+  say when the reasoning began. The schema has the summary notifications
+  and `turn/start`'s `summary` (auto, concise, detailed, none). Asked for in
+  P22s (Proposed, below), a reasoning item starts 2.5 to 3.4 s before it
+  completes, while the model works; its summary's text does not stream.
+- **X2 The exact count, per model step.** `thread/tokenUsage/updated`
+  `last.reasoningOutputTokens`, once per model response and thread; in
+  0.163.0 just after the step's tool items completed (4 to 126 ms), so
+  0.2 to 6.9 s after its reasoning item; `last` is the difference of two
+  consecutive `total`s (60 of 60 updates in 0.163.0), so `last` never
+  counts twice. Reasoning tokens with exactly one reasoning item since the
+  thread's previous update in 47 of 47 (P12x-sandbox: 10, 16, 47, 249, 14,
+  46; P7's orchestrator: 83, 8, 7). 28 of 76 steps had no reasoning item
+  and 0 reasoning tokens. No update ever comes after the next step began.
+- **X3 No live count, no budget.**
+- **X4 Child threads** report their own usage under their thread id: not
+  zone B's.
+- **X5 A step's start** is not reported: after the previous step's usage
+  update, 0.8 to 4.1 s of silence until the next reasoning item (P7: the
+  usage at 13,471 ms, after its `wait` call completed at 13,448; the
+  reasoning item at 14,910). The README says a resume replays the usage; no
+  recording has one.
 
-### Item 2 - Two timed tests outside the timing step
+### Design
 
-`internal/app/perf_test.go` has no build tag: `TestPasteToFrame` (a
-50,000-line paste, max ≤ 100 ms) and `TestStreamToFrame` (p95 ≤ 16 ms) judge
-their targets through `overTarget` in every `go test ./...`, while
-`doc/evaluation.md:86-87` says "The timed tests carry the `timing` build
-tag, so `go test ./...` never runs them": the owner's rule of 2026-10-16,
-after the keystroke tests missed their target from load alone (plan 4).
-Besides the time, they check what no other test of the ordinary run does: a
-50,000-line paste kept byte for byte, and a 2,000-line streamed answer kept
-as one entry and drawn to its end.
+The choices amendment 18 leaves open, as built; the owner may change any at
+the review.
 
-- **(a) Recommended.** Their time judged only in the timing step, as
-  `raceBuild` does under `-race`: a `timingBuild` constant (two files, the
-  `timing` tag and its negation) makes `overTarget` log the time outside
-  the timing step; both tests keep running in `go test ./...` for their
-  other checks. The timing step runs six tests, and the command in AGENTS.md
-  and evaluation.md names them.
-- **(b)** evaluation.md corrected instead: these two are judged in every
-  `go test ./...`; the timing step keeps its four tests.
-
-### Item 3 - An undocumented field, unlabelled and without a fallback
-
-`stream` (`internal/provider/claude/mapper.go:328`) merges Claude Code's
-deltas into one message by the line's top-level `api_message_id`
-(`mapper.go:48`). The documented `SDKPartialAssistantMessage` has `type`,
-`event`, `parent_tool_use_id`, `uuid`, `session_id`, `ttft_ms`,
-`user_message_uuid`, `user_message_uuids` and `resume_reason`, and no
-`api_message_id` (code.claude.com/docs/en/agent-sdk/typescript, read on
-2026-10-20); `doc/research/claude-code.md:423` does not list it, and the
-code does not label it. Without it each delta becomes its own entry
-(`internal/state/reduce.go:376-398`; `entry` returns nil for an empty id),
-against AGENTS.md: "Anything undocumented is labelled so wherever it is
-used, and the dashboard keeps working without it." In the 13 Claude Code
-recordings (P1 to P303e), all 1,237 `stream_event` lines carry it, and each
-equals the id of the same agent's last `message_start` (checked by script
-on 2026-10-20). The fix, documented source first: a delta's message id is
-the id of its agent's last `message_start` (the `event` field is the
-Anthropic raw stream event, documented); `api_message_id` only when no
-`message_start` came first, labelled undocumented in the mapper and in
-claude-code.md's `stream_event` row. The live check `oneEntryPerMessage`
-(`internal/app/livecheck_test.go:175-189`) stays.
-
-### Item 4 - Zone C empty at 160 columns and 24 to 26 rows
-
-From 160 columns with an agent in play, `cHeight`
-(`internal/render/dashboard.go:41-53`) caps C at `max(min(region/2,
-region-14), 3)`. At 160x24 to 160x26 the rows A, B and C share are 15 to 17,
-so C gets 3 rows, `room` = (3-2)/2 = 0 agents (`dashboard.go:852`), and C
-draws no agent: a blank list row, the preview's heading beside it, "↓ 1
-below" in its border. Reproduced with P3b's agent at 160x24 and 160x26; from
-27 rows C has 4 rows and the agent's two rows show. No size under 160
-columns is affected.
-
-- **(a) Recommended.** The floor raised: with an agent in play, C keeps one
-  agent's rows (4 from 100 columns), A and B giving the rows: at 160x24,
-  160x25 and 160x26, C 4 rows, A and B 11, 12 and 13 rows; from 27 rows, as
-  today.
-- **(b)** A minimum documented instead: ui-design.md (Zone C) and ASM-12 say
-  that from 160 columns an agent's rows need 27 rows, and a test holds
-  today's 3 rows at 160x24 to 160x26.
-
-### Item 5 - Documents that promise what the code does not do
-
-For each, the owner chooses: **build** the feature, or **correct** the
-document to what is built.
-
-- **5.1 The application's own configuration file.** architecture.md, How
-  it starts, step 1 (`architecture.md:312-314`), with ASM-7 (its path and
-  TOML format) and ASM-9; ui-design.md: "Colours are configurable in the
-  application's own configuration file" (`ui-design.md:1497-1498`) and
-  "Bindings are lists, configurable" (`:1597-1598`); and brief amendment 3,
-  "Implement configurable Enter-to-send and newline shortcuts"
-  (`doc/brief.md:296`, AM3 M7). Nothing reads such a file: key bindings and
-  colours are fixed in the code, and no evaluation records the gap.
-  Recommended, **build the two shortcuts only**, since amendment 3 asks for
-  them and AGENTS.md makes its input MVP-essential: the send keys and the
-  newline keys, each a list, read at start from
-  `%APPDATA%\agent-command-center\config.json`. JSON, not ASM-7's TOML: Go's
-  standard library reads JSON, and a TOML parser would be a new dependency,
-  which needs the owner's approval. A file that cannot be read, an unknown
-  key name, an empty list or a key in both lists: the first screen names
-  the file and the problem, and the default keys apply. The other bindings
-  and the colours stay fixed, and the documents say so. Or correct: the
-  documents say keys and colours are fixed in the code, and amendment 3's
-  shortcuts go under Nice to have by the owner's decision.
-- **5.2 The sign-in kind.** architecture.md's Detect rows read it with
-  `claude auth status` (`authMethod`) and `codex login status`
-  (`architecture.md:169`, `:203`); both adapters say "The sign-in kind is
-  not read yet" (`internal/provider/claude/provider.go:46`,
-  `internal/provider/codex/provider.go:50`), and `Detection.SignIn`
-  (`internal/provider/provider.go:21`) is never set or shown. Recommended,
-  **correct**: the dashboard tells a subscription from an API key by the
-  session's own reports, Claude Code's `system/init` `apiKeySource`
-  (`claude/mapper.go:152-169`, the quota's N/A reason) and Codex's
-  `account/rateLimits/read`, refused without a ChatGPT sign-in; the unused
-  field and the two comments go. Building it would start two more processes
-  at detection to show nothing the screen lacks.
-- **5.3 The Capabilities flags.** architecture.md (`:157-163`): each adapter
-  fills them from detection and the handshake, and "The UI shows "N/A" or
-  hides an action when a flag is off". They are constants
-  (`claude/session.go:352-353`, `codex/session.go:522-523`,
-  `mock/session.go:153`), and only `AutoApprovals` is read
-  (`internal/app/keys.go:165`, F4); the other per-CLI differences come from
-  the provider id (`keys.go:422` `decision`, `state/reduce.go:665`,
-  `state/actions.go:293`, `render/dashboard.go:214`) and from the events
-  each CLI sends. Recommended, **correct**: rewiring working code to the
-  flags would change nothing on screen (AGENTS.md: change what fails, not
-  what works).
-- **5.4 The frame rate.** ASM-3, "Rendering at most 30 frames per second,
-  coalescing events per frame" (`architecture.md:425`), with
-  architecture.md's Threads (`:118-122`), ui-design.md's Rendering
-  (`:1570-1573`) and Assumptions (`:1929`), and events-and-state.md's
-  Pipeline (`:15`). No `tea.WithFPS` is passed
-  (`cmd/agent-command-center/main.go:37`, `internal/app/run.go:34`), so
-  Bubble Tea v2.1.0's default of 60 applies (its `renderer.go:13`,
-  `defaultFPS = 60`), and events are not coalesced by kind: `listen`
-  (`internal/app/app.go:657-683`) hands over what is waiting, at most
-  `maxDrain` = 512 events per update (`app.go:111`). Recommended,
-  **correct**: every live review ran at 60; at 30, a key could wait up to
-  33 ms for its frame, against up to 17 ms at 60.
-- **5.5 The separation test.** reliability.md's test 7 "reads the package
-  graph (`go list -deps`)" (`reliability.md:617-620`); the test parses the
-  sources with `go/parser` (`internal/arch/separation_test.go:7`, `:53`).
-  **Correct**: the test works, and its planted faults fail it.
-- **5.6 ui-design.md's promises.**
-  - a. A retry count "↻ n" on an agent's row (`ui-design.md:1040-1041`, the
-    symbols' table `:1486`): amendment 2's "Retry information" in zone C
-    (`doc/brief.md:151`, AM2 C7; `architecture.md:517`). The state counts
-    each agent's retries (`internal/state/reduce.go:195-200`,
-    `Agent.Retries`), and zone C draws none. Recommended, **build**: "↻ n"
-    in amber after the agent's time when n ≥ 1, at every width. Codex gives
-    an agent's retries (a thread's `error` with `willRetry`,
-    `codex/mapper.go:459-465`); Claude Code's `system/api_retry` is the
-    orchestrator's (`claude/mapper.go:200`), so a Claude Code agent shows
-    none, and ui-design.md says so. Mapping Claude Code's documented
-    `tool_progress` `subagent_retry` (claude-code.md:405) is left out: no
-    recording holds one, so it could not be checked without a live retry.
-  - b. The "ai" label, right-aligned "in lists and previews"
-    (`ui-design.md:1462`); `originLabel` returns "" for AI
-    (`internal/render/dashboard.go:690-695`). Recommended, **correct**: AI
-    text is the text without a label, under the model's header in B; every
-    other origin keeps its label, so AI messages stay distinct, as the
-    owner reviewed them in plans 19 and 20.
-  - c. The notices "interrupted by you", "turn failed: …" and "send refused:
-    session not ready", grey, marked "dashboard" (`ui-design.md:872-873`;
-    the States table, `:1447`). The code writes no such entry: a refused
-    send says "not sent: the session is <phase>; the draft is kept" on the
-    editor's status row (`internal/state/actions.go:286`), and an
-    interrupted turn's stage in zone A reads "○ interrupted"
-    (`internal/render/tree.go:130-131`). Recommended, **correct**:
-    ui-design.md names what the code shows, and where.
-  - d. "wrapping, Markdown and highlighting are cached per entry and width"
-    (`ui-design.md:1591-1592`). The wrap is cached per source line and
-    widths (`WrapCache.ranges`, `internal/render/content.go:235`), a
-    finished entry's row count per entry, width and shape (`rowCount`,
-    `content.go:210`); Markdown is classified again for each entry drawn
-    (`mdLines`, `render/cards.go:135`, `content.go:391`). Recommended,
-    **correct**: the stream's frame time is within its target
-    (`TestStreamToFrame`) without that cache.
-- **5.7 The MOCK badge on two full screens.** In a mock run, the file
-  viewer full screen (f) and the draft window full screen (Ctrl+F) fill the
-  terminal (`FileRect`, `internal/render/file.go:65-71`), so their frames
-  have no title bar and no "◆ MOCK — not a live session"
-  (`testdata/frames/file-full-*.txt` and `draft-full-*.txt` at 80x24,
-  120x40 and 200x60), against reliability.md (`:472-475`, the title bar of
-  every screen; test 8, `:621-625`) and evaluation.md's standing check
-  (`:47`, "in mock mode every screen shows that it is mock data"). The
-  inspection and zone D's details keep the title bar at full screen.
-  Recommended, **build**: these two full screens start under the title
-  bar, as the inspection does, live and mock; the golden test fails a
-  mock-session frame without the badge.
-- **5.8 ASM-23's path** (`architecture.md:445`) reads
-  `%LOCALAPPDATA%agent-command-centerdrafts`, its backslashes lost.
-  **Correct** to `%LOCALAPPDATA%\agent-command-center\drafts`
-  (`internal/input/draft.go:23-25`, `os.UserCacheDir`).
+1. **One conversation entry per thinking phase**, role `thinking`, in its
+   place among the turn's entries, with its times, the CLI's estimate, the
+   exact count and its scope (`state.Thought`). Every animation is a
+   function of those times and the frame's time: the frame never writes
+   the chronology.
+2. **The live card**, in the CLI's block of the exchange, in the violet of
+   thinking: the circular spinner, the playful expression, the elapsed time
+   at the right; the count line; the bar. Seven rows (bordered, blank rows
+   between, the mock-up of section 2) when zone B's conversation has 20
+   rows or more, five from 12, two without a border below (80x24); the
+   size does not change while a phase lasts unless zone B does.
+3. **Claude Code: the card is the observed phase.** The count line shows
+   the CLI's estimate, "≈ 650 thinking tokens · live estimate" (mode B,
+   the scale 0–2k, doubling as the estimate passes it: 2k, 4k, 8k…), and
+   "Thinking · token usage pending" before the first estimate (mode C).
+   The summary row shows the estimate, marked as one, until the message's
+   exact count comes, then the count.
+4. **Codex: the card is the model step.** No thinking is reported live, so
+   the card shows while the model works on a step, "Model working ·
+   reasoning tokens reported when the step ends", the bar indeterminate
+   (mode C), from the step's start: the turn's message recorded, or the
+   previous step's response complete and its tools finished (X5). A
+   reasoning item turns it into "✓ Thought for up to 4.1s" (the step's
+   time up to the reasoning's end: an upper bound), and the step's usage
+   adds "· 16 reasoning tokens"; a step whose first output is not
+   reasoning collapses away and leaves no row. The Codex adapter reports
+   each step's start, inferred; the reducer stays provider-independent.
+5. **Mode A**, a known budget: "Thinking · 1,284 / 4,096 tokens", the fill
+   proportional. No supported CLI reports a budget: tested, never shown.
+6. **Animations.** Entrance 280 ms: the frame's top edge swept by a light,
+   then the spinner's row, the count's and the track, each from dim to
+   full. The bar: after each new value the fill grows over 300 ms (ease
+   out) with its leading edge lit, settling over 400 ms more; between
+   values a shimmer crosses the filled part, the fill unchanged; mode C's
+   segment sweeps the track every 1.6 s. The spinner: six frames, 100 ms
+   each. The expression: every 4 s from the owner's ten, never twice in a
+   row, its first 200 ms dimmed. Exit 300 ms: ✓ in place of the spinner and
+   the duration in place of the expression, lit, then the bar's row and the
+   count's close, to the summary row in muted colours. Frames every 50 ms
+   while one of these runs, the 100 ms spinner otherwise.
+7. **Only what was drawn live animates.** A phase whose start and end come
+   in one batch (a replay, a resume) is drawn as its summary row at once.
+8. **The summary row**, among the tool rows: "▸ ✓ Thought for 2.8s · 719
+   thinking tokens", its end time and origin at the right. → opens its
+   details (the times, each value's source and scope), ← folds it, Enter
+   shows it whole; the entry cursor stops on it. "✗ Thinking interrupted
+   after 0.2s" when the turn was interrupted.
+9. **The activity line**, while the turn runs with no live card, nothing
+   streaming and no request waiting: the spinner, an expression, the
+   turn's time at the right ("00:24"), and "◇ 1 subagent working" while
+   agents run. A request waiting stops every animation of the turn.
+10. **Image 1's line**: the editor's placeholder reads "Claude Code is
+    processing your request…" while a turn runs and the draft is empty.
 
 ### Criteria
 
-Each criterion of items 2, 4 and 5 applies to the choice the owner makes:
-"(a)", "(b)", "Build" or "Correct" marks it.
+Recordings (`internal/provider`, `internal/state`; the recordings replayed
+through the adapters, times from `fixture.Epoch`).
 
-Item 1, the session time (a test in `internal/render`).
+- 1.1 Claude Code's mapper: each `content_block_start` and
+  `content_block_stop` marker carries its block index; each
+  `message_delta` marker its `thinking_tokens` when the line has it
+  (P303b: 719, 281, 268, in order).
+- 1.2 Codex's mapper: a `step_started` marker, origin inferred, at the
+  orchestrator's `userMessage` item, and once a step's response is
+  complete (its usage) and its tool items have finished, when the step
+  made a call (a tool item or a spawn); none after a step that made none.
+  P7: 5 markers, at 3,380, 7,120, 9,632, 13,471 and 24,076 ms; the
+  reasoning tokens of each usage update as a metric, by thread (P7's
+  orchestrator: 83, 0, 8, 7, 0).
+- 1.3 Claude Code's phases: one `thinking` entry per orchestrator thinking
+  block, none for a subagent's. P12c-block: 4 entries; their durations
+  3,476, 13,902, 56 and 2,161 ms; their estimates as C2 lists for the
+  second; exact counts 717, 2,852, 17, 354. P303b: 3 entries, 719, 281,
+  268, and none for the subagent's 4 thinking blocks.
+- 1.4 Never counted twice, never mixed: the sum of P303b's phases is 1,268,
+  the `result`'s total; the turn total never adds to a phase; an estimate
+  lower than the last leaves the phase's unchanged (a synthetic event); an
+  estimate with no open phase changes none; a message with two thinking
+  blocks (synthetic) puts its count on the second, with "over 2 phases".
+- 1.5 Codex's phases: P7's orchestrator: 3 thoughts, "up to" 3,140,
+  3,743 and 1,440 ms (from the step's start to the reasoning item's
+  completion; a step that made a spawn and no reasoning stays open into
+  the next), counts 83, 8, 7; 1 step dropped (the last, a message); no
+  count from a child thread on any of them; a usage update goes only to
+  the thoughts since the previous one of its thread.
+- 1.6 Ends: a message ended with `stop_reason` null marks its phases
+  interrupted (P303a: "interrupted", no exact count, the CLI's 0 kept
+  apart as reported; corrected on 2026-10-21 by correction C1, the owner's
+  choice, from "0 thinking tokens, as reported"); a
+  turn interrupted ends an open phase with the event's time and
+  "interrupted", a failed turn or a crash with "failed"; an open Codex
+  step ends dropped.
+- 1.7 A replay in one batch: P12c-block applied as one batch, then frames
+  at +0, +100 and +300 ms: every phase drawn as its summary row, no card,
+  no entrance or exit.
 
-- 1.1 6,000 events one second apart from t0, the frame at t0 + 6,000 s:
-  zone D reads "time 1h 40m session"; today's code reads "33m 20s session"
-  (the check run once on it, and failing).
-- 1.2 1,999 events: the value today's code gives; no event: "N/A (…)", as
-  TestTelemetryNA checks today.
-- 1.3 A resume after a crash, past 2,000 events: the time still counts from
-  the first event.
-- 1.4 No golden frame changes; events-and-state.md's State names what is
-  kept.
+Rendering (`internal/render`, at chosen times; golden frames at 80x24,
+79x24, 120x40 and 200x60).
 
-Item 2, the timed tests.
+- 2.1 The live card, mode B: P12c-block's second phase at 11,000 ms (it
+  began at 7,449; the estimate 650 came at 10,610, its growth over by
+  10,910), 120x40, seven rows as design 2 and 3 say: "00:03" at the right
+  of the expression's row, "≈ 650 thinking tokens · live estimate", the bar
+  filled on 650/2,000 of its width, its right label "2k" (a golden frame).
+  Corrected on 2026-10-21 from 10,700 ms, where the fill still grows from
+  350 (design 6), as the rendering's agent found.
+- 2.2 The bar: fill = width × count / scale, to half a cell ("╸"); the
+  scale 2,000 doubled until the count fits (2,200 reads 4k, 1,950 reads
+  2k); the label of a phase never goes down; at the end of a phase the
+  fill is the last value's, never full because it ended (a table test).
+- 2.3 Mode A with a budget of 4,096 and 1,284: "Thinking · 1,284 / 4,096
+  tokens", the fill 1,284/4,096 of the width; no adapter sets a budget.
+- 2.4 Mode C: before C2's first estimate, "Thinking · token usage
+  pending"; a Codex step, "Model working · reasoning tokens reported when
+  the step ends"; the segment at its positions for 0, 0.4, 0.8 and 1.2 s;
+  no token count drawn.
+- 2.5 Growth: an estimate from 300 to 650 at T: the fill f(300) at T,
+  between at T+150 ms, f(650) from T+300 ms; the edge lit until T+300 ms,
+  normal from T+700 ms; frames between two estimates show the same fill.
+- 2.6 The count only shows reported values: frames every 10 ms across a
+  change show 300 or 650, nothing between; the number lit for 400 ms after
+  a change.
+- 2.7 The spinner: six frames, the frame at Now−Start of 0, 100, …, 600 ms
+  cycles through all six and repeats.
+- 2.8 The expressions: the owner's ten, word for word; a new one every 4 s;
+  over 200 s none twice in a row; dimmed for its first 200 ms.
+- 2.9 Entrance: for a phase drawn live, frames at 0, 70, 140, 210 and
+  280 ms reveal the edge, the spinner's row, the count's, the track; the
+  card's row count is final from the first frame.
+- 2.10 Exit: at End the spinner is ✓ and the expression the duration; at
+  End+100 and End+200 ms fewer rows; from End+300 ms the summary row only;
+  no animation for a phase not drawn live (1.7's replay).
+- 2.11 The summary rows, word for word: "✓ Thought for 2.8s · 719 thinking
+  tokens"; "✓ Thought for 2.8s · ≈ 650 thinking tokens (estimate)" before
+  the exact count; "✓ Thought for 0.1s" with none; "✓ Thought for up to
+  3.1s · 83 reasoning tokens"; "✗ Thinking interrupted after 0.2s"
+  (corrected on 2026-10-21 by correction C1 (a), the owner's choice, from
+  "… · 0 thinking tokens").
+- 2.12 The details: → opens them under the row (the times, each value's
+  source and scope), ← folds; Enter shows the phase whole; the entry
+  cursor stops on a summary row, never on a live card; the folds of tool
+  runs count only calls (plan 19's tests pass unchanged).
+- 2.13 The activity line: P303b while its subagent works: the spinner, an
+  expression, the turn's time, "◇ 1 subagent working"; none while a
+  request waits (P303b's approval), while text streams, or once the turn
+  ended.
+- 2.14 Sizes and resize: seven, five and two rows by zone B's room; no row
+  wider than its zone; a card drawn at 120x40, then the same instant at
+  80x24, equals the 80x24 golden.
+- 2.15 Focus and scrolling: 50 frames of animation with the view held
+  (scrolled up) change none of `Focus`, `ConvTop`, `ConvHold`, `Entry`.
 
-- 2.1 (a) With both targets set to 1 ns, a mutation reverted after: `go
-  test ./internal/app -run '^(TestPasteToFrame|TestStreamToFrame)$'`
-  passes, each test logging its time as not judged; with `-tags timing`
-  both fail.
-- 2.2 (a) Both tests still run in `go test ./... -v` and pass, their checks
-  besides time unchanged.
-- 2.3 (a) The timing step runs the six tests, each within its target, its
-  p50, p95 and maximum recorded in plan.md with the conditions
-  (evaluation.md, Keystroke timing).
-- 2.4 (a) AGENTS.md (Commands) and evaluation.md (Keystroke timing) give the
-  six-test command, and evaluation.md says what the code does.
-- 2.1 (b) evaluation.md says these two are judged in `go test ./...`, the
-  four others in the timing step; the timing step 4 of 4 within its
-  targets.
+Application (`internal/app`).
 
-Item 3, a delta's message id (`internal/provider/claude`).
+- 3.1 Ticks: 50 ms frames while a card is live or a transition runs, the
+  100 ms spinner otherwise; none once the turn is idle and every exit has
+  ended (`Options.After` recorded); `ui.Spinner` counts only the 100 ms
+  ticks.
+- 3.2 An idle dashboard draws nothing: no frame scheduled with the turn
+  idle and no transition left (the test reliability.md's test 9 names,
+  not found by plan 22's survey, added).
+- 3.3 The mock replays: `claude-thinking.jsonl` (from P12c-block) and
+  `claude-thinking-subagent.jsonl` (from P303b), by TestMockFiles;
+  `codex-subagents.jsonl` (P7) shows its three thoughts.
 
-- 3.1 In each of the 13 Claude Code recordings, every `stream_event` line
-  maps to the id of its agent's last `message_start`, equal to its
-  `api_message_id`: 1,237 of 1,237 lines (a test over
-  `testdata/probes`).
-- 3.2 Each recording replayed with `api_message_id` removed from every line
-  gives the same conversation as replayed as is (roles, message ids,
-  texts), one entry per message (`oneEntryPerMessage` on each replay).
-- 3.3 A delta with no `message_start` before it takes its `api_message_id`.
-- 3.4 The code that reads `api_message_id` says it is undocumented; so does
-  claude-code.md's `stream_event` row, with the recordings that show it.
-- 3.5 Checked by mutation: a mapper that reads neither id fails 3.2.
+Checks and regressions.
 
-Item 4, zone C (TestAdaptiveLayout, `internal/render`).
+- 4.1 `go build ./...`, `go vet ./...` exit 0; `gofmt -l .` empty; `go
+  test ./...` 0 FAIL, only TestDiskListLink skipped; `go.mod` unchanged.
+- 4.2 The timing step, 6 of 6 within targets, plus TestThinkingFrame: a
+  live card animated over the long session, frame p95 ≤ 16 ms.
+- 4.3 Golden frames: only those with a thinking block or a running turn
+  change (each diff read); the new scenarios' frames at the four sizes.
+- 4.4 Windows Terminal, maximised then 120x40: screenshots of A to F
+  (amendment 18, section 11), and for A to C and F a sequence of frames
+  50 ms or less apart made into an animated GIF; the look listed as not
+  verified until the owner has seen it.
+- 4.5 Documents: ui-design.md (zone B's thinking), events-and-state.md,
+  architecture.md (ASM-18's frame rate, ASM-22, the provider-id table),
+  reliability.md (the fallbacks), claude-code.md and codex-cli.md (the
+  findings above, each with its source and documented or not); plan.md;
+  `doc/plan22-evaluation.md`; UTF-8 without BOM, LF only.
+- 4.6 `git status` lists only the intended files; no commit before the
+  owner's review.
 
-- 4.1 (a) P3b's agent at 160x24, 160x25 and 160x26: C 4 rows, the agent's
-  label "general-purpose" on C's first row inside its border, left of the
-  rule, the preview's heading right of it; A's and B's bottom borders on
-  one row, A and B 11, 12 and 13 rows; no row wider than the screen.
-- 4.2 (a) At 160x27, and at every size TestAdaptiveLayout and
-  TestDashboardGeometry check today, the heights of today.
-- 4.3 (a) ASM-12 and ui-design.md (Zone C) state the floor.
-- 4.1 (b) ASM-12 and ui-design.md (Zone C) state the 27-row minimum; a
-  TestAdaptiveLayout case holds C at 3 rows with "↓ 1 below" in its border
-  at 160x24 to 160x26.
+### Proposed, not run
 
-Item 5, per the owner's choice for each.
+- A live run with Opus 5.5 (the owner's model) on Claude Code: one prompt
+  that thinks, to see whether Opus also sends `thinking_display`
+  "updates", the estimates and the exact counts that Haiku sends.
+- Codex with reasoning summaries asked for at `turn/start`, to see whether
+  a reasoning item then starts when the reasoning does: the smallest
+  change that would make Codex's thinking observable live. A change to how
+  the dashboard drives Codex: the owner's decision.
 
-- 5.1 Build: (i) no file: Enter sends, Ctrl+J and Shift+Enter add a newline,
-  and the existing input tests pass unchanged; (ii) `{"keys": {"send":
-  ["ctrl+enter"], "newline": ["enter"]}}`: Ctrl+Enter sends, Enter adds a
-  newline, Ctrl+J and Shift+Enter neither send nor add a newline; (iii) the
-  footer and the F1 page show the keys in force; (iv) a bracketed paste
-  ending with a newline never sends, with either file
-  (TestPasteNeverSubmits); (v) invalid JSON, an unknown key name, an empty
-  list, a key in both lists: a message naming `config.json` and the
-  problem on the first screen (the startup screen; the editor's status row
-  in a mock run), and the default keys apply; (vi) the same input tests
-  pass with the Claude Code, Codex and mock adapters; (vii) the file is
-  only read, nothing else in it is used, `go.mod` unchanged; (viii)
-  architecture.md (How it starts, ASM-7, ASM-9) and ui-design.md (Focus
-  and keys, Colours) say what is built. Correct: those passages say keys
-  and colours are fixed in the code, and plan.md's Nice to have lists
-  amendment 3's configurable shortcuts with the owner's decision.
-- 5.2 Correct: architecture.md's Detect rows name no status command and say
-  which reports tell a subscription from an API key; `SignIn` and the two
-  "not read yet" comments gone; `go build ./...` exit 0.
-- 5.3 Correct: architecture.md's Capabilities paragraph names the one flag
-  read and the provider-id checks, each with its file.
-- 5.4 Correct: architecture.md (Threads, ASM-3), ui-design.md (Rendering,
-  Assumptions) and events-and-state.md (Pipeline) say 60 frames per second,
-  Bubble Tea's default, and a burst of at most 512 events applied as one
-  update; none of them says 30 frames per second.
-- 5.5 Correct: reliability.md's test 7 says the test parses the sources
-  with `go/parser`.
-- 5.6a Build: an agent with 2 retries shows "↻ 2" in amber after its time
-  at 120x40, 200x60 and 80x24, none with 0 (a test from a Codex thread's
-  `error` with `willRetry`); ui-design.md says why a Claude Code agent
-  shows none. Correct: ui-design.md has no "↻ n", and says retries are
-  counted in zone D only.
-- 5.6b Correct: ui-design.md's Origins table says AI text carries no label.
-  Build: "ai" right-aligned on the AI rows of C's preview and the
-  inspection, their golden frames rewritten.
-- 5.6c Correct: ui-design.md names the texts shown for a refused send, an
-  interrupted turn and a failed one, each found in the code, and no longer
-  promises "interrupted by you" or "send refused". Build: the three notices
-  as entries in B, marked "dashboard", a test for each.
-- 5.6d Correct: ui-design.md's Rendering says what is cached and what is
-  not.
-- 5.7 Build: the six frames `file-full-*` and `draft-full-*` at 80x24,
-  120x40 and 200x60 begin with the title bar and "◆ MOCK — not a live
-  session", each window one row shorter; TestGoldenFrames fails any frame
-  of a mock session without the badge (run once on today's frames: those
-  six fail); the viewer's and the draft window's tests pass. Correct:
-  reliability.md and evaluation.md name the two exceptions.
-- 5.8 ASM-23 reads `%LOCALAPPDATA%\agent-command-center\drafts`, checked
-  from the bytes.
+**The two as probes**, proposed on 2026-10-21 at the owner's request ("Let's
+do: The two proposed live checks"). Neither runs before the owner approves
+this proposal (standing decision: live runs). What both share:
+- An empty temporary folder outside the repository.
+- The configuration check (`drivers/hash-config.sh`) before and after.
+- No CLI session open in a terminal.
+- The CLI through Px, by the environment it inherits.
+- Each recording sanitized by `drivers/sanitize.mjs`, the organisation's
+  name taken from the recording itself and never typed, then kept in
+  `doc/research/probes`.
 
-Item 6, regressions and checks.
+P22o, Opus's thinking, on Claude Code 2.1.303:
+- How: a new driver `drivers/p22-claude.mjs` with `p303-claude.mjs`'s
+  arguments (the dashboard's), and `ANTHROPIC_MODEL=claude-opus-5-5` for
+  this process only. That is Opus where the standing decision says Haiku,
+  which is the check's purpose. One prompt that needs reasoning and no tool:
+  "Without using any tool, find the smallest positive integer that leaves
+  the remainders 1, 2, 3, 4 and 5 when divided by 2, 3, 4, 5 and 6. Think it
+  through, then reply with the number and one line of justification." Any
+  tool request is denied. Only if that turn has no thinking block, a second
+  prompt asks it to think hard about another question.
+- Usage: one Opus turn, two at most, over a cached context of about 25k
+  tokens, with 1 to 5k output tokens, thinking included. The 5-hour quota is
+  read before and after from the CLI's own rate-limit events.
+- Stops: after the turn's result; at 180 s; at any request other than a
+  tool's, denied.
+- Recorded, not judged against Haiku's numbers:
+  - O1 the session's model (`system/init`) and the CLI's version;
+  - O2 a main-thread thinking block, its start and stop;
+  - O3 `"thinking_display":"updates"` on its stream events, or not;
+  - O4 `system/thinking_tokens`: how many, the first one's delay after the
+    block's start, the steps (multiples of 50 or not), the interval, and the
+    last value against the exact count;
+  - O5 the exact count in the final `message_delta`
+    (`usage.output_tokens_details.thinking_tokens`), or none;
+  - O6 replayed through the dashboard's adapter and reducer in a scratch
+    copy: no unrecognised event, the phase's estimates and count as
+    recorded;
+  - O7 the configuration hashes before and after (`~/.claude.json`
+    excepted, Claude Code's own state, as documented); the quota used.
 
-- 6.1 `go build ./...` and `go vet ./...` exit 0; `gofmt -l .` empty; `go
-  test ./...` 0 FAIL, only TestDiskListLink skipped; `go.mod` and `go.sum`
-  unchanged.
-- 6.2 The timing step within its targets: 6 of 6 under 2 (a), 4 of 4 under
-  2 (b).
-- 6.3 Only the golden frames the chosen items change, each diff reviewed:
-  the six full-screen frames under 5.7's build; none for items 1 to 4.
-- 6.4 A mock run in Windows Terminal, maximised: the file viewer and the
-  draft window at full screen with the badge (5.7); then a 160x24 grid,
-  P3b's agent's rows in C (item 4); screenshots for the owner, the look
-  listed as not verified until the owner has seen them.
-- 6.5 AGENTS.md's status line names plan 21; plan.md holds the progress;
-  `doc/plan21-evaluation.md` the summary; every changed file UTF-8 without
-  BOM, LF only, checked from the bytes.
-- 6.6 `git status` lists only the intended files; no commit before the
-  owner's approval.
+P22s, Codex's reasoning summaries, on Codex CLI 0.163.0:
+- How: a new driver `drivers/p22-codex.mjs` with `p12-codex.mjs`'s
+  handshake and thread (the dashboard's: read-only, approvals on request),
+  `turn/start` with `summary`: `auto` on turn 1, `detailed` on turn 2
+  (`TurnStartParams.summary`, schema line 3772). The prompts:
+  - turn 1: "Without running any command or editing any file: how many
+    trailing zeros does 100! have? Reason it through, then reply with the
+    number and one line.";
+  - turn 2: "Without running any command or editing any file: in how many
+    ways can 10 be written as an ordered sum of 1s and 2s? Reason it
+    through, then reply with the number and one line.".
+
+  Every approval is declined. `account/rateLimits/read` runs at the start
+  and at the end.
+- Usage: two Codex turns at its configured model and effort (gpt-6-sol,
+  high), a few thousand tokens each; the 5-hour window read before and
+  after.
+- Stops: after turn 2 completes; at 300 s; on a refused `turn/start`, which
+  is recorded and not retried.
+- Recorded:
+  - S1 `turn/start` with `summary` accepted, or its error;
+  - S2 for each reasoning item, its `item/started` to `item/completed`, set
+    against 0 to 10 ms without summaries; the
+    `item/reasoning/summaryTextDelta`, `summaryPartAdded` and `textDelta`
+    notifications, how many and when, against the step's start and the
+    item's end;
+  - S3 the question itself: does the reasoning item now start when the
+    reasoning does, its `item/started` before its summary deltas and well
+    before its completion? Yes or no;
+  - S4 each step's `last.reasoningOutputTokens`, as before;
+  - S5 replayed through the dashboard's adapter in a scratch copy: what it
+    does with the summary notifications today;
+  - S6 the configuration hashes; the quota used.
+
+After both runs:
+- The findings go to claude-code.md and codex-cli.md, section 12, and here.
+- Nothing in the dashboard changes in this step. If S3 is yes, sending
+  `summary` and drawing Codex's reasoning live is proposed to the owner
+  with its design. If it is no, the indeterminate bar stays.
+
+**Results, 2026-10-21**, both run as approved, in 17 s each
+(`doc/research/probes`, `p22o-claude-opus-thinking.jsonl` and
+`p22s-codex-reasoning-summary.jsonl`; claude-code.md and codex-cli.md,
+section 12).
+
+P22o (18:51):
+- O1: `claude-opus-5-5`, CLI 2.1.303, one turn, thinking at the first
+  prompt.
+- O2: one main-thread thinking block, 2,796 to 10,807 ms (8.0 s).
+- O3: `"thinking_display":"updates"` on 8 of its 10 lines, as on Haiku's
+  blocks.
+- O4: six estimates, 50 to 850, the first 508 ms into the block (Haiku: 146
+  to 392 ms), then every 1.0 to 1.6 s, each step a multiple of 50. No last,
+  uneven value. The last estimate is 8.4% under the exact count.
+- O5: the exact count, 928, in the final `message_delta`, 967 ms after the
+  block's stop.
+- O6: replayed, one observed phase, estimate 850, count 928, "Thought for
+  8.0s · 928 thinking tokens". Three unrecognised events, none about
+  thinking: `system/hook_started` and `hook_response` (the owner's
+  `SessionStart` hook) and `system/post_turn_summary`. Zone D counts them
+  ("unrecognised events").
+- O7: 21 of 22 configuration files identical; `~/.claude.json` rewritten by
+  the probe's Claude Code (hash only). After the turn, 5-hour 9% and 7-day
+  14%: the CLI sends no reading before its first request. 1,050 output
+  tokens, 928 of them thinking, $0.42 API-equivalent.
+
+P22s (18:52):
+- S1: `summary` accepted, `auto` and `detailed`.
+- S2: the reasoning items span 2,506 and 3,436 ms (0 to 10 ms without
+  summaries), each starting about 1.6 s after its turn's `userMessage` item.
+  `auto` gave no summary. `detailed` gave one heading, "**Computing
+  f(10)**", 9 ms before its item completed.
+- S3: yes, with a limit. The item now starts while the model works, so the
+  reasoning becomes observable live. Its text does not stream, and its span
+  may include making the summary (28 and 36 reasoning tokens over 2.5 and
+  3.4 s).
+- S4: one usage update per step, 28 and 36 reasoning tokens, as before.
+- S5: replayed as today, each step is a phase "up to" 4.1 s and 5.0 s. The
+  item's start confirms the step, so the card already reads "Thinking"
+  from it. `summaryTextDelta` maps to a hidden thinking delta;
+  `summaryPartAdded` is unrecognised.
+- S6: Codex's configuration files identical; the 5-hour and weekly windows
+  0% before and after; nothing left running, nothing written in either work
+  folder.
+
+**Proposed from these results, for the owner's decision:**
+- Codex: send `summary: "auto"` with every `turn/start`. With no other change
+  to the drawing, the card then reads "Thinking" from the reasoning item's
+  start, about 1.6 s into the step, for the 2.5 to 3.4 s it lasts, instead
+  of at its very end. With it:
+  - the summary row keeps its "up to" time;
+  - the details give the item's own start and end, and the summary's heading
+    when Codex sends one, marked as Codex's text;
+  - the mapper recognises `summaryPartAdded`.
+  
+  It is a change to how the dashboard drives Codex (plan 22, X1).
+- Claude Code: map `system/hook_started`, `hook_response` and
+  `post_turn_summary` as known events with nothing drawn. Today each session
+  adds 2 to zone D's "unrecognised events", and each turn 1.
+
+### Corrections C1 to C12
+
+The owner's decision of 2026-10-21 on the investigation
+(`doc/plan22-investigation.md`, sections 2 and 5): "Apply the recommended
+corrections C1 to C12, with C1's wording (a) and without the optional C13.
+Then re-verify, including the demonstrations the corrections change."
+
+**Design**, where section 5 leaves a choice:
+- C1 is made in the state, not only in the drawing. A message cut short
+  (`stop_reason` null) gives its phase no exact count. The 0 the CLI sends
+  with it is kept apart, as reported, so nothing that reads a count shows
+  it as one, the exit's count row included.
+- C2, C3 and C4 as the investigation's verified copy
+  (`verify-state\bundle.diff`), C5 as its copy `fix-f4r`.
+- C6: the application notes when the activity line's condition began, by
+  the function the drawing uses. The line shows from 200 ms after, drawn
+  by the 100 ms spinner, with no new tick.
+- C8: the exit's count row reads the exact count once it came ("2,852
+  thinking tokens", short "2,852 tokens"), else the live text without
+  "live" ("≈ 2,700 thinking tokens · estimate", short "≈ 2,700 tokens ·
+  estimate").
+- Added at the review of the first build, before the code that follows
+  them (the implementer's open points):
+  - C7 completed: when neither form fits beside the exit's head (a Codex
+    phase interrupted or failed at 80x24), the 2-row card leaves the count
+    out of that row, never cut, as D7 says "Codex's too".
+  - C8 completed: in its exit, a phase whose count can no longer come (cut
+    or closed) with no estimate reads "Thinking · no exact count reported"
+    (short "Thinking · no count"), not "token usage pending" (P2); a shared
+    count "1,268 thinking tokens over 2 phases", as the summary row says it.
+  - C4's details: a phase it ended says "when the next step began
+    (inferred)", not "when its turn ended".
+  - C9: toolLine's left and right parts become two helpers that the summary
+    row's check uses too, so the rule cannot drift.
+
+**Criteria.**
+- 5.1 C1, P303a's cut message: its phase interrupted, with no exact count,
+  the CLI's 0 kept as reported; its summary row "✗ Thinking interrupted
+  after 0.2s" with nothing after it; its details "no exact count: the CLI
+  reports 0 for an interrupted message" and "live estimate 50"; no frame of
+  its exit shows "0 thinking tokens". P2 the same (golden `stream-p2-06`).
+- 5.2 C2, a phase whose turn or session ended with no exact count takes
+  none later:
+  - P12x-sandbox cut at line 61 by a crash, line 57 replayed after the
+    resume: its phase has no count and reads "no exact count reported"
+    (was "up to 4.1s · 10 reasoning tokens"); P9n the same (was "0
+    reasoning tokens");
+  - a turn with no prompt (synthetic) never shares an earlier turn's
+    phase: no "over 2 phases";
+  - in P6b no row reads "exact count not reported yet" once its turn ended
+    (was 1 of 66).
+- 5.3 C3: a phase live while the turn is Idle (synthetic) ends when a
+  prompt is sent, at the last event's time, its end inferred; no 50 ms
+  frame once its exit is over.
+- 5.4 C4: a confirmed reasoning item still live when the next Codex step
+  starts (synthetic) ends at that start, its end inferred: never two live
+  phases; its details say it ended when the next step began.
+- 5.5 C5: a reasoning item that finds no step open starts at its turn's
+  last usage update. P9a line 24's phase reads "Thought for up to …s · 118
+  reasoning tokens" and its exit is timed (no "--:--"); P6b's second entry
+  gains a start; no other recorded phase changes.
+- 5.6 C6: the activity line shows once its condition has held 200 ms.
+  Every recording replayed with a frame every 50 ms: no frame draws it in
+  the gaps D3 lists (the 17 Codex turn ends, 27 to 145 ms; Claude Code's 0
+  to 27 ms; before and between step cards; around approvals); after a
+  prompt, not before +200 ms; P303b's subagent at work still shows it
+  (2.13); no new tick (TestThinkingTicks and TestIdleDrawsNothing
+  unchanged).
+- 5.7 C7: P303a at 80x24, the 2-row card's exit row is never cut ("live
+  esti…" gone): the count's form is chosen against the exit's head; a
+  Codex phase interrupted or failed (synthetic) leaves its count out
+  rather than cut.
+- 5.8 C8: the exit's count row as the design says; never "live estimate"
+  or "token usage pending" once a count is reported (P303a, P303e, P2), nor
+  "token usage pending" when none can come (P2's cut phase); a shared
+  count "over 2 phases" (synthetic); Codex's unchanged.
+- 5.9 C9: at 80 columns a thought's summary row drops its origin whole when
+  its right part does not fit: no cut origin ("obse…") in any frame of any
+  recording at 80x24; tool rows unchanged.
+- 5.10 C10: zone B held, only a dropped step new: revealing an entry in
+  view scrolls nothing (the reproduction's ConvTop 217 stays 217); reveal
+  and the "↓ N new" badge count alike.
+- 5.11 C11: TestThinkingReplayInOneBatch reads `ui.Live` by `Thought.ID`,
+  and fails when markLive marks every phase.
+- 5.12 C12, as section 5 lists: codex-cli.md section 10 item 4 (the
+  resume's usage replay documented for 0.145.0, present in 0.163.0's
+  source, fork included, never recorded); "4 to 126 ms" where "4 to 87"
+  was (codex-cli.md section 12, this file); claude-code.md section 12 (the
+  relay of the API's per-delta estimate, the last value's fit, an
+  interrupted message's usage its message_start's).
+- 5.13 Each correction's test fails with its fix undone, one at a time.
+- 5.14 `go build ./...` and `go vet ./...` (and `-tags timing`) exit 0;
+  `gofmt -l .` empty; `go test ./...` twice, 0 FAIL, only TestDiskListLink
+  skipped; `-race` 0 races; `go.mod` and `go.sum` unchanged; the timing
+  step 7 of 7 within targets, on mains.
+- 5.15 Golden frames: only those the corrections change, each diff read:
+  C1's (`stream-p2-06`), C6's (an activity line drawn under 200 ms), C7 to
+  C9's at 80x24.
+- 5.16 Documents: ui-design.md (Thinking: the interrupted row, the details,
+  the exit's count row, the activity line's 200 ms, the summary row at 80
+  columns); events-and-state.md (the closed and the cut phase, the ends of
+  C3 to C5); criteria 1.6 and 2.11 corrected here with a note; UTF-8
+  without BOM, LF only.
+- 5.17 Windows Terminal, maximised then at 120x40: the demonstrations whose
+  frames the corrections change, run again, the earlier ones kept; P303a's
+  interrupted phase at 80x24 too, for C1, C7 and C9, from a mock made in a
+  scratch copy (not added to the repository). The look stays not verified
+  until the owner has seen it.
+- 5.18 `git status` lists only the intended files; no commit.
 
 ### Progress
 
-- 2026-10-20: proposed from the review of d84e5d4. Each finding checked
-  again at its file and line; the Agent SDK's `SDKPartialAssistantMessage`
-  read; the 1,237 `stream_event` lines of the recordings checked by
-  script; `go test ./... -count=1` exit 0 at d84e5d4. Waiting for the
-  owner's approval and decisions.
-- 2026-10-20: approved with the recommended choices; built the same day.
-  Item 3 and item 5.1 by an implementer agent each (Sonnet), reviewed and
-  rerun here; the rest here.
-  - Item 1: `State.Applied` and `State.FirstAt` (`internal/state`), set
-    where `log` appends; `sessionTime` counts from `FirstAt`.
-    TestSessionTimeKeepsFirstEvent (`internal/render`): run once on the old
-    code, it failed with "time 33m 20s session" for 6,000 events over
-    1 h 40 min and "34m 55s session" after a resume; now 1.1, 1.2
-    ("33m 19s session" for 1,999 events, as before; N/A with no event) and
-    1.3 ("1h 00m session") pass.
-  - Item 2 (a): `timingBuild` (`timing_on_test.go`, `timing_off_test.go`);
-    `overTarget` logs outside the timing step. Mutation, both targets
-    1 ns: `go test ./internal/app -run '^(TestPasteToFrame|TestStreamToFrame)$'`
-    ok, each logging "not judged outside the timing step"; with `-tags
-    timing` both FAIL ("max 2.9571ms over the 1ns target", "p95 5.986ms
-    over the 1ns target"); targets restored.
-  - Item 3: the mapper takes a delta's id from its agent's last
-    `message_start`, `api_message_id` (labelled undocumented) only before
-    one. TestStreamEventsTakeTheMessageStartID: 1,237 lines in 13 of 14
-    recordings (p4 has none); TestConversationDoesNotNeedAPIMessageID: the
-    14 recordings replayed with and without the field, equal, one entry per
-    message; TestStreamEventWithoutMessageStartFallsBack; mutation (the
-    mapper reading neither id): both tests fail ("assistant entry with
-    message id \"\" (empty or repeated)").
-  - Item 4 (a): `agentC` = 4, the floor in `cHeight`. TestZoneCFloor: on
-    the old code C 3 and no agent at 160x24 to 160x26; now C 4, A and B 11,
-    12, 13, the label left of the preview's rule; 160x27 as before.
-  - Item 5.1: `internal/input/config.go` (`LoadKeys`, `NormaliseKey`),
-    read in `main.go`; `editorKey` and `draftWinKey` use the lists; the
-    footer, status row, draft window and F1 page show the keys in force
-    (`internal/render/keyset.go`). Tests: TestLoadKeys* (`internal/input`),
-    TestConfiguredKeys, TestPasteNeverSubmitsConfigured,
-    TestConfiguredKeysShown, TestConfiguredDraftWindow,
-    TestKeysProblemOnStartup, TestKeysProblemInMockRun (`internal/app`).
-  - Item 5.6a: "↻ n" in amber after the agent's time (`agentRetries`).
-    TestAgentRetries, from two `error` notifications with `willRetry` on a
-    child thread of P7 through Codex's mapper, at 120x40, 200x60, 80x24;
-    mutation (no count drawn): it fails at the three sizes.
-  - Item 5.7: `FileRect` full screen under the title bar. The new check in
-    TestGoldenFrames, run once with the old layout: exactly the six
-    `file-full-*` and `draft-full-*` frames failed it; frames rewritten,
-    those six only, each the title bar added and the window one row
-    shorter. TestFileRect, TestDraftWindow and TestFileKeys updated to the
-    new full screen.
-  - Documents: architecture.md (Provider interface, Capabilities, the two
-    Detect rows, Threads, How it starts, ASM-3, ASM-7, ASM-9, ASM-12,
-    ASM-13, ASM-23), ui-design.md (Zone B's notices, Zone C, States,
-    Origins, Colours, Rendering, Focus and keys, File viewer, Draft
-    window, Assumptions), events-and-state.md (Pipeline, State, Polling),
-    reliability.md (test 7, test 8), evaluation.md (Keystroke timing),
-    claude-code.md (`stream_event`), AGENTS.md (status, timing command).
-  - Checks: `go build ./...`, `go vet ./...` exit 0; `gofmt -l .` empty;
-    `go test ./... -count=1 -v` exit 0, 0 FAIL, only TestDiskListLink
-    skipped, TestPasteToFrame and TestStreamToFrame run and pass; `go.mod`
-    and `go.sum` unchanged; 48 changed or new files UTF-8, no BOM, no CR.
-  - Windows Terminal, the P3b mock (`scratchpad\term\p21shot.ps1`,
-    plan 20's harness): maximised 156x44, the file viewer and the draft
-    window full screen, each under the title bar with "◆ MOCK — not a live
-    session"; a 160x24 grid (147x22 and one Ctrl+minus): C 4 rows, the
-    agent's two rows left of the preview, A and B 11 rows. Screenshots for
-    the owner.
-  - The timing step (2.3, 6.2), not run on battery (status 1, 37% then
-    34%), evaluation.md requiring mains power; run alone at 19:40 once on
-    mains (status 2, 30%), the CPU at 37%, the usual applications open:
-    TestKeystrokeToFrame p50 0 s, p95 1.0062 ms, max 1.9993 ms (draft
-    window 503.4 µs, 1.3271 ms, 9.5393 ms); TestDraftKeystrokes 1.034 ms,
-    3.0566 ms, 41.7277 ms; TestKeystrokeCost 524 µs and 1.27 ms a key;
-    TestPasteToFrame p50 3.5169 ms, max 4.2555 ms; TestStreamToFrame
-    3.0111 ms, 8.9818 ms, 21.9225 ms; **TestLongSession FAIL**, p50
-    10.6808 ms, p95 16.6898 ms over 16 ms, max 22.169 ms. 5 of 6.
-  - The miss investigated, not rerun: d84e5d4 (plan 20, committed) p95
-    16.10 ms, FAIL; 8b3b16b (plan 18) p95 2.65 ms, PASS; a CPU profile:
-    `agentsDone` (plan 20's RESULT rule, `internal/render/look.go`) 32%,
-    walking every agent for every exchange each frame. Proposed, tried in
-    a scratch copy only: prefix sums of each stage's agents not completed,
-    once a frame; TestLongSession p95 4.19 ms, render tests and golden
-    frames unchanged. Waiting for the owner's approval
-    (`doc/plan21-evaluation.md`: 38 PASS, 2 FAIL, the same miss).
-- 2026-10-20: the owner approved the fix and the commit ("Apply the speed
-  fix, then commit"). `undoneByStage` and the new `agentsDone`
-  (`internal/render/look.go`); TestAgentsDoneCounts: the rule's answer for
-  every pair of turns in P3b, P7 and a synthetic session, two mutations
-  each failing it. `go test ./... -count=1` 0 FAIL, TestDiskListLink
-  skipped, no golden frame changed by the fix. The timing step, alone, at
-  20:00 on mains (status 2, 53%), the CPU at 29%: 6 of 6;
-  TestKeystrokeToFrame p50 0 s, p95 1.0415 ms, max 2.0003 ms (draft window
-  0 s, 1.1376 ms, 2.1069 ms); TestDraftKeystrokes 1.0121 ms, 3.0418 ms,
-  5.391 ms; TestKeystrokeCost 220 µs and 556 µs a key; TestLongSession
-  2.0002 ms, 3.9032 ms, 5.1539 ms (last tenth 3.54 ms); TestPasteToFrame
-  p50 1.0041 ms, max 1.1631 ms; TestStreamToFrame 1.5154 ms, 3.515 ms,
-  15.5502 ms. Committed (bdc4250).
-- 2026-10-20: the owner looked at the three Windows Terminal screenshots
-  and asked for no change ("push, and I looked at the screenshots"); 6.4's
-  look recorded as seen (`doc/plan21-evaluation.md`, The owner's review).
-  Pushed to origin.
+- 2026-10-21: the request recorded as amendment 18; the recordings read by
+  script, an agent checking the claims, the documentation checked; this
+  plan written.
+- 2026-10-21: the contract written here (`event.Marker`'s `Index`,
+  `Thinking`, `HasThinking`; `event.StepStarted`, `ThinkingEstimate`,
+  `ReasoningLast`; `state.Thought` and `Entry.Thought`; `render.UI.Live`),
+  `go build ./...` exit 0. Building: the adapters and the mock files, then
+  the reducer (an implementer agent each, Sonnet); zone B's rendering in
+  parallel (an implementer agent, Opus). At 01:26 the adapters' and the
+  reducer's agents stopped on `ERR_PROXY_TUNNEL` (the corporate proxy
+  refused a tunnel), the adapters' having written nothing; both restarted
+  at once, the rendering's agent unaffected. The documentation check
+  added to `doc/research/claude-code.md` and `codex-cli.md`, section 12.
+- 2026-10-21: built and reviewed here. The rendering (`internal/render/thinking.go`,
+  look, cards, content, dashboard, viewer, palette; 18 tests): two fixes
+  after review, a card in its exit never folded away in a run of calls and
+  no activity line under a closing card (TestThinkingFoldKeepsCard, a case
+  of TestThinkingActivity; each fails without its fix); criterion 2.1's
+  moment corrected to 11,000 ms. The adapters (`steps` in the Codex
+  mapper, the block indices and `message_delta` counts in Claude Code's;
+  P7: 5 markers, reasoning 83, 0, 8, 7, 0; two mock files added, seven
+  regenerated): one fix after review, only a spawn counts as a call, not a
+  child's end told on its parent (TestSubAgentActivityIsACall). The reducer
+  (`marker` and the thinking section of `reduce.go`; 13 tests): two fixes,
+  a force stop ends a live phase (interrupted) and the owner's close too,
+  a crash failed (TestThinkingEnds). Then the integration (the application,
+  golden frames, the frame-time test), an implementer agent (Sonnet).
+- 2026-10-21: the integration's agent stopped on `ERR_PROXY_TUNNEL` after
+  `markLive`, the 50 ms `animMsg` and the → / ← keys (kept, reviewed); the
+  rest done here. `internal/app/thinking_test.go`: TestThinkingFrames (8
+  scenarios at the 4 sizes, 32 frames, recordings replayed with their own
+  times), TestThinkingTicks, TestIdleDrawsNothing (reliability.md's test 9,
+  missing until now), TestThinkingHoldsView, TestThinkingReplayInOneBatch,
+  TestThinkingKeys, each but the frames checked by a mutation that makes it
+  fail; TestEntryViewer updated for the thought's stop of the cursor; 32
+  frames rewritten, each diff read (thought rows, the placeholder, the †
+  of `thinking.estimate`, two mock files in the listings). Found and fixed:
+  a mock replay at speed 0 emitted from a goroutine, so where the batches
+  fell, and which phase a frame drew live, changed from run to run
+  (TestColourProfiles and TestGoldenFrames failed 2 runs in 6); now every
+  event is queued before the session starts (`mock.Provider.Start`), 7 runs
+  of 7 pass. TestThinkingFrame (timing tag): p95 3.42 ms in a 5,522-entry
+  session (a first run, not the timing step). `go test -race ./...`: 14
+  packages ok, no race.
+- 2026-10-21: verified by three read-only agents (a verifier, a review of
+  the logic, a review of what the screen claims, the last stopped by the
+  proxy): 28 PASS, 1 FAIL, 2 not verified, and 9 findings; each fixed here
+  with its test (`doc/plan22-evaluation.md`, The independent
+  verification). Then: `go test ./...` 14 ok twice, `-race` 14 ok; the
+  timing step 7 of 7 on mains (TestThinkingFrame p95 3.33 ms,
+  TestLongSession 4.52 ms); Windows Terminal, the workstation unlocked by
+  the owner: the three mock replays maximised and at 120x40, 26
+  screenshots and 6 GIFs, a first run before the fixes and a final one
+  after; 31 of 31 PASS. Waiting for the owner's review of the
+  demonstrations; no commit.
+- 2026-10-21: the owner asked for a read-only investigation before
+  finalising: the Claude Code estimate, the Codex usage updates, defects,
+  regressions, verification. It is reported in `doc/plan22-investigation.md`.
+  - The estimate is the CLI's sum of the API's per-delta increments, and
+    it is always labelled as one, except an interrupted message's 0 (D1).
+  - The Codex adapter and reducer are correct on all 76 recorded updates.
+    Reasoning usage comes only after a step ends: the indeterminate bar
+    stays.
+  - Defects: 13 worth correcting, one medium (D2, a resumed thread's
+    replayed usage), 1 optional, 4 not.
+  - No regression: every baseline test, the golden frames zone by zone,
+    2,953 snapshots of 23 recordings, the timing step 7 of 7, `-race`
+    with 0 races.
+  - Corrections C1 to C13 wait for the owner's approval. Nothing in the
+    application changed; no commit.
+- 2026-10-21: the session-start checks after the restart, read-only.
+  - The handoff written before the restart was acted on and deleted at
+    15:11 by the session that ran the first Px check. Its open points are
+    all recorded here or in `doc/plan22-evaluation.md`.
+  - `claude` 2.1.303 and `codex` 0.163.0 are the last probed; Claude
+    Desktop's own CLI is 2.1.304. HEAD is still f939d96: nothing committed.
+  - The demonstrations for the owner's review are in a temporary folder,
+    `%TEMP%\claude\C--javadev-projets-agent-command-center\a5552254-6236-4074-b92d-9ffa1ad3272e\scratchpad\term\out-p22`
+    (`out-p22-first` beside it: the run before the fixes).
+  - The owner's Windows user name, left for the owner to decide
+    (`doc/plan22-evaluation.md`, Limitations), is in six committed files,
+    all pushed:
+    - the plan 12 recording `p12x-sandbox-codex-turn-workspace-write.jsonl`,
+      40 times on 23 lines (the "23 times" counts lines), in both copies,
+      `testdata/probes` and `doc/research/probes`;
+    - `p12x-sandbox2` (16 times) and `p12x-sandbox3` (35 times), in
+      `doc/research/probes`;
+    - one temporary path each in `doc/plan16-evaluation.md` (line 123) and
+      `doc/plan19-evaluation.md` (line 98).
+
+    None of the 127 files waiting to be committed holds it.
+
+    The owner's decision, the same day: "Leave it: the repository is
+    private." The six files stay as they are; GitHub answers an anonymous
+    request for the repository with "not found". This settles only these
+    files: new recordings still have the user name replaced
+    (`doc/research/probes/README.md`).
+- 2026-10-21: corrections C1 to C12, the owner's choice (C1's wording (a),
+  no C13): built and verified, 17 of 18 criteria PASS
+  (`doc/plan22-evaluation.md`, The corrections C1 to C12). No commit.
+  - The design and criteria 5.1 to 5.18 above, written before the code;
+    four additions came from the review of the first build, before their
+    code.
+  - Built by an implementer agent (Sonnet, max) in two rounds, from the
+    investigation's verified copies for C2 to C5. Each round was reviewed
+    here against a copy of the tree taken before the corrections.
+  - The tests: a `corrections_test.go` in `internal/state`,
+    `internal/render` and `internal/app`. A mutation run here caught 11 of
+    11 fixes undone. One golden frame changed, `stream-p2-06.txt` line 23
+    (C1).
+  - C12 and the documents: codex-cli.md, claude-code.md, ui-design.md,
+    events-and-state.md, reliability.md; criteria 1.6 and 2.11 corrected
+    with a note.
+  - Checks: build, vet (also `timing` and `live`) and gofmt clean; `-race`
+    0 races; the timing step 7 of 7; with the proxy variables unset, the
+    suite 14 of 14 packages, twice.
+  - 5.14 FAIL, not caused by the corrections: amendment 19's
+    TestClaudeEnvironmentIgnoresCodexProxy
+    (`internal/app/codexproxy_test.go:413`) fails in the owner's environment
+    since the Windows user variables point at Px. It pins `HTTPS_PROXY` only
+    and reads the ambient `HTTP_PROXY`, which equals its Codex proxy. It
+    fails the same on the tree before the corrections.
+  - Then fixed at the owner's request: the test pins `HTTP_PROXY` too and
+    checks it is kept. It passes with the owner's environment as it is, and
+    fails on a planted leak of the Codex proxy. In the owner's environment,
+    go test ./... gives 14 of 14 packages, twice, 0 FAIL. The fix is in
+    amendment 19's own file, so it goes with amendment 19's commit.
+  - The demonstrations (5.17): 13 runs, 39 screenshots, 354 burst frames,
+    14 GIFs, in a temporary folder:
+    `%TEMP%\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\term\out-p22c`.
+    Beside them are the harness copy (`p22cdemo.ps1`, `p22call.ps1`) and
+    the two scratch mocks. The earlier demonstrations are unchanged.
+  - Waiting for the owner: the review of the demonstrations, then the
+    commits (plan 22 with these corrections, and amendment 19 apart).
+- 2026-10-21: the two live checks, P22o and P22s, proposed and approved
+  ("run P22o (Opus 5.5 instead of Haiku for this one process) and P22s
+  (Codex with summary auto then detailed) exactly as proposed in plan.md"),
+  then run at 18:51 and 18:52.
+  - The drivers are `doc/research/probes/drivers/p22-claude.mjs` and
+    `p22-codex.mjs`.
+  - The recordings were sanitized, the organisation's candidates taken from
+    the Windows domain and Px's upstream and never typed: 0 user name, 0 host
+    name, 0 candidate left.
+  - Results under Proposed, not run, above. Opus thinks as Haiku does, and
+    the dashboard draws it right. Asking Codex for summaries makes its
+    reasoning observable as it starts, not its text.
+  - The research documents and the probes README are updated. No dashboard
+    code changed.
+  - Waiting for the owner: the two proposals made from the results (Codex's
+    `summary`, Claude Code's three unrecognised events).
 
 ## Closed plans
 
@@ -551,7 +788,7 @@ its commits. Their criteria and progress logs: `git show 8888f59:plan.md`
 (plans 1 to 13), `git show 84d2ad8:plan.md` (plan 14), `git show
 b047434:plan.md` (plan 15), `git show becfb34:plan.md` (plan 16), `git show
 f00c2d8:plan.md` (plan 17), `git show 8b3b16b:plan.md` (plan 18), `git show
-d84e5d4:plan.md` (plan 20).
+d84e5d4:plan.md` (plan 20), `git show f939d96:plan.md` (plan 21).
 
 ## Plan 1 - Research
 
@@ -701,3 +938,15 @@ pending approval's pink box and RESULT. Approved on 2026-10-20 after the
 owner's live review, 32 of 32 PASS
 ([`doc/plan20-evaluation.md`](doc/plan20-evaluation.md)); commit d84e5d4,
 with plan 19.
+
+## Plan 21 - What the review of d84e5d4 found
+
+A read-only review of commit d84e5d4: zone D's session time past 2,000
+events, two timed tests outside the timing step, Claude Code's
+undocumented `api_message_id` labelled with a fallback, zone C's floor at
+160x24 to 160x26, and documents promising what the code did not do (the
+send and newline keys built in `config.json`, the others corrected).
+Approved on 2026-10-20 with the recommended choices, 38 PASS and 2 FAIL,
+then the long session's frame time fixed at the owner's request, 6 PASS
+([`doc/plan21-evaluation.md`](doc/plan21-evaluation.md)); commits bdc4250,
+f939d96.

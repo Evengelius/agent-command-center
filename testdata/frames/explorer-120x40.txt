@@ -1,22 +1,22 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
 ╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────────────── Idle ─╮
-│ claude-haiku-5-5 · or… ││ ▎ YOU  11:30                                                                               │
-│ turn 2 · c╭─ Explorer ───────────────────────────────────────────────────────────────── mock · 11 items ─╮ the       │
-│           │ sample/viewer.go                                                                             │txt with   │
+│ claude-haiku-5-5 · or… ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the       │
+│ turn 2 · c╭─ Explorer ───────────────────────────────────────────────────────────────── mock · 13 items ─╮txt with   │
+│           │ sample/viewer.go                                                                             │           │
 │ STAGES  in│ ▾ sample                                                                                  ●  │           │
-│ TURN 1  ✓ │     viewer.go                                                                             M  │           │
-│ TURN 2  ✓ │     viewer_test.go                                                                        D  │────────── │
+│ TURN 1  ✓ │     viewer.go                                                                             M  │────────── │
+│ TURN 2  ✓ │     viewer_test.go                                                                        D  │           │
 │   started │ ▸ tools                                                                                   D  │           │
-│           │   claude-api-key-context-refused.jsonl                                                       │           │
-│           │   claude-subagent-approval.jsonl                                                             │    mock   │
+│           │   claude-api-key-context-refused.jsonl                                                       │    mock   │
+│           │   claude-subagent-approval.jsonl                                                             │           │
+│           │   claude-thinking-subagent.jsonl                                                             │           │
+│           │   claude-thinking.jsonl                                                                      │           │
 │           │   codex-api-key.jsonl                                                                     U  │           │
-│           │   codex-no-5h-window.jsonl                                                                   │           │
-│           │   codex-plan6-limits.jsonl                                                                !  │           │
-│           │   codex-spawn-request.jsonl                                                               A  │           │
-│           │   codex-subagents.jsonl                                                                      │    mock   │
-│           │                                                                                              │    mock   │
-│           │                                                                                              │           │
+│           │   codex-no-5h-window.jsonl                                                                   │    mock   │
+│           │   codex-plan6-limits.jsonl                                                                !  │    mock   │
+│           │   codex-spawn-request.jsonl                                                               A  │    mock   │
+│           │   codex-subagents.jsonl                                                                      │           │
 │           │                                                                                              │─────────╮ │
 │           │                                                                                              │         │ │
 │           │                                                                                              │wrote    │ │
@@ -32,7 +32,7 @@
 ╭─ C · LIVE │                                                                                              │ · 1 DONE ─╮
 │  ✓  genera│                                                                                              │           │
 │     00:00 │                                                                                              │           │
-╰───────────│ ↑↓ move · → open · ← close · Enter view · / quick open · Esc back · F3 close         2 of 11 │───────────╯
+╰───────────│ ↑↓ move · → open · ← close · Enter view · / quick open · Esc back · F3 close         2 of 13 │───────────╯
 ╭─ D · QUOTA╰──────────────────────────────────────────────────────────────────────────────────────────────╯ted field ─╮
 │ 5h ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00                      │
 │ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 4% of 1M (derived)   +5 more                │

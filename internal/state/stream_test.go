@@ -40,13 +40,20 @@ func TestAnswerStreamsAcrossBlockLines(t *testing.T) {
 		b := newBench(t).running()
 		delta(b, "thinking", "")
 		line(b, "", true)
+		// The orchestrator's thinking is a thinking entry of its own (plan 22,
+		// item 9): a thinking delta and a thinking line make no assistant entry.
+		for _, e := range b.s.Conversation {
+			if e.Role == "assistant" {
+				t.Fatalf("an assistant entry before any text: %+v", e)
+			}
+		}
 		delta(b, "text", "one\n")
 		e, _ := answer(b)
 		b.eq("streaming after the thinking line and a text delta", e.Streaming, true)
 		delta(b, "text", "two\n")
 		e, _ = answer(b)
 		b.eq("text", e.Text, "one\ntwo\n")
-		b.eq("thinking", e.Thinking, true)
+		b.eq("no thinking mark: the thinking entry stands for it", e.Thinking, false)
 		line(b, "one\ntwo\n", false)
 		stop(b)
 		e, _ = answer(b)
@@ -63,6 +70,28 @@ func TestAnswerStreamsAcrossBlockLines(t *testing.T) {
 		e, _ := answer(b)
 		b.eq("text kept", e.Text, "A")
 		b.eq("thinking", e.Thinking, true)
+	})
+
+	// A subagent's thinking keeps its mark on its message (plan 22, item 9):
+	// a delta or a line marks the message, and none reaches the orchestrator's
+	// record.
+	t.Run("a subagent's thinking", func(t *testing.T) {
+		b := newBench(t).running()
+		b.ev(event.MessageDelta, "a1", event.Delta{MessageID: "s1", Block: "thinking"})
+		b.ev(event.MessageCompleted, "a1", event.Completed{MessageID: "s1", Thinking: true})
+		b.ev(event.MessageDelta, "a1", event.Delta{MessageID: "s2", Block: "text", Text: "hi"})
+		b.ev(event.MessageCompleted, "a1", event.Completed{MessageID: "s2", Thinking: true})
+		msgs := b.agent("a1").Messages
+		if len(msgs) != 2 {
+			t.Fatalf("%d messages, want 2: %+v", len(msgs), msgs)
+		}
+		b.eq("the thinking delta marks its message", msgs[0].Thinking, true)
+		b.eq("a thinking line marks the message it completes", msgs[1].Thinking, true)
+		for _, e := range b.s.Conversation {
+			if e.Role == "thinking" || e.Role == "assistant" {
+				t.Errorf("a subagent's message in the orchestrator's record: %+v", e)
+			}
+		}
 	})
 
 	t.Run("two text blocks", func(t *testing.T) {

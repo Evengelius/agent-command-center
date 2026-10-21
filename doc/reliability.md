@@ -186,6 +186,8 @@ reset shown N/A.
 | Concurrency limit | not reported | "limit N/A (not reported)" |
 | Duration | `result.duration_ms`; wall time measured | "N/A" before the first `result`; wall time labelled observed |
 | Errors, retries | `result`, `assistant.error`, task status; `api_retry`, `subagent_retry` | the counters start at 0 once the stream is up; retries "N/A (none reported)" |
+| A thinking phase's live count (zone B, plan 22) | `system/thinking_tokens`, the CLI's running estimate of the open block | before the first estimate, or none for a short block: the card's bar indeterminate and "Thinking · token usage pending", no number; shown as "≈ … · live estimate", never as a count |
+| A thinking phase's count (zone B, plan 22) | the message's `message_delta` `usage.output_tokens_details.thinking_tokens` | until it comes, the summary row gives the estimate marked "(estimate)", or no count; an interrupted message's 0 is no count: the row says only that it was interrupted, its details that the CLI reports 0 for an interrupted message (plan 22, correction C1); a phase whose turn ended with no count takes none later (C2) |
 
 **Codex: ways** (TEL CX, first table)
 
@@ -214,6 +216,7 @@ reset shown N/A.
 | Concurrency limit | `config/read` (`{"cwd": <project>, "includeLayers": false}`), once per session after `initialized`; only `config.agents.max_concurrent_threads_per_session` (fallback name `agents.max_threads`) is decoded, and `config.features.multi_agent_v2.max_concurrent_threads_per_session`, the V2 backend's own limit, which counts the main thread (Codex 0.163.0 source, `codex-rs/core/src/config/mod.rs:1666-1680`; probe 2026-10-17). The reply is the effective configuration and can hold secrets (an MCP server's `env`, a provider's bearer token), so no event keeps any byte of it: its `Raw` is a fixed placeholder. When unset the reply has no `agents` key and the built-in default is never reported (probe 2026-10-17, Codex CLI 0.163.0; owner's approval 2026-10-17) | set: "limit 3 (config)"; replied but unset: "limit N/A (not set; default not reported)"; the V2 limit minus one differs from `agents`' (or `agents` unset): "limit N/A (set per backend; backend not reported)", since the active backend is not reported; no reply yet or refused: "limit N/A (not read)" |
 | Duration | `turn/completed.durationMs` | "N/A" before the first turn ends |
 | Errors, retries | `error`, failed `turn/completed`; `willRetry` | counters from 0 once the stream is up; retries "N/A (none reported)" (CX-10 q9) |
+| A thinking phase (zone B, plan 22) | none live: a `reasoning` item comes once the reasoning ended; the step's `thread/tokenUsage/updated` `last.reasoningOutputTokens` after it | while the model works on a step: the card "Model working · reasoning tokens reported when the step ends", its bar indeterminate, no number; the reasoning's own duration never reported: "Thought for up to …", the step's time; until the usage comes, no count; a repeated update (Codex 0.145.0 on an interrupt) gives none; a phase whose turn or session ended with no count takes none later, so a resume's replayed usage counts nothing (plan 22, correction C2); a reasoning item with no step open starts at its turn's last usage update, "up to" like a step (C5) |
 
 **Refresh policy** (TEL "Open points"): quota and context are read on
 events, plus one read at session start (Codex `account/rateLimits/read`) and
@@ -459,9 +462,15 @@ provider):
   is reachable through `--mock` alone.
 - **Input**: a JSONL file of normalised events with their timing, either
   hand-written or produced from a probe recording by the real adapter's
-  mapping, so that mock screens exercise the same parts 2 to 4. Three files
-  are synthetic: a probe recording with one documented reply put in, for a
-  case no probe has (`TestMockFiles`, internal/provider/mock/files_test.go).
+  mapping, so that mock screens exercise the same parts 2 to 4.
+  `claude-thinking.jsonl` (P12c-block) and `claude-thinking-subagent.jsonl`
+  (P303b) replay thinking phases as recorded (plan 22). Four files are
+  synthetic: a probe recording with documented replies put in, for a case
+  no probe has (`TestMockFiles`, internal/provider/mock/files_test.go).
+  `codex-plan6-limits.jsonl` is P7 with plan 6's cases: each child's
+  `spawnAgent` call, the first requesting a model and an effort; a long
+  orchestrator answer in Markdown; a failed orchestrator command whose
+  output ends with its error.
   `claude-api-key-context-refused.jsonl` is P2 with `apiKeySource`
   `ANTHROPIC_API_KEY`, no `rate_limit_event` and `get_context_usage` refused;
   `codex-api-key.jsonl` is P7 with `account/rateLimits/read` refused as
@@ -636,7 +645,9 @@ those marked live.
    fixtures, for the startup screen, the dashboard and inspection; "terminal
    too small" below 80x24; every N/A shows its reason; every undocumented
    value carries †; no line exceeds the width. A frame-count test checks
-   that an idle dashboard draws nothing (ASM-18).
+   that an idle dashboard asks for no spinner and no animation frame, only
+   the 1 s clock for the ages it shows (ASM-18; `TestIdleDrawsNothing`,
+   plan 22).
 10. **Faults, with a fake CLI** (a test binary replaying a fixture): a
     truncated line, invalid JSON, an unknown type, a 10 MiB line, a 65 MiB
     line (ASM-20), stderr flooding, no handshake (the 60 s timeout shortened

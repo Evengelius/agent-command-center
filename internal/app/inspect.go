@@ -340,9 +340,10 @@ func (m *Model) closeView() {
 
 // entryKey handles a key while zone B's entry cursor is on (ui-design.md,
 // Zone B, Expanding): ↑ ↓ move it, Enter shows its entry whole, → expands a
-// folded run and opens nothing, Esc returns to the input. done is false for
-// the keys that keep their meaning; any other key leaves the cursor and
-// reaches the input, so typing types.
+// folded run and opens nothing, Esc returns to the input. On a thinking
+// phase's summary row, → opens its details and ← folds them (plan 22, design
+// 8). done is false for the keys that keep their meaning; any other key
+// leaves the cursor and reaches the input, so typing types.
 func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	if m.ui.Entry > len(m.s.Conversation) || m.ui.Focus != "B" || m.ui.Card != "" {
 		m.ui.Entry = 0
@@ -353,6 +354,12 @@ func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	key, first, open, folded, inRun := render.FoldOf(m.s, m.ui, m.ui.Entry)
 	if folded {
 		m.ui.Entry = first
+	}
+	// A thinking phase drawn as its summary row (ended and shown): the key of
+	// its details in ui.Unfolded; "" for any other entry (plan 22, design 8).
+	thought := ""
+	if e := m.s.Conversation[m.ui.Entry-1]; e.Role == "thinking" && render.Expandable(e) {
+		thought = render.ThoughtKey(e)
 	}
 	switch k.String() {
 	case "up":
@@ -371,10 +378,17 @@ func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		// → unfolds, as in zone A's tree; only Enter opens (the owner's live
 		// review, 2026-10-20: → opening an entry, as Enter does, confused it
 		// with unfolding).
-		if folded {
+		switch {
+		case folded:
 			m.unfold(key, true)
+		case thought != "":
+			m.unfold(thought, true)
 		}
 	case "left":
+		if thought != "" && m.ui.Unfolded[thought] {
+			m.unfold(thought, false) // the details fold; the cursor stays on the row
+			break
+		}
 		if !inRun || !open {
 			m.ui.Entry = 0
 			return nil, false
@@ -412,9 +426,10 @@ func (m *Model) moveEntry(n, d int) bool {
 	return false
 }
 
-// unfold expands zone B's run of calls key, or folds it again (plan 19).
-// Expanding holds B's view where it is, so the calls open under the run's
-// row instead of pushing it up out of view while B follows its end.
+// unfold expands zone B's run of calls key, or a thinking phase's details
+// (render.ThoughtKey, plan 22), or folds it again (plan 19). Expanding holds
+// B's view where it is, so the calls open under the run's row instead of
+// pushing it up out of view while B follows its end.
 func (m *Model) unfold(key string, open bool) {
 	if m.ui.Unfolded == nil {
 		m.ui.Unfolded = map[string]bool{}
@@ -441,9 +456,11 @@ func (m *Model) reveal(n int) {
 		top = min(max(m.ui.ConvTop, 0), max(c.Rows-c.Room, 0))
 	}
 	// The "↓ N new" badge covers B's last row while the view is held with new
-	// entries: one row less to show the marked entry in (plan 6, item 2).
+	// entries: one row less to show the marked entry in (plan 6, item 2). It
+	// counts the entries zone B draws, as render.NewShown does, so a Codex step
+	// that left no row is no news (plan 22, correction C10).
 	room := c.Room
-	if m.ui.ConvHold && len(m.s.Conversation) > m.ui.ConvSeen {
+	if m.ui.ConvHold && render.NewShown(m.s, m.ui.ConvSeen) > 0 {
 		room = max(room-1, 1)
 	}
 	to := min(top, c.Starts[n-1])

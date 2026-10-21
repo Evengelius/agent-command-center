@@ -2,6 +2,7 @@ package state
 
 import (
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -144,11 +145,7 @@ func (s *State) apply(ev event.Event) []Command {
 		s.delta(ev, p)
 		return nil
 	case event.Marker:
-		if p.Name == "message_stop" {
-			if e := s.entry(ev.Agent, p.MessageID); e != nil {
-				e.Streaming = false
-			}
-		}
+		s.marker(ev, p)
 		return nil
 	case event.Completed:
 		s.completed(ev, p)
@@ -290,7 +287,9 @@ func (s *State) ended(ev event.Event, p event.Ended) []Command {
 			cmds = append(cmds, Command{Kind: CmdRestoreDraft, Text: s.Turn.Draft})
 			s.Turn.Draft = ""
 		}
-		s.endAll(ev)
+		// Closed by the owner: what runs is interrupted, not failed (plan 22,
+		// criterion 1.6).
+		s.endAll(ev, "interrupted")
 		if s.Startup.Phase == Exited {
 			cmds = append(cmds, Command{Kind: CmdExit})
 		}
@@ -320,15 +319,19 @@ func (s *State) crash(ev event.Event, reason string, close bool) []Command {
 	if s.Turn.Phase != Idle {
 		s.Turn.Phase, s.Turn.Outcome = Idle, "failed"
 	}
-	s.endAll(ev)
+	s.endAll(ev, "failed")
 	if close {
 		cmds = append(cmds, Command{Kind: CmdClose})
 	}
 	return cmds
 }
 
-// endAll ends what cannot outlive the session: agents, approvals, tools.
-func (s *State) endAll(ev event.Event) {
+// endAll ends what cannot outlive the session: agents, approvals, tools and
+// the orchestrator's thinking phases, these with outcome: "failed" with a
+// crashed session, "interrupted" with one the owner closed (plan 22,
+// criterion 1.6).
+func (s *State) endAll(ev event.Event, outcome string) {
+	s.endThoughts(ev.At, outcome)
 	for _, k := range s.Order {
 		if a := s.Agents[k]; !a.Status.Final() {
 			a.Status, a.StatusOrigin, a.EndedAt, a.EndStage = AgentEnded, event.Inferred, ev.At, s.stage()
@@ -383,6 +386,15 @@ func (s *State) delta(ev event.Event, p event.Delta) {
 	if p.Block != "text" && p.Block != "thinking" {
 		return
 	}
+	if ev.Agent == "" {
+		if p.Block == "thinking" {
+			// The orchestrator's thinking is its thinking entry, from the
+			// block's markers or the step's: no assistant entry for it (plan
+			// 22, item 9). A subagent's message keeps its mark.
+			return
+		}
+		s.dropStep(ev.At) // text is a step's first output (plan 22, criterion 1.5)
+	}
 	e := s.entry(ev.Agent, p.MessageID)
 	if e == nil {
 		list := s.messages(ev.Agent)
@@ -398,6 +410,9 @@ func (s *State) delta(ev event.Event, p event.Delta) {
 }
 
 func (s *State) completed(ev event.Event, p event.Completed) {
+	if ev.Agent == "" && p.Text != "" {
+		s.dropStep(ev.At) // a message is a step's first output (plan 22, criterion 1.5)
+	}
 	e := s.entry(ev.Agent, p.MessageID)
 	if e == nil {
 		if p.Text == "" {
@@ -438,6 +453,7 @@ func (s *State) tool(ev event.Event, p event.Tool) []Command {
 		}
 		s.Tools[id] = &ToolCall{ID: id, Agent: ev.Agent, Name: p.Name, Input: p.Input, Status: ToolStarted, Origin: ev.Origin, StartedAt: ev.At, Stage: s.stage(), Seq: ev.Seq}
 		if ev.Agent == "" {
+			s.dropStep(ev.At) // a call is a step's first output (plan 22, criterion 1.5)
 			s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "tool", MessageID: id, Text: p.Name, Origin: ev.Origin, At: ev.At})
 		} else {
 			a := s.ensureAgent(ev.Agent, ev)
@@ -657,6 +673,9 @@ func (s *State) requested(ev event.Event, p event.Approval) []Command {
 		Input: p.Input, Question: ev.Kind == event.Question, ForSession: p.ForSession, Problem: p.Problem, Raw: ev.Raw, Status: Pending, RequestedAt: ev.At}
 	s.Approvals[id] = a
 	s.Queue = append(s.Queue, id)
+	if ev.Agent == "" {
+		s.dropStep(ev.At) // a request is a step's first output (plan 22, criterion 1.5)
+	}
 	s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "approval", Agent: ev.Agent, MessageID: id, Text: p.Tool, Origin: ev.Origin, At: ev.At})
 	if p.Problem != "" {
 		// An unreadable request is denied, never allowed (INT 4 fallback),
@@ -774,6 +793,7 @@ func (s *State) turnEnd(ev event.Event, p event.TurnEnd) []Command {
 	}
 	if s.Turn.Phase == Idle {
 		s.note(ev, "unexpected turn end")
+		s.endThoughts(ev.At, p.Outcome) // a phase must not outlive a turn end, whatever the machine says
 		return nil
 	}
 	// A turn the CLI completed stays completed, Ctrl+C or not: the interrupt
@@ -783,6 +803,7 @@ func (s *State) turnEnd(ev event.Event, p event.TurnEnd) []Command {
 		outcome = "interrupted"
 	}
 	s.Turn.Phase, s.Turn.Outcome, s.Turn.ForceStopOffered = Idle, outcome, false
+	s.endThoughts(ev.At, outcome)
 	if outcome == "failed" && p.Error != "" {
 		s.Errors = appendBounded(s.Errors, ErrorEntry{Seq: ev.Seq, At: ev.At, Message: "turn failed: " + p.Error}, MaxErrors)
 		// The error as received, in B (ui-design.md, States: Error); B shows
@@ -831,6 +852,14 @@ func (s *State) telemetry(ev event.Event, p event.Metrics) {
 				Last: prev.Present || prev.Last, V: prev.V, Text: prev.Text, Unit: prev.Unit, ReceivedAt: prev.ReceivedAt}
 		}
 		s.Metrics[m.Name] = v
+		if m.Reason == "" {
+			switch m.Name {
+			case event.ThinkingEstimate:
+				s.estimate(ev, m.Value)
+			case event.ReasoningLast:
+				s.reasoningTokens(ev, m.Value)
+			}
+		}
 	}
 	s.deriveTokens(ev)
 }
@@ -985,4 +1014,409 @@ func reviewText(p event.Review) string {
 		t += ": " + p.Rationale
 	}
 	return t
+}
+
+// The orchestrator's thinking phases (plan 22, brief amendment 18;
+// events-and-state.md, Conversation record). Each is an entry of role
+// "thinking" with its Thought, appended where the phase starts, so it comes
+// before the text and the calls of its step. Only the orchestrator's events
+// make one: a subagent's or a child thread's thinking is no entry of zone B
+// (plan 22, C6 and X4). Every time is the event's.
+
+// The sources a Thought records for its exact count (plan 22, C3 and X2).
+const (
+	sourceMessageDelta = "message_delta usage.output_tokens_details.thinking_tokens"
+	sourceTokenUsage   = "thread/tokenUsage/updated last.reasoningOutputTokens"
+)
+
+// marker applies a stream marker: a message's end, and the starts, ends and
+// counts of the orchestrator's thinking, which Claude Code's blocks and
+// message_delta carry, and Codex's inferred steps and reasoning items.
+func (s *State) marker(ev event.Event, p event.Marker) {
+	if p.Name == "message_stop" {
+		if e := s.entry(ev.Agent, p.MessageID); e != nil {
+			e.Streaming = false
+		}
+		if ev.Agent == "" {
+			s.closeBlocks(p.MessageID, false, ev.At)
+		}
+		return
+	}
+	if ev.Agent != "" {
+		return
+	}
+	switch p.Name {
+	case "message_start":
+		s.closeBlocks(p.MessageID, true, ev.At)
+	case "content_block_start":
+		if p.Block == "thinking" || p.Block == "redacted_thinking" {
+			s.blockStarted(ev, p)
+		}
+	case "content_block_stop":
+		s.blockStopped(ev, p)
+	case "message_delta":
+		if p.HasThinking {
+			s.messageCount(ev, p)
+		}
+		s.closeBlocks(p.MessageID, false, ev.At)
+	case event.StepStarted:
+		s.stepStarted(ev)
+	case "item_started":
+		switch p.Block {
+		case "thinking":
+			s.reasoningStarted(ev, p)
+		case "text":
+			s.dropStep(ev.At) // a message is a step's first output (plan 22, criterion 1.5)
+		}
+	case "item_completed":
+		if p.Block == "thinking" {
+			s.reasoningCompleted(ev, p)
+		}
+	}
+}
+
+// block is the entry of Claude Code's thinking block index in message id, nil
+// when none came since the last prompt. A message's entries all come after
+// the previous message's, so the search stops at the first thinking entry of
+// another message.
+func (s *State) block(id string, index int) *Entry {
+	for i := len(s.Conversation) - 1; i >= 0; i-- {
+		e := &s.Conversation[i]
+		if e.Role == "user" {
+			return nil
+		}
+		if t := e.Thought; e.Role == "thinking" && t != nil && !t.Inferred {
+			if e.MessageID != id {
+				return nil
+			}
+			if t.Block == index {
+				return e
+			}
+		}
+	}
+	return nil
+}
+
+// blockStarted opens the phase of a thinking block, observed: its start is
+// the marker's (plan 22, C1). A block already started, same message and
+// index, is a repeated line and opens nothing; so is one after the session
+// crashed, which no end would ever close (plan 22, the review).
+func (s *State) blockStarted(ev event.Event, p event.Marker) {
+	if p.MessageID != "" && s.block(p.MessageID, p.Index) != nil {
+		s.note(ev, "thinking block started twice: "+p.MessageID+" "+strconv.Itoa(p.Index))
+		return
+	}
+	if s.Session.Phase == Crashed {
+		s.note(ev, "thinking block after the session crashed: no phase opened")
+		return
+	}
+	s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "thinking", MessageID: p.MessageID, Origin: ev.Origin, Streaming: true, At: ev.At,
+		Thought: s.newThought(Thought{Block: p.Index, Start: ev.At, Confirmed: true})})
+}
+
+// newThought numbers phase t, the record's next (State.Thoughts): its ID
+// stays unique across a resume, where events are numbered from 1 again.
+func (s *State) newThought(t Thought) *Thought {
+	s.Thoughts++
+	t.ID = s.Thoughts
+	return &t
+}
+
+// closeBlocks ends the live thinking blocks of message id, or of every
+// message but id when others, at at, their end inferred: a block whose stop
+// never came ends with its message, or when the next message starts, so it
+// never stays live beside the next one (plan 22, the review).
+func (s *State) closeBlocks(id string, others bool, at time.Time) {
+	for i := len(s.Conversation) - 1; i >= 0; i-- {
+		e := &s.Conversation[i]
+		if e.Role == "user" {
+			return
+		}
+		t := e.Thought
+		if e.Role != "thinking" || t == nil || t.Inferred || !t.Live() || (e.MessageID == id) == others {
+			continue
+		}
+		t.End, t.EndInferred, e.Streaming = at, true, false
+	}
+}
+
+// blockStopped ends the phase of the block that stopped: the stop of the same
+// message and index (plan 22, C1).
+func (s *State) blockStopped(ev event.Event, p event.Marker) {
+	if e := s.block(p.MessageID, p.Index); e != nil && e.Thought.Live() {
+		e.Thought.End, e.Streaming = ev.At, false
+	}
+}
+
+// estimate applies Claude Code's running estimate (system/thinking_tokens,
+// cumulative: plan 22, C2) to the live thinking block, the last one: a value
+// not higher than the phase's changes nothing, so it never goes down, and with
+// no phase live there is none to take it.
+func (s *State) estimate(ev event.Event, v float64) {
+	for i := len(s.Conversation) - 1; i >= 0; i-- {
+		e := &s.Conversation[i]
+		if e.Role == "user" {
+			return
+		}
+		if t := e.Thought; e.Role == "thinking" && t.Live() && t.Confirmed && !t.Inferred {
+			if n := int64(v); n > t.Estimate {
+				t.EstimateFrom, t.Estimate, t.EstimateAt = t.Estimate, n, ev.At
+			}
+			return
+		}
+	}
+}
+
+// messageCount applies a message_delta's exact thinking count (plan 22, C3)
+// to the message's phases: to its only phase, or to the last of several,
+// marked shared. A message cut short (stop_reason null, C7) marks every phase
+// interrupted, and ends one still live, but gives its last phase no exact
+// count: the 0 the CLI sends with it is the usage the message had when it
+// began (P303a, P2), kept apart as reported in Cut and CutTokens (plan 22,
+// correction C1). A phase whose turn or session ended with no count takes
+// none later (correction C2, both CLIs).
+func (s *State) messageCount(ev event.Event, p event.Marker) {
+	var last *Entry
+	k := 0
+	for i := len(s.Conversation) - 1; i >= 0; i-- {
+		e := &s.Conversation[i]
+		if e.Role == "user" {
+			break
+		}
+		t := e.Thought
+		if e.Role != "thinking" || t == nil || t.Inferred {
+			continue
+		}
+		if e.MessageID != p.MessageID {
+			break
+		}
+		k++
+		if last == nil {
+			last = e
+		}
+		if p.StopReason == "" && !t.Closed {
+			t.Outcome = "interrupted"
+			if t.Live() {
+				t.End, t.EndInferred, e.Streaming = ev.At, true, false
+			}
+		}
+	}
+	if last == nil || last.Thought.Closed {
+		return
+	}
+	t := last.Thought
+	if p.StopReason == "" {
+		t.Cut, t.CutTokens = true, p.Thinking
+		return
+	}
+	t.Tokens, t.HasTokens, t.TokensAt, t.Source = p.Thinking, true, ev.At, sourceMessageDelta
+	if k > 1 {
+		t.Shared = k
+	}
+}
+
+// openStep is the Codex model step that runs and no reasoning item has
+// confirmed: the last thinking entry, when live, inferred and unconfirmed. Any
+// other output of the orchestrator ends one (dropStep), so the search stops at
+// the first entry such an output made.
+func (s *State) openStep() *Entry {
+	for i := len(s.Conversation) - 1; i >= 0; i-- {
+		e := &s.Conversation[i]
+		switch {
+		case e.Role == "thinking":
+			if t := e.Thought; t.Live() && t.Inferred && !t.Confirmed {
+				return e
+			}
+			return nil
+		case e.Role == "user", e.Agent == "" && (e.Role == "assistant" || e.Role == "tool" || e.Role == "approval"):
+			return nil
+		}
+	}
+	return nil
+}
+
+// stepStarted opens the phase of a Codex model step, inferred: the adapter
+// marks where each begins (plan 22, X5; event.StepStarted). Only a turn at
+// work has steps. A step that made a spawn and no reasoning is still open when
+// the next marker comes, and stays open into it (criterion 1.5).
+func (s *State) stepStarted(ev event.Event) {
+	switch s.Turn.Phase {
+	case Submitted, Running, WaitingApproval:
+	default:
+		s.note(ev, "model step started while the turn is "+string(s.Turn.Phase)+": no phase opened")
+		return
+	}
+	if s.openStep() != nil {
+		return
+	}
+	// A reasoning item whose completion never came is over once the next step
+	// begins: it ends there, its end inferred, so two phases are never live at
+	// once (plan 22, correction C4).
+	for i := len(s.Conversation) - 1; i >= 0; i-- {
+		e := &s.Conversation[i]
+		if e.Role == "user" {
+			break
+		}
+		if t := e.Thought; e.Role == "thinking" && t.Live() && t.Inferred && t.Confirmed {
+			t.End, t.EndInferred, t.EndNext, e.Streaming = ev.At, true, true, false
+		}
+	}
+	s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "thinking", MessageID: "step:" + itoa(ev.Seq), Origin: stepOrigin(ev), Streaming: true, At: ev.At,
+		Thought: s.newThought(Thought{Start: ev.At, Inferred: true})})
+}
+
+// stepOrigin is the origin of a Codex step: inferred, as its adapter marks it;
+// mock where every event is (events-and-state.md, Origins).
+func stepOrigin(ev event.Event) event.Origin {
+	if ev.Origin == event.Mock {
+		return event.Mock
+	}
+	return event.Inferred
+}
+
+// dropStep ends the open Codex step as dropped, at at: its first output was
+// not reasoning, so it leaves no row (plan 22, design 4). A step a reasoning
+// item confirmed is never dropped.
+func (s *State) dropStep(at time.Time) {
+	if e := s.openStep(); e != nil {
+		e.Thought.End, e.Thought.Dropped, e.Streaming = at, true, false
+	}
+}
+
+// reasoning is the phase of Codex reasoning item id, nil when none came since
+// the last prompt.
+func (s *State) reasoning(id string) *Entry {
+	if id == "" {
+		return nil
+	}
+	for i := len(s.Conversation) - 1; i >= 0; i-- {
+		e := &s.Conversation[i]
+		if e.Role == "user" {
+			return nil
+		}
+		if t := e.Thought; e.Role == "thinking" && t != nil && t.Item == id {
+			return e
+		}
+	}
+	return nil
+}
+
+// reasoningStarted applies a reasoning item's start: the model reasoned in its
+// step (plan 22, X1), which confirms the open step, whose start stays the
+// step's, inferred. With none open, a phase whose start is not known.
+func (s *State) reasoningStarted(ev event.Event, p event.Marker) {
+	if s.reasoning(p.MessageID) != nil {
+		s.note(ev, "reasoning item started twice: "+p.MessageID)
+		return
+	}
+	if e := s.openStep(); e != nil {
+		e.Thought.Confirmed, e.Thought.Item = true, p.MessageID
+		return
+	}
+	if s.Session.Phase == Crashed {
+		s.note(ev, "reasoning item after the session crashed: no phase opened")
+		return
+	}
+	s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "thinking", MessageID: "step:" + itoa(ev.Seq), Origin: ev.Origin, Streaming: true, At: ev.At,
+		Thought: s.newThought(Thought{Item: p.MessageID, Inferred: true, Confirmed: true, Start: s.lastResponseEnd()})})
+}
+
+// lastResponseEnd is when the turn's last model response ended, by its usage
+// update; zero when none came since the prompt. A reasoning item no step
+// marker announced (the step before it made no call, so the adapter began
+// none) belongs to the request that followed that response at once, so its
+// step's time runs from there, "up to" like every other Codex phase's (plan
+// 22, correction C5).
+func (s *State) lastResponseEnd() time.Time {
+	v, ok := s.Metrics[event.ReasoningLast]
+	if !ok || !v.Present {
+		return time.Time{}
+	}
+	for i := len(s.Conversation) - 1; i >= 0; i-- {
+		if e := s.Conversation[i]; e.Role == "user" {
+			if !v.ReceivedAt.Before(e.At) {
+				return v.ReceivedAt
+			}
+			break
+		}
+	}
+	return time.Time{}
+}
+
+// reasoningCompleted ends the phase of the reasoning item that completed; the
+// item's two lines come 0 to 10 ms apart (plan 22, X1).
+func (s *State) reasoningCompleted(ev event.Event, p event.Marker) {
+	if e := s.reasoning(p.MessageID); e != nil && e.Thought.Live() {
+		e.Thought.End, e.Streaming = ev.At, false
+	}
+}
+
+// reasoningTokens applies a usage update's reasoning tokens
+// (last.reasoningOutputTokens, the model response it closes: plan 22, X2) to
+// the orchestrator's confirmed thoughts that no update has counted: to the only
+// one, or to the last of several, marked shared. Each is counted, so the next
+// update goes to the thoughts after them. With none, nothing: a step with no
+// reasoning item reports 0. Only the orchestrator's updates come here; a child
+// thread's goes to its agent (telemetry).
+func (s *State) reasoningTokens(ev event.Event, v float64) {
+	var last *Entry
+	k := 0
+	for i := len(s.Conversation) - 1; i >= 0; i-- {
+		e := &s.Conversation[i]
+		if e.Role == "user" {
+			break
+		}
+		t := e.Thought
+		if e.Role != "thinking" || t == nil || !t.Inferred || !t.Confirmed || t.Counted || t.Closed {
+			continue
+		}
+		k++
+		if last == nil {
+			last = e
+		}
+		t.Counted = true
+	}
+	if last == nil {
+		return
+	}
+	t := last.Thought
+	t.Tokens, t.HasTokens, t.TokensAt, t.Source = int64(v), true, ev.At, sourceTokenUsage
+	if k > 1 {
+		t.Shared = k
+	}
+}
+
+// endThoughts ends the orchestrator's live thinking phases at at, the end of
+// the turn or of the session (plan 22, criterion 1.6): a Codex step no
+// reasoning item confirmed is dropped, any other phase takes the outcome when
+// it is interrupted or failed. A session ended by an action has no time: the
+// last event's. Every phase of the exchange that has no exact count by then
+// is closed: none can come, and none is applied to it later (plan 22,
+// correction C2).
+func (s *State) endThoughts(at time.Time, outcome string) {
+	if at.IsZero() {
+		if n := len(s.Log); n > 0 {
+			at = s.Log[n-1].At
+		}
+	}
+	for i := len(s.Conversation) - 1; i >= 0; i-- {
+		e := &s.Conversation[i]
+		if e.Role == "user" {
+			return
+		}
+		t := e.Thought
+		if e.Role == "thinking" && t != nil && !t.HasTokens {
+			t.Closed = true
+		}
+		if e.Role != "thinking" || !t.Live() {
+			continue
+		}
+		t.End, t.EndInferred, e.Streaming = at, true, false
+		switch {
+		case t.Inferred && !t.Confirmed:
+			t.Dropped = true
+		case outcome == "interrupted" || outcome == "failed":
+			t.Outcome = outcome
+		}
+	}
 }

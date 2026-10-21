@@ -21,6 +21,7 @@ var entryKinds = map[string][]event.Kind{
 	"notice":    {event.StatusChanged, event.ApprovalMode}, // a mode refusal (plan 12)
 	"review":    {event.ReviewUpdated},
 	"error":     {event.TurnCompleted},
+	"thinking":  {event.MessageMarker}, // a block's start, a model step's start, a reasoning item's start (plan 22)
 }
 
 // untraced lists the entries of s that no applied event accounts for.

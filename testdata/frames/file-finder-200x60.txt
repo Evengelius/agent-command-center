@@ -4,7 +4,7 @@
 │ claude-haiku-5-5 · orchestrator          ││                                                                                                                                                          │
 │ turn 2 · completed                       ││ ▎ YOU  11:30                                                                                                                                             │
 │                                          ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into a new file   │
-│ STAGES  inferred f╭─ Quick open ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 8 files ─╮                   │
+│ STAGES  inferred f╭─ Quick open ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 10 files ─╮                   │
 │ TURN 1  ✓ complete│ › vi▌                                                                                                                                                        │                   │
 │ TURN 2  ✓ complete│ ▸ sample/viewer.go                                                                                                                                           │────────────────── │
 │   started by the C│                                                                                                                                                              │                   │
@@ -15,6 +15,7 @@
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │:30:00      mock   │
 │                   │                                                                                                                                                              │:30:00      mock   │
+│                   │                                                                                                                                                              │:30:00      mock   │
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │─────────────────╮ │
 │                   │                                                                                                                                                              │                 │ │
@@ -22,7 +23,6 @@
 │                   │                                                                                                                                                              │                 │ │
 │                   │                                                                                                                                                              │                 │ │
 │                   │                                                                                                                                                              │─────────────────╯ │
-│                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │

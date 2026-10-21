@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                                                 ● LIVE
+ (project bar: the test's temporary directory)
+ A ◉ Turn 1 › ◉ /root/list_files                          (inferred)   F6: tree
+╭─ B · CONVERSATION ─────────────────────────────────────────────── ⠋ Running ─╮
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│ ▎ CODEX  gpt-5.6-sol  02:00                                                  │
+│ ▎  ▸ ✓ Thought for up to 3.1s · 83 reasoning tokens     02:00:06  inferred   │
+│ ▎                                                                            │
+│ ▎ ◜ Pondering...                                                      00:00  │
+│ ▎                                                                            │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ >  OpenAI Codex is processing your request…                                  │
+│   turn running: the draft waits · Ctrl+C interr…1 line · Ctrl+G draft window │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
+│  ◉ /root/list_files model N/A   running                       0s     tok N/A │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
+│ 5h ▱▱▱▱▱ 0%   7d ▱▱▱▱▱ 0%   ctx 6%   tok 15.1k   cost N/A   errors 0         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

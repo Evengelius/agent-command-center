@@ -43,6 +43,14 @@ func (p *Provider) Start(_ context.Context, sc provider.SessionContext) (provide
 		now = time.Now
 	}
 	s := &Session{ch: make(chan event.Event, 4096), done: make(chan struct{}), now: now}
+	if p.Speed <= 0 && len(p.Events) <= cap(s.ch) {
+		// At once, literally: every event queued before the session starts, so
+		// the application reads them as one batch, the same in every run. From
+		// a goroutine, where the batches fell depended on the scheduler, and
+		// with them which thinking phase a frame drew live (plan 22, design 7).
+		s.replay(p.Events, 0)
+		return s, nil
+	}
 	go s.replay(p.Events, p.Speed)
 	return s, nil
 }

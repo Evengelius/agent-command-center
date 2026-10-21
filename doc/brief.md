@@ -2368,3 +2368,539 @@ Implement them faithfully and consistently throughout Zone B, while preserving t
 
 **The objective is strict visual and structural conformance, not a partial approximation.**
 ````
+
+## Amendment 18, 2026-10-21: a live thinking indicator, for plan 22
+
+The owner's request, word for word, after plan 21 was committed and pushed.
+It came with three images, each a caption above a drawing of zone B and a
+sentence under it, from a document of the owner's. The brief keeps no
+images; they are described here:
+
+- **"1. Live thinking — Most important".** Zone B alone, its border
+  rounded, on a dark ground: "B · CONVERSATION" in violet at the top left,
+  "● LIVE" in green at the right, a thin rule under them. The owner's
+  message after a chevron, "> Analyze the repository architecture.". Under
+  it, a card on a slightly lighter ground with rounded corners: a circular
+  spinner and "Crunching..." in lavender bold, "00:12" in grey at the right;
+  "1,284" in white bold, then "thinking tokens · live" in grey; a thin bar
+  across the card, lavender on about its first 60%, dark after. Under the
+  card, in grey: "Claude is processing your request...". The sentence:
+  "This is the **primary reference** for the animated entrance, rotating
+  expressions, live token counter, and dynamically growing purple progress
+  bar."
+- **"2. Completed thinking — Exit animation".** The same zone, "IDLE" in
+  grey at the right. A row "> Thought for 12s · 1,284 tokens", the chevron
+  and "Thought for 12s" in lavender, "· 1,284 tokens" in grey, a down
+  chevron at the far right. Then "I've analyzed the repository. Here are the
+  improvements I recommend." in white; a box on a dark green ground, "✓
+  Analysis completed" in green; a rule; the input "> Ask Claude Code
+  anything..." in grey. The sentence: "This defines the transition into
+  `Thought for Xs`, the completed token count when available, and the
+  collapsible historical summary."
+- **"3. Work in progress — Tools and subagents".** The same zone, "●
+  WORKING" in green at the right. "✓ Thought for 12s" in grey after a green
+  check in a circle; "Vibing..." in lavender bold after a circular spinner,
+  "00:24" in grey at the right; a box on a grey ground, a terminal icon and
+  "Running Bash", "Inspecting repository files..." in grey under it; "1
+  subagent working" in grey after a small robot icon. The sentence: "This
+  shows how the playful animation coexists with actual tool execution and
+  subagent activity."
+
+---
+
+Ok onto the next one.
+
+````markdown
+Agent Command Center — Dynamic Thinking Indicator, Live Token Progress & Animations
+Mission
+The first Zone B redesign is complete. We are now implementing the second major UI enhancement.
+The attached image is the approved design reference for the live-thinking indicator.
+The most important feature is a beautiful, animated, dynamically growing progress bar that visualizes thinking-token consumption in real time, whenever reliable live reasoning-token data is available.
+This must be implemented for both Claude Code and OpenAI Codex.
+The feature must include:
+
+1. An animated entrance when thinking begins.
+2. A live timer.
+3. A dynamically growing token-progress bar.
+4. A live reasoning-token counter when available.
+5. Playful, rotating activity expressions.
+6. Smooth progress animations as new token data arrives.
+7. A polished exit animation when thinking finishes.
+8. A collapsible historical summary: `Thought for Xs`.
+9. Seamless transitions into tool execution and subagent activity.
+10. Truthful fallbacks for providers that do not expose live reasoning-token usage.
+
+The thinking indicator must feel alive. It must not be a static progress bar with a changing number.
+Treat the attached image as the visual target, not merely inspiration.
+1. Visual Design — Strict Reference Fidelity
+The attached image illustrates the intended appearance:
+
+* Dark terminal-native panel.
+* Subtle purple/lavender thinking container.
+* Animated circular thinking indicator.
+* Rotating expression such as `Crunching...`.
+* Elapsed time aligned to the right.
+* Prominent token count.
+* Horizontal purple progress bar that grows.
+* Smooth transitions between states.
+* Clean, restrained typography.
+* Consistency with the recently completed Zone B redesign.
+
+The final implementation must preserve the existing approved visual language:
+
+* Purple: user identity and thinking.
+* Blue: assistant/provider identity and tools.
+* Green: confirmed successful completion.
+* Pink/magenta: pending approvals.
+* Muted gray: secondary information.
+
+Use a terminal-compatible equivalent of the reference styling.
+Do not introduce large, unrelated panels or redesign Zones A, C, or D.
+The thinking component belongs inside the corresponding assistant message in Zone B.
+2. Highest Priority — Live Thinking-Token Progress Bar
+This is the centerpiece of the enhancement.
+Target appearance
+
+```
+CLAUDE · Opus 5.5
+
+╭───────────────────────────────────────────────╮
+│ ◌ Crunching...                         00:12 │
+│                                               │
+│ 1,284 thinking tokens · live                  │
+│                                               │
+│ █████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+╰───────────────────────────────────────────────╯
+```
+
+The exact numerical values are illustrative.
+The progress bar must animate dynamically rather than update abruptly.
+2.1 Live token counter
+Investigate the actual structured event streams of Claude Code and Codex to determine what reasoning-specific usage information is available.
+If reliable live thinking/reasoning token counts are exposed:
+
+* Display the count prominently.
+* Update it whenever new authoritative usage arrives.
+* Animate numerical transitions appropriately.
+* Keep the displayed count monotonic within a single thinking phase where the source is cumulative.
+* Never double-count cumulative provider usage.
+* Never use total output tokens as if they were exclusively thinking tokens.
+* Never invent intermediate token values.
+
+An illustrative progression:
+
+```
+Thinking started       00:01     128 tokens
+Processing             00:04     416 tokens
+Processing             00:08     892 tokens
+Processing             00:12   1,284 tokens
+Thinking completed     00:14   1,506 tokens
+```
+
+The actual update frequency must follow provider data availability.
+Do not simulate token production using elapsed time or estimated generation speed.
+2.2 The progress bar must visibly grow
+As thinking-token usage increases, the illuminated section of the bar must extend from left to right.
+Use smooth terminal-cell animation between valid measurements.
+When new token data arrives:
+
+1. Read the actual updated usage.
+2. Calculate the corresponding visual fill.
+3. Animate the newly filled region.
+4. Subtly highlight the leading edge.
+5. Settle into the normal purple progress-bar appearance.
+
+Avoid sudden full redraws or disruptive flashing.
+The visual movement must communicate accumulation without pretending to measure how close the model is to finishing.
+2.3 Correct progress semantics
+Implement two different token-bar modes depending on available data.
+Mode A — Known reasoning-token budget
+When a genuine, documented reasoning-token budget or explicit limit exists:
+
+* Use it as the progress-bar denominator.
+* Calculate actual consumption relative to that limit.
+* Display a correctly labeled count and budget.
+* Use proportional fill.
+
+Example:
+
+```
+Thinking · 1,284 / 4,096 tokens
+
+█████████████░░░░░░░░░░░░░░░░░░░░░
+```
+
+Do not assume the model's context window is its thinking-token budget.
+Do not interpret full-bar completion as proof that the task is finished.
+Mode B — Live token count, but unknown budget
+This is also an important supported mode.
+If reliable live token usage exists but no thinking-token budget is available:
+
+* Still display a dynamically growing token-accumulation bar.
+* Use an explicitly labeled, adaptive token scale.
+* Allow the scale to expand as usage increases.
+* Keep the real cumulative token count prominent.
+* Never label the bar as a percentage of overall task completion.
+* Make scale changes visually understandable.
+
+For example, an initial 0–2,000-token scale can expand to 0–4,000 tokens if necessary.
+Animate scale transitions smoothly and show the current scale clearly enough that a user cannot mistake the change for token usage decreasing.
+Do not remove the growing bar simply because the provider does not expose a fixed thinking-token budget.
+The bar still needs to visualize observed token accumulation truthfully.
+2.4 No reliable live token count
+If the CLI does not expose reliable live reasoning-token counts:
+
+* Display an animated indeterminate progress bar.
+* Keep the live thinking timer visible.
+* Keep the rotating playful status messages.
+* Do not display invented token numbers.
+* Do not claim that the indeterminate animation represents measured token consumption.
+
+For example:
+
+```
+◌ Crunching...                         00:12
+
+Thinking · token usage pending
+
+░░░░░░██████░░░░░░░░░░░░░░░░░░░░░
+```
+
+The highlighted segment can move smoothly along the track.
+If the provider subsequently delivers reliable final reasoning-token usage, display that count in the completed summary.
+There must always be a polished live-thinking animation when thinking is observable, even if live token telemetry is unavailable.
+3. Animation A — Thinking Indicator Appears
+When a genuine thinking phase begins, the component must enter with a short, polished animation.
+The attached image defines the final appearance.
+Required entrance behavior
+
+1. The assistant message's thinking area appears.
+2. The purple accent becomes visible.
+3. The circular spinner starts animating.
+4. The initial playful expression appears.
+5. The elapsed timer begins.
+6. The token counter or telemetry fallback appears.
+7. The progress track becomes visible.
+8. Progress begins responding to observed data.
+
+Use restrained terminal-compatible transitions.
+Suggested visual techniques:
+
+* A brief color-intensity transition.
+* Progressive reveal of the indicator.
+* A short highlight moving across the new component.
+* Smooth introduction of the progress track.
+
+Aim for an entrance animation of roughly 150–300 ms, subject to actual terminal rendering performance.
+Do not shift unrelated conversation messages unnecessarily.
+Do not steal keyboard focus or reset scrolling.
+The animation must also work when an assistant produces a second or later thinking phase.
+4. Animation B — Thinking Is in Progress
+This is the main animation.
+It combines three independent elements.
+4.1 Animated spinner
+Render a smooth circular/spinner-like indicator beside the current expression.
+Example:
+
+```
+◌ Crunching...
+```
+
+Use a small set of terminal-compatible frames.
+Keep the animation smooth without unnecessarily redrawing the entire dashboard.
+4.2 Rotating playful expressions
+Use the approved vocabulary:
+
+* Crunching...
+* Vibing...
+* Connecting dots...
+* Smoothing...
+* Pondering...
+* Untangling...
+* Brewing ideas...
+* Cooking...
+* Piecing it together...
+* Making magic...
+
+Rotate expressions approximately every 3–5 seconds.
+Use subtle transitions between expressions.
+Avoid consecutive repetition.
+The expressions must remain decorative, not factual claims about actual internal model activity.
+Do not allow them to override real execution states.
+4.3 Progress-bar animation
+The bar must respond to new usage events with noticeable but restrained visual movement.
+When tokens increase:
+
+* Extend the illuminated region.
+* Animate the leading edge.
+* Use the approved purple color family.
+* Avoid full-screen flashes.
+* Avoid unnecessary rendering allocations.
+* Avoid changes in the component's overall height.
+
+Between provider usage updates, the bar may show a subtle activity animation, but must not falsely advance its measured token fill.
+The combination should make the interface feel responsive and continuously alive.
+Performance requirement
+Animation must remain lightweight.
+Use the existing rendering cache and terminal update mechanisms.
+Do not redraw the entire dashboard simply to advance a spinner or progress-bar frame.
+Preserve the application's established responsiveness and performance requirements.
+5. Animation C — Thinking Finishes
+When the thinking phase ends, the component must not simply disappear instantly.
+Implement an elegant transition from live thinking to completed thinking.
+Required completion sequence
+
+1. Stop the active token-progress animation.
+2. Reconcile any final authoritative reasoning-token usage.
+3. Stop the thinking timer.
+4. Replace the spinner with a completion indicator.
+5. Briefly highlight the completed state.
+6. Collapse the large thinking component into a compact historical row.
+7. Preserve that row in the conversation.
+
+Example:
+
+```
+✓ Thought for 14s · 1,506 thinking tokens
+```
+
+If tokens are unavailable:
+
+```
+✓ Thought for 14s
+```
+
+If precise thinking duration cannot be established, use an accurately labeled processing duration instead.
+Visual transition
+Use a brief, smooth terminal-compatible exit animation.
+For example:
+
+* Active purple indicator settles.
+* Spinner changes into a completed-state icon.
+* Purple highlight fades to a muted tone.
+* Progress track closes or collapses.
+* The completed summary remains.
+
+Aim for a short transition, approximately 200–350 ms, without delaying CLI event processing.
+Do not fill the bar to 100% merely because the thinking phase finished.
+Completion is determined by provider lifecycle events, not by the bar's fill percentage.
+The completed-thinking row should be expandable/collapsible using existing navigation conventions.
+Preserve the transcript content and original event ordering.
+6. Thinking, Execution and Subagent States
+A turn can contain several phases:
+
+* Thinking.
+* Assistant text.
+* Tool execution.
+* Waiting for approval.
+* Subagent execution.
+* More thinking.
+* More tool execution.
+* Completion.
+
+Do not implement a simplistic assumption that every turn has exactly one thinking phase followed by one final message.
+When tools start executing
+Keep the completed thinking summary visible, then show the actual work.
+Example:
+
+```
+✓ Thought for 14s · 1,506 tokens
+
+◌ Vibing...                            00:24
+
+▸ Running Bash
+  Inspecting repository files...
+
+◇ 1 subagent working
+```
+
+The execution timer is separate from the completed thinking duration.
+The playful expression may continue rotating while real work is taking place, but the displayed operation must come from actual CLI events.
+Do not keep increasing the previous thinking-token counter during tool execution unless the provider supplies additional reasoning usage attributable to that thinking segment.
+Pending approvals
+When execution pauses for approval:
+
+* Clearly show the existing pending-approval UI.
+* Stop or appropriately pause misleading progress animations.
+* Preserve the actual approval state.
+* Never suggest that an action has been completed while approval is pending.
+
+Multiple thinking phases
+When reasoning resumes later in the same turn, create or update the appropriate thinking-phase indicator.
+Associate each phase with its correct timing and usage information.
+Do not accidentally merge independent thinking segments or subagent token usage.
+7. Claude Code Integration
+Investigate the installed Claude Code CLI and the adapter already used by Agent Command Center.
+Identify actual supported events for:
+
+* Thinking start.
+* Thinking-content streaming.
+* Thinking end.
+* Usage updates.
+* Tool execution.
+* Turn completion.
+* Interruption.
+* Crash and resume.
+
+Determine whether reliable thinking-specific token counts are accessible during execution, only at the end, or not at all.
+Do not assume that output-token usage equals thinking-token usage.
+Do not estimate token counts by tokenizing visible thinking text.
+If only usage data from the overall turn is available, label it with the correct scope.
+Use structured CLI data rather than screen scraping.
+8. OpenAI Codex Integration
+This feature must also work with Codex.
+Investigate the actual Codex app-server protocol and current adapter.
+Pay particular attention to:
+
+* Reasoning-item lifecycle events.
+* `thread/tokenUsage/updated`.
+* `reasoningOutputTokens`.
+* Cumulative thread usage.
+* Per-turn usage.
+* Tool activity.
+* Subagent activity, where observable.
+* Turn completion and interruption.
+
+Determine whether reasoning-token counts arrive during a turn or only after it.
+Distinguish live reasoning usage from final usage accounting.
+Do not double-count cumulative values.
+If reasoning tokens are reported for an entire turn rather than an individual thinking phase, do not present the number as if it belonged exclusively to one phase.
+Codex must use the same thinking indicator, progress-bar visuals, animations and completion transitions as Claude Code.
+Only genuine provider data limitations may produce differences.
+9. Shared State and Rendering Architecture
+Implement a provider-independent presentation layer backed by normalized events.
+The component should distinguish states such as:
+
+```
+Inactive
+Entering
+Thinking
+ThinkingCompleted
+Executing
+WaitingForApproval
+Interrupted
+Failed
+Completed
+```
+
+These names are illustrative. Integrate them with the project's existing state model rather than adding unnecessary or conflicting state machines.
+Each relevant state must have clear entry and exit conditions.
+The implementation must safely handle:
+
+* Repeated updates.
+* Missing events.
+* Delayed usage information.
+* Multiple thinking segments.
+* Session resume.
+* Streaming messages.
+* Provider crashes.
+* Cancellation.
+* Terminal resize.
+* Transcript scrolling.
+* Mock playback.
+
+Animation state must not corrupt authoritative execution state.
+Do not let animation timing alter the recorded chronology.
+When usage is delayed, reconcile it without inventing earlier measurements.
+10. Mandatory Tests
+Add deterministic tests using recorded events, mock sessions and simulated clocks wherever appropriate.
+Live token bar
+Verify:
+
+1. Token count increases accurately when authoritative usage updates arrive.
+2. Bar fill advances according to the reported count and configured scale.
+3. Scale changes are correctly labeled.
+4. No artificial increase occurs between actual usage updates.
+5. Unknown budgets do not produce misleading completion percentages.
+6. Missing token counts activate the indeterminate mode.
+7. Delayed final usage is handled correctly.
+8. Cumulative provider usage is not counted twice.
+9. Per-turn and per-phase usage remain correctly attributed.
+
+Animations
+Verify:
+
+1. Entrance animation plays when thinking begins.
+2. Spinner advances.
+3. Playful expressions rotate.
+4. Progress-bar changes animate.
+5. The exit animation plays after thinking ends.
+6. Completed thinking collapses into a compact historical row.
+7. No active animation remains after termination.
+8. Animation does not steal focus or damage scrolling.
+9. Resizing does not corrupt the display.
+10. Replayed historical events do not produce misleading live activity.
+
+Provider behavior
+Test the same scenarios for Claude Code and Codex, accounting for their actual event capabilities.
+Regression protection
+Preserve:
+
+* Existing Zone B design.
+* Message headers and horizontal separators.
+* Tool grouping and collapse.
+* Approval interactions.
+* Input and clipboard handling.
+* Full-width adaptive Zone C.
+* Existing rendering performance targets.
+
+Do not weaken existing tests to make the animation pass.
+11. Mandatory Visual Demonstrations
+I need actual Windows Terminal evidence, not only golden-frame PASS results.
+Use the attached live-thinking screenshot as the visual reference.
+Demonstrate at least:
+A. Thinking starts
+The indicator appears with its entrance animation.
+B. Thinking progresses
+Show at least two distinct progress points, proving that the count and illuminated bar advance from actual test data.
+C. Thinking finishes
+Show the transition into the compact `Thought for Xs` summary.
+D. Thinking tokens unavailable
+Show the indeterminate animation without fabricated token counts.
+E. Tool execution
+Show the transition from completed thinking into a real tool or subagent activity state.
+F. Codex
+Show equivalent reasoning animations using Codex fixtures.
+Provide screenshots at the relevant states and, where technically feasible, a short recording or sequence of captured frames proving that the animations actually work.
+Do not substitute a static mockup for proof of animation.
+12. Strict Acceptance Criteria
+The enhancement is complete only when:
+
+* The live-thinking component matches the supplied design direction.
+* The entrance animation works.
+* The spinner animates smoothly.
+* Playful status expressions rotate correctly.
+* The live timer advances accurately.
+* The thinking-token counter uses genuine provider data.
+* The progress bar visibly grows when token usage increases.
+* Bar scaling never misrepresents task-completion percentage.
+* Indeterminate animation works when live token data is unavailable.
+* The exit animation transitions cleanly to a completed summary.
+* Multiple thinking phases are handled.
+* Tool and subagent states remain accurate.
+* Both Claude Code and Codex are supported.
+* Visual demonstrations match the intended experience.
+* Existing functional and performance tests remain green.
+
+If a provider does not expose a desired metric, document the exact limitation and implement the specified fallback.
+Do not report fabricated equivalence between the providers.
+13. Delivery and Approval
+Before declaring completion, provide:
+
+1. The implemented animation and state behavior.
+2. Actual token-usage capabilities confirmed for Claude Code.
+3. Actual token-usage capabilities confirmed for Codex.
+4. Progress-bar calculations and scaling rules.
+5. Visual evidence of entrance, progression and exit.
+6. Deterministic test evidence.
+7. Performance and regression results.
+8. Any remaining documented limitations.
+
+Do not commit until I have reviewed the updated visual demonstrations.
+Continue iterating on actionable discrepancies until the feature meets the approved specification.
+Final Instruction
+The animated live-thinking token-progress bar is the centerpiece of this enhancement.
+It must appear elegantly, respond visibly to real token updates, and disappear through a polished transition into a completed-thinking summary.
+The objective is a smooth, technically accurate, visually distinctive experience for both Claude Code and Codex.
+Do not deliver merely a changing token number beside a static bar. Implement the complete animated interaction shown in the attached design reference.
+````

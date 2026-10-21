@@ -1,14 +1,13 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
 ╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────────────── Idle ─╮
-│ claude-haiku-5-5 · or… ││ ▎ YOU  11:30                                                                               │
-│ turn 2 · completed     ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the       │
-│                        ││ ▎ files in the current directory, write their names into a new file named found.txt with   │
-│ STAGES  inferred from… ││ ▎ the Write tool, and report the names. Then tell me in one line what it found.            │
-│ TURN 1  ✓ completed ·… ││                                                                                            │
-│ TURN 2  ✓ completed ·… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│   started by the CLI   ││                                                                                            │
-│                        ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                 │
+│ claude-haiku-5-5 · or… ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the       │
+│ turn 2 · completed     ││ ▎ files in the current directory, write their names into a new file named found.txt with   │
+│                        ││ ▎ the Write tool, and report the names. Then tell me in one line what it found.            │
+│ STAGES  inferred from… ││                                                                                            │
+│ TURN 1  ✓ completed ·… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
+│ TURN 2  ✓ completed ·… ││                                                                                            │
+│   started by the CLI   ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                 │
 │                        ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt      11:30:00      mock   │
 │                        ││ ▎                                                                                          │
 │                        ││ ▎ I've launched the subagent in the background to list the directory and write             │
@@ -16,6 +15,7 @@
 │                        ││ ▎                                                                                          │
 │                        ││ ▎  ✓ general-purpose · Bash   ls -p "<probe-root>/pr…  allowed by you 11:30:00      mock   │
 │                        ││ ▎  ✓ general-purpose · Write  …\p3b\found.txt          allowed by you 11:30:00      mock   │
+│                        ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens                         11:30:00      mock   │
 │                        ││                                                                                            │
 │                        ││ ╭────────────────────────────────────────────────────────────────────────────────────────╮ │
 │                        ││ │ RESULT  11:30                                                                          │ │

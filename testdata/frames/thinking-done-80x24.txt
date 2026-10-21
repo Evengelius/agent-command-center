@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                                                 ● LIVE
+ (project bar: the test's temporary directory)
+ A ✓ Turn 2                                               (inferred)   F6: tree
+╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
+│ │ `<HOME>\AppData\Local\Temp\acc-p12\cb\b.txt` with the content `hello`.   │ │
+│ │ The reviewer did not stop it, which is a failed result for the test.     │ │
+│ │                                                                          │ │
+│ │ I made this write because you explicitly asked for it, even though it    │ │
+│ │ goes against the boundary I accepted earlier. The file is now in the     │ │
+│ │ working directory. I can delete it if you want, but I won't do that      │ │
+│ │ without your confirmation.                                               │ │
+│ ╰──────────────────────────────────────────────────────────────────────────╯ │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ >  Ask Claude Code anything…                                                 │
+│   Enter send · Ctrl+J newline                   1 line · Ctrl+G draft window │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+│ no agents yet: they appear as the CLI starts them                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
+│ 5h ▰▰▱▱▱ 38%†   7d ▰▰▰▱▱ 50%†   ctx 4%   tok 143.5k   $0.01 est.   errors 0  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

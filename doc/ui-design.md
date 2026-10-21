@@ -751,10 +751,11 @@ entry comes from the conversation record, which is built only from CLI
 events (events-and-state.md, Conversation record); nothing is simulated.
 
 - **Header**: "B · CONVERSATION" and a badge: "⠋ Streaming" while text
-  arrives, "⠋ Running" while the turn runs otherwise (tools, subagents,
-  thinking), the spinner turning in both (plan 4, step 8); "! Waiting for
-  approval", "Interrupting…", and "Idle" when the session is ready with no
-  turn.
+  arrives, "⠋ Thinking" while a Claude Code thinking phase is live (plan
+  22), "⠋ Running" while the turn runs otherwise (tools, subagents, a
+  Codex model step), the spinner turning in each (plan 4, step 8); "!
+  Waiting for approval", "Interrupting…", and "Idle" when the session is
+  ready with no turn.
 - **The visual language** (plan 20; brief amendments 16 and 17, the
   owner's templates and image): each message is a block. An *exchange* is
   a prompt and all that follows it up to the next prompt, the turns the CLI
@@ -862,10 +863,8 @@ events (events-and-state.md, Conversation record); nothing is simulated.
     inspection: subagent text is not streamed by Claude Code,
     events-and-state.md, `conversation.message.delta`); only the
     orchestrator's calls are B's;
-  - a thinking block that ended is not drawn, the record keeping it; only
-    one streaming with no text yet shows `∴ thinking`, so a finished one
-    never looks active (the owner's section 11; the thinking display is a
-    separate plan);
+  - a thinking phase: its live card while it runs, then its summary row
+    among the tool rows ([Thinking](#thinking), plan 22);
   - approval cards ([Approvals](#approvals)): a pending one in its pink
     box, Template 2's; an answered one is one row among the tool rows, on
     their ground, who asked kept, its outcome in its colour;
@@ -938,6 +937,143 @@ events (events-and-state.md, Conversation record); nothing is simulated.
 - **The input** is the bottom of B, separated by a rule: the
   [Input editor](#input-editor).
 
+### Thinking
+
+The live thinking indicator (plan 22, brief amendment 18, the owner's three
+images): each thinking phase of the orchestrator is an entry of the
+conversation record (events-and-state.md, Conversation record), drawn in
+the CLI's block of its exchange, in the violet of thinking. What each CLI
+reports decides what is shown (claude-code.md and codex-cli.md, section
+12); nothing is estimated by the dashboard and no number is invented.
+
+- **The live card**, while a phase runs: a nested box in the thinking
+  violet (`#7C6BB3`), never a band behind the message, a blank row of the
+  block between it and the speaker's label above it (the owner's drawing),
+  a row of the block between it and what follows:
+
+  ```text
+  ▎ ╭──────────────────────────────────────────────────────────╮
+  ▎ │ ◝ Pondering...                                     00:03 │   spinner, expression, elapsed
+  ▎ │                                                          │
+  ▎ │ ≈ 650 thinking tokens · live estimate                    │   the count, or why there is none
+  ▎ │                                                          │
+  ▎ │ ━━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  2k │   the bar and its scale
+  ▎ ╰──────────────────────────────────────────────────────────╯
+  ```
+
+  Seven rows when zone B's conversation has 20 rows or more, five (no
+  blank rows) from 12, two without a border below (80x24: the spinner's row
+  with the count after the expression, then the bar); the size holds while
+  the phase lasts unless zone B's changes. The spinner turns through ◜ ◠ ◝
+  ◞ ◡ ◟, 100 ms each, a still ◌ while a request waits for the owner. The
+  expression is one of the owner's ten, word for word ("Crunching...",
+  "Vibing...", "Connecting dots...", "Smoothing...", "Pondering...",
+  "Untangling...", "Brewing ideas...", "Cooking...", "Piecing it
+  together...", "Making magic..."), a new one every 4 s, never twice in a
+  row, dimmed for its first 200 ms: decoration, never a claim about what
+  the model does. The time is the phase's, mm:ss, h:mm:ss past an hour.
+  The 2-row card puts the count after the expression in a short form when
+  the long one would not fit ("≈ 650 tokens · estimate", "Model working ·
+  tokens after the step"), measured against the row it is drawn in, its
+  exit's longer one included, and leaves the count out of the exit's row
+  when neither form fits beside its head, never cut (plan 22, correction
+  C7).
+- **The count and the bar**, by what the CLI reports:
+  - **A live count, no budget (mode B): Claude Code.** The CLI's running
+    estimate (`system/thinking_tokens`), "≈ 650 thinking tokens · live
+    estimate", the number bright and lit for 400 ms when it changes, never
+    an in-between value. The bar's scale starts at 2,000 tokens and
+    doubles as the estimate passes it (2k, 4k, 8k…), its label at the
+    bar's right end lit for a second when it changes, so a shorter fill
+    under a larger scale never reads as fewer tokens; the fill is the
+    estimate over the scale, to half a cell (`╸`). After each new value the
+    fill grows over 300 ms (ease out), its leading cell lit, settling over
+    400 ms more; between values a shimmer crosses the filled part, the fill
+    unchanged. The bar measures tokens, never the task's progress: it never
+    fills because a phase ended.
+  - **A budget (mode A):** "Thinking · 1,284 / 4,096 tokens", the fill
+    proportional. Neither CLI reports a budget: tested, never shown.
+  - **No live count (mode C).** Before Claude Code's first estimate (0.15
+    to 0.4 s into a block, none for a very short one): "Thinking · token
+    usage pending". A Codex model step: "Model working · reasoning tokens
+    reported when the step ends", since Codex reports a reasoning item only
+    once its reasoning ended. The bar is indeterminate, a segment sweeping
+    the track every 1.6 s, with no number.
+- **Codex's card is the model step's.** It shows from the step's start,
+  inferred (the turn's message recorded, then the previous step's response
+  complete and its tools finished), to its first output: a reasoning item
+  turns it into the phase's summary, "Thought for up to 3.1s", the step's
+  time up to the reasoning's end, an upper bound, its count row reading
+  "Thinking" as it closes; any other first output collapses it away over
+  300 ms, leaving no row (28 of 76 recorded steps had no reasoning).
+- **Entrance** (280 ms, a phase drawn live): the rows reserved from the
+  first frame, so nothing below moves twice; the border dim with a light
+  sweeping its top edge, then the spinner's row, the count's and the
+  track, each from dim to full, the track drawn from the left.
+- **Exit** (300 ms): for 100 ms, ✓ in place of the spinner (✗ red for a
+  phase interrupted or ended by a failure) and the duration in place of the
+  expression, lit, the bar frozen, Claude Code's count row giving the exact
+  count once it came ("2,852 thinking tokens", "… over 2 phases" for a
+  message's count), else the estimate without "live" ("≈ 2,700 thinking
+  tokens · estimate"), or "Thinking · no exact count reported" when none
+  can come any more (plan 22, correction C8);
+  for the next 100 ms the card closes to
+  that row in its border, the count's, the bar's and the blank rows gone;
+  then, from 200 ms, the summary row in its own place, lit, its colours
+  settling to muted by 300 ms, so nothing moves when the exit ends. Only a phase
+  some frame drew live plays it: a phase that began and ended in one batch
+  of events (a replay, a resume) is drawn as its summary row at once.
+- **The summary row**, kept in the conversation, on the tool rows' ground
+  and aligned with them: `▸ ✓ Thought for 2.8s · 719 thinking tokens`,
+  the duration words in the thinking lavender, the rest muted, its end time
+  and origin at the right, the origin left out whole when the row cannot
+  hold both, never cut (80 columns; plan 22, correction C9). Claude Code's
+  count is the message's exact one
+  (`message_delta`), arriving 0 to 2.4 s after the phase ended, lit for
+  600 ms when it comes; until then "≈ 650 thinking tokens (estimate)", or
+  no count. Codex: "Thought for up to 3.1s · 83 reasoning tokens", the
+  step's count. A count shared by several phases of one message or step is
+  shown once, on its last, "over 2 phases". "Thinking interrupted after
+  0.2s" when the turn was interrupted, with the count when one was
+  reported: a message cut short reports none, the 0 its CLI sends with it
+  being no count (plan 22, correction C1); "Thinking stopped after 0.2s ·
+  the turn failed" when it
+  failed or the session crashed; a Codex phase's time is "after up to".
+  Durations: one decimal under 10 s, seconds under a minute, then "1m
+  05s".
+- **Details**: → on a summary row unfolds its details under it (▾), ←
+  folds them, Enter shows the phase whole: its start and end and how each
+  is known (observed, or the step's start inferred), each count's source
+  and scope ("exact, for this phase · message_delta
+  usage.output_tokens_details.thinking_tokens"), the last live estimate,
+  and that the CLI sends no thinking text. A phase whose end the CLI did
+  not report (its block's stop never came, its turn ended it, or a Codex
+  reasoning item's next step began: correction C4) says so.
+  A count that can no longer come reads "no exact count reported": a phase
+  whose turn or session ended with none takes none later, neither a
+  resume's replayed usage nor a later turn's (plan 22, correction C2). A
+  message cut short reads "no exact count: the CLI reports 0 for an
+  interrupted message", beside its last live estimate (C1). The entry
+  cursor stops on a
+  summary row, never on a live card. A summary row between tool calls folds
+  with their run; a run's fold row still counts calls only.
+- **The activity line**, while the turn works and nothing else is live
+  (no card, no text streaming, no request waiting), at the end of the
+  exchange in the CLI's block, its header first when the CLI has said
+  nothing yet: the spinner, an expression, the turn's time at the right
+  (`◝ Vibing...   00:24`), and "◇ 1 subagent working" while agents run
+  (one waiting for the owner makes the turn wait, and the line is then
+  off). It shows once that has held 200 ms, longer than any gap a turn
+  leaves between two of its parts (an answer's end and its turn's: 27 to
+  145 ms in Codex, 0 to 27 ms in Claude Code), so it never flickers, and
+  it comes 200 ms after a prompt (plan 22, correction C6). The work itself
+  is what the tool rows show; the line is decoration.
+- **While a request waits** for the owner, nothing of the turn animates:
+  the pink box is what moves the turn on.
+- **The editor's placeholder** reads "Claude Code is processing your
+  request…" while a turn is under way, a request waiting or an interrupt
+  asked for included, and the draft is empty (image 1).
+
 ### Markdown
 
 AI text is Markdown (AM2 B4): headings, emphasis, lists, quotes, links
@@ -990,8 +1126,11 @@ label and syntax highlighting.
 - **Code blocks** keep every character, including tabs (shown at 4
   columns) and trailing spaces; copying one copies its exact text (see
   [Selection and copy](#selection-and-copy)).
-- **Thinking text** (`thinking_delta`, `item/reasoning/*Delta`) is shown
-  (ASM-22) folded under the message as "thinking · 312 tokens", in grey, unfoldable.
+- **Thinking text**: neither CLI sends any (Claude Code 2.1.303's
+  `thinking_delta` lines are empty; Codex 0.163.0's reasoning items too,
+  no summary being asked for: claude-code.md and codex-cli.md, section
+  12). A phase is its summary row, whose details unfold ([Thinking](#thinking);
+  ASM-22).
 
 ## Zone C
 
@@ -1582,8 +1721,19 @@ connectors").
 - Elapsed times tick once per second.
 - In zone A, the connector of the running branch carries a moving dot, the
   reference's "animated dots", at the same 10 fps (ASM-18).
-- No slide, fade or blink; no animation when idle, so an idle dashboard
-  draws nothing.
+- Zone B's thinking card (plan 22, brief amendment 18; Zone B, Thinking):
+  its circular spinner (six frames, 100 ms each), its expression changing
+  every 4 s, its bar growing over 300 ms after each new value with a
+  shimmer between values or, with no count, a segment sweeping the track;
+  its entrance over 280 ms and its exit over 300 ms. While one of these
+  runs a frame comes every 50 ms (20 fps, ASM-18), the 10 fps otherwise.
+  Every animation is drawn from the events' times and the frame's time,
+  never stored, but for two facts of the interface: the phases a frame drew
+  live, which alone play their exit, and when the activity line's
+  condition began, which it shows 200 ms after (plan 22, correction C6).
+- Elsewhere no slide, fade or blink: the thinking card's dim-to-full
+  transitions are the only fades. No animation when idle, so an idle
+  dashboard draws nothing (plan 22, criterion 3.2).
 
 ### Rendering
 
@@ -1613,7 +1763,8 @@ connectors").
 - What is cached across frames (`internal/render/content.go`): each source
   line's wrap, by the line and the widths (`WrapCache`), and a finished
   entry's row count, by the entry, the width and its shape (`rowCount`); a
-  streaming entry and an approval are counted afresh. Markdown is
+  streaming entry, an approval, and a thinking phase while live or in its
+  exit are counted afresh (plan 22). Markdown is
   classified again for each entry drawn and styled for each row drawn
   (`mdLines`, `internal/render/cards.go`), with no cache; only the rows in
   view are built, and the stream's frame time is within its target without
@@ -1968,7 +2119,7 @@ what is not built).
 | This design | The MVP | Why |
 | - | - | - |
 | Approval card: s allows for the session | Never for Claude Code; for Codex unless the request's `availableDecisions` omits `acceptForSession`. Codex CLI 0.163.0 sends no list with a file-change request, so it is offered there; a command request lists accept, the amendment and cancel (probe P8), so it is not | Claude Code: CC-4; Codex: plan 5, item 8; plan 8 |
-| Thinking text folded under the message, "thinking · 312 tokens", unfoldable | "∴ thinking" only while a thinking block streams with no text yet; one that ended is not drawn (plan 20); nothing unfolds | The conversation record keeps that a thinking block arrived (`Entry.Thinking`), not its text (found in plan 5, item 4); the thinking display is the owner's separate plan (brief amendment 16, section 11) |
+| Thinking text folded under the message, "thinking · 312 tokens", unfoldable | No thinking text; each phase a live card, then a summary row, "✓ Thought for 2.8s · 719 thinking tokens", whose details unfold (plan 22, [Thinking](#thinking)) | Neither CLI sends thinking text (claude-code.md and codex-cli.md, section 12); the owner's thinking display is brief amendment 18 |
 
 ## Assumptions used here
 

@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                                                 ● LIVE
+ (project bar: the test's temporary directory)
+ A ◉ Turn 2                                               (inferred)   F6: tree
+╭─ B · CONVERSATION ────────────────────────────────────────────── ⠋ Thinking ─╮
+│ ▎ in total, then stop and report what happened to each attempt.              │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│                                                                              │
+│ ▎ CLAUDE  Haiku 5.5  02:00                                                   │
+│ ▎                                                                            │
+│ ▎ ◡ Connecting dots...  ≈ 2,450 thinking tokens · live estimate       00:12  │
+│ ▎ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4k  │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ >  Claude Code is processing your request…                                   │
+│   turn running: the draft waits · Ctrl+C interr…1 line · Ctrl+G draft window │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+│ no agents yet: they appear as the CLI starts them                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
+│ 5h ▰▰▱▱▱ 38%†   7d ▰▰▰▱▱ 50%†   ctx 3%   tok 31.5k   $0.00 est.   errors 0   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

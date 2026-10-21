@@ -1,17 +1,19 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ codex-subagents.jsonl   ..\..\testdata\mock\codex-subagents.jsonl                 Mock data 0.145.0 · approvals Auto
 ╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────────────── Idle ─╮
-│ gpt-5.6-sol · orchest… ││                                                                                            │
-│ turn 1 · completed     ││ ▎ YOU  11:30                                                                               │
-│                        ││ ▎ Spawn two subagents in parallel. The first lists the files in the current directory.     │
-│ STAGES  inferred from… ││ ▎ The second creates a file named found.txt in the current directory containing the        │
-│ TURN 1  ✓ completed ·… ││ ▎ single word found. Wait for both, then reply with the single word done.                  │
-│   Spawn two subagents… ││                                                                                            │
-│   ├─ ✓ child  /r… mock ││ ────────────────────────────────────────────────────────────────────────────────────────── │
+│ gpt-5.6-sol · orchest… ││ ▎ YOU  11:30                                                                               │
+│ turn 1 · completed     ││ ▎ Spawn two subagents in parallel. The first lists the files in the current directory.     │
+│                        ││ ▎ The second creates a file named found.txt in the current directory containing the        │
+│ STAGES  inferred from… ││ ▎ single word found. Wait for both, then reply with the single word done.                  │
+│ TURN 1  ✓ completed ·… ││                                                                                            │
+│   Spawn two subagents… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
 │   ├─ ✓ child  /r… mock ││                                                                                            │
-│   ├─ ✓ collabAge… mock ││ ▎ CODEX  gpt-5.6-sol  11:30                                                                │
-│   └─ ✓ collabAge… mock ││ ▎  ✓ collabAgent:wait                                                 11:30:00      mock   │
+│   ├─ ✓ child  /r… mock ││ ▎ CODEX  gpt-5.6-sol  11:30                                                                │
+│   ├─ ✓ collabAge… mock ││ ▎  ▸ ✓ Thought for up to 0.0s · 83 reasoning tokens                   11:30:00      mock   │
+│   └─ ✓ collabAge… mock ││ ▎  ▸ ✓ Thought for up to 0.0s · 8 reasoning tokens                    11:30:00      mock   │
+│                        ││ ▎  ✓ collabAgent:wait                                                 11:30:00      mock   │
 │                        ││ ▎  ✓ /root/create_found · fileChange                   allowed by you 11:30:00      mock   │
+│                        ││ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens                    11:30:00      mock   │
 │                        ││ ▎  ✓ collabAgent:wait                                                 11:30:00      mock   │
 │                        ││                                                                                            │
 │                        ││ ╭────────────────────────────────────────────────────────────────────────────────────────╮ │
@@ -20,8 +22,6 @@
 │                        ││ ╰────────────────────────────────────────────────────────────────────────────────────────╯ │
 │                        ││                                                                                            │
 │                        ││   ◈ auto-review approved · risk low · authorization high: a read-only check of the project │
-│                        ││                                                                                            │
-│                        ││                                                                                            │
 │                        ││                                                                                            │
 │                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
 │                        ││ >  Ask Mock data anything…                                                                 │

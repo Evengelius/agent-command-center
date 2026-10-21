@@ -2,7 +2,7 @@
  ▣ codex-subagents.jsonl                    approvals Manual → Auto (next turn)
  A ✓ Turn 1 › ✓ /root/list_files › ✓ /root/create_found   (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
-│ ▎  ✓ /root/create_found · fileChange     allowed by you 11:30:00      mock   │
+│ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens      11:30:00      mock   │
 │ ▎  ✓ collabAgent:wait                                   11:30:00      mock   │
 │                                                                              │
 │ ╭──────────────────────────────────────────────────────────────────────────╮ │

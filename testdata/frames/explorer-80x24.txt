@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ▣╭─ Explorer ───────────────────────────────────────────── mock · 11 items ─╮l
+ ▣╭─ Explorer ───────────────────────────────────────────── mock · 13 items ─╮l
  A│ sample/viewer.go                                                         │e
 ╭─│ ▾ sample                                                              ●  │─╮
 │ │     viewer.go                                                         M  │ │
@@ -7,18 +7,18 @@
 │ │ ▸ tools                                                               D  │ │
 │ │   claude-api-key-context-refused.jsonl                                   │ │
 │ │   claude-subagent-approval.jsonl                                         │ │
+│ │   claude-thinking-subagent.jsonl                                         │ │
+│ │   claude-thinking.jsonl                                                  │ │
 │ │   codex-api-key.jsonl                                                 U  │ │
 │ │   codex-no-5h-window.jsonl                                               │ │
 │ │   codex-plan6-limits.jsonl                                            !  │ │
 │ │   codex-spawn-request.jsonl                                           A  │ │
 │ │   codex-subagents.jsonl                                                  │ │
-│ │                                                                          │ │
-│ │                                                                          │ │
 ╰─│                                                                          │─╯
 ╭─│                                                                          │─╮
 │ │                                                                          │ │
 ╰─│                                                                          │─╯
 ╭─│                                                                          │─╮
-│ │ Enter view · / find · Esc back · F3 close                        2 of 11 │ │
+│ │ Enter view · / find · Esc back · F3 close                        2 of 13 │ │
 ╰─╰──────────────────────────────────────────────────────────────────────────╯─╯
  Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

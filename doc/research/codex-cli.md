@@ -507,7 +507,15 @@ Settled:
    effective sandbox is the one the response reports: `workspaceWrite` when
    asked on this machine (P12x-sandbox2), shown as it is reported.
 4. **Resume across processes.** A new app-server process, `thread/resume`
-   on P6b's thread: returned `turns`, replayed `thread/tokenUsage/updated`.
+   on P6b's thread: returned `turns`. Its usage replay is not recorded:
+   the 0.145.0 README documents `thread/tokenUsage/updated` sent
+   "immediately after the response" when the stored session has persisted
+   usage (line 321), and 0.163.0's source sends it, a fork included
+   (`request_processors/token_usage_replay.rs`, called from
+   `thread_processor.rs` lines 4433, 4731 and 5699; tag `rust-v0.163.0`,
+   commit 83086188ae06), but no recording has one. Plan 1 had marked it
+   not probed (`plan1-evaluation.md`, criterion 7); plan 22's investigation
+   corrected this item (`doc/plan22-investigation.md`, section 1.2).
    Live in plan 4: L3 recalled its code word after a resume, and L4 run 3
    resumed with Ctrl+R after a `taskkill` crash and answered "LANTERN-73"
    (`TestCodexCrashAndResume` replays it).
@@ -624,3 +632,73 @@ from `codex app-server generate-json-schema` of the same version:
   p12x-sandbox3-codex-thread-workspace-write-patch.jsonl]. Windows sandbox
   `elevated` (the owner's configuration). This is Codex's own behaviour;
   the dashboard does not change it.
+
+## 12. Reasoning through app-server (plan 22, 2026-10-21)
+
+What Codex reports about reasoning, for zone B's thinking indicator (brief
+amendment 18). Read by script from every app-server recording in
+`doc/research/probes` (0.163.0, and P6, P6b, P7 on 0.145.0; gpt-6-sol,
+reasoning effort high, summaries not asked for), then checked by an
+independent agent; the schema is `p0-codex-app-server-schema-v2.json`,
+generated with 0.145.0.
+
+- **No live reasoning.** 48 `reasoning` items: each `item/started` and
+  `item/completed` 0 to 10 ms apart, `startedAtMs` and `completedAtMs`
+  within 3 ms, `summary` and `content` empty ([P:p12x-codex-auto-review.jsonl] lines
+  20 and 21); no `item/reasoning/*` notification in any recording. The
+  item says the model reasoned in its step, once it had; not when it
+  began. Schema: `ReasoningThreadItem` (lines 6912 to 6945), the
+  notifications `item/reasoning/summaryTextDelta`, `summaryPartAdded` and
+  `textDelta` (lines 19109, 19129, 19149), and `TurnStartParams.summary`
+  (line 3772, `auto`, `concise`, `detailed`, `none`: "Override the
+  reasoning summary for this turn and subsequent turns"). Asked for, they
+  make a reasoning item start while the model works, 2.5 to 3.4 s before it
+  completes, with no streamed text (P22s, below).
+- **The exact count, per model step.** `thread/tokenUsage/updated`
+  `tokenUsage.last.reasoningOutputTokens` (schema `TokenUsageBreakdown`,
+  line 15493), once per model response and thread; in 0.163.0 just after
+  the step's tool items completed (4 to 126 ms), so 0.2 to 6.9 s after its
+  reasoning item, and never after the next step began. `last` is the
+  difference of two consecutive `total`s (60 of 60 updates in 0.163.0), so
+  reading `last` never counts twice. A step with reasoning tokens had
+  exactly one reasoning item since the thread's previous update in 47 of 47
+  ([P:p12x-sandbox-codex-turn-workspace-write.jsonl]: 10, 16, 47, 249, 14,
+  46; [P:p7-codex-subagents.jsonl], the orchestrator: 83, 8, 7). 28 of 76
+  steps had no reasoning item and 0 reasoning tokens. When the update is
+  sent is not documented. 0.145.0 only: an interrupted turn's update
+  repeats the previous one ([P:p6b] line 87), which the adapter reads as no
+  model response (no reasoning count, no step), and a forked child's first
+  update counts the parent's history ([P:p7] line 95).
+- **A step's start is not reported.** After the previous step's update,
+  0.8 to 4.1 s of silence on the thread until the next reasoning item; the
+  first step begins when the turn's `userMessage` item starts. The adapter
+  infers each step's start from these (plan 22, design 4): the
+  `userMessage` item, then the previous step's usage update once its tool
+  items have completed, when the step made a call (a tool item, or a
+  `subAgentActivity` spawn in 0.145.0).
+- **Child threads** report their own usage under their own `threadId`.
+- **Reasoning summaries asked for (P22s, 2026-10-21).** Two turns with the
+  dashboard's handshake and thread, and `turn/start`'s `summary` set: `auto`,
+  then `detailed` ([P:p22s-codex-reasoning-summary.jsonl]). Codex 0.163.0
+  accepts both.
+  - A reasoning item then starts long before it completes: 2,506 ms and
+    3,436 ms from `item/started` to `item/completed`. Without summaries, all
+    48 recorded items spanned 0 to 10 ms. Each starts about 1.6 s after its
+    turn's `userMessage` item: the item starts while the model works.
+  - The summary's text does not stream. `auto` gave none. `detailed` gave
+    one `summaryPartAdded` and one `summaryTextDelta`, a four-word heading
+    ("**Computing f(10)**"), 9 ms before the item completed.
+  - The span may hold the summary's making as well as the reasoning: 28 and
+    36 reasoning tokens over 2.5 and 3.4 s. It is the item's, an upper bound
+    of the reasoning's, not a measure of it.
+  - Usage is as before: one update per step, `last.reasoningOutputTokens` 28
+    and 36. The 5-hour and weekly windows read 0% before and after.
+  - Replayed through the adapter and the reducer, as today: each step is a
+    phase from its inferred start to the item's completion ("up to 4.1s ·
+    28", "up to 5.0s · 36"). The item's start confirms the step, so the card
+    already reads "Thinking" from that moment.
+  - `summaryTextDelta` maps to a thinking delta (`mapper.go`, line 442) and
+    is never drawn as conversation text; `summaryPartAdded` is unrecognised.
+- **Not verified:** a resume (the 0.145.0 README says the usage is
+  replayed; no recording has one); the schema of 0.163.0 (the 0.163.0 README
+  names neither token usage nor reasoning).

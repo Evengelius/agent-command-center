@@ -1,0 +1,60 @@
+ >_ AGENT COMMAND CENTER     ■ gpt-5.6-sol                                                                                                                                                       ● LIVE
+ (project bar: the test's temporary directory)
+╭─ A · ORCHESTRATOR ───────────────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ⠋ Running ─╮
+│ gpt-5.6-sol · orchestrator               ││                                                                                                                                                          │
+│ turn 1 · running 3s                      ││ ▎ YOU  02:00                                                                                                                                             │
+│                                          ││ ▎ Spawn two subagents in parallel. The first lists the files in the current directory. The second creates a file named found.txt in the current          │
+│ STAGES  inferred from activity           ││ ▎ directory containing the single word found. Wait for both, then reply with the single word done.                                                       │
+│ TURN 1  ◉ running · 3s                   ││                                                                                                                                                          │
+│   Spawn two subagents in parallel. The … ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│   •─ ○ (more as events arrive)           ││                                                                                                                                                          │
+│                                          ││ ▎ CODEX  gpt-5.6-sol  02:00                                                                                                                              │
+│                                          ││ ▎                                                                                                                                                        │
+│                                          ││ ▎ ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  │
+│                                          ││ ▎ │ ◡ Smoothing...                                                                                                                              00:01 │  │
+│                                          ││ ▎ │                                                                                                                                                   │  │
+│                                          ││ ▎ │ Model working · reasoning tokens reported when the step ends                                                                                      │  │
+│                                          ││ ▎ │                                                                                                                                                   │  │
+│                                          ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │
+│                                          ││ ▎ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││                                                                                                                                                          │
+│                                          ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│                                          ││ >  OpenAI Codex is processing your request…                                                                                                              │
+│ ↑↓ move ←→ fold Enter inspect            ││   turn running: the draft waits · Ctrl+C interrupt                                                                          1 line · Ctrl+G draft window │
+╰──────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+│ no agents yet: they appear as the CLI starts them                                                                                                                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── quota updated 4s ago · † undocumented field ─╮
+│ 5h ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 0%  resets Fri 02:43   7d ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 0%  resets Thu 10:30   plan plus   credits none                                                           │
+│ model gpt-5.6-sol   context N/A (no model call yet)   tokens N/A (no update yet)   cost N/A (Codex reports none)   last turn N/A (no turn ended yet)                                                 │
+│ agents 0 active / limit N/A (not read)   time 5s session   errors 0   retries N/A (none reported)   unrecognised events 0                                                                            │
+│                                                                                                                                                                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit

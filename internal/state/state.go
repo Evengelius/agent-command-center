@@ -183,12 +183,12 @@ type TurnState struct {
 // Entry is one item of a conversation record.
 type Entry struct {
 	Seq       uint64
-	Role      string // user, assistant, tool, notice, approval, error, dashboard
+	Role      string // user, assistant, tool, notice, approval, error, dashboard, thinking
 	Agent     string
 	MessageID string
 	Text      string
 	Origin    event.Origin
-	Streaming bool
+	Streaming bool // still coming; for a thinking entry, the phase is live
 	Thinking  bool
 	At        time.Time
 	// Status is a review entry's status as reported (inProgress, approved,
@@ -198,7 +198,75 @@ type Entry struct {
 	// when it came, for a prompt the one it opens; after a turn ended, that
 	// turn; 0 before any (plan 19, zone B's RESULT).
 	Stage int
+	// Thought is a thinking entry's phase; nil for any other role (plan 22).
+	Thought *Thought
 }
+
+// Thought is one thinking phase of the orchestrator, the entry of role
+// "thinking" that zone B draws as its live card, then as its summary row
+// (plan 22, brief amendment 18). Claude Code reports a phase's start and
+// end, a thinking block's; Codex only that its model step reasoned, once
+// the reasoning ended: the step's start stands for the phase's, inferred,
+// until a reasoning item confirms it (plan.md, plan 22, C1 and X1).
+type Thought struct {
+	// ID numbers the phases of the conversation record from 1, kept across a
+	// resume (State.Thoughts), where an event's Seq starts again: zone B's
+	// keys for a phase, its details open and drawn live, are its ID.
+	ID    int
+	Block int       // the thinking block's index in its message (Claude Code)
+	Item  string    // the reasoning item's id (Codex)
+	Start time.Time // the block's start; a Codex step's start, inferred; zero when unknown
+	End   time.Time // when it ended; zero while it runs
+	// EndInferred marks an End the CLI did not report as the phase's own (its
+	// block's stop, its reasoning item's completion): the end of its
+	// message, of its turn, or of the session.
+	EndInferred bool
+	// EndNext marks an inferred End that is the start of the next Codex step: a
+	// reasoning item whose completion never came is over there, and its details
+	// say so, not "when its turn ended" (plan 22, correction C4).
+	EndNext bool
+	// Inferred marks a Codex model step: Start is the step's, and it is a
+	// phase of thinking only once Confirmed by a reasoning item; Dropped
+	// when the step ended with no reasoning, which leaves no row.
+	Inferred, Confirmed, Dropped bool
+	Outcome                      string // "" ended normally; "interrupted" or "failed"
+	// Estimate is the CLI's live estimate, cumulative, never lowered (Claude
+	// Code's system/thinking_tokens, C2); 0 before the first. EstimateFrom is
+	// the value before the last change, EstimateAt the change's time: the bar
+	// grows from one to the other.
+	Estimate, EstimateFrom int64
+	EstimateAt             time.Time
+	// Tokens is the exact count once reported (HasTokens), at TokensAt, from
+	// Source. Shared > 1 when it is the count of a message or a step with
+	// that many phases, set on its last phase only. Counted marks a Codex
+	// thought a usage update was applied to, so the next update goes to the
+	// next thoughts only.
+	Tokens    int64
+	HasTokens bool
+	TokensAt  time.Time
+	Source    string
+	Shared    int
+	Counted   bool
+	// Closed marks a phase whose turn or session ended with no exact count
+	// reported: none can come any more, so no later count (a resume's replay of
+	// the last usage, the next turn's update, a late message_delta) is applied
+	// to it, and its details say so (plan 22, correction C2).
+	Closed bool
+	// Cut marks a Claude Code phase whose message was cut short (stop_reason
+	// null: an interrupt, P303a and P2). The CLI's message_delta then carries a
+	// thinking_tokens of 0, the usage the message had when it began, not a
+	// measure; CutTokens keeps that value as reported. The phase has no exact
+	// count (HasTokens stays false), so nothing that reads one shows the 0 as
+	// a count, the exit's count row included (plan 22, correction C1).
+	Cut       bool
+	CutTokens int64
+	// Budget is a thinking-token budget the CLI reported; 0 for none. No
+	// supported CLI reports one (C8, X3): mode A of the bar is tested only.
+	Budget int64
+}
+
+// Live reports whether the phase still runs.
+func (t *Thought) Live() bool { return t != nil && t.End.IsZero() }
 
 // Agent is one node of the agent tree.
 type Agent struct {
@@ -346,6 +414,7 @@ type State struct {
 	Errors           []ErrorEntry
 	Retries          int
 	Log              []event.Event // the last MaxLog events, for the inspection view
+	Thoughts         int           // the thinking phases opened: the last Thought.ID (plan 22)
 	Applied          int           // events applied; the first one's time is FirstAt
 	FirstAt          time.Time     // the session time counts from it, kept when Log drops events and on a resume (plan 21, item 1)
 	Unrecognised     int

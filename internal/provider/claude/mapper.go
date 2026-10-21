@@ -226,11 +226,21 @@ func (m *Mapper) system(l line, raw []byte) []event.Event {
 	case "permission_denied":
 		return []event.Event{m.ev(event.Error, event.Observed, "", raw, event.Problem{Message: "permission denied"})}
 	case "thinking_tokens":
+		// The running estimate of the open thinking block's tokens, cumulative,
+		// main thread only, with no agent field (plan 22, C2). Recorded in
+		// testdata/probes/p303b-claude-subagent-approval.jsonl (lines 12, 15
+		// and 17: 50, 300, 650) and p12c-block-claude-auto-boundary-edit.jsonl
+		// (lines 73 to 93: the second phase's 50 to 2,700). Documented: the
+		// Agent SDK TypeScript reference lists it as SDKThinkingTokensMessage,
+		// "a running estimate of the thinking tokens generated so far in the
+		// current block", Claude Code 2.1.153 or later
+		// (code.claude.com/docs/en/agent-sdk/typescript, checked 2026-10-21).
+		// An estimate, never the exact count (C5).
 		var s struct {
 			Estimated float64 `json:"estimated_tokens"`
 		}
 		_ = json.Unmarshal(raw, &s)
-		return []event.Event{m.ev(event.Telemetry, event.Observed, "", raw, event.Metrics{Items: []event.Metric{{Name: "thinking.estimate", Value: s.Estimated, Unit: "tokens", Source: "system/thinking_tokens"}}})}
+		return []event.Event{m.ev(event.Telemetry, event.Observed, "", raw, event.Metrics{Items: []event.Metric{{Name: event.ThinkingEstimate, Value: s.Estimated, Unit: "tokens", Documented: true, Source: "system/thinking_tokens"}}})}
 	case "task_started", "task_progress", "task_updated", "task_notification":
 		return m.task(l, raw)
 	case "background_tasks_changed":
@@ -363,12 +373,48 @@ func (m *Mapper) stream(l line, agent string, raw []byte) []event.Event {
 		return []event.Event{m.ev(event.MessageDelta, event.AI, agent, raw, d)}
 	case "message_start":
 		return []event.Event{m.ev(event.MessageMarker, event.Observed, agent, raw, event.Marker{MessageID: id, Name: se.Type, Model: se.Message.Model})}
-	case "content_block_start", "content_block_stop", "message_stop":
+	case "content_block_start", "content_block_stop":
+		// The block's index in its message: a stop finds its start by it (plan
+		// 22, C1). A thinking block is always index 0 in the recordings, a
+		// later block 1 or more: p303b-claude-subagent-approval.jsonl lines
+		// 11 and 22 (a thinking block), 23 and 79 (the tool use at 1 after it);
+		// p12c-block-claude-auto-boundary-edit.jsonl lines 99, 107 and 108
+		// (text at 1, a tool use at 2).
+		return []event.Event{m.ev(event.MessageMarker, event.Observed, agent, raw, event.Marker{MessageID: id, Name: se.Type, Block: se.ContentBlock.Type, Index: se.Index})}
+	case "message_stop":
 		return []event.Event{m.ev(event.MessageMarker, event.Observed, agent, raw, event.Marker{MessageID: id, Name: se.Type, Block: se.ContentBlock.Type})}
 	case "message_delta":
-		return []event.Event{m.ev(event.MessageMarker, event.Observed, agent, raw, event.Marker{MessageID: id, Name: se.Type, StopReason: se.Delta.StopReason})}
+		thinking, has := thinkingTokens(l.Event)
+		return []event.Event{m.ev(event.MessageMarker, event.Observed, agent, raw, event.Marker{MessageID: id, Name: se.Type, StopReason: se.Delta.StopReason, Thinking: thinking, HasThinking: has})}
 	}
 	return []event.Event{m.unknown(raw, l.Type, se.Type)}
+}
+
+// thinkingTokens reads a message_delta's usage.output_tokens_details.
+// thinking_tokens, the message's exact thinking-token count (plan 22, C3):
+// 719, 281 and 268 on the three messages of
+// testdata/probes/p303b-claude-subagent-approval.jsonl (lines 82, 146 and
+// 195), 717, 2,852, 17 and 354 on the four of
+// p12c-block-claude-auto-boundary-edit.jsonl (lines 65, 121, 154 and 205), 0
+// for a message with no thinking. Documented: "When streaming, this
+// breakdown appears only on the final message_delta event"
+// (platform.claude.com/docs/en/build-with-claude/extended-thinking, checked
+// 2026-10-21). has is false when the line gives none, which is never a zero:
+// a line without the field, or with another shape, reports no count. It
+// reads the line apart from the stream event's other fields so that an odd
+// usage cannot turn the message_delta into an unrecognised line.
+func thinkingTokens(ev json.RawMessage) (n int64, has bool) {
+	var u struct {
+		Usage struct {
+			Details struct {
+				Thinking *float64 `json:"thinking_tokens"`
+			} `json:"output_tokens_details"`
+		} `json:"usage"`
+	}
+	if json.Unmarshal(ev, &u) != nil || u.Usage.Details.Thinking == nil {
+		return 0, false
+	}
+	return int64(*u.Usage.Details.Thinking), true
 }
 
 type block struct {

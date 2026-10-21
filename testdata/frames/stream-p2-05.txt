@@ -1,17 +1,15 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
 ╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ───────────────────────────────────────────────────────── Interrupting… ─╮
-│ claude-haiku-5-5 · or… ││ │ RESULT  02:00                                                                          │ │
-│ turn 3 · interrupting… ││ │ done                                                                                   │ │
-│                        ││ ╰────────────────────────────────────────────────────────────────────────────────────────╯ │
-│ STAGES  inferred from… ││                                                                                            │
-│ TURN 1  ✓ completed ·… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│ TURN 2  ✓ completed ·… ││                                                                                            │
-│ TURN 3  ◉ interruptin… ││ ▎ YOU  02:00                                                                               │
-│   Count from 1 to 300… ││ ▎ Reply with the single word: again                                                        │
-│   •─ ○ (more as event… ││                                                                                            │
+│ claude-haiku-5-5 · or… ││ ╰────────────────────────────────────────────────────────────────────────────────────────╯ │
+│ turn 3 · interrupting… ││                                                                                            │
 │                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││                                                                                            │
+│ STAGES  inferred from… ││                                                                                            │
+│ TURN 1  ✓ completed ·… ││ ▎ YOU  02:00                                                                               │
+│ TURN 2  ✓ completed ·… ││ ▎ Reply with the single word: again                                                        │
+│ TURN 3  ◉ interruptin… ││                                                                                            │
+│   Count from 1 to 300… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
+│   •─ ○ (more as event… ││                                                                                            │
 │                        ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                 │
 │                        ││ ▎ again                                                                                    │
 │                        ││                                                                                            │
@@ -23,6 +21,8 @@
 │                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
 │                        ││                                                                                            │
 │                        ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                 │
+│                        ││ ▎  ▸ ✓ Thought for 0.2s                                               02:00:12  observed   │
+│                        ││ ▎                                                                                          │
 │                        ││ ▎ 1▌                                                                                       │
 │                        ││                                                                                            │
 │                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │

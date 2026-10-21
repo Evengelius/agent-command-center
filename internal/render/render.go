@@ -51,7 +51,17 @@ type UI struct {
 	Card     string // the approval card with the focus: it takes a, d, c (ui-design.md, Approvals)
 	Pick     Pick   // the owner's choices on the focused question card (plan 14, item 1)
 	Spinner  int    // the spinner's frame
-	Toast    string // replaces the key hints for a moment (ui-design.md, Clipboard)
+	// Live holds the thinking phases a frame drew while they ran, by their
+	// Thought.ID: only they play their exit, so a phase that began and ended
+	// in one batch of events (a replay, a resume) never looks live (plan 22).
+	Live map[uint64]bool
+	// ActivitySince is when the activity line's condition began (ActivityOn),
+	// zero while it does not hold. The application notes it; the line is drawn
+	// once Now is 200 ms past it, so a gap of a few frames between two cards, or
+	// before a turn's end, never shows it. Zero draws no line (plan 22,
+	// correction C6).
+	ActivitySince time.Time
+	Toast         string // replaces the key hints for a moment (ui-design.md, Clipboard)
 	// The editor's send and newline keys in force, as the screen names them
 	// ("Ctrl+Enter"), in the configuration file's order (plan 21, item 5.1);
 	// none is the defaults. KeysProblem is why the file's keys were not used,

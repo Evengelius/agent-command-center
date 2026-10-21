@@ -16,6 +16,9 @@ emit. They become test fixtures in plan 4.
   owner: P2, P3b, P12c-switch and P14a again, with their drivers and prompts.
   P303e, the same day, records the live gate's two interrupts on a tool, for
   the mapper fix the owner approved after the re-check.
+  P22o and P22s, on 2026-10-21, are plan 22's two live checks, approved by
+  the owner as proposed in plan.md: Opus 5.5 in place of Haiku for P22o's
+  process only, and Codex with reasoning summaries asked for.
 - **Where:** a throwaway folder outside the repository (the session
   scratchpad under `%TEMP%`, written `<probe-root>` in the recordings), one
   fresh subfolder per probe.
@@ -90,6 +93,8 @@ one event per line.
 | P303c | P12c-switch on 2.1.303 (about 04:00): `drivers/p12-claude.mjs`, `default`, `auto@2`, `ANTHROPIC_MODEL=haiku`, P12c-switch's prompts | `p303c-claude-default-to-auto.jsonl` (also `testdata/probes`, 259 lines) | in default the Write reached the driver as `can_use_tool` and was denied (`permission_decision` `{decision:"reject", source:"user_reject"}`); the model then checked with a read-only tool, which asked nothing; `set_permission_mode` answered `{subtype:"success", response:{mode:"auto"}}`, the next `system/init` read `auto`, and hello2.txt was written with no request; exit 0 after 19 s |
 | P303d | P14a on 2.1.303 (about 04:00): `drivers/p14-claude.mjs`, `ANTHROPIC_MODEL=haiku`, P14a's prompt | `p303d-claude-question-answer.jsonl` (also `testdata/probes`, 62 lines) | as P14a: `can_use_tool` `AskUserQuestion` with `requires_user_interaction:true`; the answers ("Rouge café ✓"; "Monday, Tuesday") came back in the tool result and the reply "Colour: Rouge café ✓. Days: Monday, Tuesday.", the non-ASCII label intact both ways; `get_context_usage` answered (1000000, "model-default"); exit 0 after 10 s |
 | P303e | [`drivers/p303-claude.mjs`](drivers/p303-claude.mjs) on 2.1.303 (about 04:15), `ANTHROPIC_MODEL=haiku`: the dashboard's arguments; the live gate's (d) and (c) prompts, a Write interrupted while its `can_use_tool` is pending (never answered), then a ping allowed and interrupted 3 s later; then "Reply with the single word ready." | `p303e-claude-interrupt-tool.jsonl` (also `testdata/probes`, 88 lines) | turn 1: the CLI cancelled the pending request (`control_cancel_request` with its `request_id`), and the tool result carries `tool_result_meta` `[{id, non_execution_kind:"user-rejected"}]` with no `permission_decision`; result `error_during_execution`; pending.txt not written. Turn 2: the same shape for the interrupted Bash call, result `error_during_execution`. Turn 3: "ready". Exit 0 after 14 s |
+| P22o | [`drivers/p22-claude.mjs`](drivers/p22-claude.mjs) on 2.1.303 (2026-10-21, about 18:51), `ANTHROPIC_MODEL=claude-opus-5-5`: the dashboard's arguments; one prompt that needs reasoning and no tool (the smallest number with the remainders 1 to 5 by 2 to 6) | `p22o-claude-opus-thinking.jsonl` (57 lines) | one turn, no tool asked: a main-thread thinking block of 8.0 s; six `system/thinking_tokens`, 50 to 850, the first 508 ms in, then every 1.0 to 1.6 s; the exact count 928 in the final `message_delta`, 967 ms after the block's stop; the answer 59. Also `system/hook_started` and `hook_response` (the owner's `SessionStart` hook) and a `system/post_turn_summary`. Exit 0 after 17 s |
+| P22s | [`drivers/p22-codex.mjs`](drivers/p22-codex.mjs) on 0.163.0 (about 18:52), `auto,detailed`: the dashboard's handshake and thread, `turn/start` with `summary`; two reasoning questions, no command or edit | `p22s-codex-reasoning-summary.jsonl` (124 lines) | both `turn/start` accepted; the reasoning items span 2,506 and 3,436 ms from `item/started` to `item/completed` (0 to 10 ms without summaries); `auto` no summary, `detailed` one heading ("**Computing f(10)**") 9 ms before its item completed; 28 and 36 reasoning tokens; the answers 24 and 89. Exit 0 after 17 s |
 
 Quota used: 7 short Claude Haiku turns and 2 subagent runs (P1 to P4, P3b; the
 results report a total of about USD 0.03 API-equivalent); 3 short Codex turns
@@ -278,6 +283,13 @@ project folders outside the repository. P303e (about 04:15) and, after the
 mapper fix, `TestLiveGate` again (about 04:18, PASS in 32.3 s, no
 unrecognised event): configuration PASS each time, `~/.claude.json` changed
 only in cache-state keys, 1 new session file each; no process left.
+
+P22o and P22s (2026-10-21, 18:51 to 18:52 local time, `drivers/hash-config.sh`
+before and after, as the approved proposal set): 21 of the 22 files
+identical; `~/.claude.json` rewritten at 18:51:38, during P22o, by its
+Claude Code. The check hashes only, so which of its keys changed is not
+known. Nothing was written in either work folder, and no process the drivers
+started was left.
 
 Not checked: the files the CLIs write by design for each session (Claude
 transcripts under `~/.claude/projects`, Codex rollouts under

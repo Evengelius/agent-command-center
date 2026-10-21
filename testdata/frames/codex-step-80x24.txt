@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                                                 ● LIVE
+ (project bar: the test's temporary directory)
+ A ◉ Turn 1                                               (inferred)   F6: tree
+╭─ B · CONVERSATION ─────────────────────────────────────────────── ⠋ Running ─╮
+│ ▎ with the single word done.                                                 │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│                                                                              │
+│ ▎ CODEX  gpt-5.6-sol  02:00                                                  │
+│ ▎                                                                            │
+│ ▎ ◡ Smoothing...  Model working · tokens after the step               00:01  │
+│ ▎ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ >  OpenAI Codex is processing your request…                                  │
+│   turn running: the draft waits · Ctrl+C interr…1 line · Ctrl+G draft window │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+│ no agents yet: they appear as the CLI starts them                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
+│ 5h ▱▱▱▱▱ 0%   7d ▱▱▱▱▱ 0%   ctx N/A   tok N/A   cost N/A   errors 0          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

@@ -216,23 +216,21 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 			cw = cardContent(cardResult, w)
 			out = append(out, crow{l: resultLabel(e), fr: fr})
 		}
-		if e.Text != "" || !e.Thinking {
-			// The answer, Markdown styled; a thinking block it had is not
-			// drawn once it ended (plan 20, the owner's section 11).
-			out = cardText(out, wc, fr, i, entryLines(s, e), cw, nil, nil, stText, true)
-			if e.Streaming {
-				if last := out[len(out)-1].content(); last.width() < cw {
-					out[len(out)-1] = crow{l: append(last, deco("▌", stText)), fr: fr}
-				} else {
-					out = append(out, crow{l: line{deco("▌", stText)}, fr: fr})
-				}
+		// The answer, Markdown styled; a thinking block it had is the thinking
+		// entry's (plan 22): a message with nothing else is not drawn (looks).
+		out = cardText(out, wc, fr, i, entryLines(s, e), cw, nil, nil, stText, true)
+		if e.Streaming {
+			if last := out[len(out)-1].content(); last.width() < cw {
+				out[len(out)-1] = crow{l: append(last, deco("▌", stText)), fr: fr}
+			} else {
+				out = append(out, crow{l: line{deco("▌", stText)}, fr: fr})
 			}
-		} else if e.Streaming { // a thinking block streaming, no text yet
-			out = append(out, crow{l: decoLine("∴ thinking", stGrey), fr: fr})
 		}
 		if k.result {
 			out = append(out, crow{l: resultEdge(w, false)})
 		}
+	case "thinking":
+		out = thoughtRows(s, ui, out, i, e, w, k, fr, focused)
 	case "tool":
 		// Drawn only when shown: a long session has thousands (test 11).
 		out = append(out, crow{fn: func() line { return callRow(s, ui, i, e, cw, k, focused) }, fr: fr, cursor: focused})
@@ -272,19 +270,37 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 	return out
 }
 
+// toolLeft is a tool row's left part: a cell, the status symbol, a cell and
+// the name (plan 20, Template 1's columns).
+func toolLeft(sym span, name line) line {
+	return append(line{deco(" ", stNone), sym, deco(" ", stNone)}, name...)
+}
+
+// toolRight is a tool row's right part: the outcome, then the origin in its
+// column, as wide as "observed" for the outcomes to align, or a cell alone.
+func toolRight(outcome line, origin string) line {
+	if origin != "" {
+		return append(append(line{}, outcome...), deco(fmt.Sprintf("  %8s ", origin), stGrey))
+	}
+	return append(append(line{}, outcome...), deco(" ", stNone))
+}
+
+// toolRoom is the room a tool row leaves its right part, in a row w cells wide.
+// The name stays whole, so a right part wider than this is cut. toolLine does
+// it; a phase's summary row asks the same question of the same parts (toolLeft,
+// toolRight, toolRoom) to drop its origin whole instead, so the rule is in one
+// place (plan 22, correction C9).
+func toolRoom(left line, w int) int { return w - left.width() - 2 }
+
 // toolLine lays out a tool row w cells wide on the tool rows' ground: the
 // status symbol, the name part padded to nameW, the detail cut to the room
 // left, and at the right the outcome and the origin (plan 20, Template 1's
 // columns).
 func toolLine(sym span, name, fail line, nameW int, detail line, path bool, outcome line, origin string, w int) line {
-	left := append(line{deco(" ", stNone), sym, deco(" ", stNone)}, name...)
-	right := append(append(line{}, outcome...), deco(" ", stNone))
-	if origin != "" { // its column, as wide as "observed", for the outcomes to align
-		right = append(append(line{}, outcome...), deco(fmt.Sprintf("  %8s ", origin), stGrey))
-	}
+	left, right := toolLeft(sym, name), toolRight(outcome, origin)
 	// The name stays whole: a right part too long for the row (the entry
 	// cursor's hint at 80 columns) is cut instead.
-	if room := w - left.width() - 2; right.width() > room {
+	if room := toolRoom(left, w); right.width() > room {
 		right = right.fit(max(room, 0))
 	}
 	// Then the target, in its column, and a failure's error after it ("· exit

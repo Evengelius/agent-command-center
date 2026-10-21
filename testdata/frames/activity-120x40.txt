@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                                         ● LIVE
+ (project bar: the test's temporary directory)
+╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ───────────────────────────────────────────────────────────── ⠋ Running ─╮
+│ claude-haiku-5-5 · or… ││                                                                                            │
+│ turn 1 · running 11s   ││ ▎ YOU  02:00                                                                               │
+│                        ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the       │
+│ STAGES  inferred from… ││ ▎ files in the current directory, write their names into a new file named found.txt with   │
+│ TURN 1  ◉ running · 1… ││ ▎ the Write tool, and report the names. Then tell me in one line what it found.            │
+│   Use the Agent tool … ││                                                                                            │
+│   •─ ⠋ Agent… observed ││ ────────────────────────────────────────────────────────────────────────────────────────── │
+│   ├─ ◉ agent… observed ││                                                                                            │
+│   │  └─ ⠋ Bash         ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                 │
+│   └─ ○ (more as event… ││ ▎  ▸ ✓ Thought for 2.8s · 719 thinking tokens                         02:00:05  observed   │
+│                        ││ ▎  ⠋ Agent  general-purpose · List directory files into found.txt   running 5s  observed   │
+│                        ││ ▎                                                                                          │
+│                        ││ ▎ ◠ Cooking...                                                                      00:10  │
+│                        ││ ▎ ◇ 1 subagent working                                                                     │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││                                                                                            │
+│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
+│                        ││ >  Claude Code is processing your request…                                                 │
+│ ↑↓ move ←→ fold Enter… ││   turn running: the draft waits · Ctrl+C interrupt            1 line · Ctrl+G draft window │
+╰────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
+│  ◉  general-purpose   haiku-5-5   running                                                                            │
+│     00:05   40.1k tok   tool: Bash ⠋                                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ D · QUOTA & TELEMETRY ─────────────────────────────────────────────── quota updated 10s ago · † undocumented field ─╮
+│ 5h ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 6%†  resets Mon 05:40   7d ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 4%†  resets Tue 11:00                        │
+│ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 3%† of 1M   +5 more                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

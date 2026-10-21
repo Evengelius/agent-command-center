@@ -15,16 +15,16 @@
 │                   │ 21      {"attention", 0xe0af68},                                                                                                                             │                   │
 │                   │ 22  }                                                                                                                                                        │:30:00      mock   │
 │                   │ 23                                                                                                                                                           │:30:00      mock   │
-│                   │ 24  // Find returns the colour called name, and whether there is one.                                                                                        │                   │
-│                   │ 25  func Find(name string) (Colour, bool) {                                                                                                                  │─────────────────╮ │
-│                   │ 26      for _, c := range palette {                                                                                                                          │                 │ │
-│                   │ 27          if strings.EqualFold(c.Name, name) {                                                                                                             │`.               │ │
-│                   │ 28              return c, true                                                                                                                               │                 │ │
+│                   │ 24  // Find returns the colour called name, and whether there is one.                                                                                        │:30:00      mock   │
+│                   │ 25  func Find(name string) (Colour, bool) {                                                                                                                  │                   │
+│                   │ 26      for _, c := range palette {                                                                                                                          │─────────────────╮ │
+│                   │ 27          if strings.EqualFold(c.Name, name) {                                                                                                             │                 │ │
+│                   │ 28              return c, true                                                                                                                               │`.               │ │
 │                   │ 29          }                                                                                                                                                │                 │ │
-│                   │ 30      }                                                                                                                                                    │─────────────────╯ │
-│                   │ 31      return Colour{}, false                                                                                                                               │                   │
-│                   │ 32  }                                                                                                                                                        │ntries · Esc back  │
-│                   │ 33                                                                                                                                                           │                   │
+│                   │ 30      }                                                                                                                                                    │                 │ │
+│                   │ 31      return Colour{}, false                                                                                                                               │─────────────────╯ │
+│                   │ 32  }                                                                                                                                                        │                   │
+│                   │ 33                                                                                                                                                           │ntries · Esc back  │
 │                   │ 34  // Hex is the colour as "#rrggbb".                                                                                                                       │                   │
 │                   │ 35▌ func (c Colour) Hex() string {                                                                                                                           │                   │
 │                   │ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                                                                                   │                   │

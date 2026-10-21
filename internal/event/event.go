@@ -128,11 +128,34 @@ type Delta struct {
 // Marker is the payload of MessageMarker.
 type Marker struct {
 	MessageID  string
-	Name       string // message_start, content_block_start, content_block_stop, message_delta, message_stop, item_started
+	Name       string // message_start, content_block_start, content_block_stop, message_delta, message_stop, item_started, item_completed, step_started
 	Block      string
 	Model      string
 	StopReason string
+	// Index is a content block's index in its message, on Claude Code's
+	// content_block_start and content_block_stop, so a block's stop finds
+	// its start (plan 22).
+	Index int `json:",omitempty"`
+	// Thinking is the message's exact thinking-token count, a message_delta's
+	// usage.output_tokens_details.thinking_tokens (Claude Code); HasThinking
+	// is false when the line has none (plan 22, C3).
+	Thinking    int64 `json:",omitempty"`
+	HasThinking bool  `json:",omitempty"`
 }
+
+// StepStarted names the marker of a model step's start: Codex reports a
+// reasoning item only once its reasoning ended, so its adapter infers when
+// each step began, from its items and its usage (plan 22, X5).
+const StepStarted = "step_started"
+
+// The thinking metrics (plan 22): Claude Code's live estimate of the open
+// thinking block, cumulative (system/thinking_tokens, C2), and a Codex
+// model step's reasoning tokens (thread/tokenUsage/updated
+// last.reasoningOutputTokens, X2), by thread.
+const (
+	ThinkingEstimate = "thinking.estimate"
+	ReasoningLast    = "reasoning.last"
+)
 
 // Completed is the payload of MessageCompleted.
 type Completed struct {

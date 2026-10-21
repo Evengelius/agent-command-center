@@ -67,8 +67,8 @@ func TestGoldenFrames(t *testing.T) {
 	codexDash := func(t *testing.T) *harness {
 		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "codex-subagents.jsonl")}})
 		h.settle()
-		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 177 {
-			t.Fatalf("codex dashboard: screen %q, %d events, want 177", s.Screen, len(s.Log))
+		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 182 { // 177 and the 5 steps Codex's adapter infers (plan 22)
+			t.Fatalf("codex dashboard: screen %q, %d events, want 182", s.Screen, len(s.Log))
 		}
 		return h
 	}

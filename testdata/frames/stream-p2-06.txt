@@ -1,16 +1,14 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
 ╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────────────── Idle ─╮
-│ claude-haiku-5-5 · or… ││ │ done                                                                                   │ │
-│ turn 3 · interrupted   ││ ╰────────────────────────────────────────────────────────────────────────────────────────╯ │
+│ claude-haiku-5-5 · or… ││                                                                                            │
+│ turn 3 · interrupted   ││                                                                                            │
 │                        ││                                                                                            │
-│ STAGES  inferred from… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│ TURN 1  ✓ completed ·… ││                                                                                            │
-│ TURN 2  ✓ completed ·… ││ ▎ YOU  02:00                                                                               │
-│ TURN 3  ○ interrupted… ││ ▎ Reply with the single word: again                                                        │
+│ STAGES  inferred from… ││ ▎ YOU  02:00                                                                               │
+│ TURN 1  ✓ completed ·… ││ ▎ Reply with the single word: again                                                        │
+│ TURN 2  ✓ completed ·… ││                                                                                            │
+│ TURN 3  ○ interrupted… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
 │   Count from 1 to 300… ││                                                                                            │
-│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││                                                                                            │
 │                        ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                 │
 │                        ││ ▎ again                                                                                    │
 │                        ││                                                                                            │
@@ -22,6 +20,8 @@
 │                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
 │                        ││                                                                                            │
 │                        ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                 │
+│                        ││ ▎  ▸ ✗ Thinking interrupted after 0.2s                                02:00:12  observed   │
+│                        ││ ▎                                                                                          │
 │                        ││ ▎ 1                                                                                        │
 │                        ││ ▎ · [Request interrupted by user]                                                          │
 │                        ││                                                                                            │

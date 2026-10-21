@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                                                 ● LIVE
+ (project bar: the test's temporary directory)
+ A ◉ Turn 1 › ◉ general-purpose                           (inferred)   F6: tree
+╭─ B · CONVERSATION ─────────────────────────────────────────────── ⠋ Running ─╮
+│                                                                              │
+│                                                                              │
+│ ▎ CLAUDE  Haiku 5.5  02:00                                                   │
+│ ▎  ▸ ✓ Thought for 2.8s · 719 thinking tokens           02:00:05  observed   │
+│ ▎  ⠋ Agent  general-purpose · List directory files …  running 5s  observed   │
+│ ▎                                                                            │
+│ ▎ ◠ Cooking...                                                        00:10  │
+│ ▎ ◇ 1 subagent working                                                       │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ >  Claude Code is processing your request…                                   │
+│   turn running: the draft waits · Ctrl+C interr…1 line · Ctrl+G draft window │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
+│  ◉ general-purpose haiku-5-5   Bash                           5s   40.1k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
+│ 5h ▱▱▱▱▱ 6%†   7d ▱▱▱▱▱ 4%†   ctx 3%†   tok N/A   cost N/A   errors 0        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

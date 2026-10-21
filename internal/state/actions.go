@@ -161,6 +161,10 @@ func (s *State) Do(a Action) []Command {
 	case ForceStop:
 		if s.Turn.Phase == Interrupting {
 			s.Turn.Phase, s.Turn.Outcome, s.Turn.ForceStopOffered = Idle, "interrupted", false
+			// No turn end will come: a live thinking phase ends here, interrupted,
+			// at the last event's time, so no card animates past the turn (plan
+			// 22, criterion 1.6).
+			s.endThoughts(time.Time{}, "interrupted")
 			if s.Session.Phase == Ready {
 				s.Session.Phase = Closing
 			}
@@ -299,6 +303,11 @@ func (s *State) send(a Send) []Command {
 		return nil
 	}
 	s.Turn.SlashHeld = ""
+	// The turn is Idle: a phase still live is one that began outside any turn
+	// and that no turn end will ever close. It ends here, at the last event's
+	// time, its end inferred, so no card is left animating past this prompt
+	// (plan 22, correction C3).
+	s.endThoughts(time.Time{}, "")
 	s.Turn.Phase, s.Turn.Count, s.Turn.Outcome, s.Turn.Notice, s.Turn.ByCLI = Submitted, s.Turn.Count+1, "", "", false
 	return []Command{{Kind: CmdWrite, Text: a.Text}}
 }

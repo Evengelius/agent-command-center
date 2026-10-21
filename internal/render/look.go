@@ -23,45 +23,79 @@ const (
 
 // look is how zone B draws one entry, besides the entry itself.
 type look struct {
-	head   bool     // the speaker's label row above it: its exchange's first message or call
-	result bool     // the RESULT box around it: its exchange's last message, completed
-	hidden bool     // no row of its own: a folded call, or a thinking mark that ended
-	fold   int      // > 0: it draws its run's fold row, for this many calls
-	end    int      // with fold: the first entry after the calls it folds
-	open   bool     // its run is expanded
-	run    string   // the key of the folding run of calls it is in; "" for none
-	first  int      // that run's first entry, the one drawing its fold row
-	card   cardKind // the block it is drawn in (plan 20)
-	sep    bool     // a new message: a rule above it, a blank row on each side (amendment 17)
-	gap    bool     // a blank row above it: the result's box, or a part of its message
-	inner  bool     // with gap: the row is the block's, between two of its parts
-	top    bool     // a blank row above it: the conversation's first entry drawn
-	tail   bool     // a blank row after it: the conversation's last entry drawn
-	nameW  int      // its group of tool rows' name column, for their targets to align
+	head    bool       // the speaker's label row above it: its exchange's first message or call
+	result  bool       // the RESULT box around it: its exchange's last message, completed
+	hidden  bool       // no row of its own: a folded call, a thinking mark, a thinking step not drawn
+	fold    int        // > 0: it draws its run's fold row, for this many calls
+	end     int        // with fold: the first entry after the calls it folds
+	open    bool       // its run is expanded
+	run     string     // the key of the folding run of calls it is in; "" for none
+	first   int        // that run's first entry, the one drawing its fold row
+	card    cardKind   // the block it is drawn in (plan 20)
+	sep     bool       // a new message: a rule above it, a blank row on each side (amendment 17)
+	gap     bool       // a blank row above it: the result's box, or a part of its message
+	inner   bool       // with gap: the row is the block's, between two of its parts
+	top     bool       // a blank row above it: the conversation's first entry drawn
+	tail    bool       // a blank row after it: the conversation's last entry drawn
+	nameW   int        // its group of tool rows' name column, for their targets to align
+	think   thinkStage // a thinking entry's stage: its live card, its exit, its summary row (plan 22)
+	size    int        // the live card's rows by zone B's room: 7, 5 or 2 (plan 22, design 2)
+	details bool       // a phase's summary row with its details open under it (plan 22, design 8)
 }
+
+// The shape's bits besides its flags and its card (plan 22): a thinking
+// entry's live card or exit, and a phase's details open; the row cache counts
+// such an entry every frame.
+const (
+	shapeAnim    uint16 = 1 << 8
+	shapeDetails uint16 = 1 << 9
+)
 
 // shape is what of a look changes the entry's row count, for the cache.
 func (k look) shape() uint16 {
-	b := uint16(k.card) << 8
+	b := uint16(k.card) << 12
 	for i, on := range []bool{k.head, k.result, k.hidden, k.fold > 0, k.gap, k.sep, k.top, k.tail} {
 		if on {
 			b |= 1 << i
 		}
+	}
+	if k.think == thinkLive || k.think == thinkExit || k.think == thinkSettle {
+		b |= shapeAnim
+	}
+	if k.details {
+		b |= shapeDetails
 	}
 	return b
 }
 
 // looks is each conversation entry's look.
 func looks(s *state.State, ui UI) []look {
+	out, _ := lookAll(s, ui)
+	return out
+}
+
+// lookAll is looks, and whether the activity line follows the conversation
+// (plan 22, design 9): then the last entry drawn has no blank row of its own,
+// the line ends with it.
+func lookAll(s *state.State, ui UI) ([]look, bool) {
 	conv := s.Conversation
 	out := make([]look, len(conv))
-	// A thinking block that ended is not drawn: only one streaming without
-	// text yet shows, as "∴ thinking" (plan 20, the owner's section 11).
+	// A thinking entry is drawn by its stage (plan 22, design 1); an assistant
+	// entry with nothing but a thinking block is never drawn: plan 20's "∴
+	// thinking" gave way to the thinking entry's card (plan 22, design 1).
 	for i, e := range conv {
-		out[i].hidden = thinkingMark(e) && !e.Streaming
+		if e.Role != "thinking" {
+			out[i].hidden = thinkingMark(e)
+			continue
+		}
+		k := &out[i]
+		k.think = thoughtStage(ui, e)
+		k.hidden = k.think == thinkHidden
+		k.details = k.think == thinkSummary && len(ui.Unfolded) > 0 && ui.Unfolded[ThoughtKey(e)]
 	}
-	// Runs of tool calls: consecutive calls, with the thinking marks between
-	// two of them, which are not drawn.
+	// Runs of tool calls: consecutive calls, with the thinking marks and the
+	// thinking entries between two of them; those are folded with the calls
+	// (plan 22, criterion 2.12).
 	for i := 0; i < len(conv); {
 		if conv[i].Role != "tool" {
 			i++
@@ -71,19 +105,18 @@ func looks(s *state.State, ui UI) []look {
 		for ; j < len(conv); j++ {
 			if conv[j].Role == "tool" {
 				calls, last = append(calls, j), j
-			} else if !thinkingMark(conv[j]) {
+			} else if !thinkingMark(conv[j]) && conv[j].Role != "thinking" {
 				break
 			}
-		}
-		for k := i; k < last; k++ {
-			out[k].hidden = thinkingMark(conv[k])
 		}
 		if len(calls) >= foldFrom {
 			key := runKey(conv[i])
 			open, cut := ui.Unfolded[key], calls[len(calls)-foldKeep]
 			for k := i; k <= last; k++ {
 				out[k].run, out[k].first, out[k].open = key, i, open
-				if !open && k < cut {
+				// A card live or in its exit is never folded away (plan 22,
+				// design 1): only a phase that ended folds with the calls.
+				if !open && k < cut && out[k].think != thinkLive && out[k].think != thinkExit {
 					out[k].hidden = true
 				}
 			}
@@ -101,7 +134,18 @@ func looks(s *state.State, ui UI) []look {
 		}
 	}
 	cards(s, out)
-	return out
+	// The activity line, once its condition (ActivityOn: the turn works with no
+	// card live or in its exit) has held for 200 ms (plan 22, correction C6).
+	act := ActivityOn(s, ui) && activityDue(ui)
+	if act {
+		for i := len(out) - 1; i >= 0; i-- {
+			if out[i].tail {
+				out[i].tail = false
+				break
+			}
+		}
+	}
+	return out, act
 }
 
 // exchange marks the speaker's label, RESULT and the cards in entries [a,
@@ -120,7 +164,9 @@ func exchange(s *state.State, out []look, a, b int, undone []int) {
 	head, msg := -1, -1
 	for k := a; k < b; k++ {
 		e := conv[k]
-		if (e.Role == "assistant" || e.Role == "tool") && head < 0 && (!out[k].hidden || out[k].fold > 0) {
+		// A thinking entry is the CLI's part of the exchange, never its RESULT
+		// (plan 22, design 1).
+		if (e.Role == "assistant" || e.Role == "tool" || e.Role == "thinking") && head < 0 && (!out[k].hidden || out[k].fold > 0) {
 			head = k
 		}
 		if e.Role == "assistant" && e.Text != "" {
@@ -212,15 +258,18 @@ func agentsDone(undone []int, from, last int) bool {
 func cards(s *state.State, out []look) {
 	prev := -1 // the last entry drawn
 	group := []int{}
+	role, card := "", cardNone // the group's kind of rows, and its card
 	flush := func() {
 		w := 0
 		for _, k := range group {
-			w = max(w, nameWidth(s, s.Conversation[k]))
+			if out[k].think == thinkNone { // a phase's summary has no name column
+				w = max(w, nameWidth(s, s.Conversation[k]))
+			}
 		}
 		for _, k := range group {
 			out[k].nameW = min(w, 32)
 		}
-		group = group[:0]
+		group, role = group[:0], ""
 	}
 	for i, e := range s.Conversation {
 		k := &out[i]
@@ -240,21 +289,30 @@ func cards(s *state.State, out []look) {
 			// Inside the CLI's part, narration, a group of tool rows and a
 			// request waiting in its box are a row apart (plan 20, the owner's
 			// section 7.3): the row is the block's, its bar.
-			if a, b := part(s, s.Conversation[p]), part(s, e); k.card == cardAI && (a != b || b == partBox) {
+			if a, b := part(s, s.Conversation[p], out[p]), part(s, e, *k); k.card == cardAI && (a != b || b == partBox) {
 				k.gap, k.inner = true, true
 			}
 		}
 		prev = i
 		switch {
 		case k.fold > 0 && k.hidden: // a folded run's row: no name column, the group goes on
+		case k.think == thinkSummary || k.think == thinkSettle:
+			// A phase's summary row is one of the group's rows, the calls on
+			// each side of it aligned (plan 22, design 8).
+			if len(group) > 0 && card != k.card {
+				flush()
+			}
+			card = k.card
+			group = append(group, i)
 		case !asToolRow(s, e):
 			flush()
 		default:
 			// A group is one card's rows of one kind: calls align with calls,
 			// requests ("general-purpose · Bash") with requests.
-			if len(group) > 0 && (out[group[0]].card != k.card || s.Conversation[group[0]].Role != e.Role) {
+			if len(group) > 0 && (card != k.card || role != "" && role != e.Role) {
 				flush()
 			}
+			role, card = e.Role, k.card
 			group = append(group, i)
 		}
 	}
@@ -267,14 +325,18 @@ func cards(s *state.State, out []look) {
 // The parts of the CLI's card, for the rows between them.
 const (
 	partText  = iota // narration, notes, errors
-	partTools        // tool rows, a fold's row
-	partBox          // a request waiting for the owner, in its box
+	partTools        // tool rows, a fold's row, a phase's summary row
+	partBox          // a request waiting for the owner, in its box; a thinking card
 )
 
-// part is which part of a card entry e draws.
-func part(s *state.State, e state.Entry) int {
+// part is which part of a card entry e, drawn with its look k, draws: a
+// thinking entry's live card and exit are a box, its summary row a tool row
+// (plan 22, designs 2 and 8).
+func part(s *state.State, e state.Entry, k look) int {
 	switch {
-	case asToolRow(s, e):
+	case k.think == thinkLive || k.think == thinkExit:
+		return partBox
+	case k.think == thinkSummary || k.think == thinkSettle || asToolRow(s, e):
 		return partTools
 	case e.Role == "approval":
 		return partBox
@@ -307,7 +369,8 @@ func nameWidth(s *state.State, e state.Entry) int {
 	return textWidth(name)
 }
 
-// thinkingMark is an assistant entry with nothing but its thinking mark.
+// thinkingMark is an assistant entry with nothing but a thinking block: not
+// drawn, the thinking entry draws the phase (plan 22, design 1).
 func thinkingMark(e state.Entry) bool {
 	return e.Role == "assistant" && e.Text == "" && e.Thinking
 }
@@ -322,12 +385,13 @@ func runKey(e state.Entry) string {
 
 // Targets says, for each conversation entry, whether zone B's entry cursor
 // stops on it: an entry B shows in part, or a folded run's row; never a
-// folded call (plan 19).
+// folded call (plan 19); a phase of thinking on its summary row only, never
+// on its live card or its exit (plan 22, design 8).
 func Targets(s *state.State, ui UI) []bool {
 	lk := looks(s, ui)
 	out := make([]bool, len(lk))
 	for i, k := range lk {
-		out[i] = k.fold > 0 && k.hidden || !k.hidden && Expandable(s.Conversation[i])
+		out[i] = k.fold > 0 && k.hidden || !k.hidden && (k.think == thinkNone || k.think == thinkSummary) && Expandable(s.Conversation[i])
 	}
 	return out
 }

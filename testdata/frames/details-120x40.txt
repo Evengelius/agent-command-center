@@ -22,7 +22,7 @@
  quota.5h            35%†  · rate_limit_event.unifiedWindows 0s ago
  quota.7d            47%†  · rate_limit_event.unifiedWindows 0s ago
  quota.status        allowed  · rate_limit_event 0s ago
- thinking.estimate   343 tokens†  · system/thinking_tokens 0s ago
+ thinking.estimate   343 tokens  · system/thinking_tokens 0s ago
  tokens.session      159,362 tokens  · result.modelUsage (running total, subagents included) 0s ago
  tokens.turn         35,443 tokens  · result.usage 0s ago
 

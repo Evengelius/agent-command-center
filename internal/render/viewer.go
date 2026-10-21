@@ -164,13 +164,16 @@ const (
 
 // Expandable reports whether conversation entry e has more than B shows: a
 // sent message folded to its first lines, a tool call (B shows its name), an
-// error (B shows its first line, cut to the width).
+// error (B shows its first line, cut to the width), a phase of thinking that
+// ended (B shows its summary; plan 22, design 8).
 func Expandable(e state.Entry) bool {
 	switch e.Role {
 	case "user":
 		return len(entryLines(nil, e)) > foldOver
 	case "tool", "error", "review":
 		return true
+	case "thinking":
+		return thoughtShown(e.Thought)
 	}
 	return false
 }
@@ -192,6 +195,8 @@ func entryViewer(s *state.State, ui UI, i int, sc *Screen) []line {
 		}
 	case "tool":
 		head, body = toolView(s, ui, e, back, w)
+	case "thinking":
+		head, body = thoughtView(e, back, w)
 	case "review":
 		head = line{back, deco("◈ AUTO-REVIEW [UNSTABLE]", stBold), deco("  "+clockSec(e.At), stGrey)}
 		for _, l := range strings.Split(e.Text, "\n") {
@@ -253,12 +258,32 @@ func toolView(s *state.State, ui UI, e state.Entry, back span, w int) (line, []l
 func entryFooter(s *state.State, ui UI) string {
 	// On a run of calls: its row expands it, the calls of an expanded one
 	// fold it (plan 19).
-	if _, _, open, folded, ok := FoldOf(s, ui, ui.Entry); folded {
+	_, _, open, folded, ok := FoldOf(s, ui, ui.Entry)
+	if folded {
 		return "Enter or → expand · ↑↓ entries · Esc back to the input · F1 keys"
-	} else if ok && open {
+	}
+	if i := ui.Entry - 1; i >= 0 && i < len(s.Conversation) && s.Conversation[i].Role == "thinking" {
+		// A phase's summary row: → opens its details, ← folds them (plan 22,
+		// design 8), then its run of calls.
+		return strings.Replace(entryKeys, "↑↓ entries", thoughtKeys(ui.Unfolded[ThoughtKey(s.Conversation[i])], ok && open)+"↑↓ entries", 1)
+	}
+	if ok && open {
 		return strings.Replace(entryFooterFor(s, ui), "↑↓ entries", "← fold · ↑↓ entries", 1)
 	}
 	return entryFooterFor(s, ui)
+}
+
+// thoughtKeys are the keys a summary row adds before "↑↓ entries": ← folds
+// its details when open, → opens them, then ← folds its run of calls when it
+// is in an expanded one (plan 22, design 8).
+func thoughtKeys(details, run bool) string {
+	switch {
+	case details:
+		return "← fold · "
+	case run:
+		return "→ details · ← fold · "
+	}
+	return "→ details · "
 }
 
 // entryFooterFor is the key hints for the entry under the cursor.

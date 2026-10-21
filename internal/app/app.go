@@ -114,6 +114,7 @@ const (
 	CloseTimeout     = 5 * time.Second
 	KillGrace        = 5 * time.Second // after the forced kill, leave anyway
 	spinnerEvery     = 100 * time.Millisecond
+	animEvery        = 50 * time.Millisecond // ASM-18, 20 frames a second while the thinking card animates (plan 22)
 	clockEvery       = time.Second
 	maxDrain         = 512 // events applied per screen update
 )
@@ -173,6 +174,7 @@ type Model struct {
 	locking bool
 
 	spinning, clocking bool
+	framing            bool // an animMsg is pending (plan 22)
 
 	pasting  bool // between a paste's start and end markers
 	toastGen int  // the toast on screen; an older timer leaves it
@@ -200,6 +202,7 @@ type (
 	pasteMsg   struct{ text string }
 	toastMsg   struct{ text string }
 	spinMsg    struct{}
+	animMsg    struct{} // a frame of zone B's thinking card, every animEvery (plan 22)
 	clockMsg   struct{}
 	leaveMsg   struct{}
 	refreshMsg struct{ err error }
@@ -382,6 +385,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinMsg:
 		m.spinning = false
 		m.ui.Spinner++
+	case animMsg:
+		// A frame of the thinking card: ui.Now, set above, is all it changes. It
+		// never counts the 100 ms spinner (plan 22, criterion 3.1).
+		m.framing = false
 	case clockMsg:
 		m.clocking = false
 		cmds = append(cmds, m.do(state.Tick{At: m.ui.Now})...)
@@ -399,6 +406,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	cmds = append(cmds, m.lockSync()...)
 	m.syncUI()
+	m.markLive()
+	m.markActivity()
 	cmds = append(cmds, m.timers()...)
 	cmds = append(cmds, m.draftChanged()...)
 	return m, tea.Batch(cmds...)
@@ -430,6 +439,45 @@ func (m *Model) syncUI() {
 	m.ui.Worktrees = m.worktreesView()
 }
 
+// markLive records in ui.Live the thinking phases of the last exchange that
+// are live now, by their ID (plan 22, design 7): only a phase an update
+// left running was drawn live, so only it plays its exit; one that began and
+// ended inside a single update (a replay, a resume) is never marked and shows
+// as its summary row at once. A mark is never removed. The live phases are in
+// the current exchange, so the scan from the end stops at the owner's prompt.
+func (m *Model) markLive() {
+	conv := m.s.Conversation
+	for i := len(conv) - 1; i >= 0; i-- {
+		e := &conv[i]
+		if e.Role == "user" {
+			return
+		}
+		if e.Role == "thinking" && e.Streaming && e.Thought != nil && !m.ui.Live[uint64(e.Thought.ID)] {
+			if m.ui.Live == nil {
+				m.ui.Live = map[uint64]bool{}
+			}
+			m.ui.Live[uint64(e.Thought.ID)] = true // by its ID, unique across a resume
+		}
+	}
+}
+
+// markActivity notes in ui.ActivitySince when the activity line's condition
+// began, by the function the drawing uses (render.ActivityOn), and clears it
+// when the condition does not hold: the line is drawn once the condition has
+// held 200 ms, so the short gaps between a response and the next card, or
+// before a turn's end, never show it. It runs after markLive, whose marks the
+// condition reads, and before the timers, which ask for the line's frames. No
+// timer of its own: the 100 ms spinner, which runs while a turn is under way,
+// draws the line when it is due (plan 22, correction C6).
+func (m *Model) markActivity() {
+	switch {
+	case !render.ActivityOn(m.s, m.ui):
+		m.ui.ActivitySince = time.Time{}
+	case m.ui.ActivitySince.IsZero():
+		m.ui.ActivitySince = m.ui.Now
+	}
+}
+
 // animating reports whether a spinner is on screen.
 func (m *Model) animating() bool {
 	switch m.s.Startup.Phase {
@@ -447,13 +495,21 @@ func (m *Model) animating() bool {
 	return false
 }
 
-// timers schedules the spinner while something animates and the clock while
-// the dashboard shows elapsed times; an idle startup screen schedules nothing.
+// timers schedules the spinner while something animates, a frame every 50 ms
+// while zone B's thinking card does (ASM-18, 20 frames a second; plan 22), and
+// the clock while the dashboard shows elapsed times; an idle dashboard or
+// startup screen schedules no frame.
 func (m *Model) timers() []tea.Cmd {
 	var cmds []tea.Cmd
 	if !m.spinning && m.animating() {
 		if c := m.opt.After(spinnerEvery, spinMsg{}); c != nil {
 			m.spinning = true
+			cmds = append(cmds, c)
+		}
+	}
+	if !m.framing && render.Animating(m.s, m.ui) {
+		if c := m.opt.After(animEvery, animMsg{}); c != nil {
+			m.framing = true
 			cmds = append(cmds, c)
 		}
 	}

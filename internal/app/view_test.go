@@ -247,14 +247,17 @@ func TestEntryViewer(t *testing.T) {
 			p := entryAt(s, func(e state.Entry) bool { return e.Role == "user" && strings.Count(e.Text, "\n") == 199 })
 			tool := entryAt(s, func(e state.Entry) bool { return e.Role == "tool" && e.Text == "Write" })
 			fail := entryAt(s, func(e state.Entry) bool { return e.Role == "error" })
-			var exp []int // P2's expandable entries: the Write, its third turn's failure, the paste
+			// P2's third turn thought before the interrupt: its summary row is a
+			// stop of the cursor too (plan 22, design 8).
+			thought := entryAt(s, func(e state.Entry) bool { return e.Role == "thinking" })
+			var exp []int // P2's expandable entries: the Write, the thought, its third turn's failure, the paste
 			for i, e := range s.Conversation {
 				if render.Expandable(e) {
 					exp = append(exp, i+1)
 				}
 			}
-			if !reflect.DeepEqual(exp, []int{tool, fail, p}) || tool == 0 {
-				t.Fatalf("expandable %v, want the Write, the failure and the paste", exp)
+			if !reflect.DeepEqual(exp, []int{tool, thought, fail, p}) || tool == 0 || thought == 0 {
+				t.Fatalf("expandable %v, want the Write, the thought, the failure and the paste", exp)
 			}
 			rows := h.m.screen.Conv.Rows
 
@@ -271,16 +274,24 @@ func TestEntryViewer(t *testing.T) {
 				t.Fatalf("↑↑: entry %d, want the failure at %d:\n%s", h.m.ui.Entry, fail, f)
 			}
 			h.draw(key(tea.KeyUp, 0))
+			if f := h.frame(); h.m.ui.Entry != thought || !rowWith(f, "✗ Thinking interrupted", "Enter full view · → details") {
+				t.Fatalf("↑↑↑: entry %d, want the thought at %d:\n%s", h.m.ui.Entry, thought, f)
+			}
+			h.draw(key(tea.KeyUp, 0))
 			if f := h.frame(); h.m.ui.Entry != tool || !rowWith(f, "▸ ✓ Write", "Enter full view") {
-				t.Fatalf("↑↑↑: entry %d, want the Write at %d:\n%s", h.m.ui.Entry, tool, f)
+				t.Fatalf("↑↑↑↑: entry %d, want the Write at %d:\n%s", h.m.ui.Entry, tool, f)
 			}
 			h.draw(key(tea.KeyUp, 0)) // nothing older to expand: it stays
 			if h.m.ui.Entry != tool {
 				t.Errorf("↑ at the oldest: entry %d, want %d", h.m.ui.Entry, tool)
 			}
 			h.draw(key(tea.KeyDown, 0))
+			if h.m.ui.Entry != thought {
+				t.Errorf("↓: entry %d, want %d", h.m.ui.Entry, thought)
+			}
+			h.draw(key(tea.KeyDown, 0))
 			if h.m.ui.Entry != fail {
-				t.Errorf("↓: entry %d, want %d", h.m.ui.Entry, fail)
+				t.Errorf("↓↓: entry %d, want %d", h.m.ui.Entry, fail)
 			}
 			h.draw(key(tea.KeyEnter, 0))
 			want := strings.Split(s.Conversation[fail-1].Text, "\n")
@@ -341,7 +352,8 @@ func TestEntryViewer(t *testing.T) {
 			if h.m.ui.ViewEntry != 0 || h.m.ui.Entry != p {
 				t.Errorf("→: view %d, entry %d; want no view, the cursor kept on %d", h.m.ui.ViewEntry, h.m.ui.Entry, p)
 			}
-			h.draw(key(tea.KeyUp, 0)) // the failure, then the Write
+			h.draw(key(tea.KeyUp, 0)) // the failure, the thought, then the Write
+			h.draw(key(tea.KeyUp, 0))
 			h.draw(key(tea.KeyUp, 0))
 			h.draw(key(tea.KeyEnter, 0))
 			if tc := s.Tools[s.Conversation[tool-1].MessageID]; !strings.HasPrefix(tc.Output, "File created successfully at: ") {
@@ -384,10 +396,15 @@ func TestEntryViewer(t *testing.T) {
 				t.Fatalf("↑ to the failure: not in view:\n%s", f)
 			}
 			h.draw(key(tea.KeyUp, 0))
+			if f := h.frame(); !rowWith(f, "✗ Thinking interrupted", "Enter full view") {
+				t.Fatalf("↑ to the thought: not in view:\n%s", f)
+			}
+			h.draw(key(tea.KeyUp, 0))
 			if f := h.frame(); !rowWith(f, "▸ ✓ Write", "Enter full view") {
 				t.Fatalf("↑ to the Write: not in view:\n%s", f)
 			}
-			h.draw(key(tea.KeyDown, 0)) // back over the failure
+			h.draw(key(tea.KeyDown, 0)) // back over the thought and the failure
+			h.draw(key(tea.KeyDown, 0))
 			for k := 1; k <= n; k++ {
 				h.draw(key(tea.KeyDown, 0))
 				if f := h.frame(); !rowWith(f, "▎▸", fmt.Sprintf("… %d more lines", 16+k), "Enter full view") {

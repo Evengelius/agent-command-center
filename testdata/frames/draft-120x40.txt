@@ -1,13 +1,13 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
 ╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ────────────────────────────────────────────────────────────────── Idle ─╮
-│ claude-haiku-5-5 · or… ││                                                                                            │
-│ turn 2 · c╭─ Draft ──────────────────────────────────────────────────────────────────────────── 7 lines ─╮           │
-│           │ > Review the colour palette in sample/viewer.go:                                             │    mock   │
+│ claude-haiku-5-5 · or… ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                 │
+│ turn 2 · c╭─ Draft ──────────────────────────────────────────────────────────────────────────── 7 lines ─╮    mock   │
+│           │ > Review the colour palette in sample/viewer.go:                                             │           │
 │ STAGES  in│                                                                                              │           │
 │ TURN 1  ✓ │   1. keep the five accents of the reference screen;                                          │           │
 │ TURN 2  ✓ │   2. check each one against the dark background;                                             │           │
-│   started │   3. report any pair under 4.5:1, with its hex values.                                       │           │
+│   started │   3. report any pair under 4.5:1, with its hex values.                                       │    mock   │
 │           │                                                                                              │    mock   │
 │           │   Do not change the file yet.                                                                │    mock   │
 │           │                                                                                              │           │

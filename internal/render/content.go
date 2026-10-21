@@ -15,8 +15,17 @@ import (
 // and never part of them. Step 8's Markdown renderer draws these same lines,
 // styled, so selection and copy do not change with it. A failed tool call
 // adds its error as a second line, drawn on the same row (plan 5, item 6).
+// A phase of thinking that ended is its summary, then its details, drawn
+// when open; a live card and a step that left no row have none: the card is
+// decoration (plan 22, design 8).
 func entryLines(s *state.State, e state.Entry) []string {
 	switch e.Role {
+	case "thinking":
+		if !thoughtShown(e.Thought) {
+			return nil
+		}
+		text, _, _, _ := thoughtSummary(e.Thought)
+		return append([]string{text}, thoughtDetails(e.Thought)...)
 	case "tool":
 		name, _, _ := strings.Cut(e.Text, "\n")
 		if err := toolError(s, e); err != "" {
@@ -206,9 +215,11 @@ type entryCount struct {
 }
 
 // rowCount is entry i's row count, from count when not cached. Streaming
-// entries and approval cards change between frames and are always counted.
+// entries and approval cards change between frames and are always counted;
+// so are a thinking card, its exit and a phase's details open, which change
+// with the frame's time or a count come later (plan 22, design 6).
 func (c *WrapCache) rowCount(i int, e state.Entry, w int, shape uint16, count func() int) int {
-	if c == nil || e.Streaming || e.Role == "approval" {
+	if c == nil || e.Streaming || e.Role == "approval" || shape&(shapeAnim|shapeDetails) != 0 {
 		return count()
 	}
 	if i < len(c.counts) {

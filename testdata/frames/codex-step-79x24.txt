@@ -1,0 +1,24 @@
+ Terminal too small: 80x24 needed, now 79x24
+ (project bar: the test's temporary directory)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -444,7 +444,7 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	if len(shown) < room {
 		shown = append(shown, blank(0, room-len(shown))...)
 	}
-	if n := len(s.Conversation) - ui.ConvSeen; ui.ConvHold && n > 0 && room > 0 {
+	if n := NewShown(s, ui.ConvSeen); ui.ConvHold && n > 0 && room > 0 {
 		// The badge takes the right end of the last row only; the row's start
 		// stays, cut before it (plan 6, item 2).
 		shown[room-1] = spread(trimTail(shown[room-1]), decoLine(fmt.Sprintf("↓ %d new", n), stProgress), inner)
@@ -457,20 +457,42 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	return box('B', zoneTitle("B · CONVERSATION", focused), right, body, w, h, borderFor(focused))
 }
 
-// conversation is the orchestrator's record, then the session's state: the
-// rows in view, at most room from top, and the count of all rows. It follows
-// the end unless the owner scrolled up. Only the entries in view are drawn;
-// the others are counted, from the cache once finished (test 11).
+// NewShown counts the entries from seen on that zone B draws: a Codex step
+// that did not reason leaves no row, and is no news (plan 22, the review). It
+// is the "↓ N new" badge's count, and the application reveals an entry by it
+// (correction C10).
+func NewShown(s *state.State, seen int) int {
+	n := 0
+	for _, e := range s.Conversation[min(max(seen, 0), len(s.Conversation)):] {
+		if e.Role != "thinking" || e.Thought == nil || !e.Thought.Dropped {
+			n++
+		}
+	}
+	return n
+}
+
+// conversation is the orchestrator's record, then the activity line while
+// the turn works (plan 22, design 9), then the session's state: the rows in
+// view, at most room from top, and the count of all rows. It follows the end
+// unless the owner scrolled up. Only the entries in view are drawn; the
+// others are counted, from the cache once finished (test 11). A thinking
+// card's size follows room (plan 22, design 2).
 func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top int, starts []int) {
-	lk := looks(s, ui)
+	lk, act := lookAll(s, ui)
+	size := cardSize(room)
 	starts = make([]int, len(s.Conversation)+1)
 	for i, e := range s.Conversation {
+		lk[i].size = size
 		rows += ui.Wrap.rowCount(i, e, w, lk[i].shape(), func() int { return len(entryRows(s, ui, nil, i, e, w, lk[i])) })
 		starts[i+1] = rows
 	}
 	counts := func(i int) int { return starts[i+1] - starts[i] }
+	var activity []crow
+	if act {
+		activity = activityRows(s, ui, w, lk)
+	}
 	tail := sessionState(s, ui, w)
-	rows += len(tail)
+	rows += len(activity) + len(tail)
 	top = max(rows-room, 0)
 	if ui.ConvHold {
 		top = min(max(ui.ConvTop, 0), top)
@@ -485,6 +507,12 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 			view = append(view, rs[min(max(top-at, 0), len(rs)):min(end-at, len(rs))]...)
 		}
 		at += counts(i)
+	}
+	for _, c := range activity {
+		if at >= top && at < end {
+			view = append(view, c)
+		}
+		at++
 	}
 	for _, l := range tail {
 		if at >= top && at < end {
@@ -705,11 +733,18 @@ func clock(t time.Time) string {
 	return t.Local().Format("15:04")
 }
 
+// placeholder is the empty draft's grey text: while a turn runs, that the
+// CLI works on the request (plan 22, design 10, the owner's image 1).
 func placeholder(s *state.State) string {
-	if s.Session.Phase == state.Ready {
-		return "Ask " + s.Context.ProviderName + " anything…"
+	switch {
+	case s.Session.Phase != state.Ready:
+		return ""
+	case s.Turn.Phase != state.Idle:
+		// Any turn under way, a request waiting or an interrupt asked for
+		// included: sending is refused until it ends (plan 22, the review).
+		return s.Context.ProviderName + " is processing your request…"
 	}
-	return ""
+	return "Ask " + s.Context.ProviderName + " anything…"
 }
 
 func editorStatus(s *state.State, ui UI) string {
@@ -1187,14 +1222,18 @@ func elapsed(start, end, now time.Time) string {
 }
 
 // turnBadge is what the turn is doing, at zone B's top right: the spinner
-// turns while an answer streams or the turn runs otherwise (a tool, a
-// subagent, the model thinking), and "Idle" says the CLI waits for a message
-// (ui-design.md, Zone B; plan 4, step 8).
+// turns while the CLI reports a phase of thinking (plan 22), while
+// an answer streams, or while the turn runs otherwise (a tool, a subagent, a
+// Codex step), and "Idle" says the CLI waits for a message (ui-design.md,
+// Zone B; plan 4, step 8).
 func turnBadge(s *state.State, ui UI) line {
 	spin := spinner[ui.Spinner%len(spinner)]
 	switch s.Turn.Phase {
 	case state.Running, state.Submitted:
-		if n := len(s.Conversation); n > 0 && s.Conversation[n-1].Streaming {
+		if thinkingLive(s) {
+			return plain(spin+" Thinking", stProgress)
+		}
+		if n := len(s.Conversation); n > 0 && s.Conversation[n-1].Streaming && s.Conversation[n-1].Role != "thinking" {
 			return plain(spin+" Streaming", stProgress)
 		}
 		return plain(spin+" Running", stProgress)

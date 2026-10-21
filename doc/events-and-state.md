@@ -63,6 +63,7 @@ types are mapped to `unrecognised` and never dropped (INT shape).
 | - | - | - |
 | `conversation.message.delta` | `stream_event` with `content_block_delta` (`text_delta`, `thinking_delta`) and `parent_tool_use_id: null`. **P**: P1; P2 (25 `content_block_delta` lines: 3 `text_delta`, 1 `thinking_delta`, 1 `signature_delta`, 20 `input_json_delta` for tool input). Subagent text: **unavailable as deltas** (0 of 230 `stream_event` lines had a parent id, CC-10 q15); fallback: the whole forwarded message as one `completed` event | `item/agentMessage/delta` (`itemId`, `delta`), `item/reasoning/*Delta`, per `threadId`. **P**: P6b lines 22-33; P7 (51 deltas, parent and children) |
 | `conversation.message.completed` | `assistant` message (`message.id`, `content`, `model`, `usage`), main thread when `parent_tool_use_id` is null, else attributed to the subagent's `agent_id` (with `--forward-subagent-text`). One line **per content block**, all with the message's id, while the message goes on streaming: P2's last turn sends its thinking block's line before its text deltas. The entry keeps streaming until `message_stop`, and no block's line takes away text another block streamed (the second L2 run, 2026-10-16). **P**: P1, P2, P3b | `item/completed` with `type:"agentMessage"` (`text`). **P**: P6b, P7 |
+| thinking (plan 22: a phase's start, end, estimate and count, carried by `conversation.message.marker` and `telemetry.updated`) | a thinking block's `stream_event` `content_block_start` and `content_block_stop` (their `index`), main thread only; `system/thinking_tokens` `estimated_tokens`, the open block's running estimate (**D**: the Agent SDK's `SDKThinkingTokensMessage`); the `message_delta` event's `usage.output_tokens_details.thinking_tokens`, the message's exact count (**D**: the Messages API's extended-thinking page). **P**: 33 blocks in 14 recordings, P12c-block, P303b (claude-code.md, section 12). No thinking text: the lines' `thinking_display: "updates"` is undocumented and not used | `item/started` and `item/completed` of type `reasoning`, empty, both sent at the reasoning's end; each model step's start **inferred** by the adapter (`step_started`); `thread/tokenUsage/updated` `last.reasoningOutputTokens`, the step's exact count. **P**: 48 reasoning items, P7, P12x-sandbox (codex-cli.md, section 12). Live reasoning: **unavailable** (no reasoning summary asked for); fallback: the step's card with an indeterminate bar (ui-design.md, Zone B, Thinking) |
 | `tool.started` | an `assistant` content block `tool_use` (`id`, `name`, `input`), carrying `agent_id` for subagents. **P**: P2 (Write), P3b (subagent Bash) | `item/started` of type `commandExecution`, `fileChange`, `mcpToolCall`, `webSearch`, `dynamicToolCall`. **P**: P6b, P7 (21 `item/started`) |
 | `tool.completed` | a `user` message `tool_result` block (`tool_use_id`, `is_error`, content). **P**: P2, P3b. A tool still open when the turn's `result` arrives ends `interrupted` (inferred) | `item/completed` of the same types (`status`, `exitCode`, `aggregatedOutput`, `durationMs`). **P**: P6b line 56 (`durationMs`), P7 (23 `item/completed`) |
 | `workflow.stage.changed` | **unavailable**: the `Workflow` tool's phases have no documented stream form and were not probed under `-p` (CC-5; CC-10 q7, closed in plan 14: the dashboard starts no workflow, so it does not depend on one). Fallback: the stage tree is **derived** from the turn and its task events ([Agent tree](#agent-tree)), labelled inferred; a `local_workflow` task appears as one node with its status (**D**: `task_started.task_type`, CC-5) | `turn/plan/updated` (`plan[{step, status}]`) and `item/started` of type `plan`. **D** only: no plan update occurred in P6b or P7 (codex-cli.md, section 6). Fallback: the same derived tree |
@@ -155,11 +156,52 @@ only going back from a failed start resets the state (plan 21, item 1).
   RESULT and the folds are drawn from the record, the turn machine and the
   agent machines each frame; nothing of them is stored, except the runs of
   calls the owner expanded, a choice of the interface.
-- A thinking block is kept as its entry (`Entry.Thinking`, no text) and
-  drawn only while it streams with no text yet; once it ends, zone B does
-  not draw it (plan 20, the owner's section 11), so a finished one never
-  looks active. The record keeps it for the thinking display the owner
-  plans separately.
+- **Thinking phases** (plan 22, brief amendment 18): each thinking phase
+  of the orchestrator is an entry of role `thinking` with its
+  `state.Thought`, in its place among the turn's entries. Claude Code: a
+  thinking block's start opens it and the stop of the same index ends it,
+  both observed (a block whose stop never comes ends with its message, at
+  its `message_delta` or `message_stop`, or when the next message starts,
+  its end then inferred); the CLI's running estimate (`system/thinking_tokens`)
+  goes to the open phase, never lowered; the message's `message_delta`
+  gives its exact count (on the last phase, marked shared, should a
+  message have several), and a `stop_reason` null marks it interrupted,
+  with no exact count: the 0 the CLI then sends is the usage the message
+  had when it began, kept apart as reported (`Thought.Cut`, `CutTokens`;
+  plan 22, correction C1).
+  Codex: its adapter reports each model step's start, inferred
+  (`step_started`: the turn's `userMessage` item, then the previous step's
+  usage update once its tool items completed, when the step made a call);
+  the step is an unconfirmed phase until a `reasoning` item confirms it,
+  whose completion ends it, or the next step's start, its end then
+  inferred (correction C4); any other output of the orchestrator first
+  drops it, and it leaves no row; a step that only spawned stays open into
+  the next. A `reasoning` item that finds no step open (the step before
+  made no call, so no marker came) starts at the turn's last usage update,
+  an upper bound like a step's start (correction C5). A usage update's `last.reasoningOutputTokens` goes to the
+  orchestrator's confirmed thoughts not yet counted since the thread's
+  previous update; a repeated update (its total the thread's last, as
+  Codex 0.145.0 sends on an interrupt) counts nothing. A turn's end ends an open phase, interrupted or failed
+  with the turn, an open step dropped; so does a force stop (interrupted,
+  at the last event's time: no turn end will come), the owner's close
+  (interrupted) and a crash (failed); none opens once the session crashed.
+  A phase that ends with its turn or its session without an exact count
+  is closed (`Thought.Closed`): no count is applied to it later, neither a
+  resume's replayed usage nor a later turn's (correction C2). A phase
+  still live when the owner sends a prompt, the turn idle, ends there at
+  the last event's time, its end inferred (correction C3).
+  Each phase has an ID (`Thought.ID`, numbered by `State.Thoughts`), kept
+  across a resume, where events are numbered again: zone B keys a phase by
+  it. A subagent's or a
+  child thread's thinking makes no entry of B (a subagent's messages keep
+  `Entry.Thinking`). The turn's total (`result`) and `modelUsage`'s
+  session counts are never a phase's. Zone B draws a phase from these
+  times and the frame's time ([ui-design.md, Zone B](ui-design.md#zone-b),
+  Thinking); nothing of its animation is stored but the phases a frame
+  drew while live (`render.UI.Live`), a fact of the interface, so a phase
+  that began and ended in one batch of events is never animated, and when
+  the activity line's condition began (`render.UI.ActivitySince`), which
+  it shows 200 ms after (correction C6).
 - The record lives in memory for the session (ASM-11). Claude Code's
   `--resume` does not replay history (P4), so the dashboard's record is the
   only source of earlier turns in one dashboard session

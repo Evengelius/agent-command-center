@@ -29,6 +29,8 @@ type Mapper struct {
 	server      map[string]serverReq // id of the CLI's requests -> what they are about
 	files       map[string]string    // fileChange item id -> paths, to describe its approval
 	interrupted bool
+	steps       steps             // where the orchestrator's model steps begin (plan 22, X5)
+	totals      map[string]string // each thread's last usage total, as sent, to know a repeat (plan 22)
 }
 
 type serverReq struct {
@@ -37,7 +39,7 @@ type serverReq struct {
 
 // NewMapper returns an empty mapper.
 func NewMapper() *Mapper {
-	return &Mapper{pending: map[string]string{}, server: map[string]serverReq{}, files: map[string]string{}}
+	return &Mapper{pending: map[string]string{}, server: map[string]serverReq{}, files: map[string]string{}, totals: map[string]string{}}
 }
 
 type rpc struct {
@@ -427,6 +429,9 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 			ID string `json:"id"`
 		}
 		_ = json.Unmarshal(p.Turn, &t)
+		if agent == "" {
+			m.steps.turnStarted()
+		}
 		return []event.Event{m.ev(event.TurnStarted, event.Observed, agent, first(t.ID, p.TurnID), "", raw, nil)}
 	case "turn/completed":
 		return m.turnCompleted(p.Turn, agent, p.TurnID, raw)
@@ -441,7 +446,14 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 		// (events-and-state.md, Tool lifecycle).
 		return []event.Event{m.ev(event.ToolProgress, event.Observed, agent, p.TurnID, p.ItemID, raw, event.Tool{ToolID: p.ItemID, Output: p.Delta})}
 	case "thread/tokenUsage/updated":
-		return []event.Event{m.tokenUsage(p.TokenUse, agent, p.TurnID, raw)}
+		ev, repeat := m.tokenUsage(p.TokenUse, agent, p.TurnID, raw)
+		out := []event.Event{ev}
+		if agent == "" && !repeat && m.steps.usage() {
+			// The step's response is complete and its tools are done: the next
+			// step begins (plan 22, design 4, criterion 1.2).
+			out = append(out, m.stepStarted(p.TurnID, raw))
+		}
+		return out
 	case "account/rateLimits/updated":
 		return []event.Event{m.rateLimits(p.Limits, "account/rateLimits/updated", raw)}
 	case "turn/plan/updated":
@@ -538,6 +550,9 @@ func (m *Mapper) turnCompleted(raw json.RawMessage, agent, turnID string, line [
 		DurationMs int64           `json:"durationMs"`
 	}
 	_ = json.Unmarshal(raw, &t)
+	if agent == "" {
+		m.steps.turnEnded()
+	}
 	end := event.TurnEnd{Subtype: t.Status, DurationMS: t.DurationMs}
 	switch {
 	case t.Status == "completed":
@@ -615,7 +630,12 @@ func (m *Mapper) item(started bool, raw json.RawMessage, agent, turn string, lin
 	switch it.Type {
 	case "userMessage":
 		// The owner's message is already a UserMessage, from the write.
-		return []event.Event{m.ev(event.MessageMarker, event.Observed, agent, turn, it.ID, line, event.Marker{MessageID: it.ID, Name: name, Block: "user"})}
+		out := []event.Event{m.ev(event.MessageMarker, event.Observed, agent, turn, it.ID, line, event.Marker{MessageID: it.ID, Name: name, Block: "user"})}
+		if agent == "" && started && m.steps.message() {
+			// The turn's first step begins (plan 22, design 4, criterion 1.2).
+			out = append(out, m.stepStarted(turn, line))
+		}
+		return out
 	case "reasoning":
 		return []event.Event{m.ev(event.MessageMarker, event.Observed, agent, turn, it.ID, line, event.Marker{MessageID: it.ID, Name: name, Block: "thinking"})}
 	case "agentMessage":
@@ -624,11 +644,123 @@ func (m *Mapper) item(started bool, raw json.RawMessage, agent, turn string, lin
 		}
 		return []event.Event{m.ev(event.MessageCompleted, event.AI, agent, turn, it.ID, line, event.Completed{MessageID: it.ID, Text: it.Text})}
 	case "subAgentActivity":
+		if agent == "" {
+			m.steps.subAgent(it.Kind)
+		}
 		return m.subAgent(it, agent, turn, line)
 	case "commandExecution", "fileChange", "mcpToolCall", "dynamicToolCall", "webSearch", "imageView", "imageGeneration", "sleep", "collabAgentToolCall":
-		return m.tool(started, it, raw, agent, turn, line)
+		out := m.tool(started, it, raw, agent, turn, line)
+		if agent == "" && m.steps.tool(started, it.ID) {
+			// The step's last tool is done and its response was already
+			// complete: the next step begins (plan 22, design 4).
+			out = append(out, m.stepStarted(turn, line))
+		}
+		return out
 	}
 	return []event.Event{m.unknown(line, "item/"+it.Type, "")}
+}
+
+// stepStarted is the marker of a model step's start: inferred, the
+// orchestrator's, in the turn of the event that gave it away and with that
+// event's line. It names no message (plan 22, X5; event.StepStarted).
+func (m *Mapper) stepStarted(turn string, line []byte) event.Event {
+	return m.ev(event.MessageMarker, event.Inferred, "", turn, "", line, event.Marker{Name: event.StepStarted})
+}
+
+// steps infers where the orchestrator's model steps begin. Codex reports no
+// step's start, and a reasoning item only once its reasoning ended (plan 22,
+// X1 and X5), so the adapter marks each start from what Codex does report:
+// the owner's message, a step's usage and its tools (plan 22, design 4). It
+// follows the main thread alone, where the turn runs; a child thread's events
+// never reach it. A step's response is complete when its usage comes (X2);
+// the next step begins once that and the step's tools are both done, and only
+// if the step made a call. A step that made none, a message alone, begins
+// nothing: the turn is over. Recording: P7's orchestrator gives 3,380 (the
+// message), 7,120, 9,632, 13,471 and 24,076 ms, and none after the last
+// step, a message alone (testdata/probes/p7-codex-subagents.jsonl lines 20,
+// 30, 54, 118 and 161; the last step's usage is line 167).
+type steps struct {
+	turn     bool            // the main thread's turn runs
+	running  map[string]bool // its tool items running, by item id
+	complete bool            // the step's response is complete: its usage came
+	call     bool            // the step made a call: a tool item or a spawn
+}
+
+// begin starts a step: nothing runs, no response is complete, no call made.
+func (s *steps) begin() {
+	clear(s.running)
+	s.complete, s.call = false, false
+}
+
+// turnStarted follows the main thread's turn/started, turnEnded its
+// turn/completed: the state starts and ends empty with the turn.
+func (s *steps) turnStarted() { s.begin(); s.turn = true }
+func (s *steps) turnEnded()   { s.begin(); s.turn = false }
+
+// message follows an item/started userMessage of the main thread and reports
+// whether the turn's first step begins: only while its turn runs, so a replayed
+// message outside a turn starts none.
+func (s *steps) message() bool {
+	if !s.turn {
+		return false
+	}
+	s.begin()
+	return true
+}
+
+// subAgent follows a subAgentActivity item of the main thread, of kind kind:
+// a spawn, kind "started", is a call (plan 22, criterion 1.2). Codex 0.145.0
+// sends it as an item/completed of kind "started" (P7); 0.163.0 as both
+// items, and also tells a child's end on its parent, kind "completed" (P7b,
+// P7c), which is not the orchestrator's call: counted, it would start a step
+// after a turn's last message, a card for nothing. Counting only "started"
+// gives the same markers on every recording.
+func (s *steps) subAgent(kind string) {
+	if kind == "started" {
+		s.call = true
+	}
+}
+
+// tool follows a tool item of the main thread, started or completed, and
+// reports whether the next step begins: its last running tool just completed
+// after the response was complete, and the step made a call. An item/completed
+// with no item/started was not running (a resume, a replay): it is a call
+// and ends nothing.
+func (s *steps) tool(started bool, id string) bool {
+	s.call = true
+	if started {
+		if s.running == nil {
+			s.running = map[string]bool{}
+		}
+		s.running[id] = true
+		return false
+	}
+	if !s.running[id] {
+		return false
+	}
+	delete(s.running, id)
+	if !s.turn || !s.complete || len(s.running) > 0 {
+		return false
+	}
+	s.begin()
+	return true
+}
+
+// usage follows a thread/tokenUsage/updated of the main thread, the end of a
+// step's response (X2), and reports whether the next step begins: no tool is
+// still running and the step made a call. With a tool still running, the
+// step begins when the last one completes (tool). Outside a turn, a usage
+// replayed by a resume (X5) changes nothing.
+func (s *steps) usage() bool {
+	if !s.turn {
+		return false
+	}
+	s.complete = true
+	if len(s.running) > 0 || !s.call {
+		return false
+	}
+	s.begin()
+	return true
 }
 
 // subAgent maps a child's activity; the child hangs under the thread that
@@ -760,17 +892,29 @@ func sortStrings(s []string) {
 	}
 }
 
-func (m *Mapper) tokenUsage(raw json.RawMessage, agent, turn string, line []byte) event.Event {
+// tokenUsage maps a thread's usage update; repeat is true when its total is
+// the thread's previous one, as sent: Codex 0.145.0 sends the last update
+// again when a turn is interrupted (testdata/probes/p6b-codex-app-server.jsonl
+// line 87, the same as line 64), which reports no new model response.
+func (m *Mapper) tokenUsage(raw json.RawMessage, agent, turn string, line []byte) (ev event.Event, repeat bool) {
 	var u struct {
-		Total struct {
+		TotalRaw json.RawMessage `json:"total"`
+		Total    struct {
 			TotalTokens float64 `json:"totalTokens"`
-		} `json:"total"`
+		} `json:"-"`
 		Last struct {
-			TotalTokens float64 `json:"totalTokens"`
+			TotalTokens     float64 `json:"totalTokens"`
+			ReasoningTokens any     `json:"reasoningOutputTokens"` // a number, else no count
 		} `json:"last"`
 		Window *float64 `json:"modelContextWindow"`
 	}
 	_ = json.Unmarshal(raw, &u)
+	_ = json.Unmarshal(u.TotalRaw, &u.Total)
+	if len(u.TotalRaw) > 0 {
+		prev, seen := m.totals[agent]
+		repeat = seen && prev == string(u.TotalRaw)
+		m.totals[agent] = string(u.TotalRaw)
+	}
 	const src = "thread/tokenUsage/updated"
 	ms := []event.Metric{
 		{Name: "tokens.total", Value: u.Total.TotalTokens, Unit: "tokens", Documented: true, Source: src},
@@ -783,7 +927,21 @@ func (m *Mapper) tokenUsage(raw json.RawMessage, agent, turn string, line []byte
 			event.Metric{Name: "context.used", Value: u.Last.TotalTokens, Unit: "tokens", Documented: true, Source: src + ".last.totalTokens"},
 			event.Metric{Name: "context.window", Value: *u.Window, Unit: "tokens", Documented: true, Source: src})
 	}
-	return m.ev(event.Telemetry, event.Observed, agent, turn, "", line, event.Metrics{Items: ms})
+	if n, ok := u.Last.ReasoningTokens.(float64); ok && !repeat {
+		// The reasoning tokens of the model response this update closes, a
+		// step's, by thread (plan 22, X2): the orchestrator of
+		// testdata/probes/p7-codex-subagents.jsonl gives 83, 0, 8, 7 and 0
+		// (lines 30, 54, 118, 161 and 167), its children their own. last is
+		// the difference of two consecutive totals, so it never counts
+		// twice. The field is defined in the app-server schema
+		// (p0-codex-app-server-schema-v2.json, TokenUsageBreakdown,
+		// required); when the update is sent is not documented: observed,
+		// once per model response. A line without the number gives no
+		// metric, never a zero. A repeated update reports no model response:
+		// its count would be the previous step's again (plan 22, the review).
+		ms = append(ms, event.Metric{Name: event.ReasoningLast, Value: n, Unit: "tokens", Documented: true, Source: src + " last.reasoningOutputTokens"})
+	}
+	return m.ev(event.Telemetry, event.Observed, agent, turn, "", line, event.Metrics{Items: ms}), repeat
 }
 
 type window struct {

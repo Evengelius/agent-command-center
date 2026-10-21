@@ -32,6 +32,11 @@ var mockFiles = []struct {
 	{"claude-subagent-approval.jsonl", "p3b-claude-subagent-approval.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, nil},
 	{"codex-subagents.jsonl", "p7-codex-subagents.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, nil},
 	{"codex-spawn-request.jsonl", "p9a-codex-spawn-request.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, nil}, // plan 10, item 1
+	// Plan 22, criterion 3.3: Claude Code's thinking, live estimates and exact
+	// counts, with no subagent (P12c-block, 4 thinking blocks) and with one
+	// (P303b, 3 thinking blocks and a subagent's 4 that zone B never shows).
+	{"claude-thinking.jsonl", "p12c-block-claude-auto-boundary-edit.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, nil},
+	{"claude-thinking-subagent.jsonl", "p303b-claude-subagent-approval.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, nil},
 	// Synthetic: cases no probe has, each a real recording with only the
 	// lines of its case edited to the documented shape (plan 4, step 7).
 	{"claude-api-key-context-refused.jsonl", "p2-claude-conversation.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, claudeAPIKeyContextRefused},
@@ -301,6 +306,11 @@ func TestMockFiles(t *testing.T) {
 				}
 				if tm.Event.Kind != evs[i].Kind {
 					t.Fatalf("event %d: kind %q, want %q", i, tm.Event.Kind, evs[i].Kind)
+				}
+				// A marker keeps its block index, thinking count and step name
+				// through the file (plan 22).
+				if want, ok := evs[i].Payload.(event.Marker); ok && tm.Event.Payload != want {
+					t.Fatalf("event %d: marker %+v decoded as %+v", i, want, tm.Event.Payload)
 				}
 			}
 			t.Logf("%d events from %d records", len(evs), len(recs))
