@@ -38,6 +38,12 @@ Not verified: a fresh machine, where Terminal has not seen the profile's id and 
 Verdict: DONE
 ```
 
+**23.7, once the commit and the push were made (2026-10-21).** Commit
+e8d3e3b was pushed to `origin`. `origin/main` equals `main`, the working
+tree is clean, and the author is `Evengelius <molimoabel@gmail.com>`, with
+no attribution line: PASS. The owner approved plan 23 on 2026-10-22. The
+block above stays as it was reported.
+
 What is left outside the repository, by design:
 - The owner's PowerShell profile has a one-line `acc` calling the
   repository's `acc.cmd`. PowerShell never runs a command from the current

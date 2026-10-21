@@ -10,8 +10,8 @@ to 13, `git show 84d2ad8:plan.md` for plan 14, `git show b047434:plan.md`
 for plan 15, `git show becfb34:plan.md` for plan 16, `git show f00c2d8:plan.md`
 for plan 17, `git show 8b3b16b:plan.md` for plan 18, `git show
 d84e5d4:plan.md` for plan 20, `git show f939d96:plan.md` for plan 21,
-`git show d13ef71:plan.md` for plan 22), and its results in its evaluation
-file.
+`git show d13ef71:plan.md` for plan 22, `git show e8d3e3b:plan.md` for
+plan 23), and its results in its evaluation file.
 
 ## The owner's standing decisions
 
@@ -79,109 +79,10 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 23 - The acc launcher in the project
+## No plan active
 
-**Done on 2026-10-21 and committed at the owner's request** ("make it work
-in this project, so that it is committed and pushed"), recorded word for word
-as brief amendment 21. Typed in Windows Terminal, `acc` opens the dashboard at
-the owner's size, a 9 pt font, and only there. Its evaluation:
-[`doc/plan23-evaluation.md`](doc/plan23-evaluation.md). The launcher lives in the
-repository. Today's machine-local changes are undone: Windows Terminal's
-settings and the long `acc` function of the owner's PowerShell profile.
-
-**Design.**
-- `acc.cmd` at the repository's root is the only `acc` there. A
-  PowerShell's `.\acc` runs an `acc.ps1` first, and Windows' default
-  policy (Restricted) refuses it, so a `.ps1` there would break a fresh
-  machine. `acc.cmd` runs `scripts\acc.ps1` with `-ExecutionPolicy Bypass`.
-- `scripts\acc.ps1` keeps the owner's `acc` behaviour:
-  - `go run ./cmd/agent-command-center` from the repository, its parent
-    folder;
-  - `--project` set to the folder `acc` runs in, unless `--mock`;
-  - the arguments passed on.
-- In Windows Terminal it opens a new tab of the same window for the
-  dashboard (`wt -w 0 new-tab`). That tab uses the profile "Agent Command
-  Center": font size 9, and it closes when the dashboard exits cleanly.
-- The profile is a Terminal fragment, Microsoft's documented extension for
-  apps. The script writes it under `%LOCALAPPDATA%\Microsoft\Windows
-  Terminal\Fragments\AgentCommandCenter` when it is missing or different.
-  It never writes Terminal's `settings.json`.
-  - Corrected by the tests, before the commit: a running Terminal reads
-    fragments only when it reloads its settings. So when the script writes
-    the fragment, it sets the time of Terminal's `settings.json`, with its
-    bytes untouched, and waits 2 s. That is enough on Terminal 1.23: a new
-    fragment then opens at 208x59 maximised, and without it at 156x44.
-  - On first use Terminal records the profile in its settings, as it does
-    for every fragment.
-  - Also corrected by the tests: Terminal gives a tab opened with a command
-    line and no profile the profile whose command line begins it. The
-    profile's command line is therefore one no other command starts with: a
-    PowerShell that prints a hint. With `powershell.exe -NoLogo`, such tabs
-    came up small too.
-- The tab's command is base64 (`-EncodedCommand`), so no quoting passes
-  through `wt`. `ANTHROPIC_MODEL`, when set where `acc` runs, goes with it.
-- Outside Windows Terminal, the dashboard runs in place, as before.
-- Outside the repository, the owner's PowerShell profile keeps a one-line
-  `acc` that calls the repository's `acc.cmd`. PowerShell never runs a
-  command from the current folder by its bare name. In the repository's
-  folder, `.\acc` needs nothing.
-
-**Criteria.**
-- 23.1 From a copy of the repository, as a fresh clone has it, in a
-  Windows Terminal tab, `.\acc --mock
-  testdata/mock/claude-subagent-approval.jsonl`:
-  - writes the fragment and opens the dashboard in a second tab, "Agent
-    Command Center", of the same window;
-  - that tab is about 208x59 maximised, the first one 156x44;
-  - Ctrl+Q closes that tab.
-- 23.2 From another folder, the owner's `acc --provider codex` opens that
-  tab on the startup screen, its project that folder and its agent CLI
-  Codex. Ctrl+Q there quits with no CLI session, and the tab closes.
-- 23.3 A second run leaves the fragment as it was (the same bytes and
-  time). The script never writes Terminal's `settings.json`, which only
-  gains Terminal's own entry for the profile.
-- 23.4 Outside Windows Terminal, `acc.cmd` runs the dashboard in place:
-  with `--provider bogus`, the program's own error and a non-zero exit.
-- 23.5 Undone: Windows Terminal's settings as before today, apart from
-  Terminal's entry for the profile; in the PowerShell profile, the long
-  `acc` replaced by the one line; no backup or test file left.
-- 23.6 No Go file changes. `acc.cmd` is CRLF, through `.gitattributes`.
-  The scripts are ASCII. AGENTS.md (Layout, Commands, status), plan.md
-  and brief.md amendment 21 are UTF-8 without BOM, with LF.
-- 23.7 Committed and pushed at the owner's request, `origin/main` equal
-  to `main`.
-
-### Progress
-
-- 2026-10-21: the request recorded as amendment 21. Two checks before the
-  design:
-  - a fragment written while Terminal runs is used at once;
-  - `.\acc` runs `acc.ps1` before `acc.cmd`, and is refused under
-    Restricted.
-
-  Terminal's settings were restored first: the global font size, and the
-  profile added this morning, were both removed.
-- 2026-10-21: built and checked, 6 of 6 criteria before the commit PASS
-  (`doc/plan23-evaluation.md`).
-  - The files: `acc.cmd` (CRLF, through a `*.cmd` rule in `.gitattributes`)
-    and `scripts\acc.ps1`.
-  - The owner's PowerShell profile: its `acc` is now one line calling the
-    repository's `acc.cmd`.
-  - Tested in Windows Terminal windows of their own, with a mock replay and
-    the startup screen only. The earlier runs failed; each cause was found
-    and fixed before the next:
-    - the harness's `;`, which `wt` takes as its separator, so `acc` never
-      ran;
-    - the fragment unread until a settings reload, which the script now
-      makes;
-    - leftover windows of earlier runs;
-    - the profile's command line matching other PowerShell tabs, now unique;
-    - a wrapped line that UI Automation reads as one row, which skewed the
-      harness's measure.
-  - Undone and clean: Terminal's `settings.json` has this morning's 3,064
-    bytes, the test fragments are gone, and no backup is left. Terminal's
-    `state.json` still names the two test profiles' ids among those it has
-    seen. That is harmless, and Terminal rewrites the file itself.
+Plan 23 was approved and closed on 2026-10-22 (Closed plans, below). The
+next plan starts when the owner asks for one.
 
 ## Closed plans
 
@@ -191,7 +92,7 @@ its commits. Their criteria and progress logs: `git show 8888f59:plan.md`
 b047434:plan.md` (plan 15), `git show becfb34:plan.md` (plan 16), `git show
 f00c2d8:plan.md` (plan 17), `git show 8b3b16b:plan.md` (plan 18), `git show
 d84e5d4:plan.md` (plan 20), `git show f939d96:plan.md` (plan 21), `git show
-d13ef71:plan.md` (plan 22).
+d13ef71:plan.md` (plan 22), `git show e8d3e3b:plan.md` (plan 23).
 
 ## Plan 1 - Research
 
@@ -368,3 +269,13 @@ Codex's reasoning summaries asked for and Claude Code's hook events known
 amendment 20 13 of 13, and L20 8 of 8 once two criteria were corrected
 ([`doc/plan22-evaluation.md`](doc/plan22-evaluation.md)); commits
 e6895c6, 6306bfb and d13ef71, then the approval commit.
+
+## Plan 23 - The acc launcher in the project
+
+Brief amendment 21: `acc`, typed in Windows Terminal, opens the dashboard
+in a tab of its own at the owner's size, a 9 pt font. `acc.cmd` at the root
+runs `scripts\acc.ps1`, which writes a Terminal fragment for the profile
+and makes Terminal reload. The day's machine-local changes were undone.
+Approved on 2026-10-22, 6 of 6 PASS before the commit, then committed and
+pushed ([`doc/plan23-evaluation.md`](doc/plan23-evaluation.md)); commit
+e8d3e3b, then the approval commit.
