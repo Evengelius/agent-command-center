@@ -178,7 +178,11 @@ and need the owner's approval where it says so. tmux is not used.
 - Px, a local proxy at `127.0.0.1:3128` that signs in to the corporate
   proxy, starts at logon. Since 2026-10-21 the Windows user variables
   `HTTPS_PROXY` and `HTTP_PROXY` point at it, so Claude Code, Codex and
-  every other tool started since go through it; `NO_PROXY` is unchanged.
+  the other tools started since go through it; `NO_PROXY` is unchanged.
+  Git is the exception: the `http.proxy` of `~/.gitconfig` names the
+  corporate proxy and comes before these variables, so git goes to the
+  corporate proxy directly and signs in by itself; its pushes work
+  (checked 2026-10-21).
   The proxy keys of `~/.claude/settings.json` alone don't reach a Claude
   Desktop session, which takes its proxy from those variables. It is set up
   outside the repository, as the owner's global CLAUDE.md describes. The
