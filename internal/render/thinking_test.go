@@ -799,8 +799,8 @@ func TestThinkingDetails(t *testing.T) {
 		{codex, []string{
 			"the model step from 11:30:01.200 (inferred) to its reasoning's end at 11:30:05.300 · reasoning item",
 			"83 reasoning tokens · exact, for this step · thread/tokenUsage/updated last.reasoningOutputTokens",
-			"no live estimate: Codex reports reasoning once it ended",
-			"no reasoning summary: the CLI sends none",
+			"no live estimate: Codex reports reasoning tokens when the step ends", // plan 22, amendment 20
+			"no reasoning summary: Codex sent none",
 		}},
 	} {
 		s := thinkBench(c.th)

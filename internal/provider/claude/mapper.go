@@ -241,6 +241,14 @@ func (m *Mapper) system(l line, raw []byte) []event.Event {
 		}
 		_ = json.Unmarshal(raw, &s)
 		return []event.Event{m.ev(event.Telemetry, event.Observed, "", raw, event.Metrics{Items: []event.Metric{{Name: event.ThinkingEstimate, Value: s.Estimated, Unit: "tokens", Documented: true, Source: "system/thinking_tokens"}}})}
+	case "hook_started", "post_turn_summary":
+		// Known, and they give no event: nothing in the MVP draws a hook's start
+		// or the turn's summary line (plan 22, amendment 20). P22o, Claude Code
+		// 2.1.303 with the owner's SessionStart hook: hook_started at line 3,
+		// post_turn_summary at line 55, each counted as unrecognised before.
+		return nil
+	case "hook_response":
+		return m.hookResponse(raw)
 	case "task_started", "task_progress", "task_updated", "task_notification":
 		return m.task(l, raw)
 	case "background_tasks_changed":
@@ -257,6 +265,61 @@ func (m *Mapper) system(l line, raw []byte) []event.Event {
 		return []event.Event{m.ev(event.AgentSet, event.Observed, "", raw, event.AgentKeys{Keys: keys})}
 	}
 	return []event.Event{m.unknown(raw, l.Type, l.Subtype)}
+}
+
+// hookResponse maps system/hook_response, a hook's end. A hook that succeeded
+// draws nothing: its outcome is "success" and its exit code, when it reports
+// one, is 0. Any other end is one observed notice naming the hook, its exit
+// code (else its outcome) and the first non-blank line of its stderr, left out
+// when stderr is blank, so a failing hook stays visible (plan 22, amendment
+// 20; AGENTS.md, keep failures visible). It is a notice, not an error: the CLI
+// carries on after a failing hook, so the dashboard must not end the session,
+// and a SessionStart hook's end comes before the initialize response (P22o,
+// lines 4 and 5), where the reducer takes an error for a failed handshake and
+// closes the session (reduce.go, Problem). The fields are those of P22o's line
+// 4, the owner's SessionStart hook: hook_name "SessionStart:startup", outcome
+// "success", exit_code 0, stderr "". No recording holds a failing hook, so that
+// case is synthetic; the outcomes other than "success" are not documented in
+// this repository, and the word is carried as sent. A response with no
+// exit_code is judged by its outcome alone.
+func (m *Mapper) hookResponse(raw []byte) []event.Event {
+	var h struct {
+		Name     string `json:"hook_name"`
+		Outcome  string `json:"outcome"`
+		ExitCode *int   `json:"exit_code"`
+		Stderr   string `json:"stderr"`
+	}
+	_ = json.Unmarshal(raw, &h)
+	if h.Outcome == "success" && (h.ExitCode == nil || *h.ExitCode == 0) {
+		return nil
+	}
+	msg := "hook"
+	if h.Name != "" {
+		msg += " " + h.Name
+	}
+	msg += " failed: "
+	switch {
+	case h.ExitCode != nil && *h.ExitCode != 0:
+		msg += fmt.Sprintf("exit %d", *h.ExitCode)
+	case h.Outcome != "":
+		msg += "outcome " + h.Outcome
+	default:
+		msg += "no outcome reported"
+	}
+	if l := firstLine(h.Stderr); l != "" {
+		msg += ": " + l
+	}
+	return []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, event.Status{Status: "notice", Detail: msg})}
+}
+
+// firstLine is the first line of s with text in it, trimmed; "" when none.
+func firstLine(s string) string {
+	for l := range strings.SplitSeq(s, "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			return l
+		}
+	}
+	return ""
 }
 
 func (m *Mapper) task(l line, raw []byte) []event.Event {

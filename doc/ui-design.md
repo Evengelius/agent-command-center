@@ -996,16 +996,21 @@ reports decides what is shown (claude-code.md and codex-cli.md, section
   - **No live count (mode C).** Before Claude Code's first estimate (0.15
     to 0.4 s into a block, none for a very short one): "Thinking · token
     usage pending". A Codex model step: "Model working · reasoning tokens
-    reported when the step ends", since Codex reports a reasoning item only
-    once its reasoning ended. The bar is indeterminate, a segment sweeping
-    the track every 1.6 s, with no number.
+    reported when the step ends", since Codex reports a step's reasoning
+    tokens only once the step ends. The bar is indeterminate, a segment
+    sweeping the track every 1.6 s, with no number.
 - **Codex's card is the model step's.** It shows from the step's start,
   inferred (the turn's message recorded, then the previous step's response
   complete and its tools finished), to its first output: a reasoning item
   turns it into the phase's summary, "Thought for up to 3.1s", the step's
   time up to the reasoning's end, an upper bound, its count row reading
   "Thinking" as it closes; any other first output collapses it away over
-  300 ms, leaving no row (28 of 76 recorded steps had no reasoning).
+  300 ms, leaving no row (28 of 76 recorded steps had no reasoning). The
+  dashboard asks Codex for reasoning summaries (`summary: "auto"` on every
+  `turn/start`; plan 22, amendment 20), so a step's reasoning item starts
+  while the model works. The card then reads "Thinking · reasoning tokens
+  reported when the step ends" from that start until the item completes
+  (2.5 and 3.4 s in P22s), and "Model working" before it.
 - **Entrance** (280 ms, a phase drawn live): the rows reserved from the
   first frame, so nothing below moves twice; the border dim with a light
   sweeping its top edge, then the spinner's row, the count's and the
@@ -1053,8 +1058,11 @@ reports decides what is shown (claude-code.md and codex-cli.md, section
   whose turn or session ended with none takes none later, neither a
   resume's replayed usage nor a later turn's (plan 22, correction C2). A
   message cut short reads "no exact count: the CLI reports 0 for an
-  interrupted message", beside its last live estimate (C1). The entry
-  cursor stops on a
+  interrupted message", beside its last live estimate (C1). A Codex phase's
+  details also give its reasoning item's start and end, observed, and
+  Codex's summary in its own words when it sends one ("Codex's summary, its
+  own text: **Computing f(10)**"), else "no reasoning summary: Codex sent
+  none" (plan 22, amendment 20). The entry cursor stops on a
   summary row, never on a live card. A summary row between tool calls folds
   with their run; a run's fold row still counts calls only.
 - **The activity line**, while the turn works and nothing else is live

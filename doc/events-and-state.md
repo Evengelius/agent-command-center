@@ -82,7 +82,7 @@ types are mapped to `unrecognised` and never dropped (INT shape).
 | `diff.updated` | **derived** from `tool_use.input` of `Edit` (`old_string`, `new_string`) and `Write` (`content`), labelled derived. **P**: P2 (Write input) | `fileChange.changes[{path, kind, diff}]` and `turn/diff/updated` (the turn's unified diff). **P**: P6b, P7 (5 `turn/diff/updated`) |
 | `retry` | `system/api_retry` (main loop), `tool_progress.subagent_retry` (subagents). **D**, not observed | `error` with `willRetry:true`. **D**, not observed (CX-10 q9, closed in plan 14: read when sent, not depended on) |
 | `error` | `result.is_error`, `assistant.error`, `system/permission_denied`, a failed `tool_result`. **P**: P2 (`error_during_execution` after interrupt, not counted as an error) | `error` with `willRetry:false`, `turn/completed failed` with `codexErrorInfo`. **P**: P5, P6 lines 23-24 |
-| `status.changed` | `system/status` (`compacting`, `permissionMode`) **P** P1; `system/compact_boundary` **D**; `system/commands_changed` **P** P3b, logged with no status (no MVP zone lists commands) | `thread/status/changed` **P** P7 (10); `mcpServer/startupStatus/updated` **P** P7 (12) |
+| `status.changed` | `system/status` (`compacting`, `permissionMode`) **P** P1; `system/compact_boundary` **D**; `system/commands_changed` **P** P3b, logged with no status (no MVP zone lists commands); a `system/hook_response` that is not a success, a notice naming the hook, its exit code and its stderr's first line, never an error (plan 22, amendment 20; **P** P22o's success, the failure synthetic). Known with no event: `system/hook_started`, a successful `hook_response`, `system/post_turn_summary` **P** P22o | `thread/status/changed` **P** P7 (10); `mcpServer/startupStatus/updated` **P** P7 (12). Known with no event: `item/reasoning/summaryPartAdded` **P** P22s (plan 22, amendment 20) |
 | `unrecognised` | any other `type`/`subtype`, kept with its raw line | any other method or item type |
 
 Every row's fallback, and what the screen shows while the fallback applies,
@@ -178,7 +178,12 @@ only going back from a failed start resets the state (plan 21, item 1).
   drops it, and it leaves no row; a step that only spawned stays open into
   the next. A `reasoning` item that finds no step open (the step before
   made no call, so no marker came) starts at the turn's last usage update,
-  an upper bound like a step's start (correction C5). A usage update's `last.reasoningOutputTokens` goes to the
+  an upper bound like a step's start (correction C5). The dashboard asks
+  for reasoning summaries on every `turn/start` (plan 22, amendment 20), so
+  a reasoning item starts while the model works. The phase keeps when its
+  item started, observed (`Thought.ItemStart`), and the summary its
+  completion carries (`event.Marker.Summary`, then `Thought.Summary`); its
+  own start stays the step's, inferred. A usage update's `last.reasoningOutputTokens` goes to the
   orchestrator's confirmed thoughts not yet counted since the thread's
   previous update; a repeated update (its total the thread's last, as
   Codex 0.145.0 sends on an interrupt) counts nothing. A turn's end ends an open phase, interrupted or failed

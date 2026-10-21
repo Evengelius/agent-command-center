@@ -698,7 +698,19 @@ generated with 0.145.0.
     28", "up to 5.0s · 36"). The item's start confirms the step, so the card
     already reads "Thinking" from that moment.
   - `summaryTextDelta` maps to a thinking delta (`mapper.go`, line 442) and
-    is never drawn as conversation text; `summaryPartAdded` is unrecognised.
+    is never drawn as conversation text; `summaryPartAdded` was
+    unrecognised.
+  - Since plan 22's amendment 20 the dashboard asks for `summary: "auto"` on
+    every `turn/start`, and the adapter knows `summaryPartAdded`. A phase's
+    details give its reasoning item's start and end, and Codex's summary when
+    it sends one.
+  - The live check L20, one turn in the dashboard with `auto` (2026-10-21,
+    `doc/plan22-evaluation.md`), used 81 reasoning tokens.
+    - The reasoning item started 1.7 s into the step and lasted 2.2 s.
+    - This time Codex sent a summary, one part, "**Calculating 12!
+      divisors**". Its delta came 15 ms before the item completed. P22s's
+      `auto` turn, with 28 reasoning tokens, had none.
+    - The card read "Thinking" within 44 ms of the item's start.
 - **Not verified:** a resume (the 0.145.0 README says the usage is
   replayed; no recording has one); the schema of 0.163.0 (the 0.163.0 README
   names neither token usage nor reasoning).

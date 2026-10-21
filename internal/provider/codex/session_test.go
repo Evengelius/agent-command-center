@@ -566,8 +566,11 @@ const (
 
 const initLine = `{"id":1,"method":"initialize","params":{"clientInfo":{"name":"agent_command_center","title":"Agent Command Center","version":"dev"}}}`
 
+// turnLine is the turn/start line the session writes for text: Manual's
+// reviewer and sandbox, and the reasoning summary every turn asks for (plan
+// 22, amendment 20). The keys come sorted, as the encoder writes a map.
 func turnLine(id int, thread, text string) string {
-	return `{"id":` + strconv.Itoa(id) + `,"method":"turn/start","params":{"approvalsReviewer":"user","input":[{"text":` + quote(text) + `,"type":"text"}],"sandboxPolicy":{"type":"readOnly"},"threadId":"` + thread + `"}}`
+	return `{"id":` + strconv.Itoa(id) + `,"method":"turn/start","params":{"approvalsReviewer":"user","input":[{"text":` + quote(text) + `,"type":"text"}],"sandboxPolicy":{"type":"readOnly"},"summary":"auto","threadId":"` + thread + `"}}`
 }
 
 // TestHandshakeApprovalInterrupt replays P6b through the real process

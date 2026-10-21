@@ -28,20 +28,28 @@ func count(evs []event.Event, k event.Kind) int {
 	return n
 }
 
-// Every line of every Claude recording maps to at least one event, and no
-// line is unreadable (proposal step 0, item 6: 0 lines dropped).
+// Every line of every Claude recording maps to at least one event, except the
+// quiet ones (a hook's start, the turn's summary, a hook's success: plan 22,
+// amendment 20), and no line is unreadable (proposal step 0, item 6: 0 lines
+// dropped); none of P22o's is unrecognised (it had 3).
 func TestEveryLineMaps(t *testing.T) {
-	for _, name := range []string{"p1-claude-stream.jsonl", "p2-claude-conversation.jsonl", "p3-claude-subagent.jsonl", "p3b-claude-subagent-approval.jsonl", "p4-claude-resume.jsonl", "p12c-claude-auto.jsonl", "p12c-switch-claude-default-to-auto.jsonl", "p13c-claude-auto-classifier-deny.jsonl", "p14a-claude-question-answer.jsonl", "p303a-claude-conversation.jsonl", "p303b-claude-subagent-approval.jsonl", "p303c-claude-default-to-auto.jsonl", "p303d-claude-question-answer.jsonl", "p303e-claude-interrupt-tool.jsonl"} {
+	for _, name := range []string{"p1-claude-stream.jsonl", "p2-claude-conversation.jsonl", "p3-claude-subagent.jsonl", "p3b-claude-subagent-approval.jsonl", "p4-claude-resume.jsonl", "p12c-claude-auto.jsonl", "p12c-switch-claude-default-to-auto.jsonl", "p13c-claude-auto-classifier-deny.jsonl", "p14a-claude-question-answer.jsonl", "p303a-claude-conversation.jsonl", "p303b-claude-subagent-approval.jsonl", "p303c-claude-default-to-auto.jsonl", "p303d-claude-question-answer.jsonl", "p303e-claude-interrupt-tool.jsonl", p22o} {
 		recs, per := replay(t, name)
 		for i, evs := range per {
-			if len(evs) == 0 {
+			if len(evs) == 0 && !quietLine(recs[i].Msg) {
 				t.Errorf("%s line %d: no event", name, i+1)
+			}
+			if len(evs) != 0 && quietLine(recs[i].Msg) {
+				t.Errorf("%s line %d: %d events from a quiet line", name, i+1, len(evs))
 			}
 			for _, e := range evs {
 				if e.Kind == event.Error {
 					if p, ok := e.Payload.(event.Problem); ok && len(p.Message) > 10 && p.Message[:10] == "unreadable" {
 						t.Errorf("%s line %d: %s", name, i+1, p.Message)
 					}
+				}
+				if name == p22o && e.Kind == event.Unrecognised {
+					t.Errorf("%s line %d: unrecognised %+v", name, i+1, e.Payload)
 				}
 			}
 		}

@@ -2923,3 +2923,19 @@ What do you mean? With the acc codex could take account of this px ?
 
 I actually love that, let's implement it because it will matter for the dashboard if I want to use it with codex. standalone I juse Claude, but with Dashboard I could use Codex
 ````
+
+## Amendment 20, 2026-10-21: Codex's reasoning summaries and Claude Code's known events, during plan 22
+
+The owner's request, word for word, after plan 22's two live checks
+(plan.md, Plan 22, Proposed, not run). P22s showed that a Codex
+`turn/start` asking for reasoning summaries makes each reasoning item start
+while the model works, 2.5 to 3.4 s before it completes, though its
+summary's text does not stream. P22o showed that the owner's `SessionStart`
+hook makes Claude Code send `system/hook_started` and `hook_response`, and
+that a turn ends with `system/post_turn_summary`, three events the dashboard
+counted as unrecognised. Two changes were proposed from these results, and
+the owner took both:
+
+````text
+Yes, take up both proposals from the live checks: send summary auto to Codex with the details as described, and map Claude Code's hook_started, hook_response and post_turn_summary as known events. Start with the criteria in plan.md.
+````

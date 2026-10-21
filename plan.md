@@ -708,6 +708,180 @@ Then re-verify, including the demonstrations the corrections change."
   until the owner has seen it.
 - 5.18 `git status` lists only the intended files; no commit.
 
+### Amendment 20: Codex's reasoning summaries, Claude Code's known events
+
+The owner's request after the two live checks (doc/brief.md, amendment 20),
+the two proposals of their results, both taken.
+
+**Design.**
+- **Codex's turns.** Every `turn/start` the dashboard sends carries
+  `"summary": "auto"` (`TurnStartParams.summary`; P22s: accepted).
+  `thread/start` and `thread/resume` are unchanged, and nothing else is
+  sent.
+- **Codex's adapter.**
+  - `item/reasoning/summaryPartAdded` is known and gives no event: the text
+    comes in its delta and in the item's completion.
+  - `summaryTextDelta` stays a thinking delta, never drawn as text.
+  - A reasoning item's `item/completed` marker carries the item's summary
+    as Codex sent it, its parts joined by a blank line, in a new
+    `event.Marker` field.
+- **The state.** A Codex phase keeps when its reasoning item started
+  (`item/started`, observed) and the item's summary. Its start stays the
+  step's, inferred, and its time stays "up to".
+- **The card** does not change. The item's start confirms the step, so the
+  card reads "Thinking · reasoning tokens reported when the step ends" from
+  then until the item completes: 2.5 and 3.4 s in P22s, instead of 0 to
+  10 ms.
+- **The details of a Codex phase:**
+  - the step's line, as today;
+  - a new line, "the reasoning item from <start> to <end> · observed", when
+    its start is known;
+  - the count, as today;
+  - "no live estimate: Codex reports reasoning tokens when the step ends",
+    in place of "… Codex reports reasoning once it ended", no longer true;
+  - "Codex's summary, its own text: **Computing f(10)**" when Codex sent
+    one, else "no reasoning summary: Codex sent none".
+- **Claude Code's adapter.**
+  - `system/hook_started` and `system/post_turn_summary` are known and give
+    no event.
+  - `system/hook_response` gives none when its `outcome` is "success" and
+    its `exit_code` 0. Otherwise it gives an observed notice, drawn in zone B
+    in amber like the CLI's own notes, naming the hook, its exit code and the
+    first line of its stderr. A failing hook stays visible (AGENTS.md, keep
+    failures visible), and the session goes on, as the CLI does.
+  - Changed at the review of the first build, before its code: the design
+    first said "an observed error". A SessionStart hook's lines come before
+    the initialize response, and any error during the handshake ends the
+    session (`reduce.go`, the handshake rule). A failing `pxw` hook would
+    then have stopped a session that Claude Code itself carries on.
+
+**Criteria.**
+- 20.1 Every `turn/start` the Codex session sends carries `"summary":
+  "auto"`, its other parameters unchanged; `thread/start` and
+  `thread/resume` unchanged.
+- 20.2 P22s through the Codex adapter: no unrecognised event (was 1,
+  `summaryPartAdded`). The second reasoning item's completion marker carries
+  "**Computing f(10)**", the first's nothing.
+- 20.3 P22s through the reducer:
+  - two phases, their reasoning items started at 6,882 and 11,397 ms and
+    completed at 9,388 and 14,833 ms;
+  - their starts the steps', inferred, 5,252 and 9,849 ms;
+  - their summaries none and "**Computing f(10)**", their counts 28 and 36;
+  - the summary rows unchanged, "Thought for up to 4.1s · 28 reasoning
+    tokens" and "… up to 5.0s · 36 reasoning tokens".
+- 20.4 P22s replayed in the application: at 6,000 ms the card reads "Model
+  working · …"; at 8,000 ms, between the first item's start and its end,
+  "Thinking · reasoning tokens reported when the step ends".
+- 20.5 The details, word for word: the item's line and the new "no live
+  estimate" line for both phases; the summary line for the second; "no
+  reasoning summary: Codex sent none" for the first.
+- 20.6 Recordings without summaries are drawn as before: every golden frame
+  unchanged, unless a Codex phase's details are open in it (each such diff
+  read).
+- 20.7 P22o through the Claude Code adapter: no unrecognised event (was 3);
+  its conversation unchanged. A hook response with outcome "error", exit
+  code 1 and a stderr (synthetic) gives one observed notice naming the hook,
+  the code and the stderr's first line; one with "success" and 0 gives
+  nothing. P22o with its hook made to fail: the session reaches Ready,
+  never crashed, the notice drawn in zone B before the prompt (changed with
+  the design at the review, above).
+- 20.8 The two recordings are copied to `testdata/probes`, and the replay
+  tests take them with no unrecognised event.
+- 20.9 Each change's test fails with the change undone, one at a time.
+- 20.10 Checks: build, vet (also `timing`, `live`), gofmt; go test ./...
+  twice in the owner's environment; `-race` 0 races; the timing step 7 of
+  7; go.mod and go.sum unchanged.
+- 20.11 Documents:
+  - ui-design.md: Codex's card and details;
+  - events-and-state.md: the phase's reasoning item and summary, and the
+    marker;
+  - architecture.md: the Codex adapter's `turn/start`;
+  - reliability.md: Codex's thinking, a failing hook;
+  - codex-cli.md and claude-code.md: what the dashboard now sends and maps;
+  - plan.md.
+
+  All UTF-8 without BOM, LF only.
+- 20.12 Windows Terminal, maximised then 120x40: P22s replayed from a mock
+  made in a scratch copy, not added to the repository. The card reads
+  "Thinking" from the item's start, and the details show the summary. The
+  look stays not verified until the owner has seen it.
+- 20.13 `git status` lists only the intended files; no commit.
+- Proposed, not run, with the owner's approval only: a live run of the
+  dashboard with Codex, one turn on a temporary project, to see the card read
+  "Thinking" from the reasoning item's start.
+
+**The live check L20**, approved on 2026-10-21: "run the proposed live
+dashboard check with Codex, one turn on a temporary project, as plan.md's
+amendment 20 criteria describe, then record the findings".
+- How:
+  - The dashboard built from this tree, in a new Windows Terminal window,
+    maximised.
+  - Codex 0.163.0 through a test-only wrapper first on that window's PATH.
+    It passes every argument through, adds no override, and logs the
+    app-server's stdin and stdout byte for byte, each line with the time it
+    arrived.
+  - The real home, so that Codex is signed in; Px through the window's
+    environment and the owner's `config.json`.
+  - An empty temporary project outside the repository; the configuration
+    check (confcheck) before and after; no CLI session open in a terminal.
+  - One prompt, which asks Codex to reason without running a command or
+    editing a file. A card, should one come, is denied.
+  - UI Automation reads the screen from the prompt to the turn's end, each
+    read timed, with a screenshot at each change of the card's line. Once
+    the turn has ended, the window is also shown at its default size,
+    without another turn.
+- Criteria:
+  - L20.1 Before: no Claude Code or Codex session in a terminal; Px
+    listening on 127.0.0.1:3128; `codex --version` 0.163.0; the snapshot
+    taken.
+  - L20.2 The dashboard reaches Ready on Codex in the temporary project,
+    maximised. The wrapper logs the app-server session, with the
+    dashboard's own arguments.
+  - L20.3 The `turn/start` the dashboard sends carries `"summary":"auto"`
+    (the wrapper's stdin log).
+  - L20.4 The turn ends (`turn/completed`, completed) with no approval
+    card. Zone D reads "errors 0" on screen. The session's recording,
+    replayed through the Codex adapter and the reducer, gives 0
+    unrecognised events.
+
+    Corrected on 2026-10-21, after the run, at the owner's request, from
+    "Zone D reads "unrecognised events 0" and "errors 0"". Zone D's two-row
+    form, maximised here and at 120x30, draws no such counter.
+  - L20.5 The card, against the wrapper's times:
+    - every read from the card's count row's appearance, 140 ms after the
+      step's start, to the reasoning item's `item/started` reads "Model
+      working · reasoning tokens reported when the step ends", and none
+      reads "Thinking" before it.
+
+      Corrected on 2026-10-21, after the run, at the owner's request, from
+      "every read from the step's start". The card's 280 ms entrance draws
+      its count row from 140 ms, the third of its four 70 ms stages
+      (`render/thinking.go`, `entrance`);
+    - the first read after `item/started` reads "Thinking · reasoning
+      tokens reported when the step ends", within 250 ms of it;
+    - every read from then to the item's `item/completed` reads
+      "Thinking".
+
+    A turn without a reasoning item leaves L20.5 not verified rather than
+    failed: it is Codex's choice, and is recorded as such.
+  - L20.6 After the turn:
+    - the phase's row reads "Thought for up to <t>s · <n> reasoning tokens",
+      where n is the turn's `last.reasoningOutputTokens`;
+    - its details (→) give "the reasoning item from <start> to <end> ·
+      observed", each time within 50 ms of the wrapper's `item/started` and
+      `item/completed`;
+    - they also give "Codex's summary, its own text: …" with the summary
+      `item/completed` carries, or "no reasoning summary: Codex sent none"
+      when it carries none.
+  - L20.7 At the default size, after the turn: every row is closed by its
+    border, and the phase's row and details are drawn.
+  - L20.8 Ctrl+Q closes the window, and no Codex or dashboard process is
+    left. The project is empty. The configuration check passes:
+    configuration files identical, Codex's new session files allowed.
+- Recorded, not judged: where the item starts in the step and how long it
+  lasts; whether `auto` gave a summary; the turn's length; the quota
+  windows before and after.
+
 ### Progress
 
 - 2026-10-21: the request recorded as amendment 18; the recordings read by
@@ -950,6 +1124,73 @@ Then re-verify, including the demonstrations the corrections change."
     code changed.
   - Waiting for the owner: the two proposals made from the results (Codex's
     `summary`, Claude Code's three unrecognised events).
+- 2026-10-21: amendment 20, the owner's request on those two proposals
+  (doc/brief.md): built and verified, 13 of 13 criteria PASS
+  (`doc/plan22-evaluation.md`, Amendment 20). No commit.
+  - The design and criteria 20.1 to 20.13 above, written before the code.
+    One change came at the review of the first build, before its code: a
+    failing hook is a notice, not an error.
+  - Built by an implementer agent in two rounds, each reviewed here against
+    a copy of the tree taken before the amendment. Its requests went out as
+    Sonnet 5.5 at effort max, the session's: no effort was passed, and the
+    agent's frontmatter says high (Claude Desktop's CLI 2.1.304).
+  - The tests: eight new files, and nine existing ones updated to the new
+    behaviour, none loosened. The new files are `summary_test.go` in the Codex adapter, the
+    mock files, the state, render and the application, and `hook_test.go`
+    in Claude Code's adapter, the state and the application.
+  - A mutation run here caught 10 of 10 changes undone.
+  - Checks: build, vet (also `timing` and `live`) and gofmt clean; go test
+    ./... 14 of 14 packages, twice in the owner's environment; `-race` 0
+    races; the timing step 7 of 7. The 152 golden frames are byte for byte
+    as before; go.mod and go.sum are unchanged.
+  - The timing step's first two runs gave p95s about twice the
+    corrections'. Timed in turn with the copy taken before the amendment,
+    the two trees gave the same values: the machine at that time, not the
+    change (`doc/plan22-evaluation.md`, Amendment 20).
+  - Windows Terminal (20.12): P22s from a scratch mock, maximised then
+    120x40. The card turns from "Model working" to "Thinking" within one
+    frame of each reasoning item's start, and the details read word for
+    word.
+  - At 120x40, the second phase's details, opened at zone B's bottom, show
+    their last two lines, the summary among them, only after Shift+PgDn.
+    Zone B holds its view while an entry is selected, as before.
+  - The summary drawn comes from P22s's `detailed` turn. Its `auto` turn,
+    the value the dashboard now sends, gave none.
+  - Proposed, not run, with the owner's approval only: the live run of the
+    dashboard with Codex (criteria, above).
+  - Waiting for the owner: the review of the demonstrations, then the
+    commits (plan 22 with the corrections, amendment 19 apart, and
+    amendment 20).
+- 2026-10-21: the live check L20, approved the same day ("run the proposed
+  live dashboard check with Codex, one turn on a temporary project, as
+  plan.md's amendment 20 criteria describe, then record the findings"), run
+  at 21:38: 6 of 8 criteria PASS, 2 FAIL (`doc/plan22-evaluation.md`, The
+  live check L20). No commit.
+  - The criteria L20.1 to L20.8 above were written before the run.
+  - The card, read 227 times against the wrapper's times, behaved as
+    designed. It read "Model working" from its entrance's count row, 142 ms
+    into the step, up to the reasoning item's start 1,701 ms in. It read
+    "Thinking" from 24 to 44 ms after that start, and on every read until
+    the item completed 2,211 ms later.
+  - Under `auto`, Codex sent a summary this time, "**Calculating 12!
+    divisors**". The details show it, and the item's start and end to the
+    wrapper's millisecond.
+  - L20.4 FAIL, the criterion's: zone D's two-row form, maximised here and
+    at 120x30, draws no unrecognised-events counter. The recording replayed
+    through the adapter gives 0.
+  - L20.5 FAIL, the criterion's: the first 3 reads, in the card's first
+    111 ms, came before the entrance draws its count row at 140 ms.
+  - Configuration check PASS, nothing left running; the temporary project
+    deleted.
+  - Then, at the owner's request ("Yes: correct L20.4 and L20.5 with a
+    note, as the evaluation proposes … No code change, no new run."), both
+    were corrected above, each with a note. Judged again by script on the
+    run's records, both PASS, so all 8 of L20's criteria hold as corrected.
+    The block as reported stays FAIL for both (`doc/plan22-evaluation.md`,
+    The live check L20).
+  - Waiting for the owner: the review of the demonstrations and of L20's
+    screenshots, then the commits (plan 22 with the corrections, amendment
+    19 apart, and amendment 20 with L20).
 
 ## Closed plans
 

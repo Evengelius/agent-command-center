@@ -1303,14 +1303,15 @@ func (s *State) reasoning(id string) *Entry {
 
 // reasoningStarted applies a reasoning item's start: the model reasoned in its
 // step (plan 22, X1), which confirms the open step, whose start stays the
-// step's, inferred. With none open, a phase whose start is not known.
+// step's, inferred. With none open, a phase whose start is not known. Either
+// way the item's own start, observed, is kept (plan 22, amendment 20).
 func (s *State) reasoningStarted(ev event.Event, p event.Marker) {
 	if s.reasoning(p.MessageID) != nil {
 		s.note(ev, "reasoning item started twice: "+p.MessageID)
 		return
 	}
 	if e := s.openStep(); e != nil {
-		e.Thought.Confirmed, e.Thought.Item = true, p.MessageID
+		e.Thought.Confirmed, e.Thought.Item, e.Thought.ItemStart = true, p.MessageID, ev.At
 		return
 	}
 	if s.Session.Phase == Crashed {
@@ -1318,7 +1319,7 @@ func (s *State) reasoningStarted(ev event.Event, p event.Marker) {
 		return
 	}
 	s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "thinking", MessageID: "step:" + itoa(ev.Seq), Origin: ev.Origin, Streaming: true, At: ev.At,
-		Thought: s.newThought(Thought{Item: p.MessageID, Inferred: true, Confirmed: true, Start: s.lastResponseEnd()})})
+		Thought: s.newThought(Thought{Item: p.MessageID, Inferred: true, Confirmed: true, Start: s.lastResponseEnd(), ItemStart: ev.At})})
 }
 
 // lastResponseEnd is when the turn's last model response ended, by its usage
@@ -1344,9 +1345,19 @@ func (s *State) lastResponseEnd() time.Time {
 }
 
 // reasoningCompleted ends the phase of the reasoning item that completed; the
-// item's two lines come 0 to 10 ms apart (plan 22, X1).
+// item's two lines come 0 to 10 ms apart when no summary was asked for (plan
+// 22, X1), 2.5 to 3.4 s apart when one was (P22s). The item's summary, Codex's
+// own text, goes to the phase it belongs to, still live or not; a completion
+// without one never clears it (plan 22, amendment 20).
 func (s *State) reasoningCompleted(ev event.Event, p event.Marker) {
-	if e := s.reasoning(p.MessageID); e != nil && e.Thought.Live() {
+	e := s.reasoning(p.MessageID)
+	if e == nil {
+		return
+	}
+	if p.Summary != "" {
+		e.Thought.Summary = p.Summary
+	}
+	if e.Thought.Live() {
 		e.Thought.End, e.Streaming = ev.At, false
 	}
 }

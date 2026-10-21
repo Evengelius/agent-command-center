@@ -1,6 +1,7 @@
 package codex
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -42,10 +43,21 @@ func countRaw(evs []event.Event, k event.Kind, method string) int {
 	return n
 }
 
-var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl", "p7c-codex-spawn-model.jsonl", "p9a-codex-spawn-request.jsonl", "p12x-codex-auto-review.jsonl", "p12x-switch-codex-user-to-auto-review.jsonl", "p12x-sandbox-codex-turn-workspace-write.jsonl"}
+var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl", "p7c-codex-spawn-model.jsonl", "p9a-codex-spawn-request.jsonl", "p12x-codex-auto-review.jsonl", "p12x-switch-codex-user-to-auto-review.jsonl", "p12x-sandbox-codex-turn-workspace-write.jsonl", "p22s-codex-reasoning-summary.jsonl"}
 
-// Every line of every app-server recording maps to at least one event, and no
-// line is unreadable or unrecognised.
+// quietLine says a recorded line is one the adapter knows and gives no event
+// for: a reasoning summary's part added, whose text comes in the delta and in
+// the item's completion (plan 22, amendment 20). It reads the line apart from
+// the mapper.
+func quietLine(msg []byte) bool {
+	var l struct {
+		Method string `json:"method"`
+	}
+	return json.Unmarshal(msg, &l) == nil && l.Method == "item/reasoning/summaryPartAdded"
+}
+
+// Every line of every app-server recording maps to at least one event, except
+// the quiet ones, and no line is unreadable or unrecognised.
 func TestEveryLineMaps(t *testing.T) {
 	for _, name := range appServer {
 		recs, per := replay(t, name)
@@ -53,8 +65,11 @@ func TestEveryLineMaps(t *testing.T) {
 			t.Errorf("%s: %d results for %d lines", name, len(per), len(recs))
 		}
 		for i, evs := range per {
-			if len(evs) == 0 {
+			if len(evs) == 0 && !quietLine(recs[i].Msg) {
 				t.Errorf("%s line %d: no event", name, i+1)
+			}
+			if len(evs) != 0 && quietLine(recs[i].Msg) {
+				t.Errorf("%s line %d: %d events from a quiet line", name, i+1, len(evs))
 			}
 			for _, e := range evs {
 				if p, ok := e.Payload.(event.Problem); ok && strings.HasPrefix(p.Message, "unreadable") {

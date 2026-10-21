@@ -142,6 +142,14 @@ func TestCorrectionC1Rows(t *testing.T) {
 // interrupted later, no phase reads "exact count not reported yet" once its
 // turn ended (it was 1 of 66 rows over the recordings).
 func TestCorrectionC2Details(t *testing.T) {
+	// A recorded Codex phase has the line of its reasoning item between its
+	// time and its count (plan 22, amendment 20): the count is the one after it.
+	countDetail := func(d []string) string {
+		if len(d) > 2 && strings.HasPrefix(d[1], "the reasoning item from ") {
+			return d[2]
+		}
+		return d[1]
+	}
 	open := &state.Thought{Start: thinkAt(1000), End: thinkAt(4000), Confirmed: true}
 	if d := thoughtDetails(open); d[1] != "exact count not reported yet" {
 		t.Errorf("a phase whose count may still come: %q", d)
@@ -164,8 +172,8 @@ func TestCorrectionC2Details(t *testing.T) {
 	last := -1
 	for _, i := range thoughtEntries(s) {
 		x := s.Conversation[i].Thought
-		if d := thoughtDetails(x); d[1] == "exact count not reported yet" {
-			t.Errorf("P6b: entry %d reads %q once its turn ended: %+v", i+1, d[1], x)
+		if d := thoughtDetails(x); countDetail(d) == "exact count not reported yet" {
+			t.Errorf("P6b: entry %d reads %q once its turn ended: %+v", i+1, countDetail(d), x)
 		}
 		if thoughtShown(x) && !x.HasTokens {
 			last = i
@@ -174,7 +182,7 @@ func TestCorrectionC2Details(t *testing.T) {
 	if last < 0 {
 		t.Fatal("P6b: no phase without a count")
 	}
-	if d := thoughtDetails(s.Conversation[last].Thought); d[1] != "no exact count reported" {
+	if d := thoughtDetails(s.Conversation[last].Thought); countDetail(d) != "no exact count reported" {
 		t.Errorf("P6b's phase without a count: %q", d)
 	}
 
@@ -194,8 +202,8 @@ func TestCorrectionC2Details(t *testing.T) {
 			}
 			rows++
 			over := e.Stage > 0 && !rs.Stages[e.Stage-1].Open
-			if d := thoughtDetails(e.Thought); over && d[1] == "exact count not reported yet" {
-				t.Errorf("%s: entry %d of an ended turn reads %q", filepath.Base(f), i+1, d[1])
+			if d := thoughtDetails(e.Thought); over && countDetail(d) == "exact count not reported yet" {
+				t.Errorf("%s: entry %d of an ended turn reads %q", filepath.Base(f), i+1, countDetail(d))
 			}
 		}
 	}

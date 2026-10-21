@@ -209,7 +209,7 @@ func codexRigWith(t *testing.T, opt Options) inputRig {
 			enc.SetEscapeHTML(false)
 			_ = enc.Encode(map[string]any{"id": json.RawMessage(m.ID), "method": "turn/start", "params": map[string]any{
 				"approvalsReviewer": "user", "threadId": "th-input", "input": []map[string]string{{"type": "text", "text": want}},
-				"sandboxPolicy": map[string]string{"type": "readOnly"}}})
+				"sandboxPolicy": map[string]string{"type": "readOnly"}, "summary": "auto"}}) // plan 22, amendment 20
 			if got := ls[i] + "\n"; got != b.String() {
 				t.Errorf("stdin line\n got %q\nwant %q", got, b.String())
 			}

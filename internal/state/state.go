@@ -225,6 +225,17 @@ type Thought struct {
 	// reasoning item whose completion never came is over there, and its details
 	// say so, not "when its turn ended" (plan 22, correction C4).
 	EndNext bool
+	// ItemStart is when the Codex reasoning item of the step started (its
+	// item/started, observed), zero while none did; Claude Code's phases have
+	// none. A turn that asks for reasoning summaries starts the item while the
+	// model works (P22s: 2.5 and 3.4 s before it completes); without them the
+	// item starts and completes within 10 ms. Start stays the step's, inferred,
+	// and the phase's time stays "up to" (plan 22, amendment 20).
+	ItemStart time.Time
+	// Summary is the item's summary, Codex's own text, as its completion
+	// carried it: the parts joined by a blank line; "" when Codex sent none
+	// (plan 22, amendment 20).
+	Summary string
 	// Inferred marks a Codex model step: Start is the step's, and it is a
 	// phase of thinking only once Confirmed by a reasoning item; Dropped
 	// when the step ended with no reasoning, which leaves no row.

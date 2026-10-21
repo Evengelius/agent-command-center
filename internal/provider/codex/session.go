@@ -494,6 +494,14 @@ func (s *Session) notify(method string) error {
 	return s.write(map[string]any{"method": method})
 }
 
+// turnSummary is the reasoning summary every turn/start asks for
+// (TurnStartParams.summary, "auto"). Asked for, a reasoning item starts while
+// the model works, 2.5 to 3.4 s before it completes in P22s (0 to 10 ms
+// without), and it carries Codex's summary when Codex sends one (plan 22,
+// amendment 20; codex-cli.md, section 12). Only turn/start carries it:
+// thread/start and thread/resume are unchanged.
+const turnSummary = "auto"
+
 // Send starts a turn on the main thread with the owner's message, byte for
 // byte.
 func (s *Session) Send(text string) error {
@@ -505,7 +513,7 @@ func (s *Session) Send(text string) error {
 	}
 	return s.request("turn/start", map[string]any{"threadId": thread,
 		"input": []map[string]string{{"type": "text", "text": text}}, "approvalsReviewer": reviewer,
-		"sandboxPolicy": map[string]string{"type": turnSandbox[reviewer]}})
+		"sandboxPolicy": map[string]string{"type": turnSandbox[reviewer]}, "summary": turnSummary})
 }
 
 // Answer answers a pending approval with one of Codex's decisions, echoing

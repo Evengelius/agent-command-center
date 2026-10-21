@@ -441,6 +441,14 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 		return []event.Event{m.ev(event.MessageDelta, event.AI, agent, p.TurnID, p.ItemID, raw, event.Delta{MessageID: p.ItemID, Block: "text", Text: p.Delta})}
 	case "item/reasoning/summaryTextDelta", "item/reasoning/textDelta":
 		return []event.Event{m.ev(event.MessageDelta, event.AI, agent, p.TurnID, p.ItemID, raw, event.Delta{MessageID: p.ItemID, Block: "thinking", Text: p.Delta})}
+	case "item/reasoning/summaryPartAdded":
+		// A new part of a reasoning item's summary begins (schema:
+		// ReasoningSummaryPartAddedNotification, itemId and summaryIndex; P22s
+		// line 68, 2026-10-21). Known, and it gives no event: the part's text
+		// comes in the summaryTextDelta that follows and in the item's
+		// completion, whose marker carries the whole summary (plan 22,
+		// amendment 20).
+		return nil
 	case "item/commandExecution/outputDelta":
 		// First seen in P7b (Codex 0.163.0): a running command's output
 		// (events-and-state.md, Tool lifecycle).
@@ -605,6 +613,7 @@ type item struct {
 	Model             string          `json:"model"`           // subAgentActivity, Codex 0.163.0 (P7b); absent before
 	ReasoningEffort   string          `json:"reasoningEffort"` // beside model (P7b; plan 6, item 6)
 	Prompt            string          `json:"prompt"`          // a spawnAgent call's task (P9a; plan 10, item 1)
+	Summary           json.RawMessage `json:"summary"`         // a reasoning item's summary, a list of strings (schema: ReasoningThreadItem; plan 22, amendment 20)
 	SenderThreadID    string          `json:"senderThreadId"`
 	ReceiverThreadIDs []string        `json:"receiverThreadIds"`
 	AgentsStates      map[string]struct {
@@ -637,7 +646,18 @@ func (m *Mapper) item(started bool, raw json.RawMessage, agent, turn string, lin
 		}
 		return out
 	case "reasoning":
-		return []event.Event{m.ev(event.MessageMarker, event.Observed, agent, turn, it.ID, line, event.Marker{MessageID: it.ID, Name: name, Block: "thinking"})}
+		mk := event.Marker{MessageID: it.ID, Name: name, Block: "thinking"}
+		unreadable := false
+		if !started {
+			// The item's summary rides on its completion (plan 22, amendment 20).
+			mk.Summary, unreadable = reasoningSummary(it.Summary)
+		}
+		out := []event.Event{m.ev(event.MessageMarker, event.Observed, agent, turn, it.ID, line, mk)}
+		if unreadable {
+			// Kept visible, not shown as "Codex sent none": the marker stands.
+			out = append(out, m.unknown(line, "item/reasoning", "summary is not a list of strings"))
+		}
+		return out
 	case "agentMessage":
 		if started {
 			return []event.Event{m.ev(event.MessageMarker, event.Observed, agent, turn, it.ID, line, event.Marker{MessageID: it.ID, Name: name, Block: "text"})}
@@ -658,6 +678,24 @@ func (m *Mapper) item(started bool, raw json.RawMessage, agent, turn string, lin
 		return out
 	}
 	return []event.Event{m.unknown(line, "item/"+it.Type, "")}
+}
+
+// reasoningSummary is a reasoning item's summary as one text: the parts of its
+// summary list (schema: ReasoningThreadItem.summary, a list of strings) joined
+// by a blank line, each as Codex sent it; a part with no text in it is left
+// out. A field that is missing, null or an empty list, and a list with no text
+// in it, give "": Codex sent none. unreadable is true when the field is there
+// and is not a list of strings (plan 22, amendment 20; P22s lines 23 and 70).
+func reasoningSummary(raw json.RawMessage) (text string, unreadable bool) {
+	if len(raw) == 0 {
+		return "", false
+	}
+	var parts []string
+	if json.Unmarshal(raw, &parts) != nil {
+		return "", true
+	}
+	parts = slices.DeleteFunc(parts, func(p string) bool { return strings.TrimSpace(p) == "" })
+	return strings.Join(parts, "\n\n"), false
 }
 
 // stepStarted is the marker of a model step's start: inferred, the

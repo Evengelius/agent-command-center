@@ -233,6 +233,13 @@ func thoughtSummary(t *state.Thought) (text string, lead, n0, n1 int) {
 // whose turn or session ended with none is closed (correction C2). The 0 a
 // message cut short reports is named for what it is, no exact count
 // (correction C1).
+//
+// A Codex phase (plan 22, amendment 20) gives, in this order: its step's line;
+// its reasoning item's own span, observed, when the item's start is known; the
+// count; what Codex does not report live; and Codex's summary, its own text,
+// each line of it a line of the entry, else that Codex sent none. The item's
+// span and summary are the item's own; the phase's time stays the step's,
+// inferred.
 func thoughtDetails(t *state.Thought) []string {
 	at := func(x time.Time) string {
 		if x.IsZero() {
@@ -263,12 +270,25 @@ func thoughtDetails(t *state.Thought) []string {
 		case t.EndInferred:
 			end = " to " + at(t.End) + ", when its turn ended (inferred)"
 		}
-		return []string{
-			step + end,
-			count,
-			"no live estimate: Codex reports reasoning once it ended",
-			"no reasoning summary: the CLI sends none",
+		out := []string{step + end}
+		if !t.ItemStart.IsZero() {
+			item := "the reasoning item from " + at(t.ItemStart)
+			if t.EndInferred {
+				item += " · observed, its completion not reported"
+			} else {
+				item += " to " + at(t.End) + " · observed"
+			}
+			out = append(out, item)
 		}
+		out = append(out, count, "no live estimate: Codex reports reasoning tokens when the step ends")
+		if t.Summary == "" {
+			return append(out, "no reasoning summary: Codex sent none")
+		}
+		// Codex's own lines: a summary of several parts has a blank line between
+		// them, and a line of an entry holds no line break.
+		lines := strings.Split(t.Summary, "\n")
+		out = append(out, "Codex's summary, its own text: "+lines[0])
+		return append(out, lines[1:]...)
 	}
 	switch {
 	case t.HasTokens:

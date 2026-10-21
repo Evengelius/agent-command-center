@@ -930,7 +930,11 @@ over the same recordings; the documentation read on 2026-10-21.
 - **Not thinking, from the same run:** the owner's `SessionStart` hook makes
   the CLI send `system/hook_started` and `system/hook_response`, and the turn
   ends with a `system/post_turn_summary`. No earlier recording has them, and
-  the adapter counts all three as unrecognised.
+  the adapter counted all three as unrecognised. Since plan 22's amendment
+  20 it knows them and draws nothing, except for a hook response that is not
+  a success: a notice in zone B naming the hook, its exit code and the first
+  line of its stderr. It is not an error, since the hook's lines come before
+  the initialize response, and the CLI carries on.
 - **Not used, undocumented:** the `thinking_display` field (`"updates"`) on
   `stream_event` lines and the `estimated_tokens` field of a
   `thinking_delta` (the Messages API's `ThinkingDelta` has `thinking` and

@@ -141,6 +141,11 @@ type Marker struct {
 	// is false when the line has none (plan 22, C3).
 	Thinking    int64 `json:",omitempty"`
 	HasThinking bool  `json:",omitempty"`
+	// Summary is the summary of a Codex reasoning item, on its item_completed,
+	// as Codex sent it: the item's parts joined by a blank line ("\n\n"); ""
+	// when the item has none, as every item of a turn that did not ask for one
+	// (plan 22, amendment 20; codex-cli.md, section 12).
+	Summary string `json:",omitempty"`
 }
 
 // StepStarted names the marker of a model step's start: Codex reports a

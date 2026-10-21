@@ -32,6 +32,8 @@ func TestFixturesMatchRecordings(t *testing.T) {
 		"p12x-switch-codex-user-to-auto-review.jsonl":   180,
 		"p13c-claude-auto-classifier-deny.jsonl":        260,
 		"p14a-claude-question-answer.jsonl":             68,
+		"p22o-claude-opus-thinking.jsonl":               57,  // plan 22, amendment 20: Opus thinks; the owner's SessionStart hook
+		"p22s-codex-reasoning-summary.jsonl":            124, // plan 22, amendment 20: Codex's reasoning summaries asked for
 		"p303a-claude-conversation.jsonl":               79,
 		"p303b-claude-subagent-approval.jsonl":          198,
 		"p303c-claude-default-to-auto.jsonl":            259,
