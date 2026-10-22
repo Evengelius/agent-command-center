@@ -3880,3 +3880,36 @@ with the placeholders "High · Ultracode" after it; the editor's dynamic
 statuses and a multi-line draft's line count keep a place in the row's
 free middle; nothing is committed until the owner has reviewed the
 screenshots and approved.
+
+## Amendment 30, 2026-10-22: the "+" menu after the owner's image, for plan 30
+
+After plan 29 was approved and pushed, the owner sent an image of the
+editor's "+" clicked, kept as `references/09-plus-menu.png` (492x196) and
+described in [reference-design.md](reference-design.md#the-plus-menu): a
+small menu above the "+" with a folder icon and "Upload from computer",
+the item highlighted under the mouse, the "+" on an active background.
+The owner, word for word:
+
+````text
+Ok good
+
+Now onto the next one : clicking on "+" must trigger exactly what you see on image,
+
+The message must be : Upload from computer
+With that folder icon next to it.
+
+And if you noticed : once clicked, there is an active background-color on it, I want that also
+
+And about "Upload from computer", I want a hover effect of that color you see when the mouse target it.
+
+--
+
+Implement that design first. I will review it, and then we could focus on the uplaod functionality
+````
+
+Taken as plan 30: a click on the band opens the menu above it, a second
+click, Esc, another key or a click elsewhere closes it; the band on an
+active ground while it is open; the item on that ground under the
+pointer; the item does nothing yet, the upload being a later plan;
+nothing is committed until the owner has reviewed the screenshots and
+approved.

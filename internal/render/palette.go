@@ -39,6 +39,7 @@ var (
 	cGround    = colour{"#1E2133", ""}   // zone B's tool rows; no ground on 16 colours (plan 19)
 	cMuted     = colour{"#A1A9C0", "7"}  // a tool row's target, readable on its ground (plan 20)
 	cPill      = colour{"#3B1531", ""}   // the "F2 to answer" pill (plan 20)
+	cActive    = colour{"#272745", "4"}  // the "+" pressed and the menu item under the mouse (plan 30, the owner's image)
 
 	// The violet of thinking (plan 22, design 2): the live card's border, its
 	// bar's fill, the fill's lit leading edge, the mid shade (and the
@@ -226,8 +227,14 @@ type ground struct {
 
 var (
 	toolGround = &ground{c: cGround, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	grounds    = []*ground{toolGround}
+	// activeGround is the "+" menu's: the band while the menu is open and
+	// the item under the mouse (plan 30, design D2 and D3).
+	activeGround = &ground{c: cActive, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	grounds      = []*ground{toolGround, activeGround}
 )
+
+// active is st on the active ground (plan 30).
+func active(st *lipgloss.Style) *lipgloss.Style { return activeGround.on(st) }
 
 // on is st on the ground, made on first use; st itself on a 16-colour
 // terminal, which has no ground to spare.

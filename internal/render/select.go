@@ -116,6 +116,10 @@ func Draw(s *state.State, ui UI) *Screen {
 		}
 		sc.lines[i] = l.fit(ui.Width)
 	}
+	if s.Screen == state.ScreenDashboard && ui.Plus && !WindowOpen(ui) && !ui.DraftWin.Open && !ui.Keys && !ui.Worktrees.Open &&
+		ui.Width >= MinWidth && ui.Height >= MinHeight {
+		plusMenu(sc, ui) // the "+" menu over zone B (plan 30)
+	}
 	if s.Screen == state.ScreenDashboard && WindowOpen(ui) && !ui.Keys && !ui.Worktrees.Open &&
 		ui.Width >= MinWidth && ui.Height >= MinHeight {
 		floatWindow(s, ui, sc)

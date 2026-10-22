@@ -158,7 +158,7 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 		if status != idleHint(ui) {
 			middle = append(middle, status)
 		}
-		out = append(out, rule(w), inputRow(s, strings.Join(middle, " · "), w))
+		out = append(out, rule(w), inputRow(s, strings.Join(middle, " · "), w, ui.Plus))
 	}
 	for i := range out {
 		out[i] = out[i].fit(w) // the padding is the editor's: a click on it goes to the editor
@@ -174,15 +174,23 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 // selections, with no function yet (design D2); the pill names the
 // session's model as zone B's speaker does, "High · Ultracode" are its
 // placeholders. A middle text that does not fit beside the pills has the
-// row alone, as the status line had.
-func inputRow(s *state.State, middle string, w int) line {
+// row alone, as the status line had. The band is panel '+', so a click on
+// it opens the menu; while the menu is open (plan 30, design D2) it lies
+// on the active ground with the "+" in the lavender-white.
+func inputRow(s *state.State, middle string, w int, open bool) line {
 	model := "model N/A"
 	if m := s.Session.Model; m != "" {
 		model = modelName(m)
 	}
 	pill := line{deco(" "+model+" High", stText), deco(" · ", stMdBullet), deco("Ultracode ", stYou)}
 	left := line{deco(" ", stNone)}
-	left = append(left, grounded(line{deco(" + ", stText)}, 3)...)
+	band := span{text: " + ", st: stText, ref: ref{panel: '+', kind: refDeco}}
+	if open {
+		band.st = active(stThinkEdge)
+		left = append(left, band)
+	} else {
+		left = append(left, grounded(line{band}, 3)...)
+	}
 	left = append(left, deco("   ", stNone))
 	left = append(left, grounded(pill, pill.width())...)
 	right := line{deco("↯ Auto ", stText)}

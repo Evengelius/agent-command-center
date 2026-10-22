@@ -1,0 +1,60 @@
+ >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                                                Mock data 2.1.300
+╭──────────────────────────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
+│ A · ORCHESTRATOR                                     ││                                                                                                                                              │
+│ ✿ Claude Haiku 5.5                       ✓ COMPLETED ││ ▎ YOU  11:30                                                                                                                                 │
+│ ──────────────────────────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into  │
+│ STAGES · inferred from activity                      ││ ▎ a new file named found.txt with the Write tool, and report the names. Then tell me in one line what it found.                              │
+│ ✓ TURN 1                                          0s ││                                                                                                                                              │
+│   Use the Agent tool to launch one general-purpose … ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│   Agent · agent general-purpose                      ││                                                                                                                                              │
+│                                                      ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                                                                   │
+│ ✓ TURN 2                                          0s ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                                                        11:30:00      mock   │
+│   started by the CLI                                 ││ ▎                                                                                                                                            │
+│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it finishes.         │
+│                                                      ││ ▎                                                                                                                                            │
+│                                                      ││ ▎  ✓ general-purpose · Bash   ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'                         allowed by you 11:30:00      mock   │
+│                                                      ││ ▎  ✓ general-purpose · Write  <probe-root>\probe-work\p3b\found.txt                                      allowed by you 11:30:00      mock   │
+│                                                      ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens                                                                           11:30:00      mock   │
+│                                                      ││                                                                                                                                              │
+│                                                      ││ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ │
+│                                                      ││ │ RESULT  11:30                                                                                                                            │ │
+│                                                      ││ │ The subagent found two files in the directory, `alpha.txt` and `beta.md`, and wrote them into `<probe-root>\probe-work\p3b\found.txt`.   │ │
+│                                                      ││ │                                                                                                                                          │ │
+│                                                      ││ │ Found 2 files: alpha.txt and beta.md.                                                                                                    │ │
+│                                                      ││ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│ ──────────────────────────────────────────────────── ││                                                                                                                                              │
+│ ✦ TELEMETRY                            Enter details ││                                                                                                                                              │
+│ ▾ SESSION USAGE                                      ││                                                                                                                                              │
+│   CONTEXT           │ TOKENS        │ EST. COST      ││                                                                                                                                              │
+│   4% of 1M          │ 159.4k        │ $0.01          ││                                                                                                                                              │
+│   █░░░░░░░░░░░░░░░░ │ session total │ API-equivalent ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│ ▾ QUOTA WINDOWS                                      ││                                                                                                                                              │
+│   Session (5hr)                                 35%† ││                                                                                                                                              │
+│   ██████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││  ╭──────────────────────────╮                                                                                                                │
+│   Resets in 14h 40m                                  ││  │  🗀  Upload from computer │                                                                                                                │
+│                                                      ││ ─╰──────────────────────────╯─────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│   Weekly (7 day)                                47%† ││ >  Ask Mock data anything…                                                                                                                   │
+│   ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│   Resets in 1d 20h                                   ││   +     Haiku 5.5 High · Ultracode    turn started by the CLI                                                                        ↯ Auto  │
+╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                                                                                                    0 ACTIVE · 1 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                                                                                                            ✓ COMPLETED │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md found.txt path: <probe-root>\probe-work\p3b\found.txt                             │
+│     00:00   21.5k tok   │  tool: Write   │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit

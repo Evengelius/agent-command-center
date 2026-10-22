@@ -230,10 +230,24 @@ func TestGoldenFrames(t *testing.T) {
 			return h
 		}
 	}
+	// plusMenu is the "+" menu open over the dashboard, its item under the
+	// pointer (plan 30, amendment 30).
+	plusMenu := func(t *testing.T) *harness {
+		h := dash(t)
+		x, y := at(t, h, "+     ", 0)
+		mouseAt(t, h, click(x+1, y))
+		mouseAt(t, h, tea.MouseReleaseMsg{X: x + 1, Y: y, Button: tea.MouseLeft})
+		ix, iy := at(t, h, "Upload from computer", 0)
+		mouseAt(t, h, tea.MouseMotionMsg{X: ix + 3, Y: iy})
+		if !h.m.ui.Plus || !h.m.ui.PlusHover {
+			t.Fatalf("the menu: open %v, hover %v", h.m.ui.Plus, h.m.ui.PlusHover)
+		}
+		return h
+	}
 	for _, sc := range []struct {
 		name string
 		rig  func(*testing.T) *harness
-	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))}} {
+	}{{"startup", startup}, {"dashboard", dash}, {"plus-menu", plusMenu}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))}} {
 		for _, size := range sizes {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)

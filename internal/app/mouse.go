@@ -44,11 +44,30 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 	mo := msg.Mouse()
 	switch msg.(type) {
 	case tea.MouseClickMsg:
+		// The "+" menu (plan 30): a left click on the band opens or closes
+		// it; while it is open, a click on its item closes it and does
+		// nothing else yet, a click anywhere else closes it and goes on.
+		if mo.Button == tea.MouseLeft && !m.ui.DraftWin.Open {
+			switch p := m.screen.PanelAt(mo.X, mo.Y); {
+			case p == '+':
+				m.ui.Plus, m.ui.PlusHover = !m.ui.Plus, false
+				m.ui.Focus = "B"
+				return nil
+			case m.ui.Plus:
+				m.ui.Plus, m.ui.PlusHover = false, false
+				if p == 'U' {
+					return nil
+				}
+			}
+		}
 		// Over the draft window, only the window takes a click (amendment 13).
 		if mo.Button == tea.MouseLeft && (!m.ui.DraftWin.Open || m.screen.PanelAt(mo.X, mo.Y) == 'E') {
 			m.press(mo)
 		}
 	case tea.MouseMotionMsg:
+		if m.ui.Plus && !m.drag.on {
+			m.ui.PlusHover = m.screen.PanelAt(mo.X, mo.Y) == 'U' // the hover (plan 30, design D3)
+		}
 		if m.drag.on {
 			m.drag.moved = m.drag.moved || mo.X != m.drag.x || mo.Y != m.drag.y
 			m.extend(mo)

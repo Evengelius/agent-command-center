@@ -2091,7 +2091,7 @@ The same file can name Codex's proxy (plan 22, amendment 19).
 | F4 | approvals Manual ⇄ Auto, from any focus; Manual at every launch, never saved | plan 12; brief amendment 8 |
 | F6 / Shift+F6 | next / previous zone (B, C, A) | ASM-9 |
 | Tab / Shift+Tab | next / previous zone, outside the editor (in the editor Tab inserts a tab) | ASM-9 |
-| Esc | close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
+| Esc | close the "+" menu (plan 30), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
 | Shift+PgUp / Shift+PgDn | scroll the conversation from any focus | ASM-9 |
 | F12 | toggle mouse capture (native terminal selection when off) | TI 6.3 item 6 |
 | Ctrl+W | the [Worktrees](#worktrees) view of the session's repository: list, diff, merge, remove | plan 16; brief amendment 10 |
@@ -2231,14 +2231,38 @@ provider: it has no provider code and sends a string to part 5's caller
   phase, the quit question), joined by " · "; at the right end "↯ Auto"
   and one cell. When the middle does not fit beside the pills, the row is
   the middle alone, as the status line was; the configuration file's
-  problem keeps its red row alone (plan 21, item 5.1). The "+", "High ·
-  Ultracode" and "Auto" are the owner's design placeholders for a file to
-  add, the model and the effort selections: no key, no click, no event,
-  no state behind them; a click on the row focuses the editor. The idle
+  problem keeps its red row alone (plan 21, item 5.1). The "+" opens its
+  menu (plan 30, the next bullet); "High · Ultracode" and "Auto" are the
+  owner's design placeholders for the model and the effort selections: no
+  key, no click, no event, no state behind them; a click on the row
+  elsewhere focuses the editor. The idle
   hint "Enter send · Ctrl+J newline" and "Ctrl+G draft window" went with
   the row: the footer and the F1 page keep the keys (the footer leaves the
   newline key out when it has no room). On 16 colours the ground is not
   drawn, as zone B's tool rows there.
+- **The "+" menu** (plan 30, brief amendment 30; [reference-design.md,
+  The "+" menu](reference-design.md#the-plus-menu)): a click on the band
+  opens a three-row box above the editor's rule, its left edge on the
+  band's cell, its bottom edge on the rule:
+
+  ```text
+  ╭──────────────────────────╮
+  │  🗀 Upload from computer  │
+  ╰──────────────────────────╯
+  ```
+
+  The box in the frame's colour, the item (the folder icon U+1F5C0 and
+  the text) in the thinking edge's lavender-white. While the menu is open
+  the band lies on the active ground, `#272745`, the image's indigo (ANSI
+  4 on 16 colours), its "+" in that lavender-white, and the dashboard
+  asks the terminal for every mouse motion (cell motion otherwise, as
+  before, so idle moves cost nothing): the item's inner row lies on the
+  active ground while the pointer is over it. A second click on the band,
+  a click on the item, a click anywhere else, Esc or any other key closes
+  it; the click on the item and Esc do nothing more, the other click and
+  the other keys act as usual. The item does nothing yet: the upload is a
+  later plan's. The band is panel '+', the menu panel 'U'. On 16 colours
+  the ground is not drawn, as zone B's grounds.
 - **While a turn runs**: editable, not sendable; "turn running: the draft
   waits · Ctrl+C interrupt" in the row's middle (ASM-15). Enter then does
   nothing but flash that line.

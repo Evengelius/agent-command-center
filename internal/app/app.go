@@ -296,6 +296,9 @@ func (m *Model) View() tea.View {
 	v.AltScreen = true
 	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
+		if m.ui.Plus {
+			v.MouseMode = tea.MouseModeAllMotion // the "+" menu's hover follows the pointer (plan 30)
+		}
 	}
 	v.WindowTitle = "Agent Command Center"
 	return v

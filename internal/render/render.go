@@ -62,6 +62,10 @@ type UI struct {
 	// correction C6).
 	ActivitySince time.Time
 	Toast         string // replaces the key hints for a moment (ui-design.md, Clipboard)
+	// Plus is the editor row's "+" menu, open after a click on the band;
+	// PlusHover says the pointer is over its item (plan 30, the owner's
+	// image; ui-design.md, Input editor).
+	Plus, PlusHover bool
 	// The editor's send and newline keys in force, as the screen names them
 	// ("Ctrl+Enter"), in the configuration file's order (plan 21, item 5.1);
 	// none is the defaults. KeysProblem is why the file's keys were not used,

@@ -13,6 +13,7 @@ point at it. Two references, with different roles:
 | `05-zone-c-timeline-close.png` (1128x373), `06-zone-c-timeline-close.webp` (1403x469), from amendment 27 | **zone C's close-ups**: the lines in the title colour, the card's two columns and their bar, the panel as wide as its card, the model grey | [Zone C with the execution timeline](#zone-c-with-the-execution-timeline) |
 | `07-top-right.webp` (1685x504), from amendment 28 | **the top right**: "● LIVE" over the provider's name and version alone, over zone B's edge with the session's state | [The top right](#the-top-right) |
 | `08-input-editor.png` (1685x139), from amendment 29 | **the input editor's row**: a "+" box, the pill "Fable 5.1 High · Ultracode", "⚡ Auto" at the right end, design placeholders | [The input editor's row](#the-input-editors-row) |
+| `09-plus-menu.png` (492x196), from amendment 30 | **the "+" menu**: the "+" clicked, on an active background, a menu above it with a folder icon and "Upload from computer" highlighted under the mouse | [The "+" menu](#the-plus-menu) |
 
 **It is a visual reference, not a product.** The reference looks like a
 promotional mock-up ("CLAUDE CODE ULTRACODE TIP"). Its model names, flags
@@ -351,3 +352,24 @@ mode have a source. What it keeps: the editor's dynamic statuses (a turn
 running, a paste, a notice, the quit question, a keys problem) and the
 line count of a multi-line draft, in the row's free middle, since the row
 is where they were; the keys stay in the footer and on the F1 page.
+
+## The "+" menu
+
+`09-plus-menu.png` (492x196), sent with amendment 30 of the brief (plan
+30): the editor's "+" after a click, magnified. The "+" box has an
+indigo background (`#242D52`) and its "+" in lavender-white; above it a
+rounded box with a grey border (`#333447`) and a dark fill, a small tail
+pointing down at the "+", holding a folder outline icon and "Upload from
+computer" in lavender-white (`#D9D5FC`) on an indigo highlight
+(`#272745`): the item under the mouse. The owner: the message must be
+"Upload from computer" with that folder icon; the active background on
+the clicked "+"; the hover colour on the item under the mouse; the
+design first, the upload itself later.
+
+What plan 30 takes from it: a click on the band opens a three-row box
+above it, its bottom edge on the editor's rule, in the frame's colour,
+with " 🗀 Upload from computer " in the thinking edge's lavender-white;
+the band and the hovered item on a new active ground, the image's
+indigo; the terminal asked for every mouse motion while the menu is
+open, so the hover follows the pointer. What differs: the tail, which a
+one-cell grid cannot draw; the box's fill, the background itself.

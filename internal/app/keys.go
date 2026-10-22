@@ -23,6 +23,13 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	if m.s.QuitAsked && k.String() == "esc" {
 		return m.do(state.Stay{})
 	}
+	if m.ui.Plus {
+		// Any key closes the "+" menu; Esc does nothing more (plan 30).
+		m.ui.Plus, m.ui.PlusHover = false, false
+		if k.String() == "esc" {
+			return nil
+		}
+	}
 	if m.wt != nil {
 		return m.worktreesKey(k)
 	}
