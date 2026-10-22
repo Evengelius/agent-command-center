@@ -34,6 +34,7 @@ func TestFixturesMatchRecordings(t *testing.T) {
 		"p14a-claude-question-answer.jsonl":             68,
 		"p22o-claude-opus-thinking.jsonl":               57,  // plan 22, amendment 20: Opus thinks; the owner's SessionStart hook
 		"p22s-codex-reasoning-summary.jsonl":            124, // plan 22, amendment 20: Codex's reasoning summaries asked for
+		"p24u-claude-usage-report.jsonl":                11,  // plan 24, amendment 23: "/usage" over stream-json, the usage report
 		"p303a-claude-conversation.jsonl":               79,
 		"p303b-claude-subagent-approval.jsonl":          198,
 		"p303c-claude-default-to-auto.jsonl":            259,

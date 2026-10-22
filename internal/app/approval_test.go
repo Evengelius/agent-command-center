@@ -77,6 +77,11 @@ func (w *wireClaude) Spawn(sp proc.Spec) (proc.Process, error) {
 				id, _ := json.Marshal(m.RequestID)
 				p.emit(`{"type":"control_response","response":{"subtype":"success","request_id":` + string(id) + `,"response":{}}}`)
 			}
+			if isUsageRead(l) {
+				// Claude Code answers "/usage" itself, with no model call (P24u):
+				// the report, then a result that ends no turn (plan 24, amendment 23).
+				p.emit(usageReport, `{"type":"result","subtype":"success","is_error":false,"duration_ms":2,"duration_api_ms":0,"num_turns":0,"result":"Current session","session_id":"s-usage","total_cost_usd":0,"usage":{},"modelUsage":{}}`)
+			}
 		}
 		if w.onEOF != nil {
 			w.onEOF()
@@ -99,12 +104,16 @@ func (w *wireClaude) spawns() [][]string {
 	return append([][]string(nil), w.argv...)
 }
 
-// written is every stdin line of the given types, as written.
+// written is every stdin line of the given types, as written, without the
+// adapter's own usage reads (plan 24, amendment 23), which usageReads finds.
 func (w *wireClaude) written(types ...string) []string {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	var out []string
 	for _, l := range w.lines {
+		if isUsageRead(l) {
+			continue
+		}
 		var m struct {
 			Type    string `json:"type"`
 			Request struct {
@@ -120,6 +129,35 @@ func (w *wireClaude) written(types ...string) []string {
 	}
 	return out
 }
+
+// usageReads is the position of each "/usage" the adapter wrote among all
+// the stdin lines, in order.
+func (w *wireClaude) usageReads() []int {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	var at []int
+	for i, l := range w.lines {
+		if isUsageRead(l) {
+			at = append(at, i)
+		}
+	}
+	return at
+}
+
+// isUsageRead tells the adapter's own "/usage" user message.
+func isUsageRead(l string) bool {
+	var m struct {
+		Type    string `json:"type"`
+		Message struct {
+			Content json.RawMessage `json:"content"`
+		} `json:"message"`
+	}
+	return json.Unmarshal([]byte(l), &m) == nil && m.Type == "user" && string(m.Message.Content) == `"/usage"`
+}
+
+// usageReport is Claude Code's answer to "/usage" as P24u recorded it: the
+// usage page as text, and the documented report beside it.
+const usageReport = `{"type":"assistant","message":{"id":"msg_usage","type":"message","role":"assistant","model":"<synthetic>","content":[{"type":"text","text":"Current session: 6% used · resets Oct 22, 5:20pm\nCurrent week (all models): 24% used\nCurrent week (Fable): 11% used"}]},"usage_report":{"rate_limits":{"limits":[{"kind":"session","group":"session","percent":6,"resets_at":"2026-10-22T15:20:00.473808+00:00","scope":null,"severity":"normal","is_active":false},{"kind":"weekly_all","group":"weekly","percent":24,"resets_at":"2026-10-27T09:00:00.473852+00:00","scope":null,"severity":"normal","is_active":true},{"kind":"weekly_scoped","group":"weekly","percent":11,"resets_at":"2026-10-27T09:00:00.474012+00:00","scope":{"model":{"display_name":"Fable"},"surface":null},"severity":"normal","is_active":false}],"extra_usage":{"is_enabled":false,"monthly_limit":null,"used_credits":null,"utilization":null,"currency":null}}},"parent_tool_use_id":null,"session_id":"s-usage"}`
 
 func (p *wireProc) emit(lines ...string) {
 	p.wmu.Lock()

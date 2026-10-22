@@ -594,13 +594,16 @@ func (m *Model) command(c state.Command) tea.Cmd {
 			return nil
 		}, nil), m.opt.After(InterruptTimeout, actionMsg{state.InterruptTimeout{}}))
 	case state.CmdRefresh:
+		// Through the write queue, in order with the owner's messages: the
+		// Claude adapter's refresh writes "/usage", which must reach the CLI
+		// before any prompt sent after the turn (plan 24, amendment 23).
 		sess := m.sess
-		return func() tea.Msg {
+		return m.write(func() tea.Msg {
 			if sess == nil {
 				return nil
 			}
 			return refreshMsg{sess.Refresh()}
-		}
+		}, nil)
 	case state.CmdClose:
 		return tea.Batch(m.close(), m.opt.After(CloseTimeout, actionMsg{state.CloseTimeout{}}))
 	case state.CmdKill:

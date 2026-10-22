@@ -746,18 +746,24 @@ Closed, the dashboard does not depend on the answer:
 7. **Workflows under `-p`.** The dashboard starts none; if Claude Code runs
    one, its `local_workflow` task maps to the agent type "workflow" in zone C
    (`internal/provider/claude/mapper.go`), like any other task.
-9. **`/usage` over stream-json.** The dashboard does not send it yet; its
-   quota comes from `rate_limit_event` (item 8) and its context from
-   `get_context_usage` (item 10). A `/usage` the owner types is an ordinary
-   message, shown as Claude Code answers it (plan 4, the owner's live run).
-   P24u (plan 24, 2026-10-22) sent one as a probe: Claude Code answers it
+9. **`/usage` over stream-json.** The dashboard sends it since plan 24
+   (amendment 23): right after the handshake's answer and after each turn's
+   `result`, with `get_context_usage` (item 10); its quota comes from the
+   report, and `rate_limit_event` (item 8) updates the windows between
+   reads. P24u (2026-10-22) recorded the answer: Claude Code answers it
    locally in 2.2 s with no model call (`result` `num_turns` 0, cost 0), an
    `assistant` message whose `usage_report.rate_limits.limits[]` holds the
    `session`, `weekly_all` and `weekly_scoped` rows (`scope.model.display_name`
    "Fable"), each with `percent`, `resets_at` and `is_active`; the
-   dashboard's `rate_limit_event`s never carried a model-scoped window. A
-   read at session start and after each turn, kept out of the conversation,
-   is proposed for a plan of its own (doc/plan24-evaluation.md).
+   dashboard's `rate_limit_event`s never carried a model-scoped window. In
+   the dashboard, live on 2026-10-22 (doc/plan24-evaluation.md, "Live
+   check"): `session_state_changed` running 5 ms after the write, then
+   `system/init`, the report and the `result` together 1.9 s later,
+   `session_state_changed` idle 2 ms after the result, `commands_changed`
+   0.4 s later. The mapper keeps the exchange out of the conversation
+   (`internal/provider/claude/mapper.go`); a `/usage` the owner types is an
+   ordinary message, shown as Claude Code answers it (plan 4, the owner's
+   live run), its report read too.
 14. **Status line under `-p`.** Zone D reads the stream (items 8 and 10), not
     the status line, whether or not it runs.
 

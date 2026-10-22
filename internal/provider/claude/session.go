@@ -155,11 +155,29 @@ func (s *Session) read(r io.Reader) {
 		case len(bytes.TrimSpace(l)) > 0:
 			s.mu.Lock()
 			evs := s.m.Out(l)
+			ready := false
 			for _, ev := range evs {
 				s.track(ev)
-				s.q.Push(ev)
+				ready = ready || ev.Kind == event.SessionReady
 			}
+			if !ready {
+				for _, ev := range evs {
+					s.q.Push(ev)
+				}
+				s.mu.Unlock()
+				break
+			}
+			// The handshake's answer: its events are held while "/usage" is
+			// written, so the usage report is asked for before the owner can
+			// write anything, and its Sent event follows session.ready (plan
+			// 24, amendment 23; P24u). A failed write is an event of its own.
+			held := s.q.Hold(evs)
 			s.mu.Unlock()
+			werr := s.readUsage()
+			s.q.Release(held, true)
+			if werr != nil {
+				s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "usage report not asked for: " + werr.Error()}})
+			}
 		}
 		if err != nil {
 			if !errors.Is(err, io.EOF) && !s.closing.Load() {
@@ -252,7 +270,11 @@ func (s *Session) Events() <-chan event.Event { return s.q.Out() }
 
 // write sends one line. Its events are mapped before the write, so a reply
 // can never be mapped first, and released only once the line is written.
-func (s *Session) write(msg any) error {
+func (s *Session) write(msg any) error { return s.writeWith(msg, s.m.In) }
+
+// writeWith is write with the mapping of the line's own events: the
+// dashboard's, In, or an internal line's, InInternal.
+func (s *Session) writeWith(msg any, in func([]byte) []event.Event) error {
 	var b bytes.Buffer
 	enc := json.NewEncoder(&b)
 	enc.SetEscapeHTML(false)
@@ -265,7 +287,7 @@ func (s *Session) write(msg any) error {
 		return errors.New("Claude Code's input is closed")
 	}
 	s.mu.Lock()
-	evs := s.m.In(bytes.TrimRight(b.Bytes(), "\n"))
+	evs := in(bytes.TrimRight(b.Bytes(), "\n"))
 	for _, ev := range evs {
 		s.track(ev)
 	}
@@ -293,14 +315,23 @@ func (s *Session) control(subtype, body string) error {
 }
 
 // Send writes the owner's message, byte for byte.
-func (s *Session) Send(text string) error {
-	return s.write(map[string]any{
+func (s *Session) Send(text string) error { return s.write(userMessage(text)) }
+
+// userMessage is a user message as Claude Code reads it.
+func userMessage(text string) map[string]any {
+	return map[string]any{
 		"type":               "user",
 		"message":            map[string]any{"role": "user", "content": text},
 		"parent_tool_use_id": nil,
 		"session_id":         "default",
-	})
+	}
 }
+
+// readUsage asks for the usage report: "/usage" as a user message, which
+// Claude Code answers itself with no model call (P24u, plan 24: the
+// session, weekly and model-scoped windows). The mapper keeps the exchange
+// out of the conversation.
+func (s *Session) readUsage() error { return s.writeWith(userMessage("/usage"), s.m.InInternal) }
 
 // DenyMessage is what Claude Code is told when the owner denies a request.
 const DenyMessage = "The user denied this in Agent Command Center."
@@ -345,8 +376,14 @@ func (s *Session) Answer(id, decision string) error {
 // Interrupt asks Claude Code to end the running turn.
 func (s *Session) Interrupt() error { return s.control("interrupt", "") }
 
-// Refresh asks for the context usage (undocumented, INT 4).
-func (s *Session) Refresh() error { return s.control("get_context_usage", "") }
+// Refresh asks for the context usage (undocumented, INT 4), then for the
+// usage report (plan 24): both after each turn.
+func (s *Session) Refresh() error {
+	if err := s.control("get_context_usage", ""); err != nil {
+		return err
+	}
+	return s.readUsage()
+}
 
 // Capabilities of Claude Code 2.1 in way A.
 func (s *Session) Capabilities() provider.Capabilities {

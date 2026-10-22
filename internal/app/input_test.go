@@ -60,6 +60,10 @@ func (f *fakeClaude) Spawn(sp proc.Spec) (proc.Process, error) {
 			case m.Type == "control_request" && m.Request.Subtype == "initialize":
 				id, _ := json.Marshal(m.RequestID)
 				out = `{"type":"control_response","response":{"subtype":"success","request_id":` + string(id) + `,"response":{}}}` + "\n"
+			case isUsageRead(string(l)):
+				// The adapter's own usage read, answered as Claude Code does:
+				// the report, then a result that ends no turn (plan 24, amendment 23).
+				out = usageReport + "\n" + `{"type":"result","subtype":"success","is_error":false,"duration_ms":2,"duration_api_ms":0,"num_turns":0,"result":"Current session","session_id":"s-usage","total_cost_usd":0,"usage":{},"modelUsage":{}}` + "\n"
 			case m.Type == "user":
 				out = `{"type":"system","subtype":"init","cwd":` + string(cwd) + `,"session_id":"s-input","model":"claude-haiku-5-5","permissionMode":"default"}` + "\n" +
 					`{"type":"result","subtype":"success","is_error":false,"duration_ms":1,"result":"ok","session_id":"s-input"}` + "\n"
@@ -72,7 +76,8 @@ func (f *fakeClaude) Spawn(sp proc.Spec) (proc.Process, error) {
 	return p, nil
 }
 
-// users is every user message written to stdin, as written.
+// users is every user message written to stdin, as written, without the
+// adapter's own usage reads (plan 24, amendment 23).
 func (f *fakeClaude) users() [][]byte {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -81,7 +86,7 @@ func (f *fakeClaude) users() [][]byte {
 		var m struct {
 			Type string `json:"type"`
 		}
-		if json.Unmarshal(l, &m) == nil && m.Type == "user" {
+		if json.Unmarshal(l, &m) == nil && m.Type == "user" && !isUsageRead(string(l)) {
 			us = append(us, l)
 		}
 	}

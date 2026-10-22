@@ -3705,3 +3705,29 @@ Zones B and C must retain their approved designs.
 
 **Do not stop at a partial visual approximation. Continue correcting actionable discrepancies until the implementation faithfully reflects the approved design within Windows Terminal's technical constraints.**
 ````
+
+## Amendment 23, 2026-10-22: the usage report read, for the Fable limit, during plan 24
+
+Plan 24's screenshots were sent for review. The owner ran the dashboard on
+Fable 5.1 and came back with a screenshot of it: zone A's quota windows
+showing "Session (5hr)" and "Weekly (7 day)" only, both marked †, and the
+model row reading the raw id `claude-fable-5-1`. One probe was approved,
+P24u, which recorded what Claude Code answers to "/usage" over stream-json
+(`doc/research/probes/README.md`). The third message came with a screenshot
+of VS Code's Claude Code panel, "ACCOUNT & USAGE", for the owner's account:
+"Session (5hr) 6%, Resets in 4h", "Weekly (7 day) 24%, Resets in 4d",
+"Fable limit 12%, Resets in 4d". The owner, in three messages, word for
+word:
+
+````text
+Before approving and commit I have one remark, Showing Fable limit is based on the user's anthropic subscription, I don't think it is the case Because in your mock yes it works, but look at my image, read the conversation and look, it does use fable 5.1, but it doesn't show fable limit
+
+Approved: run one /usage probe over stream-json on a temporary project, record what the report holds, then we decide about the commit.
+
+VS Code manage to show it directly and you telling me you can't do it ?
+````
+
+Taken as: the dashboard reads the usage report itself, in plan 24, so the
+Fable limit shows live as VS Code shows it (plan.md, D14); this reverses
+plan 14's decision on CC-10 q9. Nothing is committed until the owner
+approves.

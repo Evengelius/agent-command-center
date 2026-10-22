@@ -96,9 +96,10 @@ func TestStreamEventsTakeTheMessageStartID(t *testing.T) {
 	t.Logf("%d stream_event lines in %d of %d recordings", total, files, len(names))
 	// 1,237 in 13 of 14 recordings until plan 22 added P12c-block, whose 162
 	// stream events all take their message_start's id too; then 1,399 in 14 of 15
-	// until amendment 20 added P22o, whose 36 do too.
-	if total != 1435 || files != 15 || len(names) != 16 {
-		t.Errorf("%d lines in %d of %d recordings, want 1435 in 15 of 16", total, files, len(names))
+	// until amendment 20 added P22o, whose 36 do too; then 1,435 in 15 of 16
+	// until plan 24 added P24u, which has no stream event.
+	if total != 1435 || files != 15 || len(names) != 17 {
+		t.Errorf("%d lines in %d of %d recordings, want 1435 in 15 of 17", total, files, len(names))
 	}
 }
 

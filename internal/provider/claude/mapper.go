@@ -35,6 +35,14 @@ type Mapper struct {
 	// thread): the id the agent's following stream events take (plan 21,
 	// item 3).
 	streamIDs map[string]string
+	// The usage reads the dashboard asked for with "/usage" and the CLI has
+	// not answered yet (plan 24, amendment 23; P24u): the CLI answers each
+	// in order, as a turn of its own, which the mapper keeps out of the
+	// conversation: usageStarted once its turn start was seen, usageOpen
+	// once its answer was.
+	usageReads   int
+	usageStarted bool
+	usageOpen    bool
 }
 
 // NewMapper returns an empty mapper.
@@ -52,6 +60,7 @@ type line struct {
 	Event           json.RawMessage `json:"event"`
 	APIMessageID    string          `json:"api_message_id"`
 	ToolResultMeta  json.RawMessage `json:"tool_result_meta"`
+	UsageReport     json.RawMessage `json:"usage_report"` // on the assistant message answering "/usage" (P24u)
 	RequestID       string          `json:"request_id"`
 	Request         json.RawMessage `json:"request"`
 	Response        json.RawMessage `json:"response"`
@@ -78,6 +87,11 @@ func (m *Mapper) Out(raw []byte) []event.Event {
 	case "system":
 		return m.system(l, raw)
 	case "stream_event":
+		if agent == "" && m.usageReads > 0 && !m.usageOpen {
+			// A streamed part of the dashboard's own usage read (P24u showed
+			// none): never a message of the conversation.
+			return []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, event.Status{Detail: "usage report: streaming"})}
+		}
 		return m.stream(l, agent, raw)
 	case "assistant":
 		return m.assistant(l, agent, raw)
@@ -196,6 +210,12 @@ func (m *Mapper) system(l line, raw []byte) []event.Event {
 		}
 		_ = json.Unmarshal(raw, &s)
 		if s.State == "running" {
+			if m.usageReads > 0 && !m.usageStarted {
+				// The dashboard's own usage read runs as a turn of the CLI's:
+				// no turn of the owner's opens for it (plan 24).
+				m.usageStarted = true
+				return []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, event.Status{Detail: "usage report: reading"})}
+			}
 			return []event.Event{m.ev(event.TurnStarted, event.Observed, "", raw, nil)}
 		}
 		return []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, event.Status{Status: s.State})}
@@ -504,6 +524,16 @@ func (m *Mapper) assistant(l line, agent string, raw []byte) []event.Event {
 		} `json:"usage"`
 	}
 	_ = json.Unmarshal(l.Message, &msg)
+	// The answer to "/usage" (P24u): its usage_report gives the quota
+	// windows; when the dashboard asked, the message itself is not shown.
+	report := m.usageReport(l.UsageReport, raw)
+	if agent == "" && m.usageReads > 0 {
+		m.usageOpen = true
+		if report == nil {
+			report = []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, event.Status{Detail: "usage report: the answer holds none"})}
+		}
+		return report
+	}
 	if u := msg.Usage; agent == "" && u != nil {
 		// What the request put in the context (claude-code.md, section 9:
 		// input + cache creation + cache read).
@@ -541,7 +571,86 @@ func (m *Mapper) assistant(l line, agent string, raw []byte) []event.Event {
 	if len(l.Error) > 0 && string(l.Error) != "null" {
 		out = append(out, m.ev(event.Error, event.Observed, agent, raw, event.Problem{Message: "assistant error: " + strings.Trim(string(l.Error), `"`)}))
 	}
-	return out
+	return append(report, out...)
+}
+
+// usageReport maps the usage_report of an assistant message, documented as
+// experimental (doc agent-sdk/typescript#sdkusagereport; P24u), to the quota
+// windows: its rate_limits.limits[] rows by kind, session to quota.5h,
+// weekly_all to quota.7d, weekly_scoped to quota.7d.<model> from its
+// scope.model.display_name ("Fable"), each with its percent and reset time;
+// nil without a report or a row.
+func (m *Mapper) usageReport(rep json.RawMessage, raw []byte) []event.Event {
+	if len(rep) == 0 || string(rep) == "null" {
+		return nil
+	}
+	var r struct {
+		RateLimits struct {
+			Limits []struct {
+				Kind     string  `json:"kind"`
+				Percent  float64 `json:"percent"`
+				ResetsAt string  `json:"resets_at"`
+				Scope    *struct {
+					Model *struct {
+						DisplayName string `json:"display_name"`
+					} `json:"model"`
+				} `json:"scope"`
+			} `json:"limits"`
+		} `json:"rate_limits"`
+	}
+	if json.Unmarshal(rep, &r) != nil {
+		return nil
+	}
+	var ms []event.Metric
+	for _, w := range r.RateLimits.Limits {
+		name := ""
+		switch w.Kind {
+		case "session":
+			name = "quota.5h"
+		case "weekly_all":
+			name = "quota.7d"
+		case "weekly_scoped":
+			model := ""
+			if w.Scope != nil && w.Scope.Model != nil {
+				model = scopeSlug(w.Scope.Model.DisplayName)
+			}
+			if model == "" {
+				model = "scoped"
+			}
+			name = "quota.7d." + model
+		default:
+			continue // a kind the SDK does not document today: not shown
+		}
+		var reset time.Time
+		if t, err := time.Parse(time.RFC3339Nano, w.ResetsAt); err == nil {
+			reset = t.UTC()
+		}
+		ms = append(ms, event.Metric{Name: name, Value: w.Percent, Unit: "%", ResetsAt: reset, Documented: true, Source: "usage_report (" + w.Kind + ")"})
+	}
+	if len(ms) == 0 {
+		return nil
+	}
+	return []event.Event{m.ev(event.Telemetry, event.Observed, "", raw, event.Metrics{Items: ms})}
+}
+
+// scopeSlug is a model's display name as a metric name's part: its letters
+// and digits, lower case ("Fable" gives "fable").
+func scopeSlug(name string) string {
+	var b strings.Builder
+	for _, c := range strings.ToLower(name) {
+		if c >= 'a' && c <= 'z' || c >= '0' && c <= '9' {
+			b.WriteRune(c)
+		}
+	}
+	return b.String()
+}
+
+// InInternal maps a line the dashboard wrote for itself, "/usage" (plan 24,
+// amendment 23): logged as a write, never the owner's message, and the
+// CLI's answer to it is kept out of the conversation (usageReads).
+func (m *Mapper) InInternal(raw []byte) []event.Event {
+	m.usageReads++
+	return []event.Event{m.ev(event.Sent, event.Observed, "", raw, event.Write{What: "usage"})}
 }
 
 func (m *Mapper) user(l line, agent string, raw []byte) []event.Event {
@@ -764,6 +873,23 @@ func (m *Mapper) result(raw []byte) []event.Event {
 		} `json:"modelUsage"`
 	}
 	_ = json.Unmarshal(raw, &r)
+	if m.usageReads > 0 {
+		// The result of the dashboard's own usage read: no turn ended, and
+		// its figures (no model call: 0 ms, 0 tokens, no cost) are not the
+		// session's (P24u).
+		open := m.usageOpen
+		m.usageReads, m.usageStarted, m.usageOpen = m.usageReads-1, false, false
+		if open {
+			return []event.Event{m.ev(event.StatusChanged, event.Observed, "", raw, event.Status{Detail: "usage report: read"})}
+		}
+		why := r.Subtype
+		if len(r.Errors) > 0 && r.Errors[0] != "" {
+			why = strings.Join(r.Errors, "; ")
+		} else if r.Result != "" {
+			why = r.Result
+		}
+		return []event.Event{m.ev(event.Error, event.Observed, "", raw, event.Problem{Message: "usage report not read: " + why})}
+	}
 	end := event.TurnEnd{Subtype: r.Subtype, DurationMS: r.DurationMS}
 	switch {
 	case r.Subtype == "success" && !r.IsError:

@@ -1393,8 +1393,8 @@ AM4 D3, D5, D6), which were zone D's until plan 23. Every value is a `Value`
 
 | Value | Claude Code | Codex |
 | - | - | - |
-| 5-hour, 7-day quota | percentage bar, from `unifiedWindows` **U**, marked † "undocumented field"; reset time | percentage bar from `account/rateLimits/*`, windows identified by `windowDurationMins`; reset time |
-| Model-scoped weekly windows | one block each, "<Model> limit", only once reported: a `unifiedWindows` key or a `rateLimitType` of the form `seven_day_<model>` (`quota.7d.<model>`); never assumed from the model or the plan | none |
+| 5-hour, 7-day quota | percentage bar, from the `/usage` report read right after the handshake and after each turn (documented; plan 24, amendment 23), updated between reads by `unifiedWindows` **U**, marked † "undocumented field"; reset time | percentage bar from `account/rateLimits/*`, windows identified by `windowDurationMins`; reset time |
+| Model-scoped weekly windows | one block each, "<Model> limit", only once reported: the report's `weekly_scoped` rows, named by `scope.model.display_name` ("Fable limit"), a `unifiedWindows` key or a `rateLimitType` of the form `seven_day_<model>` (`quota.7d.<model>`); never assumed from the model or the plan | none |
 | Context | % of the window, from `get_context_usage` or derived from usage | % of the window, from `thread/tokenUsage/updated` |
 | Tokens | session total from `result.usage` and messages | session total, derived: the sum over threads, labelled so |
 | Cost | "$0.42 API-equiv. estimate", from `total_cost_usd`, never mixed with quota | "cost N/A (Codex reports none)" |
@@ -1409,6 +1409,11 @@ AM4 D3, D5, D6), which were zone D's until plan 23. Every value is a `Value`
   reset; waiting for the next update" until a new value arrives (TEL rules).
 - **Freshness**: the notes show the age of the last quota report, "quota
   updated 4s ago", so a stale value is visible.
+- **Before the first turn**: Claude Code's windows are in zone A as soon
+  as the session is ready, from the usage report the adapter asks for
+  right after the handshake; the exchange is never a conversation entry,
+  a stage or an agent (events-and-state.md, Polling; plan 24, amendment
+  23).
 - **N/A** is grey, never zero, and always carries a short reason on screen
   or in the details view: on a quota window's second row ("no report yet",
   "API key: no subscription window", "plan has no 5-hour limit"), as the

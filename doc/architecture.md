@@ -194,7 +194,7 @@ screen):
 | Converse | user messages as stream-json lines on stdin; stdin stays open for the life of the session (background tasks die if it closes) | INT 1; P3, P3b |
 | Approvals | `can_use_tool` requests answered allow (echoing `updatedInput`) or deny with a message; `permission_suggestions` and `updatedPermissions` other than `session` never sent | INT 4; CC-4; P2, P3b |
 | Interrupt | `interrupt` control request | INT 5; P2 |
-| Telemetry | stream messages; `get_context_usage` after each turn | TEL CC |
+| Telemetry | stream messages; "/usage" right after the handshake and, with `get_context_usage`, after each turn (plan 24, amendment 23) | TEL CC |
 | Close | close stdin, wait 5 s, terminate, wait 5 s, kill | CC-4; INT 9 (no POSIX signals on Windows) |
 
 Permission mode: the startup screen asks nothing beyond the two questions
@@ -310,7 +310,9 @@ and the VS Code extension use; INT 1). Codex: `codex app-server` over stdio
   undocumented pieces the MVP relies on are labelled where they are used:
   Claude Code's control-request wire form and `--permission-prompt-tool
   stdio` (INT 1, INT 4), and Claude Code's `rate_limit_event.unifiedWindows`
-  (TEL CC). Codex's app-server is documented but labelled experimental (INT 1).
+  (TEL CC), which updates the quota between the documented `/usage` reports
+  (plan 24, amendment 23). Codex's app-server is documented but labelled
+  experimental (INT 1).
   Each has a fallback in [reliability.md](reliability.md#fallbacks-for-every-source).
 - **Read only towards configuration.** No CLI configuration is written; no
   request that writes it is sent; configuration comes from the CLI's own

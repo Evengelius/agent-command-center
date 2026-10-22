@@ -85,9 +85,11 @@ Brief amendment 22 (2026-10-22), the owner's image
 `references/03-zone-a-telemetry.webp`
 ([reference-design.md](doc/reference-design.md#zone-a-with-the-telemetry)):
 zone A redrawn after the image and given zone D's telemetry; zone D gone;
-zones B and C as plans 20 to 22 left them. The criteria below were written
-before the code; the owner reviews the Windows Terminal screenshots before
-any commit.
+zones B and C as plans 20 to 22 left them. Amendment 23 (2026-10-22), after
+the owner's review of the screenshots: the usage report read, so the
+model-scoped "Fable limit" shows live (D14, criteria 24.36 to 24.41). The
+criteria below were written before the code; the owner reviews the Windows
+Terminal screenshots before any commit.
 
 ### Design
 
@@ -215,6 +217,24 @@ any commit.
   architecture.md's coverage table, reliability.md (the model-scoped
   windows), events-and-state.md (the errors list's place), AGENTS.md (the
   zones, the status), reference-design.md (the image).
+- **D14 The usage report (amendment 23).** The Claude adapter writes
+  "/usage" as a user message right after the handshake's answer, before
+  the owner can write (the answer's events are held until the line is
+  written), and after each turn's `result` beside `get_context_usage`
+  (`Refresh`, through the application's write queue, so a prompt typed at
+  once follows it). Claude Code answers it itself, with no model call
+  (P24u): the mapper takes `usage_report.rate_limits.limits[]`, `session`
+  to `quota.5h`, `weekly_all` to `quota.7d`, `weekly_scoped` to
+  `quota.7d.<model>` from `scope.model.display_name` ("Fable limit"),
+  documented, source "usage_report (<kind>)", with their `resets_at`, and
+  keeps the exchange out of the conversation, the stages and zone C: its
+  running state, its streamed parts, its assistant message and its result
+  are statuses ("usage report: reading", "streaming", "read"), never a
+  turn or an entry; a result with no report before it is one error,
+  "usage report not read: <reason>", and the last values stay with their
+  age. A "/usage" the owner types is a message like any other, its report
+  read too. `rate_limit_event` keeps updating the windows between reads.
+  The tests' fake CLIs answer "/usage" as Claude Code does.
 
 ### Criteria
 
@@ -408,6 +428,51 @@ Documents and hygiene:
   the image binary; `git status` lists only the intended files, and
   nothing is committed until the owner approves the screenshots.
 
+The usage report (amendment 23, D14):
+
+- 24.36 `TestUsageReadInternal` (`internal/provider/claude/usage_test.go`):
+  P24u through the mapper with the dashboard's own "/usage" gives
+  `quota.5h` 6%, `quota.7d` 24% and `quota.7d.fable` 11%, documented,
+  source `usage_report (<kind>)`, with their reset times, and no turn,
+  message, unrecognised or error event; the reducer keeps no entry and no
+  stage, the turn idle, the session Ready with the init's model, and the
+  next running state is a turn's again.
+- 24.37 `TestUsageTypedByOwner`: the same recording with "/usage" as the
+  owner's message gives the user message, the completed message naming
+  Fable, the turn's end, and the windows.
+- 24.38 `TestUsageReadFailed`, `TestUsageReadRunningState`,
+  `TestUsageReportShapes`: a result with no report before it is one error
+  naming the reason and leaves no read pending; a running state and a
+  streamed part during the read are statuses, an answer without a report
+  too; an unparsable `resets_at` leaves the window without a reset time,
+  an unnamed scope reads `quota.7d.scoped`, an unknown kind is dropped.
+- 24.39 `TestUsageReadAroundTurns` (the fake CLI): the first report is in
+  the state before any turn (6%, Fable 11% documented), a turn adds one
+  stage and no error, and `Refresh` writes `get_context_usage` then
+  "/usage", whose report (7%) replaces the first with no new stage or
+  entry; `TestHandshakeAndTurn` and `TestSetApprovalMode` list the lines
+  written, byte for byte, "/usage" right after `initialize`.
+- 24.40 `TestUsageReads` (`internal/app/usage_test.go`): over the wire
+  fake, zone A shows "Session (5hr)", "Weekly (7 day)", "Fable limit" and
+  "Resets in" before any turn, with no entry, stage, error or unrecognised
+  event; the lines written are `initialize`, "/usage", the prompt,
+  `get_context_usage`, "/usage", the next prompt; two stages after two
+  prompts.
+- 24.41 `go build ./...`, `go vet ./...`, `gofmt -l .` empty, `go test
+  ./...` all packages ok with every existing test (the fakes answer
+  "/usage"), `go test -race` on `internal/provider/claude` and
+  `internal/app` clean, the timing step alone 7 of 7.
+- 24.42 The live check the owner approved (2026-10-22, 13:48): the
+  dashboard built from the tree on Claude Code 2.1.303, in a temporary
+  project outside the repository, no prompt typed, the configuration check
+  before and after; its eight criteria (L24.1 to L24.8: the preconditions,
+  Ready through the logging wrapper, the three windows with percentages,
+  reset times and no "†" before any prompt, no entry, stage or error and
+  the status IDLE, the details view naming `usage_report` for the three
+  windows with 0 errors, Ctrl+Q leaving no process, the project empty, the
+  configuration check PASS) written in `scratchpad\term\p24live.ps1` before
+  the run, every one PASS, in `doc/plan24-evaluation.md`, "Live check".
+
 ### Progress
 
 - [x] Amendment 22 recorded, the image in references, this plan written.
@@ -435,10 +500,21 @@ Documents and hygiene:
   only. The mapper keeps a model-scoped window beside them now, and Fable
   and Mythos are family names. P24u, the `/usage` probe the owner approved
   (12:39, `doc/research/probes/README.md`): answered locally with no model
-  call, its `usage_report` holding the session, weekly and "Fable" windows;
-  the read is proposed for a plan of its own
+  call, its `usage_report` holding the session, weekly and "Fable" windows
   ([`doc/plan24-evaluation.md`](doc/plan24-evaluation.md), "After the
-  owner's live session").
+  owner's live session"); the read followed as amendment 23.
+- [x] The usage report read (amendment 23, D14): the Claude adapter and
+  its mapper, `Refresh` through the application's write queue, the tests
+  (24.36 to 24.41; every fake CLI answers "/usage"), the documents; the
+  whole suite, the race run and the timing step rerun
+  ([`doc/plan24-evaluation.md`](doc/plan24-evaluation.md), "Amendment
+  23").
+- [x] The live check the owner approved (13:48; 24.42): the dashboard on
+  Claude Code 2.1.303, zone A read before any prompt, 8 of 8 PASS, "Fable
+  limit 15%" on screen 762 ms after Ready, the report answered with no
+  model call, the configuration check PASS
+  ([`doc/plan24-evaluation.md`](doc/plan24-evaluation.md), "Live check").
+  Waiting for the owner's approval before any commit.
 
 ## Closed plans
 

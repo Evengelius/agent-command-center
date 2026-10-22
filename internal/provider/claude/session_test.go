@@ -44,6 +44,29 @@ func fake(mode string) {
 		return l
 	}
 	out := func(s string) { os.Stdout.WriteString(s + "\n") }
+	// Claude Code answers "/usage" itself, with no model call (P24u), and the
+	// dashboard writes it after the handshake and after each turn (plan 24,
+	// amendment 23): every mode answers it on the way to the line it waits
+	// for, with a session window one point higher at each read.
+	reads := 0
+	readLine := next
+	next = func() []byte {
+		for {
+			l := readLine()
+			var msg struct {
+				Type    string `json:"type"`
+				Message struct {
+					Content json.RawMessage `json:"content"`
+				} `json:"message"`
+			}
+			if json.Unmarshal(l, &msg) != nil || msg.Type != "user" || string(msg.Message.Content) != `"/usage"` {
+				return l
+			}
+			reads++
+			out(usageReport(5 + reads))
+			out(`{"type":"result","subtype":"success","is_error":false,"duration_ms":2,"duration_api_ms":0,"num_turns":0,"result":"Current session","session_id":"0f5e2a64-0000-4000-8000-000000000001","total_cost_usd":0,"usage":{},"modelUsage":{}}`)
+		}
+	}
 	cwd, _ := os.Getwd()
 	init := `{"type":"system","subtype":"init","cwd":` + quote(cwd) + `,"session_id":"0f5e2a64-0000-4000-8000-000000000001","model":"claude-haiku-4-5","permissionMode":"default"}`
 	ready := func() {
@@ -68,6 +91,30 @@ func fake(mode string) {
 		}
 		out(init)
 		out(`{"type":"assistant","message":{"id":"msg_echo","type":"message","role":"assistant","model":"claude-haiku-4-5","content":[{"type":"text","text":` + quote(msg.Message.Content) + `}]},"parent_tool_use_id":null,"session_id":"0f5e2a64-0000-4000-8000-000000000001"}`)
+	case "usage": // echoes one message as a whole turn, then answers the context usage; the usage reads around them are answered by next (plan 24, amendment 23)
+		ready()
+		var msg struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		}
+		if json.Unmarshal(next(), &msg) != nil {
+			os.Exit(2)
+		}
+		out(init)
+		out(`{"type":"assistant","message":{"id":"msg_echo","type":"message","role":"assistant","model":"claude-haiku-4-5","content":[{"type":"text","text":` + quote(msg.Message.Content) + `}]},"parent_tool_use_id":null,"session_id":"0f5e2a64-0000-4000-8000-000000000001"}`)
+		out(`{"type":"result","subtype":"success","is_error":false,"duration_ms":10,"num_turns":1,"result":` + quote(msg.Message.Content) + `,"session_id":"0f5e2a64-0000-4000-8000-000000000001","total_cost_usd":0.01,"usage":{"input_tokens":10,"output_tokens":5},"modelUsage":{"claude-haiku-4-5":{"inputTokens":10,"outputTokens":5,"contextWindow":200000}}}`)
+		var ctl struct {
+			RequestID string `json:"request_id"`
+			Request   struct {
+				Subtype string `json:"subtype"`
+			} `json:"request"`
+		}
+		if json.Unmarshal(next(), &ctl) != nil || ctl.Request.Subtype != "get_context_usage" {
+			fmt.Fprintf(os.Stderr, "fake: wanted get_context_usage, got %q\n", ctl.Request.Subtype)
+			os.Exit(2)
+		}
+		out(`{"type":"control_response","response":{"subtype":"success","request_id":` + quote(ctl.RequestID) + `,"response":{"totalTokens":15,"maxTokens":200000,"autoCompactThreshold":190000}}}`)
 	case "question": // reads one user message, then asks the questions of probe P14a
 		ready()
 		next()
@@ -114,6 +161,13 @@ func fake(mode string) {
 }
 
 func quote(s string) string { b, _ := json.Marshal(s); return string(b) }
+
+// usageReport is Claude Code's answer to "/usage" as P24u recorded it, with
+// the session window at pct: the page as text, and the report beside it.
+func usageReport(pct int) string {
+	p := strconv.Itoa(pct)
+	return `{"type":"assistant","message":{"id":"msg_usage","type":"message","role":"assistant","model":"<synthetic>","content":[{"type":"text","text":"Current session: ` + p + `% used"}]},"usage_report":{"rate_limits":{"limits":[{"kind":"session","percent":` + p + `,"resets_at":"2026-10-22T15:20:00.473808+00:00","scope":null,"severity":"normal","is_active":false},{"kind":"weekly_all","percent":24,"resets_at":"2026-10-27T09:00:00.473852+00:00","scope":null,"severity":"normal","is_active":true},{"kind":"weekly_scoped","percent":11,"resets_at":"2026-10-27T09:00:00.474012+00:00","scope":{"model":{"display_name":"Fable"},"surface":null},"severity":"normal","is_active":false}],"extra_usage":{"is_enabled":false}}},"parent_tool_use_id":null,"session_id":"0f5e2a64-0000-4000-8000-000000000001"}`
+}
 
 // replayFixture plays probe P2: each recorded input waits for a line on
 // stdin, each recorded output is written, with the probe's directory
@@ -294,9 +348,13 @@ func TestHandshakeAndTurn(t *testing.T) {
 		t.Fatal(err)
 	}
 	lines := strings.Split(strings.TrimSuffix(string(b), "\n"), "\n")
+	// The usage reads of plan 24 (amendment 23): after the handshake, and
+	// with the context usage in Refresh.
 	want := []string{
 		`{"request":{"subtype":"initialize","hooks":null},"request_id":"req_1","type":"control_request"}`,
+		`{"message":{"content":"/usage","role":"user"},"parent_tool_use_id":null,"session_id":"default","type":"user"}`,
 		`{"request":{"subtype":"get_context_usage"},"request_id":"req_2","type":"control_request"}`,
+		`{"message":{"content":"/usage","role":"user"},"parent_tool_use_id":null,"session_id":"default","type":"user"}`,
 		`{"message":{"content":` + quote(text) + `,"role":"user"},"parent_tool_use_id":null,"session_id":"default","type":"user"}`,
 		`{"response":{"request_id":"` + req.ID + `","response":{"behavior":"allow","updatedInput":` + string(req.Input) + `},"subtype":"success"},"type":"control_response"}`,
 	}
@@ -510,13 +568,14 @@ func TestSetApprovalMode(t *testing.T) {
 	var lines []string
 	for time.Now().Before(deadline) {
 		b, _ := os.ReadFile(log)
-		if lines = strings.Split(strings.TrimSuffix(string(b), "\n"), "\n"); len(lines) >= 3 {
+		if lines = strings.Split(strings.TrimSuffix(string(b), "\n"), "\n"); len(lines) >= 4 {
 			break
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
 	want := []string{
 		`{"request":{"subtype":"initialize","hooks":null},"request_id":"req_1","type":"control_request"}`,
+		`{"message":{"content":"/usage","role":"user"},"parent_tool_use_id":null,"session_id":"default","type":"user"}`, // plan 24, amendment 23
 		`{"request":{"subtype":"set_permission_mode","mode":"auto"},"request_id":"req_2","type":"control_request"}`,
 		`{"request":{"subtype":"set_permission_mode","mode":"default"},"request_id":"req_3","type":"control_request"}`,
 	}

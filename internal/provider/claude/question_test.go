@@ -52,7 +52,7 @@ func TestAnswerQuestion(t *testing.T) {
 	if err := r.sess.AnswerQuestion("q14", answers); err != nil {
 		t.Fatal(err)
 	}
-	line := lastLine(t, log, 3) // initialize, the message, then the answer
+	line := lastLine(t, log, 4) // initialize, the usage read (plan 24), the message, then the answer
 	var got struct {
 		Type     string `json:"type"`
 		Response struct {

@@ -141,16 +141,18 @@ nothing written). What it holds:
   dashboard reading it must keep it out of zone B, out of zone A's turns
   and out of zone C's clearing.
 
-Proposed, as a plan of its own (it reverses plan 14's decision, CC-10 q9):
-the Claude adapter sends "/usage" after the handshake and after each turn
-end, where `get_context_usage` is read; its `limits[]` rows become
-`quota.5h` (session), `quota.7d` (weekly_all) and `quota.7d.<model>`
+Proposed as a plan of its own, then asked for at once by the owner ("VS
+Code manage to show it directly and you telling me you can't do it ?"):
+amendment 23, done in this plan (it reverses plan 14's decision, CC-10
+q9). The Claude adapter sends "/usage" right after the handshake and after
+each turn end, where `get_context_usage` is read; its `limits[]` rows
+become `quota.5h` (session), `quota.7d` (weekly_all) and `quota.7d.<model>`
 (weekly_scoped, "Fable limit" from `scope.model.display_name`), documented,
-source "usage_report", with their reset times; the exchange is never a
-conversation entry, a stage or a prompt; a failed read keeps the last
-values with the reason, as Codex's does; `rate_limit_event` keeps updating
-the windows between reads. Until then a model-scoped window appears only
-when a `rate_limit_event` carries it, which none has.
+source "usage_report (<kind>)", with their reset times; the exchange is
+never a conversation entry, a stage or a prompt; a failed read keeps the
+last values and reports one error; `rate_limit_event` keeps updating the
+windows between reads. Its criteria and results are under "Amendment 23"
+below.
 
 **What differs from the image, and why.**
 - The image's "▾" before "A · ORCHESTRATOR" and the "›" before STAGES are not
@@ -176,3 +178,168 @@ Automation rows and `log.txt`), `term\p24demo.ps1`, `plan24\p24-live.jsonl`
 (the mock with live reset times), `plan24\timing.log` and `timing2.log` (the
 two runs of the timing step), `plan24\race.log` and `race2.log`,
 `plan24\full.log` (the whole suite, verbose).
+
+## Amendment 23: the usage report read
+
+The owner's third message after the screenshots, with VS Code's "ACCOUNT &
+USAGE" panel showing "Fable limit 12%" beside the session and weekly
+windows: "VS Code manage to show it directly and you telling me you can't
+do it ?". The read proposed above was done at once, inside plan 24 (brief
+amendment 23; plan.md D14, criteria 24.36 to 24.41), on the recording of
+P24u and the fake CLIs: no live session was started for it.
+
+How it was checked:
+- `internal/provider/claude/usage_test.go`: P24u replayed through the
+  mapper twice, once with "/usage" as the dashboard's own write
+  (`InInternal`), once as the owner's (`In`); the failure, the running
+  state, the streamed part and the report's shapes on synthetic lines.
+- `internal/provider/claude/usage_session_test.go`: the fake CLI (this
+  package's test binary) in its new mode, through the real process plumbing:
+  the read after the handshake, a turn, `Refresh`.
+- `internal/app/usage_test.go`: the dashboard on the wire fake, the lines
+  written in order, zone A's rows before any turn.
+- Every fake CLI of the suite answers "/usage" as Claude Code does, with a
+  report and a `num_turns` 0 result (`session_test.go`'s `next`,
+  `approval_test.go`'s `wireClaude`, `input_test.go`'s `fakeClaude`): the
+  existing tests run unchanged in what they check, their lists of written
+  lines now showing the read where it goes (`TestHandshakeAndTurn`,
+  `TestSetApprovalMode`, `TestAnswerQuestion`).
+- Build, vet, gofmt, the whole suite, the race run on the two packages that
+  changed, the timing step alone.
+
+```text
+Evaluation - Plan 24, amendment 23, the usage report read - 6 criteria: 6 PASS, 0 FAIL
+PASS 24.36 TestUsageReadInternal: the recording through the mapper with the dashboard's own "/usage" gives one Sent "usage", session.ready, session.started and one telemetry.updated holding quota.5h 6%, quota.7d 24% and quota.7d.fable 11%, each documented with source "usage_report (session|weekly_all|weekly_scoped)" and its reset time (15:20:00.473808 UTC on the 22nd, 09:00:00.473852 and 09:00:00.474012 UTC on the 27th); no turn, message, unrecognised or error event; the reducer: 0 entries, 0 stages, turn Idle, session Ready with the init's model, quota.7d.fable 11 present and documented; the next running state maps to turn.started
+PASS 24.37 TestUsageTypedByOwner: the same recording with "/usage" by In gives conversation.user, telemetry.updated, conversation.message.completed (its text naming Fable) and turn.completed
+PASS 24.38 TestUsageReadFailed: a result with no report before it maps to one error "usage report not read: usage endpoint unavailable" and leaves no read pending, the owner's next result to turn.completed; TestUsageReadRunningState: a running state, a streamed part and an answer without a report during the read map to status.changed "usage report: reading", "streaming", "the answer holds none", the result to "read", the next running state to turn.started; TestUsageReportShapes: resets_at "soon" leaves quota.5h 50% without a reset time, "Opus 5.5" gives quota.7d.opus55, no scope gives quota.7d.scoped, kind monthly_new is dropped, scopeSlug("Fable") is "fable"
+PASS 24.39 TestUsageReadAroundTurns: after session.ready the first read ends ("usage report: read") with quota.5h 6 and quota.7d.fable 11 documented, 0 entries, 0 stages, turn Idle; Send("hello") ends in turn.completed with 1 closed stage; Refresh writes get_context_usage then "/usage": context.used 15, quota.5h 7, still 1 stage and the same entries, 0 errors; TestHandshakeAndTurn's six lines byte for byte: initialize, "/usage", get_context_usage, "/usage", the prompt, the allow; TestSetApprovalMode's four: initialize, "/usage", set_permission_mode auto, default
+PASS 24.40 TestUsageReads: on the wire fake, before any turn: session Ready, turn Idle, quota.5h 6, quota.7d 24, quota.7d.fable 11 documented with reset times, 0 entries, 0 stages, 0 errors, 0 unrecognised; zone A's text holds "Session (5hr)", "Weekly (7 day)", "Fable limit" and "Resets in"; written so far: initialize, "/usage"; after a turn and a prompt typed as soon as it ends: initialize, "/usage", user, get_context_usage, "/usage", user; 2 stages, 0 errors; written("user") is the two prompts
+PASS 24.41 go build ./... ok; go vet ./... clean; gofmt -l . empty; go test ./... 14 packages ok (internal/app 31.5 s, internal/provider/claude 9.1 s), 1 skipped as before (TestDiskListLink); go test -race -count=1 on internal/provider/claude (24.1 s) and internal/app (132.5 s), CGO_ENABLED=1 with the winlibs gcc: ok, no race (plan24\race5.log); the timing step alone 7 of 7 (plan24\race3.log): TestKeystrokeToFrame p95 1.01 ms and 1.11 ms in the window, TestDraftKeystrokes p95 2.13 ms, TestLongSession delta-to-frame p95 4.69 ms, TestPasteToFrame max 1.20 ms, TestStreamToFrame p95 3.98 ms, TestThinkingFrame p95 3.54 ms, every target 16 ms (100 ms for the paste)
+```
+
+What the owner should know:
+- The dashboard now writes "/usage" to Claude Code twice around each turn:
+  once right after the handshake, before anything the owner can write, and
+  once after each `result`, with `get_context_usage`. P24u showed the
+  answer costs no model call (`num_turns` 0, `total_cost_usd` 0,
+  `duration_api_ms` 0), so the quota is untouched; the documentation says
+  the usage endpoint can itself be rate-limited, in which case the
+  dashboard shows one error "usage report not read: <reason>" and keeps the
+  last windows with their age.
+- The exchange is kept out of zone B, out of zone A's stages and out of
+  zone C; its running state and its result are statuses. A "/usage" the
+  owner types is still shown as Claude Code answers it, its report read
+  too.
+- The windows from the report are documented, so they carry no "†"; the
+  "†" stays on values `rate_limit_event`'s undocumented `unifiedWindows`
+  updates between reads.
+
+Not verified, to check in the owner's next live session (it needs no plan:
+starting the dashboard on Claude Code and reading zone A before any prompt;
+a live run, so with the owner's approval):
+- The real CLI's answer inside the dashboard: whether a
+  `session_state_changed` running line precedes it (P24u had none; the
+  mapper handles both), and the windows on screen before the first turn,
+  "Fable limit" among them, at the values VS Code shows.
+- The read after a real turn, where `rate_limit_event` and the report both
+  update the windows.
+
+**Live check (2026-10-22, 13:51), approved by the owner.** The dashboard
+built from this tree (`acc-p24.exe`) on Claude Code 2.1.303, in a new
+Windows Terminal window, maximised and zoomed out three times (208x59, the
+acc launcher's size); Claude Code through a test-only logging wrapper first
+on that window's PATH (plan 20's, rebuilt as `claude.exe`: it runs the real
+`<HOME>\.local\bin\claude.exe` and copies stdin and stdout with each line's
+time); the real home, so that Claude Code is signed in; Px through the
+window's environment; a fresh project `%LOCALAPPDATA%\Temp\acc-p24-claude-135136`;
+`confcheck snapshot` before and `confcheck compare -cli-ran` after. No
+prompt was typed: the script (`scratchpad\term\p24live.ps1`, its criteria
+written before the run) read zone A through UI Automation as soon as the
+session was ready, opened the details view from A, then pressed Ctrl+Q.
+No terminal-hosted Claude Code or Codex session was open; none was closed.
+
+```text
+p24live claude-code  2026-10-22T13:51:38  project C:\Users\amolimom\AppData\Local\Temp\acc-p24-claude-135136
+13:51:38.055 [L24.1 before] PASS  terminal CLI sessions: none; Px listening: True; claude 2.1.303 (Claude Code); snapshot exit 0
+13:51:45.124 [L24.2 Ready on Claude Code, maximised, through the wrapper] PASS  ready True in 1632 ms; 59 rows x 208 columns; argv {"argv":["<HOME>\\.local\\bin\\claude.exe","-p","--input-format","stream-json","--output-format","stream-json","--verbose","--include-partial-messages","--forward-subagent-text","--permission-prompt-tool","stdio","--permission-mode","default"],"cli_pid":19484,"start_ms":1792669903365,"wrapper_pid":14456}
+13:51:52.114 [L24.3 the three windows with percentages, reset times and no dagger, before any prompt] PASS  windows after Ready in 762 ms: Session (5hr) 13% '', Weekly (7 day) 25% '', 'Fable limit' 15% ''; 'Resets in' x3; note 'quota updated 5s ago'
+13:51:52.154 [L24.4 no entry, no stage, no error, the status IDLE] PASS  model row '│ ✿ Claude Fable 5.1                              ○ IDLE ││ Ready to work on this project.                                                                                                                     │'; texts found that should not be: none
+13:51:54.722 [L24.5 the details view lists the three windows from usage_report, 0 errors] PASS  2 F6, A focused True; title True; sources found: usage_report (session), usage_report (weekly_all), usage_report (weekly_scoped); errors '0'
+13:51:58.470 [L24.6 Ctrl+Q closes the window, no process left] PASS  2,79 s; left: wrapper or CLI , new claude.exe , acc-p24 0; of the 1 processes seen under the wrapper, left 
+13:51:58.482 [L24.7 the project is empty] PASS  no file
+13:51:59.538 [L24.8 configuration check] PASS  exit 0; configuration  C:\Users\…\.claude\CLAUDE.md  identical | configuration  C:\Users\…\.claude\plugins\plugin-directory-cache-v2.json  identical | configuration  C:\Users\…\.claude\remote-settings.json  identical | configuration  C:\Users\…\.claude\settings.json  identical | configuration  C:\Users\…\.claude\skills\code-review-and-quality\SKILL.md  identical | configuration  C:\Users\…\.claude\skills\debug\SKILL.md  identical | configuration  C:\Users\…\.claude\skills\find-skills\SKILL.md  identical | configuration  C:\Users\…\.claude\skills\reverse-engineer-anything\SKILL.md  identical | configuration  C:\Users\…\.claude\skills\reverse-engineer-anything\references\android-applications.md  identical | configuration  C:\Users\…\.claude\skills\reverse-engineer-anything\references\connection-and-recovery.md  identical | configuration  C:\Users\…\.claude\skills\reverse-engineer-anything\references\evidence-workflows.md  identical | configuration  C:\Users\…\.claude\skills\reverse-engineer-anything\references\javascript-applications.md  identical | configuration  C:\Users\…\.claude\skills\reverse-engineer-anything\references\native-and-artifacts.md  identical | configuration  C:\Users\…\.claude\skills\reverse-engineer-anything\references\runtime-observation.md  identical | configuration  C:\Users\…\.claude\skills\security-review\SKILL.md  identical | configuration  C:\Users\…\.claude\skills\security-review\cloud-infrastructure-security.md  identical | configuration  C:\Users\…\.claude\skills\testing-strategy\SKILL.md  identical | configuration  C:\Users\…\.codex\.codex-global-state.json  identical | configuration  C:\Users\…\.codex\AGENTS.md  identical | configuration  C:\Users\…\.codex\config.toml  identical | configuration  C:\Users\…\.codex\plugins\.remote-plugin-install-staging\remote-plugin-bundle-GSsSCp\README.md  identical | configuration  C:\Users\…\.codex\plugins\.remote-plugin-install-staging\remote-plugin-bundle-OTxF4w\README.md  identical | configuration  C:\Users\…\.codex\plugins\.remote-plugin-install-staging\remote-plugin-bundle-Qu0fUA\README.md  identical | configuration  C:\Users\…\.codex\plugins\.remote-plugin-install-staging\remote-plugin-bundle-lprmnz\README.md  identical | mixed  C:\Users\…\.claude.json  changed (key-level diff follows)  sha256=a18f1d0e33cd7ed9ea4e5fe8b0011086fa25978053862f8bbbc86aa9c2928a57 | mixed  C:\Users\…\.claude.json  key cachedExperimentData  changed (state) | mixed  C:\Users\…\.claude.json  key cachedExperimentFeatures  changed (state) | mixed  C:\Users\…\.claude.json  key cachedGrowthBookFeatures  changed (state) | mixed  C:\Users\…\.claude.json  key cachedGrowthBookFeaturesAt  changed (state) | mixed  C:\Users\…\.claude.json  key cachedUsageUtilization  changed (state) | mixed  C:\Users\…\.claude.json  key claudeCodeFirstTokenDate  not compared (sensitive name) | mixed  C:\Users\…\.claude.json  key oauthAccount  not compared (sensitive name) | mixed  C:\Users\…\.claude\plugins\known_marketplaces.json  identical | session data: 1 new file(s) (count only) | configuration: PASS
+13:51:59.554 [END] PASS  0 FAIL
+```
+
+What the wrapper logged (ms after the CLI's start; the usage page's text
+is not reproduced):
+
+```text
+argv: ["C:\\Users\\amolimom\\.local\\bin\\claude.exe","-p","--input-format","stream-json","--output-format","stream-json","--verbose","--include-partial-messages","--forward-subagent-text","--permission-prompt-tool","stdio","--permission-mode","default"] start 1792669903365
+end: {"end_ms":1792669916294,"exit":0}
+
+== the dashboard wrote (ms after start) ==
+19	control_request/initialize req_1
+1458	user content="/usage"
+
+== Claude Code answered (ms after start) ==
+1382	system/hook_started
+1425	system/hook_response
+1458	control_response req_1 success
+1463	system/session_state_changed state=running
+3377	system/init model=claude-fable-5-1 permissionMode=default apiKeySource=none cwd=<HOME>\AppData\Local\Temp\acc-p24-claude-135136
+3378	assistant model=<synthetic> usage_report=yes
+	  limit kind=session group=session percent=13 resets_at=2026-10-22T15:20:00.161756+00:00 scope=null severity=normal is_active=false
+	  limit kind=weekly_all group=weekly percent=25 resets_at=2026-10-27T09:00:00.161780+00:00 scope=null severity=normal is_active=true
+	  limit kind=weekly_scoped group=weekly percent=15 resets_at=2026-10-27T09:00:00.161969+00:00 scope=Fable severity=normal is_active=false
+	  extra_usage={"is_enabled":false,"monthly_limit":null,"used_credits":null,"utilization":null,"currency":null}
+3379	result/success is_error=false num_turns=0 total_cost_usd=0 duration_ms=1910 duration_api_ms=0 modelUsage={}
+3381	system/session_state_changed state=idle
+3757	system/commands_changed
+
+== stderr ==
+<empty>
+```
+
+What it settles:
+- The read works live: "/usage" went out the same millisecond the
+  handshake's answer arrived (1458 ms), and Claude Code answered it with no
+  model call: `system/init` (model `claude-fable-5-1`), the `assistant`
+  message with the report and the `result` (`num_turns` 0, cost 0,
+  `duration_api_ms` 0) within 2 ms of each other, 1.9 s after the write.
+- The CLI wraps that answer in `session_state_changed` running (5 ms after
+  the write) and idle (2 ms after the result), which P24u's recording did
+  not show; the mapper took them as the read's statuses: no stage, no
+  entry, "unrecognised events 0", "no errors" in the details view.
+- Zone A before any prompt, 762 ms after "Ready to work on this project.":
+  "Session (5hr) 13%", "Weekly (7 day) 25%", "Fable limit 15%", each with
+  its lavender bar and its countdown ("Resets in 3h 28m", "4d 21h", "4d
+  21h", right for 15:20 UTC and the 27th at 09:00 UTC), no "†", the note
+  "quota updated 5s ago"; the model row "✿ Claude Fable 5.1 … ○ IDLE" from
+  the read's init. The details view: `quota.5h 13% · usage_report (session)
+  8s ago`, `quota.7d 25% · usage_report (weekly_all) 8s ago`,
+  `quota.7d.fable 15% · usage_report (weekly_scoped) 8s ago`.
+- Nothing of the exchange reached zone B ("Waiting for instructions",
+  "Ready to work on this project." only), zone C ("no agents yet") or the
+  stages ("stages appear as turns run").
+- Ctrl+Q closed the window in 2.8 s with no process left; the project stayed
+  empty; the configuration check passed: every configuration file identical,
+  `~/.claude.json` changed in state keys only (`cachedUsageUtilization`,
+  the experiment caches), one new session file.
+- The values are the owner's at 13:51 (VS Code showed 12% on the Fable
+  limit at about 12:30; the owner's sessions ran in between): the same
+  windows, read from the same report.
+
+Evidence: `scratchpad\term\out-p24-live\` (`results.txt`, the screenshots
+`00-startup` to `06-back` with their UI Automation rows, `confcheck.txt`,
+`before.json`, `processes-ready.txt`), `scratchpad\live\log-p24\`
+(`in.jsonl`, `out.jsonl`, `in-times.txt`, `out-times.txt`, `argv.json`,
+`end.json`, `err.txt`), `scratchpad\term\p24live.ps1`,
+`scratchpad\live\analyze-p24.mjs`, `scratchpad\livewrap\claude\` (the
+wrapper's source) and `claudebin\` (its executable and `wrap.json`).
+
+**Evidence outside the repository**, in the session's scratchpad
+(`C:\Users\amolimom\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\plan24\`):
+`race3.log` (the timing step's third run), `race5.log` (the race run), the
+patch files `usage-*.patch` and `doc-*.patch` (what was changed, block by
+block).
