@@ -1401,7 +1401,7 @@ AM4 D3, D5, D6), which were zone D's until plan 23. Every value is a `Value`
 | Model | from `system/init` and each message | from `thread/start`; children "N/A" |
 | Agents | active count, derived; "limit N/A" | active count, derived; "limit 3 (config)" from `config/read`, or "limit N/A (not set; default not reported)", or "limit N/A (set per backend; backend not reported)" when `features.multi_agent_v2` sets a different limit, or "limit N/A (not read)" |
 | Time | turn and session durations | same |
-| Errors, retries, unrecognised events | counters, named in the notes when above 0; the details view lists the last errors | same |
+| Errors, retries, unrecognised events | counters, named in the notes when above 0; the details view lists the last errors and the last 20 unrecognised lines, each with its time, the mapper's type and reason, and the line (plan 25) | same |
 
 - **Bars**: lavender for every window, the 7-day's no longer amber (brief
   amendment 22, section 6.1: warning colours are for warnings), red from 90%
@@ -1423,12 +1423,17 @@ AM4 D3, D5, D6), which were zone D's until plan 23. Every value is a `Value`
   three headings, or a click on TELEMETRY, opens it full screen: "◀ back
   (Esc)   ERRORS AND TELEMETRY" with "N errors · last 50 kept" at its right
   end (the title lost its "D ·" in plan 24). It lists the last errors,
-  newest first and whole, then every value with its source and age
-  ("quota.5h 35%† · rate_limit_event.unifiedWindows 0s ago"), then, under
-  the values, the counters zone D's rows held until plan 23: agents, session
-  time, retries and unrecognised events. ↑ ↓, PgUp, PgDn, Home and End
-  scroll it, it updates live, and Esc returns to the dashboard with A
-  focused and its cursor where it was.
+  newest first and whole; then "UNRECOGNISED  lines the dashboard could not
+  map, newest first", the last 20 of them, each on two rows: its time, the
+  mapper's type ("system/tool_use_summary", "user/tool_result_meta") and
+  its reason when it gave one, then the line itself cut to the width with
+  "…", or "none" (plan 25: zone A's note "unrecognised N" says how many,
+  this says which); then every value with its source and age ("quota.5h
+  35%† · rate_limit_event.unifiedWindows 0s ago"), then, under the values,
+  the counters zone D's rows held until plan 23: agents, session time,
+  retries and unrecognised events. ↑ ↓, PgUp, PgDn, Home and End scroll
+  it, it updates live, and Esc returns to the dashboard with A focused and
+  its cursor where it was.
 
 ## Agent inspection
 
@@ -1788,7 +1793,7 @@ How each state looks, wherever it occurs (B3.3; AM2 D9):
 | Error | ✗ in red with the first line of the error; the full error in inspection or in the details view's error list |
 | Session crashed | B shows the exit code and stderr tail; send is disabled; "Ctrl+R resume · Ctrl+Q quit" (resume only once the session had reached Ready; earlier, the StartFailed card); the draft is kept; nothing restarts without the key ([reliability.md, Resumption](reliability.md#resumption)) |
 | CLI not installed | on the startup screen only, "not installed" with the reason; not selectable |
-| Unrecognised events | counted in A's notes ("unrecognised N") and in the details view; listed in Raw events; never dropped |
+| Unrecognised events | counted in A's notes ("unrecognised N"); the details view lists the last 20 with their time, type, reason and line (plan 25); listed in Raw events; never dropped |
 | Mock mode | "◆ MOCK — not a live session" in the title bar of every screen |
 
 ## Origins on screen

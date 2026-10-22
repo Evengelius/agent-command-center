@@ -78,7 +78,7 @@ not emitted by this CLI or version, not yet received, or malformed.
 | `retry` | not counted (both are **D**, not observed) | retries "N/A (none reported)" until one arrives |
 | `error` | the other error fields still count (TEL) | the counter |
 | `status.changed` | no compaction or MCP status shown | nothing extra |
-| `unrecognised` | never absent: anything unknown lands here | counted in zone A's telemetry, listed in Raw events |
+| `unrecognised` | never absent: anything unknown lands here | counted in zone A's telemetry, the last 20 named in the details view with their time, type, reason and line (plan 25), listed in Raw events |
 
 ### Integration sources
 
@@ -176,7 +176,7 @@ reset shown N/A.
 | Value | Source | Fallback, and what zone A shows |
 | - | - | - |
 | 5-hour, 7-day quota | the `/usage` report's `session` and `weekly_all` rows (documented; plan 24, amendment 23), read right after the handshake and after each turn; between reads `rate_limit_event` (`unifiedWindows` **U**, marked †) | before the first report "N/A (no report yet)"; with an API key "N/A (API key: no subscription window)"; past the reset "N/A (window reset)"; without `unifiedWindows` but with `rateLimitType` and `status`: the status word ("allowed", "warning", "rejected") with no percentage |
-| Model-scoped weekly windows | the `/usage` report's `weekly_scoped` rows, `scope.model.display_name` naming the model ("Fable limit"; documented; plan 24, amendment 23), and `rate_limit_event`: a `unifiedWindows` key or a `rateLimitType` of the form `seven_day_<model>` (**U** for `unifiedWindows`, marked †; `seven_day_opus` and `seven_day_sonnet` are documented `rateLimitType` values: claude-code.md, section 7; TEL CC); metric `quota.7d.<model>` | shown as "<Model> limit" only once reported, never assumed from the model or the plan: no report, no row; past the reset "N/A (window reset)", as the quota row above |
+| Model-scoped weekly windows | the `/usage` report's `weekly_scoped` rows, `scope.model.display_name` naming the model ("Fable limit"; documented; plan 24, amendment 23), and `rate_limit_event`: a `unifiedWindows` key or a `rateLimitType` of the form `seven_day_<model>` (a key that is no model's, `seven_day_overage_included` on 2.1.303 since 2026-10-22, is skipped: plan 25; **U** for `unifiedWindows`, marked †; `seven_day_opus` and `seven_day_sonnet` are documented `rateLimitType` values: claude-code.md, section 7; TEL CC); metric `quota.7d.<model>` | shown as "<Model> limit" only once reported, never assumed from the model or the plan: no report, no row; past the reset "N/A (window reset)", as the quota row above |
 | Reset times | `resetsAt` | with the window |
 | Overage | `overageStatus` and related | "N/A (not reported)", shown apart from quota |
 | Model | `system/init`, per message | a subagent whose text is not forwarded: "model N/A" |

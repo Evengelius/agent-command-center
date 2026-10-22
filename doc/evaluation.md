@@ -191,6 +191,15 @@ before and after:
    `TestedVersion` updated together (`TestTestedVersion` compares them), and
    the result reported in the summary format.
 
+A live run of the dashboard through the test-only logging wrapper (plan 20's
+`codex.exe`, plan 24's `claude.exe`: the real CLI first on the window's
+PATH, stdin and stdout copied with each line's time) can be replayed through
+the Claude Code mapper afterwards: `go test ./internal/provider/claude -run
+TestWireReplay -count=1 -v` with `ACC_WIRE_LOG` set to the log folder prints
+every event kind and names each line the mapper could not map, with the
+mapper's type and reason and the line itself (plan 25). The dashboard shows
+the same lines live in its details view.
+
 ## Summary format
 
 ```text

@@ -210,7 +210,7 @@ func (s *State) apply(ev event.Event) []Command {
 		return nil
 	case event.Unknown:
 		s.Unrecognised++
-		s.UnrecognisedLast = appendBounded(s.UnrecognisedLast, ev.Raw, MaxUnrecognised)
+		s.UnrecognisedLast = appendBounded(s.UnrecognisedLast, UnknownEntry{At: ev.At, Type: p.Type, Reason: p.Reason, Line: ev.Raw}, MaxUnrecognised)
 		return nil
 	}
 	if ev.Kind == event.TurnStarted {

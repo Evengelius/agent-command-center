@@ -716,6 +716,23 @@ func detailsBody(s *state.State, ui UI, w int) []line {
 			body = append(body, append(lead, sp(l, stFailed)))
 		}
 	}
+	// The lines the mapper could not map, newest first: when, what the
+	// mapper called them, why when it said, and the line itself cut to the
+	// width (plan 25, D2). Zone A's note "unrecognised N" says how many;
+	// this says which, so a CLI change is read here, not guessed.
+	body = append(body, line{}, line{deco("UNRECOGNISED  ", stBold), deco("lines the dashboard could not map, newest first", stGrey)})
+	if len(s.UnrecognisedLast) == 0 {
+		body = append(body, plain("none", stGrey))
+	}
+	for i := len(s.UnrecognisedLast) - 1; i >= 0; i-- {
+		u := s.UnrecognisedLast[i]
+		head := line{deco(clockSec(u.At)+"  ", stGrey), deco(u.Type, stText)}
+		if u.Reason != "" {
+			head = append(head, deco(" · "+u.Reason, stGrey))
+		}
+		body = append(body, head.fit(w))
+		body = append(body, line{deco(strings.Repeat(" ", errorIndent), stNone), deco(cutRight(u.Line, max(w-errorIndent, 10)), stGrey)}.fit(w))
+	}
 	body = append(body, line{}, line{deco("TELEMETRY  ", stBold), deco("value · source · received", stGrey)})
 	// Every value received, and the documented values the CLI has not
 	// given yet, each N/A with its reason, as zone D listed them.
@@ -771,6 +788,26 @@ func detailsBody(s *state.State, ui UI, w int) []line {
 		body = append(body, line{deco(padTo(c[0], 20), stGrey), sp(c[1], st)}.fit(w))
 	}
 	return body
+}
+
+// cutRight keeps the start of text within w cells and ends it with "…" when
+// it was longer; a long line is first cut to twice w runes, so a 64 KiB
+// line costs no more than a short one.
+func cutRight(text string, w int) string {
+	if textWidth(text) <= w {
+		return text
+	}
+	if w <= 1 {
+		return "…"
+	}
+	rs := []rune(text)
+	if len(rs) > 2*w {
+		rs = rs[:2*w]
+	}
+	for len(rs) > 0 && textWidth(string(rs))+1 > w {
+		rs = rs[:len(rs)-1]
+	}
+	return string(rs) + "…"
 }
 
 // documentedValues are the values the session's CLI documents, listed in the

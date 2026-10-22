@@ -186,8 +186,12 @@ func TestHookResponse(t *testing.T) {
 	}
 }
 
-// hook_started and post_turn_summary give no event, whatever they hold and
-// whichever agent they come from.
+// hook_started, post_turn_summary and task_summary give no event, whatever
+// they hold and whichever agent they come from. The two task_summary lines
+// are the ones the owner's scenario 1 run of 2026-10-22 counted as
+// unrecognised, as the rerun through the logging wrapper recorded them
+// (plan 25, criterion 25.3): the first right after task_started, the second
+// right after the turn's result.
 func TestHookStartAndSummaryGiveNoEvent(t *testing.T) {
 	for _, l := range []string{
 		`{"type":"system","subtype":"hook_started"}`,
@@ -195,6 +199,9 @@ func TestHookStartAndSummaryGiveNoEvent(t *testing.T) {
 		`{"type":"system","subtype":"hook_started","hook_name":"PreToolUse:Bash","parent_tool_use_id":"toolu_1","agent_id":"a1"}`,
 		`{"type":"system","subtype":"post_turn_summary","summarizes_uuid":"u","status_category":"completed","status_detail":"done","needs_action":""}`,
 		`{"type":"system","subtype":"post_turn_summary","status_category":"blocked","needs_action":"approve a tool"}`,
+		`{"type":"system","subtype":"task_summary","detail":"Px reminder: your local Px proxy on 127.0.0.1:3128 is set up for every tool. If anything shows \"Connection refused\", run ` + "`pxw`" + `. I'm launching one general-purpose subagent to list the files here, write their names to found.txt, and report them back.","uuid":"f61173de-eaba-4c2b-ac37-0f2f0f279c55","session_id":"d8cc1c6e-d2ad-45f0-b306-9f48638ed917"}`,
+		`{"type":"system","subtype":"task_summary","detail":null,"uuid":"26b3dac7-0198-40fd-8524-4356128d6bbf","session_id":"d8cc1c6e-d2ad-45f0-b306-9f48638ed917"}`,
+		`{"type":"system","subtype":"task_summary","detail":"a summary","agent_id":"a1"}`,
 	} {
 		if evs := NewMapper().Out([]byte(l)); len(evs) != 0 {
 			t.Errorf("%s: %d events, want none: %+v", l, len(evs), evs)

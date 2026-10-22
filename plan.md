@@ -80,10 +80,106 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 25 - The unrecognised lines named
 
-Plan 24 was approved and closed on 2026-10-22 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 24 (2026-10-22): after plan 24, the owner's live run of
+scenario 1 on Fable 5.1 ended with "unrecognised 2" in zone A's notes and
+no way to see which lines; the owner asked why, approved a logged turn to
+name them, and asked for plan 25: the unrecognised lines shown in the
+details view, and these two handled. The criteria below were written
+before the code; nothing is committed until the owner approves.
+
+### Design
+
+- **D1 What is kept.** The reducer keeps the last 20 unrecognised lines
+  (`MaxUnrecognised`) as entries, not raw strings: the time the event
+  carried, the mapper's type ("system/foo", "stream_event/bar",
+  "user/tool_result_meta", "control_request/baz" as `event.Unknown.Type`
+  names them), its reason when it gives one, and the line itself. The
+  counter `Unrecognised` is unchanged.
+- **D2 Where they show.** The details view ("ERRORS AND TELEMETRY", Enter
+  on TELEMETRY) gets a section between ERRORS and TELEMETRY:
+  "UNRECOGNISED  lines the dashboard could not map, newest first", one row
+  a line: its time, its type, its reason, then the line cut to the width
+  ("…"), as the errors are laid out; "none" when there is none. The
+  COUNTERS row "unrecognised events N" stays, and so does zone A's note
+  "unrecognised N": the details view, one Enter away, now says which.
+- **D3 Naming the owner's two.** A logged turn through the wrapper
+  (approved: one short prompt, 15:51) gave none, so they belong to the
+  subagent turn. Scenario 1 rerun through the wrapper, the Write allowed
+  as the owner did, names them (`scratchpad\term\p25scen1.ps1`, criteria
+  S1.1 to S1.8 written in it); the replay of the log through the mapper
+  (`TestWireReplay`, D4) lists each one with its line. Each named line is
+  then mapped, or classified as known with no event, as the research
+  document says it should be; a synthetic recording of them joins the
+  tests so the replay gives 0 unrecognised.
+- **D4 The replay tool.** `internal/provider/claude/wirereplay_test.go`,
+  `TestWireReplay`: a wrapper log (`ACC_WIRE_LOG`) replayed through the
+  mapper in wire order, every unrecognised line and every error named;
+  skipped without the variable; named in evaluation.md's live-run text.
+- **D5 Also seen in the logged turn.** `rate_limit_event.unifiedWindows`
+  carries a third key, `seven_day_overage_included`, on 2.1.303 with the
+  owner's plan; what the mapper makes of it is checked and, if it is not a
+  model's window, it is left out of the quota windows and the fact is
+  recorded (research, reliability).
+- **D6 Docs.** ui-design.md (the details view), events-and-state.md (the
+  state's list), reliability.md, research/claude-code.md, AGENTS.md
+  (status), brief.md (amendment 24), the evaluation
+  `doc/plan25-evaluation.md`.
+
+### Criteria
+
+- 25.1 TestUnrecognisedKept (`internal/state`): twenty-two unrecognised
+  events leave `Unrecognised` 22 and `UnrecognisedLast` the last twenty,
+  oldest first, each with its time, type, reason and line.
+- 25.2 TestDetailsUnrecognised (`internal/render`): on a state with three
+  unrecognised lines, the details view shows the UNRECOGNISED section
+  between ERRORS and TELEMETRY, newest first, each row with its time, its
+  type, its reason and the line cut to the width ending in "…", at 120 and
+  200 columns; with none, the row "none"; the COUNTERS row still reads
+  "unrecognised events 3"; the golden frames `details-120x40` and
+  `details-200x60` regenerated show the section with "none".
+- 25.3 The owner's two lines named by the scenario 1 rerun (S1.1 to S1.8,
+  every one PASS or explained) and `TestWireReplay` on its log; each is
+  mapped or classified, with a test on the recorded line, and the replay
+  of the log through the mapper gives 0 unrecognised afterwards.
+- 25.4 `TestWireReplay` on the logged turn of 15:51 (`live\log-p25`) and
+  on the scenario 1 log prints every event kind and 0 unrecognised once
+  25.3 is done; without `ACC_WIRE_LOG` it is skipped.
+- 25.5 `seven_day_overage_included` gives no window of its own in zone A
+  (TestScopedWindows extended with the recorded event), and the research
+  and reliability documents say what the key is.
+- 25.6 `go build ./...`, `go vet ./...`, `gofmt -l .` empty, `go test
+  ./...` all ok, the race run on the changed packages clean, the timing
+  step alone 7 of 7.
+- 25.7 The documents of D6 updated; every changed text file UTF-8 without
+  BOM, LF; `git status` lists only the intended files; nothing committed
+  until the owner approves.
+
+### Progress
+
+- 2026-10-22, 15:51: the logged turn the owner approved ("Reply with the
+  word ok.", Fable 5.1): 0 unrecognised, the turn 10 s; the lines of the
+  subagent turn are the ones to name (`doc/plan25-evaluation.md`).
+- [x] D1, D2 and their tests (TestUnrecognisedKept, TestDetailsUnrecognised),
+  the golden frames `details-*` regenerated (the section with "none"); D4
+  (`TestWireReplay`, evaluation.md); D5 (TestOverageWindowSkipped: the
+  key gives no window); ui-design.md, events-and-state.md, reliability.md
+  updated; `go test ./...` ok.
+- [x] D3, 16:05: scenario 1 rerun through the wrapper (approved), the
+  dashboard again at "unrecognised 2" (S1.1 to S1.8, S1.5 a script fault);
+  `TestWireReplay` named both as `system/task_summary`, one right after
+  `task_started` with the orchestrator's narration as `detail`, one right
+  after the turn's `result` with `detail` null. Known with no event since,
+  as `post_turn_summary`; the two recorded lines in
+  TestHookStartAndSummaryGiveNoEvent; the three wrapper logs replay with 0
+  unrecognised; research/claude-code.md and events-and-state.md say what
+  it is.
+- [x] The final tree: `go test ./...` ok, the race run on `internal/state`,
+  `internal/render` and `internal/provider/claude` clean, the timing step
+  alone 7 of 7; the evaluation
+  [`doc/plan25-evaluation.md`](doc/plan25-evaluation.md): 7 of 7 PASS.
+  Waiting for the owner's approval before any commit.
 
 ## Closed plans
 

@@ -262,11 +262,16 @@ func (m *Mapper) system(l line, raw []byte) []event.Event {
 		}
 		_ = json.Unmarshal(raw, &s)
 		return []event.Event{m.ev(event.Telemetry, event.Observed, "", raw, event.Metrics{Items: []event.Metric{{Name: event.ThinkingEstimate, Value: s.Estimated, Unit: "tokens", Documented: true, Source: "system/thinking_tokens"}}})}
-	case "hook_started", "post_turn_summary":
+	case "hook_started", "post_turn_summary", "task_summary":
 		// Known, and they give no event: nothing in the MVP draws a hook's start
 		// or the turn's summary line (plan 22, amendment 20). P22o, Claude Code
 		// 2.1.303 with the owner's SessionStart hook: hook_started at line 3,
 		// post_turn_summary at line 55, each counted as unrecognised before.
+		// task_summary (undocumented; plan 25, scenario 1 through the logging
+		// wrapper on 2.1.303 with Fable 5.1, 2026-10-22): once right after
+		// task_started, its detail the orchestrator's narration before the
+		// Agent call, which zone B already shows; once right after the turn's
+		// result, its detail null. The 2.1.303 probes of 2026-10-19 had none.
 		return nil
 	case "hook_response":
 		return m.hookResponse(raw)

@@ -422,6 +422,57 @@ func TestDetailsErrors(t *testing.T) {
 	}
 }
 
+// TestDetailsUnrecognised (plan 25, D2; criterion 25.2): the details view
+// lists the unrecognised lines between ERRORS and TELEMETRY, newest first,
+// each with its time, type and reason, and the line cut to the width; "none"
+// when there is none; the COUNTERS row keeps the count.
+func TestDetailsUnrecognised(t *testing.T) {
+	s := state.New()
+	s.Context.Provider = "claude-code"
+	at := fixture.Epoch
+	long := `{"type":"system","subtype":"tool_use_summary","summary":"` + strings.Repeat("x", 300) + `"}`
+	s.Unrecognised = 3
+	s.UnrecognisedLast = []state.UnknownEntry{
+		{At: at.Add(time.Second), Type: "system/tool_use_summary", Line: long},
+		{At: at.Add(2 * time.Second), Type: "user/tool_result_meta", Reason: "tool result without tool_result_meta permission_decision (undocumented)", Line: `{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1"}]}}`},
+		{At: at.Add(3 * time.Second), Type: "stream_event/content_block_x", Line: `{"type":"stream_event","event":{"type":"content_block_x"}}`},
+	}
+	for _, w := range []int{98, 198} {
+		body := texts(detailsBody(s, UI{Width: w + 2, Now: at.Add(time.Minute)}, w))
+		iE, iU, iT := strings.Index(body, "ERRORS  "), strings.Index(body, "UNRECOGNISED  "), strings.Index(body, "TELEMETRY  ")
+		if !(iE >= 0 && iE < iU && iU < iT) {
+			t.Errorf("%d: the section is not between ERRORS and TELEMETRY (%d %d %d):\n%s", w, iE, iU, iT, body)
+		}
+		i3, i2, i1 := strings.Index(body, "stream_event/content_block_x"), strings.Index(body, "user/tool_result_meta"), strings.Index(body, "system/tool_use_summary")
+		if !(i3 > 0 && i3 < i2 && i2 < i1) {
+			t.Errorf("%d: not newest first:\n%s", w, body)
+		}
+		for _, want := range []string{clockSec(at.Add(3*time.Second)) + "  stream_event/content_block_x", "user/tool_result_meta · tool result without", `{"type":"stream_event","event":{"type":"content_block_x"}}`, "unrecognised events 3"} {
+			if !strings.Contains(body, want) {
+				t.Errorf("%d: lacks %q:\n%s", w, want, body)
+			}
+		}
+		cut := false
+		for _, l := range strings.Split(body, "\n") {
+			if textWidth(l) > w {
+				t.Errorf("%d: row wider than %d: %q", w, w, l)
+			}
+			if strings.Contains(l, `"summary":"xxx`) && strings.HasSuffix(strings.TrimRight(l, " "), "…") {
+				cut = true
+			}
+		}
+		if !cut {
+			t.Errorf("%d: the long line is not cut with …:\n%s", w, body)
+		}
+	}
+	if body := texts(detailsBody(state.New(), UI{}, 98)); !strings.Contains(body, "UNRECOGNISED") || !strings.Contains(body, "\nnone") {
+		t.Errorf("no \"none\" when there are none:\n%s", body)
+	}
+	if got := cutRight("héllo wörld", 6); got != "héllo…" {
+		t.Errorf("cutRight = %q", got)
+	}
+}
+
 // Criterion 3: the account-linked reset credit ids Codex sends are kept
 // nowhere: not in an event's Raw, not in the log, not on any screen
 // (reliability.md, Telemetry sources: Plan and credits).

@@ -397,6 +397,16 @@ type ErrorEntry struct {
 	Retry   bool
 }
 
+// UnknownEntry is one line the mapper could not map (plan 25, D1): when,
+// what the mapper called it (event.Unknown.Type), why when it said, and
+// the line itself. The details view lists the last MaxUnrecognised.
+type UnknownEntry struct {
+	At     time.Time
+	Type   string
+	Reason string
+	Line   string
+}
+
 // Bounds of the lists kept in memory.
 const (
 	MaxErrors       = 50
@@ -429,7 +439,7 @@ type State struct {
 	Applied          int           // events applied; the first one's time is FirstAt
 	FirstAt          time.Time     // the session time counts from it, kept when Log drops events and on a resume (plan 21, item 1)
 	Unrecognised     int
-	UnrecognisedLast []string
+	UnrecognisedLast []UnknownEntry
 	Notes            []string // anomalies logged by the reducer (invalid transitions)
 	QuitAsked        bool     // Ctrl+Q asked to confirm; a second one quits, Esc stays
 }

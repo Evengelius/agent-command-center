@@ -82,7 +82,7 @@ types are mapped to `unrecognised` and never dropped (INT shape).
 | `diff.updated` | **derived** from `tool_use.input` of `Edit` (`old_string`, `new_string`) and `Write` (`content`), labelled derived. **P**: P2 (Write input) | `fileChange.changes[{path, kind, diff}]` and `turn/diff/updated` (the turn's unified diff). **P**: P6b, P7 (5 `turn/diff/updated`) |
 | `retry` | `system/api_retry` (main loop), `tool_progress.subagent_retry` (subagents). **D**, not observed | `error` with `willRetry:true`. **D**, not observed (CX-10 q9, closed in plan 14: read when sent, not depended on) |
 | `error` | `result.is_error`, `assistant.error`, `system/permission_denied`, a failed `tool_result`. **P**: P2 (`error_during_execution` after interrupt, not counted as an error) | `error` with `willRetry:false`, `turn/completed failed` with `codexErrorInfo`. **P**: P5, P6 lines 23-24 |
-| `status.changed` | `system/status` (`compacting`, `permissionMode`) **P** P1; `system/compact_boundary` **D**; `system/commands_changed` **P** P3b, logged with no status (no MVP zone lists commands); a `system/hook_response` that is not a success, a notice naming the hook, its exit code and its stderr's first line, never an error (plan 22, amendment 20; **P** P22o's success, the failure synthetic). The adapter's own `/usage` exchange (`session_state_changed` running, `stream_event`, `assistant` with `usage_report`, `result`): "usage report: reading", "streaming", "read" (plan 24, amendment 23; **P** P24u). Known with no event: `system/hook_started`, a successful `hook_response`, `system/post_turn_summary` **P** P22o | `thread/status/changed` **P** P7 (10); `mcpServer/startupStatus/updated` **P** P7 (12). Known with no event: `item/reasoning/summaryPartAdded` **P** P22s (plan 22, amendment 20) |
+| `status.changed` | `system/status` (`compacting`, `permissionMode`) **P** P1; `system/compact_boundary` **D**; `system/commands_changed` **P** P3b, logged with no status (no MVP zone lists commands); a `system/hook_response` that is not a success, a notice naming the hook, its exit code and its stderr's first line, never an error (plan 22, amendment 20; **P** P22o's success, the failure synthetic). The adapter's own `/usage` exchange (`session_state_changed` running, `stream_event`, `assistant` with `usage_report`, `result`): "usage report: reading", "streaming", "read" (plan 24, amendment 23; **P** P24u). Known with no event: `system/hook_started`, a successful `hook_response`, `system/post_turn_summary` **P** P22o, `system/task_summary` **U** (plan 25: the two lines the owner's scenario 1 run of 2026-10-22 counted as unrecognised, named by the rerun through the logging wrapper) | `thread/status/changed` **P** P7 (10); `mcpServer/startupStatus/updated` **P** P7 (12). Known with no event: `item/reasoning/summaryPartAdded` **P** P22s (plan 22, amendment 20) |
 | `unrecognised` | any other `type`/`subtype`, kept with its raw line | any other method or item type |
 
 Every row's fallback, and what the screen shows while the fallback applies,
@@ -111,7 +111,7 @@ State
                                        since plan 24)
   Log              ring of Event       raw events for the inspection view, the last 2,000
   Applied, FirstAt count, time         the events applied and the first one's time
-  Unrecognised     count, last N raw lines
+  Unrecognised     count, and the last 20 lines as UnknownEntry {At, Type, Reason, Line} (plan 25)
 
 Entry        {Seq, Role: user|assistant|tool|notice|approval, Agent, Text,
               Origin, Streaming bool, At}

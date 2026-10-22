@@ -11,6 +11,9 @@
                        API Error: 529 Overloaded; retrying in 2s (attempt 1 of 10)
  11:30:01  session     get_context_usage refused by Claude Code: Unsupported control request subtype: get_context_usage
 
+ UNRECOGNISED  lines the dashboard could not map, newest first
+ none
+
  TELEMETRY  value · source · received
  context.compact_at  967,000 tokens†  · get_context_usage 0s ago
  context.used        35,061 tokens (derived)  · last assistant usage over result.modelUsage.contextWindow 0s ago
@@ -31,9 +34,6 @@
  session time        0s session
  retries             1
  unrecognised events 0
-
-
-
 
 
 

@@ -3731,3 +3731,24 @@ Taken as: the dashboard reads the usage report itself, in plan 24, so the
 Fable limit shows live as VS Code shows it (plan.md, D14); this reverses
 plan 14's decision on CC-10 q9. Nothing is committed until the owner
 approves.
+
+## Amendment 24, 2026-10-22: the unrecognised lines named, for plan 25
+
+After plan 24 was approved and pushed, the owner ran plan 20's scenario 1
+again on Claude Code 2.1.303 with Fable 5.1 ("Hey bro", then the subagent
+prompt; the Write allowed) and sent a screenshot of the dashboard at the
+end: zone A's notes read "ⓘ unrecognised 2 · quota updated 16s ago". The
+owner, in two messages, word for word (the second one after the answer
+that the dashboard counts the lines it cannot map but shows them nowhere,
+and the offer of a logged turn to name them):
+
+````text
+Why does it show "unrecognized 2" ? It makes me confused
+
+Approved: run one short turn on Claude Code through the logging wrapper in a temporary project (the configuration check before and after) to identify the unrecognised lines; then plan 25: show the unrecognised lines in the details view and handle these two.
+````
+
+Taken as plan 25: the details view lists the unrecognised lines (their
+time, type, reason and the line itself), the two of the owner's session
+are named by logged live runs and mapped, and nothing is committed until
+the owner approves.

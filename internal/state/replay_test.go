@@ -74,8 +74,11 @@ func TestReplayDeterministic(t *testing.T) {
 		}
 		t.Logf("%s: %d events; session %s; turns %d; entries %d; agents %d; approvals %d; tools %d; errors %d; notes %d; unrecognised %d",
 			r.name, n, a.Session.Phase, a.Turn.Count, len(a.Conversation), len(a.Agents), len(a.Approvals), len(a.Tools), len(a.Errors), len(a.Notes), a.Unrecognised)
-		for _, x := range append(a.Notes, a.UnrecognisedLast...) {
+		for _, x := range a.Notes {
 			t.Logf("  %s", x)
+		}
+		for _, u := range a.UnrecognisedLast {
+			t.Logf("  %s %s: %.120s", u.Type, u.Reason, u.Line)
 		}
 	}
 }

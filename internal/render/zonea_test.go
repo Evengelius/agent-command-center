@@ -493,6 +493,34 @@ func TestNotes(t *testing.T) {
 
 // TestScopedWindows is criterion 24.30: the Claude adapter's model-scoped
 // weekly windows, from unifiedWindows and from rateLimitType.
+// TestOverageWindowSkipped (plan 25, D5; criterion 25.5): the
+// unifiedWindows key seven_day_overage_included, which Claude Code 2.1.303
+// sent in the logged turn of 2026-10-22 (the owner's plan, overage
+// disabled), is no model's window: the two windows show, nothing else, and
+// no value is kept for it.
+func TestOverageWindowSkipped(t *testing.T) {
+	p2 := records(t, "p2-claude-conversation.jsonl")[:3]
+	s, _ := replayed("claude-code", claude.NewMapper(), append(p2, rec(7000, "out",
+		`{"type":"rate_limit_event","rate_limit_info":{"status":"allowed","resetsAt":1792682400,"rateLimitType":"five_hour","overageStatus":"rejected","overageDisabledReason":"org_level_disabled","isUsingOverage":false,"unifiedWindows":{"five_hour":{"utilization":0.17,"resetsAt":1792682400},"seven_day":{"utilization":0.26,"resetsAt":1793091600},"seven_day_overage_included":{"utilization":0.17,"resetsAt":1793091600}}},"uuid":"ab0a3e5e-34ca-40c2-9d82-9aeb6cea838d","session_id":"5d15927c-da0a-46f1-9c41-d330ba488c5d"}`)))
+	if v := s.Metrics["quota.5h"]; !v.Present || v.V != 17 {
+		t.Errorf("quota.5h %+v", v)
+	}
+	if v := s.Metrics["quota.7d"]; !v.Present || v.V != 26 {
+		t.Errorf("quota.7d %+v", v)
+	}
+	for name := range s.Metrics {
+		if name == "" || strings.Contains(name, "overage_included") {
+			t.Errorf("a value for the overage key: %q", name)
+		}
+	}
+	if ws := windows(s, UI{}); len(ws) != 2 || ws[0].key != "quota.5h" || ws[1].key != "quota.7d" {
+		t.Errorf("windows %+v", ws)
+	}
+	if s.Unrecognised != 0 {
+		t.Errorf("%d unrecognised", s.Unrecognised)
+	}
+}
+
 func TestScopedWindows(t *testing.T) {
 	p2 := records(t, "p2-claude-conversation.jsonl")[:3]
 	s, _ := replayed("claude-code", claude.NewMapper(), append(p2, rec(7000, "out",
