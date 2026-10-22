@@ -14,7 +14,8 @@ d84e5d4:plan.md` for plan 20, `git show f939d96:plan.md` for plan 21,
 plan 23, `git show a3bfe5d:plan.md` for plan 24, `git show cb8f76d:plan.md`
 for plan 25, `git show a9a5145:plan.md` for plan 26, `git show 041e7b8:plan.md`
 for plan 27, `git show 8fe0077:plan.md` for plan 28, `git show d696f22:plan.md`
-for plan 29), and its results in its evaluation file.
+for plan 29, `git show 6025513:plan.md` for plan 30), and its results in
+its evaluation file.
 
 ## The owner's standing decisions
 
@@ -88,104 +89,10 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 30 - The "+" menu after the owner's image
+## No plan active
 
-Brief amendment 30 (2026-10-22), the owner's image
-`references/09-plus-menu.png`
-([reference-design.md](doc/reference-design.md#the-plus-menu)): a click
-on the editor row's "+" opens a small menu above it with one item, a
-folder icon and "Upload from computer"; the "+" keeps an active
-background while the menu is open; the item takes the image's colour
-when the mouse is over it. Design first: the item does nothing yet. The
-criteria below were written before the code; the owner reviews the
-screenshots before any commit.
-
-### Design
-
-- **D1 The menu.** A click on " + " (the editor row's band, plan 29)
-  opens the menu: a three-row box over zone B, its left edge on the
-  band's first cell, its bottom edge on the editor's rule, in the
-  frame's colour, holding " 🗀 Upload from computer " in the thinking
-  edge's lavender-white (the image's `#D9D5FC`): the folder icon
-  (U+1F5C0, one cell) and the text. A second click on " + ", Esc, any
-  other key or a click anywhere else closes it (the key or the click
-  then acts as usual); a click on the item closes it and does nothing
-  else yet. The item belongs to a panel of its own ('U'), the band to
-  another ('+'), so the mouse finds them.
-- **D2 The active "+".** While the menu is open the band " + " lies on
-  the active ground, a new palette colour `#272745` (the image's indigo
-  behind the pressed "+" and the hovered item; ANSI 4 on 16 colours),
-  the "+" in the lavender-white; closed, the band is plan 29's.
-- **D3 The hover.** While the menu is open the dashboard asks the
-  terminal for every mouse motion (Bubble Tea's all-motion mode; cell
-  motion otherwise, as today, so idle moves cost nothing); the item's
-  inner row lies on the active ground while the pointer is over it and
-  on none otherwise. Nothing else of the mouse changes: a drag, a wheel
-  or a click elsewhere behave as today once the menu is closed.
-- **D4 No function yet.** No file is read, chosen or sent; the item has
-  no key; the upload comes with a later plan, after the owner's review.
-- **D5 Docs.** ui-design.md (Input editor: the row's "+", the menu; Focus
-  and keys: Esc; Selection and copy: the mouse modes), reference-design.md
-  (the image), AGENTS.md (status), brief.md (amendment 30),
-  `doc/plan30-evaluation.md` with the conformance table; three golden
-  frames of the open menu, hovered (plus-menu at 80x24, 120x40, 200x60).
-
-### Criteria
-
-- 30.1 TestPlusMenu (`internal/render`): the quota mock at 80x24, 120x40
-  and 208x59 with the menu open: the three rows above the editor's rule
-  read "╭" + 26 "─" + "╮", "│  🗀  Upload from computer │" and "╰" + 26
-  "─" + "╯" starting at the band's cell (corrected as the screenshots
-  were read: Windows Terminal draws the icon over two cells, so two
-  spaces follow it and one shows), the box in stFrame, the text in
-  stThinkEdge; the band " + " on the active ground with the "+" in
-  stThinkEdge; hovered, the item's inner row on the active ground and
-  the text tinted; not hovered, no ground inside the box; the cells of
-  the band answer panel '+' and the item's panel 'U' to PanelAt; closed,
-  the frame is plan 29's (no box, the band on the tool rows' ground);
-  every other cell of the frame equal between open and closed but the
-  box's and the band's.
-- 30.2 TestPlusMenuMouse (`internal/app`): on the dashboard a click on
-  the band opens the menu ("Upload from computer" on screen, the view's
-  mouse mode all motion); a motion over the item sets the hover and off
-  it clears it; a click on the item closes the menu with the draft, the
-  focus and the sent messages unchanged; a click on the band again
-  opens, Esc closes and is consumed (the draft unchanged); open, a click
-  in zone C closes it and focuses C; open, typing "a" closes it and
-  puts "a" in the draft; closed, the mouse mode is cell motion.
-- 30.3 Three golden frames added, plus-menu at 80x24, 120x40 and 200x60,
-  the menu open and hovered; every other frame unchanged. Corrected as
-  the frames were added: four, the golden test drawing every scenario at
-  79x24 too, the "Terminal too small" frame.
-- 30.4 `go build ./...`, `go vet ./...`, `gofmt -l .` empty, `go test
-  ./...` all ok, the race run on `internal/render` and `internal/app`
-  clean, the timing step alone 7 of 7.
-- 30.5 Windows Terminal, maximised at 9 pt (208x59) and at 120x40 on the
-  quota mock: a click on the band, then the pointer over the item: the
-  menu with the hover, the active band; compared with the image in a
-  conformance table, each element PASS or a documented deviation; the
-  owner reviews the screenshots before any commit.
-- 30.6 The documents of D5 updated; every changed text file UTF-8 without
-  BOM, LF; `git status` lists the intended files only.
-
-### Progress
-
-- [x] D1 to D4 (`internal/render/menu.go`: the box, its panel, the rule
-  found; `editor.go`: the band's panel and its active ground;
-  `palette.go`: cActive and the active ground; `internal/app/mouse.go`,
-  `keys.go`, `app.go`: the click, the hover, the keys, the mouse mode)
-  and their tests (TestPlusMenu, TestPlusMenuMouse); four golden frames
-  of the plus-menu scenario added, no other changed.
-- [x] The checks (30.4): build, vet, gofmt, the suite (14 packages ok),
-  the race run on render and app (clean), the timing step alone (7 of 7,
-  keystroke-to-frame p95 1.1 ms, delta-to-frame 5.2 ms):
-  `scratchpad\plan24\p30-checks.log`; the screenshots
-  (`scratchpad\term\out-p30\`: the menu open and hovered at 208x59 and
-  120x40, the harness's new click and hover steps) and the conformance
-  table (`doc/plan30-evaluation.md`).
-- [x] D5 (ui-design.md's Input editor and keys table, reference-design.md,
-  brief.md's amendment 30, AGENTS.md) and the evaluation.
-- [ ] The owner's review of the screenshots; then the commit.
+Plan 30 was approved and closed on 2026-10-22 (Closed plans, below). The
+next plan starts when the owner asks for one.
 
 ## Closed plans
 
@@ -457,4 +364,18 @@ Ultracode" and "Auto" are placeholders with no function. Zone B is one
 row shorter. Approved on 2026-10-22: 7 of 7 PASS, 59 golden frames,
 Windows Terminal screenshots at 208x59 and 120x40 against the image
 ([`doc/plan29-evaluation.md`](doc/plan29-evaluation.md)); commit d696f22,
+then the approval commit.
+
+## Plan 30 - The "+" menu after the owner's image
+
+Brief amendment 30: the owner's image of the "+" clicked, design first. A
+click on the editor row's band opens a three-row box above the editor's
+rule, "🗀  Upload from computer", the band and the item under the
+pointer on the active ground (`#272745`), the terminal asked for every
+mouse motion only while it is open; Esc, any key or a click elsewhere
+closes it; the item does nothing yet, the upload being a later plan's.
+Approved on 2026-10-22: 6 of 6 PASS, four golden frames added, Windows
+Terminal screenshots with a real click and pointer moves at 208x59 and
+120x40 against the image
+([`doc/plan30-evaluation.md`](doc/plan30-evaluation.md)); commit 6025513,
 then the approval commit.

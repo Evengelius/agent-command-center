@@ -60,3 +60,10 @@ Glide made public for the hover step), `term\acc-p30.exe`,
 `plan24\p30-checks.log`, `plan24\harness30.cjs`, the patch files
 `p30-open.patch`, `p30-crit1.patch`, `p30-crit3.patch`, `agents30.patch`,
 `amendment30.md`.
+
+**The commit and the push (2026-10-22), after the owner's approval.** The
+owner approved plan 30 on 2026-10-22; commit 6025513 (22 files: 13
+modified, 9 added, 4 of them golden frames) and the approval commit were
+pushed to `origin`; `origin/main` equals `main`, the working tree is
+clean, and the author is `Evengelius <molimoabel@gmail.com>`, with no
+attribution line: PASS. The block above stays as it was reported.
