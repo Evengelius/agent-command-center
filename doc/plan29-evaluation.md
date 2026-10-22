@@ -74,3 +74,10 @@ card back at 120x40, if the owner prefers.
 `plan24\framecheck29.cjs`, `plan24\docframes\` (the three redrawn frames),
 `plan24\uidesign28.cjs` (the frames' replacement, reused), the patch files
 `p29-open.patch`, `agents29.patch`, `amendment29.md`.
+
+**The commit and the push (2026-10-22), after the owner's approval.** The
+owner approved plan 29 on 2026-10-22; commit d696f22 (74 files: 71
+modified, 59 of them golden frames, 3 added) and the approval commit were
+pushed to `origin`; `origin/main` equals `main`, the working tree is
+clean, and the author is `Evengelius <molimoabel@gmail.com>`, with no
+attribution line: PASS. The block above stays as it was reported.
