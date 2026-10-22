@@ -3827,3 +3827,24 @@ and the panels' line in the title colour, the card's two columns with
 their bar on both rows and nothing else on them, the panel as wide as its
 card, the model grey; nothing is committed until the owner has reviewed
 the new screenshots and approved.
+
+## Amendment 28, 2026-10-22: the top right after the owner's image, for plan 28
+
+After plan 27 was approved and pushed, the owner sent a close-up of the
+screen's top right corner of a live Claude Code session, kept as
+`references/07-top-right.webp` (1685x504) and described in
+[reference-design.md](reference-design.md#the-top-right): "● LIVE" over
+"Claude Code 2.1.303" over zone B's edge with "Idle". The owner, word for
+word:
+
+````text
+Now a small fix,  on the top right, I want that design on my image
+
+"Idle" is just the state of the session, this can stay. And it is dynamic. But you know this already. So all good for this, don't touch it.
+````
+
+Taken as plan 28: the project bar's right end is the provider's name and
+version alone while approvals are Manual with no change asked; the
+approvals mode shows there only while it is Auto or changing, so that
+amendment 8's Auto stays visible; "Idle" and the title row stay; nothing
+is committed until the owner has reviewed the screenshot and approved.

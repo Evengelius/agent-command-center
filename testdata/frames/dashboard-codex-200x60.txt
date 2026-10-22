@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER     ■ gpt-5.6-sol                                                                                                                                  ◆ MOCK — not a live session
- ▣ codex-subagents.jsonl   ..\..\testdata\mock\codex-subagents.jsonl                                                                                               Mock data 0.145.0 · approvals Manual
+ ▣ codex-subagents.jsonl   ..\..\testdata\mock\codex-subagents.jsonl                                                                                                                  Mock data 0.145.0
 ╭──────────────────────────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                                     ││                                                                                                                                              │
 │ ◆ GPT-5.6-sol                            ✓ COMPLETED ││ ▎ YOU  11:30                                                                                                                                 │

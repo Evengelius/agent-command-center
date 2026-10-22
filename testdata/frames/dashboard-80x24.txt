@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ▣ claude-subagent-approval.jsonl          Mock data 2.1.300 · approvals Manual
+ ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
  A ✓ Turn 2                                               (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
 │ ▎  ✓ general-purpose · Bash   ls -p "<…  allowed by you 11:30:00      mock   │

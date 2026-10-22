@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ▣╭─ Explorer ───────────────────────────────────────────── mock · 14 items ─╮l
+ ▣╭─ Explorer ───────────────────────────────────────────── mock · 14 items ─╮0
  A│ sample/viewer.go                                                         │e
 ╭─│ ▾ sample                                                              ●  │─╮
 │ │     viewer.go                                                         M  │ │

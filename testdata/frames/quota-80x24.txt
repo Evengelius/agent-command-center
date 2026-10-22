@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ▣ claude-quota-windows.jsonl              Mock data 2.1.300 · approvals Manual
+ ▣ claude-quota-windows.jsonl                                 Mock data 2.1.300
  A ✓ Turn 2                                               (inferred)   F6: tree
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │ A · ORCHESTRATOR                                                             │

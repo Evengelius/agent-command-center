@@ -53,12 +53,14 @@ func readyScript(t *testing.T, id string, auto bool, started event.Started) (*ha
 // barLine is the project bar of the frame, the line holding the approvals mode.
 func barLine(t *testing.T, h *harness) string {
 	t.Helper()
+	// The project bar: the mode shows on it only while Auto or changing
+	// (plan 28).
 	for _, l := range strings.Split(h.frame(), "\n") {
-		if strings.Contains(l, "approvals ") && strings.Contains(l, "▣") {
+		if strings.Contains(l, "▣") {
 			return strings.TrimRight(l, " ")
 		}
 	}
-	t.Fatalf("no project bar with the approvals mode in\n%s", h.frame())
+	t.Fatalf("no project bar in\n%s", h.frame())
 	return ""
 }
 
@@ -71,7 +73,9 @@ func modesOf(c *scriptCLI) []bool {
 func TestF4ClaudeSwitch(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h, cli := readyScript(t, "claude-code", true, event.Started{SessionID: "s1", Version: "2.1.300", PermissionMode: "default", ApprovalMode: event.ModeManual})
-		if b := barLine(t, h); !strings.HasSuffix(b, "approvals Manual") {
+		// Manual with no change asked: the version ends the bar, no mode
+		// (plan 28, the owner's image).
+		if b := barLine(t, h); !strings.HasSuffix(b, "2.1.300") || strings.Contains(b, "approvals") {
 			t.Fatalf("bar %q", b)
 		}
 		h.send(key(tea.KeyF4, 0))
@@ -88,6 +92,9 @@ func TestF4ClaudeSwitch(t *testing.T) {
 		h.send(key(tea.KeyF4, 0))
 		if got := modesOf(cli); len(got) != 2 || got[1] {
 			t.Fatalf("writes %v, want [true false]", got)
+		}
+		if b := barLine(t, h); !strings.HasSuffix(b, "approvals Auto → Manual …") {
+			t.Fatalf("back to Manual requested: bar %q", b)
 		}
 		// A refusal leaves the mode in force and says so in zone B.
 		pushEvents(h, "claude-code", evOf(event.ApprovalMode, event.Mode{Refused: true, Text: "set_permission_mode refused by Claude Code: not allowed"}))
@@ -106,7 +113,7 @@ func TestF4CodexNextTurn(t *testing.T) {
 			h, cli := readyScript(t, "codex", true, event.Started{SessionID: "th", Version: "0.145.0", Model: "gpt-5.5", Sandbox: "workspace-write", ApprovalPolicy: "on-request", ApprovalMode: event.ModeManual})
 			h.send(tea.WindowSizeMsg{Width: w, Height: 40})
 			b := barLine(t, h)
-			if !strings.HasSuffix(b, "approvals Manual") || (w >= 120 && !strings.Contains(b, "policy on-request")) {
+			if strings.Contains(b, "approvals") || (w >= 120 && !strings.HasSuffix(b, "policy on-request")) {
 				t.Fatalf("%d: bar %q", w, b)
 			}
 			h.send(key(tea.KeyF4, 0))

@@ -191,17 +191,27 @@ func projectBar(s *state.State, ui UI) line {
 			}
 		}
 	}
-	short := false // at the narrowest, the approvals mode alone
+	// The right end is the name and version alone while approvals are
+	// Manual with no change asked, the owner's image of the top right (plan
+	// 28, brief amendment 28); the mode shows only while Auto or changing.
+	short := false // at the narrowest, the approvals mode alone, or the name alone without one
 	right := func() line {
-		if short {
-			return approvalsSpans(s)
+		mode := approvalsSpans(s)
+		if short && len(mode) > 0 {
+			return append(mode, sp(" ", stText))
 		}
-		rest := strings.Join(append([]string{""}, extras...), " · ") + " · "
+		rest := strings.Join(append([]string{""}, extras...), " · ")
+		if short {
+			rest = ""
+		}
+		if len(mode) > 0 {
+			rest += " · "
+		}
 		r := plain(name+rest, stText)
 		if newer {
 			r = line{sp(name, stText), sp(" newer than tested", stAttention), sp(rest, stText)}
 		}
-		return append(r, approvalsSpans(s)...)
+		return append(append(r, mode...), sp(" ", stText))
 	}
 	for len(extras) > 0 && withBranch().width()+right().width() >= ui.Width {
 		extras = extras[:len(extras)-1]
@@ -223,20 +233,25 @@ func projectBar(s *state.State, ui UI) line {
 	return spread(left, r, ui.Width)
 }
 
-// approvalsSpans is the project bar's approvals mode: Auto in the attention
-// colour, a change asked for and not yet in force after an arrow (plan 12,
-// item 2). Codex applies it with its next turn; Claude Code answers at once.
+// approvalsSpans is the project bar's approvals mode (plan 12, item 2):
+// nothing while Manual is in force with no change asked (plan 28, the
+// owner's image); else "approvals " and the mode in force, Auto in the
+// attention colour, and a change asked for and not yet in force after an
+// arrow. Codex applies it with its next turn; Claude Code answers at once.
 func approvalsSpans(s *state.State) line {
-	cur := s.Mode()
+	cur, req := s.Mode(), s.Session.ApprovalRequested
+	if (cur == "" || cur == state.ModeManual) && req == "" {
+		return nil
+	}
 	l := line{sp("approvals ", stGrey), sp(state.ModeLabel(cur), modeStyle(cur))}
-	if req := s.Session.ApprovalRequested; req != "" {
+	if req != "" {
 		suffix := " …"
 		if s.CLI() == "codex" {
 			suffix = " (next turn)"
 		}
 		l = append(l, sp(" → ", stGrey), sp(state.ModeLabel(req), modeStyle(req)), sp(suffix, stGrey))
 	}
-	return append(l, sp(" ", stText))
+	return l
 }
 
 func modeStyle(mode string) *lipgloss.Style {

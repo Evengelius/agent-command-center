@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ▣ codex-subagents.jsonl                   Mock data 0.145.0 · approvals Manual
+ ▣ codex-subagents.jsonl                                      Mock data 0.145.0
  A ✓ Turn 1 › ✓ /root/list_files › ✓ /root/create_found   (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
 │ ▎  ▸ ✓ Thought for up to 0.0s · 8 reasoning tokens      11:30:00      mock   │

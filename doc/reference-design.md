@@ -11,6 +11,7 @@ point at it. Two references, with different roles:
 | `03-zone-a-telemetry.webp` (1312x1199), from amendment 22 | **zone A with the telemetry**: the orchestrator's header, the stages, session usage, the quota windows and the notes, zone D gone | [Zone A with the telemetry](#zone-a-with-the-telemetry) |
 | `04-zone-c-timeline.png` (553x315), from amendment 26 | **zone C with the execution timeline**: the heading inside the frame, the agents' panel and the timeline panel with the agent's status | [Zone C with the execution timeline](#zone-c-with-the-execution-timeline) |
 | `05-zone-c-timeline-close.png` (1128x373), `06-zone-c-timeline-close.webp` (1403x469), from amendment 27 | **zone C's close-ups**: the lines in the title colour, the card's two columns and their bar, the panel as wide as its card, the model grey | [Zone C with the execution timeline](#zone-c-with-the-execution-timeline) |
+| `07-top-right.webp` (1685x504), from amendment 28 | **the top right**: "● LIVE" over the provider's name and version alone, over zone B's edge with the session's state | [The top right](#the-top-right) |
 
 **It is a visual reference, not a product.** The reference looks like a
 promotional mock-up ("CLAUDE CODE ULTRACODE TIP"). Its model names, flags
@@ -308,3 +309,20 @@ What plan 27's second pass takes from them: design D7 to D9 in plan.md
 (the lines in the title colour, the card's two columns with their bar on
 both rows and nothing else, the selected agent's rows on zone B's tool
 rows' ground, the panel as wide as its cards, the model grey).
+
+## The top right
+
+`07-top-right.webp` (1685x504), sent with amendment 28 of the brief (plan
+28): the screen's top right corner of a live Claude Code session,
+magnified. Top to bottom: "● LIVE", a green dot and the word in green, at
+the right end of the title row; "Claude Code 2.1.303" in white under it,
+at the right end of the project bar, nothing after it; then zone B's top
+edge in lavender with "Idle" in grey let into it before the corner. The
+owner: "Idle" is just the state of the session, this can stay. And it is
+dynamic.
+
+What plan 28 takes from it: the project bar's right end is the provider's
+name and version alone while approvals are Manual with no change asked;
+the mode shows there only while it is Auto or changing, since amendment
+8 made Auto visible on purpose. What it keeps: the title row, zone B's
+edge and its state word, the footer's "F4 Manual/Auto" and the key page.

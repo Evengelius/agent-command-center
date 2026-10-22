@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
- ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                 ││ ▎ CLAUDE  Haiku 5.5  11:30                                                       │
 │ ✿ Claude H╭─ viewer.go ────────────────────────────────────────────────────────────────── Go · 58 lines ─╮    mock   │

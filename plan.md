@@ -87,10 +87,88 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 28 - The top right after the owner's image
 
-Plan 27 was approved and closed on 2026-10-22 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 28 (2026-10-22), the owner's image
+`references/07-top-right.webp`
+([reference-design.md](doc/reference-design.md#the-top-right)): the
+screen's top right corner, "● LIVE" over "Claude Code 2.1.303" over zone
+B's top edge with its "Idle"; "Idle" is the session's state, dynamic, and
+stays. The criteria below were written before the code; the owner reviews
+the screenshot before any commit.
+
+### Design
+
+- **D1 The project bar's right end.** The provider's name and version
+  ("Claude Code 2.1.303", "newer than tested" after it when the CLI is
+  newer than probed; for Codex its model, sandbox and policy as today)
+  and one cell, nothing else, while approvals are Manual with no change
+  asked: the image's row. The approvals mode stays visible only when it
+  is not that: "approvals Auto" in the attention colour while Auto is in
+  force (brief amendment 8: the owner must see it), and a change asked
+  for and not yet in force after an arrow, "approvals Manual → Auto …"
+  (Claude Code answers at once), "approvals Manual → Auto (next turn)"
+  (Codex), "approvals Auto → Manual …" back. The freed cells go to the
+  middle's path, which shows more of itself. The narrowest bar, which
+  kept the mode alone, keeps the mode alone when there is one and the
+  name alone otherwise.
+- **D2 Untouched.** The title row's "● LIVE" and zone B's edge with the
+  session's state ("Idle", "Running", "Interrupted") stay as they are; the
+  footer's "F4 Manual/Auto" and the key page's "approvals Manual / Auto"
+  stay, so the key keeps its name.
+- **D3 Docs.** ui-design.md (Project bar; the Layouts frames redrawn by
+  TestDocFrames, the 80x24 one added to it), reference-design.md (the
+  image), AGENTS.md (status), brief.md (amendment 28),
+  `doc/plan28-evaluation.md`.
+
+### Criteria
+
+- 28.1 TestTopRight (`internal/render`): a Claude Code session (version
+  2.1.303) on P3b at its Write, at 120x40 and 208x59: the project bar ends
+  with "Claude Code 2.1.303 " and holds no "approvals"; with Auto in force
+  it ends with "approvals Auto " in stAttentionBold after "Claude Code
+  2.1.303 · "; with Auto asked for it ends with "approvals Manual → Auto
+  … "; with Manual asked for from Auto, "approvals Auto → Manual … "; at
+  208x59 the middle's path is at least 10 cells longer without the mode
+  than with it; the bar's left part unchanged.
+- 28.2 TestF4ClaudeSwitch, TestF4CodexNextTurn and TestKeysPage
+  (`internal/app`) adapted: in Manual the bar ends with the version (Codex:
+  "policy on-request" from 120 columns) and no "approvals"; the requested
+  and Auto texts as D1; "F4 Manual/Auto" in the footer and "approvals
+  Manual / Auto" on the key page unchanged.
+- 28.3 Every golden frame holding "approvals Manual" (25) regenerated, each
+  differing from HEAD on its project bar row only (a script); no frame
+  holds "approvals". Corrected as the frames were reviewed: no project
+  bar reads "approvals Manual" in force; the footer's "F2 approvals" hint
+  is on every frame, and the frames of a change asked for ("approvals
+  Manual → Auto …") and of Auto in force keep their bars.
+- 28.4 `go build ./...`, `go vet ./...`, `gofmt -l .` empty, `go test
+  ./...` all ok, the race run on `internal/render` and `internal/app`
+  clean, the timing step alone 7 of 7.
+- 28.5 Windows Terminal, maximised at 9 pt (208x59), the quota mock: the
+  top right reads "◆ MOCK — not a live session" (mock mode's own title
+  row) over "Mock data 2.1.300" over the edge's "Idle", no "approvals";
+  compared with the image, each element PASS or a documented deviation;
+  the owner reviews it before any commit.
+- 28.6 The documents of D3 updated; every changed text file UTF-8 without
+  BOM, LF; `git status` lists the intended files only.
+
+### Progress
+
+- [x] D1 (`internal/render/dashboard.go`: approvalsSpans empty while
+  Manual with no change asked, the bar's right part without the mode's
+  separator) and its tests (TestTopRight; the version, F4 and bar tests
+  adapted); 27 golden frames regenerated and reviewed by script; the
+  three doc frames redrawn (80x24 added to TestDocFrames).
+- [x] The checks (28.4): build, vet, gofmt, the suite (14 packages ok),
+  the race run on render and app (clean), the timing step alone (7 of 7,
+  keystroke-to-frame p95 1.0 ms, delta-to-frame 4.5 ms):
+  `scratchpad\plan24\p28-checks.log`; the screenshot
+  (`scratchpad\term\out-p28\quota-max\top-right.png`).
+- [x] D3 (ui-design.md's Project bar and Layouts frames,
+  reference-design.md, brief.md's amendment 28, AGENTS.md) and the
+  evaluation (`doc/plan28-evaluation.md`).
+- [ ] The owner's review of the screenshot; then the commit.
 
 ## Closed plans
 

@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ▣╭─ Draft ──────────────────────────────────────────────────────── 7 lines ─╮l
+ ▣╭─ Draft ──────────────────────────────────────────────────────── 7 lines ─╮0
  A│ > Review the colour palette in sample/viewer.go:                         │e
 ╭─│                                                                          │─╮
 │ │   1. keep the five accents of the reference screen;                      │ │

@@ -461,10 +461,18 @@ One line under the title (AM4 W1; architecture.md, Session context):
   adapter was last probed with ([evaluation.md](evaluation.md), After a CLI
   update; plan 14, item 6); for Codex also the model,
   sandbox and approval policy reported by `thread/start` (P6b), because
-  they decide what the agent may do; last, "approvals Manual" or
-  "approvals Auto" (Auto in the attention colour), with "→ Auto …" while
-  Claude Code is asked and "→ Auto (next turn)" until the next Codex
-  message; when narrow, Codex's sandbox and policy drop first (plan 12).
+  they decide what the agent may do; then one cell to the edge, nothing
+  else while approvals are Manual with no change asked (plan 28, the
+  owner's image of the top right: "● LIVE" over "Claude Code 2.1.303"
+  over zone B's edge with its "Idle"). The approvals mode shows only
+  while it is not that: "approvals Auto" in the attention colour while
+  Auto is in force (brief amendment 8 keeps it visible), and a change
+  asked for and not yet in force after an arrow, "approvals Manual →
+  Auto …" while Claude Code is asked, "approvals Manual → Auto (next
+  turn)" until the next Codex message, "approvals Auto → Manual …" back;
+  the freed cells go to the middle's path. When narrow, Codex's sandbox
+  and policy drop first, then the branch; at the narrowest the mode
+  alone when there is one, else the name alone (plan 12, plan 28).
 
 ## Layouts at three sizes
 
@@ -504,9 +512,9 @@ hold more states).
 ### Narrow, 80x24
 
 ```text
- >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ▣ claude-subagent-approval.jsonl          Mock data 2.1.300 · approvals Manual
- A ✓ Turn 1 › ! general-purpose                           (inferred)   F6: tree
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session 
+ ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300 
+ A ✓ Turn 1 › ! general-purpose                           (inferred)   F6: tree 
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
 │ ▎                                                                            │
 │ ▎ ╭───────────────────────────────────────────────────────────────────────╮  │
@@ -525,9 +533,9 @@ hold more states).
 │   Enter send · Ctrl+J newline                   1 line · Ctrl+G draft window │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
-│  ● general-purpose haiku-5-5   waiting: approval             13s   21.2k tok │
+│  ● general-purpose haiku-5-5   waiting: approval              6s   21.2k tok │
 ╰──────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys     
 ```
 
 - A is one row: the current path through the stage tree, a status symbol
@@ -546,7 +554,7 @@ hold more states).
 
 ```text
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session 
- ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual 
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300 
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                 ││                                                                                  │
 │ ✿ Haiku 5.5      ! AGENT WAITING ││ ▎ CLAUDE  Haiku 5.5  11:30                                                       │
@@ -627,7 +635,7 @@ hold more states).
 
 ```text
  >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session 
- ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                             Mock data 2.1.300 · approvals Manual 
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                                                Mock data 2.1.300 
 ╭──────────────────────────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                                     ││                                                                                                                                              │
 │ ✿ Claude Haiku 5.5                   ! AGENT WAITING ││ ▎ YOU  11:30                                                                                                                                 │

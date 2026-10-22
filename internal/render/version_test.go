@@ -24,7 +24,8 @@ func TestProjectBarNewerThanTested(t *testing.T) {
 			t.Errorf("version %q, mock %v: %q", c.version, c.mock, got)
 		}
 		if c.want {
-			if !strings.Contains(got, "Claude Code 2.1.303 newer than tested · ") {
+			// The mark ends the bar while approvals are Manual (plan 28).
+			if !strings.HasSuffix(strings.TrimSuffix(got, "\n"), "Claude Code 2.1.303 newer than tested ") {
 				t.Errorf("mark misplaced: %q", got)
 			}
 			for _, x := range l {
