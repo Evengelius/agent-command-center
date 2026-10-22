@@ -1,37 +1,37 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────── Interrupting… ─╮
-│ A · ORCHESTRATOR                 ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
-│ ✿ Haiku 5.5       ◉ INTERRUPTING ││ │ RESULT  02:00                                                                │ │
-│ ──────────────────────────────── ││ │ done                                                                         │ │
-│ STAGES · inferred from activity  ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
-│ ✓ TURN 1                      4s ││                                                                                  │
-│   Create a file named hello.txt… ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Write                          ││                                                                                  │
-│                                  ││ ▎ YOU  02:00                                                                     │
-│ ✓ TURN 2                      1s ││ ▎ Reply with the single word: again                                              │
-│   Reply with the single word: a… ││                                                                                  │
-│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│ ◉ TURN 3 · interrupting   9h 29m ││                                                                                  │
-│   Count from 1 to 300, one numb… ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│   •─ ○ (more as events arrive)   ││ ▎ again                                                                          │
+│ A · ORCHESTRATOR                 ││ │ RESULT  02:00                                                                │ │
+│ ✿ Haiku 5.5       ◉ INTERRUPTING ││ │ done                                                                         │ │
+│ ──────────────────────────────── ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
+│ STAGES · inferred from activity  ││                                                                                  │
+│ ✓ TURN 1                      4s ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Create a file named hello.txt… ││                                                                                  │
+│   Write                          ││ ▎ YOU  02:00                                                                     │
+│                                  ││ ▎ Reply with the single word: again                                              │
+│ ✓ TURN 2                      1s ││                                                                                  │
+│   Reply with the single word: a… ││ ──────────────────────────────────────────────────────────────────────────────── │
 │                                  ││                                                                                  │
+│ ◉ TURN 3 · interrupting   9h 29m ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
+│   Count from 1 to 300, one numb… ││ ▎ again                                                                          │
+│   •─ ○ (more as events arrive)   ││                                                                                  │
 │                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│ ──────────────────────────────── ││                                                                                  │
-│ ✦ TELEMETRY        Enter details ││ ▎ YOU  02:00                                                                     │
-│ ▾ SESSION USAGE                  ││ ▎ Count from 1 to 300, one number per line, nothing else.                        │
-│   Context 3% of 1M ░░░░░░░░░░░░░ ││                                                                                  │
-│   Tokens 91.1k session total     ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Est. cost $0.00 API-equiv.     ││                                                                                  │
-│                                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│ ▾ QUOTA WINDOWS                  ││ ▎  ▸ ✓ Thought for 0.2s                                     02:00:12  observed   │
-│   Session (5hr)             25%† ││ ▎                                                                                │
-│   ████████░░░░░░░░░░░░░░░░░░░░░░ ││ ▎ 1▌                                                                             │
-│   Resets in 14h 40m              ││                                                                                  │
-│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Weekly (7 day)            46%† ││ > a draft                                                                        │
-│   ██████████████░░░░░░░░░░░░░░░░ ││       kept as typed                                                              │
-│   Resets in 1d 20h               ││   interrupting…                                    2 lines · Ctrl+G draft window │
+│                                  ││                                                                                  │
+│ ──────────────────────────────── ││ ▎ YOU  02:00                                                                     │
+│ ✦ TELEMETRY        Enter details ││ ▎ Count from 1 to 300, one number per line, nothing else.                        │
+│ ▾ SESSION USAGE                  ││                                                                                  │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Tokens 91.1k session total     ││                                                                                  │
+│   Est. cost $0.00 API-equiv.     ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
+│                                  ││ ▎  ▸ ✓ Thought for 0.2s                                     02:00:12  observed   │
+│ ▾ QUOTA WINDOWS                  ││ ▎                                                                                │
+│   Session (5hr)             25%† ││ ▎ 1▌                                                                             │
+│   ████████░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
+│   Resets in 14h 40m              ││ ──────────────────────────────────────────────────────────────────────────────── │
+│                                  ││ > a draft                                                                        │
+│   Weekly (7 day)            46%† ││       kept as typed                                                              │
+│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Resets in 1d 20h               ││   +     Haiku 5.5 High · Ultracode    2 lines · interrupting…            ↯ Auto  │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │

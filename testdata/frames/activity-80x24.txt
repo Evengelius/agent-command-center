@@ -2,7 +2,6 @@
  (project bar: the test's temporary directory)
  A ◉ Turn 1 › ◉ general-purpose                           (inferred)   F6: tree
 ╭─ B · CONVERSATION ─────────────────────────────────────────────── ⠋ Running ─╮
-│ ▎ file named found.txt with the Write tool, and report the names. Then tell  │
 │ ▎ me in one line what it found.                                              │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
@@ -16,7 +15,8 @@
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Claude Code is processing your request…                                   │
-│   turn running: the draft waits · Ctrl+C interr…1 line · Ctrl+G draft window │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   turn running: the draft waits · Ctrl+C interrupt                           │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
 │  ◉ general-purpose haiku-5-5   Bash                           5s   40.1k tok │

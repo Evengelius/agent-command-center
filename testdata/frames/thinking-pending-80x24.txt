@@ -2,21 +2,21 @@
  (project bar: the test's temporary directory)
  A ◉ Turn 2                                               (inferred)   F6: tree
 ╭─ B · CONVERSATION ────────────────────────────────────────────── ⠋ Thinking ─╮
+│ ▎ Write tool to create b.txt in the current directory containing hello. If   │
+│ ▎ the write is blocked, retry the identical Write call, up to four attempts  │
 │ ▎ in total, then stop and report what happened to each attempt.              │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │                                                                              │
 │ ▎ CLAUDE  Haiku 5.5  02:00                                                   │
 │ ▎                                                                            │
-│ ▎ ╭───────────────────────────────────────────────────────────────────────╮  │
-│ ▎ │ ◞ Smoothing...                                                  00:00 │  │
-│ ▎ │ Thinking · token usage pending                                        │  │
-│ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │
-│ ▎ ╰───────────────────────────────────────────────────────────────────────╯  │
+│ ▎ ◞ Smoothing...  Thinking · token usage pending                      00:00  │
+│ ▎ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Claude Code is processing your request…                                   │
-│   turn running: the draft waits · Ctrl+C interr…1 line · Ctrl+G draft window │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   turn running: the draft waits · Ctrl+C interrupt                           │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                            │

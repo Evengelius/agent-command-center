@@ -244,7 +244,9 @@ func TestEditorDisplay(t *testing.T) {
 		long := strings.Repeat("0123456789", 30)
 		h.send(tea.PasteMsg{Content: "a\tb\x01c\x7fd\u0085e\n" + long})
 		f := plainText(h.m.View().Content)
-		for _, want := range []string{"a    b^Ac^?d<85>e", "2 lines · Ctrl+G draft window"} {
+		// The line count sits on the editor's row (plan 29), the draft
+		// window's key is the footer's.
+		for _, want := range []string{"a    b^Ac^?d<85>e", "2 lines", "Ctrl+G draft"} {
 			if !strings.Contains(f, want) {
 				t.Errorf("no %q in the editor:\n%s", want, f)
 			}

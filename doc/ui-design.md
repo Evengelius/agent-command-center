@@ -443,7 +443,7 @@ how:
 | "▶ subagent" and "▶ tool" kinds, the narration before the Agent call (Template 2) | The real tool's name ("Agent", "Bash") and the agent's identity; the events' order | The real events decide the content |
 | Turns 2 to 4 "○ pending" and the agent's tool history in zone A (Template 2) | The real stages; A's content unchanged | Nothing invented; the owner's section 8 keeps A's model |
 | A wrench on approved rows, a circled "!" on a failed one (Template 1) | ✓ and ✗ | No single-cell glyph in Windows Terminal's font; the status symbols of [Colours and symbols](#colours-and-symbols) |
-| "1 line · Ctrl+G draft window" on the input row, no status row (Template 1) | The status row under the input (Template 2's) | It carries the editor's messages ("turn running: the draft waits", quit confirmations) |
+| "1 line · Ctrl+G draft window" on the input row, no status row (Template 1) | Since plan 29 the owner's row under a separator (amendment 29): the "+" box, the model pill, "↯ Auto", and in its middle the editor's messages ("turn running: the draft waits", quit confirmations) and the line count past one line | The row is where the messages were; the keys are the footer's and the F1 page's |
 | A failed call's path, "failed" at the right (Template 1) | Its path, then its error, "failed" and the time at the right | The error is what needs a look, copyable (plan 5, item 6); it keeps half the row (the owner's live review, 2026-10-20) |
 
 ## Project bar
@@ -516,7 +516,6 @@ hold more states).
  ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300 
  A ✓ Turn 1 › ! general-purpose                           (inferred)   F6: tree 
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
-│ ▎                                                                            │
 │ ▎ ╭───────────────────────────────────────────────────────────────────────╮  │
 │ ▎ │ ! APPROVAL · general-purpose · Write                      11:30  mock │  │
 │ ▎ │   <probe-root>\probe-work\p3b\found.txt                               │  │
@@ -530,7 +529,8 @@ hold more states).
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Ask Mock data anything…                                                   │
-│   Enter send · Ctrl+J newline                   1 line · Ctrl+G draft window │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   +     Haiku 5.5 High · Ultracode                                   ↯ Auto  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
 │  ● general-purpose haiku-5-5   waiting: approval              6s   21.2k tok │
@@ -556,29 +556,29 @@ hold more states).
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session 
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300 
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                 ││                                                                                  │
-│ ✿ Haiku 5.5      ! AGENT WAITING ││ ▎ CLAUDE  Haiku 5.5  11:30                                                       │
-│ ──────────────────────────────── ││ ▎  ✓ Agent  general-purpose · List directory and write fo…  11:30:06      mock   │
-│ STAGES · inferred from activity  ││ ▎                                                                                │
-│ ✓ TURN 1                      4s ││ ▎ I've launched the subagent in the background to list the directory and write   │
-│   Use the Agent tool to launch … ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
-│   Agent · agent general-purpose  ││ ▎                                                                                │
-│                                  ││ ▎  ✓ general-purpose · Bash  ls -p "<probe…  allowed by you 11:30:08      mock   │
+│ A · ORCHESTRATOR                 ││ ▎ CLAUDE  Haiku 5.5  11:30                                                       │
+│ ✿ Haiku 5.5      ! AGENT WAITING ││ ▎  ✓ Agent  general-purpose · List directory and write fo…  11:30:06      mock   │
+│ ──────────────────────────────── ││ ▎                                                                                │
+│ STAGES · inferred from activity  ││ ▎ I've launched the subagent in the background to list the directory and write   │
+│ ✓ TURN 1                      4s ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
+│   Use the Agent tool to launch … ││ ▎                                                                                │
+│   Agent · agent general-purpose  ││ ▎  ✓ general-purpose · Bash  ls -p "<probe…  allowed by you 11:30:08      mock   │
 │                                  ││ ▎                                                                                │
 │                                  ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
-│ ──────────────────────────────── ││ ▎ │ ! APPROVAL · general-purpose · Write                          11:30  mock │  │
-│ ✦ TELEMETRY        Enter details ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                                   │  │
-│ ▾ SESSION USAGE                  ││ ▎ │ ▸ Preview of found.txt (2 lines)                                          │  │
-│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎ │  1 │ alpha.txt                                                            │  │
-│   Tokens 61.9k session total     ││ ▎ │  2 │ beta.md                                                              │  │
-│   Est. cost $0.00 API-equiv.     ││ ▎ │ This will create or overwrite the file at                                 │  │
-│ ▾ QUOTA WINDOWS                  ││ ▎ │ `<probe-root>\probe-work\p3b\found.txt` with the above content.           │  │
-│   Session (5hr)             35%† ││ ▎ │ ▐ F2 to answer ▌                                                          │  │
-│   ███████████░░░░░░░░░░░░░░░░░░░ ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
-│   Resets in 14h 39m              ││                                                                                  │
-│   Weekly (7 day)            47%† ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   ██████████████░░░░░░░░░░░░░░░░ ││ >  Ask Mock data anything…                                                       │
-│   Resets in 1d 20h               ││   Enter send · Ctrl+J newline                       1 line · Ctrl+G draft window │
+│                                  ││ ▎ │ ! APPROVAL · general-purpose · Write                          11:30  mock │  │
+│ ──────────────────────────────── ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                                   │  │
+│ ✦ TELEMETRY        Enter details ││ ▎ │ ▸ Preview of found.txt (2 lines)                                          │  │
+│ ▾ SESSION USAGE                  ││ ▎ │  1 │ alpha.txt                                                            │  │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎ │  2 │ beta.md                                                              │  │
+│   Tokens 61.9k session total     ││ ▎ │ This will create or overwrite the file at                                 │  │
+│   Est. cost $0.00 API-equiv.     ││ ▎ │ `<probe-root>\probe-work\p3b\found.txt` with the above content.           │  │
+│ ▾ QUOTA WINDOWS                  ││ ▎ │ ▐ F2 to answer ▌                                                          │  │
+│   Session (5hr)             35%† ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
+│   Resets in 14h 39m              ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Weekly (7 day)            47%† ││ >  Ask Mock data anything…                                                       │
+│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Resets in 1d 20h               ││   +     Haiku 5.5 High · Ultracode                                       ↯ Auto  │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    1 ACTIVE · 0 DONE │
@@ -672,10 +672,10 @@ hold more states).
 │   Session (5hr)                                 35%† ││                                                                                                                                              │
 │   ██████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                                                                              │
 │   Resets in 14h 39m                                  ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│   Weekly (7 day)                                47%† ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
-│   ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ >  Ask Mock data anything…                                                                                                                   │
-│   Resets in 1d 20h                                   ││   Enter send · Ctrl+J newline                                                                                   1 line · Ctrl+G draft window │
+│                                                      ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│   Weekly (7 day)                                47%† ││ >  Ask Mock data anything…                                                                                                                   │
+│   ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│   Resets in 1d 20h                                   ││   +     Haiku 5.5 High · Ultracode                                                                                                   ↯ Auto  │
 ╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                                                                                                    1 ACTIVE · 0 DONE │
@@ -1041,7 +1041,7 @@ events (events-and-state.md, Conversation record); nothing is simulated.
     as Claude Code's "[Request interrupted by user]", in amber with "· "
     (observed), zone A's stage "○ interrupted" (`internal/render/tree.go`),
     its open tools "unfinished"; a refused send, no entry either: the
-    editor's status row reads "not sent: the session is <phase>; the draft
+    editor's row reads "not sent: the session is <phase>; the draft
     is kept", or "turn running: wait, or interrupt" while a turn runs
     (`internal/state/actions.go`). The one note of the dashboard's own in B
     is the Codex slash command held back, below, in grey with "· ".
@@ -1845,7 +1845,7 @@ How each state looks, wherever it occurs (B3.3; AM2 D9):
 | Streaming | "⠋ Streaming", its spinner turning, in B's header; the cursor `▌` at the end of the open entry |
 | Running a tool | the tool line with ◉; in C, the agent's task |
 | Waiting for approval | "!" in the colour of attention on the agent in A, a pink "●" in C, the pink card in B, "! Waiting for approval" in B's header |
-| Interrupting | "Interrupting…" in B's header; after 10 s, the editor's status row reads "no turn end after the interrupt: force stop closes the session", and F force-stops (ASM-16; `internal/state/actions.go`) |
+| Interrupting | "Interrupting…" in B's header; after 10 s, the editor's row reads "no turn end after the interrupt: force stop closes the session", and F force-stops (ASM-16; `internal/state/actions.go`) |
 | Interrupted, cancelled | the CLI's own note in B when it sends one (Claude Code's "[Request interrupted by user]", amber, observed); zone A's stage "○ interrupted"; open tools end "unfinished" (inferred); no notice of the dashboard's (plan 21, item 5.6c) |
 | No data | "N/A" in grey with its reason; never a zero, never a blank |
 | Error | ✗ in red with the first line of the error; the full error in inspection or in the details view's error list |
@@ -2045,10 +2045,11 @@ modifiers are written in any order and case. A file that cannot be read or
 is not JSON, an unknown setting, another key, an empty list, or a key in
 both lists or twice in one: the first screen names `config.json` and the
 problem, the startup screen under its project field, a mock run's editor
-status row in red (only a quit question goes before it) until a message
-is sent, and the default keys apply. The footer, the editor's status row, the draft
-window's hints and this overlay show the keys in force; a send key keeps
-Enter's rules: never inside a paste, and after `\` a newline.
+row in red, the row its alone (only a quit question goes before it) until
+a message is sent, and the default keys apply. The footer, the draft
+window's hints and this overlay show the keys in force (the editor's row
+carries no keys since plan 29); a send key keeps Enter's rules: never
+inside a paste, and after `\` a newline.
 
 The same file can name Codex's proxy (plan 22, amendment 19).
 - **Setting.** `{"codex": {"proxy": "http://127.0.0.1:3128"}}` starts
@@ -2206,14 +2207,41 @@ provider: it has no provider code and sends a string to part 5's caller
   terminal sends a raw Ctrl+V key, the editor reads the native clipboard and
   inserts it as a paste. Mouse: click places the cursor, drag selects,
   double-click a word, triple-click a line.
-- **Size**: one row when empty or on one line, under the rule, then the
-  status line, no empty row between them (plan 20, the owner's templates);
-  it grows with its content up to half of B, then scrolls; the status line
-  shows the line count and the newline key that works in the detected
-  terminal (TI 4.3, "On screen").
+- **Size**: one row when empty or on one line, under the rule, then a
+  separator and the row, no empty row between them (plan 20, the owner's
+  templates; plan 29, the owner's image); it grows with its content up to
+  half of B, the separator and the row counted in that half, then scrolls.
+- **The row** (plan 29, brief amendment 29; [reference-design.md, The
+  input editor's row](reference-design.md#the-input-editors-row)), under
+  a separator in the frame's colour:
+
+  ```text
+   +     Haiku 5.5 High · Ultracode    12 lines · turn running: the draft waits · Ctrl+C interrupt    ↯ Auto
+  ```
+
+  A margin cell; " + " on zone B's tool rows' ground (plan 19; the image's
+  grey against the ground's), the "+" in the text colour; three cells; the
+  pill on the ground, " <model> High · Ultracode ": the model the session's
+  own as zone B's speaker names it ("Haiku 5.5", "Fable 5.1"; a Codex id as
+  given; "model N/A" before the CLI reports one), "High" in the text
+  colour, the dot in the title colour, "Ultracode" in violet bold (YOU's
+  colour); three cells after the pill, in grey, the draft's line count
+  once it passes one line, then what the status line said when it had
+  something to say (a turn running, "pasting…", a notice, the session's
+  phase, the quit question), joined by " · "; at the right end "↯ Auto"
+  and one cell. When the middle does not fit beside the pills, the row is
+  the middle alone, as the status line was; the configuration file's
+  problem keeps its red row alone (plan 21, item 5.1). The "+", "High ·
+  Ultracode" and "Auto" are the owner's design placeholders for a file to
+  add, the model and the effort selections: no key, no click, no event,
+  no state behind them; a click on the row focuses the editor. The idle
+  hint "Enter send · Ctrl+J newline" and "Ctrl+G draft window" went with
+  the row: the footer and the F1 page keep the keys (the footer leaves the
+  newline key out when it has no room). On 16 colours the ground is not
+  drawn, as zone B's tool rows there.
 - **While a turn runs**: editable, not sendable; "turn running: the draft
-  waits · Ctrl+C interrupt" (ASM-15). Enter then does nothing but flash that
-  line.
+  waits · Ctrl+C interrupt" in the row's middle (ASM-15). Enter then does
+  nothing but flash that line.
 - **After send**: the editor is cleared only once the message is written to
   the CLI; if the write fails, the draft is restored (events-and-state.md,
   Turn machine).

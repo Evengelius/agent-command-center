@@ -88,10 +88,110 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 29 - The input editor's row after the owner's image
 
-Plan 28 was approved and closed on 2026-10-22 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 29 (2026-10-22), the owner's image
+`references/08-input-editor.png`
+([reference-design.md](doc/reference-design.md#the-input-editors-row)):
+the helper line under the prompt ("Enter send · Ctrl+J newline … 1 line ·
+Ctrl+G draft window") replaced by the image's row, a "+" box, a pill
+"Fable 5.1 High · Ultracode" and "⚡ Auto" at the right end, all design
+placeholders with no function yet. The criteria below were written
+before the code; the owner reviews the screenshots before any commit.
+
+### Design
+
+- **D1 The row.** Under the draft's rows, a separator (a rule in the
+  frame's colour, the image's grey line) and the row: a margin cell; " +
+  " on zone B's tool rows' ground (plan 19; the image's grey `#1D2129`
+  against the ground's `#1E2133`), the "+" in the text colour; three
+  cells; the pill on the ground, " <model> High · Ultracode ", the model
+  the session's own as zone B's speaker names it ("Haiku 5.5", "Fable
+  5.1"; a Codex id as given; "model N/A" before the CLI reports one),
+  "High" in the text colour, the dot in the title colour, "Ultracode" in
+  violet bold (zone B's YOU colour); then, three cells after the pill, in
+  grey, what the status line said when it had something to say: a turn
+  running, "pasting…", a notice, the session's phase, the quit question,
+  or, when it had nothing, the draft's line count once it passes one
+  line ("12 lines"); at the right end "↯ Auto" and one cell. When the
+  status does not fit beside the pills, the row is the status alone, as
+  it was; the configuration file's problem keeps its red row alone (plan
+  21, item 5.1). The idle hint "Enter send · Ctrl+J newline" and "Ctrl+G
+  draft window" go: the footer and the F1 page keep the keys. On 16
+  colours the ground is not drawn, as zone B's tool rows there.
+- **D2 Placeholders.** The "+", the pill's "High · Ultracode" and "Auto"
+  are the owner's design placeholders for a file to add, the model and
+  the effort selections: no key, no click, no event, no state behind
+  them; the row belongs to the editor's panel, so a click on it focuses
+  the editor as the helper line did.
+- **D3 Height.** The editor is one row taller: its rule, the draft's rows
+  (one for an empty or one-line draft), the separator and the row; it
+  still grows with its content up to half of B, the separator and the
+  row counted in that half, then scrolls. Zone B's conversation loses one
+  row at every size; zones A and C are unchanged.
+- **D4 Docs.** ui-design.md (Input editor: the row and the statuses'
+  place; the Layouts frames redrawn by TestDocFrames), reference-design.md
+  (the image), AGENTS.md (status), brief.md (amendment 29),
+  `doc/plan29-evaluation.md` with the conformance table.
+
+### Criteria
+
+- 29.1 TestEditorRow (`internal/render`): on the quota mock, idle, at
+  80x24, 120x40 and 208x59, zone B's last four inner rows are a rule, the
+  prompt row ("> ", the cursor, "Ask Mock data anything…"), a rule in
+  stFrame, and the row " + " + three cells + " Haiku 5.5 High ·
+  Ultracode " then spaces then "↯ Auto " at the end, nothing else; the "+"
+  and the pill's cells on the ground (tint) and no other cell; "Ultracode"
+  in tint(stYou), " · " in tint(stMdBullet), "+", the model and "High" in
+  tint(stText), "↯ Auto" in stText; a 12-line draft puts "12 lines" in
+  stGrey three cells after the pill; P3b at its Write (the turn running)
+  puts "turn running: the draft waits · Ctrl+C interrupt" there at 208x59
+  and, at 120x40 where it does not fit beside the pills, alone on the
+  row; a pasting draft "pasting…"; the keys problem its red row alone.
+- 29.2 TestCompactEditor adapted: under the rule one input row for an
+  empty or one-line draft, three for a 3-line draft, then the separator
+  and the row, no empty row between them; "3 lines" on the row for the
+  3-line draft and no "line" for the others; a 40-line draft at 120x40
+  and 200x60 leaves B's conversation at least half of B's inner rows.
+- 29.3 The app's TestEditorDisplay ("2 lines" on the row, no "Ctrl+G
+  draft window"), TestDraftWindow (the footer's "Ctrl+G draft" names the
+  window; its own footer unchanged), the quit test (the quit question on
+  the row), TestEditorMouse and the select, pane and key tests pass.
+- 29.4 Every golden frame regenerated and reviewed by script: in each
+  changed frame the rows outside zone B are identical to HEAD's, B's
+  editor ends with the separator and the row (or the status alone), and
+  B's conversation holds HEAD's rows less one at the top (or its last
+  blank row); the frames with a window over the dashboard reported, not
+  judged.
+- 29.5 `go build ./...`, `go vet ./...`, `gofmt -l .` empty, `go test
+  ./...` all ok, the race run on `internal/render` and `internal/app`
+  clean, the timing step alone 7 of 7.
+- 29.6 Windows Terminal, maximised at 9 pt (208x59) and at 120x40 on the
+  quota mock (idle), and at 208x59 on the waiting copy of P3b (the turn
+  running): the row compared with the image in a conformance table, each
+  element PASS or a documented deviation; the owner reviews the
+  screenshots before any commit.
+- 29.7 The documents of D4 updated; every changed text file UTF-8 without
+  BOM, LF; `git status` lists the intended files only.
+
+### Progress
+
+- [x] D1 to D3 (`internal/render/editor.go`: the separator and inputRow;
+  `dashboard.go`: the editor's half of B) and their tests (TestEditorRow;
+  TestCompactEditor, TestThinkingSizes and the app's editor, draft window
+  and keys tests adapted); 59 golden frames regenerated and reviewed by
+  script; the three doc frames redrawn.
+- [x] The checks (29.5): build, vet, gofmt, the suite (14 packages ok),
+  the race run on render and app (clean), the timing step alone (7 of 7,
+  keystroke-to-frame p95 1.1 ms, delta-to-frame 4.6 ms):
+  `scratchpad\plan24\p29-checks.log`; the screenshots
+  (`scratchpad\term\out-p29\`: the quota mock at 208x59 and 120x40, the
+  waiting copy of P3b at 208x59) and the conformance table
+  (`doc/plan29-evaluation.md`).
+- [x] D4 (ui-design.md's Input editor, tables and Layouts frames,
+  reference-design.md, brief.md's amendment 29, AGENTS.md) and the
+  evaluation.
+- [ ] The owner's review of the screenshots; then the commit.
 
 ## Closed plans
 

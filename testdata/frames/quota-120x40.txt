@@ -2,28 +2,28 @@
  ▣ claude-quota-windows.jsonl   ..\..\testdata\mock\claude-quota-windows.jsonl                        Mock data 2.1.300
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                 ││                                                                                  │
-│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││                                                                                  │
-│ ──────────────────────────────── ││ ▎ CLAUDE  Haiku 5.5  11:30                                                       │
-│ STAGES · inferred from activity  ││ ▎  ✓ Agent  general-purpose · List directory and write fo…  11:30:00      mock   │
-│ ✓ TURN 1                      0s ││ ▎                                                                                │
-│   Use the Agent tool to launch … ││ ▎ I've launched the subagent in the background to list the directory and write   │
-│   Agent · agent general-purpose  ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
-│                                  ││ ▎                                                                                │
-│ ✓ TURN 2                      0s ││ ▎  ✓ general-purpose · Bash   ls -p "<prob…  allowed by you 11:30:00      mock   │
-│   started by the CLI             ││ ▎  ✓ general-purpose · Write  …\found.txt    allowed by you 11:30:00      mock   │
-│                                  ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens               11:30:00      mock   │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎ CLAUDE  Haiku 5.5  11:30                                                       │
+│ ──────────────────────────────── ││ ▎  ✓ Agent  general-purpose · List directory and write fo…  11:30:00      mock   │
+│ STAGES · inferred from activity  ││ ▎                                                                                │
+│ ✓ TURN 1                      0s ││ ▎ I've launched the subagent in the background to list the directory and write   │
+│   Use the Agent tool to launch … ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
+│   Agent · agent general-purpose  ││ ▎                                                                                │
+│                                  ││ ▎  ✓ general-purpose · Bash   ls -p "<prob…  allowed by you 11:30:00      mock   │
+│ ✓ TURN 2                      0s ││ ▎  ✓ general-purpose · Write  …\found.txt    allowed by you 11:30:00      mock   │
+│   started by the CLI             ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens               11:30:00      mock   │
 │                                  ││                                                                                  │
 │                                  ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
 │                                  ││ │ RESULT  11:30                                                                │ │
-│ ──────────────────────────────── ││ │ The subagent found two files in the directory, `alpha.txt` and `beta.md`,    │ │
-│ ✦ TELEMETRY        Enter details ││ │ and wrote them into `<probe-root>\probe-work\p3b\found.txt`.                 │ │
-│ ▾ SESSION USAGE                  ││ │                                                                              │ │
-│   Context 4% of 1M ░░░░░░░░░░░░░ ││ │ Found 2 files: alpha.txt and beta.md.                                        │ │
-│   Tokens 159.4k · Cost $0.01     ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
-│ ▾ QUOTA WINDOWS                  ││                                                                                  │
-│   Session (5hr)  0%† · 4h 12m    ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Weekly (7 day)  17%† · 5d 3h   ││ > Ask Mock data anything…                                                        │
-│   Fable limit  0%† · 5d 3h       ││   turn started by the CLI                           1 line · Ctrl+G draft window │
+│                                  ││ │ The subagent found two files in the directory, `alpha.txt` and `beta.md`,    │ │
+│ ──────────────────────────────── ││ │ and wrote them into `<probe-root>\probe-work\p3b\found.txt`.                 │ │
+│ ✦ TELEMETRY        Enter details ││ │                                                                              │ │
+│ ▾ SESSION USAGE                  ││ │ Found 2 files: alpha.txt and beta.md.                                        │ │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
+│   Tokens 159.4k · Cost $0.01     ││                                                                                  │
+│ ▾ QUOTA WINDOWS                  ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Session (5hr)  0%† · 4h 12m    ││ > Ask Mock data anything…                                                        │
+│   Weekly (7 day)  17%† · 5d 3h   ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Fable limit  0%† · 5d 3h       ││   +     Haiku 5.5 High · Ultracode    turn started by the CLI            ↯ Auto  │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │

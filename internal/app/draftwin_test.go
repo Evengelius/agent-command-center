@@ -40,8 +40,8 @@ func TestDraftWindow(t *testing.T) {
 		r, clip := copyRig(t, nil)
 		h := r.h
 		h.send(tea.PasteMsg{Content: "first\nsecond"})
-		if f := h.frame(); !strings.Contains(f, "Ctrl+G draft window") || strings.Contains(f, "Ctrl+G editor") {
-			t.Errorf("the input box does not name the draft window:\n%s", f)
+		if f := h.frame(); !strings.Contains(f, "Ctrl+G draft") || strings.Contains(f, "Ctrl+G editor") {
+			t.Errorf("the footer does not name the draft window:\n%s", f)
 		}
 		draftWin(t, h)
 		x, y, ww, wh := render.FileRect(h.m.ui.Width, h.m.ui.Height, false)

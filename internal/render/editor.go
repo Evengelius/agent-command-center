@@ -2,6 +2,7 @@ package render
 
 import (
 	"fmt"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/Evengelius/agent-command-center/internal/state"
@@ -128,9 +129,13 @@ func (v EditorView) selected(line, off int) bool {
 	return v.From != v.To && at(v.From) && !at(v.To)
 }
 
-// editorLines is the editor at B's bottom edge: a rule, the draft, a status.
-// It grows with its content from minRows up to maxRows, then scrolls to keep
-// the cursor in view (ui-design.md, Input editor, Size).
+// editorLines is the editor at B's bottom edge: a rule, the draft, a
+// separator, then the row of the owner's image (plan 29, brief amendment
+// 29; ui-design.md, Input editor): the "+" and the model pill on the tool
+// rows' ground, "↯ Auto" at the right end, and in the free middle what the
+// status line said when it had something to say. It grows with its content
+// from minRows up to maxRows, then scrolls to keep the cursor in view
+// (ui-design.md, Input editor, Size).
 func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 	v := ui.Editor
 	out := append([]line{rule(w)}, draftRows(s, ui, w, minRows, maxRows)...)
@@ -138,16 +143,56 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 	if v.Pasting {
 		status = "pasting…"
 	}
-	if keysProblemShown(s, ui) && status == ui.KeysProblem {
+	switch {
+	case keysProblemShown(s, ui) && status == ui.KeysProblem:
 		// The configuration file's problem is long: the row is its alone (plan 21, item 5.1).
-		out = append(out, plain("  "+status, stFailed))
-	} else {
-		out = append(out, spread(plain("  "+status, stGrey), plain(lineCount(v)+" · Ctrl+G draft window", stGrey), w))
+		out = append(out, rule(w), plain("  "+status, stFailed))
+	default:
+		// The middle: the draft's line count once it passes one line, then
+		// what the status line said; the idle hint goes, the keys being the
+		// footer's and the key page's.
+		var middle []string
+		if v.Total > 1 {
+			middle = append(middle, lineCount(v))
+		}
+		if status != idleHint(ui) {
+			middle = append(middle, status)
+		}
+		out = append(out, rule(w), inputRow(s, strings.Join(middle, " · "), w))
 	}
 	for i := range out {
 		out[i] = out[i].fit(w) // the padding is the editor's: a click on it goes to the editor
 	}
 	return in('E', out)
+}
+
+// inputRow is the row under the draft (plan 29, design D1): a margin
+// cell, " + " on the ground, three cells, the pill " <model> High ·
+// Ultracode " on the ground, the middle text in grey three cells after it,
+// and "↯ Auto " at the right end. The "+", the pill and "Auto" are the
+// owner's placeholders for a file to add, the model and the effort
+// selections, with no function yet (design D2); the pill names the
+// session's model as zone B's speaker does, "High · Ultracode" are its
+// placeholders. A middle text that does not fit beside the pills has the
+// row alone, as the status line had.
+func inputRow(s *state.State, middle string, w int) line {
+	model := "model N/A"
+	if m := s.Session.Model; m != "" {
+		model = modelName(m)
+	}
+	pill := line{deco(" "+model+" High", stText), deco(" · ", stMdBullet), deco("Ultracode ", stYou)}
+	left := line{deco(" ", stNone)}
+	left = append(left, grounded(line{deco(" + ", stText)}, 3)...)
+	left = append(left, deco("   ", stNone))
+	left = append(left, grounded(pill, pill.width())...)
+	right := line{deco("↯ Auto ", stText)}
+	if middle != "" {
+		if left.width()+3+textWidth(middle)+right.width() > w {
+			return plain("  "+middle, stGrey)
+		}
+		left = append(left, deco("   ", stNone), sp(middle, stGrey))
+	}
+	return spread(left, right, w)
 }
 
 // lineCount is the draft's logical lines, "1 line" or "n lines".

@@ -101,9 +101,10 @@ func TestConfiguredKeysShown(t *testing.T) {
 		f := plainText(r.h.m.View().Content)
 		rows := strings.Split(strings.TrimRight(f, "\n"), "\n")
 		// At 120 columns the footer leaves the newline key out for room
-		// (TestDashboardF3); the editor's status row names both.
-		if n := strings.Count(f, "Ctrl+Enter send · Enter newline"); n != 1 {
-			t.Errorf("%d places show \"Ctrl+Enter send · Enter newline\", want the status row alone:\n%s", n, f)
+		// (TestDashboardF3); the editor's row carries no keys since plan 29,
+		// the F1 page names both.
+		if n := strings.Count(f, "Ctrl+Enter send · Enter newline"); n != 0 {
+			t.Errorf("%d places show \"Ctrl+Enter send · Enter newline\" at 120 columns, want none:\n%s", n, f)
 		}
 		if foot := strings.TrimSpace(rows[len(rows)-1]); !strings.HasPrefix(foot, "Ctrl+Enter send · Ctrl+C interrupt") {
 			t.Errorf("footer %q, want it to name Ctrl+Enter as the send key", foot)
@@ -113,8 +114,8 @@ func TestConfiguredKeysShown(t *testing.T) {
 		}
 		// Wider, the footer holds both keys.
 		r.h.send(tea.WindowSizeMsg{Width: 200, Height: 60})
-		if n := strings.Count(plainText(r.h.m.View().Content), "Ctrl+Enter send · Enter newline"); n != 2 {
-			t.Errorf("at 200 columns %d places show the keys, want the status row and the footer", n)
+		if n := strings.Count(plainText(r.h.m.View().Content), "Ctrl+Enter send · Enter newline"); n != 1 {
+			t.Errorf("at 200 columns %d places show the keys, want the footer alone", n)
 		}
 		r.h.send(key(tea.KeyF1, 0))
 		f = plainText(r.h.m.View().Content)

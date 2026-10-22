@@ -92,8 +92,8 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		hints = sendNewline(ui) + " · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
 	}
 	if lipgloss.Width(hints)+1 > w {
-		// Zone B's input shows the newline key above: the room goes to the
-		// end of the line, Ctrl+Q quit (plan 17, F3 in the footer).
+		// The key page (F1) lists the newline key: the room goes to the end
+		// of the line, Ctrl+Q quit (plan 17, F3 in the footer; plan 29).
 		hints = strings.Replace(hints, ui.newlineKeys()[0]+" newline · ", "", 1)
 	}
 	return append(ls, keyHints(w, ui, footer(s, ui, hints)))
@@ -344,8 +344,9 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	inner := w - 4
 	right := turnBadge(s, ui)
 	// The editor grows up to half of B, then scrolls (ui-design.md, Input
-	// editor, Size); its rule and status line count in that half.
-	editor := editorLines(s, ui, inner, editorRows, (h-2)/2-2)
+	// editor, Size); its rule, its separator and its row count in that half
+	// (plan 29).
+	editor := editorLines(s, ui, inner, editorRows, (h-2)/2-3)
 	room := max(h-2-len(editor), 0)
 	conv, rows, top, starts := conversation(s, ui, inner, room)
 	var shown []line // only the rows shown are drawn

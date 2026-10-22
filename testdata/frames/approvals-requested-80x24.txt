@@ -2,7 +2,6 @@
  ▣ codex-subagents.jsonl                    approvals Manual → Auto (next turn)
  A ✓ Turn 1 › ✓ /root/list_files › ✓ /root/create_found   (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
-│ ▎  ▸ ✓ Thought for up to 0.0s · 8 reasoning tokens      11:30:00      mock   │
 │ ▎  ✓ collabAgent:wait                                   11:30:00      mock   │
 │ ▎  ✓ /root/create_found · fileChange     allowed by you 11:30:00      mock   │
 │ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens      11:30:00      mock   │
@@ -15,7 +14,8 @@
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Ask Mock data anything…                                                   │
-│   Enter send · Ctrl+J newline                   1 line · Ctrl+G draft window │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   +     gpt-5.6-sol High · Ultracode                                 ↯ Auto  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
 │  ✓ /root/create_found model N/A   completed                   0s   77.3k tok │

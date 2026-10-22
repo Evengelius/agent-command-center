@@ -2,7 +2,6 @@
  ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
  A ✓ Turn 2                                               (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
-│ ▎  ✓ general-purpose · Bash   ls -p "<…  allowed by you 11:30:00      mock   │
 │ ▎  ✓ general-purpose · Write  …ound.txt  allowed by you 11:30:00      mock   │
 │ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens           11:30:00      mock   │
 │                                                                              │
@@ -16,7 +15,8 @@
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Ask Mock data anything…                                                   │
-│   turn started by the CLI                       1 line · Ctrl+G draft window │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   +     Haiku 5.5 High · Ultracode    turn started by the CLI        ↯ Auto  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
 │  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │

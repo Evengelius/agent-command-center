@@ -36,10 +36,10 @@
 │   Session (5hr)   │ 42      for _, c := range palette {                                                                                                                          │                   │
 │   ████████████████│ 43          out = append(out, c.Name)                                                                                                                        │                   │
 │   Resets in 14h 40│ 44      }                                                                                                                                                    │                   │
-│                   │ 45      return out                                                                                                                                           │                   │
-│   Weekly (7 day)  │ 46  }                                                                                                                                                        │────────────────── │
-│   ████████████████│ 47                                                                                                                                                           │                   │
-│   Resets in 1d 20h│ 48  // Brighter is the colour with each channel raised by step, at most 255.                                                                                 │trl+G draft window │
+│                   │ 45      return out                                                                                                                                           │────────────────── │
+│   Weekly (7 day)  │ 46  }                                                                                                                                                        │                   │
+│   ████████████████│ 47                                                                                                                                                           │────────────────── │
+│   Resets in 1d 20h│ 48  // Brighter is the colour with each channel raised by step, at most 255.                                                                                 │           ↯ Auto  │
 ╰───────────────────│ 49  func (c Colour) Brighter(step uint32) Colour {                                                                                                           │───────────────────╯
 ╭───────────────────│ 50      r, g, b := c.RGB>>16&0xff, c.RGB>>8&0xff, c.RGB&0xff                                                                                                 │───────────────────╮
 │ C · LIVE AGENTS   │ 51      up := func(v uint32) uint32 { return min(v+step, 255) }                                                                                              │ 0 ACTIVE · 1 DONE │

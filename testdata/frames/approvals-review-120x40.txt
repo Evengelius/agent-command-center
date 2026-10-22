@@ -1,29 +1,29 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ codex-subagents.jsonl   ..\..\testdata\mock\codex-subagents.jsonl                 Mock data 0.145.0 · approvals Auto
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                 ││ ▎ word done.                                                                     │
+│ A · ORCHESTRATOR                 ││                                                                                  │
 │ ◆ GPT-5.6-sol        ✓ COMPLETED ││                                                                                  │
-│ ──────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────────────── │
-│ STAGES · inferred from activity  ││                                                                                  │
-│ ✓ TURN 1                      0s ││ ▎ CODEX  gpt-5.6-sol  11:30                                                      │
-│   Spawn two subagents in parall… ││ ▎  ▸ ✓ Thought for up to 0.0s · 83 reasoning tokens         11:30:00      mock   │
-│   child /root/list_files · chil… ││ ▎  ▸ ✓ Thought for up to 0.0s · 8 reasoning tokens          11:30:00      mock   │
-│                                  ││ ▎  ✓ collabAgent:wait                                       11:30:00      mock   │
+│ ──────────────────────────────── ││                                                                                  │
+│ STAGES · inferred from activity  ││ ▎ CODEX  gpt-5.6-sol  11:30                                                      │
+│ ✓ TURN 1                      0s ││ ▎  ▸ ✓ Thought for up to 0.0s · 83 reasoning tokens         11:30:00      mock   │
+│   Spawn two subagents in parall… ││ ▎  ▸ ✓ Thought for up to 0.0s · 8 reasoning tokens          11:30:00      mock   │
+│   child /root/list_files · chil… ││ ▎  ✓ collabAgent:wait                                       11:30:00      mock   │
 │                                  ││ ▎  ✓ /root/create_found · fileChange         allowed by you 11:30:00      mock   │
 │                                  ││ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens          11:30:00      mock   │
-│ ──────────────────────────────── ││ ▎  ✓ collabAgent:wait                                       11:30:00      mock   │
-│ ✦ TELEMETRY        Enter details ││                                                                                  │
-│ ▾ SESSION USAGE                  ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
-│   Context 6% of 258.4k █░░░░░░░░ ││ │ RESULT  11:30                                                                │ │
-│   Tokens 184.3k session total    ││ │ done                                                                         │ │
-│   Est. cost N/A Codex reports n… ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
-│ ▾ QUOTA WINDOWS                  ││                                                                                  │
-│   Session (5hr)               1% ││   ◈ auto-review approved · risk low · authorization high: a read-only check of   │
-│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││     the project                                                                  │
-│   Resets in 15h 13m              ││                                                                                  │
-│   Weekly (7 day)              1% ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ >  Ask Mock data anything…                                                       │
-│   Resets in 6d 23h               ││   Enter send · Ctrl+J newline                       1 line · Ctrl+G draft window │
+│                                  ││ ▎  ✓ collabAgent:wait                                       11:30:00      mock   │
+│ ──────────────────────────────── ││                                                                                  │
+│ ✦ TELEMETRY        Enter details ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
+│ ▾ SESSION USAGE                  ││ │ RESULT  11:30                                                                │ │
+│   Context 6% of 258.4k █░░░░░░░░ ││ │ done                                                                         │ │
+│   Tokens 184.3k session total    ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
+│   Est. cost N/A Codex reports n… ││                                                                                  │
+│ ▾ QUOTA WINDOWS                  ││   ◈ auto-review approved · risk low · authorization high: a read-only check of   │
+│   Session (5hr)               1% ││     the project                                                                  │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
+│   Resets in 15h 13m              ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Weekly (7 day)              1% ││ >  Ask Mock data anything…                                                       │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Resets in 6d 23h               ││   +     gpt-5.6-sol High · Ultracode                                     ↯ Auto  │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 2 DONE │

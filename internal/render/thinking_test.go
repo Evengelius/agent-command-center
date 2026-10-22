@@ -1011,8 +1011,9 @@ func TestThinkingFoldKeepsCard(t *testing.T) {
 // TestThinkingSizes is criterion 2.14: seven, five and two rows by zone B's
 // room, none wider than the zone; drawn at 120x40, then the same instant at
 // 80x24, the frame is the 80x24 frame drawn at once. Since plan 24 zone B
-// has zone D's rows: at 80x24 its room is 12, the five-row card; the
-// two-row card comes with a room under 12, as cardSize is checked.
+// has zone D's rows, and since plan 29 the editor's row takes one more: at
+// 80x24 its room is 11, the two-row card, as cardSize is checked; at
+// 100x30 the five-row card.
 func TestThinkingSizes(t *testing.T) {
 	for room, want := range map[int]int{43: 7, 25: 7, 20: 7, 19: 5, 15: 5, 12: 5, 11: 2, 9: 2} {
 		if got := cardSize(room); got != want {
@@ -1028,7 +1029,7 @@ func TestThinkingSizes(t *testing.T) {
 		{state.Thought{Start: thinkAt(7449), Inferred: true}, "a Codex step"},
 	} {
 		s := thinkBench(c.th)
-		for _, size := range []struct{ w, h, rows int }{{120, 40, 7}, {200, 60, 7}, {100, 30, 5}, {80, 24, 5}} {
+		for _, size := range []struct{ w, h, rows int }{{120, 40, 7}, {200, 60, 7}, {100, 30, 5}, {80, 24, 2}} {
 			ui := UI{Width: size.w, Height: size.h, Now: thinkAt(10700), Focus: "B"}
 			rows := zoneBText(s, ui)
 			got := len(boxIn(rows))

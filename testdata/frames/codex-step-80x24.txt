@@ -2,21 +2,21 @@
  (project bar: the test's temporary directory)
  A ◉ Turn 1                                               (inferred)   F6: tree
 ╭─ B · CONVERSATION ─────────────────────────────────────────────── ⠋ Running ─╮
+│ ▎ directory. The second creates a file named found.txt in the current        │
+│ ▎ directory containing the single word found. Wait for both, then reply      │
 │ ▎ with the single word done.                                                 │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │                                                                              │
 │ ▎ CODEX  gpt-5.6-sol  02:00                                                  │
 │ ▎                                                                            │
-│ ▎ ╭───────────────────────────────────────────────────────────────────────╮  │
-│ ▎ │ ◡ Smoothing...                                                  00:01 │  │
-│ ▎ │ Model working · reasoning tokens reported when the step ends          │  │
-│ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │
-│ ▎ ╰───────────────────────────────────────────────────────────────────────╯  │
+│ ▎ ◡ Smoothing...  Model working · tokens after the step               00:01  │
+│ ▎ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  OpenAI Codex is processing your request…                                  │
-│   turn running: the draft waits · Ctrl+C interr…1 line · Ctrl+G draft window │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   turn running: the draft waits · Ctrl+C interrupt                           │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                            │

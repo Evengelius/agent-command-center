@@ -3848,3 +3848,35 @@ version alone while approvals are Manual with no change asked; the
 approvals mode shows there only while it is Auto or changing, so that
 amendment 8's Auto stays visible; "Idle" and the title row stay; nothing
 is committed until the owner has reviewed the screenshot and approved.
+
+## Amendment 29, 2026-10-22: the input editor's row after the owner's image, for plan 29
+
+After plan 28 was approved and pushed, the owner sent a crop of zone B's
+input editor as it is ("Ok now in this zone I have a new request"), then
+an image of it as it must be, kept as `references/08-input-editor.png`
+(1685x139) and described in
+[reference-design.md](reference-design.md#the-input-editors-row): the
+prompt row, a separator, then a "+" box, a pill "Fable 5.1 High ·
+Ultracode" and "⚡ Auto" at the right end. The owner, word for word:
+
+````text
+The line below "Ask Claude Code anything..." must be replaced.
+We are specifically talking about the current helper line that shows things like "Enter send" and "Ctrl+J newline".
+It should be replaced by the design shown in the image.
+Important clarification:
+
+* The "+" is only a design placeholder for a future feature: clicking it will later allow adding a file.
+* "Fable 5.1 High · Ultracode" is also only design for now: it will later correspond to model selection.
+* "Auto" is also only design for now: it will later correspond to effort selection.
+
+For the moment, do not implement any of these functionalities yet.
+The focus right now is design only.
+````
+
+Taken as plan 29: the editor's helper line gives way to the image's row,
+a separator above it; the "+", the pill and "Auto" are design
+placeholders with no function; the pill names the session's real model
+with the placeholders "High · Ultracode" after it; the editor's dynamic
+statuses and a multi-line draft's line count keep a place in the row's
+free middle; nothing is committed until the owner has reviewed the
+screenshots and approved.

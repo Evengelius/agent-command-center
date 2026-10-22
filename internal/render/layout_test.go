@@ -309,9 +309,10 @@ func TestAgentCardTemplate2(t *testing.T) {
 	}
 }
 
-// TestCompactEditor is plan 20's criterion 3.10: under its rule the input
-// is one row, then the status row, no empty row between them; a 3-line
-// draft takes three input rows.
+// TestCompactEditor is plan 20's criterion 3.10 as plan 29 draws the
+// editor (criterion 29.2): under its rule the input is one row, then the
+// separator and the row, no empty row between them; a 3-line draft takes
+// three input rows and puts "3 lines" on the row, a shorter draft nothing.
 func TestCompactEditor(t *testing.T) {
 	// The Claude mock's session, ready (a probe's ends with its process).
 	f := filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")
@@ -324,7 +325,7 @@ func TestCompactEditor(t *testing.T) {
 		lines []string
 		rows  int
 		count string
-	}{{[]string{""}, 1, "1 line"}, {[]string{"one"}, 1, "1 line"}, {[]string{"one", "two", "three"}, 3, "3 lines"}} { // as the app sends them: an empty draft is one empty line
+	}{{[]string{""}, 1, ""}, {[]string{"one"}, 1, ""}, {[]string{"one", "two", "three"}, 3, "3 lines"}} { // as the app sends them: an empty draft is one empty line
 		for _, size := range [][2]int{{80, 24}, {120, 40}, {200, 60}} {
 			ui := UI{Width: size[0], Height: size[1], Focus: "B", Editor: EditorView{Lines: c.lines, Total: max(len(c.lines), 1)}}
 			rows := strings.Split(texts(Draw(s, ui).lines), "\n")
@@ -333,15 +334,25 @@ func TestCompactEditor(t *testing.T) {
 				cells := []rune(rows[y])
 				return strings.TrimSpace(string(cells[b.left+1 : b.right]))
 			}
+			isRule := func(y int) bool { txt := inner(y); return txt != "" && strings.Trim(txt, "─") == "" }
+			// The row is B's last inner row, the separator above it (plan 29),
+			// the draft's rows above that up to the editor's rule.
+			sep := b.bottom - 2
 			rule := -1
-			for y := b.bottom - 1; y > b.top && rule < 0; y-- {
-				if txt := inner(y); txt != "" && strings.Trim(txt, "─") == "" {
+			for y := sep - 1; y > b.top && rule < 0; y-- {
+				if isRule(y) {
 					rule = y
 				}
 			}
-			got := b.bottom - 1 - rule - 1 // the rows between the rule and the status row
-			if rule < 0 || got != c.rows || !strings.HasPrefix(inner(rule+1), ">") || !strings.Contains(inner(b.bottom-1), c.count) {
-				t.Errorf("%v, %d lines: %d input rows under the rule (row %d), want %d; first %q, status %q:\n%s", size, len(c.lines), got, rule, c.rows, inner(rule+1), inner(b.bottom-1), strings.Join(rows, "\n"))
+			got := sep - rule - 1 // the rows between the rule and the separator
+			last := inner(b.bottom - 1)
+			// The row holds the pills and "↯ Auto", or its middle text alone
+			// where that does not fit beside them (80x24 with the count).
+			if !isRule(sep) || rule < 0 || got != c.rows || !strings.HasPrefix(inner(rule+1), ">") || strings.HasPrefix(last, "+") != strings.HasSuffix(last, "↯ Auto") {
+				t.Errorf("%v, %d lines: %d input rows under the rule (row %d), want %d; first %q, the row %q:\n%s", size, len(c.lines), got, rule, c.rows, inner(rule+1), last, strings.Join(rows, "\n"))
+			}
+			if c.count != "" && !strings.Contains(last, c.count) || c.count == "" && strings.Contains(last, "line") {
+				t.Errorf("%v, %d lines: the row %q, want the count %q", size, len(c.lines), last, c.count)
 			}
 		}
 	}

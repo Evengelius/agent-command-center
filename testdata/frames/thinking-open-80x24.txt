@@ -2,7 +2,6 @@
  (project bar: the test's temporary directory)
  A ✓ Turn 2                                               (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
-│ ╭──────────────────────────────────────────────────────────────────────────╮ │
 │ │ RESULT  02:00                                                            │ │
 │ │ The Write was not blocked, so no retries were needed. Attempt 1 created  │ │
 │ │ `<HOME>\AppData\Local\Temp\acc-p12\cb\b.txt` with the content `hello`.   │ │
@@ -16,7 +15,8 @@
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Ask Claude Code anything…                                                 │
-│   Enter send · Ctrl+J newline                   1 line · Ctrl+G draft window │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   +     Haiku 5.5 High · Ultracode                                   ↯ Auto  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                            │

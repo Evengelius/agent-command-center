@@ -3,27 +3,27 @@
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                 ││                                                                                  │
 │ ✿ Claude H╭─ Explorer ───────────────────────────────────────────────────────────────── mock · 14 items ─╮           │
-│ ──────────│ sample/viewer.go                                                                             │           │
-│ STAGES · i│ ▾ sample                                                                                  ●  │    mock   │
-│ ✓ TURN 1  │     viewer.go                                                                             M  │           │
-│   Use the │     viewer_test.go                                                                        D  │nd write   │
+│ ──────────│ sample/viewer.go                                                                             │    mock   │
+│ STAGES · i│ ▾ sample                                                                                  ●  │           │
+│ ✓ TURN 1  │     viewer.go                                                                             M  │nd write   │
+│   Use the │     viewer_test.go                                                                        D  │           │
 │   Agent · │ ▸ tools                                                                                   D  │           │
-│           │   claude-api-key-context-refused.jsonl                                                       │           │
+│           │   claude-api-key-context-refused.jsonl                                                       │    mock   │
 │ ✓ TURN 2  │   claude-quota-windows.jsonl                                                                 │    mock   │
 │   started │   claude-subagent-approval.jsonl                                                             │    mock   │
-│ ──────────│   claude-thinking-subagent.jsonl                                                             │    mock   │
-│ ✦ TELEMETR│   claude-thinking.jsonl                                                                      │           │
-│ ▾ SESSION │   codex-api-key.jsonl                                                                     U  │─────────╮ │
-│   Context │   codex-no-5h-window.jsonl                                                                   │         │ │
-│   Tokens 1│   codex-plan6-limits.jsonl                                                                !  │.md`,    │ │
+│ ──────────│   claude-thinking-subagent.jsonl                                                             │           │
+│ ✦ TELEMETR│   claude-thinking.jsonl                                                                      │─────────╮ │
+│ ▾ SESSION │   codex-api-key.jsonl                                                                     U  │         │ │
+│   Context │   codex-no-5h-window.jsonl                                                                   │.md`,    │ │
+│   Tokens 1│   codex-plan6-limits.jsonl                                                                !  │         │ │
 │   Est. cos│   codex-spawn-request.jsonl                                                               A  │         │ │
 │ ▾ QUOTA WI│   codex-subagents.jsonl                                                                      │         │ │
-│   Session │                                                                                              │         │ │
-│   ████████│                                                                                              │─────────╯ │
-│   Resets i│                                                                                              │           │
-│   Weekly (│                                                                                              │────────── │
+│   Session │                                                                                              │─────────╯ │
 │   ████████│                                                                                              │           │
-│   Resets i│                                                                                              │aft window │
+│   Resets i│                                                                                              │────────── │
+│   Weekly (│                                                                                              │           │
+│   ████████│                                                                                              │────────── │
+│   Resets i│                                                                                              │   ↯ Auto  │
 ╰───────────│                                                                                              │───────────╯
 ╭───────────│                                                                                              │───────────╮
 │ C · LIVE A│                                                                                              │E · 1 DONE │

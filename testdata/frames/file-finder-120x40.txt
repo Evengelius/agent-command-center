@@ -3,27 +3,27 @@
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                 ││                                                                                  │
 │ ✿ Claude H╭─ Quick open ────────────────────────────────────────────────────────────────────── 11 files ─╮           │
-│ ──────────│ › vi▌                                                                                        │           │
-│ STAGES · i│ ▸ sample/viewer.go                                                                           │    mock   │
-│ ✓ TURN 1  │                                                                                              │           │
-│   Use the │                                                                                              │nd write   │
+│ ──────────│ › vi▌                                                                                        │    mock   │
+│ STAGES · i│ ▸ sample/viewer.go                                                                           │           │
+│ ✓ TURN 1  │                                                                                              │nd write   │
+│   Use the │                                                                                              │           │
 │   Agent · │                                                                                              │           │
-│           │                                                                                              │           │
+│           │                                                                                              │    mock   │
 │ ✓ TURN 2  │                                                                                              │    mock   │
 │   started │                                                                                              │    mock   │
-│ ──────────│                                                                                              │    mock   │
-│ ✦ TELEMETR│                                                                                              │           │
-│ ▾ SESSION │                                                                                              │─────────╮ │
-│   Context │                                                                                              │         │ │
-│   Tokens 1│                                                                                              │.md`,    │ │
+│ ──────────│                                                                                              │           │
+│ ✦ TELEMETR│                                                                                              │─────────╮ │
+│ ▾ SESSION │                                                                                              │         │ │
+│   Context │                                                                                              │.md`,    │ │
+│   Tokens 1│                                                                                              │         │ │
 │   Est. cos│                                                                                              │         │ │
 │ ▾ QUOTA WI│                                                                                              │         │ │
-│   Session │                                                                                              │         │ │
-│   ████████│                                                                                              │─────────╯ │
-│   Resets i│                                                                                              │           │
-│   Weekly (│                                                                                              │────────── │
+│   Session │                                                                                              │─────────╯ │
 │   ████████│                                                                                              │           │
-│   Resets i│                                                                                              │aft window │
+│   Resets i│                                                                                              │────────── │
+│   Weekly (│                                                                                              │           │
+│   ████████│                                                                                              │────────── │
+│   Resets i│                                                                                              │   ↯ Auto  │
 ╰───────────│                                                                                              │───────────╯
 ╭───────────│                                                                                              │───────────╮
 │ C · LIVE A│                                                                                              │E · 1 DONE │
