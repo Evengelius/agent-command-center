@@ -221,3 +221,11 @@ criterion in plan.md now reads: no frame holds the old preview's heading
 and the timeline keeps "no activity yet" for an agent without entry, as
 27.3 asks; the two codex-thought frames show that state. The first block
 stays as it was reported, FAIL by its first wording; no code changed.
+
+**The commit and the push (2026-10-22), after the owner's approval.** The
+owner approved plan 27 on 2026-10-22, 27.6 corrected with a note; commit
+041e7b8 (70 files: 63 modified, 46 of them golden frames, 7 added) and
+the approval commit were pushed to `origin`; `origin/main` equals `main`,
+the working tree is clean, and the author is `Evengelius
+<molimoabel@gmail.com>`, with no attribution line: PASS. The blocks above
+stay as they were reported.

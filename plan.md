@@ -12,8 +12,8 @@ for plan 17, `git show 8b3b16b:plan.md` for plan 18, `git show
 d84e5d4:plan.md` for plan 20, `git show f939d96:plan.md` for plan 21,
 `git show d13ef71:plan.md` for plan 22, `git show e8d3e3b:plan.md` for
 plan 23, `git show a3bfe5d:plan.md` for plan 24, `git show cb8f76d:plan.md`
-for plan 25, `git show a9a5145:plan.md` for plan 26), and its results in its
-evaluation file.
+for plan 25, `git show a9a5145:plan.md` for plan 26, `git show 041e7b8:plan.md`
+for plan 27), and its results in its evaluation file.
 
 ## The owner's standing decisions
 
@@ -87,285 +87,10 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 27 - Zone C with the execution timeline
+## No plan active
 
-Brief amendment 26 (2026-10-22), the owner's image
-`references/04-zone-c-timeline.png`
-([reference-design.md](doc/reference-design.md#zone-c-with-the-execution-timeline)):
-zone C redrawn after the image, strictly, from 100 columns; the status at
-the timeline heading's right end is the selected agent's, from the state.
-The criteria below were written before the code; the owner reviews the
-Windows Terminal screenshots before any commit.
-
-### Design
-
-- **D1 The frame.** Zone C's top edge carries no title (as zone A since
-  plan 24); the border's colour marks the focus. Inside, row 1: "C · LIVE
-  AGENTS" in the title colour at the left, and at the right end the counts
-  "N ACTIVE · M DONE" in grey, preceded as today by the agents out of view
-  ("↑ 2 above · ↓ 5 below", amber) and the "* requested model" footnote.
-  Row 2: a rule across the inner width. Row 3: the panels' headings, "AGENTS"
-  over the list and "EXECUTION TIMELINE" over the timeline, in the title
-  colour, with the selected agent's status at the timeline's right end: its
-  symbol and its state word in capitals, in the symbol's colour ("✓
-  COMPLETED" green, "◉ RUNNING" amber, "● WAITING" pink, "✗ FAILED" red,
-  "○ STOPPED" grey, "◉ ANNOUNCED" amber). A vertical rule "│" in the
-  frame's colour separates the panels on every row from row 3 to the
-  bottom; rows 1 and 2 span the inner width.
-- **D2 The list**, the left panel: 39% of the inner width, rounded, at
-  least 30 cells (45 at 120 columns, 80 at 208). Two rows an agent, plan 20's
-  Template 2 with the image's changes: the first row the selection mark,
-  the status symbol, the label, the model, then the state as today
-  ("waiting: approval", the running word, "completed · " and the summary's
-  first line, "failed · " and the error's), cut to the panel with "…"; the
-  second row the elapsed time, the retries, the tokens, then a vertical
-  bar in the frame's colour and "tool: " with the last call's name in
-  white, its symbol only while it runs or when it failed (the image's
-  completed Write shows none), then "next: <tool> (approval pending)" as
-  today. The rows are ordered as today; the list scrolls with the
-  selection; "no agents yet: they appear as the CLI starts them" on the
-  row under the header when none is in play (the panels and their
-  headings are not drawn then).
-- **D3 The timeline**, the right panel: the selected agent's entries (its
-  messages, then its history lines, as the preview showed them), the
-  newest last, one entry each: the time "17:11:31" in grey, the role in
-  its colour padded to 9 cells ("notice" in zone B's speaker blue,
-  "assistant" in its result green, any other role grey), a vertical bar in
-  the frame's colour, then the text wrapped onto at most two rows of the
-  room left, the second cut with "…" when the text goes on, the bar drawn
-  on both rows; a rule in grey across the panel between entries, none
-  after the last. The panel shows the tail; the wheel scrolls it (panel P,
-  by rows), and while it is held away from the tail the heading's right
-  end reads "↑ n ↓ m · End follows" in place of the status. "no activity
-  yet" in grey when the agent has no entry. The agent's model with its
-  source and its effort, which the old preview heading carried, stay in
-  the list's model column and in the inspection (Enter).
-- **D4 Height.** With no agent in play, 4 rows: the edges, the header row
-  and "no agents yet…". With agents in play from 100 columns, C needs its
-  three heading rows, the larger of the list's rows (two an agent) and the
-  timeline's eleven (four entries of two rows and three rules, the image's
-  four entries), and its two edges: 16 rows for one agent. The list's rows
-  take up to half the rows A, B and C share (plan 18: six agents at 120x40
-  give C 17 rows, twenty 18; twenty at 200x60 give 28), the timeline's up
-  to a third of them, and C never has less than one agent's rows with the
-  headings (7): with one agent 16 at 208x59 and 200x60, 13 at 156x44
-  (three entries), 12 at 120x40 (two entries), 7 at 160x24 to 160x26 and 8
-  at 160x27 (plan 21's floor, one entry). B keeps its least rows as today
-  (twenty agents at 100x24 leave C 9). Under 100 columns the narrow layout
-  keeps plan 18's one-row list with its title in the edge and its heights.
-- **D5 Keys and mouse** are unchanged: ↑ ↓ select, Enter inspects, z
-  zooms (the same drawing over the middle and bottom), PgUp, PgDn, Home
-  and End scroll the list; a click on C focuses it and starts a
-  selection, as today; the wheel over the timeline scrolls it; the
-  footer's hints as today.
-- **D6 Docs.** ui-design.md (Layouts' two frames' zone C rows and their
-  text, Zone C rewritten), reference-design.md (the image), AGENTS.md
-  (status), brief.md (amendment 26), `doc/plan27-evaluation.md` with the
-  conformance table against the image.
-
-### Criteria
-
-- 27.1 TestZoneCDesign (`internal/render`): on the P3b mock at the Write
-  approval and on the quota mock, at 120x40 and 208x59: C's top edge holds
-  no title; its row 1 reads "C · LIVE AGENTS" at the left and ends with
-  "1 ACTIVE · 0 DONE" (P3b) or "0 ACTIVE · 1 DONE" (quota); row 2 is a
-  rule; row 3 reads "AGENTS" at the left and "EXECUTION TIMELINE" at the
-  list's right, ending with "● WAITING" (P3b) or "✓ COMPLETED" (quota);
-  every row from 3 to the last has "│" at the list's right edge; the list
-  is 45 cells at 120 columns and 80 at 208.
-- 27.2 TestZoneCDesign: P3b's agent rows read "▸● general-purpose",
-  "haiku-5-5", "waiting: approval", then "00:13", "21.2k tok", "│ tool:
-  Bash" with no symbol after the completed call, "next: Write (approval
-  pending)"; a running call keeps its symbol and a failed one its "✗"
-  (TestAgentCardTemplate2 adapted).
-- 27.3 TestZoneCDesign: the timeline's entries read "<HH:MM:SS>  <role>
-  │ <text>", the role padded to 9 cells, "notice" in stSpeaker and
-  "assistant" in stResult, a text longer than two rows cut with "…" on
-  its second row, the bar on both rows, a grey rule between entries and
-  none after the last, the newest entry last; the tail shown at 120x40
-  (two entries) and 208x59 (four); scrolled up, the heading's right end
-  reads "↑ n ↓ m · End follows"; an agent with no entry reads "no activity
-  yet".
-- 27.4 TestDashboardGeometry, TestAdaptiveLayout, TestZoneCFloor and
-  TestCHeight: C's rows with one agent 16 at 208x59 and 200x60, 13 at
-  156x44, 12 at 120x40, 7 at 160x24 to 160x26 and 8 at 160x27; 17 with
-  six agents and 18 with twenty at 120x40, 28 with twenty at 200x60, 9
-  with twenty at 100x24; 4 with no agent; A and B share the rest, B
-  keeping its least rows; the narrow layout's numbers unchanged.
-- 27.5 The keys and the mouse: the C cases of the key, zoom, select and
-  pane tests pass with the new rows (a click on C focuses it and selects
-  text; the wheel scrolls the timeline, panel P).
-- 27.6 Every golden frame regenerated and read; no frame holds "· LIVE",
-  "(reported)" or "no activity yet" beside a list; each dashboard frame's
-  C holds the heading row and the panels. Corrected on 2026-10-22 at the
-  owner's decision, after the evaluation found "no activity yet" in two
-  frames as 27.3 asks: no frame holds the old preview's heading ("<label>
-  · LIVE") or its origin labels ("(reported)", "(not reported)"), and the
-  timeline keeps "no activity yet" for an agent without entry.
-- 27.7 `go build ./...`, `go vet ./...`, `gofmt -l .` empty, `go test
-  ./...` all ok, the race run on `internal/render` and `internal/app`
-  clean, the timing step alone 7 of 7.
-- 27.8 Windows Terminal, maximised at 9 pt (208x59) and at 120x40, on the
-  P3b mock (the agent waiting) and the quota mock (completed): the
-  screenshots compared with the image in a conformance table, each
-  element PASS or a documented deviation; the owner reviews them before
-  any commit.
-- 27.9 The documents of D6 updated; every changed text file UTF-8 without
-  BOM, LF; `git status` lists the intended files only.
-
-### Progress
-
-- [x] D1 to D5 (`internal/render/zonec.go`: the frame, the list, the
-  timeline, the height rule; `dashboard.go`'s old zone C, preview and
-  constants gone, the card's tool bar) and their tests (TestZoneCDesign,
-  TestCHeight; the layout, floor, model, retries, scenario, zoom and
-  long-conversation tests adapted to the list's width and C's rows); 46
-  golden frames regenerated and reviewed by script.
-- [x] The suite (`go test ./...`, 14 packages ok), the race run on
-  `internal/render` and `internal/app` (clean), the timing step alone (7 of
-  7: keystroke-to-frame p95 1.0 ms, the 50,000-line draft 2.1 ms,
-  delta-to-frame after two hours 6.0 ms, the streamed answer 4.0 ms, the
-  thinking card 3.5 ms, paste-to-frame 1.2 ms), build, vet and gofmt:
-  `scratchpad\plan24\p27-checks.log`.
-- [x] The Windows Terminal screenshots (`scratchpad\term\p27demo.ps1`, the
-  plan 24 harness on this tree's executable): the completed agent on the
-  quota mock at 208x59 and 120x40, the agent waiting for its Write on a
-  copy of the P3b mock whose approval stays pending 20 s longer
-  (`plan24\mkwait.mjs`), a four-entry timeline on the thinking-subagent
-  mock at 208x59; the conformance table in the evaluation.
-- [x] D6 (ui-design.md's Zone C and Layouts, reference-design.md's section
-  and table, brief.md's amendment 26, AGENTS.md's status) and the
-  evaluation (`doc/plan27-evaluation.md`: the criteria, the conformance
-  table, the deviations).
-- [ ] The owner's review of the screenshots and the decision on 27.6 (the
-  evaluation's one FAIL: "no activity yet" in the timeline of an agent
-  without entry, which 27.3 asks for); then the commit.
-
-### Second pass: the owner's correction (2026-10-22)
-
-The owner ran the dashboard live on Claude Code (three screenshots, 19:06
-to 19:08, a general-purpose subagent on Fable 5.1 writing found.txt in
-acc-demo) and found the design not respected, then sent two close-ups of
-it (`references/05-zone-c-timeline-close.png`,
-`references/06-zone-c-timeline-close.webp`; brief amendment 27): "the
-separation "|" is not respected either", "on the left, there is too much
-space". What the close-ups show that the first pass missed, and the design
-that follows:
-
-- **D7 The lines and the title.** "C · LIVE AGENTS" in the title colour,
-  bold, as "AGENTS" and "EXECUTION TIMELINE" (the first image's white was
-  its scale); the counts grey. The rule under the header and the vertical
-  line between the panels, from the headings to the bottom, in the title
-  colour, not bold (a shared style, `stPanelRule`; white on 16 colours),
-  not the frame's dim grey. The bars inside the panels, the card's column
-  bar and the bar before each entry's text, grey (stGrey); the rules
-  between entries stay in the frame's colour, the close-ups' thin dim
-  lines.
-- **D8 The card**, two columns on two rows, a grey bar between them on
-  both rows, nothing else:
-
-  ```text
-   ✓  general-purpose     │  fable-5-1
-      00:41   30.1k tok   │  tool: Write
-  ```
-
-  Row 1: a margin cell, the status symbol (the pink "●" waiting), two
-  cells, the label in white bold padded to the label column; three cells,
-  "│", two cells; the model in grey ("model N/A" without one, "*" after a
-  requested one, footnoted in the header as today). Row 2: four cells, the
-  elapsed clock, the retries "↻ 2" in amber when any, three cells, the
-  tokens, padded to the label column; three cells, "│", two cells; "tool:
-  " in grey and the agent's current tool in white bold: its last call's
-  name, a call waiting for the owner included (P3b's "Write"), else the
-  tool the CLI reported, else "none yet" in grey; a failed call's red "✗"
-  after the name, no symbol otherwise. No state word, no summary or error
-  text, no effort, no "next:" on the rows: the inspection has them, the
-  timeline heading the status. The selected agent's two rows lie on zone
-  B's tool rows' ground (plan 19) from the cell after the margin to the
-  cell before the panel's end, the close-ups' band; on 16 colours, which
-  have no ground (as zone B's tool rows there), no mark either: both
-  palettes draw the same characters (TestColourProfiles), and Enter
-  inspects the selected agent.
-- **D9 The width.** The panel is as wide as its card, not two fifths of
-  the screen: 12 cells (the margins, the gaps and the bar) plus the label
-  column, the longest label or second-row content over the listed agents,
-  at least 17 ("00:41   30.1k tok"), plus the tool column, the longest
-  model with its mark or "tool: <name>", 11 ("tool: Write") to 22
-  ("tool: commandExecution"). The whole never exceeds the larger of 39%
-  of the inner width and 40, nor the inner width less 23 (the timeline
-  keeps 20 cells): when it would, the tool column gives way down to 16,
-  then the label column down to 17, then the tool column down to 11,
-  names cut with "…". P3b's card gives 40 at every width from 100
-  columns; the timeline takes the rest (73 cells at 120 columns, 161 at
-  208). The heights of D4 do not change.
-
-Criteria, written before the code:
-
-- 27.10 TestZoneCDesign on P3b at its Write and the quota mock, at 120x40
-  and 208x59: "C · LIVE AGENTS" in stTitle; row 2's rule and the " │ " at
-  the panel's edge on every row from 3 in stPanelRule; the panel 40
-  cells; P3b's card rows " ●  general-purpose     │  haiku-5-5" and
-  "    <mm:ss>   <n>k tok   │  tool: Write", padded to 40, the bars on
-  the same cell; the label in stBold, the model and the bar in stGrey,
-  "tool: " in stGrey, "Write" in stBold; no "waiting", "completed",
-  "running", "next:" or summary text on the list's rows; every span of
-  the selected agent's rows between the margins on the ground (tint) and
-  none of a second agent's; on the 16-colour palette no ground and the
-  same characters (corrected as the tests ran: the first wording gave "▸"
-  in the margin cell, which TestColourProfiles forbids).
-- 27.11 TestAgentLabelColumn (the 40-cell label, the 26-cell tool name):
-  the panel 45 cells at 120 columns, 61 at 160 and 74 at 200, the label
-  column 17, 33 and 40, the tool column 16, 16 and 22, the long label
-  whole only at 200, the 18-cell one at 160 and 200, the tool name "tool:
-  abcdefghi…" at 120 and 160 and "tool: abcdefghijklmno…" at 200;
-  TestAgentModelColumn, TestAgentSourceAndEffort,
-  TestListModelAcrossWidths: the model grey from 100 columns, in its
-  family colour under 100, the effort in the inspection only;
-  TestAgentRetries: "↻ 2" after the time on the second row;
-  TestAgentCardTemplate2: P3b's waiting agent reads "tool: Write" with no
-  "next:"; the 80x24 row unchanged.
-- 27.12 TestCHeight, TestAdaptiveLayout, TestZoneCFloor and
-  TestDashboardGeometry pass unchanged: the heights of 27.4 hold.
-- 27.13 Every golden frame regenerated and read by script: each dashboard
-  frame from 100 columns with an agent holds the card's "│" on both rows
-  at the same cell, the panel's "│" on every row from the headings, and
-  no "waiting: approval", "completed ·", "next:" or running word on the
-  list's rows; ui-design.md's two Layouts frames redrawn by TestDocFrames.
-- 27.14 `go build ./...`, `go vet ./...`, `gofmt -l .` empty, `go test
-  ./...` all ok, the race run on `internal/render` and `internal/app`
-  clean, the timing step alone 7 of 7.
-- 27.15 Windows Terminal, maximised at 9 pt (208x59) and at 120x40, on
-  the quota mock, the waiting copy of P3b and the thinking-subagent mock:
-  a conformance table against the close-ups, each element PASS or a
-  documented deviation; the owner reviews the screenshots before any
-  commit.
-- 27.16 ui-design.md (Zone C, the Layouts frames), reference-design.md
-  (the close-ups), brief.md (amendment 27), plan.md updated; every
-  changed text file UTF-8 without BOM, LF; `git status` lists the
-  intended files only.
-
-Progress of the second pass:
-
-- [x] D7 to D9 (`internal/render/zonec.go`: the card's two columns and
-  bar, the panel's width from the cards, the lines in the title colour,
-  `stPanelRule` in `palette.go`; `dashboard.go`'s old card gone) and their
-  tests (TestZoneCDesign's 27.10 checks, TestCardColumns; the model,
-  layout, approval and scenario tests adapted); 46 golden frames
-  regenerated and reviewed by script; ui-design.md's two frames redrawn.
-- [x] The checks (27.14): build, vet, gofmt, the suite (14 packages ok),
-  the race run on render and app (clean), the timing step alone (7 of 7:
-  keystroke-to-frame p95 1.1 ms, the 50,000-line draft 2.5 ms,
-  delta-to-frame after two hours 4.6 ms, the streamed answer 3.7 ms, the
-  thinking card 3.7 ms, paste-to-frame 1.0 ms): `scratchpad\plan24\p27b-checks.log`.
-- [x] The screenshots (`scratchpad\term\p27bdemo.ps1` on this tree's
-  executable, `out-p27b\`: the completed agent at 208x59 and 120x40, the
-  waiting agent and a four-entry timeline at 208x59) and the conformance
-  table against the close-ups, 18 rows PASS (`doc/plan27-evaluation.md`,
-  Second pass).
-- [x] The documents (ui-design.md, reference-design.md, brief.md's
-  amendment 27, AGENTS.md) and the evaluation's second block.
-- [ ] The owner's review of the new screenshots and the decision on 27.6;
-  then the commit.
+Plan 27 was approved and closed on 2026-10-22 (Closed plans, below). The
+next plan starts when the owner asks for one.
 
 ## Closed plans
 
@@ -600,3 +325,18 @@ where an undocumented value keeps its "†" and the heading explains it; a
 standing decision. Approved on 2026-10-22: 6 of 6 PASS, 51 golden frames
 reviewed ([`doc/plan26-evaluation.md`](doc/plan26-evaluation.md)); commit
 a9a5145, then the approval commit.
+
+## Plan 27 - Zone C with the execution timeline
+
+Brief amendments 26 and 27: the owner's design of zone C and its
+close-ups, to respect strictly. Zone C from 100 columns: the header
+inside the frame, a rule and the panels' line in the title colour, the
+agents' panel as wide as its two-column cards (the label over the clock
+and the tokens, a grey bar, the model over the current tool; the selected
+agent's rows on a band) and the selected agent's execution timeline with
+its status at the heading's right end; the narrow layout keeps plan 18's
+row. Approved on 2026-10-22: 15 of 16 PASS, 27.6 corrected with a note
+at the owner's decision, 46 golden frames, Windows Terminal screenshots
+at 208x59 and 120x40 against the images
+([`doc/plan27-evaluation.md`](doc/plan27-evaluation.md)); commit 041e7b8,
+then the approval commit.
