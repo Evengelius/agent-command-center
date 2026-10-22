@@ -97,3 +97,10 @@ screenshots with their UI Automation rows, `confcheck.txt`, `before.json`),
 `out.jsonl`, the times, `argv.json`, `end.json`), `term\p25live.ps1`,
 `term\p25scen1.ps1`, `livewrap\claudebin\` (the wrapper), `plan24\p25-checks.log`
 (vet, the suite, the race run, the timing step).
+
+**The commit and the push (2026-10-22), after the owner's approval.** The
+owner approved plan 25 on 2026-10-22; commit cb8f76d (22 files: 19
+modified, 3 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+block above stays as it was reported.
