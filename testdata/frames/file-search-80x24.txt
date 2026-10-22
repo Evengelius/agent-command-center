@@ -14,8 +14,8 @@
 │ │ 39  // Names lists the palette's colour names, in order.                 │ │
 │ │ 40  func Names() []string {                                              │ │
 │ │ 41      out := make([]string, 0, len(palette))                           │ │
-╰─│ 42      for _, c := range palette {                                      │─╯
-╭─│ 43          out = append(out, c.Name)                                    │─╮
+│ │ 42      for _, c := range palette {                                      │ │
+│ │ 43          out = append(out, c.Name)                                    │ │
 │ │ 44      }                                                                │ │
 ╰─│ 45      return out                                                       │─╯
 ╭─│ 46  }                                                                    │─╮

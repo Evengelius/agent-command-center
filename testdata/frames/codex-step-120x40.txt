@@ -1,40 +1,40 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
-╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ───────────────────────────────────────────────────────────── ⠋ Running ─╮
-│ gpt-5.6-sol · orchest… ││                                                                                            │
-│ turn 1 · running 3s    ││ ▎ YOU  02:00                                                                               │
-│                        ││ ▎ Spawn two subagents in parallel. The first lists the files in the current directory.     │
-│ STAGES  inferred from… ││ ▎ The second creates a file named found.txt in the current directory containing the        │
-│ TURN 1  ◉ running · 3s ││ ▎ single word found. Wait for both, then reply with the single word done.                  │
-│   Spawn two subagents… ││                                                                                            │
-│   •─ ○ (more as event… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││                                                                                            │
-│                        ││ ▎ CODEX  gpt-5.6-sol  02:00                                                                │
-│                        ││ ▎                                                                                          │
-│                        ││ ▎ ╭─────────────────────────────────────────────────────────────────────────────────────╮  │
-│                        ││ ▎ │ ◡ Smoothing...                                                                00:01 │  │
-│                        ││ ▎ │                                                                                     │  │
-│                        ││ ▎ │ Model working · reasoning tokens reported when the step ends                        │  │
-│                        ││ ▎ │                                                                                     │  │
-│                        ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │
-│                        ││ ▎ ╰─────────────────────────────────────────────────────────────────────────────────────╯  │
-│                        ││                                                                                            │
-│                        ││                                                                                            │
-│                        ││                                                                                            │
-│                        ││                                                                                            │
-│                        ││                                                                                            │
-│                        ││                                                                                            │
-│                        ││                                                                                            │
-│                        ││                                                                                            │
-│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││ >  OpenAI Codex is processing your request…                                                │
-│ ↑↓ move ←→ fold Enter… ││   turn running: the draft waits · Ctrl+C interrupt            1 line · Ctrl+G draft window │
-╰────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────── ⠋ Running ─╮
+│ A · ORCHESTRATOR                 ││                                                                                  │
+│ ◆ GPT-5.6-sol          ⠋ RUNNING ││ ▎ YOU  02:00                                                                     │
+│ ──────────────────────────────── ││ ▎ Spawn two subagents in parallel. The first lists the files in the current      │
+│ STAGES · inferred from activity  ││ ▎ directory. The second creates a file named found.txt in the current directory  │
+│ ◉ TURN 1 · running            3s ││ ▎ containing the single word found. Wait for both, then reply with the single    │
+│   Spawn two subagents in parall… ││ ▎ word done.                                                                     │
+│   •─ ○ (more as events arrive)   ││                                                                                  │
+│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
+│                                  ││                                                                                  │
+│                                  ││ ▎ CODEX  gpt-5.6-sol  02:00                                                      │
+│                                  ││ ▎                                                                                │
+│                                  ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
+│                                  ││ ▎ │ ◡ Smoothing...                                                      00:01 │  │
+│                                  ││ ▎ │                                                                           │  │
+│ ──────────────────────────────── ││ ▎ │ Model working · reasoning tokens reported when the step ends              │  │
+│ ✦ TELEMETRY        Enter details ││ ▎ │                                                                           │  │
+│ ▾ SESSION USAGE                  ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │
+│   Context N/A no model call yet  ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
+│   Tokens N/A no update yet       ││                                                                                  │
+│   Est. cost N/A Codex reports n… ││                                                                                  │
+│                                  ││                                                                                  │
+│ ▾ QUOTA WINDOWS                  ││                                                                                  │
+│   Session (5hr)               0% ││                                                                                  │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
+│   Resets in 1d                   ││                                                                                  │
+│                                  ││                                                                                  │
+│   Weekly (7 day)              0% ││                                                                                  │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
+│   Resets in 7d 8h                ││                                                                                  │
+│ ──────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────────────── │
+│ ⓘ quota updated 4s ago           ││ >  OpenAI Codex is processing your request…                                      │
+│   plan plus · credits none       ││   turn running: the draft waits · Ctrl+C interrupt  1 line · Ctrl+G draft window │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                                                                    │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────────── quota updated 4s ago · † undocumented field ─╮
-│ 5h ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 0%  resets Fri 02:43   7d ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 0%  resets Thu 10:30   credits none           │
-│ model gpt-5.6-sol   context N/A (no model call yet)   tokens N/A (no update yet)   +4 more                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

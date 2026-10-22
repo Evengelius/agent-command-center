@@ -18,8 +18,10 @@ import (
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
-// Plan 4, step 7: zone D's values from the recordings' exact lines, and every
-// N/A case of reliability.md's two value tables with its reason.
+// Plan 4, step 7: the telemetry's values from the recordings' exact lines,
+// and every N/A case of reliability.md's two value tables with its reason;
+// since plan 24 the values are zone A's telemetry pane's and the details
+// view's, zone D's before.
 
 func records(t *testing.T, name string) []fixture.Record {
 	t.Helper()
@@ -49,15 +51,32 @@ func replayed(provider string, m fixture.Mapper, recs []fixture.Record) (*state.
 	return s, now
 }
 
-// zoneDText is zone D at its tallest, wide enough for no row to be cut.
-func zoneDText(s *state.State, now time.Time) string {
-	return texts(zoneD(s, UI{Width: 400, Height: 60, Now: now}, 400, 5, 3))
+// teleSummary writes the telemetry pane's values one per line, as a test
+// reads them: each quota window as "<label> <value> (<second line>)", the
+// usage as "context <value>", "tokens <value>" and "cost <value>", an N/A
+// with its reason in brackets; then the notes; then the details view's
+// body, whose counters and sources the pane does not draw.
+func teleSummary(s *state.State, now time.Time) string {
+	ui := UI{Width: 200, Height: 60, Now: now}
+	var out []string
+	for _, q := range windows(s, ui) {
+		out = append(out, q.label+" "+texts([]line{q.right()})[:len(texts([]line{q.right()}))-1]+" ("+q.second(ui)+")")
+	}
+	for _, c := range usageCols(s, ui, 120) {
+		l := strings.ToLower(c.label) + " " + c.value
+		if c.na {
+			l += " (" + c.support + ")"
+		}
+		out = append(out, strings.Replace(l, "est. cost", "cost", 1))
+	}
+	out = append(out, texts(noteRows(s, ui, 400, 1)))
+	return strings.Join(out, "\n") + "\n" + texts(detailsBody(s, ui, 400))
 }
 
 func near(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
 
-// Criterion 1: the values each recording's lines give, and how zone D shows
-// them.
+// Criterion 1: the values each recording's lines give, and how the pane
+// shows them.
 func TestTelemetryParsing(t *testing.T) {
 	t.Run("P1 line 3: quota and overage", func(t *testing.T) {
 		s, now := replayed("claude-code", claude.NewMapper(), records(t, "p1-claude-stream.jsonl")[:3])
@@ -71,14 +90,14 @@ func TestTelemetryParsing(t *testing.T) {
 		if o := s.Metrics["overage"]; o.Text != "rejected (org_level_disabled)" {
 			t.Errorf("overage %+v", o)
 		}
-		d := zoneDText(s, now)
-		for _, want := range []string{"5h ", " 22%†", "7d ", " 45%†", "overage rejected (org_level_disabled)"} {
+		d := teleSummary(s, now)
+		for _, want := range []string{"Session (5hr) 22%† (Resets in ", "Weekly (7 day) 45%† (Resets in ", "rejected (org_level_disabled)", "† undocumented field"} {
 			if !strings.Contains(d, want) {
-				t.Errorf("zone D lacks %q:\n%s", want, d)
+				t.Errorf("the telemetry lacks %q:\n%s", want, d)
 			}
 		}
-		if strings.Contains(d, "22%† (") || strings.Contains(d, "45%†  overage") {
-			t.Errorf("overage shown with the quota:\n%s", d)
+		if strings.Contains(d, "Fable") || len(windows(s, UI{Now: now})) != 2 {
+			t.Errorf("a window the event did not carry:\n%s", d)
 		}
 	})
 
@@ -87,11 +106,15 @@ func TestTelemetryParsing(t *testing.T) {
 		if c := s.Metrics["cost.usd"]; !c.Present || c.V != 0.00249374 {
 			t.Errorf("cost.usd %+v", c)
 		}
-		d := zoneDText(s, now) + texts(detailsBody(s, UI{Width: wide, Now: now}, wide))
+		d := teleSummary(s, now)
 		all := strings.Count(d, "$")
 		est := len(regexp.MustCompile(`\$[0-9.]+ API-equiv\. estimate`).FindAllString(d, -1))
-		if all == 0 || est != all || !strings.Contains(d, "$0.0025 API-equiv. estimate") {
+		if all != 2 || est != 1 || !strings.Contains(d, "cost $0.00\n") || !strings.Contains(d, "$0.0025 API-equiv. estimate") || !strings.Contains(d, "cost at API rates") {
 			t.Errorf("%d amounts, %d labelled estimates:\n%s", all, est, d)
+		}
+		// The pane's cost column says what the amount is.
+		if c := usageCols(s, UI{Now: now}, 120)[2]; c.value != "$0.00" || c.support != "API-equivalent" {
+			t.Errorf("the cost column %+v", c)
 		}
 	})
 
@@ -110,11 +133,14 @@ func TestTelemetryParsing(t *testing.T) {
 		if c := s.Metrics["credits"]; c.Text != "none" {
 			t.Errorf("credits %+v", c)
 		}
-		d := zoneDText(s, now)
-		for _, want := range []string{" 0%  resets", "plan plus", "credits none"} {
+		d := teleSummary(s, now)
+		for _, want := range []string{"Session (5hr) 0% (Resets in ", "Weekly (7 day) 0% (Resets in ", "plan plus", "credits none"} {
 			if !strings.Contains(d, want) {
-				t.Errorf("zone D lacks %q:\n%s", want, d)
+				t.Errorf("the telemetry lacks %q:\n%s", want, d)
 			}
+		}
+		if strings.Contains(d, "†") {
+			t.Errorf("Codex's documented windows marked undocumented:\n%s", d)
 		}
 	})
 
@@ -134,8 +160,11 @@ func TestTelemetryParsing(t *testing.T) {
 		if v := s.Metrics["tokens.session"]; v.V != 184312 || v.Origin != event.Derived {
 			t.Errorf("tokens.session %+v", v)
 		}
-		if d := zoneDText(s, now); !strings.Contains(d, "tokens 184.3k (derived)") {
-			t.Errorf("zone D:\n%s", d)
+		if d := teleSummary(s, now); !strings.Contains(d, "tokens 184.3k\n") || !strings.Contains(d, "tokens summed over threads") {
+			t.Errorf("the telemetry:\n%s", d)
+		}
+		if c := usageCols(s, UI{Now: now}, 120)[1]; c.value != "184.3k" || c.support != "session total" {
+			t.Errorf("the tokens column %+v", c)
 		}
 	})
 
@@ -144,13 +173,13 @@ func TestTelemetryParsing(t *testing.T) {
 		if v := s.Metrics["tokens.session"]; v.V != 159362 || v.Origin == event.Derived {
 			t.Errorf("tokens.session %+v", v)
 		}
-		if d := zoneDText(s, now); !strings.Contains(d, "tokens 159.4k   ") {
-			t.Errorf("zone D:\n%s", d)
+		if d := teleSummary(s, now); !strings.Contains(d, "tokens 159.4k\n") || strings.Contains(d, "summed over threads") {
+			t.Errorf("the telemetry:\n%s", d)
 		}
 	})
 }
 
-// Criterion 2: each N/A case shows "N/A" and its reason in zone D, never 0.
+// Criterion 2: each N/A case shows "N/A" and its reason, never 0.
 func TestTelemetryNA(t *testing.T) {
 	p2 := func(t *testing.T) []fixture.Record { return records(t, "p2-claude-conversation.jsonl") }
 	p6b := func(t *testing.T) []fixture.Record { return records(t, "p6b-codex-app-server.jsonl") }
@@ -175,29 +204,30 @@ func TestTelemetryNA(t *testing.T) {
 		recs     func(t *testing.T) []fixture.Record
 		at       time.Duration // the frame time after the last event; default a second
 		want     []string
+		not      []string
 		errors   int // the errors the case counts; -1 does not check
 	}{
 		// Claude Code (reliability.md, Telemetry sources: Claude Code's values).
 		{name: "claude quota before the first event", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(p2(t), 3) },
-			want: []string{"5h N/A (no report yet)", "7d N/A (no report yet)"}, errors: 0},
+			want: []string{"Session (5hr) N/A (no report yet)", "Weekly (7 day) N/A (no report yet)"}, errors: 0},
 		{name: "claude API key", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record {
 				return []fixture.Record{rec(1, "out", `{"type":"system","subtype":"init","session_id":"s","model":"claude-sonnet-5-5","apiKeySource":"ANTHROPIC_API_KEY"}`)}
 			},
-			want: []string{"5h N/A (API key: no subscription window)", "7d N/A (API key: no subscription window)"}, errors: 0},
+			want: []string{"Session (5hr) N/A (API key: no subscription window)", "Weekly (7 day) N/A (API key: no subscription window)"}, errors: 0},
 		{name: "claude window past its reset", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return records(t, "p1-claude-stream.jsonl")[:3] },
 			at:   time.Unix(1792216800, 0).Sub(fixture.Epoch),
-			want: []string{"5h N/A (window reset; waiting for the next report)", "7d N/A (window reset; waiting for the next report)"}},
+			want: []string{"Session (5hr) N/A (window reset; waiting for the next update)", "Weekly (7 day) N/A (window reset; waiting for the next update)"}},
 		{name: "claude status only", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record {
 				return upTo(p2(t), 3, rec(7000, "out", `{"type":"rate_limit_event","rate_limit_info":{"status":"allowed_warning","rateLimitType":"seven_day"}}`))
 			},
-			want: []string{"7d allowed_warning (no percentage reported)", "5h N/A (no report yet)"}},
+			want: []string{"Weekly (7 day) allowed_warning (no percentage reported)", "Session (5hr) N/A (no report yet)"}},
 		{name: "claude overage not reported", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(p2(t), 3) },
-			want: []string{"overage N/A (not reported)"}},
+			want: []string{"overage             N/A (not reported)"}},
 		{name: "claude context before the first turn", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(p2(t), 3) },
 			want: []string{"context N/A (no turn yet)"}},
@@ -209,16 +239,17 @@ func TestTelemetryNA(t *testing.T) {
 			want: []string{"context N/A (no result yet)", "errors 1"}, errors: 1},
 		{name: "claude context refused, derived after the result", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(refused(t), 48) },
-			want: []string{"context 3% of 1M (derived)", "errors 1"}, errors: 1},
+			want: []string{"context 3% of 1M\n", "context derived from usage", "errors 1"}, errors: 1},
 		{name: "claude tokens, cost, duration before the first result", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(p2(t), 8) },
-			want: []string{"tokens N/A (no result yet)", "cost N/A (no result yet)", "last turn N/A (no result yet)"}},
+			want: []string{"tokens N/A (no result yet)", "cost N/A (no result yet)", "duration.ms         N/A (no result yet)"},
+			not:  []string{"$"}},
 		{name: "claude agents before the stream is up", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(p2(t), 1) },
-			want: []string{"agents N/A (session starting)"}},
+			want: []string{"agents              N/A (session starting)"}},
 		{name: "claude limit and retries", provider: "claude-code",
 			recs: p2,
-			want: []string{"active / limit N/A (not reported)", "retries N/A (none reported)"}, errors: -1},
+			want: []string{"active / limit N/A (not reported)", "retries             N/A (none reported)"}, errors: -1},
 
 		// Codex (reliability.md, Telemetry sources: Codex's values).
 		{name: "codex API key", provider: codex.ProviderID,
@@ -226,20 +257,20 @@ func TestTelemetryNA(t *testing.T) {
 				return upTo(p6b(t), 4, rec(400, "in", p6bRead),
 					rec(500, "out", `{"id":99,"error":{"code":-32600,"message":"chatgpt authentication required to read rate limits"}}`))
 			},
-			want: []string{"5h N/A (API key: ChatGPT sign-in needed)", "7d N/A (API key: ChatGPT sign-in needed)",
-				"plan N/A (API key: ChatGPT sign-in needed)", "credits N/A (API key: ChatGPT sign-in needed)"}, errors: 0},
+			want: []string{"Session (5hr) N/A (API key: ChatGPT sign-in needed)", "Weekly (7 day) N/A (API key: ChatGPT sign-in needed)",
+				"plan                N/A (API key: ChatGPT sign-in needed)", "credits             N/A (API key: ChatGPT sign-in needed)"}, errors: 0},
 		{name: "codex no 5-hour window", provider: codex.ProviderID,
 			recs: func(t *testing.T) []fixture.Record {
 				return upTo(p6b(t), 4, rec(400, "in", p6bRead),
 					rec(500, "out", `{"id":99,"result":{"rateLimits":{"primary":{"usedPercent":12,"windowDurationMins":10080,"resetsAt":1792657845},"planType":"plus"}}}`))
 			},
-			want: []string{"5h N/A (plan has no 5-hour limit)", "12%"}},
+			want: []string{"Session (5hr) N/A (plan has no 5-hour limit)", "Weekly (7 day) 12% (Resets in "}},
 		{name: "codex read failed keeps the last value", provider: codex.ProviderID,
 			recs: func(t *testing.T) []fixture.Record {
 				return upTo(p6b(t), 7, rec(60300, "in", p6bRead),
 					rec(60301, "out", `{"id":99,"error":{"code":-32603,"message":"upstream timeout"}}`))
 			},
-			want: []string{"5h N/A (read failed: upstream timeout; last 0% 1m 00s ago)", "7d N/A (read failed: upstream timeout; last 0% 1m 00s ago)", "errors 1"}, errors: 1},
+			want: []string{"Session (5hr) N/A (read failed: upstream timeout; last 0% 1m 00s ago)", "Weekly (7 day) N/A (read failed: upstream timeout; last 0% 1m 00s ago)", "errors 1"}, errors: 1},
 		{name: "codex context before the first model call", provider: codex.ProviderID,
 			recs: func(t *testing.T) []fixture.Record { return upTo(p6b(t), 20) },
 			want: []string{"context N/A (no model call yet)"}},
@@ -281,14 +312,22 @@ func TestTelemetryNA(t *testing.T) {
 			if c.at != 0 {
 				now = fixture.Epoch.Add(c.at)
 			}
-			d := zoneDText(s, now)
+			d := teleSummary(s, now)
 			for _, want := range c.want {
 				if !strings.Contains(d, want) {
-					t.Errorf("zone D lacks %q:\n%s", want, d)
+					t.Errorf("the telemetry lacks %q:\n%s", want, d)
+				}
+			}
+			for _, not := range c.not {
+				if strings.Contains(d, not) {
+					t.Errorf("the telemetry shows %q:\n%s", not, d)
 				}
 			}
 			if c.errors >= 0 && len(s.Errors) != c.errors {
 				t.Errorf("errors %d, want %d: %+v", len(s.Errors), c.errors, s.Errors)
+			}
+			if c.errors == 0 && strings.Contains(d, "errors ") {
+				t.Errorf("an errors note with none:\n%s", d)
 			}
 		})
 	}

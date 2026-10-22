@@ -1,17 +1,17 @@
  >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                             Mock data 2.1.300 · approvals Manual
-╭─ A · ORCHESTRATOR ───────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
-│ claude-haiku-5-5 · orchestrator          ││                                                                                                                                                          │
-│ turn 2 · completed                       ││ ▎ YOU  11:30                                                                                                                                             │
-│                                          ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into a new file   │
-│ STAGES  inferred f╭─ viewer.go ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Go · 58 lines ─╮                   │
-│ TURN 1  ✓ complete│ sample/viewer.go · edited by Edit                                                                                                                            │                   │
-│ TURN 2  ✓ complete│ 15                                                                                                                                                           │────────────────── │
-│   started by the C│ 16  // palette holds the colours the dashboard draws with.                                                                                                   │                   │
-│   └─ ◉ Edit  sampl│ 17  var palette = []Colour{                                                                                                                                  │                   │
-│                   │ 18      {"title", 0x7aa2f7},                                                                                                                                 │:30:00      mock   │
-│                   │ 19      {"text", 0xc0caf5},                                                                                                                                  │                   │
-│                   │ 20      {"grey", 0x565f89},                                                                                                                                  │                   │
+╭──────────────────────────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
+│ A · ORCHESTRATOR                                     ││                                                                                                                                              │
+│ ✿ Claude Haiku 5.5                       ✓ COMPLETED ││ ▎ YOU  11:30                                                                                                                                 │
+│ ──────────────────────────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into  │
+│ STAGES · inferred ╭─ viewer.go ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Go · 58 lines ─╮                   │
+│ ✓ TURN 1          │ sample/viewer.go · edited by Edit                                                                                                                            │                   │
+│   Use the Agent to│ 15                                                                                                                                                           │────────────────── │
+│   Agent · agent ge│ 16  // palette holds the colours the dashboard draws with.                                                                                                   │                   │
+│                   │ 17  var palette = []Colour{                                                                                                                                  │                   │
+│ ✓ TURN 2          │ 18      {"title", 0x7aa2f7},                                                                                                                                 │:30:00      mock   │
+│   started by the C│ 19      {"text", 0xc0caf5},                                                                                                                                  │                   │
+│   Edit            │ 20      {"grey", 0x565f89},                                                                                                                                  │ finishes.         │
 │                   │ 21      {"attention", 0xe0af68},                                                                                                                             │                   │
 │                   │ 22  }                                                                                                                                                        │:30:00      mock   │
 │                   │ 23                                                                                                                                                           │:30:00      mock   │
@@ -19,7 +19,7 @@
 │                   │ 25  func Find(name string) (Colour, bool) {                                                                                                                  │                   │
 │                   │ 26      for _, c := range palette {                                                                                                                          │─────────────────╮ │
 │                   │ 27          if strings.EqualFold(c.Name, name) {                                                                                                             │                 │ │
-│                   │ 28              return c, true                                                                                                                               │`.               │ │
+│                   │ 28              return c, true                                                                                                                               │3b\found.txt`.   │ │
 │                   │ 29          }                                                                                                                                                │                 │ │
 │                   │ 30      }                                                                                                                                                    │                 │ │
 │                   │ 31      return Colour{}, false                                                                                                                               │─────────────────╯ │
@@ -30,31 +30,31 @@
 │                   │ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                                                                                   │                   │
 │                   │ 37▌ }                                                                                                                                                        │                   │
 │                   │ 38                                                                                                                                                           │                   │
-│                   │ 39  // Names lists the palette's colour names, in order.                                                                                                     │                   │
-│                   │ 40  func Names() []string {                                                                                                                                  │                   │
-│                   │ 41      out := make([]string, 0, len(palette))                                                                                                               │                   │
-│                   │ 42      for _, c := range palette {                                                                                                                          │                   │
-│                   │ 43          out = append(out, c.Name)                                                                                                                        │                   │
-│                   │ 44      }                                                                                                                                                    │                   │
+│ ──────────────────│ 39  // Names lists the palette's colour names, in order.                                                                                                     │                   │
+│ ✦ TELEMETRY       │ 40  func Names() []string {                                                                                                                                  │                   │
+│ ▾ SESSION USAGE   │ 41      out := make([]string, 0, len(palette))                                                                                                               │                   │
+│   CONTEXT         │ 42      for _, c := range palette {                                                                                                                          │                   │
+│   4% of 1M        │ 43          out = append(out, c.Name)                                                                                                                        │                   │
+│   █░░░░░░░░░░░░░░░│ 44      }                                                                                                                                                    │                   │
 │                   │ 45      return out                                                                                                                                           │                   │
-│                   │ 46  }                                                                                                                                                        │                   │
-│                   │ 47                                                                                                                                                           │                   │
-│                   │ 48  // Brighter is the colour with each channel raised by step, at most 255.                                                                                 │────────────────── │
-│                   │ 49  func (c Colour) Brighter(step uint32) Colour {                                                                                                           │                   │
-│ ↑↓ move ←→ fold En│ 50      r, g, b := c.RGB>>16&0xff, c.RGB>>8&0xff, c.RGB&0xff                                                                                                 │trl+G draft window │
-╰───────────────────│ 51      up := func(v uint32) uint32 { return min(v+step, 255) }                                                                                              │───────────────────╯
-╭─ C · LIVE AGENTS ─│ 52      return Colour{c.Name, up(r)<<16 | up(g)<<8 | up(b)}                                                                                                  │0 ACTIVE · 1 DONE ─╮
-│  ✓  general-purpos│ 53  }                                                                                                                                                        │iku-5-5 (reported) │
-│     00:00   21.5k │ 54                                                                                                                                                           │              mock │
-│                   │ 55  // Describe is one line about the colour, for the details view.                                                                                          │                   │
-│                   │ 56  func Describe(c Colour) string {                                                                                                                         │                   │
-│                   │ 57      return fmt.Sprintf("%-10s %s", c.Name, c.Hex())                                                                                                      │                   │
-│                   │ 58  }                                                                                                                                                        │                   │
-╰───────────────────│ ↑↓ PgUp PgDn Home End move · ←→ shift · / search · n N next, previous · g go to line · f full screen · F1 keys · Esc back · F3 close              line 35/58 │───────────────────╯
-╭─ D · QUOTA & TELEM╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ndocumented field ─╮
-│ 5h ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 35%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 47%†  resets Sat 08:00   plan N/A (not reported)   overage rejected (org_level_disabled)                │
-│ model claude-haiku-5-5   context 4% of 1M (derived)   tokens 159.4k   cost $0.01 API-equiv. estimate   last turn 2s                                                                                  │
-│ agents 0 active / limit N/A (not reported)   time 0s session   errors 0   retries N/A (none reported)   unrecognised events 0                                                                        │
-│                                                                                                                                                                                                      │
+│ ▾ QUOTA WINDOWS   │ 46  }                                                                                                                                                        │                   │
+│   Session (5hr)   │ 47                                                                                                                                                           │                   │
+│   ████████████████│ 48  // Brighter is the colour with each channel raised by step, at most 255.                                                                                 │                   │
+│   Resets in 14h 40│ 49  func (c Colour) Brighter(step uint32) Colour {                                                                                                           │                   │
+│                   │ 50      r, g, b := c.RGB>>16&0xff, c.RGB>>8&0xff, c.RGB&0xff                                                                                                 │                   │
+│   Weekly (7 day)  │ 51      up := func(v uint32) uint32 { return min(v+step, 255) }                                                                                              │                   │
+│   ████████████████│ 52      return Colour{c.Name, up(r)<<16 | up(g)<<8 | up(b)}                                                                                                  │                   │
+│   Resets in 1d 20h│ 53  }                                                                                                                                                        │                   │
+│ ──────────────────│ 54                                                                                                                                                           │────────────────── │
+│ ⓘ quota updated 0s│ 55  // Describe is one line about the colour, for the details view.                                                                                          │                   │
+│   † undocumented f│ 56  func Describe(c Colour) string {                                                                                                                         │trl+G draft window │
+╰───────────────────│ 57      return fmt.Sprintf("%-10s %s", c.Name, c.Hex())                                                                                                      │───────────────────╯
+╭─ C · LIVE AGENTS ─│ 58  }                                                                                                                                                        │0 ACTIVE · 1 DONE ─╮
+│  ✓  general-purpos│ ↑↓ PgUp PgDn Home End move · ←→ shift · / search · n N next, previous · g go to line · f full screen · F1 keys · Esc back · F3 close              line 35/58 │iku-5-5 (reported) │
+│     00:00   21.5k ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯              mock │
+│                                                                        │                                                                                                                             │
+│                                                                        │                                                                                                                             │
+│                                                                        │                                                                                                                             │
+│                                                                        │                                                                                                                             │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys

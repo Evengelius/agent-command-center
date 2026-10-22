@@ -277,7 +277,7 @@ func TestThinkingTicks(t *testing.T) {
 // TestIdleDrawsNothing is reliability.md's frame-count test (test 9, ASM-18;
 // plan 22, criterion 3.2): a dashboard whose session is ready and whose turn
 // is idle, with no transition left, asks for no frame and no spinner; only
-// the 1 s clock ticks, for the ages zone D shows.
+// the 1 s clock ticks, for the ages zone A's telemetry shows.
 func TestIdleDrawsNothing(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		r := thinkStart(t, "p12c-block-claude-auto-boundary-edit.jsonl", claude.ProviderID)

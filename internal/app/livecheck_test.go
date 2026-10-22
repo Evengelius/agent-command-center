@@ -210,7 +210,7 @@ func activityShown(s *state.State, frame string) error {
 	if st.Open || st.Outcome != "completed" {
 		return fmt.Errorf("stage %d open %v, outcome %q; want closed and completed", st.N, st.Open, st.Outcome)
 	}
-	if want := fmt.Sprintf("TURN %d  ✓ completed", st.N); !strings.Contains(frame, want) {
+	if want := fmt.Sprintf("✓ TURN %d", st.N); !strings.Contains(frame, want) { // the stage's head row (plan 24, design D5)
 		return fmt.Errorf("zone A lacks %q", want)
 	}
 	tool := false

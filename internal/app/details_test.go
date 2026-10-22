@@ -36,21 +36,28 @@ func addErrors(h *harness, n int) {
 	h.send(eventsMsg{sess: h.m.sess, evs: evs, closed: true})
 }
 
-// openDetailsView focuses zone D and presses Enter.
+// openDetailsView focuses zone A, moves its cursor down to TELEMETRY and
+// presses Enter (plan 24, criterion 24.23; zone D's Enter before).
 func openDetailsView(t *testing.T, h *harness) {
 	t.Helper()
-	for i := 0; i < len(zones) && h.m.ui.Focus != "D"; i++ {
+	for i := 0; i < len(zones) && h.m.ui.Focus != "A"; i++ {
 		h.draw(key(tea.KeyF6, 0))
 	}
-	if h.m.ui.Focus != "D" {
+	if h.m.ui.Focus != "A" {
 		t.Fatalf("focus %q", h.m.ui.Focus)
 	}
-	if f := h.frame(); !strings.Contains(f, "Enter details") {
-		t.Fatalf("D focused without its hint:\n%s", f)
+	if f := h.frame(); !strings.Contains(f, "Enter inspect or details") {
+		t.Fatalf("A focused without its footer:\n%s", f)
+	}
+	for i := 0; i < 40 && h.m.ui.ACursor != render.NodeTelemetry; i++ {
+		h.draw(key(tea.KeyDown, 0))
+	}
+	if h.m.ui.ACursor != render.NodeTelemetry {
+		t.Fatalf("cursor %q, want TELEMETRY", h.m.ui.ACursor)
 	}
 	h.draw(key(tea.KeyEnter, 0))
 	if !h.m.ui.Details {
-		t.Fatal("Enter on D did not open the details")
+		t.Fatal("Enter on TELEMETRY did not open the details")
 	}
 }
 
@@ -62,7 +69,7 @@ func TestDetailsKeys(t *testing.T) {
 		openDetailsView(t, h)
 
 		f := h.frame()
-		if !strings.Contains(f, "D · ERRORS AND TELEMETRY") || !strings.Contains(f, "23 errors · last 50 kept") || strings.Contains(f, "B · CONVERSATION") {
+		if !strings.Contains(f, "◀ back (Esc)   ERRORS AND TELEMETRY") || strings.Contains(f, "D ·") || !strings.Contains(f, "23 errors · last 50 kept") || strings.Contains(f, "B · CONVERSATION") {
 			t.Fatalf("details frame:\n%s", f)
 		}
 		if i, j := strings.Index(f, "numbered error 20"), strings.Index(f, "numbered error 19"); i < 0 || j < i {
@@ -103,17 +110,19 @@ func TestDetailsKeys(t *testing.T) {
 			t.Errorf("new errors not shown:\n%s", f)
 		}
 
-		// Esc clears a selection first, then returns to D, still focused.
+		// Esc clears a selection first, then returns to A, still focused,
+		// its cursor on TELEMETRY.
 		h.m.ui.Sel = render.Selection{From: render.Pos{Panel: 'I', Item: 1}, To: render.Pos{Panel: 'I', Item: 1, Off: 4}}
 		h.draw(key(tea.KeyEscape, 0))
 		if !h.m.ui.Sel.Empty() || !h.m.ui.Details {
 			t.Errorf("first Esc: selection %+v, details %v", h.m.ui.Sel, h.m.ui.Details)
 		}
 		h.draw(key(tea.KeyEscape, 0))
-		if h.m.ui.Details || h.m.ui.Focus != "D" || h.m.ui.InspectHold {
-			t.Errorf("second Esc: details %v, focus %q, hold %v", h.m.ui.Details, h.m.ui.Focus, h.m.ui.InspectHold)
+		if h.m.ui.Details || h.m.ui.Focus != "A" || h.m.ui.ACursor != render.NodeTelemetry || h.m.ui.InspectHold {
+			t.Errorf("second Esc: details %v, focus %q, cursor %q, hold %v", h.m.ui.Details, h.m.ui.Focus, h.m.ui.ACursor, h.m.ui.InspectHold)
 		}
-		if f := h.frame(); !strings.Contains(f, "Enter details") || !strings.Contains(f, "B · CONVERSATION") {
+		// At 80x24 zone A, focused, draws its tree and telemetry over B and C.
+		if f := h.frame(); !strings.Contains(f, "Enter inspect or details") || !strings.Contains(f, "✦ TELEMETRY") || strings.Contains(f, "◀ back (Esc)") {
 			t.Errorf("not back on the dashboard:\n%s", f)
 		}
 	})

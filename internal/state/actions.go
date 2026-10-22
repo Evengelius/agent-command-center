@@ -427,7 +427,7 @@ func slashCommand(text string) string {
 func slashNote(cmd string) string {
 	n := cmd + " is a command of Codex's own terminal; it does not work here, so nothing was sent."
 	if cmd == "/status" {
-		n += " Zone D shows the 5h and weekly limits."
+		n += " Zone A's quota windows show the 5h and weekly limits."
 	}
 	return n + "\nPress Enter again to send it to the model as a message."
 }

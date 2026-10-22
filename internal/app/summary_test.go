@@ -105,11 +105,13 @@ func TestCodexSummaryInTheApplication(t *testing.T) {
 			"▾ ✓ Thought for up to 5.0s · 36 reasoning tokens",
 			"the reasoning item from " + clock(11397) + " to " + clock(14833) + " · observed",
 			"Codex's summary, its own text: **Computing f(10)**",
-			"unrecognised events 0",
 		} {
 			if !strings.Contains(text, want) {
 				t.Errorf("no %q in\n%s", want, text)
 			}
+		}
+		if strings.Contains(text, "unrecognised ") {
+			t.Errorf("an unrecognised note (the pane notes a count above 0 only):\n%s", text)
 		}
 		if n := strings.Count(text, "no live estimate: Codex reports reasoning tokens when the step ends"); n != 2 {
 			t.Errorf("%d \"no live estimate\" lines, want one for each phase", n)
@@ -133,8 +135,8 @@ func TestClaudeHookLinesAreNotUnrecognised(t *testing.T) {
 		r := thinkStart(t, p22oProbe, claude.ProviderID)
 		r.h.draw(tea.WindowSizeMsg{Width: 200, Height: 60})
 		text := r.frameAt(14400) // after the result line (14,361 ms)
-		if !strings.Contains(text, "unrecognised events 0") || strings.Contains(text, "unrecognised events 3") {
-			t.Errorf("zone D:\n%s", text)
+		if strings.Contains(text, "unrecognised ") {
+			t.Errorf("an unrecognised note (none is drawn at 0):\n%s", text)
 		}
 		s := r.h.m.State()
 		if s.Unrecognised != 0 || len(s.Errors) != 0 {

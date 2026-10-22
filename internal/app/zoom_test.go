@@ -11,7 +11,7 @@ import (
 // Plan 4, step 8, checks 6 and 7: zoom, the key overlay, and Tab between
 // zones.
 
-var zoneTitles = map[string]string{"A": "A · ORCHESTRATOR", "B": "B · CONVERSATION", "D": "D · QUOTA & TELEMETRY"}
+var zoneTitles = map[string]string{"A": "A · ORCHESTRATOR", "B": "B · CONVERSATION"}
 
 // focusZone moves the focus with F6 until it is z.
 func focusZone(t *testing.T, h *harness, z string) {
@@ -25,14 +25,15 @@ func focusZone(t *testing.T, h *harness, z string) {
 	t.Fatalf("focus %q never reached", z)
 }
 
-// z on A, C or D draws that zone alone under the bars; z or Esc restores
-// the exact frame, at the three sizes; F6 to B leaves the zoom.
+// z on A or C draws that zone alone under the bars; z or Esc restores the
+// exact frame, at the three sizes; F6 to B leaves the zoom. Zone A zoomed
+// has its telemetry in the full form (plan 24, criterion 24.25).
 func TestZoom(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h := mockDash(t, "codex-subagents.jsonl")
 		for _, size := range [][2]int{{80, 24}, {120, 40}, {200, 60}} {
 			h.draw(tea.WindowSizeMsg{Width: size[0], Height: size[1]})
-			for _, z := range []string{"A", "C", "D"} {
+			for _, z := range []string{"A", "C"} {
 				focusZone(t, h, z)
 				before := h.frame()
 				h.draw(typed('z'))
@@ -50,8 +51,17 @@ func TestZoom(t *testing.T) {
 				if !strings.Contains(zoomed, title) || len(rows) != size[1] || !strings.Contains(rows[len(rows)-1], "z or Esc restore") {
 					t.Errorf("%dx%d %s zoomed:\n%s", size[0], size[1], z, zoomed)
 				}
-				if !strings.Contains(rows[2], title) || !strings.Contains(rows[len(rows)-2], "╰") {
+				titleRow := 2 // in the top edge; zone A's heading is its first inner row
+				if z == "A" {
+					titleRow = 3
+				}
+				if !strings.HasPrefix(rows[2], "╭") || !strings.Contains(rows[titleRow], title) || !strings.Contains(rows[len(rows)-2], "╰") {
 					t.Errorf("%dx%d %s: the zone does not span rows 2 to %d:\n%s", size[0], size[1], z, len(rows)-2, zoomed)
+				}
+				// A zoomed shows its telemetry; in the full form from 120x40
+				// (at 80x24 its 19 inner rows take the tight form).
+				if z == "A" && (!strings.Contains(zoomed, "✦ TELEMETRY") || !strings.Contains(zoomed, "Weekly (7 day)") || size[1] >= 40 && !strings.Contains(zoomed, "Resets in ")) {
+					t.Errorf("%dx%d A zoomed without its telemetry:\n%s", size[0], size[1], zoomed)
 				}
 				h.draw(typed('z'))
 				if f := h.frame(); f != before {
@@ -63,7 +73,7 @@ func TestZoom(t *testing.T) {
 					t.Errorf("%dx%d %s: Esc gave focus %q and frame:\n%s", size[0], size[1], z, h.m.ui.Focus, f)
 				}
 			}
-			h.draw(typed('z')) // D zoomed; F6 reaches B
+			h.draw(typed('z')) // C zoomed; F6 reaches B
 			focusZone(t, h, "B")
 			if h.m.ui.Zoom || !strings.Contains(h.frame(), "B · CONVERSATION") {
 				t.Errorf("%dx%d: B reached, zoom %v", size[0], size[1], h.m.ui.Zoom)
@@ -166,7 +176,7 @@ func TestTabZones(t *testing.T) {
 		for _, step := range []struct {
 			k    tea.KeyPressMsg
 			want string
-		}{{key(tea.KeyTab, 0), "A"}, {key(tea.KeyTab, 0), "D"}, {key(tea.KeyTab, tea.ModShift), "A"}, {key(tea.KeyTab, tea.ModShift), "C"}, {key(tea.KeyTab, tea.ModShift), "B"}} {
+		}{{key(tea.KeyTab, 0), "A"}, {key(tea.KeyTab, tea.ModShift), "C"}, {key(tea.KeyTab, tea.ModShift), "B"}} {
 			h.draw(step.k)
 			if h.m.ui.Focus != step.want {
 				t.Errorf("%q: focus %q, want %q", step.k.String(), h.m.ui.Focus, step.want)
@@ -174,6 +184,12 @@ func TestTabZones(t *testing.T) {
 		}
 		if h.m.edit.Text() != "" {
 			t.Errorf("editor %q", h.m.edit.Text())
+		}
+		// From A, Tab wraps to B (zone D is gone since plan 24).
+		focusZone(t, h, "A")
+		h.draw(key(tea.KeyTab, 0))
+		if h.m.ui.Focus != "B" {
+			t.Errorf("Tab from A: focus %q, want B", h.m.ui.Focus)
 		}
 	})
 }

@@ -10,8 +10,8 @@ import (
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
-// zones is the F6 order (ui-design.md, Keys).
-var zones = []string{"B", "C", "A", "D"}
+// zones is the F6 order (ui-design.md, Keys); zone D is gone since plan 24.
+var zones = []string{"B", "C", "A"}
 
 // key handles one key press (ui-design.md, Keys). Step 0 binds the
 // essentials; step 3 adds selection, undo, the external editor and the rest.
@@ -289,11 +289,6 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 			return nil
 		}
 		return m.listKey(k)
-	case "D":
-		if k.String() == "enter" {
-			m.openDetails()
-			return nil
-		}
 	}
 	if k.String() == "end" {
 		m.follow() // End resumes follow mode; in B, End is the editor's, in A and C the pane's

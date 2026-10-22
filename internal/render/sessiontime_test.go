@@ -9,8 +9,9 @@ import (
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
-// Plan 21, item 1: zone D's session time counts from the first event the
-// state applied, not from the oldest the log still keeps (state.MaxLog).
+// Plan 21, item 1: the session time (the details view's counters since plan
+// 24, zone D's before) counts from the first event the state applied, not
+// from the oldest the log still keeps (state.MaxLog).
 
 // lines applies n stderr lines one second apart from t0, a stand-in for the
 // text deltas of a long session.
@@ -30,8 +31,8 @@ func TestSessionTimeKeepsFirstEvent(t *testing.T) {
 	if len(s.Log) != state.MaxLog {
 		t.Fatalf("log keeps %d events, want %d", len(s.Log), state.MaxLog)
 	}
-	if d := zoneDText(s, t0.Add(6000*time.Second)); !strings.Contains(d, "time 1h 40m session") {
-		t.Errorf("6,000 events over 1h 40m: zone D has no \"time 1h 40m session\":\n%s", d)
+	if d := texts(detailsBody(s, UI{Now: t0.Add(6000 * time.Second)}, 200)); !strings.Contains(d, "1h 40m session") {
+		t.Errorf("6,000 events over 1h 40m: the details have no \"1h 40m session\":\n%s", d)
 	}
 
 	// 1.2 Within the bound, the value counted from the log's first event; no

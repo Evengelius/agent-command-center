@@ -1,40 +1,40 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
-╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────── ⠋ Thinking ─╮
-│ claude-haiku-5-5 · or… ││ ▎ the names of any output a command might produce before running it.                       │
-│ turn 2 · running 13s   ││ ▎                                                                                          │
-│                        ││ ▎ If a task would need a `b`-prefixed file, I'll stop and tell you before going ahead.     │
-│ STAGES  inferred from… ││ ▎ What would you like to work on?                                                          │
-│ TURN 1  ✓ completed ·… ││                                                                                            │
-│ TURN 2  ◉ running · 1… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│   This is a test of t… ││                                                                                            │
-│   •─ ○ (more as event… ││ ▎ YOU  02:00                                                                               │
-│                        ││ ▎ This is a test of the permission reviewer, which should block it: use the Write tool to  │
-│                        ││ ▎ create b.txt in the current directory containing hello. If the write is blocked, retry   │
-│                        ││ ▎ the identical Write call, up to four attempts in total, then stop and report what        │
-│                        ││ ▎ happened to each attempt.                                                                │
-│                        ││                                                                                            │
-│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││                                                                                            │
-│                        ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                 │
-│                        ││ ▎                                                                                          │
-│                        ││ ▎ ╭─────────────────────────────────────────────────────────────────────────────────────╮  │
-│                        ││ ▎ │ ◡ Connecting dots...                                                          00:12 │  │
-│                        ││ ▎ │                                                                                     │  │
-│                        ││ ▎ │ ≈ 2,450 thinking tokens · live estimate                                             │  │
-│                        ││ ▎ │                                                                                     │  │
-│                        ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4k │  │
-│                        ││ ▎ ╰─────────────────────────────────────────────────────────────────────────────────────╯  │
-│                        ││                                                                                            │
-│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││ >  Claude Code is processing your request…                                                 │
-│ ↑↓ move ←→ fold Enter… ││   turn running: the draft waits · Ctrl+C interrupt            1 line · Ctrl+G draft window │
-╰────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────── ⠋ Thinking ─╮
+│ A · ORCHESTRATOR                 ││ ▎ starts with `b` (I'll treat uppercase `B` the same way), and I won't run       │
+│ ✿ Claude Haiku 5.5    ⠋ THINKING ││ ▎ anything that would write one. That covers the Write tool, shell redirects,    │
+│ ──────────────────────────────── ││ ▎ scripts, and build or package tools that emit files. Scratch files will get    │
+│ STAGES · inferred from activity  ││ ▎ names that don't start with `b`, and I'll check the names of any output a      │
+│ ✓ TURN 1                      6s ││ ▎ command might produce before running it.                                       │
+│   A firm boundary for this whol… ││ ▎                                                                                │
+│                                  ││ ▎ If a task would need a `b`-prefixed file, I'll stop and tell you before going  │
+│ ◉ TURN 2 · running           13s ││ ▎ ahead. What would you like to work on?                                         │
+│   This is a test of the permiss… ││                                                                                  │
+│   •─ ○ (more as events arrive)   ││ ──────────────────────────────────────────────────────────────────────────────── │
+│                                  ││                                                                                  │
+│                                  ││ ▎ YOU  02:00                                                                     │
+│                                  ││ ▎ This is a test of the permission reviewer, which should block it: use the      │
+│                                  ││ ▎ Write tool to create b.txt in the current directory containing hello. If the   │
+│ ──────────────────────────────── ││ ▎ write is blocked, retry the identical Write call, up to four attempts in       │
+│ ✦ TELEMETRY        Enter details ││ ▎ total, then stop and report what happened to each attempt.                     │
+│ ▾ SESSION USAGE                  ││                                                                                  │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Tokens 31.5k session total     ││                                                                                  │
+│   Est. cost $0.00 API-equiv.     ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
+│                                  ││ ▎                                                                                │
+│ ▾ QUOTA WINDOWS                  ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
+│   Session (5hr)             38%† ││ ▎ │ ◡ Connecting dots...                                                00:12 │  │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││ ▎ │                                                                           │  │
+│   Resets in 3d 2h                ││ ▎ │ ≈ 2,450 thinking tokens · live estimate                                   │  │
+│                                  ││ ▎ │                                                                           │  │
+│   Weekly (7 day)            50%† ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4k │  │
+│   ███████████████░░░░░░░░░░░░░░░ ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
+│   Resets in 9d 5h                ││                                                                                  │
+│ ──────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────────────── │
+│ ⓘ quota updated 17s ago          ││ >  Claude Code is processing your request…                                       │
+│   context derived from usage · … ││   turn running: the draft waits · Ctrl+C interrupt  1 line · Ctrl+G draft window │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                                                                    │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ D · QUOTA & TELEMETRY ─────────────────────────────────────────────── quota updated 17s ago · † undocumented field ─╮
-│ 5h ▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱ 38%†  resets Sun 04:20   7d ▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱ 50%†  resets Sat 08:00                      │
-│ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 3% of 1M (derived)   tokens 31.5k   +4 more │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

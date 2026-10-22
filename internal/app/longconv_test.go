@@ -125,11 +125,14 @@ func longGeometry(t *testing.T, f string, w, h int) {
 		}
 		cells := []rune(r)
 		for x := 0; x+3 < len(cells); x++ {
-			if cells[x] != '╭' || cells[x+1] != '─' || cells[x+2] != ' ' {
+			if cells[x] != '╭' || cells[x+1] != '─' || cells[x+2] != ' ' && !(x == 0 && cells[x+2] == '─') {
 				continue
 			}
 			z := string(cells[x+3])
-			if _, seen := boxes[z]; seen || !strings.Contains("ABCD", z) {
+			if x == 0 && cells[x+2] == '─' {
+				z = "A" // untitled in its top edge since plan 24
+			}
+			if _, seen := boxes[z]; seen || !strings.Contains("ABC", z) {
 				continue
 			}
 			right := x + 1
@@ -143,7 +146,7 @@ func longGeometry(t *testing.T, f string, w, h int) {
 			boxes[z] = box{y, bottom, x, right}
 		}
 	}
-	a, b, c, d := boxes["A"], boxes["B"], boxes["C"], boxes["D"]
+	a, b, c := boxes["A"], boxes["B"], boxes["C"]
 	if w >= 100 {
 		if _, ok := boxes["A"]; !ok || a.top != 2 || b.top != 2 || a.bottom != b.bottom || b.left != a.right+1 {
 			t.Errorf("%dx%d: A %v and B %v not side by side on one row", w, h, a, b)
@@ -151,7 +154,7 @@ func longGeometry(t *testing.T, f string, w, h int) {
 	} else if _, ok := boxes["A"]; ok {
 		t.Errorf("%dx%d: zone A boxed under 100 columns", w, h)
 	}
-	if c.top != b.bottom+1 || c.left != 0 || c.right != w-1 || d.top != c.bottom+1 || d.left != 0 || d.right != w-1 || d.bottom != h-2 {
-		t.Errorf("%dx%d: C %v and D %v not full width under B %v, to the footer", w, h, c, d, b)
+	if c.top != b.bottom+1 || c.left != 0 || c.right != w-1 || c.bottom != h-2 {
+		t.Errorf("%dx%d: C %v not full width under B %v, to the footer", w, h, c, b)
 	}
 }

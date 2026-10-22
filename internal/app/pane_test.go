@@ -158,8 +158,12 @@ func TestPaneScroll(t *testing.T) {
 			h.draw(key(tea.KeyUp, 0))
 			v = h.m.screen.Tree
 			i := slices.Index(v.IDs, h.m.ui.ACursor)
-			if i < v.Room || v.Top != i-v.Room+1 || !h.m.ui.Tree.Hold {
-				t.Errorf("↑ in a held tree: cursor row %d top %d, want the bottom of the view, top %d", i, v.Top, i-v.Room+1)
+			last := i // a folded stage's block is several rows of one node (plan 24): its last row at the bottom
+			for last+1 < len(v.IDs) && v.IDs[last+1] == h.m.ui.ACursor {
+				last++
+			}
+			if i < v.Room || v.Top != last-v.Room+1 || !h.m.ui.Tree.Hold {
+				t.Errorf("↑ in a held tree: cursor rows %d-%d top %d, want the bottom of the view, top %d", i, last, v.Top, last-v.Room+1)
 			}
 			h.draw(key(tea.KeyDown, 0)) // the last row: the tail, following
 			if h.m.ui.Tree != (render.Pane{}) {

@@ -5,12 +5,13 @@
 A personal, interactive terminal workspace, a "mission control", for
 multi-agent coding with agent CLIs: **Claude Code first, then OpenAI Codex
 CLI**, the only two supported (amendment 5; the provider interface stays open
-to others later). In one persistent screen of four zones (layout in the
-reference design): **A** the orchestrator and its workflow tree; **B** a real,
-streaming conversation with the orchestrator, with approvals and follow-ups;
-**C** the live subagents, each inspectable; **D** the real quota, tokens,
-context and costs. Dark technical style of `references/`. One owner, one
-Windows 11 machine.
+to others later). In one persistent screen of three zones (layout in the
+reference design): **A** the orchestrator and its workflow tree, also
+holding the real quota, tokens, context and costs in its telemetry pane
+(zone D's until plan 23); **B** a real, streaming conversation with the
+orchestrator, with approvals and follow-ups; **C** the live subagents, each
+inspectable. Dark technical style of `references/`. One owner, one Windows 11
+machine.
 
 It opens on a **startup screen** with two mandatory questions, the agent CLI
 and the project directory, validated before the dashboard opens; that directory
@@ -21,8 +22,9 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-22, when the owner approved plan
-23, the acc launcher in the project (brief amendment 21).** Plans 1 to 23 (research; architecture and reliability; proposal; the
+**Status: plan 24 active since 2026-10-22, zone A redesigned with the
+telemetry and zone D removed (brief amendment 22); its screenshots wait for
+the owner's review before any commit.** Plans 1 to 23 (research; architecture and reliability; proposal; the
 MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live; nothing left open; recent projects, favourites and a project browser; git worktree management; a file viewer, an Explorer and the draft in a window; an adaptive layout; zone B as the centerpiece; strict conformance to the owner's two approved templates; what the review of d84e5d4 found; a live thinking indicator in zone B; the acc launcher in the project) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
 plan's progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.

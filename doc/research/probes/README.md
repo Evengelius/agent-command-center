@@ -95,6 +95,7 @@ one event per line.
 | P303e | [`drivers/p303-claude.mjs`](drivers/p303-claude.mjs) on 2.1.303 (about 04:15), `ANTHROPIC_MODEL=haiku`: the dashboard's arguments; the live gate's (d) and (c) prompts, a Write interrupted while its `can_use_tool` is pending (never answered), then a ping allowed and interrupted 3 s later; then "Reply with the single word ready." | `p303e-claude-interrupt-tool.jsonl` (also `testdata/probes`, 88 lines) | turn 1: the CLI cancelled the pending request (`control_cancel_request` with its `request_id`), and the tool result carries `tool_result_meta` `[{id, non_execution_kind:"user-rejected"}]` with no `permission_decision`; result `error_during_execution`; pending.txt not written. Turn 2: the same shape for the interrupted Bash call, result `error_during_execution`. Turn 3: "ready". Exit 0 after 14 s |
 | P22o | [`drivers/p22-claude.mjs`](drivers/p22-claude.mjs) on 2.1.303 (2026-10-21, about 18:51), `ANTHROPIC_MODEL=claude-opus-5-5`: the dashboard's arguments; one prompt that needs reasoning and no tool (the smallest number with the remainders 1 to 5 by 2 to 6) | `p22o-claude-opus-thinking.jsonl` (57 lines) | one turn, no tool asked: a main-thread thinking block of 8.0 s; six `system/thinking_tokens`, 50 to 850, the first 508 ms in, then every 1.0 to 1.6 s; the exact count 928 in the final `message_delta`, 967 ms after the block's stop; the answer 59. Also `system/hook_started` and `hook_response` (the owner's `SessionStart` hook) and a `system/post_turn_summary`. Exit 0 after 17 s |
 | P22s | [`drivers/p22-codex.mjs`](drivers/p22-codex.mjs) on 0.163.0 (about 18:52), `auto,detailed`: the dashboard's handshake and thread, `turn/start` with `summary`; two reasoning questions, no command or edit | `p22s-codex-reasoning-summary.jsonl` (124 lines) | both `turn/start` accepted; the reasoning items span 2,506 and 3,436 ms from `item/started` to `item/completed` (0 to 10 ms without summaries); `auto` no summary, `detailed` one heading ("**Computing f(10)**") 9 ms before its item completed; 28 and 36 reasoning tokens; the answers 24 and 89. Exit 0 after 17 s |
+| P24u | [`drivers/p24-claude-usage.mjs`](drivers/p24-claude-usage.mjs) on 2.1.303 (2026-10-22, 12:39 local time), `ANTHROPIC_MODEL=haiku`: the dashboard's arguments; `initialize`, then one user message, "/usage", and nothing else (plan 24: the owner's live session showed no Fable window; approved 2026-10-22) | `p24u-claude-usage-report.jsonl` (this folder only: no test replays it) | answered locally, no model call: an `assistant` message 2.2 s after the user message, its text the TUI's usage page ("Current session: 6% used · resets Oct 22, 5:20pm", "Current week (all models): 24% used", "Current week (Fable): 11% used", then the usage breakdown of the last 24 h and 7 days) and its `usage_report` field: `session {total_cost_usd 0, total_api_duration_ms 0, total_duration_ms, total_lines_added, total_lines_removed, model_usage {}}` and `rate_limits.limits[]`, three rows `{kind, group, percent, resets_at (ISO 8601, microseconds, +00:00), scope, severity, is_active}`: `session` (group `session`) 6% resetting 15:20 UTC, `weekly_all` (group `weekly`) 24% and `weekly_scoped` 11%, both resetting Oct 27 09:00 UTC, the scoped one with `scope {model {display_name "Fable"}, surface null}`, `severity "normal"` on all three, `is_active` true on `weekly_all` only; `extra_usage {is_enabled false, monthly_limit, used_credits, utilization, currency: null}`; then `result` `success` with the same text as `result`, `num_turns` 0, `total_cost_usd` 0, `duration_api_ms` 0, `modelUsage {}`; `system/commands_changed` 0.9 s later; no `rate_limit_event` at all (none without a model call); exit 0 after 7 s; nothing written in the work folder |
 
 Quota used: 7 short Claude Haiku turns and 2 subagent runs (P1 to P4, P3b; the
 results report a total of about USD 0.03 API-equivalent); 3 short Codex turns
@@ -174,6 +175,21 @@ the same time, so the difference is not the probes' cost.
   `is_backgrounded:false`, no `background_tasks_changed` is sent, and the main
   turn's result waits for the subagent. Background subagents (P3, P3b, on
   2.1.300) had no such input.
+
+- **`/usage` over stream-json is answered locally, with no model call
+  (P24u).** A user message "/usage" gives, 2.2 s later, an `assistant`
+  message carrying the documented `usage_report` (doc
+  `agent-sdk/typescript#sdkusagereport`): `rate_limits.limits[]`, one row
+  a window by `kind`, `session`, `weekly_all` and `weekly_scoped` with
+  `scope.model.display_name` ("Fable"), each with `percent`, `resets_at`,
+  `severity` and `is_active`; then a `result` with `num_turns` 0 and cost
+  0. That is where a model-scoped weekly limit can be read on demand:
+  `rate_limit_event`'s `unifiedWindows` has never carried one (20 events
+  over the probes, five_hour and seven_day only), and a session that
+  makes no model call gets no `rate_limit_event`. The exchange is in the
+  stream as an assistant message and a result, so a dashboard that reads
+  it must keep it out of the conversation and the turns (plan 24; the
+  read is proposed for a plan of its own).
 
 ### Codex CLI
 
@@ -290,6 +306,12 @@ identical; `~/.claude.json` rewritten at 18:51:38, during P22o, by its
 Claude Code. The check hashes only, so which of its keys changed is not
 known. Nothing was written in either work folder, and no process the drivers
 started was left.
+
+P24u (2026-10-22, 12:39 local time, `drivers/hash-config.sh` before and
+after): 24 of the 25 files identical; `~/.claude.json` rewritten by its
+Claude Code, as always (hashed, not read). Nothing was written in the work
+folder, removed after; no process the driver started was left; the owner
+had no Claude Code or Codex terminal session open (checked before the run).
 
 Not checked: the files the CLIs write by design for each session (Claude
 transcripts under `~/.claude/projects`, Codex rollouts under

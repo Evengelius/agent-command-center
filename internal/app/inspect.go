@@ -110,13 +110,22 @@ func (m *Model) inspectFollow() {
 }
 
 // treeKey moves zone A's cursor, folds and unfolds its nodes, and inspects
-// an agent's.
+// an agent's; on the telemetry pane's headings Enter opens the details and
+// ← → fold its sections (plan 24, design D6).
 func (m *Model) treeKey(k tea.KeyPressMsg) []tea.Cmd {
-	nodes := render.Tree(m.s, m.ui)
+	nodes := render.Nodes(m.s, m.ui)
 	if len(nodes) == 0 {
 		return nil
 	}
-	i := len(nodes) - 1 // no cursor yet, or its node is gone: the last one
+	// No cursor yet, or its node is gone: the last tree node, the newest
+	// activity (TELEMETRY when the tree is empty); the telemetry pane's
+	// headings come after it (plan 24).
+	i := 0
+	for j, n := range nodes {
+		if !render.IsTelemetryNode(n.ID) {
+			i = j
+		}
+	}
 	for j, n := range nodes {
 		if n.ID == m.ui.ACursor {
 			i = j
@@ -141,6 +150,10 @@ func (m *Model) treeKey(k tea.KeyPressMsg) []tea.Cmd {
 		}
 	case "enter":
 		m.ui.ACursor = nodes[i].ID
+		if render.IsTelemetryNode(nodes[i].ID) {
+			m.openDetails()
+			return nil
+		}
 		if a := nodes[i].Agent; a != "" {
 			m.openInspect(a)
 			return nil
@@ -179,9 +192,11 @@ func (m *Model) listKey(k tea.KeyPressMsg) []tea.Cmd {
 	return nil
 }
 
-// openDetails shows zone D full screen at its top: the newest error first
-// (ui-design.md, Zone D: Errors).
+// openDetails shows the telemetry full screen at its top: the newest error
+// first (ui-design.md, Zone A: Errors and telemetry); zone A keeps the
+// focus, so Esc returns to it.
 func (m *Model) openDetails() {
+	m.ui.Focus = "A"
 	m.ui.Details = true
 	m.ui.Sel = render.Selection{}
 	m.ui.InspectHold, m.ui.InspectTop = true, 0
@@ -238,8 +253,9 @@ type scrollPos struct {
 	hold bool
 }
 
-// detailsKey handles a key while zone D is full screen; done is false for
-// the keys that keep their dashboard meaning, as in an inspection.
+// detailsKey handles a key while the telemetry is full screen; done is
+// false for the keys that keep their dashboard meaning, as in an
+// inspection.
 func (m *Model) detailsKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	switch s := k.String(); s {
 	case "esc":
@@ -247,7 +263,7 @@ func (m *Model) detailsKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 			m.ui.Sel = render.Selection{} // Esc clears a selection first
 			return nil, true
 		}
-		m.ui.Details = false // back to D, still focused
+		m.ui.Details = false // back to A, still focused, its cursor as it was
 		m.ui.InspectHold, m.ui.InspectTop = false, 0
 	case "up":
 		m.inspectScroll(-1)

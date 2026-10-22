@@ -22,10 +22,13 @@ type Node struct {
 }
 
 // treeRow is a drawn row of the tree; rows without a node (a prompt, "more")
-// are skipped by the cursor.
+// are skipped by the cursor. A folded stage's block is several rows of one
+// node: its head, then its continuation rows (plan 24, design D5), which
+// the cursor's background covers with it.
 type treeRow struct {
 	l    line
 	node Node
+	cont bool // a continuation row of its node's block
 }
 
 // Tree is zone A's nodes in the order they show, folded nodes' children
@@ -33,7 +36,7 @@ type treeRow struct {
 func Tree(s *state.State, ui UI) []Node {
 	var out []Node
 	for _, r := range treeRows(s, ui, zoneAMin) { // the nodes, whatever the width
-		if r.node.ID != "" {
+		if r.node.ID != "" && !r.cont {
 			out = append(out, r.node)
 		}
 	}
@@ -51,7 +54,8 @@ func folded(ui UI, id string, def bool) bool {
 // treeRows are the tree's rows at width w.
 func treeRows(s *state.State, ui UI, w int) []treeRow {
 	var out []treeRow
-	if loose := stageItems(s, 0); len(loose) > 0 {
+	idx := indexItems(s)
+	if loose := idx[0]; len(loose) > 0 {
 		out = itemRows(s, ui, out, loose, "", false, w)
 	}
 	n := len(s.Stages)
@@ -61,7 +65,10 @@ func treeRows(s *state.State, ui UI, w int) []treeRow {
 	cur := &s.Stages[n-1]
 	if len(cur.Plan) == 0 {
 		for i := range s.Stages {
-			out = stageRows(s, ui, out, &s.Stages[i], i == n-1, w)
+			if i > 0 {
+				out = append(out, treeRow{}) // a blank row between the turns' blocks (design D5)
+			}
+			out = stageRows(s, ui, out, &s.Stages[i], w, idx)
 		}
 		return out
 	}
@@ -74,21 +81,19 @@ func treeRows(s *state.State, ui UI, w int) []treeRow {
 		case "inProgress":
 			sym = deco("◉", stProgress)
 		}
-		row := treeRow{line{sym, sp(fmt.Sprintf(" %d %s", i+1, p.Step), stText)}, Node{ID: fmt.Sprintf("p:%d", i)}}
+		row := treeRow{l: line{sym, sp(fmt.Sprintf(" %d %s", i+1, p.Step), stText)}, node: Node{ID: fmt.Sprintf("p:%d", i)}}
 		out = append(out, row)
 		if p.Status == "inProgress" && !attached {
 			attached = true
-			out = itemRows(s, ui, out, stageItems(s, cur.N), "  ", more(s, cur), w)
+			out = itemRows(s, ui, out, idx[cur.N], "  ", more(s, cur), w)
 		}
 	}
 	if !attached {
-		out = stageRows(s, ui, out, cur, true, w)
-	}
-	if n > 1 {
-		out = append(out, treeRow{})
+		out = stageRows(s, ui, out, cur, w, idx)
 	}
 	for i := range s.Stages[:n-1] {
-		out = stageRows(s, ui, out, &s.Stages[i], false, w)
+		out = append(out, treeRow{})
+		out = stageRows(s, ui, out, &s.Stages[i], w, idx)
 	}
 	return out
 }
@@ -99,23 +104,68 @@ func more(s *state.State, st *state.Stage) bool {
 	return st.Open && s.Turn.Phase != state.Idle
 }
 
-// stageRows is a stage's line, "TURN n ✓ completed · 31s", and, unfolded,
-// its prompt and items. Every stage but the last starts folded.
-func stageRows(s *state.State, ui UI, out []treeRow, st *state.Stage, last bool, w int) []treeRow {
+// stageRows is a stage's block (plan 24, design D5, the owner's image): its
+// head row, "✓ TURN 1" with its elapsed time at the right end and its word
+// when it is not completed; then, unfolded, its prompt's first line and its
+// items with their connectors; folded, the prompt's line and one row naming
+// its items. A closed stage starts folded, an open one unfolded; the
+// owner's → and ← decide after that. idx holds every stage's items.
+func stageRows(s *state.State, ui UI, out []treeRow, st *state.Stage, w int, idx map[int][]item) []treeRow {
 	id := fmt.Sprintf("s:%d", st.N)
-	f := folded(ui, id, !last)
-	sym, word := stageStatus(s, st)
-	head := line{sp(fmt.Sprintf("TURN %d  ", st.N), stInferred), sym, sp(" "+word+" · "+elapsed(st.StartedAt, st.EndedAt, ui.Now), stInferred)}
-	out = append(out, treeRow{head.fit(w), Node{ID: id, Foldable: true, Folded: f}})
-	if f {
-		return out
-	}
+	f := folded(ui, id, !st.Open)
+	node := Node{ID: id, Foldable: true, Folded: f}
+	out = append(out, treeRow{l: stageHead(s, st, ui, w), node: node})
+	origin := line{}
 	if st.ByCLI {
-		out = append(out, treeRow{l: plain("  started by the CLI", stGrey)})
+		origin = plain("  started by the CLI", stGrey)
 	} else if p := firstLine(st.Prompt); p != "" {
-		out = append(out, treeRow{l: plain("  "+p, stGrey)})
+		origin = plain("  "+p, stGrey)
 	}
-	return itemRows(s, ui, out, stageItems(s, st.N), "  ", more(s, st), w)
+	if !f {
+		if len(origin) > 0 {
+			out = append(out, treeRow{l: origin.fit(w)})
+		}
+		return itemRows(s, ui, out, idx[st.N], "  ", more(s, st), w)
+	}
+	if len(origin) > 0 {
+		out = append(out, treeRow{l: origin.fit(w), node: node, cont: true})
+	}
+	if names := itemNames(idx[st.N]); names != "" {
+		out = append(out, treeRow{l: plain("  "+names, stGrey).fit(w), node: node, cont: true})
+	}
+	return out
+}
+
+// stageHead is a stage's head row: its symbol, "TURN n", its word unless
+// it completed, and its elapsed time at the row's right end.
+func stageHead(s *state.State, st *state.Stage, ui UI, w int) line {
+	sym, word := stageStatus(s, st)
+	l := line{sym, sp(fmt.Sprintf(" TURN %d", st.N), stBold)}
+	if word != "completed" && word != "" {
+		l = append(l, sp(" · "+word, stInferred))
+	}
+	return spread(l, plain(elapsed(st.StartedAt, st.EndedAt, ui.Now), stGrey), w)
+}
+
+// itemNames names a stage's items in order, each name once, joined by
+// " · ": a tool by its name, an agent as "agent <label>" (design D5).
+func itemNames(items []item) string {
+	var names []string
+	seen := map[string]bool{}
+	for _, it := range items {
+		name := ""
+		switch {
+		case it.tool != nil:
+			name = it.tool.Name
+		case it.agent != nil:
+			name = strings.TrimSpace(kindWord(it.agent.Kind) + " " + it.agent.Label)
+		}
+		if name != "" && !seen[name] {
+			seen[name] = true
+			names = append(names, name)
+		}
+	}
+	return strings.Join(names, " · ")
 }
 
 // stageStatus is the stage's symbol and word: the turn's while it runs, its
@@ -146,29 +196,37 @@ type item struct {
 // stageItems are the orchestrator's tools and the top agents of stage n, in
 // the order they appeared. An agent whose parent is unknown counts as a top
 // agent: it is shown, never dropped.
-func stageItems(s *state.State, n int) []item {
-	var out []item
+func stageItems(s *state.State, n int) []item { return indexItems(s)[n] }
+
+// indexItems is every stage's items, stageItems' for each stage, in one
+// pass over the tools and the agents: since plan 24 a folded stage names
+// its items too, so a frame needs them all, and a scan of the tools for
+// each stage grew with the session (the timing step's long session).
+func indexItems(s *state.State) map[int][]item {
+	idx := map[int][]item{}
 	for _, tc := range s.Tools {
-		if tc.Agent == "" && tc.Stage == n {
-			out = append(out, item{seq: tc.Seq, id: tc.ID, tool: tc})
+		if tc.Agent == "" {
+			idx[tc.Stage] = append(idx[tc.Stage], item{seq: tc.Seq, id: tc.ID, tool: tc})
 		}
 	}
 	for _, k := range s.Order {
 		a := s.Agents[k]
-		if a == nil || a.Stage != n {
+		if a == nil {
 			continue
 		}
 		if a.Parent == "" || s.Agents[a.Parent] == nil {
-			out = append(out, item{seq: a.Seq, id: k, agent: a})
+			idx[a.Stage] = append(idx[a.Stage], item{seq: a.Seq, id: k, agent: a})
 		}
 	}
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].seq != out[j].seq {
-			return out[i].seq < out[j].seq
-		}
-		return out[i].id < out[j].id
-	})
-	return out
+	for _, out := range idx {
+		sort.Slice(out, func(i, j int) bool {
+			if out[i].seq != out[j].seq {
+				return out[i].seq < out[j].seq
+			}
+			return out[i].id < out[j].id
+		})
+	}
+	return idx
 }
 
 // itemRows draws items with ├─ └─ │ connectors, and "○ (more as events
@@ -181,7 +239,7 @@ func itemRows(s *state.State, ui UI, out []treeRow, items []item, indent string,
 			branch, next = "└─ ", "   "
 		}
 		if it.tool != nil {
-			out = append(out, treeRow{toolRow(s, ui, it.tool, indent+branch, w), Node{ID: "t:" + it.tool.ID, Agent: it.tool.Agent}})
+			out = append(out, treeRow{l: toolRow(s, ui, it.tool, indent+branch, w), node: Node{ID: "t:" + it.tool.ID, Agent: it.tool.Agent}})
 			continue
 		}
 		out = agentRows(s, ui, out, it.agent, indent+branch, indent+next, w)
@@ -316,7 +374,7 @@ func agentRows(s *state.State, ui UI, out []treeRow, a *state.Agent, prefix, ind
 		l = append(l, sp(k+"  ", stGrey))
 	}
 	l = append(l, sp(a.Label, stText))
-	out = append(out, treeRow{withOrigin(l, originLabel(a.StatusOrigin), w), Node{ID: id, Agent: a.Key, Foldable: len(under)+len(kids) > 0, Folded: f}})
+	out = append(out, treeRow{l: withOrigin(l, originLabel(a.StatusOrigin), w), node: Node{ID: id, Agent: a.Key, Foldable: len(under)+len(kids) > 0, Folded: f}})
 	if f {
 		return out
 	}

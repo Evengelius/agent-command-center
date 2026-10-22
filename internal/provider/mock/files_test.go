@@ -43,6 +43,49 @@ var mockFiles = []struct {
 	{"codex-api-key.jsonl", "p7-codex-subagents.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexAPIKey},
 	{"codex-no-5h-window.jsonl", "p7-codex-subagents.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexNo5hWindow},
 	{"codex-plan6-limits.jsonl", "p7-codex-subagents.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexPlan6Limits},
+	// Plan 24, criterion 24.17: P3b with its rate_limit_event carrying three
+	// windows, five_hour, seven_day and seven_day_fable, at the owner's
+	// image's values (0%, 17%, 0%), resetting 4h 12m and 5d 3h after the
+	// application tests' clock (2026-10-15 09:30 UTC). No probe recorded a
+	// model-scoped window; "Fable limit" is the owner's (brief amendment
+	// 22), its key the documented seven_day_<model> form.
+	{"claude-quota-windows.jsonl", "p3b-claude-subagent-approval.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, claudeQuotaWindows},
+}
+
+// claudeQuotaWindows is P3b with every rate_limit_event's unifiedWindows
+// replaced by the three windows of plan 24's criterion 24.17.
+func claudeQuotaWindows(t *testing.T, recs []fixture.Record) []fixture.Record {
+	out := append([]fixture.Record(nil), recs...)
+	n := 0
+	for i, r := range out {
+		if r.Dir != "out" || !strings.Contains(string(r.Msg), `"type":"rate_limit_event"`) {
+			continue
+		}
+		var v map[string]any
+		if err := json.Unmarshal(r.Msg, &v); err != nil {
+			t.Fatal(err)
+		}
+		info, _ := v["rate_limit_info"].(map[string]any)
+		if info == nil {
+			t.Fatalf("record %d: no rate_limit_info", i)
+		}
+		info["resetsAt"] = 1792071720
+		info["unifiedWindows"] = map[string]any{
+			"five_hour":       map[string]any{"utilization": 0.0, "resetsAt": 1792071720},
+			"seven_day":       map[string]any{"utilization": 0.17, "resetsAt": 1792499400},
+			"seven_day_fable": map[string]any{"utilization": 0.0, "resetsAt": 1792499400},
+		}
+		b, err := json.Marshal(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out[i].Msg = b
+		n++
+	}
+	if n == 0 {
+		t.Fatal("P3b has no rate_limit_event")
+	}
+	return out
 }
 
 // codexPlan6Limits is P7 with the lines plan 6's simulated run needs and no

@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                                                                                                                                                    ◆ MOCK — not a live session
- ◀ back (Esc)   D · ERRORS AND TELEMETRY                                                                                                                                        5 errors · last 50 kept
+ ◀ back (Esc)   ERRORS AND TELEMETRY                                                                                                                                            5 errors · last 50 kept
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
  ERRORS  newest first
  11:30:05  session     numbered error 2
@@ -26,11 +26,11 @@
  tokens.session      159,362 tokens  · result.modelUsage (running total, subagents included) 0s ago
  tokens.turn         35,443 tokens  · result.usage 0s ago
 
-
-
-
-
-
+ COUNTERS  derived from the events
+ agents              0 active / limit N/A (not reported)
+ session time        0s session
+ retries             1
+ unrecognised events 0
 
 
 

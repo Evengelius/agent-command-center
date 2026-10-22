@@ -11,30 +11,33 @@ import (
 
 // The synthetic mock scenarios (files_test.go, in internal/provider/mock):
 // cases no recording has, built from a recording with the documented reply
-// put in. Each one goes through the whole pipeline, mapper to frame, and zone
-// D shows the reason a value is missing, never a figure.
+// put in. Each one goes through the whole pipeline, mapper to frame, and
+// zone A's telemetry pane shows the reason a value is missing, never a
+// figure (plan 24: zone D's rows before).
 func TestSyntheticScenarios(t *testing.T) {
 	for _, c := range []struct {
 		file      string
 		want, not []string
 	}{
 		{"claude-api-key-context-refused.jsonl",
-			[]string{"5h N/A (API key: no subscription window)", "7d N/A (API key: no subscription window)", "context 3% of 1M (derived)", "errors 1"},
-			[]string{"%  resets"}},
+			[]string{"Session (5hr)", "Weekly (7 day)", "API key: no subscription window", "3% of 1M", "context derived from usage", "errors 1"},
+			[]string{"Resets in", "Fable"}},
 		{"codex-api-key.jsonl",
-			[]string{"5h N/A (API key: ChatGPT sign-in needed)", "7d N/A (API key: ChatGPT sign-in needed)", "plan N/A (API key: ChatGPT sign-in needed)", "credits N/A (API key: ChatGPT sign-in needed)", "errors 0"},
-			[]string{"%  resets", "plan plus"}},
+			[]string{"Session (5hr)", "Weekly (7 day)", "API key: ChatGPT sign-in needed", "N/A"},
+			[]string{"Resets in", "plan plus", "errors "}},
 		{"codex-no-5h-window.jsonl",
-			[]string{"5h N/A (plan has no 5-hour limit)", "7d ", "1%  resets", "plan plus", "errors 0"},
-			[]string{"5h ▱", "5h ▰"}},
+			[]string{"Session (5hr)", "plan has no 5-hour limit", "Weekly (7 day)", "1%", "Resets in ", "plan plus"},
+			[]string{"▱", "▰", "errors "}},
 		// Plan 6's simulated run: the failed command's last line with its
 		// exit code (item 1); the requested model, and N/A without one (item
 		// 4), marked "*" with its footnote (item 5), with its effort (item 6).
 		{"codex-plan6-limits.jsonl",
 			// The failed command's row: its command, cut, then its error (the
 			// owner's live review: a failed row names what failed).
-			[]string{"✗ commandExecution  \"C:", "… · exit 1 · fatal: No configured push destination.", "/root/list_files     gpt-6-mini* low completed", "/root/create_found   model N/A       completed", "* requested model · 0 ACTIVE · 2 DONE", "errors 0"},
-			[]string{"commandExecution · On branch main", "commandExecution · exit 1 · On branch", "model N/A*"}},
+			// The error keeps half the row (plan 5, item 6): at 200 columns B's
+			// row holds "fatal: No configured push desti…" since plan 24.
+			[]string{"✗ commandExecution  \"C:", "… · exit 1 · fatal: No configured push", "/root/list_files     gpt-6-mini* low completed", "/root/create_found   model N/A       completed", "* requested model · 0 ACTIVE · 2 DONE"},
+			[]string{"commandExecution · On branch main", "commandExecution · exit 1 · On branch", "model N/A*", "errors "}},
 	} {
 		t.Run(c.file, func(t *testing.T) {
 			h := mockDash(t, c.file)
@@ -47,7 +50,7 @@ func TestSyntheticScenarios(t *testing.T) {
 					}
 				}
 				if size[0] < 200 {
-					continue // zone D's rows are complete at 200 columns
+					continue // zone A's telemetry pane is in its full form at 200x60
 				}
 				for _, s := range c.want {
 					if !strings.Contains(f, s) {

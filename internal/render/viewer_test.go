@@ -276,7 +276,7 @@ func TestEntryCursor(t *testing.T) {
 			if len(diff) != 2 || !strings.Contains(diff[0], "Enter full view · ↑↓ entries · Esc back") || !strings.Contains(diff[1], "Enter full view · ↑↓ entries · Esc back to the input") {
 				t.Errorf("%v, entry %d: changed rows %q", size, n, diff)
 			}
-			for _, focus := range []string{"A", "C", "D"} {
+			for _, focus := range []string{"A", "C"} {
 				ui.Focus = focus
 				off := Draw(s, ui)
 				ui.Entry = 0

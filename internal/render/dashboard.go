@@ -18,9 +18,10 @@ const (
 	wideWidth     = 160
 	listWide      = 74
 	// Zone A's share of the width from 100 columns, in percent, and its
-	// least width (plan 20: the templates draw it at about a fifth).
-	zoneAShare = 22
-	zoneAMin   = 24
+	// least width (plan 24: the owner's image draws it at about 59 of 208
+	// columns; its usage section needs the least width).
+	zoneAShare = 28
+	zoneAMin   = 36
 	// Zone C while no agent is in play (plan 18, plan 20): its borders and
 	// one row; with agents in play at wide width, at least previewRows for
 	// the preview beside the list; at most narrowC under 100 columns.
@@ -33,8 +34,8 @@ const (
 	agentC = 4
 )
 
-// zoneAWidth is zone A's width at w columns from 100 (plan 20): 22% of
-// it, rounded, at least 24.
+// zoneAWidth is zone A's width at w columns from 100 (plan 24): 28% of
+// it, rounded, at least 36.
 func zoneAWidth(w int) int { return max((w*zoneAShare+50)/100, zoneAMin) }
 
 // cHeight is zone C's height (plan 18, plan 20): compactC while no agent is
@@ -68,58 +69,54 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	}
 	ls := []line{titleBar(s, w, badge(s), extra), projectBar(s, ui)}
 
-	if ui.Zoom && strings.Contains("ACD", ui.Focus) && ui.Focus != "" {
+	if ui.Zoom && (ui.Focus == "A" || ui.Focus == "C") {
 		// The focused zone over the middle and bottom (ui-design.md,
 		// Scrolling, collapsing, full screen); the bars stay.
 		zh := h - len(ls) - 1
-		keys := "Enter details"
-		switch ui.Focus {
-		case "A":
-			keys = "↑↓ move · ←→ fold · Enter inspect"
+		keys := "↑↓ select · Enter inspect"
+		if ui.Focus == "A" {
+			keys = "↑↓ move · ←→ fold · Enter inspect or details"
+			sc.AY = len(ls)
 			ls = append(ls, zoneA(s, ui, w, zh, sc)...)
-		case "C":
-			keys = "↑↓ select · Enter inspect"
+		} else {
 			ls = append(ls, zoneC(s, ui, w, zh, sc)...) // its preview inside from 160 columns
-		case "D":
-			ls = append(ls, zoneD(s, ui, w, zh, zh-2)...)
 		}
 		return append(ls, keyHints(w, ui, "z or Esc restore · "+keys+" · F6 zone · F1 keys"))
 	}
 
 	// Plan 20 (brief amendment 16): A and B share the upper row, their bottom
-	// borders on one row; C spans the whole width under both, then D. C is
-	// sized by the agents in play (plan 18).
+	// borders on one row; C spans the whole width under both. C is sized by
+	// the agents in play (plan 18). Zone D is gone since plan 24: its rows
+	// are A's and B's, its values in A's telemetry pane.
 	inPlay := s.AgentsInPlay()
 	if w < standardWidth {
-		// The fallback under 100 columns: A as one row, B, C and D full width.
+		// The fallback under 100 columns: A as one row, B and C full width.
 		ls = append(ls, zoneALine(s, w))
-		dh := 3
-		region := h - len(ls) - dh - 1
+		region := h - len(ls) - 1
 		ch := cHeight(inPlay, region, 0, true, false)
 		bh := region - ch
 		if ui.Focus == "A" { // the tree takes B's and C's place until F6 leaves it
+			sc.AY = len(ls)
 			ls = append(ls, zoneA(s, ui, w, bh+ch, sc)...)
-			ls = append(ls, zoneD(s, ui, w, dh, 1)...)
-			return append(ls, keyHints(w, ui, "↑↓ move · ←→ fold · Enter inspect · F6 zone · Esc back to the input"))
+			return append(ls, keyHints(w, ui, "↑↓ move · ←→ fold · Enter inspect or details · F6 zone · Esc back to the input"))
 		}
 		sc.Conv.Y = len(ls) + 1
 		ls = append(ls, zoneB(s, ui, w, bh, editorMinRows, sc)...)
 		ls = append(ls, zoneC(s, ui, w, ch, sc)...)
-		ls = append(ls, zoneD(s, ui, w, dh, 1)...)
 		return append(ls, keyHints(w, ui, footer(s, ui, sendNewline(ui)+" · F6 zone · F2 approve · F3 Explorer · F1 keys")))
 	}
 
-	aw, dh, rows, minB := zoneAWidth(w), 4, 2, 12
+	aw, minB := zoneAWidth(w), 12
 	if wide {
-		dh, rows, minB = 6, 3, 14
+		minB = 14
 	}
-	region := h - len(ls) - dh - 1 // A and B, then C
+	region := h - len(ls) - 1 // A and B, then C
 	ch := cHeight(inPlay, region, minB, false, wide)
 	top := region - ch
 	sc.Conv.Y = len(ls) + 1
+	sc.AY = len(ls)
 	ls = append(ls, beside(zoneA(s, ui, aw, top, sc), zoneB(s, ui, w-aw, top, editorMinRows, sc))...)
 	ls = append(ls, zoneC(s, ui, w, ch, sc)...) // the whole width, its preview inside from 160 columns
-	ls = append(ls, zoneD(s, ui, w, dh, rows)...)
 	hints := sendNewline(ui) + " · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit"
 	if wide {
 		hints = sendNewline(ui) + " · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
@@ -137,14 +134,16 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 const editorMinRows = 1
 
 // footer is the bottom line's key hints: B's entry cursor's while it is on,
-// C's while C has the focus (plan 20: C has no hint row of its own), else
-// the dashboard's.
+// C's while C has the focus (plan 20: C has no hint row of its own), A's
+// while A has it (plan 24: A has none either), else the dashboard's.
 func footer(s *state.State, ui UI, hints string) string {
 	switch {
 	case ui.Entry > 0 && ui.Focus == "B" && ui.Card == "":
 		return entryFooter(s, ui)
 	case ui.Focus == "C":
 		return "↑↓ select · Enter inspect · z zoom · PgUp PgDn Home End scroll · F6 zone · Esc back to the input · F1 keys"
+	case ui.Focus == "A":
+		return aFooter
 	}
 	return hints
 }
@@ -329,58 +328,6 @@ func zoneALine(s *state.State, w int) line {
 	return spread(l, plain("   (inferred)   F6: tree ", stGrey), w)
 }
 
-// zoneA is the orchestrator and its stage tree (ui-design.md, Zone A).
-func zoneA(s *state.State, ui UI, w, h int, sc *Screen) []line {
-	var body []line
-	m := model(s)
-	if m == "" {
-		body = append(body, plain("model N/A ("+naReason(s)+")", stGrey))
-	} else {
-		body = append(body, line{sp(m, modelStyle(m)), sp(" · orchestrator", stGrey)})
-	}
-	n := len(s.Stages)
-	switch {
-	case n == 0:
-		body = append(body, plain("no turn yet", stGrey))
-	case s.Stages[n-1].Open:
-		body = append(body, plain(fmt.Sprintf("turn %d · %s %s", n, turnWord(s), elapsed(s.Stages[n-1].StartedAt, time.Time{}, ui.Now)), stText))
-	default:
-		_, word := stageStatus(s, &s.Stages[n-1])
-		body = append(body, plain(fmt.Sprintf("turn %d · %s", n, word), stText))
-	}
-	body = append(body, line{})
-	if n > 0 && len(s.Stages[n-1].Plan) > 0 {
-		body = append(body, line{sp("PLAN  ", stBold), sp("observed (turn/plan/updated)", stGrey)})
-	} else {
-		body = append(body, line{sp("STAGES  ", stBold), sp("inferred from activity", stGrey)})
-	}
-	rows := treeRows(s, ui, w-4)
-	if len(rows) == 0 {
-		rows = []treeRow{{l: plain("○ (stages appear as turns run)", stGrey)}}
-	}
-	room := max(h-3-len(body), 0)
-	top := paneTop(ui.Tree, len(rows), room, treeTop(rows, ui.ACursor, room))
-	sc.Tree = PaneView{Rows: len(rows), Room: room, Top: top}
-	for _, r := range rows {
-		sc.Tree.IDs = append(sc.Tree.IDs, r.node.ID)
-	}
-	for _, r := range rows[top:min(top+room, len(rows))] {
-		if ui.Focus == "A" && r.node.ID != "" && r.node.ID == ui.ACursor {
-			r.l = cursorLine(r.l.fit(w-4), w-4)
-		}
-		body = append(body, r.l)
-	}
-	for len(body) < h-3 {
-		body = append(body, line{})
-	}
-	hint := decoLine("↑↓ move ←→ fold Enter inspect", stGrey)
-	if ui.Tree.Hold && top < len(rows)-room { // held away from the tail
-		hint = heldHint(top, len(rows)-top-room, "End follows", w-4)
-	}
-	body = append(body[:max(h-3, 0)], hint)
-	return box('A', zoneTitle("A · ORCHESTRATOR", ui.Focus == "A"), nil, body, w, h, borderFor(ui.Focus == "A"))
-}
-
 func turnWord(s *state.State) string {
 	switch s.Turn.Phase {
 	case state.Idle:
@@ -403,20 +350,6 @@ func children(s *state.State, parent string) []string {
 		}
 	}
 	return out
-}
-
-func zoneTitle(t string, focused bool) line {
-	if focused {
-		return plain(t, stTitle)
-	}
-	return plain(t, stBold)
-}
-
-func borderFor(focused bool) *lipgloss.Style {
-	if focused {
-		return stTitle
-	}
-	return stFrame
 }
 
 // zoneB is the conversation, its notices and the editor. The conversation

@@ -87,6 +87,8 @@ func TestInspectKeysFromC(t *testing.T) {
 
 // From zone A: ↑ ↓ move the cursor through the nodes, ← folds, → unfolds,
 // Enter inspects an agent's node and leaves the orchestrator's to zone B.
+// The mock's turn is over, so its stage starts folded (plan 24, design D5):
+// → opens it first.
 func TestTreeKeys(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h := mockDash(t, "codex-subagents.jsonl")
@@ -95,11 +97,17 @@ func TestTreeKeys(t *testing.T) {
 		if h.m.ui.Focus != "A" {
 			t.Fatalf("focus %q", h.m.ui.Focus)
 		}
-		nodes := render.Tree(h.m.State(), h.m.ui)
-		if len(nodes) != 5 || nodes[0].ID != "s:1" {
-			t.Fatalf("nodes %+v", nodes)
+		if got := render.Tree(h.m.State(), h.m.ui); len(got) != 1 || got[0].ID != "s:1" || !got[0].Folded {
+			t.Fatalf("a closed stage starts folded: nodes %+v", got)
 		}
-		h.send(key(tea.KeyUp, 0)) // no cursor yet: the last node
+		h.send(key(tea.KeyRight, 0)) // no cursor yet: the last tree node, the stage; → unfolds it
+		nodes := render.Tree(h.m.State(), h.m.ui)
+		if len(nodes) != 5 || nodes[0].ID != "s:1" || h.m.ui.ACursor != "s:1" {
+			t.Fatalf("nodes %+v, cursor %q", nodes, h.m.ui.ACursor)
+		}
+		for range 4 {
+			h.send(key(tea.KeyDown, 0))
+		}
 		if h.m.ui.ACursor != nodes[4].ID {
 			t.Fatalf("cursor %q, want %q", h.m.ui.ACursor, nodes[4].ID)
 		}
@@ -136,6 +144,28 @@ func TestTreeKeys(t *testing.T) {
 		}
 		if h.m.ui.ACursor != "s:1" {
 			t.Errorf("cursor %q, want s:1", h.m.ui.ACursor)
+		}
+		// Past the tree's last node, the telemetry pane's three headings; ↓
+		// stops on the last (plan 24, criterion 24.11).
+		for range 5 {
+			h.send(key(tea.KeyDown, 0))
+		}
+		if h.m.ui.ACursor != render.NodeTelemetry {
+			t.Errorf("cursor %q after the tree, want TELEMETRY", h.m.ui.ACursor)
+		}
+		h.send(key(tea.KeyDown, 0))
+		h.send(key(tea.KeyDown, 0))
+		h.send(key(tea.KeyDown, 0))
+		if h.m.ui.ACursor != render.NodeQuota {
+			t.Errorf("cursor %q, want QUOTA WINDOWS, the last node", h.m.ui.ACursor)
+		}
+		h.send(key(tea.KeyLeft, 0))
+		if f := h.frame(); !h.m.ui.Fold[render.NodeQuota] || !strings.Contains(f, "▸ QUOTA WINDOWS") || strings.Contains(f, "Weekly (7 day)") {
+			t.Errorf("← on QUOTA WINDOWS did not fold it:\n%s", f)
+		}
+		h.send(key(tea.KeyRight, 0))
+		if f := h.frame(); h.m.ui.Fold[render.NodeQuota] || !strings.Contains(f, "▾ QUOTA WINDOWS") || !strings.Contains(f, "Weekly (7 day)") {
+			t.Errorf("→ on QUOTA WINDOWS did not unfold it:\n%s", f)
 		}
 	})
 }

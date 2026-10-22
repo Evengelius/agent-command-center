@@ -424,7 +424,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // syncUI copies what the renderer needs from the editors.
 func (m *Model) syncUI() {
 	m.settleCard()
-	if m.ui.Focus != "A" && m.ui.Focus != "C" && m.ui.Focus != "D" {
+	if m.ui.Focus != "A" && m.ui.Focus != "C" {
 		m.ui.Zoom = false // only a panel zooms; reaching B by F6, Tab or a click restores
 	}
 	m.ui.Draft = m.edit.Text()

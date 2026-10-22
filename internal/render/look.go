@@ -418,7 +418,9 @@ func modelName(id string) string {
 	if len(p) < 4 || len(p) > 5 || p[0] != "claude" {
 		return id
 	}
-	fam := map[string]string{"opus": "Opus", "sonnet": "Sonnet", "haiku": "Haiku"}[p[1]]
+	// The Claude families (plan 19; Fable and Mythos since plan 24, the
+	// owner's live session on claude-fable-5-1).
+	fam := map[string]string{"opus": "Opus", "sonnet": "Sonnet", "haiku": "Haiku", "fable": "Fable", "mythos": "Mythos"}[p[1]]
 	if fam == "" || !digits(p[2], 2) || !digits(p[3], 2) || len(p) == 5 && (len(p[4]) != 8 || !digits(p[4], 8)) {
 		return id
 	}

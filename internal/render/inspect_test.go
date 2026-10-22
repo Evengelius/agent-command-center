@@ -209,16 +209,16 @@ func TestTreeP3b(t *testing.T) {
 		}
 		return
 	}())
-	for _, want := range []string{"TURN 1  ✓ completed", "Use the Agent tool", "✓ Agent", "✓ agent  general-purpose", "TURN 2  ✓ completed", "started by the CLI"} {
+	for _, want := range []string{"✓ TURN 1", "Use the Agent tool", "✓ Agent", "✓ agent  general-purpose", "✓ TURN 2", "started by the CLI"} {
 		if !strings.Contains(rows, want) {
 			t.Errorf("tree lacks %q:\n%s", want, rows)
 		}
 	}
-	if strings.Count(rows, "observed") != 2 || strings.Contains(rows, "more as events arrive") {
-		t.Errorf("want the tool and the agent observed, no 'more' once ended:\n%s", rows)
+	if strings.Count(rows, "observed") != 2 || strings.Contains(rows, "more as events arrive") || strings.Contains(rows, "completed") {
+		t.Errorf("want the tool and the agent observed, no 'more' once ended, no 'completed' word (plan 24):\n%s", rows)
 	}
-	a := texts(zoneA(s, ui, 34, 30, &Screen{}))
-	if !strings.Contains(a, "STAGES  inferred from activity") {
+	a := texts(zoneA(s, ui, 36, 30, &Screen{}))
+	if !strings.Contains(a, "STAGES · inferred from activity") || !strings.Contains(a, "A · ORCHESTRATOR") {
 		t.Errorf("zone A heading:\n%s", a)
 	}
 	// Folding the agent hides nothing more: it has nothing under it once ended.
@@ -253,7 +253,7 @@ func TestTreeP7Running(t *testing.T) {
 			p.Apply(event.Event{Seq: 1 << 40, Kind: event.StageChanged, Origin: event.Observed,
 				Payload: event.Plan{Steps: []event.PlanStep{{Step: "list files", Status: "completed"}, {Step: "create found.txt", Status: "inProgress"}, {Step: "reply", Status: "pending"}}}})
 			plan := texts(zoneA(&p, ui, 60, 30, &Screen{}))
-			for _, want := range []string{"PLAN  observed (turn/plan/updated)", "✓ 1 list files", "◉ 2 create found.txt", "○ 3 reply", "○ (more as events arrive)"} {
+			for _, want := range []string{"PLAN · observed (turn/plan/updated)", "✓ 1 list files", "◉ 2 create found.txt", "○ 3 reply", "○ (more as events arrive)"} {
 				if !strings.Contains(plan, want) {
 					t.Errorf("plan lacks %q:\n%s", want, plan)
 				}

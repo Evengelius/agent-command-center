@@ -106,7 +106,9 @@ State
   Approvals        map[ApprovalID]Approval, Queue []ApprovalID
   Tools            map[ToolID]ToolCall
   Telemetry        Telemetry
-  Errors           []ErrorEntry        bounded list shown in zone D
+  Errors           []ErrorEntry        bounded list shown in the telemetry
+                                       details view (opened from zone A
+                                       since plan 24)
   Log              ring of Event       raw events for the inspection view, the last 2,000
   Applied, FirstAt count, time         the events applied and the first one's time
   Unrecognised     count, last N raw lines
@@ -128,11 +130,12 @@ Value        {Present bool, V, Unit, Origin, Source, ReceivedAt, ResetsAt,
 `Value.Present == false` renders "N/A" with its `Reason`; a `Value` whose
 `ResetsAt` has passed is cleared to N/A by the clock tick (TEL rules). Ages
 are computed at render time from `ReceivedAt`, so no event is needed to
-age a value. Zone D's session time counts from `FirstAt`, the time of the
-first event applied: the log keeps only the last 2,000 events (`MaxLog`),
-and a long session's text deltas pass that in a few turns, so its oldest
-kept event is not the session's start. `FirstAt` stays through a resume;
-only going back from a failed start resets the state (plan 21, item 1).
+age a value. The details view's session time counts from `FirstAt`, the
+time of the first event applied: the log keeps only the last 2,000 events
+(`MaxLog`), and a long session's text deltas pass that in a few turns, so
+its oldest kept event is not the session's start. `FirstAt` stays through a
+resume; only going back from a failed start resets the state (plan 21,
+item 1).
 
 ### Conversation record
 
@@ -451,7 +454,7 @@ The few reads it makes, each once and on a trigger:
 | - | - | - | - |
 | Codex `account/rateLimits/read` | after the handshake, and after each `turn/completed` | quota before the first model call has no push; pushes follow model calls only | TEL CX; P6 line 7 |
 | Claude Code `get_context_usage` | after each `result` | context is not pushed; the derived value from `usage` lacks the auto-compact threshold | TEL CC; P2 lines 4-6; no model call: answered in 914 ms with no `assistant` message, `result` or `rate_limit_event` after it (P14a, CC-10 q10) |
-| Claude Code `/usage` | **not used**: never sent (CC-10 q9, closed in plan 14) | it is a prompt in the conversation, may cost, and the endpoint can rate-limit | TEL CC |
+| Claude Code `/usage` | **not used yet**: never sent (CC-10 q9, closed in plan 14); P24u (plan 24) showed the CLI answers it locally, with no model call, and that its `usage_report` is where a model-scoped weekly window is read; a read after the handshake and after each `result` is proposed for a plan of its own | it is a message in the stream (an assistant message and a result the dashboard would have to keep out of the conversation), and the endpoint can rate-limit | TEL CC; P24u |
 | Git branch | once at startup, from `.git/HEAD` | display only; no git events exist | architecture.md, Session context |
 | Detection (`claude -v`, `codex --version`; no status command, plan 21, item 5.2) | once at startup | no other source | CC-2; CX-2 |
 

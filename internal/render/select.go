@@ -61,6 +61,11 @@ type Screen struct {
 	// What zone A's tree, C's list and C's preview showed, for scrolling;
 	// zero when not drawn.
 	Tree, List, Preview PaneView
+	// AY is the screen row of zone A's top edge, set before it is drawn;
+	// ARows is the node on each screen row of zone A that has one, a tree
+	// node or a telemetry heading, for a click (plan 24, design D6).
+	AY    int
+	ARows map[int]string
 	// fileLines are the file the viewer shows, for its selection (panel F).
 	fileLines []string
 }

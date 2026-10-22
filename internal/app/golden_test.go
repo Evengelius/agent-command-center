@@ -84,11 +84,11 @@ func TestGoldenFrames(t *testing.T) {
 		return h
 	}
 
-	// Zone A focused, its cursor on the first child: at 80 columns the tree
-	// takes the place of zones B and C.
+	// Zone A focused, its closed stage unfolded with →, its cursor on the
+	// first child: at 80 columns the tree takes the place of zones B and C.
 	tree := func(t *testing.T) *harness {
 		h := codexDash(t)
-		for _, k := range []tea.KeyPressMsg{key(tea.KeyF6, 0), key(tea.KeyF6, 0), key(tea.KeyUp, 0), key(tea.KeyUp, 0), key(tea.KeyUp, 0), key(tea.KeyUp, 0)} {
+		for _, k := range []tea.KeyPressMsg{key(tea.KeyF6, 0), key(tea.KeyF6, 0), key(tea.KeyRight, 0), key(tea.KeyDown, 0)} {
 			h.send(k)
 		}
 		if h.m.ui.Focus != "A" || !strings.HasPrefix(h.m.ui.ACursor, "a:") {
@@ -97,12 +97,33 @@ func TestGoldenFrames(t *testing.T) {
 		return h
 	}
 
-	// The details of zone D, with errors of the session, of an agent and a
-	// retry, one long and on two lines (plan 4, step 7).
+	// The telemetry details, from zone A since plan 24, with errors of the
+	// session, of an agent and a retry, one long and on two lines (plan 4,
+	// step 7).
 	details := func(t *testing.T) *harness {
 		h := dash(t)
 		addErrors(h, 2)
 		openDetailsView(t, h)
+		return h
+	}
+
+	// Plan 24, criterion 24.17: the three quota windows of the synthetic
+	// mock, the image's values, with zone A focused and its cursor on QUOTA
+	// WINDOWS.
+	quota := func(t *testing.T) *harness {
+		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-quota-windows.jsonl")}})
+		h.settle()
+		if s := h.m.State(); s.Screen != state.ScreenDashboard || !s.Metrics["quota.7d.fable"].Present {
+			t.Fatalf("quota dashboard: screen %q, fable window %+v", s.Screen, s.Metrics["quota.7d.fable"])
+		}
+		h.send(key(tea.KeyF6, 0))
+		h.send(key(tea.KeyF6, 0))
+		for i := 0; i < 40 && h.m.ui.ACursor != render.NodeQuota; i++ {
+			h.send(key(tea.KeyDown, 0))
+		}
+		if h.m.ui.Focus != "A" || h.m.ui.ACursor != render.NodeQuota {
+			t.Fatalf("focus %q cursor %q", h.m.ui.Focus, h.m.ui.ACursor)
+		}
 		return h
 	}
 
@@ -212,7 +233,7 @@ func TestGoldenFrames(t *testing.T) {
 	for _, sc := range []struct {
 		name string
 		rig  func(*testing.T) *harness
-	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))}} {
+	}{{"startup", startup}, {"dashboard", dash}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))}} {
 		for _, size := range sizes {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)

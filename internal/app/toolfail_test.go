@@ -56,6 +56,9 @@ func TestFailedToolRow(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			r, _, _ := rig(t)
 			h := r.h
+			// At 140 columns B's row holds the error and the hint whole (B is
+			// 10 columns narrower at 120 since plan 24).
+			h.draw(tea.WindowSizeMsg{Width: 140, Height: 40})
 			h.draw(key(tea.KeyUp, 0))
 			if f := h.frame(); !rowWith(f, "▸ ✗ Bash · "+errLine, "Enter full view") {
 				t.Fatalf("↑: the failed row is not marked:\n%s", f)

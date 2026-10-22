@@ -8,6 +8,7 @@ point at it. Two references, with different roles:
 | `reference-screenshot.png` (1200x1500), `reference-video.mp4` (the same screen, animated, 3.4 MB) | the **style**: colors, frames, diagrams, animation | [What the screen shows](#what-the-screen-shows) |
 | `reference-layout-mockup.png` (768x646), from amendment 2 of the brief | the **layout**: four zones, with the conversation | [Layout mock-up](#layout-mock-up) |
 | `01-startup-configuration.png` (960x721), `02-agent-command-center.png` (960x325), from amendment 4 | the **screen sequence**: startup, then dashboard | [Screen sequence](#screen-sequence) |
+| `03-zone-a-telemetry.webp` (1312x1199), from amendment 22 | **zone A with the telemetry**: the orchestrator's header, the stages, session usage, the quota windows and the notes, zone D gone | [Zone A with the telemetry](#zone-a-with-the-telemetry) |
 
 **It is a visual reference, not a product.** The reference looks like a
 promotional mock-up ("CLAUDE CODE ULTRACODE TIP"). Its model names, flags
@@ -191,3 +192,51 @@ The text is the specification; the images give the look.
 | "Preview configuration" | proceed once both answers are validated | the button starts the session, after validation |
 | "AGENT CONTROL CENTER" (image 2) | "AGENT COMMAND CENTER - LIVE" | the project's name, "AGENT COMMAND CENTER" |
 | git branch "main" in the project bar | provider, project name and path | the branch is shown when the project is a git repository, for display only (no git management) |
+
+## Zone A with the telemetry
+
+`03-zone-a-telemetry.webp`, sent with amendment 22 of the brief (plan 24):
+"the final approved design" of the dashboard's upper part, drawn over a
+session of the owner's (the demo of plan 22's amendment 20). What it
+shows, left to right and top to bottom:
+
+- **Zone A**, a rounded lavender frame about 59 columns wide, beside zone
+  B. Its first row inside the frame: "▾ A · ORCHESTRATOR" in lavender. The
+  second row: a lavender flower "✿", then "Claude Opus 5.5" in white, and
+  at the row's right end "✓ COMPLETED" in green. A thin grey rule under it.
+- **"› STAGES · inferred from activity"**: "STAGES" in white, the rest
+  grey. Three turns, each a block: a status symbol and "TURN n" in white
+  with its duration at the right ("16s", "10s", "1m 23s"), then two
+  indented grey lines: "Agent launched" and "Bash · Write · Results" for
+  turn 1; "Started by CLI · report completed" for turn 2; "Agent
+  general-purpose" and "Write · Read · Results" for turn 3, whose whole
+  block sits on a slightly lighter ground, the selected turn.
+- A rule, then **"✦ TELEMETRY"** in lavender.
+- **"▾ SESSION USAGE"**: three columns separated by thin vertical rules,
+  "CONTEXT", "TOKENS" and "EST. COST" in grey capitals; under them "5% of
+  1M" with a short lavender bar, "314.8k" with "session total" under it,
+  "$0.59" with "API-equivalent" under it.
+- **"▾ QUOTA WINDOWS"**: three windows, each three rows: "Session (5hr)"
+  with "0%" at the right, a lavender bar on a dark track across the
+  column, "Resets in 4h 12m" in grey; "Weekly (7 day)" and "17%", its
+  bar a sixth filled, "Resets in 5d 3h"; "Fable limit" and "0%", an
+  empty track, "Resets in 5d 3h". A blank row between the windows.
+- A rule, then a note in grey: "ⓘ Values are from the provider when
+  available." and "Estimates are marked accordingly." on a second row.
+- **Zone B** to the right as plan 20 left it: "B · CONVERSATION" in its
+  top edge, YOU and CLAUDE messages with their bars, a thinking summary
+  row, a tool group, a RESULT box, the input "> Ask Claude Code
+  anything…" with "Enter send · Ctrl+J newline".
+- **Zone C** under both, full width: "C · LIVE AGENTS", an agent's two
+  rows on the left and its preview on the right.
+- No zone D, and no footer in the image (it ends under zone C).
+
+What plan 24 takes from it: zone A's order of sections, the heading inside
+the frame, the status on the model row, the stages' compact blocks, the
+three usage columns, the quota windows' rows and lavender bars, the notes.
+What it keeps from the earlier decisions: the real events decide every
+value (the model, the statuses, the turns' durations and tools, the
+percentages, the reset times), the symbols of [Colours and
+symbols](ui-design.md#colours-and-symbols), the palette, and zones B and C
+as plans 20 to 22 left them. The mock-up's figures ("5% of 1M", "$0.59",
+"17%") are illustrative, as its "Agent launched" and "Results" lines.

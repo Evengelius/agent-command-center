@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ◀ back (Esc)   D · ERRORS AND TELEMETRY                5 errors · last 50 kept
+ ◀ back (Esc)   ERRORS AND TELEMETRY                    5 errors · last 50 kept
 ────────────────────────────────────────────────────────────────────────────────
  ERRORS  newest first
  11:30:05  session     numbered error 2
@@ -21,4 +21,4 @@
  context.window      1,000,000 tokens (derived)  · last assistant usage over r…
  cost.usd            $0.0066 API-equiv. estimate  · result.total_cost_usd (API…
  duration.ms         2s  · result.duration_ms 0s ago
- ↓ 8 more · ↑↓ PgUp PgDn scroll · Home top · End bottom · Esc back
+ ↓ 14 more · ↑↓ PgUp PgDn scroll · Home top · End bottom · Esc back

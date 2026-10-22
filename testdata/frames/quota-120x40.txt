@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-quota-windows.jsonl   ..\..\testdata\mock\claude-quota-windows.jsonl     Mock data 2.1.300 · approvals Manual
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
+│ A · ORCHESTRATOR                 ││                                                                                  │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎ YOU  11:30                                                                     │
+│ ──────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task:      │
+│ STAGES · inferred from activity  ││ ▎ list the files in the current directory, write their names into a new file     │
+│ ✓ TURN 1                      0s ││ ▎ named found.txt with the Write tool, and report the names. Then tell me in     │
+│   Use the Agent tool to launch … ││ ▎ one line what it found.                                                        │
+│   Agent · agent general-purpose  ││                                                                                  │
+│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
+│ ✓ TURN 2                      0s ││                                                                                  │
+│   started by the CLI             ││ ▎ CLAUDE  Haiku 5.5  11:30                                                       │
+│                                  ││ ▎  ✓ Agent  general-purpose · List directory and write fo…  11:30:00      mock   │
+│                                  ││ ▎                                                                                │
+│                                  ││ ▎ I've launched the subagent in the background to list the directory and write   │
+│                                  ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
+│ ──────────────────────────────── ││ ▎                                                                                │
+│ ✦ TELEMETRY        Enter details ││ ▎  ✓ general-purpose · Bash   ls -p "<prob…  allowed by you 11:30:00      mock   │
+│ ▾ SESSION USAGE                  ││ ▎  ✓ general-purpose · Write  …\found.txt    allowed by you 11:30:00      mock   │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens               11:30:00      mock   │
+│   Tokens 159.4k session total    ││                                                                                  │
+│   Est. cost $0.01 API-equiv.     ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
+│ ▾ QUOTA WINDOWS                  ││ │ RESULT  11:30                                                                │ │
+│   Session (5hr)              0%† ││ │ The subagent found two files in the directory, `alpha.txt` and `beta.md`,    │ │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ │ and wrote them into `<probe-root>\probe-work\p3b\found.txt`.                 │ │
+│   Resets in 4h 12m               ││ │                                                                              │ │
+│   Weekly (7 day)            17%† ││ │ Found 2 files: alpha.txt and beta.md.                                        │ │
+│   █████░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
+│   Resets in 5d 3h                ││                                                                                  │
+│   Fable limit                0%† ││                                                                                  │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Resets in 5d 3h                ││ > Ask Mock data anything…                                                        │
+│ ⓘ quota updated 0s ago · contex… ││   turn started by the CLI                           1 line · Ctrl+G draft window │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
+╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│  ✓  general-purpose   haiku-5-5   completed · Files written to found.txt: …                                          │
+│     00:00   21.5k tok   tool: Write ✓                                                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ↑↓ move · ←→ fold · Enter inspect or details · z zoom · PgUp PgDn Home End scroll · F6 zone · Esc back to the input · …

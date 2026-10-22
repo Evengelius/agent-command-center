@@ -182,7 +182,7 @@ screen):
 | the project bar: Codex's model, sandbox and policy; "(next turn)" for Codex's mode change | `internal/render/dashboard.go` |
 | zone B's speaker label, CLAUDE or CODEX (`providerLabel`) | `internal/render/dashboard.go` |
 | the Write and Edit sentence on a pending Claude Code request (`effect`) | `internal/render/approval.go` |
-| zone D: Codex's credits or Claude Code's overage, the concurrency limit's reason, the N/A reasons each CLI never reports | `internal/render/telemetry.go` |
+| zone A's telemetry (zone D until plan 23): Codex's credits or Claude Code's overage, the concurrency limit's reason, the N/A reasons each CLI never reports | `internal/render/telemetry.go` |
 
 ### Claude Code adapter
 
@@ -437,7 +437,8 @@ Input to plan 3's roadmap, from AM4's priorities (P1 to P6) and AGENTS.md
 3. Conversation end to end: editor, streaming, approvals, interrupt,
    clipboard (AM4 P3; AM3 M13).
 4. Zones A and C from real events (AM4 P4).
-5. Zone D from real telemetry (AM4 P5).
+5. Zone D from real telemetry (AM4 P5); since plan 24 the telemetry is zone
+   A's pane.
 6. Codex adapter through the same steps 2 to 5 (AM4 P7).
 7. Visual refinement against the references (AM4 P6), never at the cost of a
    function (AM4 P8).
@@ -460,7 +461,7 @@ confirmed in plan 3 or measured in plan 4.
 | ASM-9 | Default key bindings beyond those TI fixes; only the send and newline keys are configurable (ASM-7), the others fixed in the code | ui-design.md |
 | ASM-10 | The editor budget: a keystroke drawn within 16 ms with a 10,000-line buffer; a 50,000-line paste inserted and drawn within 100 ms | ui-design.md, reliability.md |
 | ASM-11 | The dashboard's own session record, kept in memory for the session; no history file written in the MVP | reliability.md |
-| ASM-12 | The layout geometry: breakpoints at 100 and 160 columns; the 80x24 minimum; from 100 columns A and B side by side in the upper row, their bottoms on one row, A 22% of the width, at least 24 columns (26 at 120, 44 at 200), C and D the whole width under them (plan 20, the owner's two templates); C 3 rows until agents are in play, then two rows an agent (one under 100 columns), up to half the rows A, B and C share (5 rows under 100 columns; at least 8 from 160 columns, for the preview inside C, right of a 70-cell list), B keeping at least 12 rows (14 from 160 columns), except that with an agent in play C keeps one agent's two rows, 4 rows from 100 columns, A and B giving the rows (at 160x24 to 160x26, A and B 11 to 13 rows; plan 21, item 4); zone B's labels beside their text from 90 cells inside B (plans 18 and 20) | ui-design.md, Layouts |
+| ASM-12 | The layout geometry: breakpoints at 100 and 160 columns; the 80x24 minimum; from 100 columns A and B side by side in the upper row, their bottoms on one row, A 28% of the width, at least 36 columns (36 at 120, 56 at 200), C the whole width under them (plan 20, the owner's two templates; plan 24, the owner's image: A took 28% for its telemetry and zone D, once under C, was removed); C 3 rows until agents are in play, then two rows an agent (one under 100 columns), up to half the rows A, B and C share (5 rows under 100 columns; at least 8 from 160 columns, for the preview inside C, right of a 70-cell list), B keeping at least 12 rows (14 from 160 columns), except that with an agent in play C keeps one agent's two rows, 4 rows from 100 columns, A and B giving the rows (at 160x24 to 160x26, A and B 11 to 13 rows; plan 21, item 4); zone B's labels beside their text from 90 cells inside B (plans 18 and 20) | ui-design.md, Layouts |
 | ASM-13 | The colours: the palette hex values, each model family's colour, a quota bar turning red from 90%; fixed in the code, not configurable (plan 21, item 5.1) | ui-design.md |
 | ASM-14 | Codex threads given model "N/A" until a per-thread source appears; from Codex CLI 0.163.0, `subAgentActivity.model` is that source (P7b; plan 5, item 7) | events-and-state.md |
 | ASM-15 | No message is sent while a turn runs; the draft waits (Codex `turn/steer` and Claude Code's queue are never used; CX-10 q5, closed in plan 14) | events-and-state.md, Turn machine |
@@ -489,7 +490,7 @@ ui-design.md, `REL` reliability.md.
 | B2.1 | A native terminal application | ARCH Stack; ARCH Where it runs |
 | B2.2 | Left: orchestrator, workflow tree, phase status, agent hierarchy | UI Zone A; EVT Agent tree |
 | B2.3 | Main: live subagent activity, execution logs, progress, agent selection, diff inspection | UI Zone C; UI Agent inspection; EVT `tool.completed`, `diff.updated` |
-| B2.4 | Bottom: real 5-hour and 7-day quota, reset timers, token usage, context, model, agent statistics | UI Zone D; EVT `telemetry.updated`; REL Telemetry sources |
+| B2.4 | Bottom: real 5-hour and 7-day quota, reset timers, token usage, context, model, agent statistics | UI Zone A, telemetry (zone D until plan 23); EVT `telemetry.updated`; REL Telemetry sources |
 | B2.5 | Bubble Tea, Lip Gloss and tmux unless better | ARCH Stack (tmux not needed, with the reason) |
 | B2.6 | Reuse the CLI's native orchestration; no rebuilt workflow engine | ARCH Integration strategy |
 | B2.7 | Keyboard navigation, live updates, responsive layouts, polished style | UI Focus and keys; UI Layouts at three sizes; UI Colours and symbols |
@@ -543,24 +544,24 @@ ui-design.md, `REL` reliability.md.
 | AM2 C4 | Real tool executions and progress | EVT `tool.started`, `tool.completed` |
 | AM2 C5 | Agent-specific logs and outputs | UI Agent inspection |
 | AM2 C6 | Verification and test results | UI Agent inspection ("tool results") |
-| AM2 C7 | Retry information | EVT `retry`; UI Zone C, Zone D |
+| AM2 C7 | Retry information | EVT `retry`; UI Zone C; Zone A, telemetry (notes and details view) |
 | AM2 C8 | Select an agent and expand its activity | UI Focus and keys; UI Agent inspection |
 | AM2 C9 | Return to the orchestrator conversation | UI Focus and keys |
 | AM2 C10 | Agent activity updates independently of the conversation | ARCH Threads of execution; EVT Concurrent output |
 | AM2 C11 | Watch several agents while the orchestrator talks | UI Layouts at three sizes; EVT Concurrent output |
 
-### Amendment 2, zone D (telemetry)
+### Amendment 2, zone D (telemetry; zone A's pane since plan 24)
 
 | Id | Item | Placed in |
 | - | - | - |
-| AM2 D1 | 5-hour quota | EVT `telemetry.updated`; UI Zone D |
+| AM2 D1 | 5-hour quota | EVT `telemetry.updated`; UI Zone A, telemetry |
 | AM2 D2 | 7-day quota | same |
 | AM2 D3 | Reset times when available | same |
 | AM2 D4 | Model and context-window usage | same |
-| AM2 D5 | Tokens and API-equivalent cost, apart from subscription usage | UI Zone D; REL Telemetry sources |
-| AM2 D6 | Active agents and concurrency limit | UI Zone D (Codex: the limit from `config/read`, only it kept; else N/A, with the reason) |
-| AM2 D7 | Execution duration | UI Zone D |
-| AM2 D8 | Errors and retry counters | UI Zone D; EVT `error`, `retry` |
+| AM2 D5 | Tokens and API-equivalent cost, apart from subscription usage | UI Zone A, telemetry; REL Telemetry sources |
+| AM2 D6 | Active agents and concurrency limit | UI Zone A, telemetry: the details view (Codex: the limit from `config/read`, only it kept; else N/A, with the reason) |
+| AM2 D7 | Execution duration | UI Zone A, telemetry: the details view |
+| AM2 D8 | Errors and retry counters | UI Zone A, telemetry: the details view for the errors, the notes for the counts; EVT `error`, `retry` |
 | AM2 D9 | Real telemetry; "N/A" when unavailable | REL Telemetry sources; UI States |
 
 ### Amendment 2, interaction model, events, UX
@@ -642,7 +643,7 @@ ui-design.md, `REL` reliability.md.
 | AM4 S15 | Startup follows image 1 | UI Startup screen, "Follows and departs" |
 | AM4 D1 | Transition to the dashboard | UI Transition |
 | AM4 D2 | Dashboard follows image 2 | UI Dashboard, "Follows and departs" |
-| AM4 D3 | Zones A to D kept (A: stages, progress, tree, task status, observed activity; B: real conversation, input, streaming, multiline, clipboard, history, native approvals; C: active and completed agents, tasks, activity, logs, status; D: quota, context, tokens, agent count, model) | UI Zones A to D |
+| AM4 D3 | Zones A to D kept (A: stages, progress, tree, task status, observed activity; B: real conversation, input, streaming, multiline, clipboard, history, native approvals; C: active and completed agents, tasks, activity, logs, status; D: quota, context, tokens, agent count, model) | UI Zones A to C; Zone A, telemetry (zone D until plan 23) |
 | AM4 D4 | The conversation is the primary surface | UI Focus and keys (default focus) |
 | AM4 D5 | Real provider data; "N/A" otherwise | REL Telemetry sources |
 | AM4 D6 | Providers need not expose identical telemetry | ARCH Provider interface, `Capabilities` |

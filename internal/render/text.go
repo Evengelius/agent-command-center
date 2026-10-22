@@ -332,6 +332,18 @@ func frameBox(title, right line, body []line, w, h int, border *lipgloss.Style) 
 	inner := w - 4
 	top := line{sp("╭─ ", border)}
 	top = append(top, title...)
+	untitled := title == nil
+	if untitled {
+		// No title in the edge (zone A since plan 24): "╭" fill "╮", with
+		// right before the corner as below when it fits.
+		if fill := w - 5 - right.width(); right != nil && fill >= 1 {
+			top = append(line{sp("╭"+strings.Repeat("─", fill)+" ", border)}, right...)
+			top = append(top, sp(" ─╮", border))
+		} else {
+			top = line{sp("╭"+strings.Repeat("─", max(w-2, 0))+"╮", border)}
+		}
+		right = nil
+	}
 	if right != nil {
 		// "╭─ " title " " fill " " right " ─╮"
 		fill := w - 3 - title.width() - 2 - right.width() - 3
@@ -343,7 +355,7 @@ func frameBox(title, right line, body []line, w, h int, border *lipgloss.Style) 
 			top = append(top, sp(" ─╮", border))
 		}
 	}
-	if right == nil {
+	if right == nil && !untitled {
 		fill := w - 3 - title.width() - 2
 		if fill < 0 {
 			top = append(line{sp("╭─ ", border)}, title.fit(w-5)...)

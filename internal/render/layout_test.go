@@ -17,7 +17,9 @@ import (
 )
 
 // zoneRows reads the dashboard's zones from a frame's text: each box's top
-// and bottom rows and its left and right columns, by its title.
+// and bottom rows and its left and right columns, by its title; zone A,
+// whose top edge has no title since plan 24, by its place, the box at
+// column 0.
 type zoneBox struct{ top, bottom, left, right int }
 
 func zoneBoxes(rows []string) map[string]zoneBox {
@@ -25,10 +27,18 @@ func zoneBoxes(rows []string) map[string]zoneBox {
 	for y, r := range rows {
 		cells := []rune(r)
 		for x := 0; x+3 < len(cells); x++ {
-			if cells[x] != '╭' || cells[x+1] != '─' || cells[x+2] != ' ' {
+			if cells[x] != '╭' || cells[x+1] != '─' {
 				continue
 			}
-			name := string(cells[x+3])
+			name := ""
+			switch {
+			case cells[x+2] == ' ':
+				name = string(cells[x+3])
+			case x == 0 && cells[x+2] == '─':
+				name = "A"
+			default:
+				continue
+			}
 			right := x
 			for right < len(cells) && cells[right] != '╮' {
 				right++
@@ -48,25 +58,29 @@ func zoneBoxes(rows []string) map[string]zoneBox {
 	return out
 }
 
-// TestDashboardGeometry is plan 20's item 1 (brief amendment 16): A and B
-// share the upper row, their bottom borders on one row; C spans the whole
-// width under both; D under C; the footer last.
+// TestDashboardGeometry is plan 20's item 1 (brief amendment 16) as plan 24
+// changed it (criteria 24.1 to 24.3): A and B share the upper row, their
+// bottom borders on one row, A 28% of the width and at least 36 columns; C
+// spans the whole width under both, to the footer; no fourth box.
 func TestDashboardGeometry(t *testing.T) {
 	quiet := probeState(t, "p2-claude-conversation.jsonl", claude.ProviderID, claude.NewMapper())
 	one := probeState(t, "p3b-claude-subagent-approval.jsonl", claude.ProviderID, claude.NewMapper())
 	for _, s := range []*state.State{quiet, one} {
-		for _, c := range []struct{ w, h, aw int }{{120, 40, 26}, {156, 44, 34}, {160, 45, 35}, {200, 60, 44}} {
+		for _, c := range []struct{ w, h, aw int }{{120, 40, 36}, {156, 44, 44}, {160, 45, 45}, {200, 60, 56}, {208, 59, 58}} {
 			name := fmt.Sprintf("%dx%d, %d agents", c.w, c.h, s.AgentsInPlay())
 			rows := strings.Split(strings.TrimSuffix(texts(Draw(s, UI{Width: c.w, Height: c.h, Focus: "B"}).lines), "\n"), "\n")
 			z := zoneBoxes(rows)
-			a, b, cz, d := z["A"], z["B"], z["C"], z["D"]
-			// 1.1 A and B on row 3, A aw wide, B the rest, their bottoms on one row.
+			a, b, cz := z["A"], z["B"], z["C"]
+			// 24.1 A and B on row 3, A aw wide, B the rest, their bottoms on one row.
 			if a.top != 2 || b.top != 2 || a.left != 0 || a.right != c.aw-1 || b.left != c.aw || b.right != c.w-1 || a.bottom != b.bottom {
 				t.Errorf("%s: A %+v, B %+v; want both from row 2 to one row, A 0..%d, B %d..%d", name, a, b, c.aw-1, c.aw, c.w-1)
 			}
-			// 1.2 C full width under them, D under C, the footer last.
-			if cz.top != a.bottom+1 || cz.left != 0 || cz.right != c.w-1 || d.top != cz.bottom+1 || d.left != 0 || d.right != c.w-1 || d.bottom != c.h-2 {
-				t.Errorf("%s: C %+v, D %+v; want C from row %d full width, D under it to row %d", name, cz, d, a.bottom+1, c.h-2)
+			// 24.1 C full width under them to the footer; no fourth box.
+			if cz.top != a.bottom+1 || cz.left != 0 || cz.right != c.w-1 || cz.bottom != c.h-2 {
+				t.Errorf("%s: C %+v; want C from row %d full width to row %d", name, cz, a.bottom+1, c.h-2)
+			}
+			if _, d := z["D"]; d || len(z) != 3 {
+				t.Errorf("%s: zones %+v, want A, B and C only", name, z)
 			}
 			if !strings.HasPrefix(rows[c.h-1], " Enter send") {
 				t.Errorf("%s: last row %q", name, rows[c.h-1])
@@ -75,14 +89,23 @@ func TestDashboardGeometry(t *testing.T) {
 				if n := len([]rune(r)); n > c.w {
 					t.Errorf("%s: row %d is %d wide", name, i, n)
 				}
+				if strings.Contains(r, "D · ") || strings.Contains(r, "QUOTA & TELEMETRY") {
+					t.Errorf("%s: zone D's title on row %d: %q", name, i, r)
+				}
 			}
 		}
 	}
-	// 1.3 At 80x24: A's row, then B, C and D full width; C compact.
+	// 24.3 At 80x24: A's row, then B and C full width; C compact, B 17 rows.
 	rows := strings.Split(strings.TrimSuffix(texts(Draw(quiet, UI{Width: 80, Height: 24, Focus: "B"}).lines), "\n"), "\n")
 	z := zoneBoxes(rows)
-	if !strings.HasPrefix(rows[2], " A ") || z["B"].top != 3 || z["B"].right != 79 || z["C"].top != z["B"].bottom+1 || z["C"].bottom-z["C"].top+1 != 3 || z["C"].right != 79 || z["D"].top != z["C"].bottom+1 {
+	if !strings.HasPrefix(rows[2], " A ") || z["B"].top != 3 || z["B"].bottom != 19 || z["B"].right != 79 || z["C"].top != 20 || z["C"].bottom != 22 || z["C"].right != 79 || len(z) != 2 {
 		t.Errorf("80x24: row 2 %q, zones %+v", rows[2], z)
+	}
+	// F6 on A: the tree with its telemetry over B and C.
+	rows = strings.Split(strings.TrimSuffix(texts(Draw(quiet, UI{Width: 80, Height: 24, Focus: "A"}).lines), "\n"), "\n")
+	all := strings.Join(rows, "\n")
+	if z = zoneBoxes(rows); len(z) != 1 || z["A"].top != 3 || z["A"].bottom != 22 || !strings.Contains(all, "✦ TELEMETRY") || !strings.Contains(all, "STAGES · inferred") {
+		t.Errorf("80x24, A focused: zones %+v:\n%s", z, all)
 	}
 }
 
@@ -136,22 +159,24 @@ func TestAdaptiveLayout(t *testing.T) {
 		agentRow bool // P3b's agent listed in C
 		focus    string
 	}{
-		{"2.1 120x40 no agent", quiet, 120, 40, 30, 3, false, false, ""},
-		{"2.2 120x40 one agent", one, 120, 40, 29, 4, false, true, ""},
-		{"2.2 120x40 six agents", six, 120, 40, 19, 14, false, true, ""},
-		{"2.2 120x40 twenty agents, half", twenty, 120, 40, 17, 16, false, false, ""},
-		{"2.3 120x40 its agent done, a new prompt: cleared", after, 120, 40, 30, 3, false, false, ""},
-		{"2.1 200x60 no agent", quiet, 200, 60, 48, 3, false, false, ""},
-		{"2.2 200x60 one agent, room for the preview", one, 200, 60, 43, 8, true, true, ""},
-		{"2.2 200x60 twenty agents, half", twenty, 200, 60, 26, 25, true, false, ""},
-		{"2.2 200x60 forty agents, half", forty, 200, 60, 26, 25, true, false, ""},
-		{"2.3 200x60 its agent done, a new prompt: cleared", after, 200, 60, 48, 3, false, false, ""},
-		{"2.1 156x44 no agent", quiet, 156, 44, 34, 3, false, false, ""},
-		{"2.2 156x44 one agent", one, 156, 44, 33, 4, false, true, ""},
-		{"2.1 100x24 no agent", quiet, 100, 24, 14, 3, false, false, ""},
-		{"2.2 100x24 twenty agents, B keeps 12", twenty, 100, 24, 12, 5, false, false, ""},
-		{"2.3 120x40 twenty done earlier, C focused: cleared", earlier, 120, 40, 30, 3, false, false, "C"},
-		{"2.2 120x40 six agents, C focused: as unfocused", six, 120, 40, 19, 14, false, true, "C"},
+		// The rows zone D had are A's and B's since plan 24: 4 more at 120
+		// and 156 columns, 6 more at 200.
+		{"2.1 120x40 no agent", quiet, 120, 40, 34, 3, false, false, ""},
+		{"2.2 120x40 one agent", one, 120, 40, 33, 4, false, true, ""},
+		{"2.2 120x40 six agents", six, 120, 40, 23, 14, false, true, ""},
+		{"2.2 120x40 twenty agents, half", twenty, 120, 40, 19, 18, false, false, ""},
+		{"2.3 120x40 its agent done, a new prompt: cleared", after, 120, 40, 34, 3, false, false, ""},
+		{"2.1 200x60 no agent", quiet, 200, 60, 54, 3, false, false, ""},
+		{"2.2 200x60 one agent, room for the preview", one, 200, 60, 49, 8, true, true, ""},
+		{"2.2 200x60 twenty agents, half", twenty, 200, 60, 29, 28, true, false, ""},
+		{"2.2 200x60 forty agents, half", forty, 200, 60, 29, 28, true, false, ""},
+		{"2.3 200x60 its agent done, a new prompt: cleared", after, 200, 60, 54, 3, false, false, ""},
+		{"2.1 156x44 no agent", quiet, 156, 44, 38, 3, false, false, ""},
+		{"2.2 156x44 one agent", one, 156, 44, 37, 4, false, true, ""},
+		{"2.1 100x24 no agent", quiet, 100, 24, 18, 3, false, false, ""},
+		{"2.2 100x24 twenty agents, B keeps 12", twenty, 100, 24, 12, 9, false, false, ""},
+		{"2.3 120x40 twenty done earlier, C focused: cleared", earlier, 120, 40, 34, 3, false, false, "C"},
+		{"2.2 120x40 six agents, C focused: as unfocused", six, 120, 40, 23, 14, false, true, "C"},
 	} {
 		focus := c.focus
 		if focus == "" {
@@ -183,11 +208,12 @@ func TestAdaptiveLayout(t *testing.T) {
 			t.Errorf("%s: footer %q with C focused %v", c.name, footer, focus == "C")
 		}
 	}
-	// At 80x24, one row an agent, at most 5 rows for C.
+	// At 80x24, one row an agent, at most 5 rows for C; B has zone D's 3
+	// rows since plan 24.
 	for _, c := range []struct {
 		s    *state.State
 		b, c int
-	}{{quiet, 14, 3}, {one, 14, 3}, {six, 12, 5}} {
+	}{{quiet, 17, 3}, {one, 17, 3}, {six, 15, 5}} {
 		rows := strings.Split(strings.TrimSuffix(texts(Draw(c.s, UI{Width: 80, Height: 24, Focus: "B"}).lines), "\n"), "\n")
 		z := zoneBoxes(rows)
 		if b, ch := z["B"].bottom-z["B"].top+1, z["C"].bottom-z["C"].top+1; b != c.b || ch != c.c {

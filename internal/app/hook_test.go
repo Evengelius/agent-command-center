@@ -137,7 +137,7 @@ func TestFailingHookNoticeBeforeAnyPrompt(t *testing.T) {
 func TestFailingHookTurnRuns(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		r := thinkStartFile(t, failingHookFile(t), claude.ProviderID)
-		r.h.draw(tea.WindowSizeMsg{Width: 200, Height: 60}) // wide enough for zone D's counters
+		r.h.draw(tea.WindowSizeMsg{Width: 200, Height: 60}) // zone A's telemetry pane in its full form
 		text := r.frameAt(14400)                            // after the result line (14,361 ms)
 		s := r.h.m.State()
 		if s.Session.Phase != state.Ready || s.Turn.Phase != state.Idle || s.Turn.Outcome != "completed" {
@@ -150,10 +150,13 @@ func TestFailingHookTurnRuns(t *testing.T) {
 		if strings.Join(roles, " ") != "notice user thinking assistant" {
 			t.Errorf("conversation %v", roles)
 		}
-		for _, want := range []string{failedHook, "Thought for 8.0s · 928 thinking tokens", "**59**", "errors 0", "unrecognised events 0"} {
+		for _, want := range []string{failedHook, "Thought for 8.0s · 928 thinking tokens", "**59**"} {
 			if !strings.Contains(text, want) {
 				t.Errorf("no %q in\n%s", want, text)
 			}
+		}
+		if strings.Contains(text, "errors ") || strings.Contains(text, "unrecognised ") || len(s.Errors) != 0 || s.Unrecognised != 0 {
+			t.Errorf("errors %d, unrecognised %d, or a note of them (none is drawn at 0):\n%s", len(s.Errors), s.Unrecognised, text)
 		}
 		if i, j := strings.Index(text, failedHook), strings.Index(text, "Without using any tool"); i < 0 || j < 0 || i > j {
 			t.Errorf("the notice (%d) does not come before the prompt (%d)", i, j)

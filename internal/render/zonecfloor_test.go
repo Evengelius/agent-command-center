@@ -9,14 +9,15 @@ import (
 
 // TestZoneCFloor is plan 21's item 4: from 160 columns, B's 14 rows left
 // zone C 3 rows at 24 to 26 rows, too few for an agent's two, and C listed
-// none. With an agent in play C now keeps one agent's rows, A and B giving
-// them; from 27 rows the heights are those of plan 20.
+// none. With an agent in play C keeps one agent's rows, A and B giving
+// them. Since plan 24 zone D's 6 rows are A's, B's and C's: at 24 rows C
+// has 7, and its 8 for the preview from 25 rows.
 func TestZoneCFloor(t *testing.T) {
 	one := probeState(t, "p3b-claude-subagent-approval.jsonl", claude.ProviderID, claude.NewMapper())
 	if n := one.AgentsInPlay(); n != 1 {
 		t.Fatalf("P3b: %d agents in play, want 1", n)
 	}
-	for _, c := range []struct{ h, top, c int }{{24, 11, 4}, {25, 12, 4}, {26, 13, 4}, {27, 14, 4}} {
+	for _, c := range []struct{ h, top, c int }{{24, 14, 7}, {25, 14, 8}, {26, 15, 8}, {27, 16, 8}} {
 		rows := strings.Split(strings.TrimSuffix(texts(Draw(one, UI{Width: 160, Height: c.h, Focus: "B"}).lines), "\n"), "\n")
 		if len(rows) != c.h {
 			t.Fatalf("160x%d: %d rows", c.h, len(rows))

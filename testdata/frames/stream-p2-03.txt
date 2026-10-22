@@ -1,40 +1,40 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
-╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────────────── ⠋ Streaming ─╮
-│ claude-haiku-5-5 · or… ││ ▎ YOU  02:00                                                                               │
-│ turn 2 · running 9h 2… ││ ▎ Create a file named hello.txt in the current directory containing the single word        │
-│                        ││ ▎ hello. Use the Write tool, then reply with the word done.                                │
-│ STAGES  inferred from… ││                                                                                            │
-│ TURN 1  ✓ completed ·… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│ TURN 2  ◉ running · 9… ││                                                                                            │
-│   Reply with the sing… ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                 │
-│   •─ ○ (more as event… ││ ▎  ✓ Write  <probe-root>\probe-work\p2\hello.txt                      02:00:09  observed   │
-│                        ││ ▎  ✓ orchestrator · Write  …\probe-work\p2\hello.txt   allowed by you 02:00:09  observed   │
-│                        ││                                                                                            │
-│                        ││ ╭────────────────────────────────────────────────────────────────────────────────────────╮ │
-│                        ││ │ RESULT  02:00                                                                          │ │
-│                        ││ │ done                                                                                   │ │
-│                        ││ ╰────────────────────────────────────────────────────────────────────────────────────────╯ │
-│                        ││                                                                                            │
-│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││                                                                                            │
-│                        ││ ▎ YOU  02:00                                                                               │
-│                        ││ ▎ Reply with the single word: again                                                        │
-│                        ││                                                                                            │
-│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││                                                                                            │
-│                        ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                 │
-│                        ││ ▎ again▌                                                                                   │
-│                        ││                                                                                            │
-│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││ >  Claude Code is processing your request…                                                 │
-│ ↑↓ move ←→ fold Enter… ││   turn running: the draft waits · Ctrl+C interrupt            1 line · Ctrl+G draft window │
-╰────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ───────────────────────────────────────────────── ⠋ Streaming ─╮
+│ A · ORCHESTRATOR                 ││                                                                                  │
+│ ✿ Claude Haiku 5.5     ⠋ RUNNING ││ ▎ YOU  02:00                                                                     │
+│ ──────────────────────────────── ││ ▎ Create a file named hello.txt in the current directory containing the single   │
+│ STAGES · inferred from activity  ││ ▎ word hello. Use the Write tool, then reply with the word done.                 │
+│ ✓ TURN 1                      4s ││                                                                                  │
+│   Create a file named hello.txt… ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Write                          ││                                                                                  │
+│                                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
+│ ◉ TURN 2 · running        9h 29m ││ ▎  ✓ Write  <probe-root>\probe-work\p2\hello.txt            02:00:09  observed   │
+│   Reply with the single word: a… ││ ▎  ✓ orchestrator · Write  …\p2\hello.txt    allowed by you 02:00:09  observed   │
+│   •─ ○ (more as events arrive)   ││                                                                                  │
+│                                  ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
+│                                  ││ │ RESULT  02:00                                                                │ │
+│                                  ││ │ done                                                                         │ │
+│ ──────────────────────────────── ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
+│ ✦ TELEMETRY        Enter details ││                                                                                  │
+│ ▾ SESSION USAGE                  ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││                                                                                  │
+│   Tokens 61.1k session total     ││ ▎ YOU  02:00                                                                     │
+│   Est. cost $0.00 API-equiv.     ││ ▎ Reply with the single word: again                                              │
+│                                  ││                                                                                  │
+│ ▾ QUOTA WINDOWS                  ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Session (5hr)             25%† ││                                                                                  │
+│   ████████░░░░░░░░░░░░░░░░░░░░░░ ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
+│   Resets in 14h 40m              ││ ▎ again▌                                                                         │
+│                                  ││                                                                                  │
+│   Weekly (7 day)            46%† ││                                                                                  │
+│   ██████████████░░░░░░░░░░░░░░░░ ││                                                                                  │
+│   Resets in 1d 20h               ││                                                                                  │
+│ ──────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────────────── │
+│ ⓘ quota updated 9h 29m ago       ││ >  Claude Code is processing your request…                                       │
+│   context derived from usage · … ││   turn running: the draft waits · Ctrl+C interrupt  1 line · Ctrl+G draft window │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                                                                    │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────── quota updated 9h 29m ago · † undocumented field ─╮
-│ 5h ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 25%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 46%†  resets Sat 08:00                      │
-│ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 3% of 1M (derived)   tokens 61.1k   +4 more │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

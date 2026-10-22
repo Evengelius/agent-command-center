@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-quota-windows.jsonl              Mock data 2.1.300 · approvals Manual
+ A ✓ Turn 2                                               (inferred)   F6: tree
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ A · ORCHESTRATOR                                                             │
+│ ✿ Claude Haiku 5.5                                               ✓ COMPLETED │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ STAGES · inferred from activity                                              │
+│   Agent · agent general-purpose                                              │
+│                                                                              │
+│ ✓ TURN 2                                                                  0s │
+│   started by the CLI                                                         │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ ✦ TELEMETRY                                                    Enter details │
+│ ▾ SESSION USAGE                                                              │
+│   Context 4% of 1M ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│   Tokens 159.4k · Cost $0.01                                                 │
+│ ▾ QUOTA WINDOWS                                                              │
+│   Session (5hr)  0%† · 4h 12m                                                │
+│   Weekly (7 day)  17%† · 5d 3h                                               │
+│   Fable limit  0%† · 5d 3h                                                   │
+│ ⓘ quota updated 0s ago · context derived from usage · † undocumented field … │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑↓ move · ←→ fold · Enter inspect or details · F6 zone · Esc back to the input

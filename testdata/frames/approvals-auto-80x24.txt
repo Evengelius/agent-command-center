@@ -2,6 +2,9 @@
  ▣ claude-subagent-approval.jsonl            Mock data 2.1.300 · approvals Auto
  A ✓ Turn 2                                               (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
+│ ▎  ✓ general-purpose · Bash   ls -p "<…  allowed by you 11:30:00      mock   │
+│ ▎  ✓ general-purpose · Write  …ound.txt  allowed by you 11:30:00      mock   │
+│ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens           11:30:00      mock   │
 │                                                                              │
 │ ╭──────────────────────────────────────────────────────────────────────────╮ │
 │ │ RESULT  11:30                                                            │ │
@@ -17,8 +20,5 @@
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
 │  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
-│ 5h ▰▰▱▱▱ 35%†   7d ▰▰▱▱▱ 47%†   ctx 4%   tok 159.4k   $0.01 est.   errors 0  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

@@ -194,17 +194,19 @@ func TestThinkingCardModeB(t *testing.T) {
 			t.Errorf("row %d %q, want %q … %q", c.row, r, c.prefix, c.tail)
 		}
 	}
-	// The bar: 80 cells and " 2k" in the card's 83. At 10,700 ms the fill
-	// still grows from 350 (the design's 300 ms): 350 + 300 × ease(0.3), 43
-	// half cells; from 10,910 ms, 650/2,000 of 80 cells, 26 cells exactly.
+	// The bar: 70 cells and " 2k" in the card's 73 (zone B is 84 columns at
+	// 120 since plan 24, A 36; it was 94, the bar 80 cells). At 10,700 ms
+	// the fill still grows from 350 (the design's 300 ms): 350 + 300 ×
+	// ease(0.3), 38 half cells; from 10,910 ms, 650/2,000 of 70 cells,
+	// 22.75 cells, 45 half cells.
 	w := bInner(120)
 	for _, c := range []struct {
 		ms, halves int
-	}{{10700, 43}, {10910, 52}, {11500, 52}} {
+	}{{10700, 38}, {10910, 45}, {11500, 45}} {
 		ui.Now = thinkAt(c.ms)
 		halves, _, cells, label, _ := barRead(bar(card(s, ui, w, 7)))
-		if halves != c.halves || cells != 80 || label != " 2k" {
-			t.Errorf("%d ms: %d half cells of %d, label %q; want %d of 80, \" 2k\"", c.ms, halves, cells, label, c.halves)
+		if halves != c.halves || cells != 70 || label != " 2k" {
+			t.Errorf("%d ms: %d half cells of %d, label %q; want %d of 70, \" 2k\"", c.ms, halves, cells, label, c.halves)
 		}
 	}
 }
@@ -1008,7 +1010,9 @@ func TestThinkingFoldKeepsCard(t *testing.T) {
 
 // TestThinkingSizes is criterion 2.14: seven, five and two rows by zone B's
 // room, none wider than the zone; drawn at 120x40, then the same instant at
-// 80x24, the frame is the 80x24 frame drawn at once.
+// 80x24, the frame is the 80x24 frame drawn at once. Since plan 24 zone B
+// has zone D's rows: at 80x24 its room is 12, the five-row card; the
+// two-row card comes with a room under 12, as cardSize is checked.
 func TestThinkingSizes(t *testing.T) {
 	for room, want := range map[int]int{43: 7, 25: 7, 20: 7, 19: 5, 15: 5, 12: 5, 11: 2, 9: 2} {
 		if got := cardSize(room); got != want {
@@ -1024,7 +1028,7 @@ func TestThinkingSizes(t *testing.T) {
 		{state.Thought{Start: thinkAt(7449), Inferred: true}, "a Codex step"},
 	} {
 		s := thinkBench(c.th)
-		for _, size := range []struct{ w, h, rows int }{{120, 40, 7}, {200, 60, 7}, {100, 30, 5}, {80, 24, 2}} {
+		for _, size := range []struct{ w, h, rows int }{{120, 40, 7}, {200, 60, 7}, {100, 30, 5}, {80, 24, 5}} {
 			ui := UI{Width: size.w, Height: size.h, Now: thinkAt(10700), Focus: "B"}
 			rows := zoneBText(s, ui)
 			got := len(boxIn(rows))

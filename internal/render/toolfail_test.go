@@ -130,8 +130,10 @@ func TestToolFailureRow(t *testing.T) {
 		t.Errorf("completed Bash row %q", texts([]line{l}))
 	}
 
-	// Criterion 5: the cursor on the failed row, in its margin since plan 19.
-	ui := UI{Width: 120, Height: 40, Focus: "B", ConvHold: true, ConvSeen: len(s.Conversation), Entry: 1}
+	// Criterion 5: the cursor on the failed row, in its margin since plan 19;
+	// at 140 columns, where B's row holds the error and the hint whole (B is
+	// 10 columns narrower at 120 since plan 24).
+	ui := UI{Width: 140, Height: 40, Focus: "B", ConvHold: true, ConvSeen: len(s.Conversation), Entry: 1}
 	sc = Draw(s, ui)
 	l, _ := rowOf(t, sc, "Bash")
 	txt := texts([]line{l})

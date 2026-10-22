@@ -27,7 +27,7 @@ The five parts of [architecture.md, The five parts](architecture.md#the-five-par
 | Part | A failure here | Cannot reach |
 | - | - | - |
 | 1. Execution and session | a spawn error, a closed pipe, a timeout: becomes a session event (`Crashed`, a refused command) | the screen directly; it reports through events |
-| 2. Event collection | a line that does not decode: becomes an `unrecognised` event with the parse error, counted in D | the state: it never applies anything itself |
+| 2. Event collection | a line that does not decode: becomes an `unrecognised` event with the parse error, counted in zone A's telemetry | the state: it never applies anything itself |
 | 3. Application state | a reducer bug: caught by the test plan; at runtime a panic is recovered, logged, and the terminal restored | the CLI: the reducer does no I/O |
 | 4. Rendering | a layout error: only the frame is wrong; the state is intact and the next frame redraws | the state or the CLI |
 | 5. Input and commands | a refused command (not ready, turn running): a visible notice, the draft kept | the CLI directly: commands go through part 1 |
@@ -78,7 +78,7 @@ not emitted by this CLI or version, not yet received, or malformed.
 | `retry` | not counted (both are **D**, not observed) | retries "N/A (none reported)" until one arrives |
 | `error` | the other error fields still count (TEL) | the counter |
 | `status.changed` | no compaction or MCP status shown | nothing extra |
-| `unrecognised` | never absent: anything unknown lands here | counted in D, listed in Raw events |
+| `unrecognised` | never absent: anything unknown lands here | counted in zone A's telemetry, listed in Raw events |
 
 ### Integration sources
 
@@ -165,17 +165,18 @@ reset shown N/A.
 | Way | Use | When unavailable |
 | - | - | - |
 | stream-json messages and control responses | primary | the session cannot start: StartFailed (see [When a whole integration fails](#when-a-whole-integration-fails)) |
-| `/usage` sent as a prompt | not used: the dashboard never sends it (CC-10 q9, closed as not depended on) | nothing lost: `rate_limit_event` is the quota source |
-| Status line JSON | not available to a `-p` session (CC-6) | nothing lost; its field names guide D |
+| `/usage` sent as a prompt | not used yet: the dashboard never sends it (CC-10 q9, closed as not depended on in plan 14); P24u (plan 24) showed it answered locally with no model call, its `usage_report` holding the session, weekly and model-scoped windows, and a read is proposed for a plan of its own | nothing lost today: `rate_limit_event` is the quota source; a model-scoped weekly limit ("Fable limit") is readable only there |
+| Status line JSON | not available to a `-p` session (CC-6) | nothing lost; its field names guide zone A's telemetry |
 | OpenTelemetry | not used: no quota metric, duplicates the stream | nothing lost |
 | Hooks | not used for telemetry | nothing lost |
 | Transcript files | not used for telemetry; last resort only, labelled undocumented | nothing lost |
 
 **Claude Code: values** (TEL CC, second table)
 
-| Value | Source | Fallback, and what D shows |
+| Value | Source | Fallback, and what zone A shows |
 | - | - | - |
 | 5-hour, 7-day quota | `rate_limit_event` (`unifiedWindows` **U**, marked †) | before the first event "N/A (no report yet)"; with an API key "N/A (API key: no subscription window)"; past the reset "N/A (window reset)"; without `unifiedWindows` but with `rateLimitType` and `status`: the status word ("allowed", "warning", "rejected") with no percentage |
+| Model-scoped weekly windows | `rate_limit_event`: a `unifiedWindows` key or a `rateLimitType` of the form `seven_day_<model>` (**U** for `unifiedWindows`, marked †; `seven_day_opus` and `seven_day_sonnet` are documented `rateLimitType` values: claude-code.md, section 7; TEL CC); metric `quota.7d.<model>` | shown as "<Model> limit" only once reported, never assumed from the model or the plan: no report, no row; past the reset "N/A (window reset)", as the quota row above |
 | Reset times | `resetsAt` | with the window |
 | Overage | `overageStatus` and related | "N/A (not reported)", shown apart from quota |
 | Model | `system/init`, per message | a subagent whose text is not forwarded: "model N/A" |
@@ -199,11 +200,11 @@ reset shown N/A.
 | Rollout files | not used; last resort, labelled undocumented | nothing lost |
 | OpenTelemetry | not used | nothing lost |
 | `notify`, hooks | rejected: they need a configuration change | nothing lost |
-| `account/usage/read` | not used: not a zone D value, not probed | nothing lost |
+| `account/usage/read` | not used: not a value of zone A's telemetry, not probed | nothing lost |
 
 **Codex: values** (TEL CX, second table)
 
-| Value | Source | Fallback, and what D shows |
+| Value | Source | Fallback, and what zone A shows |
 | - | - | - |
 | 5-hour, 7-day quota | `account/rateLimits/read` at startup, then pushes; windows by `windowDurationMins` | API key: "N/A (API key: ChatGPT sign-in needed)"; a plan with no 5-hour window: "N/A (plan has no 5-hour limit)"; a failed read: "N/A (read failed: <error>)" and the last pushed value with its age |
 | Reset times | `resetsAt` | with the window |
@@ -442,8 +443,8 @@ application starts plain `claude`, never `claude-jev`, and never sets
 
 - **Detection without reading any file**: Claude Code's `system/init` lists
   the loaded plugins (`plugins[].name`, observed in P1). If one is named
-  `jev-pilot`, D shows "JEV: active (plugin loaded)"; otherwise nothing. No
-  `claude plugin list` call, no read of `installed_plugins.json` or of
+  `jev-pilot`, zone A shows "JEV: active (plugin loaded)"; otherwise nothing.
+  No `claude plugin list` call, no read of `installed_plugins.json` or of
   `settings.json`'s `pluginConfigs` (a clone install keeps an API key there).
 - **What is shown when present**: the badge, and the models and efforts the
   CLI's own events report. Jev's decisions and confidences are "N/A": jev-pilot
@@ -468,9 +469,12 @@ provider):
   hand-written or produced from a probe recording by the real adapter's
   mapping, so that mock screens exercise the same parts 2 to 4.
   `claude-thinking.jsonl` (P12c-block) and `claude-thinking-subagent.jsonl`
-  (P303b) replay thinking phases as recorded (plan 22). Four files are
+  (P303b) replay thinking phases as recorded (plan 22). Five files are
   synthetic: a probe recording with documented replies put in, for a case
   no probe has (`TestMockFiles`, internal/provider/mock/files_test.go).
+  `claude-quota-windows.jsonl` is P3b with its `rate_limit_event`'s
+  `unifiedWindows` holding three windows, five_hour, seven_day and
+  seven_day_fable, at the values of the owner's image (plan 24).
   `codex-plan6-limits.jsonl` is P7 with plan 6's cases: each child's
   `spawnAgent` call, the first requesting a model and an effort; a long
   orchestrator answer in Markdown; a failed orchestrator command whose
@@ -520,7 +524,7 @@ are the numbered questions in section 10 of
 | Whether `get_context_usage` costs anything (CC-10 q10) | settled (P14a): answered in 914 ms with no `assistant` message, `result` or `rate_limit_event` after it |
 | Whether `set_model` and `set_permission_mode` write settings (CC-10 q11) | settled for `set_permission_mode` (P12c-switch, settings identical); `set_model` closed, never sent (model configuration is outside the MVP, amendment 4) |
 | Windows process handling: exit code 1 after stdin closes, `TerminateProcess` mid-turn, CRLF and UTF-8 through Go pipes (CC-10 q13) | settled: stdin closed exits 0 in 1.4 s, a job kill mid-turn ends in 41 ms with exit code 1 and resumes (plan 4, L1 (e), (g)); UTF-8 and CRLF byte for byte live (P14a) and by `TestEchoUnicode` (a fake CLI through the real pipes) |
-| The status line never runs under `-p` (CC-10 q14) | closed, not depended on: zone D reads the stream |
+| The status line never runs under `-p` (CC-10 q14) | closed, not depended on: zone A's telemetry reads the stream |
 | A raw client skipping `initialize`, and an allow without `updatedInput` (CC-10 q2, the untried part) | closed, not needed: the adapter always sends `initialize` and echoes `updatedInput` (P2, P3b); a fixture test keeps both in the adapter |
 | `CLAUDE_CODE_EMIT_SESSION_STATE_EVENTS` (events-and-state.md, `turn.started`) | settled: the adapter sets it unless the environment already does (`internal/provider/claude/session.go`), and the dashboard's live recording P13c carries `system/session_state_changed` `running` then `idle` (the probe drivers, which do not set it, recorded none) |
 | The `stdio` value of `--permission-prompt-tool` (**U**) keeps working | settled on each version used live, 2.1.300 (plan 4) to 2.1.303 (plans 13 and 14, the re-check of 2026-10-19): every `can_use_tool` reached the client; the recorded-fixture tests replay it |
@@ -535,7 +539,7 @@ are the numbered questions in section 10 of
 | Resume across app-server processes (CX-10 q4) | settled: P6b's thread resumed; live in plan 4 (L3, and L4 run 3 after a `taskkill` crash) |
 | `turn/steer` and a second `turn/start` mid-turn (CX-10 q5) | closed, not depended on: never sent; the state refuses sending while a turn runs (ASM-15) |
 | `item/tool/requestUserInput` (CX-10 q6) | closed, not depended on: off in Default mode; if it arrives it is answered -32601 and shown as unrecognised |
-| The context window before the first turn (CX-10 q7) | settled, not available before a model call: zone D reads "no model call yet" until `thread/tokenUsage/updated` |
+| The context window before the first turn (CX-10 q7) | settled, not available before a model call: zone A's session usage reads "N/A" with "no model call yet" until `thread/tokenUsage/updated` |
 | Shutdown mid-turn on Windows: orphaned shells, rollout state (CX-10 q8) | settled (plan 4, L3): a job kill mid-turn ends in 24 ms, all 9 processes gone; resume after a crash works (L4 run 3) |
 | `error.willRetry` behind the corporate proxy (CX-10 q9) | closed, not depended on: read when sent, never seen; "retries N/A (none reported)" meanwhile |
 | The rate-limit error text with an API key (CX-10 q10) | closed by the owner (plan 14, item 3); the fixture `codex-api-key.jsonl` covers the display |

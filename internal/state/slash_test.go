@@ -42,7 +42,7 @@ func TestSlashHeldOnCodex(t *testing.T) {
 	}
 	e := b.s.Conversation[0]
 	b.eq("role", e.Role, "dashboard")
-	b.eq("note", e.Text, "/status is a command of Codex's own terminal; it does not work here, so nothing was sent. Zone D shows the 5h and weekly limits.\nPress Enter again to send it to the model as a message.")
+	b.eq("note", e.Text, "/status is a command of Codex's own terminal; it does not work here, so nothing was sent. Zone A's quota windows show the 5h and weekly limits.\nPress Enter again to send it to the model as a message.")
 
 	b.do(Send{Text: "/status"}) // again: sent as a message
 	b.eq("second send", b.kinds(), string(CmdWrite))

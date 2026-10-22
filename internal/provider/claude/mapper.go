@@ -7,6 +7,7 @@ package claude
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -647,16 +648,49 @@ func (m *Mapper) rateLimit(raw []byte) []event.Event {
 	}
 	_ = json.Unmarshal(raw, &r)
 	var ms []event.Metric
-	names := map[string]string{"five_hour": "quota.5h", "seven_day": "quota.7d"}
-	for _, key := range []string{"five_hour", "seven_day"} {
-		if w, ok := r.Info.Windows[key]; ok {
-			ms = append(ms, event.Metric{Name: names[key], Value: w.Utilization * 100, Unit: "%", ResetsAt: unix(w.ResetsAt), Documented: false, Source: "rate_limit_event.unifiedWindows"})
+	// The windows in a fixed order: five_hour, seven_day, then the
+	// model-scoped weekly windows by name (plan 24, design D8).
+	keys := make([]string, 0, len(r.Info.Windows))
+	for key := range r.Info.Windows {
+		if _, ok := windowMetric(key); ok {
+			keys = append(keys, key)
 		}
 	}
-	if n, ok := names[r.Info.RateLimitType]; ok && len(ms) == 0 {
-		if r.Info.Utilization != nil {
+	sort.Slice(keys, func(i, j int) bool {
+		rank := func(k string) int {
+			switch k {
+			case "five_hour":
+				return 0
+			case "seven_day":
+				return 1
+			}
+			return 2
+		}
+		if a, b := rank(keys[i]), rank(keys[j]); a != b {
+			return a < b
+		}
+		return keys[i] < keys[j]
+	})
+	for _, key := range keys {
+		w := r.Info.Windows[key]
+		name, _ := windowMetric(key)
+		ms = append(ms, event.Metric{Name: name, Value: w.Utilization * 100, Unit: "%", ResetsAt: unix(w.ResetsAt), Documented: false, Source: "rate_limit_event.unifiedWindows"})
+	}
+	// The event's own window, documented: the one whose status changed. With
+	// a utilization it is recorded whenever unifiedWindows did not give it,
+	// so a model-scoped window (seven_day_<model>, which unifiedWindows has
+	// never carried: every probe holds five_hour and seven_day only; plan
+	// 24, the owner's live session of 2026-10-22) is kept when it comes.
+	if n, ok := windowMetric(r.Info.RateLimitType); ok {
+		seen := false
+		for _, m := range ms {
+			seen = seen || m.Name == n
+		}
+		switch {
+		case seen:
+		case r.Info.Utilization != nil:
 			ms = append(ms, event.Metric{Name: n, Value: *r.Info.Utilization * 100, Unit: "%", ResetsAt: unix(r.Info.ResetsAt), Documented: true, Source: "rate_limit_event"})
-		} else if r.Info.Status != "" {
+		case r.Info.Status != "" && len(ms) == 0:
 			// The status word alone, with no percentage (reliability.md,
 			// Telemetry sources: 5-hour, 7-day quota).
 			ms = append(ms, event.Metric{Name: n, Text: r.Info.Status, ResetsAt: unix(r.Info.ResetsAt), Documented: true, Source: "rate_limit_event.status"})
@@ -682,6 +716,29 @@ func unix(s int64) time.Time {
 		return time.Time{}
 	}
 	return time.Unix(s, 0).UTC()
+}
+
+// windowMetric names the metric of a rate-limit window: five_hour is
+// quota.5h, seven_day quota.7d, and a model-scoped weekly window,
+// seven_day_<model> (seven_day_opus and seven_day_sonnet are documented as
+// rateLimitType values; claude-code.md, section 7), quota.7d.<model>, shown
+// as "<Model> limit" (plan 24, design D8). Any other key is no window.
+func windowMetric(key string) (string, bool) {
+	switch {
+	case key == "five_hour":
+		return "quota.5h", true
+	case key == "seven_day":
+		return "quota.7d", true
+	case strings.HasPrefix(key, "seven_day_") && len(key) > len("seven_day_"):
+		m := strings.TrimPrefix(key, "seven_day_")
+		for _, c := range m {
+			if (c < 'a' || c > 'z') && (c < '0' || c > '9') {
+				return "", false
+			}
+		}
+		return "quota.7d." + m, true
+	}
+	return "", false
 }
 
 func (m *Mapper) result(raw []byte) []event.Event {

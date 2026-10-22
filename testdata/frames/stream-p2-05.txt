@@ -1,40 +1,40 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
-╭─ A · ORCHESTRATOR ─────╮╭─ B · CONVERSATION ───────────────────────────────────────────────────────── Interrupting… ─╮
-│ claude-haiku-5-5 · or… ││ ╰────────────────────────────────────────────────────────────────────────────────────────╯ │
-│ turn 3 · interrupting… ││                                                                                            │
-│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│ STAGES  inferred from… ││                                                                                            │
-│ TURN 1  ✓ completed ·… ││ ▎ YOU  02:00                                                                               │
-│ TURN 2  ✓ completed ·… ││ ▎ Reply with the single word: again                                                        │
-│ TURN 3  ◉ interruptin… ││                                                                                            │
-│   Count from 1 to 300… ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│   •─ ○ (more as event… ││                                                                                            │
-│                        ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                 │
-│                        ││ ▎ again                                                                                    │
-│                        ││                                                                                            │
-│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││                                                                                            │
-│                        ││ ▎ YOU  02:00                                                                               │
-│                        ││ ▎ Count from 1 to 300, one number per line, nothing else.                                  │
-│                        ││                                                                                            │
-│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││                                                                                            │
-│                        ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                 │
-│                        ││ ▎  ▸ ✓ Thought for 0.2s                                               02:00:12  observed   │
-│                        ││ ▎                                                                                          │
-│                        ││ ▎ 1▌                                                                                       │
-│                        ││                                                                                            │
-│                        ││ ────────────────────────────────────────────────────────────────────────────────────────── │
-│                        ││ > a draft                                                                                  │
-│                        ││       kept as typed                                                                        │
-│ ↑↓ move ←→ fold Enter… ││   interrupting…                                              2 lines · Ctrl+G draft window │
-╰────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────── Interrupting… ─╮
+│ A · ORCHESTRATOR                 ││                                                                                  │
+│ ✿ Haiku 5.5       ◉ INTERRUPTING ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
+│ ──────────────────────────────── ││ │ RESULT  02:00                                                                │ │
+│ STAGES · inferred from activity  ││ │ done                                                                         │ │
+│ ✓ TURN 1                      4s ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
+│   Create a file named hello.txt… ││                                                                                  │
+│   Write                          ││ ──────────────────────────────────────────────────────────────────────────────── │
+│                                  ││                                                                                  │
+│ ✓ TURN 2                      1s ││ ▎ YOU  02:00                                                                     │
+│   Reply with the single word: a… ││ ▎ Reply with the single word: again                                              │
+│                                  ││                                                                                  │
+│ ◉ TURN 3 · interrupting   9h 29m ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Count from 1 to 300, one numb… ││                                                                                  │
+│   •─ ○ (more as events arrive)   ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
+│ ──────────────────────────────── ││ ▎ again                                                                          │
+│ ✦ TELEMETRY        Enter details ││                                                                                  │
+│ ▾ SESSION USAGE                  ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││                                                                                  │
+│   Tokens 91.1k session total     ││ ▎ YOU  02:00                                                                     │
+│   Est. cost $0.00 API-equiv.     ││ ▎ Count from 1 to 300, one number per line, nothing else.                        │
+│                                  ││                                                                                  │
+│ ▾ QUOTA WINDOWS                  ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Session (5hr)             25%† ││                                                                                  │
+│   ████████░░░░░░░░░░░░░░░░░░░░░░ ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
+│   Resets in 14h 40m              ││ ▎  ▸ ✓ Thought for 0.2s                                     02:00:12  observed   │
+│                                  ││ ▎                                                                                │
+│   Weekly (7 day)            46%† ││ ▎ 1▌                                                                             │
+│   ██████████████░░░░░░░░░░░░░░░░ ││                                                                                  │
+│   Resets in 1d 20h               ││ ──────────────────────────────────────────────────────────────────────────────── │
+│ ──────────────────────────────── ││ > a draft                                                                        │
+│ ⓘ quota updated 9h 29m ago       ││       kept as typed                                                              │
+│   context derived from usage · … ││   interrupting…                                    2 lines · Ctrl+G draft window │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                                                                    │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ D · QUOTA & TELEMETRY ──────────────────────────────────────────── quota updated 9h 29m ago · † undocumented field ─╮
-│ 5h ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 25%†  resets Fri 02:10   7d ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ 46%†  resets Sat 08:00                      │
-│ overage rejected (org_level_disabled)   model claude-haiku-5-5   context 3% of 1M (derived)   tokens 91.1k   +4 more │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

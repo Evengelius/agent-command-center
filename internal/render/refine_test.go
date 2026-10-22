@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -14,59 +12,59 @@ import (
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
-// Plan 4, step 8, criterion 3: on every mock file at the three layouts, zone
-// D draws each value whole or not at all, "+N more" counts exactly the values
-// not drawn, and a missing cost reads "cost N/A", never "$ N/A".
-func TestZoneDWholeItems(t *testing.T) {
+// Plan 4, step 8, criterion 3, as plan 24 keeps it: on every mock file at
+// four layouts, zone A's telemetry pane draws each quota window's label,
+// its value and its bar whole, never cut; a missing cost reads "N/A",
+// never "$ N/A"; no "▰" of zone D's bars remains.
+func TestTelemetryWholeItems(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join("..", "..", "testdata", "mock", "*.jsonl"))
 	if err != nil || len(files) == 0 {
 		t.Fatalf("mock files: %v %v", files, err)
 	}
-	more := regexp.MustCompile(`\+(\d+) more`)
 	for _, f := range files {
 		evs, err := mock.Load(f)
 		if err != nil {
 			t.Fatal(err)
 		}
 		s, now := mockState(f, evs)
-		for _, size := range [][4]int{{80, 24, 1, 3}, {120, 40, 2, 4}, {200, 60, 3, 6}} {
-			w, h, rows, dh := size[0], size[1], size[2], size[3]
+		for _, size := range [][2]int{{100, 30}, {120, 40}, {156, 44}, {200, 60}} {
+			w, h := size[0], size[1]
 			t.Run(fmt.Sprintf("%s/%dx%d", filepath.Base(f), w, h), func(t *testing.T) {
 				ui := UI{Width: w, Height: h, Now: now, Focus: "B"}
 				frame := strings.Split(texts(Draw(s, ui).lines), "\n")
-				// zone D: its dh lines just above the key hints
+				aw := zoneAWidth(w)
 				var body []string
-				for _, l := range frame[h-dh : h-2] {
+				for _, l := range frame[3:] {
 					r := []rune(l)
-					body = append(body, string(r[2:len(r)-2]))
-				}
-				all := strings.Join(body, "\n")
-				missing := 0
-				for _, g := range dItems(s, ui, rows) {
-					for _, it := range g {
-						txt := strings.TrimSuffix(texts([]line{it}), "\n")
-						if !strings.Contains(all, txt) {
-							missing++
-							if len([]rune(txt)) > w-4 {
-								t.Errorf("item %q is wider than the zone", txt)
-							}
-						}
+					if len(r) == 0 || r[0] == '╰' {
+						break // zone A's bottom edge
+					}
+					if len(r) >= aw && r[0] == '│' {
+						body = append(body, strings.TrimRight(string(r[2:aw-2]), " "))
 					}
 				}
-				n := 0
-				if m := more.FindStringSubmatch(all); m != nil {
-					n, _ = strconv.Atoi(m[1])
+				all := strings.Join(body, "\n")
+				// The label and the value on one row, whole: at the row's end,
+				// or before the tight form's countdown.
+				for _, q := range windows(s, ui) {
+					value := strings.TrimSuffix(texts([]line{q.right()}), "\n")
+					found := false
+					for _, l := range body {
+						found = found || strings.Contains(l, q.label) && (strings.HasSuffix(l, value) || strings.Contains(l, value+" · "))
+					}
+					if !found {
+						t.Errorf("no row with %q and %q:\n%s", q.label, value, all)
+					}
 				}
-				if n != missing {
-					t.Errorf("%d values not drawn, the zone says +%d:\n%s", missing, n, all)
+				for _, l := range body {
+					if (strings.Contains(l, "█") || strings.Contains(l, "░")) && strings.Contains(l, "…") {
+						t.Errorf("a bar's row cut: %q", l)
+					}
 				}
-				if strings.Contains(all, "…") {
-					t.Errorf("a value cut:\n%s", all)
+				if strings.Contains(all, "$ N/A") || strings.Contains(all, "▰") || strings.Contains(all, "▱") {
+					t.Errorf("$ N/A or zone D's bar glyphs shown:\n%s", all)
 				}
-				if strings.Contains(all, "$ N/A") {
-					t.Errorf("$ N/A shown:\n%s", all)
-				}
-				if os.Getenv("ZONED_SHOW") != "" {
+				if os.Getenv("ZONEA_SHOW") != "" {
 					t.Logf("\n%s", all)
 				}
 			})

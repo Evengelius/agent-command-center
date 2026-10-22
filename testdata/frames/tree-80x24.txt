@@ -1,24 +1,24 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
  ▣ codex-subagents.jsonl                   Mock data 0.145.0 · approvals Manual
  A ✓ Turn 1 › ✓ /root/list_files › ✓ /root/create_found   (inferred)   F6: tree
-╭─ A · ORCHESTRATOR ───────────────────────────────────────────────────────────╮
-│ gpt-5.6-sol · orchestrator                                                   │
-│ turn 1 · completed                                                           │
-│                                                                              │
-│ STAGES  inferred from activity                                               │
-│ TURN 1  ✓ completed · 0s                                                     │
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ A · ORCHESTRATOR                                                             │
+│ ◆ GPT-5.6-sol                                                    ✓ COMPLETED │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ STAGES · inferred from activity                                              │
 │   Spawn two subagents in parallel. The first lists the files in the current… │
 │   ├─ ✓ child  /root/list_files                                          mock │
 │   ├─ ✓ child  /root/create_found                                        mock │
 │   ├─ ✓ collabAgent:wait                                                 mock │
 │   └─ ✓ collabAgent:wait                                                 mock │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│                                                                              │
-│ ↑↓ move ←→ fold Enter inspect                                                │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ ✦ TELEMETRY                                                    Enter details │
+│ ▾ SESSION USAGE                                                              │
+│   Context 6% of 258.4k ███░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│   Tokens 184.3k · Cost N/A                                                   │
+│ ▾ QUOTA WINDOWS                                                              │
+│   Session (5hr)  1% · 15h 13m                                                │
+│   Weekly (7 day)  1% · 6d 23h                                                │
+│ ⓘ quota updated 0s ago · tokens summed over threads · plan plus · credits n… │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ D ─────────────────────────────────────────────────── † undocumented field ─╮
-│ 5h ▱▱▱▱▱ 1%   7d ▱▱▱▱▱ 1%   ctx 6%   tok 184.3k   cost N/A   errors 0        │
-╰──────────────────────────────────────────────────────────────────────────────╯
- ↑↓ move · ←→ fold · Enter inspect · F6 zone · Esc back to the input
+ ↑↓ move · ←→ fold · Enter inspect or details · F6 zone · Esc back to the input

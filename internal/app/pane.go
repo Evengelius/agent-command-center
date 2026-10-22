@@ -100,22 +100,28 @@ func (m *Model) paneKey(p byte, key string) bool {
 }
 
 // paneReveal keeps id in held pane p's view, moving it no more than needed; a
-// pane at rest keeps its cursor in view itself.
+// pane at rest keeps its cursor in view itself. A node of several rows, a
+// folded stage's block (plan 24), is shown whole: its first row down, its
+// last row up.
 func (m *Model) paneReveal(p byte, id string) {
 	ui, v := m.pane(p)
 	if ui == nil || !ui.Hold || v.Room <= 0 {
 		return
 	}
-	i := slices.Index(v.IDs, id)
-	if i < 0 {
+	first := slices.Index(v.IDs, id)
+	if first < 0 {
 		return
+	}
+	last := first
+	for last+1 < len(v.IDs) && v.IDs[last+1] == id {
+		last++
 	}
 	top := min(max(ui.Top, 0), max(v.Rows-v.Room, 0))
 	switch {
-	case i < top:
-		m.paneAt(p, i)
-	case i >= top+v.Room:
-		m.paneAt(p, i-v.Room+1)
+	case first < top:
+		m.paneAt(p, first)
+	case last >= top+v.Room:
+		m.paneAt(p, last-v.Room+1)
 	}
 }
 

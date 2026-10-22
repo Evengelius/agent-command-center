@@ -572,7 +572,7 @@ from Anthropic's servers, the second is a client-side estimate at list price
 
 | Value | Source | Status | Notes |
 | - | - | - | - |
-| 5-hour quota | (1) `rate_limit_event.rate_limit_info` with `rateLimitType: "five_hour"`, `utilization` 0-1, `status` allowed/allowed_warning/rejected; (2) `/usage` sent as a prompt: `assistant.usage_report.rate_limits.limits[]` rows `{kind: "session", percent, resets_at, severity, is_active}`; (3) status line `rate_limits.five_hour.used_percentage` (TUI only) | (1) documented: doc `agent-sdk/python` (`RateLimitInfo`, `rate_limit_type`), doc `agent-sdk/typescript#sdkratelimitevent` (without the type field); (2) documented, experimental: doc `agent-sdk/typescript#sdkusagereport`; (3) doc `statusline#available-data` | (1) emitted "whenever the rate limit status transitions" (PY `types.py:1780-1788` docstring), so it may not arrive every turn; (2) needs a claude.ai credential with a known plan or `user:profile` scope and no usage-based billing; the usage endpoint can itself be rate-limited (doc `costs#when-the-usage-request-fails`). Show "N/A" until one arrives |
+| 5-hour quota | (1) `rate_limit_event.rate_limit_info` with `rateLimitType: "five_hour"`, `utilization` 0-1, `status` allowed/allowed_warning/rejected; (2) `/usage` sent as a prompt: `assistant.usage_report.rate_limits.limits[]` rows `{kind: "session", percent, resets_at, severity, is_active}`; (3) status line `rate_limits.five_hour.used_percentage` (TUI only) | (1) documented: doc `agent-sdk/python` (`RateLimitInfo`, `rate_limit_type`), doc `agent-sdk/typescript#sdkratelimitevent` (without the type field); (2) documented, experimental: doc `agent-sdk/typescript#sdkusagereport`; (3) doc `statusline#available-data` | (1) emitted "whenever the rate limit status transitions" (PY `types.py:1780-1788` docstring), so it may not arrive every turn; (2) needs a claude.ai credential with a known plan or `user:profile` scope and no usage-based billing; the usage endpoint can itself be rate-limited (doc `costs#when-the-usage-request-fails`). Show "N/A" until one arrives; P24u (plan 24): over stream-json "/usage" is answered locally, no model call, the `usage_report` rows `{kind, group, percent, resets_at, scope, severity, is_active}` for `session`, `weekly_all` and `weekly_scoped` (`scope.model.display_name` "Fable") |
 | 7-day quota | Same three sources: `rateLimitType` `seven_day`, `seven_day_opus`, `seven_day_sonnet`; `usage_report` rows `weekly_all`, `weekly_scoped` (with `scope.model`); status line `rate_limits.seven_day` | As above | Classify rows on `kind`, never on labels (doc `#sdkusagereport`) |
 | Reset times | `rate_limit_info.resetsAt` (Unix s); `usage_report ... resets_at` (ISO 8601); status line `resets_at` (Unix s) | Documented | Drop a window after its reset passes, as Claude Code does |
 | Overage / usage credits | `rate_limit_info.overageStatus`, `overageResetsAt`, `overageDisabledReason`; `usage_report.rate_limits.extra_usage` | Documented (Python ref; TS `#sdkusagereport`) | Keep separate from plan quota |
@@ -746,10 +746,18 @@ Closed, the dashboard does not depend on the answer:
 7. **Workflows under `-p`.** The dashboard starts none; if Claude Code runs
    one, its `local_workflow` task maps to the agent type "workflow" in zone C
    (`internal/provider/claude/mapper.go`), like any other task.
-9. **`/usage` over stream-json.** The dashboard never sends it; zone D's quota
-   comes from `rate_limit_event` (item 8) and its context from
+9. **`/usage` over stream-json.** The dashboard does not send it yet; its
+   quota comes from `rate_limit_event` (item 8) and its context from
    `get_context_usage` (item 10). A `/usage` the owner types is an ordinary
    message, shown as Claude Code answers it (plan 4, the owner's live run).
+   P24u (plan 24, 2026-10-22) sent one as a probe: Claude Code answers it
+   locally in 2.2 s with no model call (`result` `num_turns` 0, cost 0), an
+   `assistant` message whose `usage_report.rate_limits.limits[]` holds the
+   `session`, `weekly_all` and `weekly_scoped` rows (`scope.model.display_name`
+   "Fable"), each with `percent`, `resets_at` and `is_active`; the
+   dashboard's `rate_limit_event`s never carried a model-scoped window. A
+   read at session start and after each turn, kept out of the conversation,
+   is proposed for a plan of its own (doc/plan24-evaluation.md).
 14. **Status line under `-p`.** Zone D reads the stream (items 8 and 10), not
     the status line, whether or not it runs.
 

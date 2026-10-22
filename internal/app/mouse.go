@@ -141,6 +141,27 @@ func (m *Model) press(mo tea.Mouse) {
 			return
 		}
 	}
+	// A click on a row of zone A with a node puts the cursor on it; on
+	// TELEMETRY it opens the details, on a section's heading it folds or
+	// unfolds the section (plan 24, design D6).
+	if id, ok := m.screen.ARows[mo.Y]; p == 'A' && ok && m.click.n == 1 {
+		m.ui.ACursor = id
+		switch id {
+		case render.NodeTelemetry:
+			m.openDetails()
+		case render.NodeUsage, render.NodeQuota:
+			if m.ui.Fold == nil {
+				m.ui.Fold = map[string]bool{}
+			}
+			m.ui.Fold[id] = !m.ui.Fold[id]
+		default:
+			break // a tree node: the cursor moved; the click may start a selection
+		}
+		if render.IsTelemetryNode(id) {
+			m.ui.Sel = render.Selection{}
+			return
+		}
+	}
 
 	start, end, ok := m.screen.HitIn(p, mo.X, mo.Y, false)
 	if !ok {

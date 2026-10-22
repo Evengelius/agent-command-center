@@ -2967,3 +2967,741 @@ cd to the project in terminal
 acc
 it opens it automatically with my desired size automatically.
 ````
+
+## Amendment 22, 2026-10-22: zone A redesigned with the telemetry, zone D removed, for plan 24
+
+The owner's request, word for word, after plan 23 was approved. It came
+with one image, "the final approved design", a drawing of the dashboard's
+upper part: zone A, about 59 columns wide, beside the start of zone B,
+zone C's first rows under both. The image is kept as
+`references/03-zone-a-telemetry.webp` (1312x1199) and described in
+[reference-design.md](reference-design.md#zone-a-with-the-telemetry).
+
+````text
+# Agent Command Center — Strict Zone A Redesign & Telemetry Integration
+
+## Mission
+
+The attached image represents the **final approved design** for the next Agent Command Center UI improvement.
+
+Your task is to reproduce this design as faithfully as technically possible in the actual Windows Terminal application.
+
+This is not a conceptual redesign request. It is a **strict design-conformance implementation task**.
+
+The main objective is to:
+
+1. Redesign Zone A according to the attached reference.
+2. Move all Zone D telemetry information into Zone A.
+3. Remove Zone D as a separate dashboard panel.
+4. Preserve the existing telemetry functionality and detailed telemetry view.
+5. Implement the approved usage, quota, and subscription-aware presentation.
+6. Preserve Zones B and C, including their already completed improvements.
+
+**The attached image is the authoritative visual design reference. Do not treat it as optional inspiration.**
+
+---
+
+## 1. Mandatory Dashboard Architecture
+
+The resulting application must have three main zones rather than four.
+
+### Required layout
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│ AGENT COMMAND CENTER · SESSION HEADER                    │
+├──────────────────────┬───────────────────────────────────┤
+│ A · ORCHESTRATOR     │ B · CONVERSATION                  │
+│                      │                                   │
+│ Model + Status       │ User / Assistant Messages         │
+│                      │                                   │
+│ STAGES               │ Thinking / Tools / Approvals      │
+│ Turn hierarchy       │                                   │
+│ Observed activities  │ Conversation Results              │
+│                      │                                   │
+│ ───────────────────  │                                   │
+│ TELEMETRY            │                                   │
+│                      │                                   │
+│ SESSION USAGE        │                                   │
+│ Context / Tokens     │                                   │
+│ Estimated Cost       │                                   │
+│                      │                                   │
+│ QUOTA WINDOWS        │                                   │
+│ Session (5hr)        │                                   │
+│ Weekly (7 days)      │                                   │
+│ Fable limit          │                                   │
+│                      │                                   │
+│ Notes / Caveats      │ Input Editor                      │
+├──────────────────────┴───────────────────────────────────┤
+│ C · LIVE AGENTS                                          │
+│ Full-width adaptive agent monitoring                     │
+├──────────────────────────────────────────────────────────┤
+│ GLOBAL KEYBOARD SHORTCUTS                                │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Non-negotiable layout rules
+
+- Zone A and Zone B remain side by side.
+- Their top and bottom boundaries must align.
+- Zone A contains both orchestration and telemetry.
+- Zone C remains full width beneath A and B.
+- The former Zone D panel must disappear entirely from the dashboard.
+- The global keyboard shortcut footer remains at the bottom.
+- Do not create a replacement fourth panel elsewhere.
+
+Follow the attached reference for overall proportions and spacing. Adapt them to terminal dimensions using the existing responsive layout system rather than hardcoded screenshot coordinates.
+
+Zone B must retain sufficient width for readable conversations.
+
+---
+
+# 2. Zone A — Orchestrator Header
+
+Reproduce the attached design's header hierarchy.
+
+### First row
+
+Display only the section heading:
+
+**A · ORCHESTRATOR**
+
+Use the approved lavender/purple title treatment.
+
+### Second row
+
+Display the actual orchestrator model on the left and its dynamic status on the right.
+
+Example:
+
+```text
+A · ORCHESTRATOR
+
+✿ Claude Opus 5.5                 ✓ COMPLETED
+```
+
+**Critical alignment requirement: The status must be horizontally aligned with the model name, NOT with the `A · ORCHESTRATOR` heading.**
+
+The model name and status must share the same visual row.
+
+Use flexible spacing so the status remains right-aligned within Zone A.
+
+### Model identification
+
+- Display the actual provider and orchestrator model.
+- Do not hardcode `Claude Opus 5.5`.
+- Support Claude Code and OpenAI Codex.
+- Adapt the model name when the active model changes.
+- Use a small, terminal-compatible icon where appropriate.
+
+### Dynamic status
+
+The status must reflect the actual orchestrator lifecycle.
+
+Supported visual states include:
+
+| Status | Presentation |
+|---|---|
+| IDLE | Muted gray |
+| THINKING | Lavender / blue |
+| RUNNING | Green or blue activity indicator |
+| WAITING | Amber or magenta depending on the reason |
+| COMPLETED | Green with completion icon |
+| FAILED | Red |
+| INTERRUPTED | Distinct neutral or warning treatment |
+
+These states are illustrative categories; map them to the application's existing authoritative state model.
+
+Do not introduce contradictory lifecycle definitions.
+
+If the orchestrator turn has finished but asynchronous subagents are still working, the displayed status must not incorrectly imply the entire operation has completed.
+
+Avoid guessing activity from transcript text.
+
+---
+
+# 3. STAGES — Improved Visual Hierarchy
+
+Below the model/status row, place a subtle horizontal divider.
+
+Then display:
+
+**STAGES · inferred from activity**
+
+Retain the phrase `inferred from activity` when the application reconstructs execution stages rather than receiving an authoritative workflow definition.
+
+### Required presentation
+
+Follow the attached template:
+
+```text
+STAGES · inferred from activity
+
+✓ TURN 1                         16s
+  Agent launched
+  Bash · Write · Results
+
+✓ TURN 2                         10s
+  Started by CLI · report completed
+
+✓ TURN 3                       1m 23s
+  Agent general-purpose
+  Write · Read · Results
+```
+
+### Visual rules
+
+- Turn labels must be easily distinguishable.
+- Status icons must reflect actual events.
+- Durations should be aligned to the right.
+- Supporting activities must be indented beneath their parent turn.
+- Selected turns must use the approved subtle blue/lavender background highlight.
+- Use restrained spacing to distinguish turn groups.
+- Preserve the existing orchestration tree structure and relationships.
+
+### Functionality
+
+Preserve:
+
+- Keyboard navigation.
+- Turn selection.
+- Tree folding and unfolding.
+- Inspection.
+- Observed tool activity.
+- Subagent relationships.
+- Accurate lifecycle status.
+
+Do not replace the actual execution tree with static summary text.
+
+The screenshot illustrates the presentation; the underlying data must remain dynamic.
+
+---
+
+# 4. TELEMETRY — Integrated into Zone A
+
+Below STAGES, introduce another horizontal separator.
+
+Then display:
+
+**TELEMETRY**
+
+This replaces the old standalone Zone D presentation.
+
+All existing telemetry functionality must remain available.
+
+### Required internal hierarchy
+
+```text
+TELEMETRY
+
+▾ SESSION USAGE
+   Context | Tokens | Estimated Cost
+
+▾ QUOTA WINDOWS
+   Session (5hr)
+   Weekly (7 days)
+   Fable limit
+
+   Notes / Caveats
+```
+
+Reproduce the attached template's grouping, indentation, typography, separators, and color language.
+
+Do not mix unrelated telemetry values into one dense line.
+
+---
+
+# 5. SESSION USAGE — Mandatory Section
+
+This section was missing from an earlier design iteration and must be included.
+
+Display **three clearly separated metrics**.
+
+### Required arrangement
+
+```text
+▾ SESSION USAGE
+
+CONTEXT          TOKENS          EST. COST
+
+5% of 1M         314.8k          $0.59
+████░░░░░░       session total    API-equivalent
+```
+
+The values above are illustrative.
+
+### Context
+
+Display:
+
+- Current context utilization.
+- Actual context-window size when reliably known.
+- A small lavender progress bar.
+
+The percentage must represent real context utilization based on a supported measurement or correctly labeled derivation.
+
+Do not confuse total session tokens with current context-window occupancy.
+
+### Tokens
+
+Display:
+
+- Total token usage for the relevant session.
+- Compact formatting, such as `314.8k`.
+- A meaningful scope label, such as `session total`.
+
+Preserve the existing accounting semantics and distinguish cumulative totals from per-turn usage.
+
+### Estimated cost
+
+Display:
+
+- Estimated monetary cost when available.
+- The appropriate currency.
+- A label such as `API-equivalent`.
+
+**Do not present API-equivalent estimates as the amount actually charged to a subscription user.**
+
+### Visual styling
+
+- Three compact columns.
+- Subtle vertical separators.
+- Clear labels.
+- Values more prominent than supporting text.
+- Purple/lavender for the context-progress bar.
+- No excessive backgrounds or oversized cards.
+
+At narrow terminal widths, use a readable compact arrangement rather than truncating important values.
+
+---
+
+# 6. QUOTA WINDOWS — Dynamic, Subscription-Aware
+
+This section must reproduce the revised quota design.
+
+### Approved visual structure
+
+```text
+▾ QUOTA WINDOWS
+
+Session (5hr)                          0%
+████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+Resets in 4h 12m
+
+Weekly (7 days)                       17%
+██████░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+Resets in 5d 3h
+
+Fable limit                            0%
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+Resets in 5d 3h
+```
+
+The percentages, reset times, and filled-bar lengths are illustrative. The actual UI must use available provider data.
+
+## 6.1 Color consistency
+
+**Use lavender/purple for all normal quota progress bars.**
+
+Do not introduce orange simply to distinguish weekly usage.
+
+Use the existing application palette consistently.
+
+Warning colors should be reserved for meaningful warning states, not ordinary quota measurements.
+
+## 6.2 Subscription awareness
+
+The displayed quota categories must depend on what the active provider actually reports.
+
+For my current Claude Max 20× subscription, the reference includes:
+
+- Session (5hr).
+- Weekly (7 days).
+- Fable limit.
+
+**Fable limit must be supported when available, but must not be hardcoded as a universal quota for every Claude or Codex account.**
+
+When the active provider changes, show the relevant quota categories supported by that provider.
+
+Do not infer a subscription tier solely from model selection.
+
+Do not fabricate quota categories or limits when they are not exposed by the provider.
+
+## 6.3 Dynamic percentages
+
+When reliable quota updates arrive:
+
+- Update the displayed percentage.
+- Update the filled portion of the corresponding progress bar.
+- Preserve consistent formatting.
+- Prevent invalid negative or greater-than-100% visual fill.
+- Do not double-count usage.
+- Keep the last reliable measurement identifiable if it becomes stale.
+
+If a quota value is unavailable, display an explicit unavailable state rather than inventing zero usage.
+
+## 6.4 Dynamic reset countdowns
+
+This functionality is mandatory.
+
+Display human-readable countdowns such as:
+
+- `Resets in 3h 42m`
+- `Resets in 5d`
+- `Resets in 5d 3h`
+
+The countdown must update over time.
+
+Use the actual provider-reported reset timestamp where available.
+
+### Technical requirements
+
+- Calculate remaining time from the authoritative reset timestamp.
+- Update the displayed countdown at an appropriate cadence.
+- Do not repeatedly query the provider merely to decrement the timer.
+- Avoid excessive redraws.
+- Handle stale timestamps.
+- Handle session resumption.
+- Handle a quota reset.
+- Handle unavailable reset information.
+- Avoid negative countdowns.
+
+When the reset time is unknown, use a truthful fallback such as `Reset time unavailable`.
+
+Do not infer reset timestamps from the nominal duration of a quota window.
+
+---
+
+# 7. Notes, Caveats and Data Accuracy
+
+Beneath the quota windows, provide a compact notes/caveats area.
+
+Follow the attached design's muted informational treatment.
+
+Examples of information that may be relevant:
+
+- Provider-reported versus derived context usage.
+- Estimated cost.
+- Unavailable quota metrics.
+- Stale usage information.
+- Unsupported or undocumented telemetry fields.
+- Overage or account limitations.
+
+Do not hardcode these warnings.
+
+Only display information supported by the current telemetry state.
+
+Avoid overwhelming Zone A with long diagnostic messages.
+
+Use concise summaries with access to detailed information through the existing telemetry-details interface.
+
+**Unknown is not zero. Estimated is not measured. Subscription cost is not API-equivalent cost.**
+
+Preserve these distinctions throughout the implementation.
+
+---
+
+# 8. Preserve the Existing Telemetry Details View
+
+This requirement is critical.
+
+Previously, selecting or clicking Zone D opened the telemetry details page.
+
+After removing Zone D, that functionality must remain available.
+
+### Required behavior
+
+- The telemetry details page must still be accessible from Zone A.
+- Make the TELEMETRY section an appropriate navigation/interaction target.
+- Preserve keyboard accessibility.
+- Preserve mouse interaction where supported.
+- Maintain the existing focus and return behavior.
+- Update the global help or shortcut descriptions if the previous Zone D navigation is no longer valid.
+
+**Do not redesign the telemetry details page as part of this task.**
+
+Its existing layout and functionality should remain unchanged unless a minimal compatibility adjustment is required by the new navigation.
+
+Do not silently remove telemetry functionality while removing its old dashboard panel.
+
+---
+
+# 9. Vertical Space and Scrolling
+
+Zone A now contains more information than before.
+
+This must be handled carefully.
+
+### Requirements
+
+- STAGES and TELEMETRY must coexist within Zone A.
+- Zone A and Zone B retain aligned outer boundaries.
+- Zone C remains beneath them at full width.
+- Telemetry must not overwrite the orchestration tree.
+- Long stage histories must not make telemetry permanently inaccessible.
+- Long telemetry information must not destroy the tree's usable space.
+- Keyboard focus and selection must remain predictable.
+
+Use appropriate scrolling, folding, and viewport management.
+
+The `SESSION USAGE` and `QUOTA WINDOWS` sections may be collapsible as shown in the design, provided the behavior is coherent and fully functional.
+
+Preserve meaningful scroll positions during updates.
+
+Do not scroll Zone A unexpectedly merely because a quota countdown changed.
+
+---
+
+# 10. Preserve Zones B and C
+
+Zones B and C have already undergone significant design improvements.
+
+Do not redesign them during this task.
+
+### Zone B
+
+Preserve:
+
+- Approved conversation styling.
+- User/assistant headers.
+- Vertical accent bars.
+- Horizontal message separators.
+- Tool grouping.
+- Approval cards.
+- Completed results.
+- Thinking and reasoning indicators.
+- Live token animations.
+- Existing scrolling and input behavior.
+
+### Zone C
+
+Preserve:
+
+- Full-width placement beneath Zones A and B.
+- Adaptive height.
+- Current-turn agent monitoring.
+- Completed-agent visibility.
+- Agent inspection.
+- Existing lifecycle behavior.
+
+Zone C must remain expanded after agents finish and return to compact presentation only when a new user prompt is submitted, as previously agreed.
+
+### Global layout
+
+Do not reintroduce Zone D.
+
+The final dashboard must contain only Zones A, B, and C, plus the session header and global footer.
+
+---
+
+# 11. Performance Requirements
+
+The new telemetry integration must not cause unnecessary rendering work.
+
+In particular:
+
+- Updating reset countdowns must not redraw unrelated conversation content.
+- Updating quota percentages must not reset scrolling.
+- Telemetry changes must not interrupt typing.
+- Collapsing/expanding sections must preserve input focus.
+- Zone A updates must coexist with agent activity and thinking animations.
+
+Reuse the application's existing rendering optimization and caching infrastructure where appropriate.
+
+Maintain the project's established performance acceptance criteria.
+
+---
+
+# 12. Mandatory Verification
+
+Verify the implementation using deterministic tests, recorded fixtures, and actual Windows Terminal rendering.
+
+### Layout tests
+
+Verify:
+
+1. Zone D no longer appears as a separate panel.
+2. Zone A contains both STAGES and TELEMETRY.
+3. Zone A and B boundaries remain aligned.
+4. Zone C remains full width.
+5. Layout works at different terminal sizes.
+6. Scrolling and focus remain functional.
+
+### Orchestrator tests
+
+Verify:
+
+1. Model name is derived from the active provider.
+2. Dynamic status is aligned with the model row.
+3. Status reflects authoritative lifecycle events.
+4. Subagent activity does not produce misleading completion states.
+5. Stages remain navigable and inspectable.
+
+### Telemetry tests
+
+Verify:
+
+1. Session context usage is accurate or correctly labeled.
+2. Token totals preserve their intended scope.
+3. Cost estimates are not represented as subscription charges.
+4. Session, weekly, and Fable quota categories are shown only when supported.
+5. Percentages update correctly.
+6. Progress bars reflect measured values.
+7. Reset countdowns update dynamically.
+8. Unavailable information is never silently represented as zero.
+9. Provider switching does not retain incorrect quota labels.
+10. Telemetry details remain accessible.
+
+### Regression tests
+
+Verify no regression in:
+
+- Claude Code integration.
+- Codex integration.
+- Streaming responses.
+- Thinking animations.
+- Tool activity.
+- Approval handling.
+- Agent monitoring.
+- Terminal keyboard interaction.
+- Mouse interaction.
+- Scrolling.
+- Rendering performance.
+
+Run the existing build, formatting, vetting, and test procedures.
+
+Do not weaken tests simply to obtain PASS.
+
+---
+
+# 13. Required Visual Evidence
+
+**The attached screenshot is the visual acceptance reference.**
+
+Capture actual Windows Terminal screenshots of the implemented application.
+
+At minimum, provide:
+
+### Screenshot A — Completed session
+
+Show:
+
+- Orchestrator title.
+- Model and right-aligned COMPLETED status.
+- Stages.
+- Session Usage.
+- Three quota windows where supported.
+- Dynamic reset countdowns.
+- Full-width Zone C.
+- No Zone D.
+
+### Screenshot B — Active execution
+
+Show:
+
+- RUNNING or THINKING status aligned with the model.
+- Active stages.
+- Telemetry visible.
+- Conversation activity.
+- Agent monitoring.
+
+### Screenshot C — Telemetry details navigation
+
+Demonstrate that the existing details view remains accessible through Zone A.
+
+### Screenshot D — Different terminal size
+
+Show that resizing preserves the approved hierarchy without overlapping or unreadable sections.
+
+Review actual ANSI colors, panel borders, text alignment, and visual spacing.
+
+Do not merely regenerate golden frames and consider the design verified.
+
+---
+
+# 14. Strict Conformance Review
+
+Before reporting completion, evaluate every requirement.
+
+| Requirement | Verdict |
+|---|---|
+| Zone D removed from dashboard | PASS / FAIL |
+| Telemetry integrated into Zone A | PASS / FAIL |
+| Orchestrator header alignment | PASS / FAIL |
+| Dynamic orchestrator status | PASS / FAIL |
+| Stage hierarchy | PASS / FAIL |
+| Session Usage layout | PASS / FAIL |
+| Context progress bar | PASS / FAIL |
+| Token and cost presentation | PASS / FAIL |
+| Three quota categories when available | PASS / FAIL |
+| Subscription-aware telemetry | PASS / FAIL |
+| Purple/lavender quota bars | PASS / FAIL |
+| Dynamic reset countdowns | PASS / FAIL |
+| Accurate data/unavailable-state handling | PASS / FAIL |
+| Notes and caveats | PASS / FAIL |
+| Existing telemetry details preserved | PASS / FAIL |
+| Keyboard/mouse navigation | PASS / FAIL |
+| Responsive layout | PASS / FAIL |
+| Zone B unchanged | PASS / FAIL |
+| Zone C unchanged | PASS / FAIL |
+| Functional regression tests | PASS / FAIL |
+| Rendering performance | PASS / FAIL |
+| Visual conformity to screenshot | PASS / FAIL |
+
+Provide evidence for each result.
+
+If a genuine provider limitation prevents a metric from being displayed, document it accurately and verify the specified unavailable-state behavior. Do not fake the metric or mark an unverified measurement as verified.
+
+---
+
+# 15. Implementation and Delivery
+
+Follow this process:
+
+1. Inspect the existing layout and telemetry implementation.
+2. Identify the exact code changes required.
+3. Implement the approved Zone A structure.
+4. Move telemetry presentation into Zone A.
+5. Remove the old Zone D panel.
+6. Preserve and reconnect the existing telemetry details navigation.
+7. Implement the subscription-aware quota presentation and dynamic reset timers.
+8. Run deterministic and regression tests.
+9. Capture actual Windows Terminal screenshots.
+10. Compare them against the supplied design.
+11. Correct remaining actionable discrepancies.
+12. Provide the final conformance report.
+
+Continue autonomously with safe, in-scope implementation and corrections.
+
+Do not expand this task into an unrelated redesign.
+
+Do not consume live Claude Code or Codex quota without the required approval.
+
+**Do not commit until I have reviewed and approved the resulting screenshots.**
+
+---
+
+## Final Instruction
+
+The supplied image is the **approved design specification**.
+
+The final application must reproduce its intended hierarchy:
+
+**ORCHESTRATOR → STAGES → TELEMETRY → SESSION USAGE → QUOTA WINDOWS → NOTES**
+
+All within Zone A.
+
+The orchestrator's dynamic status must appear on the same row as the model.
+
+Quota progress bars must use the approved lavender/purple color scheme.
+
+Quota categories must adapt to the active subscription and provider capabilities.
+
+Reset countdowns must update dynamically.
+
+Zone D must be eliminated without losing its existing telemetry functionality.
+
+Zones B and C must retain their approved designs.
+
+**Do not stop at a partial visual approximation. Continue correcting actionable discrepancies until the implementation faithfully reflects the approved design within Windows Terminal's technical constraints.**
+````
