@@ -59,3 +59,10 @@ them to go elsewhere.
 `plan24\framecheck28.cjs`, `plan24\docframes\` (the three redrawn frames),
 `plan24\uidesign28.cjs`, the patch files `p28-open.patch`,
 `p28-crit3.patch`, `agents28.patch`.
+
+**The commit and the push (2026-10-22), after the owner's approval.** The
+owner approved plan 28 on 2026-10-22; commit 8fe0077 (39 files: 36
+modified, 27 of them golden frames, 3 added) and the approval commit were
+pushed to `origin`; `origin/main` equals `main`, the working tree is
+clean, and the author is `Evengelius <molimoabel@gmail.com>`, with no
+attribution line: PASS. The block above stays as it was reported.
