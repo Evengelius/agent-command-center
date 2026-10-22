@@ -9,6 +9,8 @@ point at it. Two references, with different roles:
 | `reference-layout-mockup.png` (768x646), from amendment 2 of the brief | the **layout**: four zones, with the conversation | [Layout mock-up](#layout-mock-up) |
 | `01-startup-configuration.png` (960x721), `02-agent-command-center.png` (960x325), from amendment 4 | the **screen sequence**: startup, then dashboard | [Screen sequence](#screen-sequence) |
 | `03-zone-a-telemetry.webp` (1312x1199), from amendment 22 | **zone A with the telemetry**: the orchestrator's header, the stages, session usage, the quota windows and the notes, zone D gone | [Zone A with the telemetry](#zone-a-with-the-telemetry) |
+| `04-zone-c-timeline.png` (553x315), from amendment 26 | **zone C with the execution timeline**: the heading inside the frame, the agents' panel and the timeline panel with the agent's status | [Zone C with the execution timeline](#zone-c-with-the-execution-timeline) |
+| `05-zone-c-timeline-close.png` (1128x373), `06-zone-c-timeline-close.webp` (1403x469), from amendment 27 | **zone C's close-ups**: the lines in the title colour, the card's two columns and their bar, the panel as wide as its card, the model grey | [Zone C with the execution timeline](#zone-c-with-the-execution-timeline) |
 
 **It is a visual reference, not a product.** The reference looks like a
 promotional mock-up ("CLAUDE CODE ULTRACODE TIP"). Its model names, flags
@@ -234,9 +236,75 @@ shows, left to right and top to bottom:
 What plan 24 takes from it: zone A's order of sections, the heading inside
 the frame, the status on the model row, the stages' compact blocks, the
 three usage columns, the quota windows' rows and lavender bars, the notes.
+
+## Zone C with the execution timeline
+
+`04-zone-c-timeline.png`, sent with amendment 26 of the brief (plan 27):
+zone C alone, drawn over a session of the owner's (2026-10-22, 17:11: a
+general-purpose subagent on Fable 5.1 listing a folder and writing
+found.txt), a rounded dark card about 79 columns wide and 17 rows tall.
+What it shows, top to bottom:
+
+- **The header row**, inside the frame: "C · LIVE AGENTS" in white, bold,
+  at the left; "0 ACTIVE · 1 DONE" in grey at the right end. A thin rule
+  under it, across the card.
+- **Two panels** under the rule, separated by a thin vertical line from
+  the panel headings to the bottom: the left one about two fifths of the
+  width.
+- **"AGENTS"**, the left panel's heading, in light blue, bold. Under it
+  the agent's two rows: a green "✓", "general-purpose" in white bold,
+  "fable-5-1" in grey, then "…" (the rest of the row cut); the second row
+  in grey, "00:41   30.1k tok", a thin vertical bar, then "tool:" and
+  "Write" in white bold.
+- **"EXECUTION TIMELINE"**, the right panel's heading, in the same light
+  blue, bold, and at its right end "✓ COMPLETED" in green: the agent's
+  status, dynamic ("Obviously the status you see on the right,
+  "completed" is dynamic").
+- **Four entries**, separated by thin grey rules, none after the last.
+  Each: the time "17:11:31" in grey, the role, "notice" in blue or
+  "assistant" in green, a grey vertical bar, then the text wrapped onto
+  two rows at most, the bar drawn on both rows, the second row ending in
+  "…" when the text goes on: "Working directory: C:\Users\…\AppData\Local\
+  Temp\acc-demo …", "I'll start with the directory listing as specified.",
+  "The listing shows three entries and no `found.txt`, so I'll write it
+  now.", "Done. Results as plain data: …".
+- No preview heading with the agent's label and model, no origin label on
+  the rows, no key hint row.
+
+What plan 27 takes from it: the heading inside the frame, the two panels
+and their headings, the vertical bar before the agent's tool, the
+timeline's entries with their role column, bar, two-row wrapping and
+rules, and the agent's status at the timeline heading's right end.
 What it keeps from the earlier decisions: the real events decide every
 value (the model, the statuses, the turns' durations and tools, the
 percentages, the reset times), the symbols of [Colours and
 symbols](ui-design.md#colours-and-symbols), the palette, and zones B and C
 as plans 20 to 22 left them. The mock-up's figures ("5% of 1M", "$0.59",
 "17%") are illustrative, as its "Agent launched" and "Results" lines.
+
+**The close-ups** `05-zone-c-timeline-close.png` and
+`06-zone-c-timeline-close.webp`, sent with amendment 27 after the owner
+found plan 27's first pass not respecting the design ("the separation "|"
+is not respected either", "on the left, there is too much space"), show
+the same card larger and settle what the small image left open:
+
+- "C · LIVE AGENTS", "AGENTS" and "EXECUTION TIMELINE" are all in the same
+  lavender, bold: the title colour. The rule under the header and the
+  vertical line between the panels are in that lavender too, thin, not the
+  dim grey of the card's border.
+- The agent's card has two columns on a slightly lighter band: the left
+  one "✓ general-purpose" over "00:41   30.1k tok", the right one
+  "fable-5-1" over "tool: Write", a grey vertical bar between them on both
+  rows, the label white bold, the model grey, "Write" white bold. Nothing
+  else: no state word, no task text.
+- The left panel is as wide as the card, about two fifths of the
+  close-up's width, which is itself about 108 columns wide: on a 208-column
+  screen the same share left most of the panel empty ("too much space"),
+  so the panel takes its width from the card.
+- Each timeline entry's grey bar and the thin rules between entries, as
+  the small image showed.
+
+What plan 27's second pass takes from them: design D7 to D9 in plan.md
+(the lines in the title colour, the card's two columns with their bar on
+both rows and nothing else, the selected agent's rows on zone B's tool
+rows' ground, the panel as wide as its cards, the model grey).

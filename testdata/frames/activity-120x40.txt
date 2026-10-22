@@ -11,30 +11,30 @@
 │   ├─ ◉ agent  general-… observed ││ ──────────────────────────────────────────────────────────────────────────────── │
 │   │  └─ ⠋ Bash                   ││                                                                                  │
 │   └─ ○ (more as events arrive)   ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│                                  ││ ▎  ▸ ✓ Thought for 2.8s · 719 thinking tokens               02:00:05  observed   │
-│                                  ││ ▎  ⠋ Agent  general-purpose · List directory files into…  running 5s  observed   │
-│                                  ││ ▎                                                                                │
-│                                  ││ ▎ ◠ Cooking...                                                            00:10  │
-│                                  ││ ▎ ◇ 1 subagent working                                                           │
-│                                  ││                                                                                  │
-│ ──────────────────────────────── ││                                                                                  │
-│ ✦ TELEMETRY        Enter details ││                                                                                  │
-│ ▾ SESSION USAGE                  ││                                                                                  │
-│   Context 3% of 1M† ░░░░░░░░░░░░ ││                                                                                  │
-│   Tokens N/A no result yet       ││                                                                                  │
+│ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for 2.8s · 719 thinking tokens               02:00:05  observed   │
+│ ✦ TELEMETRY        Enter details ││ ▎  ⠋ Agent  general-purpose · List directory files into…  running 5s  observed   │
+│ ▾ SESSION USAGE                  ││ ▎                                                                                │
+│   Context 3% of 1M† ░░░░░░░░░░░░ ││ ▎ ◠ Cooking...                                                            00:10  │
+│   Tokens N/A no result yet       ││ ▎ ◇ 1 subagent working                                                           │
 │   Est. cost N/A no result yet    ││                                                                                  │
-│                                  ││                                                                                  │
 │ ▾ QUOTA WINDOWS                  ││                                                                                  │
 │   Session (5hr)              6%† ││                                                                                  │
 │   ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
 │   Resets in 4d 3h                ││                                                                                  │
-│                                  ││                                                                                  │
 │   Weekly (7 day)             4%† ││ ──────────────────────────────────────────────────────────────────────────────── │
 │   █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ >  Claude Code is processing your request…                                       │
 │   Resets in 5d 8h                ││   turn running: the draft waits · Ctrl+C interrupt  1 line · Ctrl+G draft window │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
-╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
-│  ◉  general-purpose   haiku-5-5   running                                                                            │
-│     00:05   40.1k tok   tool: Bash ⠋                                                                                 │
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    1 ACTIVE · 0 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                              ◉ RUNNING │
+│  ◉  general-purpose     │  haiku-5-5     │ 02:00:07  notice    │ Do the following in the current working directory,  │
+│     00:05   40.1k tok   │  tool: Bash    │                     │ and nothing else: 1. List the names of the files…   │
+│                                          │ ───────────────────────────────────────────────────────────────────────── │
+│                                          │ 02:00:10  assistant │ Glob returned no matches, which could mean the      │
+│                                          │                     │ directory is empty or that Glob skipped something.… │
+│                                          │                                                                           │
+│                                          │                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

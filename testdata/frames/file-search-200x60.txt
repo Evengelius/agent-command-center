@@ -25,36 +25,36 @@
 │                   │ 31      return Colour{}, false                                                                                                                               │─────────────────╯ │
 │                   │ 32  }                                                                                                                                                        │                   │
 │                   │ 33                                                                                                                                                           │ntries · Esc back  │
-│                   │ 34  // Hex is the colour as "#rrggbb".                                                                                                                       │                   │
-│                   │ 35▌ func (c Colour) Hex() string {                                                                                                                           │                   │
-│                   │ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                                                                                   │                   │
-│                   │ 37▌ }                                                                                                                                                        │                   │
-│                   │ 38                                                                                                                                                           │                   │
-│                   │ 39  // Names lists the palette's colour names, in order.                                                                                                     │                   │
+│ ──────────────────│ 34  // Hex is the colour as "#rrggbb".                                                                                                                       │                   │
+│ ✦ TELEMETRY       │ 35▌ func (c Colour) Hex() string {                                                                                                                           │                   │
+│ ▾ SESSION USAGE   │ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                                                                                   │                   │
+│   CONTEXT         │ 37▌ }                                                                                                                                                        │                   │
+│   4% of 1M        │ 38                                                                                                                                                           │                   │
+│   █░░░░░░░░░░░░░░░│ 39  // Names lists the palette's colour names, in order.                                                                                                     │                   │
 │                   │ 40  func Names() []string {                                                                                                                                  │                   │
-│                   │ 41      out := make([]string, 0, len(palette))                                                                                                               │                   │
-│ ──────────────────│ 42      for _, c := range palette {                                                                                                                          │                   │
-│ ✦ TELEMETRY       │ 43          out = append(out, c.Name)                                                                                                                        │                   │
-│ ▾ SESSION USAGE   │ 44      }                                                                                                                                                    │                   │
-│   CONTEXT         │ 45      return out                                                                                                                                           │                   │
-│   4% of 1M        │ 46  }                                                                                                                                                        │                   │
-│   █░░░░░░░░░░░░░░░│ 47                                                                                                                                                           │                   │
-│                   │ 48  // Brighter is the colour with each channel raised by step, at most 255.                                                                                 │                   │
-│ ▾ QUOTA WINDOWS   │ 49  func (c Colour) Brighter(step uint32) Colour {                                                                                                           │                   │
-│   Session (5hr)   │ 50      r, g, b := c.RGB>>16&0xff, c.RGB>>8&0xff, c.RGB&0xff                                                                                                 │                   │
-│   ████████████████│ 51      up := func(v uint32) uint32 { return min(v+step, 255) }                                                                                              │                   │
-│   Resets in 14h 40│ 52      return Colour{c.Name, up(r)<<16 | up(g)<<8 | up(b)}                                                                                                  │                   │
-│                   │ 53  }                                                                                                                                                        │                   │
-│   Weekly (7 day)  │ 54                                                                                                                                                           │────────────────── │
-│   ████████████████│ 55  // Describe is one line about the colour, for the details view.                                                                                          │                   │
-│   Resets in 1d 20h│ 56  func Describe(c Colour) string {                                                                                                                         │trl+G draft window │
-╰───────────────────│ 57      return fmt.Sprintf("%-10s %s", c.Name, c.Hex())                                                                                                      │───────────────────╯
-╭─ C · LIVE AGENTS ─│ 58  }                                                                                                                                                        │0 ACTIVE · 1 DONE ─╮
-│  ✓  general-purpos│ ↑↓ PgUp PgDn Home End move · ←→ shift · / search · n N next, previous · g go to line · f full screen · F1 keys · Esc back · F3 close          match 10 of 17 │iku-5-5 (reported) │
-│     00:00   21.5k ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯              mock │
-│                                                                        │                                                                                                                             │
-│                                                                        │                                                                                                                             │
-│                                                                        │                                                                                                                             │
-│                                                                        │                                                                                                                             │
+│ ▾ QUOTA WINDOWS   │ 41      out := make([]string, 0, len(palette))                                                                                                               │                   │
+│   Session (5hr)   │ 42      for _, c := range palette {                                                                                                                          │                   │
+│   ████████████████│ 43          out = append(out, c.Name)                                                                                                                        │                   │
+│   Resets in 14h 40│ 44      }                                                                                                                                                    │                   │
+│                   │ 45      return out                                                                                                                                           │                   │
+│   Weekly (7 day)  │ 46  }                                                                                                                                                        │────────────────── │
+│   ████████████████│ 47                                                                                                                                                           │                   │
+│   Resets in 1d 20h│ 48  // Brighter is the colour with each channel raised by step, at most 255.                                                                                 │trl+G draft window │
+╰───────────────────│ 49  func (c Colour) Brighter(step uint32) Colour {                                                                                                           │───────────────────╯
+╭───────────────────│ 50      r, g, b := c.RGB>>16&0xff, c.RGB>>8&0xff, c.RGB&0xff                                                                                                 │───────────────────╮
+│ C · LIVE AGENTS   │ 51      up := func(v uint32) uint32 { return min(v+step, 255) }                                                                                              │ 0 ACTIVE · 1 DONE │
+│ ──────────────────│ 52      return Colour{c.Name, up(r)<<16 | up(g)<<8 | up(b)}                                                                                                  │────────────────── │
+│ AGENTS            │ 53  }                                                                                                                                                        │       ✓ COMPLETED │
+│  ✓  general-purpos│ 54                                                                                                                                                           │                   │
+│     00:00   21.5k │ 55  // Describe is one line about the colour, for the details view.                                                                                          │                   │
+│                   │ 56  func Describe(c Colour) string {                                                                                                                         │                   │
+│                   │ 57      return fmt.Sprintf("%-10s %s", c.Name, c.Hex())                                                                                                      │                   │
+│                   │ 58  }                                                                                                                                                        │                   │
+│                   │ ↑↓ PgUp PgDn Home End move · ←→ shift · / search · n N next, previous · g go to line · f full screen · F1 keys · Esc back · F3 close          match 10 of 17 │                   │
+│                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯                   │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys

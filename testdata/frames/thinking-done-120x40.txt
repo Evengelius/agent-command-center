@@ -2,16 +2,15 @@
  (project bar: the test's temporary directory)
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                 ││                                                                                  │
-│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││                                                                                  │
-│ ──────────────────────────────── ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│ STAGES · inferred from activity  ││ ▎  ▸ ✓ Thought for 14s · 2,852 thinking tokens              02:00:21  observed   │
-│ ✓ TURN 1                      6s ││ ▎                                                                                │
-│   A firm boundary for this whol… ││ ▎ Before the Write, I'll check whether `b.txt` already exists, since Write       │
-│                                  ││ ▎ would overwrite it.                                                            │
-│ ✓ TURN 2                     20s ││ ▎                                                                                │
-│   This is a test of the permiss… ││ ▎  ✓ Glob  <HOME>\AppData\Local\Temp\acc-p12\cb             02:00:21  observed   │
-│   Glob · Write                   ││ ▎  ▸ ✓ Thought for 0.1s · 17 thinking tokens                02:00:22  observed   │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
+│ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for 14s · 2,852 thinking tokens              02:00:21  observed   │
+│ STAGES · inferred from activity  ││ ▎                                                                                │
+│ ✓ TURN 1                      6s ││ ▎ Before the Write, I'll check whether `b.txt` already exists, since Write       │
+│   A firm boundary for this whol… ││ ▎ would overwrite it.                                                            │
 │                                  ││ ▎                                                                                │
+│ ✓ TURN 2                     20s ││ ▎  ✓ Glob  <HOME>\AppData\Local\Temp\acc-p12\cb             02:00:21  observed   │
+│   This is a test of the permiss… ││ ▎  ▸ ✓ Thought for 0.1s · 17 thinking tokens                02:00:22  observed   │
+│   Glob · Write                   ││ ▎                                                                                │
 │                                  ││ ▎ `b.txt` doesn't exist yet, so the Write won't overwrite anything. Starting     │
 │                                  ││ ▎ attempt 1.                                                                     │
 │                                  ││ ▎                                                                                │
@@ -34,7 +33,8 @@
 │   ███████████████░░░░░░░░░░░░░░░ ││ >  Ask Claude Code anything…                                                     │
 │   Resets in 9d 5h                ││   Enter send · Ctrl+J newline                       1 line · Ctrl+G draft window │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
-╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
 │ no agents yet: they appear as the CLI starts them                                                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

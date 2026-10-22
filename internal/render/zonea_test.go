@@ -81,8 +81,8 @@ func TestZoneAStructure(t *testing.T) {
 		}
 		// Plan 26: the pane ends with the last window's rows, no rule and no
 		// notes after them; the tree has the 3 rows the full form's notes took.
-		if tree := tele - 1 - 4; tree < 6 || tree < map[int]int{120: 9, 208: 24}[size[0]] {
-			t.Errorf("%v: the tree has %d rows, want at least 6 and plan 24's 3 more", size, tree)
+		if tree := tele - 1 - 4; tree < 6 {
+			t.Errorf("%v: the tree has %d rows, want at least 6", size, tree)
 		}
 		if last := rows[len(rows)-1]; !strings.HasPrefix(last, "  Resets in ") || strings.Contains(strings.Join(rows, "\n"), "ⓘ") {
 			t.Errorf("%v: the pane's last row %q, want the last window's countdown and no notes:\n%s", size, last, strings.Join(rows, "\n"))
@@ -96,9 +96,10 @@ func TestZoneAStructure(t *testing.T) {
 			}
 		}
 	}
-	// 24.5 At 100x24 the tight form: a window on one row with its percentage
-	// and countdown; the tree keeps at least 3 rows.
-	ui := UI{Width: 100, Height: 24, Now: now, Focus: "B"}
+	// 24.5 At 100x28 the tight form: a window on one row with its percentage
+	// and countdown; the tree keeps at least 3 rows (100x24 until plan 27,
+	// whose zone C takes three heading rows more).
+	ui := UI{Width: 100, Height: 28, Now: now, Focus: "B"}
 	rows, _ := zoneARows(s, ui)
 	tele := indexOf(rows, "✦ TELEMETRY")
 	tight := regexp.MustCompile(`^  Session \(5hr\)  \d+%†? · \S+`)
@@ -107,10 +108,11 @@ func TestZoneAStructure(t *testing.T) {
 		found = found || tight.MatchString(r)
 	}
 	if !found || tele-1-4 < 3 || strings.Contains(strings.Join(rows, "\n"), "Resets in ") {
-		t.Errorf("100x24: want the tight form and 3 tree rows, TELEMETRY at %d:\n%s", tele, strings.Join(rows, "\n"))
+		t.Errorf("100x28: want the tight form and 3 tree rows, TELEMETRY at %d:\n%s", tele, strings.Join(rows, "\n"))
 	}
-	// SESSION USAGE folded: its three rows go to the tree.
-	ui = UI{Width: 120, Height: 40, Now: now, Focus: "B"}
+	// SESSION USAGE folded: its three rows go to the tree (at 208x59, where
+	// the pane keeps its full form either way).
+	ui = UI{Width: 208, Height: 59, Now: now, Focus: "B"}
 	open, _ := zoneARows(s, ui)
 	ui.Fold = map[string]bool{NodeUsage: true}
 	folded, _ := zoneARows(s, ui)
@@ -579,11 +581,14 @@ func TestScopedWindows(t *testing.T) {
 // in zone B's or C's.
 func TestCountdownRedraw(t *testing.T) {
 	s, _ := stampedMock(t, "claude-quota-windows.jsonl", appClock)
+	// At 160x60 zone A's pane keeps its full form, "Resets in" rows and all
+	// (plan 27's zone C takes more rows at 120x40).
 	draw := func(now time.Time) []string {
-		return strings.Split(strings.TrimSuffix(texts(Draw(s, UI{Width: 120, Height: 40, Now: now, Focus: "B"}).lines), "\n"), "\n")
+		return strings.Split(strings.TrimSuffix(texts(Draw(s, UI{Width: 160, Height: 60, Now: now, Focus: "B"}).lines), "\n"), "\n")
 	}
 	base := draw(appClock)
-	aw := zoneAWidth(120)
+	aw := zoneAWidth(160)
+	aBottom := zoneBoxes(base)["A"].bottom
 	for _, c := range []struct {
 		name string
 		at   time.Time
@@ -595,7 +600,7 @@ func TestCountdownRedraw(t *testing.T) {
 				continue
 			}
 			rb, rl := []rune(base[y]), []rune(later[y])
-			if string(rb[aw:]) != string(rl[aw:]) || y > 36 {
+			if string(rb[aw:]) != string(rl[aw:]) || y > aBottom {
 				t.Errorf("%s: row %d differs outside zone A:\n%s\n%s", c.name, y, base[y], later[y])
 			}
 			changedA++

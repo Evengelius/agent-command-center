@@ -46,7 +46,10 @@ func TestAgentRetries(t *testing.T) {
 		for y := zc.top + 1; y < zc.bottom; y++ {
 			// From 100 columns the count is on the agent's second row, under
 			// its label; under 100 on its one row.
-			own := strings.Contains(rows[y], label) || (size[0] >= 100 && y > zc.top+1 && strings.Contains(rows[y-1], label))
+			// The label may end in "…" in the list's column (plan 27): its
+			// first 12 cells name the row.
+			head := label[:min(len(label), 12)]
+			own := strings.Contains(rows[y], head) || (size[0] >= 100 && y > zc.top+1 && strings.Contains(rows[y-1], head))
 			has := strings.Contains(rows[y], "↻")
 			switch {
 			case own && has:

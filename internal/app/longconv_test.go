@@ -131,6 +131,9 @@ func longGeometry(t *testing.T, f string, w, h int) {
 			z := string(cells[x+3])
 			if x == 0 && cells[x+2] == '─' {
 				z = "A" // untitled in its top edge since plan 24
+				if _, seen := boxes["A"]; seen {
+					z = "C" // untitled too since plan 27, under A and B
+				}
 			}
 			if _, seen := boxes[z]; seen || !strings.Contains("ABC", z) {
 				continue

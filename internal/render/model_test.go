@@ -11,9 +11,11 @@ import (
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
-// TestAgentModelColumn is plan 5, item 7, criterion 3: zone C shows each
-// agent's model in its colour, Claude's without "claude-", "model N/A"
-// without one; the preview header shows the name in full.
+// TestAgentModelColumn is plan 5, item 7, criterion 3, as plan 27's second
+// pass draws the card (design D8): zone C shows each agent's model,
+// Claude's without "claude-", "model N/A" without one, after the card's
+// bar in grey from 100 columns, and in its family's colour on the narrow
+// row under 100; the inspection header shows the name in full.
 func TestAgentModelColumn(t *testing.T) {
 	s := state.New()
 	s.Screen = state.ScreenDashboard
@@ -38,21 +40,29 @@ func TestAgentModelColumn(t *testing.T) {
 			}
 		}
 		for _, c := range []struct{ label, model string }{{"explore", "haiku-5-5"}, {"/root/scan", "gpt-6-sol"}, {"review", "model N/A"}} {
-			l, _ := rowOf(t, sc, agentLead(size[0], "◉", c.label, 14)+padTo(c.model, 12))
-			if st := styleOf(l, c.model); st != modelStyle(c.model) {
-				t.Errorf("%v: %s's model %q in style %p, want %p", size, c.label, c.model, st, modelStyle(c.model))
+			var l line
+			if size[0] >= standardWidth {
+				// The card: the label padded to the 17-cell column, the bar,
+				// the model in grey (the selected agent's row on the ground).
+				l, _ = rowOf(t, sc, cardLead("◉", c.label, 17)+c.model)
+				if st := styleOf(l, c.model); st != stGrey && st != tint(stGrey) {
+					t.Errorf("%v: %s's model %q in style %p, want grey", size, c.label, c.model, st)
+				}
+			} else {
+				l, _ = rowOf(t, sc, agentLead(size[0], "◉", c.label, 14)+padTo(c.model, 12))
+				if st := styleOf(l, c.model); st != modelStyle(c.model) {
+					t.Errorf("%v: %s's model %q in style %p, want %p", size, c.label, c.model, st, modelStyle(c.model))
+				}
 			}
-			txt := texts([]line{l})
-			if i := strings.Index(txt, " │ "); i >= 0 { // the list's part: the preview shares the row (plan 20)
-				txt = txt[:i]
-			}
-			if strings.Contains(txt, "claude-haiku") {
+			if txt := texts([]line{l}); strings.Contains(txt, "claude-haiku") {
 				t.Errorf("%v: row %q keeps the prefix", size, txt)
 			}
 		}
-		if size[0] >= 200 { // the preview, at wide width
-			if l, _ := rowOf(t, sc, "explore · LIVE"); !strings.Contains(texts([]line{l}), "claude-haiku-5-5") {
-				t.Errorf("%v: preview header %q", size, texts([]line{l}))
+		// The timeline's heading stands right of the list from 100 columns
+		// (plan 27); the model in full is the inspection's.
+		if size[0] >= standardWidth {
+			if l, _ := rowOf(t, sc, "EXECUTION TIMELINE"); !strings.Contains(texts([]line{l}), "AGENTS") {
+				t.Errorf("%v: the panels' headings %q", size, texts([]line{l}))
 			}
 		}
 	}
@@ -62,8 +72,10 @@ func TestAgentModelColumn(t *testing.T) {
 }
 
 // TestAgentSourceAndEffort is plan 6, items 5 and 6: an agent's model with
-// its source and its reasoning effort, in zone C, the preview and the
-// inspection header; "N/A (not reported)" where the inspection shows them.
+// its source and its reasoning effort. Since plan 27's second pass the card
+// shows the model with a requested model's "*" and nothing else (design
+// D8); the source and the effort are the inspection header's, "N/A (not
+// reported)" where it has none.
 func TestAgentSourceAndEffort(t *testing.T) {
 	s := state.New()
 	s.Screen = state.ScreenDashboard
@@ -81,31 +93,34 @@ func TestAgentSourceAndEffort(t *testing.T) {
 	apply(event.AgentStarted, "k3", event.Agent{Key: "k3", Type: "thread", Label: "/root/c"})
 
 	for _, size := range [][2]int{{120, 40}, {200, 60}} {
-		sc := Draw(s, UI{Width: size[0], Height: size[1], Focus: "C", Selected: "k2"})
+		ui := UI{Width: size[0], Height: size[1], Focus: "C", Selected: "k2"}
+		sc := Draw(s, ui)
 		for i, r := range strings.Split(sc.String(), "\n") {
 			if w := lipgloss.Width(r); w > size[0] {
 				t.Errorf("%v: row %d is %d wide", size, i, w)
 			}
 		}
-		// The effort column as wide as the longest effort; "*" after a
-		// requested model, its footnote in the header, as D's "†".
-		for _, c := range []struct{ label, model, mark, effort string }{
-			{"/root/a", "gpt-6-sol", "", "high"}, {"/root/b", "gpt-6-mini", "*", "low"}, {"/root/c", "model N/A", "", ""},
+		// "*" after a requested model, its footnote in the header, as D's
+		// "†"; no effort on the card.
+		lw := panelWidth(s, ui)
+		for _, c := range []struct{ label, model, mark string }{
+			{"/root/a", "gpt-6-sol", ""}, {"/root/b", "gpt-6-mini", "*"}, {"/root/c", "model N/A", ""},
 		} {
-			l, _ := rowOf(t, sc, agentLead(size[0], "◉", c.label, 14)+padTo(c.model+c.mark, 12)+padTo(c.effort, 5)+"announced")
-			for _, x := range []string{c.effort, c.mark} {
-				if x != "" && styleOf(l, x) != stGrey {
-					t.Errorf("%v: %s's %q not grey", size, c.label, x)
-				}
+			l, _ := rowOf(t, sc, cardLead("◉", c.label, 17)+c.model+c.mark)
+			if st := styleOf(l, c.model+c.mark); st != stGrey && st != tint(stGrey) {
+				t.Errorf("%v: %s's model %q not grey", size, c.label, c.model+c.mark)
+			}
+			if card := listPart(string([]rune(texts([]line{l}))[2:]), lw); strings.Contains(card, "high") || strings.Contains(card, "low") {
+				t.Errorf("%v: the effort on %s's card: %q", size, c.label, card)
 			}
 		}
 		if l, _ := rowOf(t, sc, "C · LIVE AGENTS"); !strings.Contains(texts([]line{l}), "* requested model · 0 ACTIVE") {
 			t.Errorf("%v: C header %q", size, texts([]line{l}))
 		}
-		if size[0] >= 200 { // the preview, at wide width
-			if l, _ := rowOf(t, sc, "/root/b · LIVE"); !strings.Contains(texts([]line{l}), "gpt-6-mini (requested) · effort low (requested)") {
-				t.Errorf("%v: preview header %q", size, texts([]line{l}))
-			}
+		// The selected agent's status at the timeline heading's right end
+		// (plan 27); its model's source and its effort are the inspection's.
+		if l, _ := rowOf(t, sc, "EXECUTION TIMELINE"); !strings.HasSuffix(strings.TrimRight(texts([]line{l}), " │\n"), "◉ ANNOUNCED") {
+			t.Errorf("%v: the timeline heading %q", size, texts([]line{l}))
 		}
 		for k, want := range map[string]string{
 			"k1": "/root/a · gpt-6-sol (reported) · ◉ announced",
@@ -120,20 +135,23 @@ func TestAgentSourceAndEffort(t *testing.T) {
 			}
 		}
 	}
-	// Without an effort or a requested model in the list, no column is added.
+	// Without a requested model in the list, no footnote.
 	s.Agents["k1"].Effort, s.Agents["k2"].Effort = state.Value{}, state.Value{}
 	s.Agents["k2"].Model.Source = "agent model"
 	sc := Draw(s, UI{Width: 120, Height: 40, Focus: "C"})
-	rowOf(t, sc, agentLead(120, "◉", "/root/b", 14)+padTo("gpt-6-mini", 12)+"announced")
+	rowOf(t, sc, cardLead("◉", "/root/b", 17)+"gpt-6-mini")
 	if l, _ := rowOf(t, sc, "C · LIVE AGENTS"); strings.Contains(texts([]line{l}), "requested") {
 		t.Errorf("C header %q", texts([]line{l}))
 	}
 }
 
-// TestAgentLabelColumn is plan 7, item 1: zone C's label column is the
-// longest label and a space, at least 14 cells, so every row's model starts
-// at the same cell; it never leaves the activity under 12 cells, and a label
-// longer than the column ends in "…", whole in the inspection.
+// TestAgentLabelColumn is plan 7, item 1, as plan 27's second pass sizes
+// the card (design D9): the label column is the longest label over the
+// agents, at least 17 cells, so every row's model starts at the same cell;
+// the panel gives way in steps when the columns would exceed its most
+// width, the tool column first down to 16, then the label column down to
+// 17; a label longer than the column ends in "…", whole in the inspection,
+// and so does a tool name longer than the tool column.
 func TestAgentLabelColumn(t *testing.T) {
 	long := "/root/" + strings.Repeat("x", 33) + "z" // 40 cells
 	labels := []string{"a", "/root/abcdefg", "/root/create_found", long}
@@ -150,18 +168,26 @@ func TestAgentLabelColumn(t *testing.T) {
 	a.Status, a.LastTool = state.AgentRunning, "abcdefghijklmnopqrstuvwxyz"
 
 	for _, size := range [][2]int{{120, 40}, {160, 50}, {200, 60}} {
-		sc := Draw(s, UI{Width: size[0], Height: size[1], Focus: "C"})
-		row := func(model string) string { // C's list part of the row (plan 20: the preview is in C, after " │ ")
+		ui := UI{Width: size[0], Height: size[1], Focus: "C"}
+		sc := Draw(s, ui)
+		agents := agentsByActivity(s)
+		cols := cardColumns(agents, currentTools(s, agents), ui, size[0]-4)
+		// 27.11: the panel 45, 61 and 74 cells; the label column 17, 33 and
+		// 40; the tool column 16, 16 and 22.
+		if want := map[int][3]int{120: {45, 17, 16}, 160: {61, 33, 16}, 200: {74, 40, 22}}[size[0]]; [3]int{cols.width, cols.label, cols.tool} != want {
+			t.Errorf("%v: the card's columns %+v, want width %d, label %d, tool %d", size, cols, want[0], want[1], want[2])
+		}
+		row := func(model string) string { // the card's first row holding the model: the panel's part
 			for _, l := range sc.lines {
-				txt := texts([]line{l})
-				if i := strings.Index(txt, " │ "); i >= 0 {
-					txt = txt[:i]
+				rs := []rune(strings.TrimSuffix(texts([]line{l}), "\n"))
+				if len(rs) < 2+cols.width {
+					continue
 				}
-				if strings.Contains(txt, model+" ") && !strings.Contains(txt, "· LIVE") {
-					return txt
+				if card := string(rs[2 : 2+cols.width]); strings.Contains(card, "│  "+model) {
+					return card
 				}
 			}
-			t.Fatalf("%v: no row for %s:\n%s", size, model, texts(sc.lines))
+			t.Fatalf("%v: no card for %s:\n%s", size, model, texts(sc.lines))
 			return ""
 		}
 		col := -1
@@ -175,22 +201,18 @@ func TestAgentLabelColumn(t *testing.T) {
 				t.Errorf("%v: %s's model at cell %d, the first row's at %d:\n%s", size, labels[i], c, col, txt)
 			}
 		}
-		// The running agent's activity keeps at least 12 cells: since plan 20,
-		// on its second row ("tool: …").
-		if txt := texts(sc.lines); !strings.Contains(txt, "tool: abcdefghijk") {
-			t.Errorf("%v: activity cut under 12 cells:\n%s", size, txt)
+		// The running agent's tool, cut to the tool column with "…".
+		if wantTool := "tool: " + fitLabel(a.LastTool, cols.tool-6); !strings.Contains(texts(sc.lines), wantTool) {
+			t.Errorf("%v: no %q:\n%s", size, wantTool, texts(sc.lines))
 		}
-		// The 40-cell label is cut with "…" in C, and only when it must be:
-		// from 100 columns an agent's time and tokens are on its second row
-		// (plan 20), so it fits whole at 120 columns; from 160 the list
-		// shares C with the preview, 70 cells, and the card's gaps take 3
-		// (Template 2): it is cut, whole in the preview's heading; at 80
-		// columns, below, it is cut.
-		if txt := row("mod-4"); size[0] < wideWidth && (!strings.Contains(txt, long) || strings.Contains(txt, "…")) || size[0] >= wideWidth && !strings.Contains(txt, "…") {
-			t.Errorf("%v: long label %q", size, txt)
+		// The 40-cell label is whole only where the label column reaches 40
+		// (200 columns), the 18-cell one where it reaches 18 (160 and 200);
+		// elsewhere they end in "…", whole in the inspection.
+		if txt := row("mod-4"); cols.label >= 40 && (!strings.Contains(txt, long) || strings.Contains(txt, "…")) || cols.label < 40 && !strings.Contains(txt, "…") {
+			t.Errorf("%v: long label %q (column %d)", size, txt, cols.label)
 		}
-		if txt := row("mod-3"); !strings.Contains(txt, "/root/create_found") && size[0] < 160 {
-			t.Errorf("%v: an 18-cell label cut where C has room: %q", size, txt)
+		if txt := row("mod-3"); cols.label >= 18 && !strings.Contains(txt, "/root/create_found") || cols.label < 18 && strings.Contains(txt, "/root/create_found") {
+			t.Errorf("%v: an 18-cell label %q (column %d)", size, txt, cols.label)
 		}
 		ins := Draw(s, UI{Width: size[0], Height: size[1], Inspect: "k4"})
 		if h := texts([]line{ins.lines[1]}); !strings.Contains(h, long) {
@@ -209,31 +231,39 @@ func TestAgentLabelColumn(t *testing.T) {
 			t.Errorf("80x24: activity cut under 12 cells: %q", txt)
 		}
 	}
-	// Labels that fit in 13 cells keep today's 14-cell column.
+	// Labels that fit in 17 cells keep the 17-cell column.
 	short := state.New()
 	short.Screen = state.ScreenDashboard
 	short.Apply(event.Event{Seq: 1, At: at, Kind: event.AgentStarted, Origin: event.Observed, Agent: "k1",
 		Payload: event.Agent{Key: "k1", Type: "thread", Label: "/root/abcdefg", Model: "mod-1"}})
-	rowOf(t, Draw(short, UI{Width: 120, Height: 40}), agentLead(120, "◉", "/root/abcdefg", 14)+"mod-1")
+	rowOf(t, Draw(short, UI{Width: 120, Height: 40}), cardLead("◉", "/root/abcdefg", 17)+"mod-1")
 }
 
-// agentLead is the start of an agent's row in zone C, w columns wide, with
-// a label column col cells wide: from 100 columns the card's, two cells
-// after the symbol and three after the column's longest label (plan 20,
-// Template 2); under 100 the single row's.
+// agentLead is the start of an agent's row in zone C under 100 columns,
+// with a label column col cells wide: the symbol, a cell, the label padded
+// to the column (plan 18's one-row list).
 func agentLead(w int, sym, label string, col int) string {
 	if w >= standardWidth {
-		return sym + "  " + padTo(label, col+2)
+		return cardLead(sym, label, col)
 	}
 	return sym + " " + padTo(label, col)
 }
 
-// TestPreviewHeaderFallback is plan 7, item 2: the preview's right-hand
-// header is the first that fits of the model, its source and the effort; the
-// model and its source; the model alone; nothing. Read from the frame at
-// every width from 160 to 220: the form drawn is one of these, the model
-// whole, and the next longer form would not have fitted in its place.
-func TestPreviewHeaderFallback(t *testing.T) {
+// cardLead is the start of an agent's card row from 100 columns (plan 27,
+// design D8): the margin cell, the symbol, two cells, the label padded to
+// the label column, three cells, the bar and two cells.
+func cardLead(sym, label string, col int) string {
+	return " " + sym + "  " + label + strings.Repeat(" ", max(col-textWidth(label), 0)) + "   │  "
+}
+
+// TestListModelAcrossWidths stands where plan 7's preview-heading fallback
+// test stood (the heading went with plan 27): from 160 to 220 columns the
+// card's model column shows each agent's model short, "*" after a requested
+// one and "model N/A" without one, C's header carries the "* requested
+// model" footnote, and the timeline's heading the selected agent's status;
+// the model's source and the effort are the inspection's
+// (TestAgentSourceAndEffort).
+func TestListModelAcrossWidths(t *testing.T) {
 	s := state.New()
 	s.Screen = state.ScreenDashboard
 	s.Context.Provider = "codex"
@@ -247,55 +277,38 @@ func TestPreviewHeaderFallback(t *testing.T) {
 	apply(event.AgentProgress, "k1", event.Agent{Key: "k1", Model: "gpt-6-mini", Effort: "low", ModelRequested: true})
 	apply(event.AgentStarted, "k2", event.Agent{Key: "k2", Type: "thread", Label: "/root/list_files", Model: "gpt-6-sol", Effort: "high"})
 	apply(event.AgentStarted, "k3", event.Agent{Key: "k3", Type: "thread", Label: "/root/c"})
-	forms := map[string][]string{ // longest first
-		"k1": {"gpt-6-mini (requested) · effort low (requested)", "gpt-6-mini (requested)", "gpt-6-mini"},
-		"k2": {"gpt-6-sol (reported) · effort high (reported)", "gpt-6-sol (reported)", "gpt-6-sol"},
-		"k3": {"model N/A (not reported)", "model N/A"},
-	}
-	// Plan 20 widened the preview (C spans the screen): from 160 columns
-	// every form fits beside these labels, so the fallback is checked on
-	// previewRight itself, at every room from 0 to 80 cells, and the
-	// dashboard's sweep below only for the forms it reaches.
-	for k, want := range forms {
-		a := s.Agents[k]
-		for room := 0; room <= 80; room++ {
-			got := texts([]line{previewRight(a, room)})
-			best := ""
-			for _, f := range want {
-				if lipgloss.Width(f) <= room {
-					best = f
+	want := map[string]string{"k1": "gpt-6-mini*", "k2": "gpt-6-sol", "k3": "model N/A"}
+	for w := 160; w <= 220; w++ {
+		ui := UI{Width: w, Height: 50, Focus: "C", Selected: "k1"}
+		sc := Draw(s, ui)
+		lw := panelWidth(s, ui)
+		for k, m := range want {
+			// The card's first row: the label in the panel's part (zone A's
+			// tree names the agent too, after "├─" or "└─").
+			txt := ""
+			for _, l := range sc.lines {
+				x := strings.TrimSuffix(texts([]line{l}), "\n")
+				rs := []rune(x)
+				if len(rs) < 2+lw || strings.Contains(x, "├─") || strings.Contains(x, "└─") {
+					continue
+				}
+				if card := string(rs[2 : 2+lw]); strings.Contains(card, s.Agents[k].Label) {
+					txt = card
 					break
 				}
 			}
-			if strings.TrimSuffix(got, "\n") != best {
-				t.Errorf("%s in %d cells: %q, want %q", k, room, strings.TrimSuffix(got, "\n"), best)
+			if !strings.Contains(txt, "│  "+m) {
+				t.Errorf("%d: %s's card %q lacks %q after the bar", w, k, txt, m)
 			}
 		}
-	}
-	seen := map[string]bool{}
-	for k, want := range forms {
-		want = want[:1] // the whole form fits from 160 columns since plan 20
-		label := s.Agents[k].Label
-		for w := 160; w <= 220; w++ {
-			sc := Draw(s, UI{Width: w, Height: 50, Focus: "C", Selected: k})
-			// The preview's heading is its first row inside C (plan 20): the
-			// label, then the right-hand header at the row's end.
-			l, _ := rowOf(t, sc, label+" · LIVE")
-			head := strings.TrimRight(strings.TrimSuffix(strings.TrimRight(texts([]line{l}), " \n"), "│"), " ")
-			for _, f := range want {
-				if strings.HasSuffix(head, f) {
-					seen[k+"|"+f] = true
-				}
-			}
+		if l, _ := rowOf(t, sc, "C · LIVE AGENTS"); !strings.Contains(texts([]line{l}), "* requested model · 0 ACTIVE") {
+			t.Errorf("%d: C's header %q", w, texts([]line{l}))
 		}
-		for _, f := range want { // every form is reached between 160 and 220
-			if !seen[k+"|"+f] {
-				t.Errorf("%s: %q never drawn between 160 and 220", k, f)
-			}
+		if l, _ := rowOf(t, sc, "EXECUTION TIMELINE"); !strings.HasSuffix(strings.TrimRight(texts([]line{l}), " │\n"), "◉ ANNOUNCED") {
+			t.Errorf("%d: the timeline heading %q", w, texts([]line{l}))
 		}
 	}
 }
-
 func index(xs []string, x string) int {
 	for i, v := range xs {
 		if v == x {

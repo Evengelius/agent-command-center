@@ -422,7 +422,7 @@ the [layout mock-up](reference-design.md#layout-mock-up):
 | Project bar: folder name, branch, agent CLI on the right; path below | One line at 100+ columns: name, branch, path, then provider and version on the right; the path drops at 80 columns | AM4 W1 |
 | A left, full height: orchestrator, model, stage tree with agents indented, a status symbol per line | Same content; since plan 20 A is the upper row's left, beside B, both ending on one row, as the owner's two templates draw it; since plan 24 the telemetry pane is at its bottom, as the owner's image draws it; the tree is labelled with its origin | AM2 A1-A4; brief amendments 16 and 22; [Origins on screen](#origins-on-screen) |
 | B upper right: "Streaming" badge, YOU and CLAUDE labelled, an in-progress line, the input at the bottom | Same, with a multiline editor, approval cards inline, and tool lines | AM2 B1-B6 |
-| C lower right: one line per agent (model, task, status), an active count, "select agent to inspect" | Since plan 20 the whole width under A and B, two rows an agent from 100 columns (Template 2), adding elapsed time and tokens; at 160+ columns a live preview of the selected agent inside C, right of the list | AM2 C1-C3, C11; brief amendment 16 |
+| C lower right: one line per agent (model, task, status), an active count, "select agent to inspect" | Since plan 20 the whole width under A and B, two rows an agent from 100 columns (Template 2), adding elapsed time and tokens; since plan 27 the owner's image: the header inside the frame, the agents' panel and the selected agent's execution timeline with its status (brief amendment 26) | AM2 C1-C3, C11; brief amendments 16 and 26 |
 | D bottom, full width: two quota bars with percentages, agents, context, tokens | No zone D since plan 24: the mock-up's D is zone A's telemetry pane, which holds the session usage (context, tokens, estimated cost) and the quota windows with their reset countdowns, the rest being in the details view; every missing value "N/A" with its reason | AM2 D1-D9; brief amendment 22 |
 | Mock-up figures (42%, "Agents 4/16") | Real values or "N/A" | AGENTS.md; RD "Layout mock-up" |
 | Image 2's empty state: "Waiting for instructions", "Ready to work on this project." | Same texts in the ready state | AM4 D2 |
@@ -545,46 +545,46 @@ hold more states).
 ### Standard, 120x40
 
 ```text
- >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
- ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session 
+ ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual 
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                 ││                                                                                  │
-│ ✿ Haiku 5.5      ! AGENT WAITING ││ ▎ YOU  11:30                                                                     │
-│ ──────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task:      │
-│ STAGES · inferred from activity  ││ ▎ list the files in the current directory, write their names into a new file     │
-│ ✓ TURN 1                      4s ││ ▎ named found.txt with the Write tool, and report the names. Then tell me in     │
-│   Use the Agent tool to launch … ││ ▎ one line what it found.                                                        │
-│   Agent · agent general-purpose  ││                                                                                  │
-│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│                                  ││                                                                                  │
-│                                  ││ ▎ CLAUDE  Haiku 5.5  11:30                                                       │
-│                                  ││ ▎  ✓ Agent  general-purpose · List directory and write fo…  11:30:06      mock   │
-│                                  ││ ▎                                                                                │
-│                                  ││ ▎ I've launched the subagent in the background to list the directory and write   │
-│                                  ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
-│                                  ││ ▎                                                                                │
+│ ✿ Haiku 5.5      ! AGENT WAITING ││ ▎ CLAUDE  Haiku 5.5  11:30                                                       │
+│ ──────────────────────────────── ││ ▎  ✓ Agent  general-purpose · List directory and write fo…  11:30:06      mock   │
+│ STAGES · inferred from activity  ││ ▎                                                                                │
+│ ✓ TURN 1                      4s ││ ▎ I've launched the subagent in the background to list the directory and write   │
+│   Use the Agent tool to launch … ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
+│   Agent · agent general-purpose  ││ ▎                                                                                │
 │                                  ││ ▎  ✓ general-purpose · Bash  ls -p "<probe…  allowed by you 11:30:08      mock   │
-│ ──────────────────────────────── ││ ▎                                                                                │
-│ ✦ TELEMETRY        Enter details ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
-│ ▾ SESSION USAGE                  ││ ▎ │ ! APPROVAL · general-purpose · Write                          11:30  mock │  │
-│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                                   │  │
-│   Tokens 61.9k session total     ││ ▎ │ ▸ Preview of found.txt (2 lines)                                          │  │
-│   Est. cost $0.00 API-equiv.     ││ ▎ │  1 │ alpha.txt                                                            │  │
-│                                  ││ ▎ │  2 │ beta.md                                                              │  │
-│ ▾ QUOTA WINDOWS                  ││ ▎ │ This will create or overwrite the file at                                 │  │
-│   Session (5hr)             35%† ││ ▎ │ `<probe-root>\probe-work\p3b\found.txt` with the above content.           │  │
-│   ███████████░░░░░░░░░░░░░░░░░░░ ││ ▎ │ ▐ F2 to answer ▌                                                          │  │
-│   Resets in 14h 39m              ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
-│                                  ││                                                                                  │
+│                                  ││ ▎                                                                                │
+│                                  ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
+│ ──────────────────────────────── ││ ▎ │ ! APPROVAL · general-purpose · Write                          11:30  mock │  │
+│ ✦ TELEMETRY        Enter details ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                                   │  │
+│ ▾ SESSION USAGE                  ││ ▎ │ ▸ Preview of found.txt (2 lines)                                          │  │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎ │  1 │ alpha.txt                                                            │  │
+│   Tokens 61.9k session total     ││ ▎ │  2 │ beta.md                                                              │  │
+│   Est. cost $0.00 API-equiv.     ││ ▎ │ This will create or overwrite the file at                                 │  │
+│ ▾ QUOTA WINDOWS                  ││ ▎ │ `<probe-root>\probe-work\p3b\found.txt` with the above content.           │  │
+│   Session (5hr)             35%† ││ ▎ │ ▐ F2 to answer ▌                                                          │  │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
+│   Resets in 14h 39m              ││                                                                                  │
 │   Weekly (7 day)            47%† ││ ──────────────────────────────────────────────────────────────────────────────── │
 │   ██████████████░░░░░░░░░░░░░░░░ ││ >  Ask Mock data anything…                                                       │
 │   Resets in 1d 20h               ││   Enter send · Ctrl+J newline                       1 line · Ctrl+G draft window │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
-╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
-│  ●  general-purpose   haiku-5-5   waiting: approval                                                                  │
-│     00:13   21.2k tok   tool: Bash ✓   next: Write (approval pending)                                                │
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    1 ACTIVE · 0 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                              ● WAITING │
+│  ●  general-purpose     │  haiku-5-5     │ no activity yet                                                           │
+│     00:06   21.2k tok   │  tool: Write   │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit            
 ```
 
 - A, 36 columns here (the least; 28% of 120 is 34), and B end on the same
@@ -597,18 +597,25 @@ hold more states).
   takes the short name), a rule, "STAGES · inferred from activity" and a
   block a turn, here TURN 1 folded, being closed: its prompt's first line,
   cut with "…", and one grey row naming its items.
-- Under the tree's free rows, a rule and the telemetry pane in its full
-  form: "✦ TELEMETRY" with "Enter details" at its right end; "▾ SESSION
-  USAGE", three rows at this width (the context with its bar, the tokens,
-  the cost); "▾ QUOTA WINDOWS", three rows a window (its percentage at the
-  right end, its bar, "Resets in …"), and nothing under the last window:
-  the pane carries no notes (plan 26, the owner's standing decision).
+- Under the tree's free rows, a rule and the telemetry pane in its compact
+  form, since zone C's 12 rows leave A 25 (plan 27): "✦ TELEMETRY" with
+  "Enter details" at its right end; "▾ SESSION USAGE", three rows at this
+  width (the context with its bar, the tokens, the cost); "▾ QUOTA
+  WINDOWS", three rows a window (its percentage at the right end, its bar,
+  "Resets in …") with no blank row between them, and nothing under the
+  last window: the pane carries no notes (plan 26, the owner's standing
+  decision).
 - B is the conversation ([Zone B](#zone-b)): each message a block, a
   narrow bar of its colour, its header on its own row and its body under it,
   a thin rule between messages (amendment 17); the input sits at B's
   bottom edge under its rule.
-- C is full width, two rows an agent (Template 2): its status, label, model
-  and state, then its time, tokens, last tool and the request it waits on.
+- C is full width and 12 rows (plan 27): inside its frame the header "C ·
+  LIVE AGENTS" with "1 ACTIVE · 0 DONE", a rule, then "AGENTS" over the
+  cards' panel (40 cells, as wide as the card) and "EXECUTION TIMELINE"
+  over the timeline with the agent's status "● WAITING" at its right end;
+  the agent's card, " ●  general-purpose     │  haiku-5-5" over "00:06
+  21.2k tok   │  tool: Write", left of the panels' line, "no activity yet"
+  right of it (the mock's subagent has sent no message yet).
 - The footer names F3 at every size: "F3 Explorer", the Explorer F3 opens
   when no file is in front ("F3 file" while B's entry cursor is on an entry
   that names one). When the whole line does not fit, as at 120 columns, it
@@ -619,8 +626,8 @@ hold more states).
 ### Wide, 200x60
 
 ```text
- >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session
- ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                             Mock data 2.1.300 · approvals Manual
+ >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session 
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                             Mock data 2.1.300 · approvals Manual 
 ╭──────────────────────────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                                     ││                                                                                                                                              │
 │ ✿ Claude Haiku 5.5                   ! AGENT WAITING ││ ▎ YOU  11:30                                                                                                                                 │
@@ -646,15 +653,7 @@ hold more states).
 │                                                      ││ ▎ │ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │  │
 │                                                      ││ ▎ │ This will create or overwrite the file at `<probe-root>\probe-work\p3b\found.txt` with the above content.                             │  │
 │                                                      ││ ▎ │ ▐ F2 to answer ▌                                                                                                                      │  │
-│                                                      ││ ▎ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│ ──────────────────────────────────────────────────── ││                                                                                                                                              │
+│ ──────────────────────────────────────────────────── ││ ▎ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  │
 │ ✦ TELEMETRY                            Enter details ││                                                                                                                                              │
 │ ▾ SESSION USAGE                                      ││                                                                                                                                              │
 │   CONTEXT           │ TOKENS        │ EST. COST      ││                                                                                                                                              │
@@ -670,15 +669,23 @@ hold more states).
 │   ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ >  Ask Mock data anything…                                                                                                                   │
 │   Resets in 1d 20h                                   ││   Enter send · Ctrl+J newline                                                                                   1 line · Ctrl+G draft window │
 ╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
-│  ●  general-purpose   haiku-5-5   waiting: approval                    │ general-purpose · LIVE                                                                          claude-haiku-5-5 (reported) │
-│     00:13   21.2k tok   tool: Bash ✓   next: Write (approval pending)  │ no activity yet                                                                                                             │
-│                                                                        │                                                                                                                             │
-│                                                                        │                                                                                                                             │
-│                                                                        │                                                                                                                             │
-│                                                                        │                                                                                                                             │
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                                                                                                    1 ACTIVE · 0 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                                                                                                              ● WAITING │
+│  ●  general-purpose     │  haiku-5-5     │ no activity yet                                                                                                                                           │
+│     00:06   21.2k tok   │  tool: Write   │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit          
 ```
 
 - A grows to 56 columns (28% of 200), and with B to 49 rows (60 less the
@@ -686,9 +693,10 @@ hold more states).
   whole title beside the status ("✿ Claude Haiku 5.5"), the usage section
   draws its three columns (CONTEXT, TOKENS and EST. COST, "API-equivalent"
   in full) and each quota window's bar runs across the pane.
-- C holds the agent list, 70 columns, and right of a rule the selected
-  agent's live preview, so several agents can be watched while the
-  orchestrator talks (AM2 C11).
+- C is 16 rows (plan 27): its header, a rule, "AGENTS" over the cards'
+  panel (40 cells here too: the card, not the width, sizes it) and
+  "EXECUTION TIMELINE" with "● WAITING" over the timeline, 153 cells, so
+  several agents can be watched while the orchestrator talks (AM2 C11).
 
 ### Below 80x24
 
@@ -1294,85 +1302,127 @@ label and syntax highlighting.
 ## Zone C
 
 The live subagents (AM2 C1-C11; AM4 D3), the whole width under A and B
-since plan 20 (brief amendment 16, the owner's two templates).
+since plan 20, drawn after the owner's image and its close-ups since plan
+27 (brief amendments 26 and 27; [reference-design.md, Zone C with the
+execution timeline](reference-design.md#zone-c-with-the-execution-timeline)):
+the header inside the frame, the agents' panel on the left, as wide as its
+cards, and the execution timeline on the right.
 
-- **Header**: "C · LIVE AGENTS" ("C · AGENTS" under 100 columns), then "N
-  ACTIVE · M DONE" on the right, counts of the agents it lists, derived
+- **The frame**: its top edge carries no title (as zone A since plan 24);
+  the border's colour marks the focus. Inside, row 1 is the header, "C ·
+  LIVE AGENTS" in the title colour, bold, at the left and "N ACTIVE · M
+  DONE" in grey at the right end, counts of the agents it lists, derived
   from the agent machines (`Running` and `WaitingApproval` are active);
   before them, in amber, how many agents are out of view, "↑ 2 above · ↓ 5
-  below".
+  below", and the "* requested model" footnote. Row 2 is a rule across the
+  inner width in the title colour (`stPanelRule`, not bold; white on 16
+  colours), the close-ups' line, not the frame's dim grey. Row 3 holds the
+  panels' headings, "AGENTS" over the cards and "EXECUTION TIMELINE" over
+  the timeline, in the title colour, with the selected agent's status at
+  the timeline's right end: its symbol and its state in capitals, in the
+  symbol's colour ("✓ COMPLETED" green, "◉ RUNNING" amber, "● WAITING"
+  pink, "✗ FAILED" red, "○ STOPPED" grey, "◉ ANNOUNCED" amber), dynamic as
+  the state changes. A vertical line in the title colour separates the
+  panels from row 3 to the bottom. With no agent in play, C is 4 rows: the
+  header with "0 ACTIVE · 0 DONE" and "no agents yet: they appear as the
+  CLI starts them".
 - **The agents in play only** (plan 18, brief amendment 14, the owner's
   third message): each prompt the owner submits clears C of the agents of
   earlier prompts, back to "0 ACTIVE · 0 DONE" and "no agents yet"; an agent
   still running stays, and so do the agents of turns the CLI opens by itself
   for a background agent's notification. The earlier agents stay in zone A's
   tree, from which they can be inspected.
-- **Two rows an agent** from 100 columns (Template 2), one under 100:
+- **The cards**, the left panel: two rows an agent, the close-ups' card
+  (plan 27, design D8):
 
   ```text
-   ●  general-purpose   haiku-5-5   waiting: approval
-      01:11   21.2k tok   tool: Bash ✓   next: Write (approval pending)
+   ●  general-purpose     │  haiku-5-5
+      00:06   21.2k tok   │  tool: Write
   ```
 
-  The first row: the status symbol (a pink `●` for an agent waiting for
-  the owner, where zone A keeps its `!`), two cells, then the label
-  (Claude Code's description or `agent_id`; Codex `agentPath`; else, for
-  a Codex agent its spawn request alone names, "task: " and the first line
-  of the request's `prompt`, cut at 24 characters with "…", replaced by
-  the agent's own label when one comes, the whole prompt in the inspection;
-  plan 10, item 1; a column as wide as the longest label and a space, at
-  least 14 cells, and three cells after it, so every model starts at the
-  same cell; never so wide that the state keeps fewer than 12 cells, a
-  longer label ending in "…", whole in the preview and the inspection; plan
-  7, item 1), the agent's own model in its colour (Claude Code: its
-  forwarded messages' `message.model`, shown without the "claude-" prefix
-  to fit the column, in full in the preview and the inspection; Codex:
+  The first row: a margin cell, the status symbol (a pink `●` for an agent
+  waiting for the owner, where zone A keeps its `!`), two cells, then the
+  label in white bold (Claude Code's description or `agent_id`; Codex
+  `agentPath`; else, for a Codex agent its spawn request alone names,
+  "task: " and the first line of the request's `prompt`, cut at 24
+  characters with "…", replaced by the agent's own label when one comes,
+  the whole prompt in the inspection; plan 10, item 1) padded to the label
+  column, three cells, a grey bar, two cells, then the model in grey
+  (Claude Code: its forwarded messages' `message.model`, shown without the
+  "claude-" prefix, in full in the inspection; Codex:
   `subAgentActivity.model`, from Codex CLI 0.163.0, else the model its
   `spawnAgent` call requested, `collabAgentToolCall.model` for each of its
   `receiverThreadIds`, source "spawn request": the agent's own report
   always wins, in either order; plan 6, item 4, from the generated schema;
   recorded by P9a on the multi-agent v1 backend, plan 9) or "model N/A"
-  (older Codex children, ASM-14; plan 5, item 7); a requested model is
-  followed by a grey "*", footnoted "* requested model" in the header, as
-  A's notes' "†" (plan 6, item 5); then, when any listed agent has one, its
-  reasoning effort in grey, a column as wide as the longest (Codex
-  `subAgentActivity.reasoningEffort`, else the spawn request's, by the
-  model's rule; plan 6, item 6); then its state: "waiting: approval" in
-  grey, its running word in amber, "completed · " and its summary's first
-  line, "failed · " and its error's. The second row, under the label: the
-  elapsed time as a clock ("01:11"), the tokens, its last call that is not
-  waiting for the owner with its status ("tool: Bash ✓"), and a request
-  waiting for the owner ("next: Write (approval pending)", grey). Under 100
-  columns the one row keeps plan 18's layout: symbol, label, model, state,
-  then the time and tokens at the right. An agent's retries show as "↻ 2"
-  in amber after its time, at every width, none while it has none (AM2 C7;
-  plan 21, item 5.6a). Codex reports an agent's retries, a thread's `error`
-  with `willRetry`; Claude Code's `system/api_retry` is the orchestrator's,
-  counted in A's notes, so a Claude Code agent shows none: its documented
-  `tool_progress` `subagent_retry` (claude-code.md) is not mapped, since no
-  recording holds one to check it against. Rows are ordered: waiting for
-  approval, running, then ended, most recent first (ASM-22).
-- **Preview** (from 160 columns, with agents in play): inside C, right of
-  the list (70 cells) and a rule, the selected agent's last events,
-  timestamped, each with its origin label, under a heading "general-purpose
-  · LIVE"; the heading's right shows the model with its source,
-  "(reported)" or "(requested)", and the effort when there is one, "·
-  effort high (reported)" (plan 6, items 5 and 6); where the whole of it
-  does not fit, it drops the effort, then the source, keeping the model
-  whole, and only then nothing (plan 7, item 2); held away from its tail,
-  the heading's right reads the rows out of view instead, "↑ 4 ↓ 2 · End
-  follows". It follows the selection, and the wheel scrolls it.
-- **Height** (plan 18, kept by plan 20): 3 rows while no agent is in play,
-  "0 ACTIVE · 0 DONE" and "no agents yet". As soon as the turn deploys
-  agents, C grows to the rows they need, two an agent (one under 100
-  columns) and its borders, up to half the rows A, B and C share (5 rows
-  under 100 columns), the list scrolling with the selection past that, and
-  keeps that height after they finish, until the owner's next prompt clears
-  it; a turn the CLI opens by itself does not. From 160 columns, with agents
-  in play, C keeps 8 rows for the preview. With an agent in play, C never
-  has fewer than one agent's rows, 4 from 100 columns, A and B giving the
-  rows: at 160x24 to 160x26, where B's 14 rows would leave C 3, C has 4 and
-  A and B 11 to 13 (plan 21, item 4).
+  (older Codex children, ASM-14; plan 5, item 7), a requested model
+  followed by "*", footnoted "* requested model" in the header (plan 6,
+  item 5). The second row, under the label: the elapsed time as a clock
+  ("01:11"), an agent's retries as "↻ 2" in amber after it (none while it
+  has none; AM2 C7; plan 21, item 5.6a: Codex reports an agent's retries,
+  Claude Code's `system/api_retry` is the orchestrator's; its documented
+  `tool_progress` `subagent_retry` is not mapped, since no recording holds
+  one), the tokens, padded to the label column, then the bar at the same
+  cell and "tool: " in grey with the agent's current tool in white bold:
+  its last call's name, a call waiting for the owner included (the Write
+  of P3b's waiting agent), else the tool the CLI reported (plan 7, item
+  1), else "none yet" in grey; a failed call's red "✗" after the name, no
+  symbol otherwise. Nothing else is on the rows: the state is the timeline
+  heading's; the summary, the error, the effort and the model's source are
+  the inspection's (Enter). The selected agent's two rows lie on the tool
+  rows' ground (plan 19) from the cell after the margin to the cell before
+  the panel's end, the close-ups' band; on 16 colours, which have no
+  ground, nothing marks it, both palettes drawing the same characters.
+  Rows are ordered: waiting for approval, running, then ended, most recent
+  first (ASM-22); the panel scrolls with the selection, which stays in
+  view.
+- **The panel's width** (design D9): as wide as its cards, not a share of
+  the screen, since the close-ups' card fills its panel and a two-fifths
+  share of 208 columns left most of it empty: 12 cells of margins, gaps
+  and bar, plus the label column, the longest label or second-row content
+  over the listed agents, at least 17 ("00:41   30.1k tok"), plus the tool
+  column, the longest model with its mark or "tool: <name>", 11 ("tool:
+  Write") to 22 ("tool: commandExecution"). The whole never exceeds the
+  larger of 39% of the inner width and 40, nor the inner width less 23
+  (the timeline keeps 20 cells): over that, the tool column gives way down
+  to 16, then the label column down to 17, then the tool column down to
+  11, names cut with "…", whole in the inspection. A Claude Code
+  subagent's card gives 40 cells at every width from 100 columns (the
+  timeline 73 at 120 columns, 153 at 200, 161 at 208); two Codex agents
+  with "tool: commandExecution" give 52 at 208 and 45 at 120.
+- **The execution timeline**, the right panel: the selected agent's
+  entries (its messages, then its history lines), the newest last, one
+  entry each: the time "17:11:31" in grey, the role in its colour padded to
+  9 cells ("notice" in zone B's speaker blue, "assistant" in its result
+  green, any other role grey), a grey vertical bar, then the text wrapped
+  onto at most two rows of the room left, the second cut with "…" when the
+  text goes on, the bar drawn on both rows; a rule across the panel in the
+  frame's colour between entries, none after the last. The panel shows the
+  tail; the wheel scrolls it (panel P, by rows), and while it is held away
+  from the tail the heading's right end reads "↑ n ↓ m · End follows" in
+  place of the status. "no activity yet" in grey when the agent has no
+  entry. The agent's model with its source and its effort, which the
+  preview's heading carried until plan 26, are the inspection's; the rows
+  carry no origin label, the role names the source.
+- **Height**: 4 rows while no agent is in play. With agents in play from
+  100 columns, C needs its three heading rows, the larger of the cards'
+  rows (two an agent) and the timeline's eleven (four entries of two rows
+  and three rules, the image's four), and its two edges: 16 rows for one
+  agent. The cards' rows take up to half the rows A, B and C share (plan
+  18: six agents at 120x40 give C 17 rows, twenty 18; twenty at 200x60 give
+  28, the panel scrolling with the selection past that), the timeline's up
+  to a third of them, and C never has less than one agent's rows with the
+  headings, 7, A and B giving the rows (plan 21, item 4): with one agent
+  16 at 208x59 and 200x60, 13 at 156x44 (three entries), 12 at 120x40 (two
+  entries), 7 at 160x24 to 160x26 and 8 at 160x27. B keeps its least rows
+  (twenty agents at 100x24 leave C 9). C keeps its height after the agents
+  finish, until the owner's next prompt clears it; a turn the CLI opens by
+  itself does not.
+- **Under 100 columns** the narrow layout keeps plan 18's one-row list:
+  "C · AGENTS" in its top edge, the counts at the edge's right, one row an
+  agent (symbol, label, the model in its family's colour, the state, then
+  the time and tokens at the right), no timeline, 3 rows while no agent is
+  in play and at most 5.
 - **Keys** when focused: ↑ ↓ select, Enter inspects, z zooms; PgUp, PgDn,
   Home and End scroll the list, the selection kept. C has no key hint row
   since plan 20: while C has the focus the footer reads "↑↓ select · Enter

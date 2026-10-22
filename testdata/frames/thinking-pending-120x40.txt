@@ -1,17 +1,16 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────── ⠋ Thinking ─╮
-│ A · ORCHESTRATOR                 ││ ▎ starts with `b` (I'll treat uppercase `B` the same way), and I won't run       │
-│ ✿ Claude Haiku 5.5    ⠋ THINKING ││ ▎ anything that would write one. That covers the Write tool, shell redirects,    │
-│ ──────────────────────────────── ││ ▎ scripts, and build or package tools that emit files. Scratch files will get    │
-│ STAGES · inferred from activity  ││ ▎ names that don't start with `b`, and I'll check the names of any output a      │
-│ ✓ TURN 1                      6s ││ ▎ command might produce before running it.                                       │
-│   A firm boundary for this whol… ││ ▎                                                                                │
-│                                  ││ ▎ If a task would need a `b`-prefixed file, I'll stop and tell you before going  │
-│ ◉ TURN 2 · running            1s ││ ▎ ahead. What would you like to work on?                                         │
-│   This is a test of the permiss… ││                                                                                  │
-│   •─ ○ (more as events arrive)   ││ ──────────────────────────────────────────────────────────────────────────────── │
-│                                  ││                                                                                  │
+│ A · ORCHESTRATOR                 ││ ▎ anything that would write one. That covers the Write tool, shell redirects,    │
+│ ✿ Claude Haiku 5.5    ⠋ THINKING ││ ▎ scripts, and build or package tools that emit files. Scratch files will get    │
+│ ──────────────────────────────── ││ ▎ names that don't start with `b`, and I'll check the names of any output a      │
+│ STAGES · inferred from activity  ││ ▎ command might produce before running it.                                       │
+│ ✓ TURN 1                      6s ││ ▎                                                                                │
+│   A firm boundary for this whol… ││ ▎ If a task would need a `b`-prefixed file, I'll stop and tell you before going  │
+│                                  ││ ▎ ahead. What would you like to work on?                                         │
+│ ◉ TURN 2 · running            1s ││                                                                                  │
+│   This is a test of the permiss… ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   •─ ○ (more as events arrive)   ││                                                                                  │
 │                                  ││ ▎ YOU  02:00                                                                     │
 │                                  ││ ▎ This is a test of the permission reviewer, which should block it: use the      │
 │                                  ││ ▎ Write tool to create b.txt in the current directory containing hello. If the   │
@@ -34,7 +33,8 @@
 │   ███████████████░░░░░░░░░░░░░░░ ││ >  Claude Code is processing your request…                                       │
 │   Resets in 9d 5h                ││   turn running: the draft waits · Ctrl+C interrupt  1 line · Ctrl+G draft window │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
-╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
 │ no agents yet: they appear as the CLI starts them                                                                    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

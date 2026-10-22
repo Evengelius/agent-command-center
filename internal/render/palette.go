@@ -96,6 +96,11 @@ var (
 	stThinkBorder, stThinkFill, stThinkTrack, stThinkEdge, stThinkMid, stThinkDim = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 	stThinkWord, stThinkWordDim, stThinkLit, stBrightBold                         = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 
+	// Zone C's rule under its header and the line between its panels, in
+	// the title colour, not bold (plan 27, the owner's close-ups; design
+	// D7).
+	stPanelRule = new(lipgloss.Style)
+
 	// The file viewer's frame, its cursor line (each class on zone A's
 	// cursor row background, the line numbers likewise) and its search
 	// matches on an amber background, the current one bold (plan 17, The
@@ -141,6 +146,7 @@ func paint() {
 	paintStyle(stAttentionBold, stAttention.Bold(true))
 	paintStyle(stFailedBold, stFailed.Bold(true))
 	paintStyle(stNone, lipgloss.NewStyle())
+	paintStyle(stPanelRule, fg(cTitle))
 
 	paintStyle(stCursor, fg(cInk).Background(cTitle.get()))
 	paintStyle(stSelected, fg(cText).Background(cSelection.get()))

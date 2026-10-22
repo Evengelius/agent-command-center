@@ -25,14 +25,6 @@
 │                                                      ││                                                                                                                                              │
 │                                                      ││                                                                                                                                              │
 │                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
 │ ──────────────────────────────────────────────────── ││                                                                                                                                              │
 │ ✦ TELEMETRY                            Enter details ││                                                                                                                                              │
 │ ▾ SESSION USAGE                                      ││                                                                                                                                              │
@@ -49,12 +41,20 @@
 │   ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ >  Claude Code is processing your request…                                                                                                   │
 │   Resets in 5d 8h                                    ││   turn running: the draft waits · Ctrl+C interrupt                                                              1 line · Ctrl+G draft window │
 ╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
-│  ◉  general-purpose   haiku-5-5   running                              │ general-purpose · LIVE                                                                          claude-haiku-5-5 (reported) │
-│     00:05   40.1k tok   tool: Bash ⠋                                   │ 02:00:07  notice  Do the following in the current working directory, and nothing else: …                           observed │
-│                                                                        │ 02:00:10  assistant  Glob returned no matches, which could mean the directory is empty or that Glob skipped something. I'l… │
-│                                                                        │                                                                                                                             │
-│                                                                        │                                                                                                                             │
-│                                                                        │                                                                                                                             │
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                                                                                                    1 ACTIVE · 0 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                                                                                                              ◉ RUNNING │
+│  ◉  general-purpose     │  haiku-5-5     │ 02:00:07  notice    │ Do the following in the current working directory, and nothing else: 1. List the names of the files in the current working          │
+│     00:05   40.1k tok   │  tool: Bash    │                     │ directory (top level only, not recursive). Use Glob with the pattern "*" and no path, or a directory listing command. Include…      │
+│                                          │ ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│                                          │ 02:00:10  assistant │ Glob returned no matches, which could mean the directory is empty or that Glob skipped something. I'll confirm with a directory     │
+│                                          │                     │ listing that marks subdirectories.                                                                                                  │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit

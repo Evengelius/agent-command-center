@@ -3773,3 +3773,57 @@ each value also has its source and age; an undocumented value keeps its "†"
 mark, as AGENTS.md asks, and the details view's heading explains it. This
 is a standing decision (plan.md, The owner's standing decisions). Nothing
 is committed until the owner approves.
+
+## Amendment 26, 2026-10-22: zone C after the owner's design, for plan 27
+
+After plan 26 was approved and pushed, the owner sent one image, a design
+of zone C drawn over a session of the owner's (17:11, a general-purpose
+subagent on Fable 5.1 that wrote found.txt): a rounded dark card about 79
+columns wide, "C · LIVE AGENTS" on its first row with "0 ACTIVE · 1 DONE"
+at the right end, a rule, then two panels side by side, "AGENTS" on the
+left with the agent's two rows, "EXECUTION TIMELINE" on the right with "✓
+COMPLETED" at its right end and four timestamped entries, each wrapped on
+two rows behind a vertical bar and separated by thin rules. The image is
+kept as `references/04-zone-c-timeline.png` (553x315) and described in
+[reference-design.md](reference-design.md#zone-c-with-the-execution-timeline).
+The owner, word for word:
+
+````text
+Now next improvement, improve zone C to this exac design. Respect this design strictly
+
+Obviously the status you see on the right, "completed" is dynamic. But I guess you knew that already.
+````
+
+Taken as plan 27: zone C redrawn after the image, strictly, from 100
+columns (the narrow layout under 100 columns keeps plan 18's one-row
+list); the status at the timeline's right end is the selected agent's,
+from the state; nothing is committed until the owner has reviewed the
+Windows Terminal screenshots and approved.
+
+## Amendment 27, 2026-10-22: the design not respected, the close-ups
+
+After plan 27's first pass, the owner ran the dashboard on Claude Code
+(19:06 to 19:08, a general-purpose subagent on Fable 5.1 writing found.txt
+in acc-demo) and sent three screenshots of it with:
+
+````text
+The design is not respected, I will show you on my next image how it must be
+
+You didn't respect the design strictly
+````
+
+then two close-ups of the design, kept as
+`references/05-zone-c-timeline-close.png` (1128x373) and
+`references/06-zone-c-timeline-close.webp` (1403x469), with:
+
+````text
+Exactly, and also the separation "|" is not respected either.
+
+You didn't respect most of it, and on the left, there is too much space
+````
+
+Taken as plan 27's second pass (plan.md, Plan 27, Second pass): the rule
+and the panels' line in the title colour, the card's two columns with
+their bar on both rows and nothing else on them, the panel as wide as its
+card, the model grey; nothing is committed until the owner has reviewed
+the new screenshots and approved.

@@ -38,7 +38,9 @@ func TestSyntheticScenarios(t *testing.T) {
 			// owner's live review: a failed row names what failed).
 			// The error keeps half the row (plan 5, item 6): at 200 columns B's
 			// row holds "fatal: No configured push desti…" since plan 24.
-			[]string{"✗ commandExecution  \"C:", "… · exit 1 · fatal: No configured push", "/root/list_files     gpt-6-mini* low completed", "/root/create_found   model N/A       completed", "* requested model · 0 ACTIVE · 2 DONE"},
+			// The cards: the label column 18 cells, the bar, the model with a
+			// requested model's "*" (plan 27, design D8).
+			[]string{"✗ commandExecution  \"C:", "… · exit 1 · fatal: No configured push", "/root/list_files     │  gpt-6-mini*", "/root/create_found   │  model N/A", "* requested model · 0 ACTIVE · 2 DONE"},
 			[]string{"commandExecution · On branch main", "commandExecution · exit 1 · On branch", "model N/A*", "errors "}},
 	} {
 		t.Run(c.file, func(t *testing.T) {
@@ -79,8 +81,10 @@ func TestSpawnRequestLabel(t *testing.T) {
 			w, h int
 			row  string
 		}{
-			{120, 40, "✓  task: Count the files in the c…   gpt-5.6-luna* low completed"},
-			{200, 60, "✓  task: Count the files in the c…   gpt-5.6-luna* low completed"},
+			// At 120 columns the panel gives way (plan 27, design D9): the
+			// label column shrinks to 19 cells; at 200 the label is whole.
+			{120, 40, "✓  task: Count the …   │  gpt-5.6-luna*"},
+			{200, 60, "✓  task: Count the files in the c…   │  gpt-5.6-luna*"},
 		} {
 			h.send(tea.WindowSizeMsg{Width: c.w, Height: c.h})
 			f := h.frame()

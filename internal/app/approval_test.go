@@ -384,7 +384,9 @@ func TestApprovalCards(t *testing.T) {
 			}
 			who := approvalLabel(s, ap)
 			f := frameText(h)
-			for _, want := range []string{"! APPROVAL · " + who + " · Write", "found.txt", "waiting: approval"} {
+			// The agent's card shows the Write it waits for as its tool and
+			// the timeline heading its status (plan 27, design D8).
+			for _, want := range []string{"! APPROVAL · " + who + " · Write", "found.txt", "│  tool: Write", "● WAITING"} {
 				if !strings.Contains(f, want) {
 					t.Errorf("subagent card lacks %q:\n%s", want, f)
 				}

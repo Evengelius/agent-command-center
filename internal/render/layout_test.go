@@ -35,7 +35,12 @@ func zoneBoxes(rows []string) map[string]zoneBox {
 			case cells[x+2] == ' ':
 				name = string(cells[x+3])
 			case x == 0 && cells[x+2] == '─':
+				// An untitled box at column 0: A, the first (plan 24), then C
+				// under it (plan 27).
 				name = "A"
+				if _, seen := out["A"]; seen {
+					name = "C"
+				}
 			default:
 				continue
 			}
@@ -159,24 +164,28 @@ func TestAdaptiveLayout(t *testing.T) {
 		agentRow bool // P3b's agent listed in C
 		focus    string
 	}{
-		// The rows zone D had are A's and B's since plan 24: 4 more at 120
-		// and 156 columns, 6 more at 200.
-		{"2.1 120x40 no agent", quiet, 120, 40, 34, 3, false, false, ""},
-		{"2.2 120x40 one agent", one, 120, 40, 33, 4, false, true, ""},
-		{"2.2 120x40 six agents", six, 120, 40, 23, 14, false, true, ""},
-		{"2.2 120x40 twenty agents, half", twenty, 120, 40, 19, 18, false, false, ""},
-		{"2.3 120x40 its agent done, a new prompt: cleared", after, 120, 40, 34, 3, false, false, ""},
-		{"2.1 200x60 no agent", quiet, 200, 60, 54, 3, false, false, ""},
-		{"2.2 200x60 one agent, room for the preview", one, 200, 60, 49, 8, true, true, ""},
+		// The rows zone D had are A's and B's since plan 24. Since plan 27
+		// (design D4) C with no agent has 4 rows; with agents it needs its
+		// three heading rows, the larger of two rows an agent and the
+		// timeline's eleven, and its edges (16 for one agent), capped at a
+		// third of the rows A, B and C share, never under 7; the timeline
+		// (" │ " inside C) is there from 100 columns.
+		{"2.1 120x40 no agent", quiet, 120, 40, 33, 4, false, false, ""},
+		{"2.2 120x40 one agent", one, 120, 40, 25, 12, true, true, ""},
+		{"2.2 120x40 six agents", six, 120, 40, 20, 17, true, true, ""},
+		{"2.2 120x40 twenty agents, half", twenty, 120, 40, 19, 18, true, false, ""},
+		{"2.3 120x40 its agent done, a new prompt: cleared", after, 120, 40, 33, 4, false, false, ""},
+		{"2.1 200x60 no agent", quiet, 200, 60, 53, 4, false, false, ""},
+		{"2.2 200x60 one agent, the timeline's four entries", one, 200, 60, 41, 16, true, true, ""},
 		{"2.2 200x60 twenty agents, half", twenty, 200, 60, 29, 28, true, false, ""},
 		{"2.2 200x60 forty agents, half", forty, 200, 60, 29, 28, true, false, ""},
-		{"2.3 200x60 its agent done, a new prompt: cleared", after, 200, 60, 54, 3, false, false, ""},
-		{"2.1 156x44 no agent", quiet, 156, 44, 38, 3, false, false, ""},
-		{"2.2 156x44 one agent", one, 156, 44, 37, 4, false, true, ""},
-		{"2.1 100x24 no agent", quiet, 100, 24, 18, 3, false, false, ""},
-		{"2.2 100x24 twenty agents, B keeps 12", twenty, 100, 24, 12, 9, false, false, ""},
-		{"2.3 120x40 twenty done earlier, C focused: cleared", earlier, 120, 40, 34, 3, false, false, "C"},
-		{"2.2 120x40 six agents, C focused: as unfocused", six, 120, 40, 23, 14, false, true, "C"},
+		{"2.3 200x60 its agent done, a new prompt: cleared", after, 200, 60, 53, 4, false, false, ""},
+		{"2.1 156x44 no agent", quiet, 156, 44, 37, 4, false, false, ""},
+		{"2.2 156x44 one agent", one, 156, 44, 28, 13, true, true, ""},
+		{"2.1 100x24 no agent", quiet, 100, 24, 17, 4, false, false, ""},
+		{"2.2 100x24 twenty agents, B keeps 12", twenty, 100, 24, 12, 9, true, false, ""},
+		{"2.3 120x40 twenty done earlier, C focused: cleared", earlier, 120, 40, 33, 4, false, false, "C"},
+		{"2.2 120x40 six agents, C focused: as unfocused", six, 120, 40, 20, 17, true, true, "C"},
 	} {
 		focus := c.focus
 		if focus == "" {
@@ -250,25 +259,40 @@ func TestAgentCardTemplate2(t *testing.T) {
 	if q := s.Queue; len(q) != 2 || !s.Approvals[q[0]].Status.Final() || s.Approvals[q[1]].Tool != "Write" || s.Approvals[q[1]].Status != state.Pending {
 		t.Fatalf("queue %v: want the Bash answered, the Write pending", q)
 	}
-	for _, size := range [][2]int{{156, 44}, {120, 40}} {
+	// The panel is as wide as the card since plan 27's second pass (design
+	// D9), 40 cells at both sizes; the waiting agent's card shows the Write
+	// it waits for as its tool after the bar and nothing else (D8).
+	for _, size := range [][2]int{{208, 59}, {156, 44}} {
 		ls := Draw(s, UI{Width: size[0], Height: size[1], Now: now, Focus: "B"}).lines
 		rows := strings.Split(texts(ls), "\n")
 		c := zoneBoxes(rows)["C"]
-		first, second := ls[c.top+1], ls[c.top+2]
+		// The agent's rows come after C's header, its rule and the panels'
+		// headings (plan 27).
+		first, second := ls[c.top+4], ls[c.top+5]
 		got := texts([]line{first, second})
-		for _, want := range []string{"●  general-purpose", "haiku-5-5", "waiting: approval", "tool: Bash ✓", "next: Write (approval pending)", "1 ACTIVE · 0 DONE"} {
-			if !strings.Contains(got, want) && !strings.Contains(rows[c.top], want) {
+		for _, want := range []string{"●  general-purpose", "│  haiku-5-5", "│  tool: Write"} {
+			if !strings.Contains(got, want) {
 				t.Errorf("%v: no %q in C's rows:\n%s", size, want, got)
 			}
 		}
-		if !regexp.MustCompile(`^│\s+\d\d:\d\d\s+[\d.]+k tok`).MatchString(texts([]line{second})) {
-			t.Errorf("%v: the second row %q lacks the time and the tokens", size, texts([]line{second}))
+		if head := texts([]line{ls[c.top+1]}); !strings.Contains(head, "1 ACTIVE · 0 DONE") {
+			t.Errorf("%v: C's header %q", size, head)
 		}
-		for _, c := range []struct {
+		for _, bad := range []string{"Bash", "waiting", "next:", "approval"} {
+			if strings.Contains(got, bad) {
+				t.Errorf("%v: %q on the card's rows:\n%s", size, bad, got)
+			}
+		}
+		if !regexp.MustCompile(`^│\s+\d\d:\d\d\s+[\d.]+k tok\s+│  tool: Write`).MatchString(texts([]line{second})) {
+			t.Errorf("%v: the second row %q lacks the time, the tokens and the tool", size, texts([]line{second}))
+		}
+		// The only agent is the selected one: its rows on the ground.
+		checks := []struct {
 			l    line
 			text string
 			st   *lipgloss.Style
-		}{{first, "●", stAttention}, {first, "waiting: approval", stMuted}, {second, "   next: Write (approval pending)", stMuted}, {second, "✓", stDone}} {
+		}{{first, "●", tint(stAttention)}, {first, "general-purpose", tint(stBold)}, {second, "Write", tint(stBold)}}
+		for _, c := range checks {
 			if x, ok := spanOf(c.l, c.text); !ok || x.st != c.st {
 				t.Errorf("%v: %q styled %v, want %v", size, c.text, x.st, c.st)
 			}

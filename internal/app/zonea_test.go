@@ -100,8 +100,18 @@ func TestZoneAKeyWords(t *testing.T) {
 func TestClockRedraw(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h := mockDash(t, "claude-quota-windows.jsonl")
+		// At 160x60 zone A's pane keeps its full form, "Resets in" rows and
+		// all (plan 27's zone C takes more rows at 120x40).
+		h.send(tea.WindowSizeMsg{Width: 160, Height: 60})
 		base := strings.Split(h.frame(), "\n")
-		aw := 36 // zone A's width at 120 columns
+		aw := 45 // zone A's width at 160 columns
+		aBottom := 2
+		for y := 3; y < len(base); y++ { // zone C's top edge ends zone A
+			if strings.HasPrefix(base[y], "╭") {
+				aBottom = y - 1
+				break
+			}
+		}
 		for _, c := range []struct {
 			name string
 			d    time.Duration
@@ -116,7 +126,7 @@ func TestClockRedraw(t *testing.T) {
 					continue
 				}
 				rb, rl := []rune(base[y]), []rune(later[y])
-				if y >= 36 || len(rb) < aw || len(rl) < aw || string(rb[aw:]) != string(rl[aw:]) {
+				if y > aBottom || len(rb) < aw || len(rl) < aw || string(rb[aw:]) != string(rl[aw:]) {
 					t.Errorf("%s: row %d differs outside zone A:\n%s\n%s", c.name, y, base[y], later[y])
 				}
 				changed++

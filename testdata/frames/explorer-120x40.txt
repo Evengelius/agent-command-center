@@ -3,38 +3,38 @@
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                 ││                                                                                  │
 │ ✿ Claude H╭─ Explorer ───────────────────────────────────────────────────────────────── mock · 14 items ─╮           │
-│ ──────────│ sample/viewer.go                                                                             │task:      │
-│ STAGES · i│ ▾ sample                                                                                  ●  │w file     │
-│ ✓ TURN 1  │     viewer.go                                                                             M  │ me in     │
-│   Use the │     viewer_test.go                                                                        D  │           │
+│ ──────────│ sample/viewer.go                                                                             │           │
+│ STAGES · i│ ▾ sample                                                                                  ●  │    mock   │
+│ ✓ TURN 1  │     viewer.go                                                                             M  │           │
+│   Use the │     viewer_test.go                                                                        D  │nd write   │
 │   Agent · │ ▸ tools                                                                                   D  │           │
-│           │   claude-api-key-context-refused.jsonl                                                       │────────── │
-│ ✓ TURN 2  │   claude-quota-windows.jsonl                                                                 │           │
-│   started │   claude-subagent-approval.jsonl                                                             │           │
-│           │   claude-thinking-subagent.jsonl                                                             │    mock   │
-│           │   claude-thinking.jsonl                                                                      │           │
-│           │   codex-api-key.jsonl                                                                     U  │nd write   │
-│           │   codex-no-5h-window.jsonl                                                                   │           │
-│           │   codex-plan6-limits.jsonl                                                                !  │           │
-│           │   codex-spawn-request.jsonl                                                               A  │    mock   │
-│ ──────────│   codex-subagents.jsonl                                                                      │    mock   │
-│ ✦ TELEMETR│                                                                                              │    mock   │
-│ ▾ SESSION │                                                                                              │           │
-│   Context │                                                                                              │─────────╮ │
-│   Tokens 1│                                                                                              │         │ │
-│   Est. cos│                                                                                              │.md`,    │ │
-│           │                                                                                              │         │ │
-│ ▾ QUOTA WI│                                                                                              │         │ │
+│           │   claude-api-key-context-refused.jsonl                                                       │           │
+│ ✓ TURN 2  │   claude-quota-windows.jsonl                                                                 │    mock   │
+│   started │   claude-subagent-approval.jsonl                                                             │    mock   │
+│ ──────────│   claude-thinking-subagent.jsonl                                                             │    mock   │
+│ ✦ TELEMETR│   claude-thinking.jsonl                                                                      │           │
+│ ▾ SESSION │   codex-api-key.jsonl                                                                     U  │─────────╮ │
+│   Context │   codex-no-5h-window.jsonl                                                                   │         │ │
+│   Tokens 1│   codex-plan6-limits.jsonl                                                                !  │.md`,    │ │
+│   Est. cos│   codex-spawn-request.jsonl                                                               A  │         │ │
+│ ▾ QUOTA WI│   codex-subagents.jsonl                                                                      │         │ │
 │   Session │                                                                                              │         │ │
 │   ████████│                                                                                              │─────────╯ │
 │   Resets i│                                                                                              │           │
-│           │                                                                                              │           │
 │   Weekly (│                                                                                              │────────── │
 │   ████████│                                                                                              │           │
 │   Resets i│                                                                                              │aft window │
-╰───────────│ ↑↓ move · → open · ← close · Enter view · / quick open · Esc back · F3 close         2 of 14 │───────────╯
-╭─ C · LIVE ╰──────────────────────────────────────────────────────────────────────────────────────────────╯ · 1 DONE ─╮
-│  ✓  general-purpose   haiku-5-5   completed · Files written to found.txt: …                                          │
-│     00:00   21.5k tok   tool: Write ✓                                                                                │
+╰───────────│                                                                                              │───────────╯
+╭───────────│                                                                                              │───────────╮
+│ C · LIVE A│                                                                                              │E · 1 DONE │
+│ ──────────│                                                                                              │────────── │
+│ AGENTS    │                                                                                              │ COMPLETED │
+│  ✓  genera│                                                                                              │ beta.md   │
+│     00:00 │                                                                                              │           │
+│           │                                                                                              │           │
+│           │ ↑↓ move · → open · ← close · Enter view · / quick open · Esc back · F3 close         2 of 14 │           │
+│           ╰──────────────────────────────────────────────────────────────────────────────────────────────╯           │
+│                                          │                                                                           │
+│                                          │                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

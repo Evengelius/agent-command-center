@@ -51,9 +51,9 @@ func TestZoom(t *testing.T) {
 				if !strings.Contains(zoomed, title) || len(rows) != size[1] || !strings.Contains(rows[len(rows)-1], "z or Esc restore") {
 					t.Errorf("%dx%d %s zoomed:\n%s", size[0], size[1], z, zoomed)
 				}
-				titleRow := 2 // in the top edge; zone A's heading is its first inner row
-				if z == "A" {
-					titleRow = 3
+				titleRow := 3 // the heading is the first inner row (A since plan 24, C since plan 27)
+				if z == "C" && size[0] < 100 {
+					titleRow = 2 // the narrow layout keeps C's title in its top edge
 				}
 				if !strings.HasPrefix(rows[2], "╭") || !strings.Contains(rows[titleRow], title) || !strings.Contains(rows[len(rows)-2], "╰") {
 					t.Errorf("%dx%d %s: the zone does not span rows 2 to %d:\n%s", size[0], size[1], z, len(rows)-2, zoomed)

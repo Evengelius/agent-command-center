@@ -10,14 +10,15 @@ import (
 // TestZoneCFloor is plan 21's item 4: from 160 columns, B's 14 rows left
 // zone C 3 rows at 24 to 26 rows, too few for an agent's two, and C listed
 // none. With an agent in play C keeps one agent's rows, A and B giving
-// them. Since plan 24 zone D's 6 rows are A's, B's and C's: at 24 rows C
-// has 7, and its 8 for the preview from 25 rows.
+// them. Since plan 27 (design D4) those rows are 7, one agent's two with
+// the three heading rows and the edges: C has 7 at 24 to 26 rows and 8 at
+// 27, a third of the rows the zones share.
 func TestZoneCFloor(t *testing.T) {
 	one := probeState(t, "p3b-claude-subagent-approval.jsonl", claude.ProviderID, claude.NewMapper())
 	if n := one.AgentsInPlay(); n != 1 {
 		t.Fatalf("P3b: %d agents in play, want 1", n)
 	}
-	for _, c := range []struct{ h, top, c int }{{24, 14, 7}, {25, 14, 8}, {26, 15, 8}, {27, 16, 8}} {
+	for _, c := range []struct{ h, top, c int }{{24, 14, 7}, {25, 15, 7}, {26, 16, 7}, {27, 16, 8}} {
 		rows := strings.Split(strings.TrimSuffix(texts(Draw(one, UI{Width: 160, Height: c.h, Focus: "B"}).lines), "\n"), "\n")
 		if len(rows) != c.h {
 			t.Fatalf("160x%d: %d rows", c.h, len(rows))
@@ -35,13 +36,14 @@ func TestZoneCFloor(t *testing.T) {
 		if top, ch := b.bottom-b.top+1, zc.bottom-zc.top+1; top != c.top || ch != c.c {
 			t.Errorf("160x%d: A and B %d rows, C %d; want %d and %d", c.h, top, ch, c.top, c.c)
 		}
-		// C's first row inside its border: the agent's label in the list,
-		// left of the rule, the preview's heading right of it.
-		first := rows[zc.top+1]
+		// C's rows inside its border: the header, its rule, the panels'
+		// headings, then the agent's label in the list left of the vertical
+		// rule and the timeline's first row right of it (plan 27).
+		head, first := rows[zc.top+3], rows[zc.top+4]
 		rule := strings.Index(first, " │ ")
 		label := strings.Index(first, "general-purpose")
-		if rule < 0 || label < 0 || label > rule || !strings.Contains(first[rule:], "general-purpose · LIVE") {
-			t.Errorf("160x%d: C's first row lists no agent left of the preview:\n%s", c.h, first)
+		if rule < 0 || label < 0 || label > rule || !strings.Contains(head, "AGENTS") || !strings.Contains(head[strings.Index(head, " │ "):], "EXECUTION TIMELINE") {
+			t.Errorf("160x%d: C's rows list no agent left of the timeline:\n%s\n%s", c.h, head, first)
 		}
 	}
 }

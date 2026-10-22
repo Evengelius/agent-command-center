@@ -1,40 +1,40 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ codex-subagents.jsonl   ..\..\testdata\mock\codex-subagents.jsonl               Mock data 0.145.0 · approvals Manual
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                 ││                                                                                  │
-│ ◆ GPT-5.6-sol        ✓ COMPLETED ││ ▎ YOU  11:30                                                                     │
-│ ──────────────────────────────── ││ ▎ Spawn two subagents in parallel. The first lists the files in the current      │
-│ STAGES · inferred from activity  ││ ▎ directory. The second creates a file named found.txt in the current directory  │
-│ ✓ TURN 1                      0s ││ ▎ containing the single word found. Wait for both, then reply with the single    │
-│   Spawn two subagents in parall… ││ ▎ word done.                                                                     │
+│ A · ORCHESTRATOR                 ││ ▎ Spawn two subagents in parallel. The first lists the files in the current      │
+│ ◆ GPT-5.6-sol        ✓ COMPLETED ││ ▎ directory. The second creates a file named found.txt in the current directory  │
+│ ──────────────────────────────── ││ ▎ containing the single word found. Wait for both, then reply with the single    │
+│ STAGES · inferred from activity  ││ ▎ word done.                                                                     │
+│ ✓ TURN 1                      0s ││                                                                                  │
+│   Spawn two subagents in parall… ││ ──────────────────────────────────────────────────────────────────────────────── │
 │   ├─ ✓ child  /root/list_f… mock ││                                                                                  │
-│   ├─ ✓ child  /root/create… mock ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   ├─ ✓ collabAgent:wait     mock ││                                                                                  │
-│   └─ ✓ collabAgent:wait     mock ││ ▎ CODEX  gpt-5.6-sol  11:30                                                      │
-│                                  ││ ▎  ▸ ✓ Thought for up to 0.0s · 83 reasoning tokens         11:30:00      mock   │
-│                                  ││ ▎  ▸ ✓ Thought for up to 0.0s · 8 reasoning tokens          11:30:00      mock   │
-│                                  ││ ▎  ✓ collabAgent:wait                                       11:30:00      mock   │
-│                                  ││ ▎  ✓ /root/create_found · fileChange         allowed by you 11:30:00      mock   │
-│ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens          11:30:00      mock   │
-│ ✦ TELEMETRY        Enter details ││ ▎  ✓ collabAgent:wait                                       11:30:00      mock   │
-│ ▾ SESSION USAGE                  ││                                                                                  │
-│   Context 6% of 258.4k █░░░░░░░░ ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
-│   Tokens 184.3k session total    ││ │ RESULT  11:30                                                                │ │
-│   Est. cost N/A Codex reports n… ││ │ done                                                                         │ │
-│                                  ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
-│ ▾ QUOTA WINDOWS                  ││                                                                                  │
-│   Session (5hr)               1% ││                                                                                  │
-│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
+│   ├─ ✓ child  /root/create… mock ││ ▎ CODEX  gpt-5.6-sol  11:30                                                      │
+│   ├─ ✓ collabAgent:wait     mock ││ ▎  ▸ ✓ Thought for up to 0.0s · 83 reasoning tokens         11:30:00      mock   │
+│   └─ ✓ collabAgent:wait     mock ││ ▎  ▸ ✓ Thought for up to 0.0s · 8 reasoning tokens          11:30:00      mock   │
+│ ──────────────────────────────── ││ ▎  ✓ collabAgent:wait                                       11:30:00      mock   │
+│ ✦ TELEMETRY        Enter details ││ ▎  ✓ /root/create_found · fileChange         allowed by you 11:30:00      mock   │
+│ ▾ SESSION USAGE                  ││ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens          11:30:00      mock   │
+│   Context 6% of 258.4k █░░░░░░░░ ││ ▎  ✓ collabAgent:wait                                       11:30:00      mock   │
+│   Tokens 184.3k session total    ││                                                                                  │
+│   Est. cost N/A Codex reports n… ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
+│ ▾ QUOTA WINDOWS                  ││ │ RESULT  11:30                                                                │ │
+│   Session (5hr)               1% ││ │ done                                                                         │ │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
 │   Resets in 15h 13m              ││                                                                                  │
-│                                  ││                                                                                  │
 │   Weekly (7 day)              1% ││ ──────────────────────────────────────────────────────────────────────────────── │
 │   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ > Ask Mock data anything…                                                        │
 │   Resets in 6d 23h               ││   Enter send · Ctrl+J newline                       1 line · Ctrl+G draft window │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
-╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
-│  ✓  /root/create_found   model N/A   completed                                                                       │
-│     00:00   77.3k tok   tool: commandExecution ✓                                                                     │
-│  ✓  /root/list_files     model N/A   completed                                                                       │
-│     00:00   30.5k tok   tool: commandExecution ✓                                                                     │
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 2 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                        │ EXECUTION TIMELINE                                       ✓ COMPLETED │
+│  ✓  /root/create_fou…   │  model N/A          │ 11:30:00  assistant │ I’ll create `found.txt` with exactly the       │
+│     00:00   77.3k tok   │  tool: commandEx…   │                     │ requested content, then verify its bytes.      │
+│  ✓  /root/list_files    │  model N/A          │ ──────────────────────────────────────────────────────────────────── │
+│     00:00   30.5k tok   │  tool: commandEx…   │ 11:30:00  assistant │ Created and verified `found.txt` containing    │
+│                                               │                     │ `found`.                                       │
+│                                               │                                                                      │
+│                                               │                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  ↑↓ move · ←→ fold · Enter inspect or details · z zoom · PgUp PgDn Home End scroll · F6 zone · Esc back to the input · …

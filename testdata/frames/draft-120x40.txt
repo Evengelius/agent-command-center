@@ -1,40 +1,40 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   …estdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300 · approvals Manual
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                 ││ ▎ one line what it found.                                                        │
+│ A · ORCHESTRATOR                 ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
 │ ✿ Claude H╭─ Draft ──────────────────────────────────────────────────────────────────────────── 7 lines ─╮           │
-│ ──────────│ > Review the colour palette in sample/viewer.go:                                             │────────── │
-│ STAGES · i│                                                                                              │           │
-│ ✓ TURN 1  │   1. keep the five accents of the reference screen;                                          │           │
-│   Use the │   2. check each one against the dark background;                                             │    mock   │
-│   Agent · │   3. report any pair under 4.5:1, with its hex values.                                       │           │
-│           │                                                                                              │nd write   │
-│ ✓ TURN 2  │   Do not change the file yet.                                                                │           │
-│   started │                                                                                              │           │
-│           │                                                                                              │    mock   │
-│           │                                                                                              │    mock   │
-│           │                                                                                              │    mock   │
-│           │                                                                                              │           │
-│           │                                                                                              │─────────╮ │
+│ ──────────│ > Review the colour palette in sample/viewer.go:                                             │    mock   │
+│ STAGES · i│                                                                                              │    mock   │
+│ ✓ TURN 1  │   1. keep the five accents of the reference screen;                                          │    mock   │
+│   Use the │   2. check each one against the dark background;                                             │           │
+│   Agent · │   3. report any pair under 4.5:1, with its hex values.                                       │─────────╮ │
 │           │                                                                                              │         │ │
-│ ──────────│                                                                                              │.md`,    │ │
+│ ✓ TURN 2  │   Do not change the file yet.                                                                │.md`,    │ │
+│   started │                                                                                              │         │ │
+│ ──────────│                                                                                              │         │ │
 │ ✦ TELEMETR│                                                                                              │         │ │
-│ ▾ SESSION │                                                                                              │         │ │
-│   Context │                                                                                              │         │ │
-│   Tokens 1│                                                                                              │─────────╯ │
+│ ▾ SESSION │                                                                                              │─────────╯ │
+│   Context │                                                                                              │           │
+│   Tokens 1│                                                                                              │────────── │
 │   Est. cos│                                                                                              │           │
-│           │                                                                                              │────────── │
 │ ▾ QUOTA WI│                                                                                              │           │
 │   Session │                                                                                              │           │
 │   ████████│                                                                                              │           │
 │   Resets i│                                                                                              │           │
-│           │                                                                                              │           │
 │   Weekly (│                                                                                              │           │
 │   ████████│                                                                                              │           │
 │   Resets i│                                                                                              │aft window │
-╰───────────│ Enter send · Ctrl+J newline · Ctrl+F full screen · Esc back          turn started by the CLI │───────────╯
-╭─ C · LIVE ╰──────────────────────────────────────────────────────────────────────────────────────────────╯ · 1 DONE ─╮
-│  ✓  general-purpose   haiku-5-5   completed · Files written to found.txt: …                                          │
-│     00:00   21.5k tok   tool: Write ✓                                                                                │
+╰───────────│                                                                                              │───────────╯
+╭───────────│                                                                                              │───────────╮
+│ C · LIVE A│                                                                                              │E · 1 DONE │
+│ ──────────│                                                                                              │────────── │
+│ AGENTS    │                                                                                              │ COMPLETED │
+│  ✓  genera│                                                                                              │ beta.md   │
+│     00:00 │                                                                                              │           │
+│           │                                                                                              │           │
+│           │ Enter send · Ctrl+J newline · Ctrl+F full screen · Esc back          turn started by the CLI │           │
+│           ╰──────────────────────────────────────────────────────────────────────────────────────────────╯           │
+│                                          │                                                                           │
+│                                          │                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

@@ -3,38 +3,38 @@
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                 ││                                                                                  │
 │ ✿ Claude H╭─ Quick open ────────────────────────────────────────────────────────────────────── 11 files ─╮           │
-│ ──────────│ › vi▌                                                                                        │task:      │
-│ STAGES · i│ ▸ sample/viewer.go                                                                           │w file     │
-│ ✓ TURN 1  │                                                                                              │ me in     │
-│   Use the │                                                                                              │           │
+│ ──────────│ › vi▌                                                                                        │           │
+│ STAGES · i│ ▸ sample/viewer.go                                                                           │    mock   │
+│ ✓ TURN 1  │                                                                                              │           │
+│   Use the │                                                                                              │nd write   │
 │   Agent · │                                                                                              │           │
-│           │                                                                                              │────────── │
-│ ✓ TURN 2  │                                                                                              │           │
-│   started │                                                                                              │           │
-│           │                                                                                              │    mock   │
 │           │                                                                                              │           │
-│           │                                                                                              │nd write   │
-│           │                                                                                              │           │
-│           │                                                                                              │           │
-│           │                                                                                              │    mock   │
+│ ✓ TURN 2  │                                                                                              │    mock   │
+│   started │                                                                                              │    mock   │
 │ ──────────│                                                                                              │    mock   │
-│ ✦ TELEMETR│                                                                                              │    mock   │
-│ ▾ SESSION │                                                                                              │           │
-│   Context │                                                                                              │─────────╮ │
-│   Tokens 1│                                                                                              │         │ │
-│   Est. cos│                                                                                              │.md`,    │ │
-│           │                                                                                              │         │ │
+│ ✦ TELEMETR│                                                                                              │           │
+│ ▾ SESSION │                                                                                              │─────────╮ │
+│   Context │                                                                                              │         │ │
+│   Tokens 1│                                                                                              │.md`,    │ │
+│   Est. cos│                                                                                              │         │ │
 │ ▾ QUOTA WI│                                                                                              │         │ │
 │   Session │                                                                                              │         │ │
 │   ████████│                                                                                              │─────────╯ │
 │   Resets i│                                                                                              │           │
-│           │                                                                                              │           │
 │   Weekly (│                                                                                              │────────── │
 │   ████████│                                                                                              │           │
 │   Resets i│                                                                                              │aft window │
-╰───────────│ type to filter · ↑↓ PgUp PgDn select · Enter open · F1 keys · Esc back · F3 close     1 of 1 │───────────╯
-╭─ C · LIVE ╰──────────────────────────────────────────────────────────────────────────────────────────────╯ · 1 DONE ─╮
-│  ✓  general-purpose   haiku-5-5   completed · Files written to found.txt: …                                          │
-│     00:00   21.5k tok   tool: Write ✓                                                                                │
+╰───────────│                                                                                              │───────────╯
+╭───────────│                                                                                              │───────────╮
+│ C · LIVE A│                                                                                              │E · 1 DONE │
+│ ──────────│                                                                                              │────────── │
+│ AGENTS    │                                                                                              │ COMPLETED │
+│  ✓  genera│                                                                                              │ beta.md   │
+│     00:00 │                                                                                              │           │
+│           │                                                                                              │           │
+│           │ type to filter · ↑↓ PgUp PgDn select · Enter open · F1 keys · Esc back · F3 close     1 of 1 │           │
+│           ╰──────────────────────────────────────────────────────────────────────────────────────────────╯           │
+│                                          │                                                                           │
+│                                          │                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

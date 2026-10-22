@@ -25,14 +25,6 @@
 │                                                      ││                                                                                                                                              │
 │                                                      ││                                                                                                                                              │
 │                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
 │ ──────────────────────────────────────────────────── ││                                                                                                                                              │
 │ ✦ TELEMETRY                            Enter details ││                                                                                                                                              │
 │ ▾ SESSION USAGE                                      ││                                                                                                                                              │
@@ -49,12 +41,20 @@
 │   █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ > Ask Mock data anything…                                                                                                                    │
 │   Resets in 6d 23h                                   ││   Enter send · Ctrl+J newline                                                                                   1 line · Ctrl+G draft window │
 ╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
-│  ✓  /root/create_found   model N/A   completed                         │ /root/create_found · LIVE                                                                          model N/A (not reported) │
-│     00:00   77.3k tok   tool: commandExecution ✓                       │ 11:30:00  assistant  I’ll create `found.txt` with exactly the requested content, then verify its bytes.                mock │
-│  ✓  /root/list_files     model N/A   completed                         │ 11:30:00  assistant  Created and verified `found.txt` containing `found`.                                              mock │
-│     00:00   30.5k tok   tool: commandExecution ✓                       │                                                                                                                             │
-│                                                                        │                                                                                                                             │
-│                                                                        │                                                                                                                             │
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                                                                                                    0 ACTIVE · 2 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                               │ EXECUTION TIMELINE                                                                                                                ✓ COMPLETED │
+│  ✓  /root/create_found   │  model N/A                │ 11:30:00  assistant │ I’ll create `found.txt` with exactly the requested content, then verify its bytes.                                      │
+│     00:00   77.3k tok    │  tool: commandExecution   │ ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│  ✓  /root/list_files     │  model N/A                │ 11:30:00  assistant │ Created and verified `found.txt` containing `found`.                                                                    │
+│     00:00   30.5k tok    │  tool: commandExecution   │                                                                                                                                               │
+│                                                      │                                                                                                                                               │
+│                                                      │                                                                                                                                               │
+│                                                      │                                                                                                                                               │
+│                                                      │                                                                                                                                               │
+│                                                      │                                                                                                                                               │
+│                                                      │                                                                                                                                               │
+│                                                      │                                                                                                                                               │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
  ↑↓ move · ←→ fold · Enter inspect or details · z zoom · PgUp PgDn Home End scroll · F6 zone · Esc back to the input · F1 keys
