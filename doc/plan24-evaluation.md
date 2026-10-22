@@ -343,3 +343,14 @@ wrapper's source) and `claudebin\` (its executable and `wrap.json`).
 `race3.log` (the timing step's third run), `race5.log` (the race run), the
 patch files `usage-*.patch` and `doc-*.patch` (what was changed, block by
 block).
+
+**The commits and the push (2026-10-22), after the owner's approval.** The
+owner approved plan 24 on 2026-10-22 and asked for two commits: 6209267,
+the plan (126 files), its tree built in a scratch copy by reversing
+amendment 23's recorded patches, where gofmt, the build, vet and the whole
+suite passed, and the commit's archive equal to that tree byte for byte;
+a3bfe5d, amendment 23 (23 files), the working tree checked above. Both and
+the approval commit were pushed to `origin`; `origin/main` equals
+`main`, the working tree is clean, and the author is `Evengelius
+<molimoabel@gmail.com>`, with no attribution line: PASS. The blocks above
+stay as they were reported.
