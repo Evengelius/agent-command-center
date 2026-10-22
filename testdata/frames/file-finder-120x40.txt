@@ -14,24 +14,24 @@
 │           │                                                                                              │    mock   │
 │           │                                                                                              │           │
 │           │                                                                                              │nd write   │
-│ ──────────│                                                                                              │           │
-│ ✦ TELEMETR│                                                                                              │           │
-│ ▾ SESSION │                                                                                              │    mock   │
-│   Context │                                                                                              │    mock   │
-│   Tokens 1│                                                                                              │    mock   │
-│   Est. cos│                                                                                              │           │
-│           │                                                                                              │─────────╮ │
-│ ▾ QUOTA WI│                                                                                              │         │ │
-│   Session │                                                                                              │.md`,    │ │
-│   ████████│                                                                                              │         │ │
-│   Resets i│                                                                                              │         │ │
+│           │                                                                                              │           │
+│           │                                                                                              │           │
+│           │                                                                                              │    mock   │
+│ ──────────│                                                                                              │    mock   │
+│ ✦ TELEMETR│                                                                                              │    mock   │
+│ ▾ SESSION │                                                                                              │           │
+│   Context │                                                                                              │─────────╮ │
+│   Tokens 1│                                                                                              │         │ │
+│   Est. cos│                                                                                              │.md`,    │ │
 │           │                                                                                              │         │ │
-│   Weekly (│                                                                                              │─────────╯ │
-│   ████████│                                                                                              │           │
+│ ▾ QUOTA WI│                                                                                              │         │ │
+│   Session │                                                                                              │         │ │
+│   ████████│                                                                                              │─────────╯ │
 │   Resets i│                                                                                              │           │
-│ ──────────│                                                                                              │────────── │
-│ ⓘ quota up│                                                                                              │           │
-│   context │                                                                                              │aft window │
+│           │                                                                                              │           │
+│   Weekly (│                                                                                              │────────── │
+│   ████████│                                                                                              │           │
+│   Resets i│                                                                                              │aft window │
 ╰───────────│ type to filter · ↑↓ PgUp PgDn select · Enter open · F1 keys · Esc back · F3 close     1 of 1 │───────────╯
 ╭─ C · LIVE ╰──────────────────────────────────────────────────────────────────────────────────────────────╯ · 1 DONE ─╮
 │  ✓  general-purpose   haiku-5-5   completed · Files written to found.txt: …                                          │

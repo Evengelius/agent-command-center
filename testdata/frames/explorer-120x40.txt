@@ -14,24 +14,24 @@
 │           │   claude-thinking-subagent.jsonl                                                             │    mock   │
 │           │   claude-thinking.jsonl                                                                      │           │
 │           │   codex-api-key.jsonl                                                                     U  │nd write   │
-│ ──────────│   codex-no-5h-window.jsonl                                                                   │           │
-│ ✦ TELEMETR│   codex-plan6-limits.jsonl                                                                !  │           │
-│ ▾ SESSION │   codex-spawn-request.jsonl                                                               A  │    mock   │
-│   Context │   codex-subagents.jsonl                                                                      │    mock   │
-│   Tokens 1│                                                                                              │    mock   │
-│   Est. cos│                                                                                              │           │
-│           │                                                                                              │─────────╮ │
-│ ▾ QUOTA WI│                                                                                              │         │ │
-│   Session │                                                                                              │.md`,    │ │
-│   ████████│                                                                                              │         │ │
-│   Resets i│                                                                                              │         │ │
+│           │   codex-no-5h-window.jsonl                                                                   │           │
+│           │   codex-plan6-limits.jsonl                                                                !  │           │
+│           │   codex-spawn-request.jsonl                                                               A  │    mock   │
+│ ──────────│   codex-subagents.jsonl                                                                      │    mock   │
+│ ✦ TELEMETR│                                                                                              │    mock   │
+│ ▾ SESSION │                                                                                              │           │
+│   Context │                                                                                              │─────────╮ │
+│   Tokens 1│                                                                                              │         │ │
+│   Est. cos│                                                                                              │.md`,    │ │
 │           │                                                                                              │         │ │
-│   Weekly (│                                                                                              │─────────╯ │
-│   ████████│                                                                                              │           │
+│ ▾ QUOTA WI│                                                                                              │         │ │
+│   Session │                                                                                              │         │ │
+│   ████████│                                                                                              │─────────╯ │
 │   Resets i│                                                                                              │           │
-│ ──────────│                                                                                              │────────── │
-│ ⓘ quota up│                                                                                              │           │
-│   context │                                                                                              │aft window │
+│           │                                                                                              │           │
+│   Weekly (│                                                                                              │────────── │
+│   ████████│                                                                                              │           │
+│   Resets i│                                                                                              │aft window │
 ╰───────────│ ↑↓ move · → open · ← close · Enter view · / quick open · Esc back · F3 close         2 of 14 │───────────╯
 ╭─ C · LIVE ╰──────────────────────────────────────────────────────────────────────────────────────────────╯ · 1 DONE ─╮
 │  ✓  general-purpose   haiku-5-5   completed · Files written to found.txt: …                                          │

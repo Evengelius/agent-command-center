@@ -18,7 +18,7 @@
  UNRECOGNISED  lines the dashboard could not map, newest first
  none
 
- TELEMETRY  value · source · received
+ TELEMETRY  value · source · received · † undocumented field
  context.compact_at  967,000 tokens†  · get_context_usage 0s ago
  context.used        35,061 tokens (derived)  · last assistant usage over resu…
  ↓ 17 more · ↑↓ PgUp PgDn scroll · Home top · End bottom · Esc back

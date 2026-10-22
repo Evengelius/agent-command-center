@@ -79,12 +79,13 @@ func TestZoneAStructure(t *testing.T) {
 		if tele < 0 || usage != tele+1 || quota < usage || strings.Trim(rows[tele-1], "─") != "" {
 			t.Errorf("%v: TELEMETRY at %d, SESSION USAGE at %d, QUOTA WINDOWS at %d:\n%s", size, tele, usage, quota, strings.Join(rows, "\n"))
 		}
-		if tree := tele - 1 - 4; tree < 6 {
-			t.Errorf("%v: the tree has %d rows, want at least 6", size, tree)
+		// Plan 26: the pane ends with the last window's rows, no rule and no
+		// notes after them; the tree has the 3 rows the full form's notes took.
+		if tree := tele - 1 - 4; tree < 6 || tree < map[int]int{120: 9, 208: 24}[size[0]] {
+			t.Errorf("%v: the tree has %d rows, want at least 6 and plan 24's 3 more", size, tree)
 		}
-		notes := indexOf(rows, "ⓘ ")
-		if notes < 0 || strings.Trim(rows[notes-1], "─") != "" || notes < len(rows)-2 {
-			t.Errorf("%v: the notes at %d of %d rows, after a rule:\n%s", size, notes, len(rows), strings.Join(rows, "\n"))
+		if last := rows[len(rows)-1]; !strings.HasPrefix(last, "  Resets in ") || strings.Contains(strings.Join(rows, "\n"), "ⓘ") {
+			t.Errorf("%v: the pane's last row %q, want the last window's countdown and no notes:\n%s", size, last, strings.Join(rows, "\n"))
 		}
 		if n := strings.Count(strings.Join(rows, "\n"), "Resets in "); n != 2 {
 			t.Errorf("%v: %d \"Resets in\" rows, want the full form's 2", size, n)
@@ -454,40 +455,56 @@ func TestQuotaWindows(t *testing.T) {
 	}
 }
 
-// TestNotes is criterion 24.22: the notes' parts from the state, nothing
-// hardcoded.
-func TestNotes(t *testing.T) {
+// TestNoNotes is plan 26's criterion 26.1 (amendment 25, the owner's
+// standing decision): zone A draws values only, none of the notes it drew
+// until plan 25, whatever the state holds; the details view keeps them.
+func TestNoNotes(t *testing.T) {
+	gone := []string{"ⓘ", "errors ", "retries ", "unrecognised", "quota updated", "derived", "undocumented field", "cost at API rates", "overage", "plan plus", "credits", "values from the CLI's events"}
 	s, now := stampedMock(t, "claude-subagent-approval.jsonl", appClock)
-	rows := noteRows(s, UI{Now: now}, 54, 2)
-	text := strings.ReplaceAll(strings.TrimRight(texts(rows), "\n"), "\n  ", " · ")
-	text = strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(text, " "))
-	if !regexp.MustCompile(`^ⓘ quota updated \d+s ago · context derived from usage · † undocumented field · cost at API rates$`).MatchString(text) {
-		t.Errorf("the notes %q", text)
+	s.Errors = append(s.Errors, state.ErrorEntry{Message: "one"}, state.ErrorEntry{Message: "two"})
+	s.Retries = 3
+	s.Unrecognised = 3
+	s.UnrecognisedLast = []state.UnknownEntry{{At: now, Type: "system/x", Line: `{"type":"system","subtype":"x"}`}}
+	if v := s.Metrics["context.used"]; !v.Present || v.Origin != event.Derived {
+		t.Fatalf("the mock's context is not derived: %+v", v)
 	}
-	if len(rows) != 2 || !strings.HasPrefix(texts(rows[1:]), "  ") {
-		t.Errorf("%d rows, the second indented: %q", len(rows), texts(rows))
+	if v := s.Metrics["quota.5h"]; !v.Present || v.Documented {
+		t.Fatalf("the mock's quota is documented: %+v", v)
+	}
+	c, _ := stampedMock(t, "codex-subagents.jsonl", appClock)
+	if rows, _ := teleRows(state.New(), UI{Width: 120, Now: now}, 54, formFull); strings.Contains(texts(rows), "ⓘ") || strings.Contains(texts(rows), "values from the CLI") {
+		t.Errorf("an empty state draws a note:\n%s", texts(rows))
+	}
+	for _, tc := range []struct {
+		name string
+		s    *state.State
+	}{{"claude", s}, {"codex", c}} {
+		for _, size := range [][2]int{{120, 40}, {208, 59}} {
+			rows, _ := zoneARows(tc.s, UI{Width: size[0], Height: size[1], Now: now, Focus: "B"})
+			all := strings.Join(rows, "\n")
+			for _, g := range gone {
+				if strings.Contains(all, g) {
+					t.Errorf("%s %v: zone A draws %q:\n%s", tc.name, size, g, all)
+				}
+			}
+			if tele := indexOf(rows, "✦ TELEMETRY"); tele < 0 || !strings.HasSuffix(strings.TrimRight(rows[tele], " "), "Enter details") {
+				t.Errorf("%s %v: the TELEMETRY heading row %d", tc.name, size, tele)
+			}
+		}
 	}
 	heading, _ := teleRows(s, UI{Now: now, Width: 208}, 54, formFull)
 	if h := strings.TrimRight(texts(heading[1:2]), "\n"); !strings.HasPrefix(h, "✦ TELEMETRY") || !strings.HasSuffix(h, "Enter details") || len([]rune(h)) != 54 {
 		t.Errorf("the heading row %q", h)
 	}
-	s.Errors = append(s.Errors, state.ErrorEntry{Message: "one"}, state.ErrorEntry{Message: "two"})
-	parts := noteParts(s, UI{Now: now})
-	if p := parts[0]; texts([]line{p}) != "errors 2\n" || p[0].st != stFailed {
-		t.Errorf("with errors: first part %q styled %p", texts([]line{p}), p[0].st)
+	if last := texts(heading[len(heading)-1:]); !strings.HasPrefix(last, "  Resets in ") {
+		t.Errorf("the full form's last row %q, want the last window's countdown", last)
 	}
-	c, _ := stampedMock(t, "codex-subagents.jsonl", appClock)
-	text = strings.TrimRight(texts(noteRows(c, UI{Now: now}, 200, 1)), " \n")
-	for _, want := range []string{"plan plus", "credits none", "tokens summed over threads"} {
-		if !strings.Contains(text, want) {
-			t.Errorf("Codex's notes lack %q: %q", want, text)
+	// The details view keeps the counts, the legend and the marks.
+	d := texts(detailsBody(s, UI{Width: 200, Now: now}, 198))
+	for _, want := range []string{"value · source · received · † undocumented field", "unrecognised events 3", "retries             3", "%†", "(derived)", "system/x"} {
+		if !strings.Contains(d, want) {
+			t.Errorf("the details view lacks %q:\n%s", want, d)
 		}
-	}
-	if strings.Contains(text, "cost") {
-		t.Errorf("Codex's notes mention a cost: %q", text)
-	}
-	if text := strings.TrimRight(texts(noteRows(state.New(), UI{}, 54, 2)), " \n"); text != "ⓘ values from the CLI's events" {
-		t.Errorf("no value: %q", text)
 	}
 }
 

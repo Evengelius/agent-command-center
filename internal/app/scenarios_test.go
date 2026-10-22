@@ -13,21 +13,23 @@ import (
 // cases no recording has, built from a recording with the documented reply
 // put in. Each one goes through the whole pipeline, mapper to frame, and
 // zone A's telemetry pane shows the reason a value is missing, never a
-// figure (plan 24: zone D's rows before).
+// figure (plan 24: zone D's rows before; plan 26: the pane's notes, "errors
+// 1", "context derived from usage", "plan plus", are gone, the details view
+// has them).
 func TestSyntheticScenarios(t *testing.T) {
 	for _, c := range []struct {
 		file      string
 		want, not []string
 	}{
 		{"claude-api-key-context-refused.jsonl",
-			[]string{"Session (5hr)", "Weekly (7 day)", "API key: no subscription window", "3% of 1M", "context derived from usage", "errors 1"},
-			[]string{"Resets in", "Fable"}},
+			[]string{"Session (5hr)", "Weekly (7 day)", "API key: no subscription window", "3% of 1M"},
+			[]string{"Resets in", "Fable", "errors ", "derived"}},
 		{"codex-api-key.jsonl",
 			[]string{"Session (5hr)", "Weekly (7 day)", "API key: ChatGPT sign-in needed", "N/A"},
 			[]string{"Resets in", "plan plus", "errors "}},
 		{"codex-no-5h-window.jsonl",
-			[]string{"Session (5hr)", "plan has no 5-hour limit", "Weekly (7 day)", "1%", "Resets in ", "plan plus"},
-			[]string{"▱", "▰", "errors "}},
+			[]string{"Session (5hr)", "plan has no 5-hour limit", "Weekly (7 day)", "1%", "Resets in "},
+			[]string{"▱", "▰", "errors ", "plan plus"}},
 		// Plan 6's simulated run: the failed command's last line with its
 		// exit code (item 1); the requested model, and N/A without one (item
 		// 4), marked "*" with its footnote (item 5), with its effort (item 6).

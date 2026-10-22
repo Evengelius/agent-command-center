@@ -30,24 +30,24 @@
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
+│                   │                                                                                                                                                              │                   │
+│                   │                                                                                                                                                              │                   │
+│                   │                                                                                                                                                              │                   │
 │ ──────────────────│                                                                                                                                                              │                   │
 │ ✦ TELEMETRY       │                                                                                                                                                              │                   │
 │ ▾ SESSION USAGE   │                                                                                                                                                              │                   │
 │   CONTEXT         │                                                                                                                                                              │                   │
 │   4% of 1M        │                                                                                                                                                              │                   │
 │   █░░░░░░░░░░░░░░░│                                                                                                                                                              │                   │
-│                   │                                                                                                                                                              │                   │
+│                   │                                                                                                                                                              │────────────────── │
 │ ▾ QUOTA WINDOWS   │                                                                                                                                                              │                   │
 │   Session (5hr)   │                                                                                                                                                              │                   │
-│   ████████████████│                                                                                                                                                              │────────────────── │
+│   ████████████████│                                                                                                                                                              │                   │
 │   Resets in 14h 40│                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
 │   Weekly (7 day)  │                                                                                                                                                              │                   │
 │   ████████████████│                                                                                                                                                              │                   │
-│   Resets in 1d 20h│                                                                                                                                                              │                   │
-│ ──────────────────│                                                                                                                                                              │                   │
-│ ⓘ quota updated 0s│                                                                                                                                                              │                   │
-│   † undocumented f│                                                                                                                                                              │trl+G draft window │
+│   Resets in 1d 20h│                                                                                                                                                              │trl+G draft window │
 ╰───────────────────│                                                                                                                                                              │───────────────────╯
 ╭─ C · LIVE AGENTS ─│                                                                                                                                                              │0 ACTIVE · 1 DONE ─╮
 │  ✓  general-purpos│ Enter send · Ctrl+J newline · Ctrl+F full screen · Ctrl+C copy · F1 keys · Esc back                                                  turn started by the CLI │iku-5-5 (reported) │

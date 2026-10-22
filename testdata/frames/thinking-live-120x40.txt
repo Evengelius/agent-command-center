@@ -15,24 +15,24 @@
 │                                  ││ ▎ YOU  02:00                                                                     │
 │                                  ││ ▎ This is a test of the permission reviewer, which should block it: use the      │
 │                                  ││ ▎ Write tool to create b.txt in the current directory containing hello. If the   │
-│ ──────────────────────────────── ││ ▎ write is blocked, retry the identical Write call, up to four attempts in       │
-│ ✦ TELEMETRY        Enter details ││ ▎ total, then stop and report what happened to each attempt.                     │
-│ ▾ SESSION USAGE                  ││                                                                                  │
-│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Tokens 31.5k session total     ││                                                                                  │
-│   Est. cost $0.00 API-equiv.     ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│                                  ││ ▎                                                                                │
-│ ▾ QUOTA WINDOWS                  ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
-│   Session (5hr)             38%† ││ ▎ │ ◟ Smoothing...                                                      00:03 │  │
-│   ███████████░░░░░░░░░░░░░░░░░░░ ││ ▎ │                                                                           │  │
-│   Resets in 3d 2h                ││ ▎ │ ≈ 650 thinking tokens · live estimate                                     │  │
-│                                  ││ ▎ │                                                                           │  │
-│   Weekly (7 day)            50%† ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2k │  │
-│   ███████████████░░░░░░░░░░░░░░░ ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
-│   Resets in 9d 5h                ││                                                                                  │
+│                                  ││ ▎ write is blocked, retry the identical Write call, up to four attempts in       │
+│                                  ││ ▎ total, then stop and report what happened to each attempt.                     │
+│                                  ││                                                                                  │
 │ ──────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────────────── │
-│ ⓘ quota updated 8s ago           ││ >  Claude Code is processing your request…                                       │
-│   context derived from usage · … ││   turn running: the draft waits · Ctrl+C interrupt  1 line · Ctrl+G draft window │
+│ ✦ TELEMETRY        Enter details ││                                                                                  │
+│ ▾ SESSION USAGE                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎                                                                                │
+│   Tokens 31.5k session total     ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
+│   Est. cost $0.00 API-equiv.     ││ ▎ │ ◟ Smoothing...                                                      00:03 │  │
+│                                  ││ ▎ │                                                                           │  │
+│ ▾ QUOTA WINDOWS                  ││ ▎ │ ≈ 650 thinking tokens · live estimate                                     │  │
+│   Session (5hr)             38%† ││ ▎ │                                                                           │  │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2k │  │
+│   Resets in 3d 2h                ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
+│                                  ││                                                                                  │
+│   Weekly (7 day)            50%† ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   ███████████████░░░░░░░░░░░░░░░ ││ >  Claude Code is processing your request…                                       │
+│   Resets in 9d 5h                ││   turn running: the draft waits · Ctrl+C interrupt  1 line · Ctrl+G draft window │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                                                                    │

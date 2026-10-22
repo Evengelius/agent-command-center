@@ -43,9 +43,9 @@ func TelemetryNodes(ui UI) []Node {
 type teleForm int
 
 const (
-	formFull    teleForm = iota // the image's: blank rows, three rows a window, two rows of notes
-	formCompact                 // no blank rows, one row of notes
-	formTight                   // the usage on two rows, one row a window without its bar, one row of notes
+	formFull    teleForm = iota // the image's: blank rows, three rows a window
+	formCompact                 // no blank rows
+	formTight                   // the usage on two rows, one row a window without its bar
 )
 
 // The pane's indent under a section's heading, and the least width the
@@ -76,7 +76,10 @@ func telemetryPane(s *state.State, ui UI, w, limit, most int) ([]line, []string)
 }
 
 // teleRows is the pane in form f: a rule, the heading, the usage section,
-// the quota section, then the notes after a rule in the full form.
+// the quota section, and nothing after it. The notes the pane drew until
+// plan 25 (counts, the quota's age, legends) are gone for good: the owner's
+// standing decision of 2026-10-22 (amendment 25, plan 26); the details view
+// holds all of it.
 func teleRows(s *state.State, ui UI, w int, f teleForm) ([]line, []string) {
 	var rows []line
 	var nodes []string
@@ -109,14 +112,6 @@ func teleRows(s *state.State, ui UI, w int, f teleForm) ([]line, []string) {
 				add(l, "")
 			}
 		}
-	}
-	n := 1
-	if f == formFull {
-		add(teleRule(w), "")
-		n = 2
-	}
-	for _, l := range noteRows(s, ui, w, n) {
-		add(l, "")
 	}
 	return rows, nodes
 }
@@ -424,83 +419,6 @@ func countdown(d time.Duration) string {
 	return "<1m"
 }
 
-// noteRows are the pane's notes (design D9): "ⓘ" then each part that
-// applies, joined by " · ", on at most n rows, the last cut with "…"; with
-// no part, "ⓘ values from the CLI's events".
-func noteRows(s *state.State, ui UI, w, n int) []line {
-	parts := noteParts(s, ui)
-	if len(parts) == 0 {
-		parts = []line{plain("values from the CLI's events", stGrey)}
-	}
-	var out []line
-	cur := line{deco("ⓘ ", stGrey)}
-	for i, p := range parts {
-		next := p
-		if i > 0 {
-			next = append(line{deco(" · ", stGrey)}, p...)
-		}
-		if cur.width()+next.width() > w && len(out) < n-1 && len(cur) > 1 {
-			out = append(out, cur.fit(w))
-			cur = line{deco(teleIndent, stNone)}
-			next = p
-		}
-		cur = append(cur, next...)
-	}
-	return append(out, cur.fit(w))
-}
-
-// noteParts are the notes' parts, each only when it applies: what went
-// wrong first, then where the values come from, then the way to the rest.
-func noteParts(s *state.State, ui UI) []line {
-	var parts []line
-	say := func(text string, st *lipgloss.Style) { parts = append(parts, plain(text, st)) }
-	if n := len(s.Errors); n > 0 {
-		say(fmt.Sprintf("errors %d", n), stFailed)
-	}
-	if s.Retries > 0 {
-		say(fmt.Sprintf("retries %d", s.Retries), stProgress)
-	}
-	if s.Unrecognised > 0 {
-		say(fmt.Sprintf("unrecognised %d", s.Unrecognised), stProgress)
-	}
-	if f := freshness(s, ui); f != "" {
-		say(f, stGrey)
-	}
-	if v := s.Metrics["context.used"]; v.Present && v.Origin == event.Derived {
-		say("context derived from usage", stGrey)
-	}
-	if v := s.Metrics["tokens.session"]; v.Present && v.Origin == event.Derived {
-		say("tokens summed over threads", stGrey)
-	}
-	if undocumentedShown(s) {
-		say("† undocumented field", stGrey)
-	}
-	if s.Metrics["cost.usd"].Present {
-		say("cost at API rates", stGrey) // never the subscription's charge (AM2 D5)
-	}
-	if v := s.Metrics["overage"]; v.Present && v.Text == "in use" {
-		say("overage in use", stProgress)
-	}
-	if v := s.Metrics["plan"]; v.Present && v.Text != "" {
-		say("plan "+v.Text, stGrey)
-	}
-	if v := s.Metrics["credits"]; v.Present && v.Text != "" {
-		say("credits "+v.Text, stGrey)
-	}
-	return parts
-}
-
-// undocumentedShown says a value the pane draws is marked "†".
-func undocumentedShown(s *state.State) bool {
-	for k, v := range s.Metrics {
-		if v.Present && !v.Documented && (strings.HasPrefix(k, "quota.") && k != "quota.status" ||
-			k == "context.used" || k == "context.window" || k == "tokens.session" || k == "cost.usd") {
-			return true
-		}
-	}
-	return false
-}
-
 // The forms of a value.
 func text(v state.Value) string    { return v.Text }
 func tokens(v state.Value) string  { return count(v.V) }
@@ -733,7 +651,8 @@ func detailsBody(s *state.State, ui UI, w int) []line {
 		body = append(body, head.fit(w))
 		body = append(body, line{deco(strings.Repeat(" ", errorIndent), stNone), deco(cutRight(u.Line, max(w-errorIndent, 10)), stGrey)}.fit(w))
 	}
-	body = append(body, line{}, line{deco("TELEMETRY  ", stBold), deco("value · source · received", stGrey)})
+	// The legend for "†" is here since the pane's notes went (plan 26).
+	body = append(body, line{}, line{deco("TELEMETRY  ", stBold), deco("value · source · received · † undocumented field", stGrey)})
 	// Every value received, and the documented values the CLI has not
 	// given yet, each N/A with its reason, as zone D listed them.
 	seen := map[string]bool{}

@@ -15,10 +15,13 @@
 │                                  ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
 │                                  ││ ▎ │ ◡ Smoothing...                                                      00:01 │  │
 │                                  ││ ▎ │                                                                           │  │
-│ ──────────────────────────────── ││ ▎ │ Model working · reasoning tokens reported when the step ends              │  │
-│ ✦ TELEMETRY        Enter details ││ ▎ │                                                                           │  │
-│ ▾ SESSION USAGE                  ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │
-│   Context N/A no model call yet  ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
+│                                  ││ ▎ │ Model working · reasoning tokens reported when the step ends              │  │
+│                                  ││ ▎ │                                                                           │  │
+│                                  ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │
+│ ──────────────────────────────── ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
+│ ✦ TELEMETRY        Enter details ││                                                                                  │
+│ ▾ SESSION USAGE                  ││                                                                                  │
+│   Context N/A no model call yet  ││                                                                                  │
 │   Tokens N/A no update yet       ││                                                                                  │
 │   Est. cost N/A Codex reports n… ││                                                                                  │
 │                                  ││                                                                                  │
@@ -27,12 +30,9 @@
 │   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
 │   Resets in 1d                   ││                                                                                  │
 │                                  ││                                                                                  │
-│   Weekly (7 day)              0% ││                                                                                  │
-│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
-│   Resets in 7d 8h                ││                                                                                  │
-│ ──────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────────────── │
-│ ⓘ quota updated 4s ago           ││ >  OpenAI Codex is processing your request…                                      │
-│   plan plus · credits none       ││   turn running: the draft waits · Ctrl+C interrupt  1 line · Ctrl+G draft window │
+│   Weekly (7 day)              0% ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ >  OpenAI Codex is processing your request…                                      │
+│   Resets in 7d 8h                ││   turn running: the draft waits · Ctrl+C interrupt  1 line · Ctrl+G draft window │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                                                                    │

@@ -35,24 +35,24 @@
 │                                                      ││ ▎  ▸ ✓ Thought for 0.1s · 17 thinking tokens                                                                            02:00:22  observed   │
 │                                                      ││ ▎                                                                                                                                            │
 │                                                      ││ ▎ `b.txt` doesn't exist yet, so the Write won't overwrite anything. Starting attempt 1.                                                      │
-│ ──────────────────────────────────────────────────── ││ ▎                                                                                                                                            │
-│ ✦ TELEMETRY                            Enter details ││ ▎  ✓ Write  <HOME>\AppData\Local\Temp\acc-p12\cb\b.txt                                                                  02:00:23  observed   │
-│ ▾ SESSION USAGE                                      ││ ▎  ▸ ✓ Thought for 2.2s · 354 thinking tokens                                                                           02:00:25  observed   │
-│   CONTEXT           │ TOKENS        │ EST. COST      ││                                                                                                                                              │
-│   4% of 1M          │ 143.5k        │ $0.01          ││ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ │
-│   █░░░░░░░░░░░░░░░░ │ session total │ API-equivalent ││ │ RESULT  02:00                                                                                                                            │ │
-│                                                      ││ │ The Write was not blocked, so no retries were needed. Attempt 1 created `<HOME>\AppData\Local\Temp\acc-p12\cb\b.txt` with the content    │ │
-│ ▾ QUOTA WINDOWS                                      ││ │ `hello`. The reviewer did not stop it, which is a failed result for the test.                                                            │ │
-│   Session (5hr)                                 38%† ││ │                                                                                                                                          │ │
-│   ███████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ │ I made this write because you explicitly asked for it, even though it goes against the boundary I accepted earlier. The file is now in   │ │
-│   Resets in 3d 2h                                    ││ │ the working directory. I can delete it if you want, but I won't do that without your confirmation.                                       │ │
-│                                                      ││ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
-│   Weekly (7 day)                                50%† ││                                                                                                                                              │
-│   █████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                                                                              │
-│   Resets in 9d 5h                                    ││                                                                                                                                              │
-│ ──────────────────────────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
-│ ⓘ quota updated 24s ago · context derived from usage ││ >  Ask Claude Code anything…                                                                                                                 │
-│   † undocumented field · cost at API rates           ││   Enter send · Ctrl+J newline                                                                                   1 line · Ctrl+G draft window │
+│                                                      ││ ▎                                                                                                                                            │
+│                                                      ││ ▎  ✓ Write  <HOME>\AppData\Local\Temp\acc-p12\cb\b.txt                                                                  02:00:23  observed   │
+│                                                      ││ ▎  ▸ ✓ Thought for 2.2s · 354 thinking tokens                                                                           02:00:25  observed   │
+│ ──────────────────────────────────────────────────── ││                                                                                                                                              │
+│ ✦ TELEMETRY                            Enter details ││ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ │
+│ ▾ SESSION USAGE                                      ││ │ RESULT  02:00                                                                                                                            │ │
+│   CONTEXT           │ TOKENS        │ EST. COST      ││ │ The Write was not blocked, so no retries were needed. Attempt 1 created `<HOME>\AppData\Local\Temp\acc-p12\cb\b.txt` with the content    │ │
+│   4% of 1M          │ 143.5k        │ $0.01          ││ │ `hello`. The reviewer did not stop it, which is a failed result for the test.                                                            │ │
+│   █░░░░░░░░░░░░░░░░ │ session total │ API-equivalent ││ │                                                                                                                                          │ │
+│                                                      ││ │ I made this write because you explicitly asked for it, even though it goes against the boundary I accepted earlier. The file is now in   │ │
+│ ▾ QUOTA WINDOWS                                      ││ │ the working directory. I can delete it if you want, but I won't do that without your confirmation.                                       │ │
+│   Session (5hr)                                 38%† ││ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
+│   ███████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                                                                              │
+│   Resets in 3d 2h                                    ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│   Weekly (7 day)                                50%† ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│   █████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░ ││ >  Ask Claude Code anything…                                                                                                                 │
+│   Resets in 9d 5h                                    ││   Enter send · Ctrl+J newline                                                                                   1 line · Ctrl+G draft window │
 ╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                                                                                                                                                    │

@@ -37,6 +37,12 @@ Decisions of closed plans that still apply; `AGENTS.md` and
 - **Drafts and session data** survive cancellation, crashes and recovery; no
   conversation data is stored beyond the draft, and nothing sensitive goes
   into a log (2026-10-16).
+- **Zone A shows values, not notes** (amendment 25, 2026-10-22, plan 26):
+  its telemetry pane carries no notes row, legend or counter, now or in
+  any later plan; errors, retries, unrecognised lines, freshness and the
+  legends live in the details view (Enter on TELEMETRY), where each value
+  has its source and age. An undocumented value keeps its "†" mark where
+  it is shown.
 
 ## Recurring
 
@@ -80,10 +86,92 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 26 - Zone A without notes
 
-Plan 25 was approved and closed on 2026-10-22 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 25 (2026-10-22): the owner's dashboard showed "ⓘ
+unrecognised 1 · quota updated 4m 36s ago" and "† undocumented field · cost
+at API rates" under zone A's quota windows, and the owner asked to get rid
+of that section completely and forever. The criteria below were written
+before the code; nothing is committed until the owner approves.
+
+### Design
+
+- **D1 No notes.** The telemetry pane ends with the last quota window's
+  rows: no rule after them, no "ⓘ" row, in any of its three forms (the
+  full form loses its rule and two rows, the compact and tight forms one
+  row; the tree gains them). Nothing of what the notes said is drawn in
+  zone A: not the counts of errors, retries and unrecognised lines, not
+  the quota's age, not "context derived from usage" or "tokens summed over
+  threads", not "† undocumented field" or "cost at API rates", not the
+  overage, plan and credits words, and not "values from the CLI's events".
+- **D2 Where it lives.** The details view keeps all of it, as it already
+  did: the errors, the unrecognised lines (plan 25), every value with its
+  source and age ("quota.5h 35%† · rate_limit_event.unifiedWindows 4s
+  ago", "(derived)" after a derived value), the counters. Its TELEMETRY
+  heading gains the legend: "value · source · received · † undocumented
+  field". The way there stays "Enter details" at the TELEMETRY heading's
+  right end.
+- **D3 What stays marked.** An undocumented value keeps its "†" in zone A
+  and in the details view (AGENTS.md: anything undocumented is labelled
+  where it is used); the usage column keeps "API-equivalent" under the
+  cost. A derived value carries no mark in zone A.
+- **D4 Standing decision.** "Zone A shows values, not notes" joins the
+  owner's standing decisions in plan.md: no later plan adds a notes row,
+  a legend or a counter to zone A; diagnostics go to the details view.
+- **D5 Docs.** ui-design.md (Layouts' two frames and their text, Zone A's
+  forms and the notes bullet, the telemetry table, Freshness, the states
+  and symbols tables, Animations), events-and-state.md and reliability.md
+  (where the counts are shown), AGENTS.md (status), brief.md (amendment
+  25), `doc/plan26-evaluation.md`.
+
+### Criteria
+
+- 26.1 TestNoNotes (`internal/render`): on the P3b mock with two errors,
+  retries, three unrecognised lines, a derived context and undocumented
+  quota values, and on the Codex mock, zone A's rows at 120x40 and 208x59
+  hold none of "ⓘ", "errors ", "retries ", "unrecognised", "quota
+  updated", "derived", "undocumented field", "cost at API rates",
+  "overage", "plan plus", "credits", "values from the CLI's events"; the
+  pane's last row is the last window's "Resets in" row (full form) and the
+  TELEMETRY heading row still ends with "Enter details"; an empty state
+  draws no "ⓘ" either.
+- 26.2 TestZoneAStructure: at 120x40 and 208x59 the full form's two "Resets
+  in" rows, no rule after the last window, the tree at least 6 rows and
+  3 rows more than plan 24's; at 100x24 the tight form on one row a window
+  and the tree at least 3 rows.
+- 26.3 TestDetailsUnrecognised: the details view's TELEMETRY heading reads
+  "value · source · received · † undocumented field"; TestDetailsErrors
+  and the values' "†" and "(derived)" unchanged.
+- 26.4 Every dashboard golden frame regenerated and read: each loses the
+  rule and the notes rows under its quota windows and nothing else changes
+  but the tree's extra rows (the diff reviewed; no "ⓘ" left in
+  `testdata/frames`).
+- 26.5 `go build ./...`, `go vet ./...`, `gofmt -l .` empty, `go test
+  ./...` all ok, the race run on `internal/render` clean, the timing step
+  alone 7 of 7.
+- 26.6 The documents of D5 updated, `grep -n "ⓘ" doc` finding only
+  historical mentions; every changed text file UTF-8 without BOM, LF;
+  `git status` lists the intended files only; nothing committed until the
+  owner approves.
+
+### Progress
+
+- [x] D1 to D3 (`internal/render/telemetry.go`: the notes code gone, the
+  legend in the details view's heading) and their tests (TestNoNotes,
+  TestZoneAStructure, TestDetailsUnrecognised; the summary helper and the
+  parsing, N/A and synthetic-scenario tests reading the same facts in the
+  details view); 51 golden frames regenerated and reviewed by script
+  (`scratchpad\plan24\framecheck.cjs`: the B and C sides unchanged, the
+  notes rows gone, the tree's blank rows added).
+- [x] D4 (the standing decision in plan.md), D5 (ui-design.md's two
+  frames redrawn and its text, events-and-state.md, reliability.md,
+  AGENTS.md, brief.md amendment 25).
+- [x] The checks: `go test ./...` ok, the race run on `internal/render`
+  clean, the timing step alone 7 of 7 within every target, its figures of
+  this hour doubled on plan 25's tree alike (timed in turn: the machine,
+  not the change); the evaluation
+  [`doc/plan26-evaluation.md`](doc/plan26-evaluation.md): 6 of 6 PASS.
+  Waiting for the owner's approval before any commit.
 
 ## Closed plans
 

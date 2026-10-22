@@ -30,6 +30,9 @@
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
+│                   │                                                                                                                                                              │                   │
+│                   │                                                                                                                                                              │                   │
+│                   │                                                                                                                                                              │                   │
 │ ──────────────────│                                                                                                                                                              │                   │
 │ ✦ TELEMETRY       │                                                                                                                                                              │                   │
 │ ▾ SESSION USAGE   │                                                                                                                                                              │                   │
@@ -42,12 +45,9 @@
 │   ████████████████│                                                                                                                                                              │                   │
 │   Resets in 14h 40│                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
-│   Weekly (7 day)  │                                                                                                                                                              │                   │
+│   Weekly (7 day)  │                                                                                                                                                              │────────────────── │
 │   ████████████████│                                                                                                                                                              │                   │
-│   Resets in 1d 20h│                                                                                                                                                              │                   │
-│ ──────────────────│                                                                                                                                                              │────────────────── │
-│ ⓘ quota updated 0s│                                                                                                                                                              │                   │
-│   † undocumented f│                                                                                                                                                              │trl+G draft window │
+│   Resets in 1d 20h│                                                                                                                                                              │trl+G draft window │
 ╰───────────────────│                                                                                                                                                              │───────────────────╯
 ╭─ C · LIVE AGENTS ─│                                                                                                                                                              │0 ACTIVE · 1 DONE ─╮
 │  ✓  general-purpos│ type to filter · ↑↓ PgUp PgDn select · Enter open · F1 keys · Esc back · F3 close                                                                     1 of 1 │iku-5-5 (reported) │

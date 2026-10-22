@@ -12,24 +12,24 @@
 │                                  ││                                                                                  │
 │                                  ││ ▎ CODEX  gpt-5.6-sol  11:30                                                      │
 │                                  ││ ▎  ▸ ✓ Thought for up to 0.0s · 83 reasoning tokens         11:30:00      mock   │
-│ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for up to 0.0s · 8 reasoning tokens          11:30:00      mock   │
+│                                  ││ ▎  ▸ ✓ Thought for up to 0.0s · 8 reasoning tokens          11:30:00      mock   │
+│                                  ││ ▎  ✓ collabAgent:wait                                       11:30:00      mock   │
+│                                  ││ ▎  ✓ /root/create_found · fileChange         allowed by you 11:30:00      mock   │
+│ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens          11:30:00      mock   │
 │ ✦ TELEMETRY        Enter details ││ ▎  ✓ collabAgent:wait                                       11:30:00      mock   │
-│ ▾ SESSION USAGE                  ││ ▎  ✓ /root/create_found · fileChange         allowed by you 11:30:00      mock   │
-│   Context 6% of 258.4k █░░░░░░░░ ││ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens          11:30:00      mock   │
-│   Tokens 184.3k session total    ││ ▎  ✓ collabAgent:wait                                       11:30:00      mock   │
-│   Est. cost N/A Codex reports n… ││                                                                                  │
-│                                  ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
-│ ▾ QUOTA WINDOWS                  ││ │ RESULT  11:30                                                                │ │
-│   Session (5hr)               1% ││ │ done                                                                         │ │
-│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
+│ ▾ SESSION USAGE                  ││                                                                                  │
+│   Context 6% of 258.4k █░░░░░░░░ ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
+│   Tokens 184.3k session total    ││ │ RESULT  11:30                                                                │ │
+│   Est. cost N/A Codex reports n… ││ │ done                                                                         │ │
+│                                  ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
+│ ▾ QUOTA WINDOWS                  ││                                                                                  │
+│   Session (5hr)               1% ││   ◈ auto-review approved · risk low · authorization high: a read-only check of   │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││     the project                                                                  │
 │   Resets in 15h 13m              ││                                                                                  │
-│                                  ││   ◈ auto-review approved · risk low · authorization high: a read-only check of   │
-│   Weekly (7 day)              1% ││     the project                                                                  │
-│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
-│   Resets in 6d 23h               ││                                                                                  │
-│ ──────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────────────── │
-│ ⓘ quota updated 0s ago           ││ >  Ask Mock data anything…                                                       │
-│   tokens summed over threads · … ││   Enter send · Ctrl+J newline                       1 line · Ctrl+G draft window │
+│                                  ││                                                                                  │
+│   Weekly (7 day)              1% ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ >  Ask Mock data anything…                                                       │
+│   Resets in 6d 23h               ││   Enter send · Ctrl+J newline                       1 line · Ctrl+G draft window │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
 │  ✓  /root/create_found   model N/A   completed                                                                       │

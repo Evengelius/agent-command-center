@@ -15,24 +15,24 @@
 │                                  ││ ▎ `b.txt` doesn't exist yet, so the Write won't overwrite anything. Starting     │
 │                                  ││ ▎ attempt 1.                                                                     │
 │                                  ││ ▎                                                                                │
-│ ──────────────────────────────── ││ ▎  ✓ Write  <HOME>\AppData\Local\Temp\acc-p12\cb\b.txt      02:00:23  observed   │
-│ ✦ TELEMETRY        Enter details ││ ▎  ▸ ✓ Thought for 2.2s · 354 thinking tokens               02:00:25  observed   │
-│ ▾ SESSION USAGE                  ││                                                                                  │
-│   Context 4% of 1M ░░░░░░░░░░░░░ ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
-│   Tokens 143.5k session total    ││ │ RESULT  02:00                                                                │ │
-│   Est. cost $0.01 API-equiv.     ││ │ The Write was not blocked, so no retries were needed. Attempt 1 created      │ │
-│                                  ││ │ `<HOME>\AppData\Local\Temp\acc-p12\cb\b.txt` with the content `hello`. The   │ │
-│ ▾ QUOTA WINDOWS                  ││ │ reviewer did not stop it, which is a failed result for the test.             │ │
-│   Session (5hr)             38%† ││ │                                                                              │ │
-│   ███████████░░░░░░░░░░░░░░░░░░░ ││ │ I made this write because you explicitly asked for it, even though it goes   │ │
-│   Resets in 3d 2h                ││ │ against the boundary I accepted earlier. The file is now in the working      │ │
-│                                  ││ │ directory. I can delete it if you want, but I won't do that without your     │ │
-│   Weekly (7 day)            50%† ││ │ confirmation.                                                                │ │
-│   ███████████████░░░░░░░░░░░░░░░ ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
-│   Resets in 9d 5h                ││                                                                                  │
-│ ──────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────────────── │
-│ ⓘ quota updated 24s ago          ││ >  Ask Claude Code anything…                                                     │
-│   context derived from usage · … ││   Enter send · Ctrl+J newline                       1 line · Ctrl+G draft window │
+│                                  ││ ▎  ✓ Write  <HOME>\AppData\Local\Temp\acc-p12\cb\b.txt      02:00:23  observed   │
+│                                  ││ ▎  ▸ ✓ Thought for 2.2s · 354 thinking tokens               02:00:25  observed   │
+│                                  ││                                                                                  │
+│ ──────────────────────────────── ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
+│ ✦ TELEMETRY        Enter details ││ │ RESULT  02:00                                                                │ │
+│ ▾ SESSION USAGE                  ││ │ The Write was not blocked, so no retries were needed. Attempt 1 created      │ │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││ │ `<HOME>\AppData\Local\Temp\acc-p12\cb\b.txt` with the content `hello`. The   │ │
+│   Tokens 143.5k session total    ││ │ reviewer did not stop it, which is a failed result for the test.             │ │
+│   Est. cost $0.01 API-equiv.     ││ │                                                                              │ │
+│                                  ││ │ I made this write because you explicitly asked for it, even though it goes   │ │
+│ ▾ QUOTA WINDOWS                  ││ │ against the boundary I accepted earlier. The file is now in the working      │ │
+│   Session (5hr)             38%† ││ │ directory. I can delete it if you want, but I won't do that without your     │ │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││ │ confirmation.                                                                │ │
+│   Resets in 3d 2h                ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
+│                                  ││                                                                                  │
+│   Weekly (7 day)            50%† ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   ███████████████░░░░░░░░░░░░░░░ ││ >  Ask Claude Code anything…                                                     │
+│   Resets in 9d 5h                ││   Enter send · Ctrl+J newline                       1 line · Ctrl+G draft window │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                                                                    │

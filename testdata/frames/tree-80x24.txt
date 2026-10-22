@@ -6,6 +6,7 @@
 │ ◆ GPT-5.6-sol                                                    ✓ COMPLETED │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ STAGES · inferred from activity                                              │
+│ ✓ TURN 1                                                                  0s │
 │   Spawn two subagents in parallel. The first lists the files in the current… │
 │   ├─ ✓ child  /root/list_files                                          mock │
 │   ├─ ✓ child  /root/create_found                                        mock │
@@ -19,6 +20,5 @@
 │ ▾ QUOTA WINDOWS                                                              │
 │   Session (5hr)  1% · 15h 13m                                                │
 │   Weekly (7 day)  1% · 6d 23h                                                │
-│ ⓘ quota updated 0s ago · tokens summed over threads · plan plus · credits n… │
 ╰──────────────────────────────────────────────────────────────────────────────╯
  ↑↓ move · ←→ fold · Enter inspect or details · F6 zone · Esc back to the input

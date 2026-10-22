@@ -15,24 +15,24 @@
 │ ◉ TURN 3 · interrupting   9h 29m ││ ──────────────────────────────────────────────────────────────────────────────── │
 │   Count from 1 to 300, one numb… ││                                                                                  │
 │   •─ ○ (more as events arrive)   ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│ ──────────────────────────────── ││ ▎ again                                                                          │
-│ ✦ TELEMETRY        Enter details ││                                                                                  │
-│ ▾ SESSION USAGE                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Context 3% of 1M ░░░░░░░░░░░░░ ││                                                                                  │
-│   Tokens 91.1k session total     ││ ▎ YOU  02:00                                                                     │
-│   Est. cost $0.00 API-equiv.     ││ ▎ Count from 1 to 300, one number per line, nothing else.                        │
+│                                  ││ ▎ again                                                                          │
 │                                  ││                                                                                  │
-│ ▾ QUOTA WINDOWS                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Session (5hr)             25%† ││                                                                                  │
-│   ████████░░░░░░░░░░░░░░░░░░░░░░ ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│   Resets in 14h 40m              ││ ▎  ▸ ✓ Thought for 0.2s                                     02:00:12  observed   │
-│                                  ││ ▎                                                                                │
-│   Weekly (7 day)            46%† ││ ▎ 1▌                                                                             │
-│   ██████████████░░░░░░░░░░░░░░░░ ││                                                                                  │
-│   Resets in 1d 20h               ││ ──────────────────────────────────────────────────────────────────────────────── │
-│ ──────────────────────────────── ││ > a draft                                                                        │
-│ ⓘ quota updated 9h 29m ago       ││       kept as typed                                                              │
-│   context derived from usage · … ││   interrupting…                                    2 lines · Ctrl+G draft window │
+│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
+│ ──────────────────────────────── ││                                                                                  │
+│ ✦ TELEMETRY        Enter details ││ ▎ YOU  02:00                                                                     │
+│ ▾ SESSION USAGE                  ││ ▎ Count from 1 to 300, one number per line, nothing else.                        │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││                                                                                  │
+│   Tokens 91.1k session total     ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Est. cost $0.00 API-equiv.     ││                                                                                  │
+│                                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
+│ ▾ QUOTA WINDOWS                  ││ ▎  ▸ ✓ Thought for 0.2s                                     02:00:12  observed   │
+│   Session (5hr)             25%† ││ ▎                                                                                │
+│   ████████░░░░░░░░░░░░░░░░░░░░░░ ││ ▎ 1▌                                                                             │
+│   Resets in 14h 40m              ││                                                                                  │
+│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   Weekly (7 day)            46%† ││ > a draft                                                                        │
+│   ██████████████░░░░░░░░░░░░░░░░ ││       kept as typed                                                              │
+│   Resets in 1d 20h               ││   interrupting…                                    2 lines · Ctrl+G draft window │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                                                                    │

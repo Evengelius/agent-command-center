@@ -561,24 +561,24 @@ hold more states).
 │                                  ││ ▎  ✓ Agent  general-purpose · List directory and write fo…  11:30:06      mock   │
 │                                  ││ ▎                                                                                │
 │                                  ││ ▎ I've launched the subagent in the background to list the directory and write   │
-│ ──────────────────────────────── ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
-│ ✦ TELEMETRY        Enter details ││ ▎                                                                                │
-│ ▾ SESSION USAGE                  ││ ▎  ✓ general-purpose · Bash  ls -p "<probe…  allowed by you 11:30:08      mock   │
-│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎                                                                                │
-│   Tokens 61.9k session total     ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
-│   Est. cost $0.00 API-equiv.     ││ ▎ │ ! APPROVAL · general-purpose · Write                          11:30  mock │  │
-│                                  ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                                   │  │
-│ ▾ QUOTA WINDOWS                  ││ ▎ │ ▸ Preview of found.txt (2 lines)                                          │  │
-│   Session (5hr)             35%† ││ ▎ │  1 │ alpha.txt                                                            │  │
-│   ███████████░░░░░░░░░░░░░░░░░░░ ││ ▎ │  2 │ beta.md                                                              │  │
-│   Resets in 14h 39m              ││ ▎ │ This will create or overwrite the file at                                 │  │
-│                                  ││ ▎ │ `<probe-root>\probe-work\p3b\found.txt` with the above content.           │  │
-│   Weekly (7 day)            47%† ││ ▎ │ ▐ F2 to answer ▌                                                          │  │
-│   ██████████████░░░░░░░░░░░░░░░░ ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
-│   Resets in 1d 20h               ││                                                                                  │
-│ ──────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────────────── │
-│ ⓘ quota updated 14s ago          ││ >  Ask Mock data anything…                                                       │
-│   context derived from usage · … ││   Enter send · Ctrl+J newline                       1 line · Ctrl+G draft window │
+│                                  ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
+│                                  ││ ▎                                                                                │
+│                                  ││ ▎  ✓ general-purpose · Bash  ls -p "<probe…  allowed by you 11:30:08      mock   │
+│ ──────────────────────────────── ││ ▎                                                                                │
+│ ✦ TELEMETRY        Enter details ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
+│ ▾ SESSION USAGE                  ││ ▎ │ ! APPROVAL · general-purpose · Write                          11:30  mock │  │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                                   │  │
+│   Tokens 61.9k session total     ││ ▎ │ ▸ Preview of found.txt (2 lines)                                          │  │
+│   Est. cost $0.00 API-equiv.     ││ ▎ │  1 │ alpha.txt                                                            │  │
+│                                  ││ ▎ │  2 │ beta.md                                                              │  │
+│ ▾ QUOTA WINDOWS                  ││ ▎ │ This will create or overwrite the file at                                 │  │
+│   Session (5hr)             35%† ││ ▎ │ `<probe-root>\probe-work\p3b\found.txt` with the above content.           │  │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││ ▎ │ ▐ F2 to answer ▌                                                          │  │
+│   Resets in 14h 39m              ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
+│                                  ││                                                                                  │
+│   Weekly (7 day)            47%† ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   ██████████████░░░░░░░░░░░░░░░░ ││ >  Ask Mock data anything…                                                       │
+│   Resets in 1d 20h               ││   Enter send · Ctrl+J newline                       1 line · Ctrl+G draft window │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
 │  ●  general-purpose   haiku-5-5   waiting: approval                                                                  │
@@ -601,8 +601,8 @@ hold more states).
   form: "✦ TELEMETRY" with "Enter details" at its right end; "▾ SESSION
   USAGE", three rows at this width (the context with its bar, the tokens,
   the cost); "▾ QUOTA WINDOWS", three rows a window (its percentage at the
-  right end, its bar, "Resets in …"); a rule; the notes, "ⓘ" first, the
-  quota's age before the rest, wrapped on two rows and cut with "…".
+  right end, its bar, "Resets in …"), and nothing under the last window:
+  the pane carries no notes (plan 26, the owner's standing decision).
 - B is the conversation ([Zone B](#zone-b)): each message a block, a
   narrow bar of its colour, its header on its own row and its body under it,
   a thin rule between messages (amendment 17); the input sits at B's
@@ -651,6 +651,9 @@ hold more states).
 │                                                      ││                                                                                                                                              │
 │                                                      ││                                                                                                                                              │
 │                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
 │ ──────────────────────────────────────────────────── ││                                                                                                                                              │
 │ ✦ TELEMETRY                            Enter details ││                                                                                                                                              │
 │ ▾ SESSION USAGE                                      ││                                                                                                                                              │
@@ -663,12 +666,9 @@ hold more states).
 │   ██████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                                                                              │
 │   Resets in 14h 39m                                  ││                                                                                                                                              │
 │                                                      ││                                                                                                                                              │
-│   Weekly (7 day)                                47%† ││                                                                                                                                              │
-│   ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                                                                              │
-│   Resets in 1d 20h                                   ││                                                                                                                                              │
-│ ──────────────────────────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
-│ ⓘ quota updated 14s ago · context derived from usage ││ >  Ask Mock data anything…                                                                                                                   │
-│   † undocumented field · cost at API rates           ││   Enter send · Ctrl+J newline                                                                                   1 line · Ctrl+G draft window │
+│   Weekly (7 day)                                47%† ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│   ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ >  Ask Mock data anything…                                                                                                                   │
+│   Resets in 1d 20h                                   ││   Enter send · Ctrl+J newline                                                                                   1 line · Ctrl+G draft window │
 ╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · LIVE AGENTS ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
 │  ●  general-purpose   haiku-5-5   waiting: approval                    │ general-purpose · LIVE                                                                          claude-haiku-5-5 (reported) │
@@ -685,8 +685,7 @@ hold more states).
   two bars, C's 8 rows and the footer): the model row has room for the
   whole title beside the status ("✿ Claude Haiku 5.5"), the usage section
   draws its three columns (CONTEXT, TOKENS and EST. COST, "API-equivalent"
-  in full) and each quota window's bar runs across the pane; the notes fit
-  their two rows whole, the quota's age first.
+  in full) and each quota window's bar runs across the pane.
 - C holds the agent list, 70 columns, and right of a rule the selected
   agent's live preview, so several agents can be watched while the
   orchestrator talks (AM2 C11).
@@ -814,17 +813,15 @@ the top, inside a frame whose top edge carries no title:
 - **The telemetry pane**, fixed at A's bottom and never scrolled, after a
   rule: "✦ TELEMETRY" in the title colour with "Enter details" in grey at
   its right end; "▾ SESSION USAGE" and its rows; a blank row; "▾ QUOTA
-  WINDOWS" and its rows; a rule; the notes. It takes the rows its form
+  WINDOWS" and its rows, and nothing after them. It takes the rows its form
   needs and the tree the rest, at least 6. Three forms, the largest that
   leaves the tree its 6 rows:
   - *full*, the image's: the usage section's three rows, three rows a quota
-    window with a blank row between windows, a rule above the notes, two
-    rows of notes;
-  - *compact*: no blank row and no rule above the notes, one row of notes;
+    window with a blank row between windows;
+  - *compact*: no blank row;
   - *tight*: the usage on two rows ("Context 6% of 258.4k" and its bar, then
     "Tokens 184.3k · Cost N/A"), a window on one row with its percentage and
-    its countdown and no bar ("Session (5hr)  1% · 15h 13m"), one row of
-    notes.
+    its countdown and no bar ("Session (5hr)  1% · 15h 13m").
 
   On a terminal too short for the tight form beside 6 tree rows, the tight
   form is drawn all the same and the tree keeps what is left, 3 rows at the
@@ -840,8 +837,8 @@ the top, inside a frame whose top edge carries no title:
   41 cells, three rows: "Context 3% of 1M" and its bar, "Tokens 61.9k
   session total", "Est. cost $0.00 API-equivalent". A value no source gave
   reads "N/A" with its reason as its support ("no result yet", "Codex
-  reports none"), never 0; "†" follows an undocumented value; "(derived)"
-  goes to the notes.
+  reports none"), never 0; "†" follows an undocumented value; a derived
+  value carries no mark here, "(derived)" follows it in the details view.
 - **Quota windows**, a block a window, in this order: "Session (5hr)"
   (`quota.5h`), "Weekly (7 day)" (`quota.7d`), each model-scoped weekly
   window the CLI reports ("Fable limit" in the image: `quota.7d.<model>`,
@@ -866,17 +863,17 @@ the top, inside a frame whose top edge carries no title:
   second row and no bar; a status word with no percentage reads the word and
   "no percentage reported". A new report replaces the value and the bar's
   fill.
-- **Notes**, after a rule: grey, "ⓘ" first, each part only when it applies,
-  joined by " · ", what went wrong first: "errors N" (red), "retries N" and
-  "unrecognised N" (amber) when above 0; then "quota updated 14s ago" (the
-  last report's age, so a stale value shows), "context derived from usage",
-  "tokens summed over threads" (Codex's derived total), "† undocumented
-  field", "cost at API rates" (the column says API-equivalent, never the
-  subscription's charge), "overage in use", "plan <plan>" and "credits
-  <credits>" (Codex). They wrap onto the form's rows and the last is cut
-  with "…"; with nothing to say they read "ⓘ values from the CLI's events".
-  The way to the rest, "Enter details", is at the right end of the TELEMETRY
-  heading, not in the notes.
+- **No notes** (plan 26, brief amendment 25, the owner's standing
+  decision): the pane ends with the last window's rows. The notes it drew
+  until plan 25 under a rule ("errors N", "retries N", "unrecognised N",
+  "quota updated 14s ago", "context derived from usage", "tokens summed over
+  threads", "† undocumented field", "cost at API rates", "overage in use",
+  "plan <plan>", "credits <credits>", or "values from the CLI's events") are
+  gone for good; the details view holds every one of those facts (the
+  errors, the unrecognised lines, each value with its source and age,
+  "(derived)" after a derived value, the counters, the "†" legend in its
+  TELEMETRY heading). The way there, "Enter details", is at the right end
+  of the TELEMETRY heading.
 - **Keys** when focused: ↑ ↓ move the cursor through the turns, then
   TELEMETRY, SESSION USAGE and QUOTA WINDOWS, and back; ← → fold and unfold
   a turn, SESSION USAGE or QUOTA WINDOWS; Enter inspects the agent or tool
@@ -1401,14 +1398,16 @@ AM4 D3, D5, D6), which were zone D's until plan 23. Every value is a `Value`
 | Model | from `system/init` and each message | from `thread/start`; children "N/A" |
 | Agents | active count, derived; "limit N/A" | active count, derived; "limit 3 (config)" from `config/read`, or "limit N/A (not set; default not reported)", or "limit N/A (set per backend; backend not reported)" when `features.multi_agent_v2` sets a different limit, or "limit N/A (not read)" |
 | Time | turn and session durations | same |
-| Errors, retries, unrecognised events | counters, named in the notes when above 0; the details view lists the last errors and the last 20 unrecognised lines, each with its time, the mapper's type and reason, and the line (plan 25) | same |
+| Errors, retries, unrecognised events | counters in the details view only (plan 26: zone A's notes are gone), which lists the last errors and the last 20 unrecognised lines, each with its time, the mapper's type and reason, and the line (plan 25) | same |
 
 - **Bars**: lavender for every window, the 7-day's no longer amber (brief
   amendment 22, section 6.1: warning colours are for warnings), red from 90%
   (ASM-13). A window whose reset time has passed reads "N/A" with "window
   reset; waiting for the next update" until a new value arrives (TEL rules).
-- **Freshness**: the notes show the age of the last quota report, "quota
-  updated 4s ago", so a stale value is visible.
+- **Freshness**: the details view shows each value's age ("4s ago" after
+  its source); zone A shows no age since plan 26, and a window whose reset
+  passed reads "N/A" there (above), so a report that stopped coming is
+  still visible.
 - **Before the first turn**: Claude Code's windows are in zone A as soon
   as the session is ready, from the usage report the adapter asks for
   right after the handshake; the exchange is never a conversation entry,
@@ -1427,13 +1426,14 @@ AM4 D3, D5, D6), which were zone D's until plan 23. Every value is a `Value`
   map, newest first", the last 20 of them, each on two rows: its time, the
   mapper's type ("system/tool_use_summary", "user/tool_result_meta") and
   its reason when it gave one, then the line itself cut to the width with
-  "…", or "none" (plan 25: zone A's note "unrecognised N" says how many,
-  this says which); then every value with its source and age ("quota.5h
-  35%† · rate_limit_event.unifiedWindows 0s ago"), then, under the values,
-  the counters zone D's rows held until plan 23: agents, session time,
-  retries and unrecognised events. ↑ ↓, PgUp, PgDn, Home and End scroll
-  it, it updates live, and Esc returns to the dashboard with A focused and
-  its cursor where it was.
+  "…", or "none" (plan 25); then, under "TELEMETRY  value · source ·
+  received · † undocumented field" (the legend lives here since plan 26),
+  every value with its source and age ("quota.5h 35%† ·
+  rate_limit_event.unifiedWindows 0s ago", "(derived)" after a derived
+  value), then, under the values, the counters zone D's rows held until
+  plan 23: agents, session time, retries and unrecognised events. ↑ ↓,
+  PgUp, PgDn, Home and End scroll it, it updates live, and Esc returns to
+  the dashboard with A focused and its cursor where it was.
 
 ## Agent inspection
 
@@ -1793,7 +1793,7 @@ How each state looks, wherever it occurs (B3.3; AM2 D9):
 | Error | ✗ in red with the first line of the error; the full error in inspection or in the details view's error list |
 | Session crashed | B shows the exit code and stderr tail; send is disabled; "Ctrl+R resume · Ctrl+Q quit" (resume only once the session had reached Ready; earlier, the StartFailed card); the draft is kept; nothing restarts without the key ([reliability.md, Resumption](reliability.md#resumption)) |
 | CLI not installed | on the startup screen only, "not installed" with the reason; not selectable |
-| Unrecognised events | counted in A's notes ("unrecognised N"); the details view lists the last 20 with their time, type, reason and line (plan 25); listed in Raw events; never dropped |
+| Unrecognised events | counted in the details view, which lists the last 20 with their time, type, reason and line (plan 25; zone A's note "unrecognised N" went in plan 26); listed in Raw events; never dropped |
 | Mock mode | "◆ MOCK — not a live session" in the title bar of every screen |
 
 ## Origins on screen
@@ -1808,7 +1808,7 @@ U9; TEL rules):
 | `derived` | right-aligned "derived", and the rule in the details view ("sum of 3 threads") |
 | `inferred` | italic, with "inferred" (the stage tree's heading says "inferred from activity") |
 | `mock` | the title badge "◆ MOCK — not a live session"; every value also labelled mock in inspection |
-| undocumented source | "†" after the value and "† undocumented field" in zone A's telemetry notes (AGENTS.md, "Prefer documented interfaces") |
+| undocumented source | "†" after the value, in zone A and in the details view, whose TELEMETRY heading carries the legend "† undocumented field" (AGENTS.md, "Prefer documented interfaces"; the legend was in zone A's notes until plan 26) |
 
 At narrow width the right-aligned labels are dropped from conversation
 lines but kept in inspection and in the zoomed panels; the inferred stage
@@ -1835,7 +1835,7 @@ rounded frames, pale violet panel titles (RD "Layout mock-up").
 | ▐ ▌ | the ends of the "F2 to answer" pill (plan 20) | dark pink |
 | ✿ ◆ | the orchestrator's model icon in zone A: a Claude model, any other (plan 24) | the model's |
 | ✦ | the TELEMETRY heading of zone A (plan 24) | title |
-| ⓘ | the first mark of the telemetry notes (plan 24) | grey |
+
 
 Model colours, after RD's legend (one colour per model family, ASM-13):
 Opus violet, Sonnet orange, Haiku blue, OpenAI GPT models teal, any other
@@ -1913,7 +1913,7 @@ connectors").
   tool, a starting session, zone A's status), at 10 frames per second; it
   stops the moment the work stops (ASM-18).
 - Elapsed times tick once per second, and so do zone A's quota countdowns
-  ("Resets in 4h 12m") and the quota's age ("quota updated 4s ago"): they
+  ("Resets in 4h 12m") and the details view's ages ("4s ago"): they
   follow the one-second clock, with no timer of their own, and are drawn
   from the frame's time, so a countdown that changed rewrites its own row
   and none of B's or C's (plan 24).

@@ -27,7 +27,7 @@ The five parts of [architecture.md, The five parts](architecture.md#the-five-par
 | Part | A failure here | Cannot reach |
 | - | - | - |
 | 1. Execution and session | a spawn error, a closed pipe, a timeout: becomes a session event (`Crashed`, a refused command) | the screen directly; it reports through events |
-| 2. Event collection | a line that does not decode: becomes an `unrecognised` event with the parse error, counted in zone A's telemetry | the state: it never applies anything itself |
+| 2. Event collection | a line that does not decode: becomes an `unrecognised` event with the parse error, counted and listed in the details view (plan 26: zone A draws no counts) | the state: it never applies anything itself |
 | 3. Application state | a reducer bug: caught by the test plan; at runtime a panic is recovered, logged, and the terminal restored | the CLI: the reducer does no I/O |
 | 4. Rendering | a layout error: only the frame is wrong; the state is intact and the next frame redraws | the state or the CLI |
 | 5. Input and commands | a refused command (not ready, turn running): a visible notice, the draft kept | the CLI directly: commands go through part 1 |
@@ -78,7 +78,7 @@ not emitted by this CLI or version, not yet received, or malformed.
 | `retry` | not counted (both are **D**, not observed) | retries "N/A (none reported)" until one arrives |
 | `error` | the other error fields still count (TEL) | the counter |
 | `status.changed` | no compaction or MCP status shown | nothing extra |
-| `unrecognised` | never absent: anything unknown lands here | counted in zone A's telemetry, the last 20 named in the details view with their time, type, reason and line (plan 25), listed in Raw events |
+| `unrecognised` | never absent: anything unknown lands here | counted in the details view, where the last 20 are named with their time, type, reason and line (plan 25; the count left zone A's notes in plan 26), listed in Raw events |
 
 ### Integration sources
 

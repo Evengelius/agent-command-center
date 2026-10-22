@@ -3752,3 +3752,24 @@ Taken as plan 25: the details view lists the unrecognised lines (their
 time, type, reason and the line itself), the two of the owner's session
 are named by logged live runs and mapped, and nothing is committed until
 the owner approves.
+
+## Amendment 25, 2026-10-22: zone A without notes, for plan 26
+
+After plan 25 was approved and pushed, the owner ran the dashboard again
+and sent a crop of zone A's notes: "ⓘ unrecognised 1 · quota updated 4m 36s
+ago" on one row, "† undocumented field · cost at API rates" on the next.
+The owner, word for word:
+
+````text
+It actually reappeared, and there is also "undocumented file", 
+
+Can we just get rid of this part/section completely and forever?
+````
+
+Taken as plan 26: zone A's telemetry pane shows values only and carries no
+notes row, now or later; the counters, the freshness, the legends and the
+unrecognised lines live in the details view (Enter on TELEMETRY), where
+each value also has its source and age; an undocumented value keeps its "†"
+mark, as AGENTS.md asks, and the details view's heading explains it. This
+is a standing decision (plan.md, The owner's standing decisions). Nothing
+is committed until the owner approves.

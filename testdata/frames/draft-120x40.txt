@@ -14,24 +14,24 @@
 │           │                                                                                              │    mock   │
 │           │                                                                                              │    mock   │
 │           │                                                                                              │    mock   │
-│ ──────────│                                                                                              │           │
-│ ✦ TELEMETR│                                                                                              │─────────╮ │
-│ ▾ SESSION │                                                                                              │         │ │
-│   Context │                                                                                              │.md`,    │ │
-│   Tokens 1│                                                                                              │         │ │
-│   Est. cos│                                                                                              │         │ │
+│           │                                                                                              │           │
+│           │                                                                                              │─────────╮ │
 │           │                                                                                              │         │ │
-│ ▾ QUOTA WI│                                                                                              │─────────╯ │
+│ ──────────│                                                                                              │.md`,    │ │
+│ ✦ TELEMETR│                                                                                              │         │ │
+│ ▾ SESSION │                                                                                              │         │ │
+│   Context │                                                                                              │         │ │
+│   Tokens 1│                                                                                              │─────────╯ │
+│   Est. cos│                                                                                              │           │
+│           │                                                                                              │────────── │
+│ ▾ QUOTA WI│                                                                                              │           │
 │   Session │                                                                                              │           │
-│   ████████│                                                                                              │────────── │
+│   ████████│                                                                                              │           │
 │   Resets i│                                                                                              │           │
 │           │                                                                                              │           │
 │   Weekly (│                                                                                              │           │
 │   ████████│                                                                                              │           │
-│   Resets i│                                                                                              │           │
-│ ──────────│                                                                                              │           │
-│ ⓘ quota up│                                                                                              │           │
-│   context │                                                                                              │aft window │
+│   Resets i│                                                                                              │aft window │
 ╰───────────│ Enter send · Ctrl+J newline · Ctrl+F full screen · Esc back          turn started by the CLI │───────────╯
 ╭─ C · LIVE ╰──────────────────────────────────────────────────────────────────────────────────────────────╯ · 1 DONE ─╮
 │  ✓  general-purpose   haiku-5-5   completed · Files written to found.txt: …                                          │

@@ -54,8 +54,9 @@ func replayed(provider string, m fixture.Mapper, recs []fixture.Record) (*state.
 // teleSummary writes the telemetry pane's values one per line, as a test
 // reads them: each quota window as "<label> <value> (<second line>)", the
 // usage as "context <value>", "tokens <value>" and "cost <value>", an N/A
-// with its reason in brackets; then the notes; then the details view's
-// body, whose counters and sources the pane does not draw.
+// with its reason in brackets; then the details view's body, whose
+// counters and sources the pane does not draw (the pane's notes went in
+// plan 26).
 func teleSummary(s *state.State, now time.Time) string {
 	ui := UI{Width: 200, Height: 60, Now: now}
 	var out []string
@@ -69,7 +70,6 @@ func teleSummary(s *state.State, now time.Time) string {
 		}
 		out = append(out, strings.Replace(l, "est. cost", "cost", 1))
 	}
-	out = append(out, texts(noteRows(s, ui, 400, 1)))
 	return strings.Join(out, "\n") + "\n" + texts(detailsBody(s, ui, 400))
 }
 
@@ -109,7 +109,7 @@ func TestTelemetryParsing(t *testing.T) {
 		d := teleSummary(s, now)
 		all := strings.Count(d, "$")
 		est := len(regexp.MustCompile(`\$[0-9.]+ API-equiv\. estimate`).FindAllString(d, -1))
-		if all != 2 || est != 1 || !strings.Contains(d, "cost $0.00\n") || !strings.Contains(d, "$0.0025 API-equiv. estimate") || !strings.Contains(d, "cost at API rates") {
+		if all != 2 || est != 1 || !strings.Contains(d, "cost $0.00\n") || !strings.Contains(d, "$0.0025 API-equiv. estimate") {
 			t.Errorf("%d amounts, %d labelled estimates:\n%s", all, est, d)
 		}
 		// The pane's cost column says what the amount is.
@@ -134,12 +134,14 @@ func TestTelemetryParsing(t *testing.T) {
 			t.Errorf("credits %+v", c)
 		}
 		d := teleSummary(s, now)
-		for _, want := range []string{"Session (5hr) 0% (Resets in ", "Weekly (7 day) 0% (Resets in ", "plan plus", "credits none"} {
-			if !strings.Contains(d, want) {
+		for _, want := range []string{"Session (5hr) 0% (Resets in ", "Weekly (7 day) 0% (Resets in ", `plan\s+plus`, `credits\s+none`} {
+			if !regexp.MustCompile(regexp.QuoteMeta(want)).MatchString(d) && !regexp.MustCompile(want).MatchString(d) {
 				t.Errorf("the telemetry lacks %q:\n%s", want, d)
 			}
 		}
-		if strings.Contains(d, "†") {
+		// The details view's heading carries the legend "† undocumented field"
+		// (plan 26); no value is marked.
+		if regexp.MustCompile(`\S†`).MatchString(d) {
 			t.Errorf("Codex's documented windows marked undocumented:\n%s", d)
 		}
 	})
@@ -160,7 +162,7 @@ func TestTelemetryParsing(t *testing.T) {
 		if v := s.Metrics["tokens.session"]; v.V != 184312 || v.Origin != event.Derived {
 			t.Errorf("tokens.session %+v", v)
 		}
-		if d := teleSummary(s, now); !strings.Contains(d, "tokens 184.3k\n") || !strings.Contains(d, "tokens summed over threads") {
+		if d := teleSummary(s, now); !strings.Contains(d, "tokens 184.3k\n") || !regexp.MustCompile(`tokens\.session\s+184,312 tokens \(derived\)`).MatchString(d) {
 			t.Errorf("the telemetry:\n%s", d)
 		}
 		if c := usageCols(s, UI{Now: now}, 120)[1]; c.value != "184.3k" || c.support != "session total" {
@@ -236,10 +238,10 @@ func TestTelemetryNA(t *testing.T) {
 			want: []string{"context N/A (no result yet)"}},
 		{name: "claude context refused, before the first result", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(refused(t), 8) },
-			want: []string{"context N/A (no result yet)", "errors 1"}, errors: 1},
+			want: []string{"context N/A (no result yet)"}, errors: 1},
 		{name: "claude context refused, derived after the result", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(refused(t), 48) },
-			want: []string{"context 3% of 1M\n", "context derived from usage", "errors 1"}, errors: 1},
+			want: []string{"context 3% of 1M\n", "(derived)"}, errors: 1},
 		{name: "claude tokens, cost, duration before the first result", provider: "claude-code",
 			recs: func(t *testing.T) []fixture.Record { return upTo(p2(t), 8) },
 			want: []string{"tokens N/A (no result yet)", "cost N/A (no result yet)", "duration.ms         N/A (no result yet)"},
@@ -270,7 +272,7 @@ func TestTelemetryNA(t *testing.T) {
 				return upTo(p6b(t), 7, rec(60300, "in", p6bRead),
 					rec(60301, "out", `{"id":99,"error":{"code":-32603,"message":"upstream timeout"}}`))
 			},
-			want: []string{"Session (5hr) N/A (read failed: upstream timeout; last 0% 1m 00s ago)", "Weekly (7 day) N/A (read failed: upstream timeout; last 0% 1m 00s ago)", "errors 1"}, errors: 1},
+			want: []string{"Session (5hr) N/A (read failed: upstream timeout; last 0% 1m 00s ago)", "Weekly (7 day) N/A (read failed: upstream timeout; last 0% 1m 00s ago)"}, errors: 1},
 		{name: "codex context before the first model call", provider: codex.ProviderID,
 			recs: func(t *testing.T) []fixture.Record { return upTo(p6b(t), 20) },
 			want: []string{"context N/A (no model call yet)"}},
