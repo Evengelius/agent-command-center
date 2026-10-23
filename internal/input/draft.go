@@ -3,6 +3,7 @@ package input
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"io/fs"
 	"os"
@@ -97,13 +98,82 @@ func (d Drafts) Save(project, text string) error {
 	return nil
 }
 
-// Delete removes a project's draft; no draft is not an error.
+// Delete removes a project's draft and its images' list; no draft is not an
+// error.
 func (d Drafts) Delete(project string) error {
 	p, err := d.Path(project)
 	if err != nil {
 		return err
 	}
 	if err := os.Remove(p); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	return d.SaveImages(project, nil)
+}
+
+// imagesPath is the file a draft's attached images are listed in, beside
+// the draft (plan 31, design D6): their paths, never their bytes.
+func (d Drafts) imagesPath(project string) (string, error) {
+	p, err := d.Path(project)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(p, ".txt") + ".images.json", nil
+}
+
+// LoadImages reads the paths of the draft's attached images; none is nil
+// without an error.
+func (d Drafts) LoadImages(project string) ([]string, error) {
+	p, err := d.imagesPath(project)
+	if err != nil {
+		return nil, err
+	}
+	b, err := os.ReadFile(p)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var paths []string
+	if err := json.Unmarshal(b, &paths); err != nil {
+		return nil, errors.New("the draft's images list is unreadable: " + err.Error())
+	}
+	return paths, nil
+}
+
+// SaveImages writes the paths of the draft's attached images, as Save
+// writes the text; none deletes the list.
+func (d Drafts) SaveImages(project string, paths []string) error {
+	p, err := d.imagesPath(project)
+	if err != nil {
+		return err
+	}
+	if len(paths) == 0 {
+		if err := os.Remove(p); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+		return nil
+	}
+	b, err := json.Marshal(paths)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(filepath.Dir(p), ".draft-*")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	_, werr := f.Write(b)
+	if err := errors.Join(werr, f.Sync(), f.Close()); err != nil {
+		_ = os.Remove(tmp)
+		return err
+	}
+	if err := os.Rename(tmp, p); err != nil {
+		_ = os.Remove(tmp)
 		return err
 	}
 	return nil

@@ -115,10 +115,14 @@ func (s *Session) emitLocked(ev event.Event) bool {
 // Events are the replayed events, then the ones Send and Answer add.
 func (s *Session) Events() <-chan event.Event { return s.ch }
 
-// Send goes nowhere: it records the message and a notice saying so, as a
-// turn that ends at once.
-func (s *Session) Send(text string) error {
-	ok := s.emit(event.Event{Kind: event.UserMessage, Payload: event.User{Text: text}}) &&
+// Send goes nowhere: it records the message, its images named, and a
+// notice saying so, as a turn that ends at once.
+func (s *Session) Send(msg provider.Message) error {
+	var imgs []event.Image
+	for _, img := range msg.Images {
+		imgs = append(imgs, event.Image{Name: img.Name, Media: img.Media, Size: len(img.Data)})
+	}
+	ok := s.emit(event.Event{Kind: event.UserMessage, Payload: event.User{Text: msg.Text, Images: imgs}}) &&
 		s.emit(event.Event{Kind: event.TurnStarted}) &&
 		s.emit(event.Event{Kind: event.StatusChanged, Payload: event.Status{Status: "notice", Detail: "mock session: the message was not sent to any CLI"}}) &&
 		s.emit(event.Event{Kind: event.TurnCompleted, Payload: event.TurnEnd{Outcome: "completed", Subtype: "mock"}})
@@ -158,7 +162,12 @@ func (s *Session) SetApprovalMode(bool) error {
 func (s *Session) Refresh() error { return nil }
 
 // Capabilities: a mock session offers nothing beyond what its file shows.
-func (s *Session) Capabilities() provider.Capabilities { return provider.Capabilities{} }
+// Capabilities are none of a CLI's but the images: a mock run takes them
+// with Claude Code's limits, the stricter, so the editor's attachments can
+// be shown and sent nowhere (plan 31).
+func (s *Session) Capabilities() provider.Capabilities {
+	return provider.Capabilities{Images: provider.ImageLimits{MaxCount: 100, MaxBytes: 7_400_000, MaxTotal: 7_400_000, MaxSide: 8000}}
+}
 
 // Close stops the replay and ends the session with session.ended, the last
 // event: the lock is held from that event to closing the channel.

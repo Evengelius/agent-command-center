@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
+ A ✓ Turn 3                                               (inferred)   F6: tree
+╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
+│ ╰──────────────────────────────────────────────────────────────────────────╯ │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│                                                                              │
+│ ▎ YOU  11:30                                                                 │
+│ ▎ What colours and what text are in these images?                            │
+│ ▎ 🗀  acc-image-upload-test.png · 1 KB                                        │
+│ ▎ 🗀  acc-image-upload-test.jpg · 6 KB                                        │
+│                                                                              │
+│   · mock session: the message was not sent to any CLI                        │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ >  Ask Mock data anything…                                                   │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   +     Haiku 5.5 High · Ultracode                                   ↯ Auto  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+│ no agents yet: they appear as the CLI starts them                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

@@ -252,6 +252,23 @@ func (sc *Screen) units(p byte, y int) []unit {
 	return out
 }
 
+// ItemAt is the panel and the item of the span under the cell (x, y): for
+// an attachment chip's ✕, panel 'X' and the attachment's index (plan 31).
+func (sc *Screen) ItemAt(x, y int) (byte, int) {
+	if y < 0 || y >= len(sc.lines) {
+		return 0, 0
+	}
+	cx := 0
+	for _, s := range sc.lines[y] {
+		w := textWidth(s.text)
+		if x >= cx && x < cx+w {
+			return s.ref.panel, s.ref.item
+		}
+		cx += w
+	}
+	return 0, 0
+}
+
 // PanelAt is the panel under the cell (x, y), 0 outside every panel. The
 // editor's row belongs to the editor, its frame included.
 func (sc *Screen) PanelAt(x, y int) byte {

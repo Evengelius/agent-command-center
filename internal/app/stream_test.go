@@ -51,6 +51,7 @@ type scriptSession struct {
 	close      sync.Once
 	mu         sync.Mutex
 	sent       []string
+	msgs       []provider.Message // the messages sent, their images with them (plan 31)
 	answers    []string
 	questions  []string            // AnswerQuestion calls: the approval ids
 	qanswers   []map[string]string // and their answers
@@ -62,10 +63,11 @@ type scriptSession struct {
 func newScriptSession() *scriptSession { return &scriptSession{events: make(chan event.Event, 4096)} }
 
 func (s *scriptSession) Events() <-chan event.Event { return s.events }
-func (s *scriptSession) Send(text string) error {
+func (s *scriptSession) Send(msg provider.Message) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.sent = append(s.sent, text)
+	s.sent = append(s.sent, msg.Text)
+	s.msgs = append(s.msgs, msg)
 	return nil
 }
 func (s *scriptSession) Answer(id, decision string) error {
@@ -89,7 +91,8 @@ func (s *scriptSession) Interrupt() error {
 }
 func (s *scriptSession) Refresh() error { return nil }
 func (s *scriptSession) Capabilities() provider.Capabilities {
-	return provider.Capabilities{AutoApprovals: s.auto}
+	// Claude Code's limits on images (plan 31), so attachments can be tested.
+	return provider.Capabilities{AutoApprovals: s.auto, Images: provider.ImageLimits{MaxCount: 100, MaxBytes: 7_400_000, MaxTotal: 7_400_000, MaxSide: 8000}}
 }
 func (s *scriptSession) SetApprovalMode(auto bool) error {
 	s.mu.Lock()

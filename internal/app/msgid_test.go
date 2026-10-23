@@ -53,13 +53,17 @@ func replayState(recs []fixture.Record) *state.State {
 
 // conversation is what the message id decides: each entry's agent, role,
 // message id and text.
-func conversation(es []state.Entry) []state.Entry {
-	out := make([]state.Entry, len(es))
+func conversation(es []state.Entry) []entryKey {
+	out := make([]entryKey, len(es))
 	for i, e := range es {
-		out[i] = state.Entry{Agent: e.Agent, Role: e.Role, MessageID: e.MessageID, Text: e.Text}
+		out[i] = entryKey{agent: e.Agent, role: e.Role, id: e.MessageID, text: e.Text}
 	}
 	return out
 }
+
+// entryKey is what the comparison reads of an entry: a comparable value,
+// since an entry's images make it a slice holder (plan 31).
+type entryKey struct{ agent, role, id, text string }
 
 // Plan 21, item 3.2: every Claude Code recording replayed twice, as recorded
 // and with api_message_id removed from every line, gives the same

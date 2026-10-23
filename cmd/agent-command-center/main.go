@@ -49,6 +49,7 @@ func main() {
 		MockSpeed:         1,
 		Drafts:            &input.Drafts{},
 		Projects:          &input.Projects{},
+		PickImages:        input.PickImages,
 		Git:               input.GitCLI{},
 		Sessions:          &input.Sessions{},
 	})

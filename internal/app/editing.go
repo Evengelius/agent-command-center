@@ -37,10 +37,11 @@ func (m *Model) editorKey(k tea.KeyPressMsg) []tea.Cmd {
 			// `\` then a send key: a newline, as in Claude Code (ui-design.md, Keys).
 			e.Backspace()
 			e.Newline()
-		case strings.TrimSpace(e.Text()) != "":
+		case strings.TrimSpace(e.Text()) != "" || len(m.attach) > 0:
 			m.follow()            // sending shows the end of the conversation
 			m.ui.KeysProblem = "" // a mock run's status row shows the configuration's problem until now
-			return m.do(state.Send{Text: e.Text()})
+			// The text and the attached images, together (plan 31).
+			return m.do(state.Send{Text: e.Text(), Images: m.sentImages()})
 		}
 		return nil
 	case m.opt.Keys.IsNewline(name):
@@ -48,6 +49,8 @@ func (m *Model) editorKey(k tea.KeyPressMsg) []tea.Cmd {
 		return nil
 	}
 	switch name {
+	case "ctrl+shift+x":
+		return m.removeAttachment(len(m.attach) - 1) // the last attached image (plan 31)
 	case "tab":
 		e.Insert("\t")
 	case "ctrl+a":
@@ -162,6 +165,7 @@ func (m *Model) editorView() render.EditorView {
 		Total:   e.Lines(),
 		Line:    cur,
 		Pasting: m.pasting,
+		Attach:  m.chips(),
 	}
 	text := e.Text()
 	v.Col = e.Cursor() - (strings.LastIndexByte(text[:e.Cursor()], '\n') + 1)

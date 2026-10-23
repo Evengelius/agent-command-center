@@ -147,7 +147,10 @@ Provider
 
 Session
   Events() <-chan Event             normalised events, in stream order
-  Send(UserMessage) error           a user turn (text, byte for byte)
+  Send(Message) error               a user turn: the text byte for byte and its images
+                                    as image input (plan 31; Claude Code: base64 image
+                                    blocks before the text; Codex: `image` inputs with
+                                    data URLs, then the text)
   Answer(ApprovalID, Decision) error  allow / deny / allow-for-session where offered
   AnswerQuestion(QuestionID, Answers) error   where the CLI supports it
   Interrupt() error                 cancel the running turn
@@ -162,7 +165,9 @@ Session
 pretends both CLIs are the same (AM4 D6 "Do not force all providers to
 expose identical telemetry"): streaming of subagent text, per-subagent model,
 quota without a turn, API-equivalent cost, clarification questions, plan
-steps, resume with history, allow-for-session, Manual or Auto approvals. They
+steps, resume with history, allow-for-session, Manual or Auto approvals, and
+the limits on a message's images (`Images`: count, bytes an image and a
+message, pixels a side, patches; plan 31, doc/research/image-input.md). They
 are fixed per adapter (`internal/provider/claude/session.go`,
 `internal/provider/codex/session.go`, `internal/provider/mock/session.go`),
 not read from detection or the handshake, and one is read:
@@ -426,6 +431,19 @@ It only reads; nothing is written anywhere.
   goroutine started in `TestMain`, outside every bubble
   (`internal/app/main_test.go`).
 - **The search** runs in a command too, at most 10,000 matches.
+
+## Images attached to a message
+
+Plan 31 (brief amendment 31; ui-design.md, Input editor; the research in
+doc/research/image-input.md).
+
+| Part | What it does | Where |
+| - | - | - |
+| 5. Input | the system's Open dialog (GetOpenFileNameW, Explorer style, owned by the window in front, on a locked thread with COM), in a command; each file read and checked by its bytes, never its extension: PNG, JPEG and GIF by the standard library, BMP, baseline TIFF, ICO and the WebP header by the dashboard's own readers; an EXIF orientation applied, an animated GIF's first frame and the converted formats sent as PNG; an image over the provider's limits scaled down by area averaging; HEIC, AVIF, JPEG XL, JPEG 2000, PSD, TGA, DDS, HDR, EXR, camera raws and SVG refused by name; the original never written; the stored draft's images listed beside it | `internal/input/image*.go`, `dialog*.go`, `draft.go` |
+| The application | the "+" menu's item opens the dialog; the accepted images are the draft's attachments, removable by a chip's ✕ or Ctrl+Shift+X; at send each is read and checked again in the write command, a file gone or changed failing the send with the draft and its images kept | `internal/app/attach.go`, `app.go`, `draft.go` |
+| 2 and 3. State | the message's images ride on the write command and stay with the turn until it is accepted, a failed write giving them back; the owner's entry is named from them | `internal/state/actions.go`, `reduce.go` |
+| 1. Providers | `Send(provider.Message)`: Claude Code's base64 image blocks before the text, Codex's `image` inputs with data URLs; each adapter's mapper keeps the line it wrote without the image's bytes, and Codex's every line it reads too, since the app-server writes the message back with its images (the event, the log and the screen hold the media type and size) | `internal/provider/claude/images.go`, `codex/images.go` |
+| 4. Rendering | the chips' row under the editor's rule, the images under a sent message's text | `internal/render/attach.go`, `editor.go`, `cards.go` |
 
 ## Build order
 

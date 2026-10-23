@@ -30,7 +30,10 @@ type (
 	Quit             struct{}
 	Stay             struct{} // Esc while Ctrl+Q asks to confirm: the session goes on
 	Resume           struct{} // start the crashed session's CLI session again in a new process
-	Send             struct{ Text string }
+	Send             struct {
+		Text   string
+		Images []Attachment // the images attached to the draft (plan 31)
+	}
 	WriteFailed      struct{ Message string }
 	Interrupt        struct{}
 	InterruptTimeout struct{}
@@ -150,7 +153,7 @@ func (s *State) Do(a Action) []Command {
 	case WriteFailed:
 		if s.Turn.Phase == Submitted {
 			s.Turn.Phase, s.Turn.Outcome, s.Turn.Notice = Idle, "failed", "the message could not be sent: "+a.Message
-			return []Command{{Kind: CmdRestoreDraft, Text: s.Turn.Draft}}
+			return []Command{s.restoreDraft()}
 		}
 	case Interrupt:
 		return s.interrupt()
@@ -284,8 +287,16 @@ func (s *State) stopWork() []Command {
 	return cmds
 }
 
+// restoreDraft gives the sent message back to the editor, its text and its
+// images (ASM-23; plan 31), and forgets it.
+func (s *State) restoreDraft() Command {
+	c := Command{Kind: CmdRestoreDraft, Text: s.Turn.Draft, Images: s.Turn.DraftImages}
+	s.Turn.Draft, s.Turn.DraftImages = "", nil
+	return c
+}
+
 func (s *State) send(a Send) []Command {
-	s.Turn.Draft = a.Text
+	s.Turn.Draft, s.Turn.DraftImages = a.Text, a.Images
 	if s.Session.Phase != Ready {
 		s.Turn.Notice = "not sent: the session is " + string(s.Session.Phase) + "; the draft is kept"
 		return nil
@@ -309,7 +320,7 @@ func (s *State) send(a Send) []Command {
 	// (plan 22, correction C3).
 	s.endThoughts(time.Time{}, "")
 	s.Turn.Phase, s.Turn.Count, s.Turn.Outcome, s.Turn.Notice, s.Turn.ByCLI = Submitted, s.Turn.Count+1, "", "", false
-	return []Command{{Kind: CmdWrite, Text: a.Text}}
+	return []Command{{Kind: CmdWrite, Text: a.Text, Images: a.Images}}
 }
 
 func (s *State) interrupt() []Command {

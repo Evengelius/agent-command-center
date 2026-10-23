@@ -9,6 +9,7 @@ import (
 
 	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/fixture"
+	"github.com/Evengelius/agent-command-center/internal/provider"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -244,7 +245,7 @@ func TestSessionPlaysP22o(t *testing.T) {
 	}
 	text := "Without using any tool, find the smallest positive integer that leaves the remainders 1, 2, 3, 4 and 5 when divided by 2, 3, 4, 5 and 6."
 	r.st.Do(state.Send{Text: text})
-	if err := r.sess.Send(text); err != nil {
+	if err := r.sess.Send(provider.Message{Text: text}); err != nil {
 		t.Fatal(err)
 	}
 	if end := r.wait(event.TurnCompleted).Payload.(event.TurnEnd); end.Outcome != "completed" {
@@ -308,7 +309,7 @@ func TestSessionSurvivesAFailingHook(t *testing.T) {
 	}
 	text := "Without using any tool, find the smallest positive integer that leaves the remainders 1, 2, 3, 4 and 5 when divided by 2, 3, 4, 5 and 6."
 	r.st.Do(state.Send{Text: text})
-	if err := r.sess.Send(text); err != nil {
+	if err := r.sess.Send(provider.Message{Text: text}); err != nil {
 		t.Fatal(err)
 	}
 	if end := r.wait(event.TurnCompleted).Payload.(event.TurnEnd); end.Outcome != "completed" {

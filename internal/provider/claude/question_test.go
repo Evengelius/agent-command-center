@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
+	"github.com/Evengelius/agent-command-center/internal/provider"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -35,7 +36,7 @@ func TestAnswerQuestion(t *testing.T) {
 	t.Setenv("ACC_FAKE_LOG", log)
 	r, _ := start(t, "question", nil)
 	r.wait(event.SessionReady)
-	if err := r.sess.Send("ask"); err != nil {
+	if err := r.sess.Send(provider.Message{Text: "ask"}); err != nil {
 		t.Fatal(err)
 	}
 	q := r.wait(event.Question).Payload.(event.Approval)
@@ -104,7 +105,7 @@ func TestEchoUnicode(t *testing.T) {
 	r, _ := start(t, "echo", nil)
 	r.wait(event.SessionReady)
 	const text = "café ✓ — 日本\r\nline 2\n"
-	if err := r.sess.Send(text); err != nil {
+	if err := r.sess.Send(provider.Message{Text: text}); err != nil {
 		t.Fatal(err)
 	}
 	var got string

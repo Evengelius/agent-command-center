@@ -45,10 +45,11 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 	switch msg.(type) {
 	case tea.MouseClickMsg:
 		// The "+" menu (plan 30): a left click on the band opens or closes
-		// it; while it is open, a click on its item closes it and does
-		// nothing else yet, a click anywhere else closes it and goes on.
+		// it; while it is open, a click on its item closes it and opens the
+		// Open dialog (plan 31), a click anywhere else closes it and goes on.
+		// A click on a chip's ✕ removes its image.
 		if mo.Button == tea.MouseLeft && !m.ui.DraftWin.Open {
-			switch p := m.screen.PanelAt(mo.X, mo.Y); {
+			switch p, item := m.screen.ItemAt(mo.X, mo.Y); {
 			case p == '+':
 				m.ui.Plus, m.ui.PlusHover = !m.ui.Plus, false
 				m.ui.Focus = "B"
@@ -56,8 +57,11 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			case m.ui.Plus:
 				m.ui.Plus, m.ui.PlusHover = false, false
 				if p == 'U' {
-					return nil
+					return m.pickImages()
 				}
+			case p == 'X':
+				m.ui.Focus = "B"
+				return m.removeAttachment(item)
 			}
 		}
 		// Over the draft window, only the window takes a click (amendment 13).

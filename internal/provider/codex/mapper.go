@@ -7,6 +7,7 @@ package codex
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -68,8 +69,15 @@ type ids struct {
 	ItemID   string `json:"itemId"`
 }
 
-// Out maps one line read from the CLI's stdout.
+// Out maps one line read from the CLI's stdout. The events keep no image:
+// the app-server writes the owner's images back in its userMessage items
+// (plan 31, seen live in 31.8), so each event's raw line loses its image
+// data URLs once the line is mapped (keepNoImages).
 func (m *Mapper) Out(raw []byte) []event.Event {
+	return keepNoImages(m.out(raw))
+}
+
+func (m *Mapper) out(raw []byte) []event.Event {
 	if evs, ok := m.configRead(raw); ok {
 		return evs
 	}
@@ -112,6 +120,8 @@ func (m *Mapper) In(raw []byte) []event.Event {
 			Input []struct {
 				Type string `json:"type"`
 				Text string `json:"text"`
+				URL  string `json:"url"`
+				Path string `json:"path"`
 			} `json:"input"`
 			Reviewer string          `json:"approvalsReviewer"`
 			Sandbox  json.RawMessage `json:"sandboxPolicy"`
@@ -128,12 +138,21 @@ func (m *Mapper) In(raw []byte) []event.Event {
 		switch r.Method {
 		case "turn/start":
 			var texts []string
+			var imgs []event.Image
 			for _, in := range p.Input {
-				if in.Type == "text" {
+				switch in.Type {
+				case "text":
 					texts = append(texts, in.Text)
+				case "image":
+					imgs = append(imgs, dataURLImage(in.URL))
+				case "localImage":
+					imgs = append(imgs, event.Image{Name: filepath.Base(in.Path)})
 				}
 			}
-			out = append(out, m.ev(event.UserMessage, event.Observed, agent, "", "", raw, event.User{Text: strings.Join(texts, "\n")}))
+			if len(imgs) > 0 {
+				raw = withoutImageURLs(raw) // the events keep no image bytes (plan 31)
+			}
+			out = append(out, m.ev(event.UserMessage, event.Observed, agent, "", "", raw, event.User{Text: strings.Join(texts, "\n"), Images: imgs}))
 		case "turn/interrupt":
 			m.interrupted = true
 		}

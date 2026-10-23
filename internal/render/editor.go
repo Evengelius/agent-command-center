@@ -20,6 +20,16 @@ type EditorView struct {
 	From    [2]int // the selection's start (line, byte); equal to To when none
 	To      [2]int // the selection's end, exclusive
 	Pasting bool   // between a paste's start and end markers
+	// Attach are the images attached to the draft, as their chips show
+	// them (plan 31).
+	Attach []Attachment
+}
+
+// Attachment is an image attached to the draft as its chip shows it: the
+// file's name and its size as sent (plan 31, design D4).
+type Attachment struct {
+	Name string
+	Size string
 }
 
 // TabWidth is the cells a tab takes on screen; the text keeps the tab
@@ -138,7 +148,14 @@ func (v EditorView) selected(line, off int) bool {
 // (ui-design.md, Input editor, Size).
 func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 	v := ui.Editor
-	out := append([]line{rule(w)}, draftRows(s, ui, w, minRows, maxRows)...)
+	out := []line{rule(w)}
+	if len(v.Attach) > 0 {
+		// The attachments' row, under the rule, within the editor's half of B
+		// (plan 31, design D4).
+		out = append(out, attachRow(v.Attach, w))
+		maxRows = max(maxRows-1, minRows)
+	}
+	out = append(out, draftRows(s, ui, w, minRows, maxRows)...)
 	status := editorStatus(s, ui)
 	if v.Pasting {
 		status = "pasting…"

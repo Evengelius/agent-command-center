@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -314,8 +315,37 @@ func (s *Session) control(subtype, body string) error {
 	return s.write(map[string]any{"type": "control_request", "request_id": id, "request": json.RawMessage(req + "}")})
 }
 
-// Send writes the owner's message, byte for byte.
-func (s *Session) Send(text string) error { return s.write(userMessage(text)) }
+// imageLimits are Claude Code's limits on a message's images
+// (doc/research/image-input.md): the Claude API's 10 MB an image once
+// base64-encoded, 7.4 MB as sent, 8000 px a side, 100 images a request on
+// a 200k-context model; the dashboard's own 7.4 MB a message keeps a
+// written line under the 10 MB of piped input the headless page names.
+var imageLimits = provider.ImageLimits{MaxCount: 100, MaxBytes: 7_400_000, MaxTotal: 7_400_000, MaxSide: 8000}
+
+// Send writes the owner's message: its text byte for byte, and its images
+// as base64 image blocks before the text, as the Agent SDK's streaming
+// input takes them and the vision guide advises (plan 31;
+// doc/research/image-input.md).
+func (s *Session) Send(msg provider.Message) error { return s.write(userContent(msg)) }
+
+// userContent is the owner's message as Claude Code reads it: a string
+// content without images, content blocks with them, the images first.
+func userContent(msg provider.Message) map[string]any {
+	m := userMessage(msg.Text)
+	if len(msg.Images) == 0 {
+		return m
+	}
+	blocks := make([]map[string]any, 0, len(msg.Images)+1)
+	for _, img := range msg.Images {
+		blocks = append(blocks, map[string]any{"type": "image", "source": map[string]any{
+			"type": "base64", "media_type": img.Media, "data": base64.StdEncoding.EncodeToString(img.Data)}})
+	}
+	if msg.Text != "" {
+		blocks = append(blocks, map[string]any{"type": "text", "text": msg.Text})
+	}
+	m["message"] = map[string]any{"role": "user", "content": blocks}
+	return m
+}
 
 // userMessage is a user message as Claude Code reads it.
 func userMessage(text string) map[string]any {
@@ -387,7 +417,7 @@ func (s *Session) Refresh() error {
 
 // Capabilities of Claude Code 2.1 in way A.
 func (s *Session) Capabilities() provider.Capabilities {
-	return provider.Capabilities{SubagentText: true, APICost: true, Questions: true, ResumeHistory: true, AutoApprovals: true}
+	return provider.Capabilities{SubagentText: true, APICost: true, Questions: true, ResumeHistory: true, AutoApprovals: true, Images: imageLimits}
 }
 
 // Close closes stdin, then terminates the CLI, then kills its tree, each

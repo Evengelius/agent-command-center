@@ -37,6 +37,37 @@ type SessionContext struct {
 	ResumeID    string // a CLI session id to resume, "" for a new session
 }
 
+// Message is the owner's message: the text as typed and the images attached
+// to it, read, checked and converted by the application (plan 31, brief
+// amendment 31). An adapter sends each image as image input in the CLI's
+// supported interface, never as a path in the text
+// (doc/research/image-input.md).
+type Message struct {
+	Text   string
+	Images []Image
+}
+
+// Image is one attached image as sent: its file's name, the media type the
+// models take (image/png, image/jpeg, image/gif, image/webp) and its bytes.
+// Adapters keep its bytes out of events, logs and the screen.
+type Image struct {
+	Name  string
+	Media string
+	Data  []byte
+}
+
+// ImageLimits are a CLI's limits on the images of one message
+// (doc/research/image-input.md); a zero field is no limit, except MaxCount:
+// 0 means the CLI takes no image.
+type ImageLimits struct {
+	MaxCount   int   // images a message
+	MaxBytes   int64 // an image as sent
+	MaxTotal   int64 // all the images of a message as sent
+	MaxSide    int   // pixels a side
+	MaxPatches int   // patches of PatchSize px an image
+	PatchSize  int
+}
+
 // Capabilities are what one CLI and version support; the screen shows "N/A"
 // or hides an action when a flag is off.
 type Capabilities struct {
@@ -49,6 +80,9 @@ type Capabilities struct {
 	ResumeHistory    bool
 	AllowForSession  bool
 	AutoApprovals    bool // the session can switch between Manual and Auto approvals (plan 12)
+	// Images are the CLI's limits on a message's images (plan 31); a zero
+	// MaxCount is a CLI that takes none.
+	Images ImageLimits
 }
 
 // Provider is one agent CLI.
@@ -63,7 +97,9 @@ type Provider interface {
 // last event (session.ended).
 type Session interface {
 	Events() <-chan event.Event
-	Send(text string) error
+	// Send writes the owner's message, its text byte for byte and its images
+	// as image input (plan 31).
+	Send(msg Message) error
 	Answer(approvalID, decision string) error
 	// AnswerQuestion answers a pending question request with the answer to each
 	// question, by its text (plan 14, item 1); Capabilities.Questions says whether

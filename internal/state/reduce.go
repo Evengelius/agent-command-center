@@ -106,7 +106,7 @@ func turnActivity(k event.Kind) bool {
 
 func (s *State) toRunning() []Command {
 	s.Turn.Phase = Running
-	s.Turn.Draft = ""
+	s.Turn.Draft, s.Turn.DraftImages = "", nil
 	return []Command{{Kind: CmdDraftAccepted}}
 }
 
@@ -129,7 +129,7 @@ func (s *State) apply(ev event.Event) []Command {
 		s.Session.StderrTail = appendBounded(s.Session.StderrTail, p.Text, MaxStderr)
 		return nil
 	case event.User:
-		s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "user", Text: p.Text, Origin: ev.Origin, At: ev.At})
+		s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "user", Text: p.Text, Origin: ev.Origin, At: ev.At, Images: s.namedImages(p.Images)})
 		if s.Turn.Phase == Idle {
 			// A prompt the dashboard did not send, a mock file's: it opens the
 			// turn as Send does, the last turn's notice gone.
@@ -281,11 +281,10 @@ func (s *State) ended(ev event.Event, p event.Ended) []Command {
 	if s.Session.Phase == Closing {
 		s.Session.Phase = Closed
 		var cmds []Command
-		if s.Turn.Phase == Submitted && s.Turn.Draft != "" {
+		if s.Turn.Phase == Submitted && s.Turn.pending() {
 			// Closed before the CLI took the message: it goes back to the
 			// editor, so the draft saved on the way out keeps it (ASM-23).
-			cmds = append(cmds, Command{Kind: CmdRestoreDraft, Text: s.Turn.Draft})
-			s.Turn.Draft = ""
+			cmds = append(cmds, s.restoreDraft())
 		}
 		// Closed by the owner: what runs is interrupted, not failed (plan 22,
 		// criterion 1.6).
@@ -310,11 +309,10 @@ func (s *State) crash(ev event.Event, reason string, close bool) []Command {
 		s.Startup.Phase, s.Startup.Failure = StartFailed, reason
 	}
 	var cmds []Command
-	if s.Turn.Phase == Submitted && s.Turn.Draft != "" {
+	if s.Turn.Phase == Submitted && s.Turn.pending() {
 		// Not accepted before the crash: the message goes back to the editor,
 		// as after a failed write (ASM-23).
-		cmds = append(cmds, Command{Kind: CmdRestoreDraft, Text: s.Turn.Draft})
-		s.Turn.Draft = ""
+		cmds = append(cmds, s.restoreDraft())
 	}
 	if s.Turn.Phase != Idle {
 		s.Turn.Phase, s.Turn.Outcome = Idle, "failed"
@@ -1430,4 +1428,23 @@ func (s *State) endThoughts(at time.Time, outcome string) {
 			t.Outcome = outcome
 		}
 	}
+}
+
+// namedImages are a message's images with their files' names: the line a
+// CLI was written carries no name, so while the dashboard's own message
+// waits to be accepted, its attachments name the images, in order, when
+// they are as many (plan 31).
+func (s *State) namedImages(imgs []event.Image) []event.Image {
+	if len(imgs) == 0 {
+		return nil
+	}
+	out := append([]event.Image(nil), imgs...)
+	if d := s.Turn.DraftImages; s.Turn.Phase == Submitted && len(d) == len(out) {
+		for i := range out {
+			if out[i].Name == "" {
+				out[i].Name = d[i].Name
+			}
+		}
+	}
+	return out
 }

@@ -309,7 +309,7 @@ func TestHandshakeAndTurn(t *testing.T) {
 
 	text := "Create a file named hello.txt in the current directory containing the single word hello. Use the Write tool, then reply with the word done."
 	r.st.Do(state.Send{Text: text})
-	if err := r.sess.Send(text); err != nil {
+	if err := r.sess.Send(provider.Message{Text: text}); err != nil {
 		t.Fatal(err)
 	}
 	started := r.wait(event.SessionStarted).Payload.(event.Started)
@@ -400,7 +400,7 @@ func TestExitMidTurn(t *testing.T) {
 	r, _ := start(t, "midturn", nil)
 	r.wait(event.SessionReady)
 	r.st.Do(state.Send{Text: "hello"})
-	if err := r.sess.Send("hello"); err != nil {
+	if err := r.sess.Send(provider.Message{Text: "hello"}); err != nil {
 		t.Fatal(err)
 	}
 	e := r.end()
@@ -411,7 +411,7 @@ func TestExitMidTurn(t *testing.T) {
 	if s.Session.Phase != state.Crashed || s.Session.Reason != "the CLI exited unexpectedly" || s.Turn.Outcome != "failed" || s.Session.ExitCode != 3 {
 		t.Errorf("session %q %q, turn %q, code %d", s.Session.Phase, s.Session.Reason, s.Turn.Outcome, s.Session.ExitCode)
 	}
-	if err := r.sess.Send("again"); err == nil {
+	if err := r.sess.Send(provider.Message{Text: "again"}); err == nil {
 		t.Error("a send after the exit succeeded")
 	}
 }
@@ -422,7 +422,7 @@ func TestSendClosedStdin(t *testing.T) {
 	r, _ := start(t, "deaf", &Provider{CloseStep: time.Second})
 	r.wait(event.SessionReady)
 	r.st.Do(state.Send{Text: "hello"})
-	err := r.sess.Send("hello")
+	err := r.sess.Send(provider.Message{Text: "hello"})
 	if err == nil {
 		t.Fatal("the write succeeded")
 	}

@@ -89,10 +89,225 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 31 - Image upload
 
-Plan 30 was approved and closed on 2026-10-22 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 31 (2026-10-23): the "+" menu's "Upload from computer"
+works: the native Windows file dialog, the images validated by their
+content, attached to the draft as compact removable attachments, and sent
+as real image input to Claude Code and Codex when the owner submits;
+nothing is committed until the owner has reviewed the implementation and
+the results. The criteria below were written before the code.
+
+### Research (D0, [doc/research/image-input.md](doc/research/image-input.md))
+
+- Claude Code: `--input-format stream-json` takes the Agent SDK's user
+  message, whose `message.content` is a string or the Messages API's
+  content blocks; the streaming-input page shows an image block, `{"type":
+  "image", "source": {"type": "base64", "media_type": "image/png", "data":
+  …}}`, beside a text block, and says an image block without a source is
+  replaced by a text note (code.claude.com, Agent SDK, Streaming input,
+  read 2026-10-23). The Claude API takes image/jpeg, image/png, image/gif
+  and image/webp, 10 MB base64-encoded an image, up to 100 images a request
+  on 200k-context models, 8000x8000 px, a 32 MB request; animations are
+  unsupported, the first frame is used; images are best placed before the
+  text (platform.claude.com, Vision, read 2026-10-23).
+- Codex: `turn/start`'s `input` is a list of `UserInput`: `text`, `image`
+  (`url`, a data URL or a web URL, with an optional `detail`) or
+  `localImage` (`path`) (the app-server v2 schema probed in plan 1,
+  doc/research/probes/p0-codex-app-server-schema-v2.json). The OpenAI API
+  takes PNG, JPEG, WebP and non-animated GIF, up to 1,500 images and 512
+  MB a request, each image at most 30,000 patches of 32 px, rejected
+  rather than resized (developers.openai.com, Images and vision, read
+  2026-10-23).
+- Both take the image as content, never as a path in the text. Neither
+  takes BMP, TIFF, ICO, HEIC, AVIF, JPEG XL, SVG, PSD, TGA, DDS, HDR, EXR,
+  JPEG 2000 or camera RAW: those need a conversion to PNG here, which
+  needs a decoder the dashboard has. The dependencies stay the approved
+  ones: the decoders of D1 are Go's standard library and the dashboard's
+  own; golang.org/x/image (WebP, TIFF with compression) would widen the
+  matrix and needs the owner's approval.
+
+### Design
+
+- **D1 The format matrix** (`internal/input/image.go`): by the file's
+  bytes, never its extension; a file read in a command, never in the
+  update loop; the original never written. The matrix below says what is
+  found, validated and sent; a refusal names the format and the reason.
+  The limits are the provider's (`provider.Capabilities.Images`): Claude
+  Code 100 images a message, 7.5 MB a file as sent (10 MB base64), 8000
+  px a side; Codex 100 images a message (the dashboard's own cap), 20 MB
+  a file, 30,000 patches of 32 px an image; an image over a limit is
+  refused when attached, naming the limit; an image over 100 megapixels
+  by its header is refused before decoding.
+- **D2 The dialog** (`internal/input/dialog_windows.go`): the Common Item
+  Dialog (IFileOpenDialog through COM, with x/sys/windows and syscall, no
+  new module): multiple selection, existing file-system files only, the
+  filter "Images" with every extension of D1 and "All files", the title
+  "Upload from computer", owned by the foreground window at the click so
+  it is modal to the terminal; run in a command on its own OS thread with
+  an apartment-threaded COM; cancel gives no files and no message. Other
+  platforms: "no file dialog on this platform". The app takes the dialog
+  through its options, so tests give it a fake.
+- **D3 Attaching** (app): a click on "Upload from computer" opens the
+  dialog; each chosen file is inspected (D1) in the same command; the
+  result adds the accepted images to the draft's attachments (path, name,
+  size, media type, width, height, note), refuses the others with a toast
+  naming the file and the reason, skips a file already attached ("already
+  attached"), and never touches the text or the cursor. A chosen image is
+  never sent by itself: only the send key sends.
+- **D4 The attachments row** (render): while the draft has attachments,
+  one row between the editor's rule and the prompt row, the chips on the
+  tool rows' ground: "🗀 name.png · 12 KB ✕", the note after the size when
+  there is one, two cells between chips, the chips past the width folded
+  into "+N"; the "✕" is panel 'X' with the chip's index and a click on it
+  removes the attachment; Ctrl+Shift+X removes the last one; the editor is
+  one row taller with attachments, within its half of B. The sent
+  message's entry in zone B lists its images under the text, "🗀 name.png
+  · 12 KB", one a row.
+- **D5 Sending**: the session's Send takes a `provider.Message`, the text
+  and the images (name, media type, bytes, width, height); the app reads
+  and converts each attachment in the write command and refuses the send
+  with "not sent: <name>: <reason>", the draft and its attachments kept,
+  when a file is gone or over a limit; Claude Code's adapter writes the
+  user message with the content blocks, the images first then the text;
+  Codex's adapter starts the turn with `image` inputs holding data URLs,
+  then the text; the mock records the images' names and media types and
+  echoes them in its user message. A failed write restores the text and
+  the attachments; an accepted one clears both. The bytes live in the
+  message only; nothing of them is logged.
+- **D6 Drafts**: the stored draft gains a sidecar, `<draft>.attachments`
+  (JSON, the paths); a restored draft re-inspects its paths, keeps the
+  images still valid and says which are gone.
+- **D7 Test images** (`internal/input/imagetest`): drawn at run time in
+  the test's temporary directory, 320x160: a red, a green and a blue
+  square and the text "ACC IMAGE UPLOAD TEST" in a 5x7 pixel font; written
+  as PNG, JPEG, GIF, BMP, TIFF and ICO by the standard library and the
+  dashboard's own writers; the WebP generated once by a browser canvas
+  (its script kept with the fixture) and checked in as
+  testdata/images/acc-image-upload-test.webp, since Go's standard library
+  has no WebP encoder.
+- **D8 Docs**: ui-design.md (Input editor: the attachments row, the key;
+  Zone B: the entry's images), architecture.md (the input part, the
+  provider interface), AGENTS.md (status), brief.md (amendment 31),
+  doc/research/image-input.md, `doc/plan31-evaluation.md`.
+
+The format matrix (D1):
+
+| Format | Found by | Validated by | Sent as | Note |
+| - | - | - | - | - |
+| PNG (.png, .apng) | the signature | image/png, a full decode | image/png as is | an APNG (acTL chunk): "animated: the first frame is what the model sees" |
+| JPEG (.jpg, .jpeg, .jpe, .jfif) | the SOI marker | image/jpeg, a full decode | image/jpeg as is; re-encoded at quality 95 with the rotation or flip applied when its EXIF orientation is not 1, "orientation applied" | the providers read no metadata |
+| GIF (.gif) | the signature | image/gif, every frame | image/gif as is with one frame; the first frame as PNG when animated, "animated: the first frame is sent" | OpenAI refuses animated GIFs |
+| WebP (.webp) | the RIFF/WEBP signature | the VP8, VP8L or VP8X header: its dimensions and flags | image/webp as is | an animated WebP is refused: no frame can be taken without a decoder |
+| BMP (.bmp, .dib) | the signature | the dashboard's decoder: BITMAPINFOHEADER, 24 or 32 bits BI_RGB or BI_BITFIELDS, 8 bits with a palette, top-down or bottom-up | PNG | other depths and compressions refused by name |
+| TIFF (.tif, .tiff) | the signature | the dashboard's decoder: baseline uncompressed 8-bit RGB, RGBA or grayscale in strips | PNG | compressed or other TIFFs refused by name |
+| ICO (.ico) | the signature | its largest image: PNG by image/png, DIB by the BMP decoder | PNG | |
+| HEIC, HEIF, AVIF (ftyp brands), JPEG XL, JPEG 2000, PSD, DDS, HDR, EXR, camera RAW (DNG, CR2, NEF, ARW), TGA (by its extension: it has no signature) | their signatures | refused: "<format>: no decoder here; convert it to PNG or JPEG first" | | not supported, never claimed |
+| SVG, SVGZ | the XML or gzip start | refused: "SVG is not an image the providers take, and is never rendered or executed here" | | |
+| anything else | | refused: "not an image" | | |
+
+### Criteria
+
+- 31.1 TestImageInspect (`internal/input`): the generated images (D7) in
+  every written format and the checked-in WebP are accepted with the
+  right media type at 320x160; the conversions (BMP, TIFF and ICO to PNG,
+  an animated GIF to its first frame, a JPEG with EXIF orientation 6
+  rotated back) decode to the drawn pixels (the red square at the top
+  left); a PNG renamed .jpg is accepted as PNG; an empty file, a text
+  file, a truncated PNG, a PNG with a corrupt chunk, an SVG, an HEIC
+  brand, a TGA, a PSD, a compressed TIFF and an animated WebP are refused
+  with the designed reasons; a 9000x9000 PNG header is refused for its
+  size before decoding; a Unicode name and a path with spaces are
+  accepted; the capabilities' limits refuse a file over them by name.
+- 31.2 The dialog's COM calls are behind an interface the app's tests
+  fake; on Windows the real dialog is exercised by the harness (31.7).
+- 31.3 TestAttachments (`internal/app`): with a fake picker, choosing two
+  images shows two chips with their names and sizes and leaves the text
+  and the cursor as they were; choosing one of them again is skipped
+  with a toast; a refused file toasts its reason; cancel changes nothing;
+  a click on a chip's "✕" removes it; Ctrl+Shift+X removes the last; the
+  send key sends the text and the images, the fake session receiving the
+  generated PNG's bytes, and the chips go; a failed write restores the
+  text and the chips; a missing file at send time keeps the draft with
+  "not sent: …"; the stored draft's sidecar holds the paths, a restart
+  restores the chips and drops a deleted file with a toast; choosing an
+  image never submits.
+- 31.4 TestClaudeImageMessage and TestCodexImageTurn: the line written to
+  Claude Code holds the content blocks, the images first with their media
+  types and base64 data, then the text; the `turn/start` sent to Codex
+  holds `image` inputs with data URLs, then the text; each provider's
+  capabilities state its limits.
+- 31.5 Golden frames: the editor with two attachments at 80x24, 120x40
+  and 200x60 and the sent message's entry; every other frame unchanged;
+  TestZoneCDesign, TestEditorRow, TestPlusMenu and the select, pane, key
+  and draft tests pass unchanged.
+- 31.6 `go build ./...`, `go vet ./...`, `gofmt -l .` empty, `go test
+  ./...` all ok, the race run on `internal/input`, `internal/render`,
+  `internal/app` and `internal/provider/...` clean, the timing step alone
+  7 of 7.
+- 31.7 Windows Terminal at 208x59 on the quota mock: the dialog open over
+  the terminal (a screenshot), the generated PNG chosen through it (its
+  path typed into the dialog's name field), the chip on the attachments
+  row, the chip removed with a click on its "✕"; nothing else of the
+  approved design changed.
+- 31.8 Live, once the owner approves: Claude Code and Codex each sent the
+  generated PNG with "What colours and what text are in this image?
+  Answer in one line." in a temporary project; the answer names red,
+  green and blue and "ACC IMAGE UPLOAD TEST"; the wrapper's log shows the
+  image block or the image input as sent; the configuration check before
+  and after.
+- 31.9 The documents of D8; every changed text file UTF-8 without BOM,
+  LF; `git status` lists the intended files only; nothing committed.
+
+### Progress
+
+Corrections made as the work went, each with its reason:
+- D1: an image over a side, its patches or its bytes is scaled down to the
+  provider's limits by area averaging when it can be decoded, and said so
+  ("resized from 9000x6000 to 8000x5333 for the provider's limits"), not
+  refused: a 4K screenshot over Claude Code's 7.4 MB is common; a WebP,
+  which nothing here decodes, stays refused. The decode guard is 60
+  megapixels, not 100, for memory: a 50 MP camera's image passes. The
+  limits gained a message total (Claude Code 7.4 MB, Codex 50 MB).
+- D2: GetOpenFileNameW with the Explorer flag and no hook, not
+  IFileOpenDialog through COM's vtables: Windows shows it as the same
+  common item dialog, with far less code to get wrong.
+- D4: the chips carry no icon, so two fit on a 120-column row; the sent
+  message's rows in zone B have it.
+- 31.1: "the capabilities' limits refuse a file over them by name" reads
+  "scale a decodable file down to them, said so, and refuse a WebP over
+  them by name" (D1's correction).
+- 31.8's run: Codex writes the owner's message back with its images, and
+  the mapper kept the lines it reads whole in the events, so the event log
+  held the image's bytes; every event mapped from Codex's output now loses
+  its image data URLs (keepNoImages, TestCodexImageEcho).
+
+- [x] D0 the research written (doc/research/image-input.md).
+- [x] D1 the image package (`internal/input/image*.go`) and its tests
+  (TestImageInspect, TestImageFit, TestSniffRefusals, TestDraftImages);
+  D7 the test images (`internal/input/imagetest`, TestDrawPixels;
+  testdata/images/acc-image-upload-test.webp from a browser canvas,
+  checked against the drawing's pixel hash).
+- [x] D2 the dialog (`internal/input/dialog*.go`, TestPickedPaths).
+- [x] D5 the message, the adapters and their tests (TestClaudeImageMessage
+  and TestCodexImageTurn through the real process plumbing; TestSentImages).
+- [x] D3, D4 and D6: the app and the render (TestAttachments,
+  TestAttachmentsDraft, TestAttachRow), eight golden frames added.
+- [x] The checks (31.6): build, vet, gofmt, the suite, the race run on the
+  changed packages, the timing step alone 7 of 7 (the streamed answer's
+  p95 moving between 4 and 7 ms, the previous commit's tree timed in turn
+  alike); the screenshots (31.7, `scratchpad\term\out-p31\`).
+- [x] D8 (ui-design.md, architecture.md, brief.md's amendment 31,
+  AGENTS.md) and the evaluation (`doc/plan31-evaluation.md`).
+- [x] The live tests (31.8), approved by the owner and run on 2026-10-23:
+  Claude Code on Haiku and Codex each read the image (2 PASS,
+  `doc/plan31-evaluation.md`, Follow-up); the fix the run found, tested;
+  the checks again, the timing step 7 of 7.
+- [x] The echo fix checked live at the owner's request (2026-10-23): a
+  third Codex turn, its real lines replayed through this tree's mapper and
+  state: nothing kept holds the image, while the control without the fix
+  keeps it three times (`doc/plan31-evaluation.md`, second follow-up).
+- [ ] The owner's review; then the commit.
 
 ## Closed plans
 

@@ -962,7 +962,10 @@ events (events-and-state.md, Conversation record); nothing is simulated.
 - **Entries**:
   - **YOU** with the time, violet (`#A78BFA`), on its own row; under it
     the message as sent, byte for byte, in a brighter text colour
-    (`#F9FAFB`; a long paste is shown folded, below);
+    (`#F9FAFB`; a long paste is shown folded, below); then one row an
+    image the message carried as image input (plan 31), "🗀  name · 12
+    KB", muted, its file's name from the attachments, else its media type
+    as the line written gives it;
   - **CLAUDE** or **CODEX** with the model and the time, the label blue
     (`#60A5FA`), the model and the time muted, once per exchange, above its
     first message or tool call: under it the AI text, streamed, rendered as
@@ -2247,7 +2250,7 @@ provider: it has no provider code and sends a string to part 5's caller
 
   ```text
   ╭──────────────────────────╮
-  │  🗀 Upload from computer  │
+  │  🗀  Upload from computer │
   ╰──────────────────────────╯
   ```
 
@@ -2259,10 +2262,39 @@ provider: it has no provider code and sends a string to part 5's caller
   before, so idle moves cost nothing): the item's inner row lies on the
   active ground while the pointer is over it. A second click on the band,
   a click on the item, a click anywhere else, Esc or any other key closes
-  it; the click on the item and Esc do nothing more, the other click and
-  the other keys act as usual. The item does nothing yet: the upload is a
-  later plan's. The band is panel '+', the menu panel 'U'. On 16 colours
-  the ground is not drawn, as zone B's grounds.
+  it; Esc does nothing more, the other click and the other keys act as
+  usual. The band is panel '+', the menu panel 'U'. On 16 colours the
+  ground is not drawn, as zone B's grounds.
+- **Attached images** (plan 31, brief amendment 31; the formats and the
+  providers' limits in [doc/research/image-input.md](research/image-input.md)
+  and plan 31's matrix): a click on "Upload from computer" opens the
+  system's Open dialog over the terminal, "Upload from computer", the
+  filter "Images" with every extension the owner listed and "All files",
+  several files at once; cancelling it changes nothing. Each file chosen
+  is read and checked by its bytes in a command; the accepted ones become
+  the draft's attachments, after those already attached, the text and the
+  cursor untouched; a file already attached is skipped, a refused one is
+  named with its reason in a toast, and so is what the sending changes
+  ("converted from BMP", "animated: the first frame is sent", "resized
+  from 9000x6000 to 8000x5333 for the provider's limits"). Choosing an
+  image never sends anything. While the draft has attachments, a row of
+  chips sits between the editor's rule and the prompt, within the
+  editor's half of B:
+
+  ```text
+   acc-image-upload-test.png · 1 KB ✕    acc-image-upload-test.jpg · 6 KB ✕
+  ```
+
+  Each chip on the tool rows' ground, the name cut at 28 cells, its size
+  as sent in grey, a ✕ that removes it (panel 'X', its index); two cells
+  between chips, those past the width folded into "+N more"; Ctrl+Shift+X
+  removes the last. The send key sends the text and the images together,
+  a message of images alone included; each image is read and checked
+  again as it is sent, and a file gone or changed past a limit fails the
+  send, the text and the images back in the editor with the reason ("the
+  message could not be sent: x.png: the file is gone"). The stored draft
+  lists its images' paths beside it; a restart restores the ones still
+  there and names the ones gone.
 - **While a turn runs**: editable, not sendable; "turn running: the draft
   waits · Ctrl+C interrupt" in the row's middle (ASM-15). Enter then does
   nothing but flash that line.

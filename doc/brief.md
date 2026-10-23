@@ -3913,3 +3913,182 @@ active ground while it is open; the item on that ground under the
 pointer; the item does nothing yet, the upload being a later plan;
 nothing is committed until the owner has reviewed the screenshots and
 approved.
+
+## Amendment 31, 2026-10-23: image upload, for plan 31
+
+After plan 30 was approved and pushed, the owner asked for the "+" menu's
+"Upload from computer" to work: the native Windows file dialog, images
+validated by their content, attached to the draft as compact, removable
+attachments, and sent as real image input to Claude Code and Codex when
+the owner submits; nothing committed before the owner's review. The
+owner, word for word:
+
+````text
+Agent Command Center — Implement Image Upload Functionality
+The design of the `+` button and its Upload from computer menu is complete and approved.
+Now it's time to implement the actual image-upload functionality.
+1. Expected Behavior
+When the user clicks `+` and selects Upload from computer:
+
+1. Open the native Windows file-selection dialog.
+2. Allow the user to select one or multiple images.
+3. Validate the selected files and their formats.
+4. Attach the images to the current message draft.
+5. Display the attached images as compact, removable attachments in the input area.
+6. Preserve the user's existing text and cursor position.
+7. Send the images together with the user's message when the user explicitly submits it.
+
+Selecting an image must never automatically submit the prompt.
+The user must be able to remove an attachment before sending.
+2. Supported Image Formats
+Support the widest practical range of image formats, including:
+Common formats
+
+* PNG (`.png`)
+* JPEG (`.jpg`, `.jpeg`, `.jpe`, `.jfif`)
+* WebP (`.webp`)
+* GIF (`.gif`)
+* BMP (`.bmp`, `.dib`)
+* TIFF (`.tif`, `.tiff`)
+
+Modern formats
+
+* HEIC / HEIF (`.heic`, `.heif`)
+* AVIF (`.avif`)
+* APNG (`.apng`)
+* JPEG XL (`.jxl`)
+
+Vector and icon formats
+
+* SVG (`.svg`, `.svgz`)
+* ICO (`.ico`)
+
+Additional formats, where reliable decoding is available
+
+* JPEG 2000 (`.jp2`, `.j2k`)
+* Photoshop (`.psd`)
+* TGA (`.tga`)
+* DDS (`.dds`)
+* HDR / OpenEXR (`.hdr`, `.exr`)
+* Camera RAW (`.dng`, `.cr2`, `.nef`, `.arw`)
+
+Compatibility requirements
+Do not assume every provider natively supports every format.
+Investigate the actual image-input capabilities of both Claude Code and OpenAI Codex.
+Where a format is not supported natively:
+
+* Convert it to PNG or JPEG when a reliable, safe decoder is available.
+* Preserve the original image's visual content and orientation.
+* Handle transparency and animation appropriately.
+* Do not silently discard animation frames or important visual information.
+* Never execute embedded scripts or active content from uploaded files.
+* Reject unsupported conversions with a clear explanation.
+
+Validate actual file content, not merely file extensions.
+Do not claim support for a format unless the application can successfully decode and transmit it.
+3. Provider Integration
+This feature must work with both Claude Code and Codex.
+Before implementation, verify how each provider accepts image attachments through its existing supported CLI integration.
+An image must be delivered as actual image input, not merely inserted as a filesystem path in the text prompt.
+Preserve the current provider architecture.
+Do not introduce unsupported protocol methods, screen scraping, or undocumented workarounds.
+If a provider cannot accept image attachments through its supported interface, document the limitation rather than simulating success.
+4. Preserve the Approved UI Design
+Keep the existing input-area design exactly as approved.
+Do not redesign:
+
+* The `+` button.
+* The Upload from computer menu.
+* The model/Ultracode indicator.
+* The Auto effort indicator.
+* The conversation panel.
+* Zones A and C.
+* The global footer.
+
+Add only the necessary visual representation for selected attachments.
+Attachments should be compact, readable, and removable without occupying excessive conversation space.
+Preserve existing keyboard navigation, multiline input, text selection, copy/paste, scrolling, and draft behavior.
+5. Create Your Own Test Image
+Do not use my personal files for testing.
+Generate your own valid image files programmatically in an isolated temporary test directory.
+At minimum, create one visually identifiable test image containing:
+
+* A red square.
+* A green square.
+* A blue square.
+* The text `ACC IMAGE UPLOAD TEST`.
+
+Generate equivalent images in several supported formats, particularly PNG, JPEG, and WebP.
+Use these images to verify the complete upload pipeline.
+Tests must demonstrate that:
+
+1. The file picker selects the correct image.
+2. The application validates the image.
+3. The attachment appears in the composer.
+4. The attachment can be removed.
+5. The attachment remains associated with the correct message.
+6. The supported provider receives the actual image.
+7. The provider can identify the test image's visual content when an authorized live test is performed.
+
+A successful file selection alone does not prove that image upload works.
+6. Error Handling and Reliability
+Cover the following cases:
+
+* Invalid image files.
+* Unsupported formats.
+* Corrupted images.
+* Very large images.
+* Multiple attachments.
+* Duplicate selections.
+* Unicode filenames.
+* Windows paths containing spaces.
+* File-dialog cancellation.
+* Missing or deleted files.
+* Provider rejection.
+* Failed conversion.
+* Interrupted message submission.
+* Application crash and draft recovery.
+
+Use temporary storage safely.
+Do not modify original images.
+Avoid unnecessarily retaining uploaded image data, exposing private paths, or logging image contents.
+Respect actual provider size and attachment limits.
+7. Verification and Regression Testing
+Add deterministic tests for file validation, supported formats, attachment state, conversion, and provider-specific transmission.
+Verify that the feature introduces no regressions in:
+
+* Message submission.
+* Conversation streaming.
+* Draft persistence.
+* Keyboard and mouse interactions.
+* Provider adapters.
+* Approval handling.
+* Existing UI rendering.
+* Performance.
+
+Use generated fixtures and offline tests wherever possible.
+Request approval before any live provider tests that consume quota.
+8. Delivery Requirements
+Before declaring completion, provide:
+
+1. The supported image-format matrix.
+2. Claude Code image-input integration results.
+3. Codex image-input integration results.
+4. Evidence that generated test images are handled correctly.
+5. Screenshots showing the file picker, attached image, and removal behavior.
+6. Evidence of successful image transmission where verified.
+7. Regression-test results.
+8. Any unsupported formats or provider limitations.
+
+Do not mark the feature complete if images merely appear in the UI but are not correctly delivered to the selected provider.
+Preserve the approved design. Implement genuine image attachment support, validate it end to end, and report any technical limitations accurately.
+Do not commit until I have reviewed the implementation and test results.
+````
+
+Taken as plan 31 (plan.md, Plan 31): the research of both providers'
+image input first (doc/research/image-input.md), then the design, the
+format matrix the dashboard can honestly claim, the native dialog, the
+attachments in the editor, the transmission through both adapters, the
+generated test images, the deterministic tests, the screenshots, and a
+live test on each CLI once the owner approves it; nothing is committed
+until the owner has reviewed the implementation and the results.

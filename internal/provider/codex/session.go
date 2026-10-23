@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -502,17 +503,31 @@ func (s *Session) notify(method string) error {
 // thread/start and thread/resume are unchanged.
 const turnSummary = "auto"
 
-// Send starts a turn on the main thread with the owner's message, byte for
-// byte.
-func (s *Session) Send(text string) error {
+// imageLimits are Codex's limits on a message's images
+// (doc/research/image-input.md): the OpenAI API's 30,000 patches of 32 px an
+// image, rejected beyond; the dashboard's own 20 MB an image, 50 MB and 100
+// images a message, well under the API's 512 MB and 1,500 a request.
+var imageLimits = provider.ImageLimits{MaxCount: 100, MaxBytes: 20_000_000, MaxTotal: 50_000_000, MaxPatches: 30_000, PatchSize: 32}
+
+// Send starts a turn on the main thread with the owner's message: its
+// images as `image` inputs holding data URLs, then its text byte for byte
+// (UserInput, the app-server v2 schema; plan 31).
+func (s *Session) Send(msg provider.Message) error {
 	s.mu.Lock()
 	thread, reviewer := s.thread, s.reviewerLocked()
 	s.mu.Unlock()
 	if thread == "" {
 		return errors.New("no Codex thread to send to yet")
 	}
+	input := make([]map[string]string, 0, len(msg.Images)+1)
+	for _, img := range msg.Images {
+		input = append(input, map[string]string{"type": "image", "url": "data:" + img.Media + ";base64," + base64.StdEncoding.EncodeToString(img.Data)})
+	}
+	if msg.Text != "" || len(msg.Images) == 0 {
+		input = append(input, map[string]string{"type": "text", "text": msg.Text})
+	}
 	return s.request("turn/start", map[string]any{"threadId": thread,
-		"input": []map[string]string{{"type": "text", "text": text}}, "approvalsReviewer": reviewer,
+		"input": input, "approvalsReviewer": reviewer,
 		"sandboxPolicy": map[string]string{"type": turnSandbox[reviewer]}, "summary": turnSummary})
 }
 
@@ -552,7 +567,7 @@ func (s *Session) Refresh() error { return s.request("account/rateLimits/read", 
 // is decided per request by the mapper: offered unless the request's
 // availableDecisions omits acceptForSession (plan 5, item 8; plan 8).
 func (s *Session) Capabilities() provider.Capabilities {
-	return provider.Capabilities{SubagentText: true, QuotaWithoutTurn: true, AutoApprovals: true}
+	return provider.Capabilities{SubagentText: true, QuotaWithoutTurn: true, AutoApprovals: true, Images: imageLimits}
 }
 
 // Close closes stdin, then terminates the CLI, then kills its tree, each

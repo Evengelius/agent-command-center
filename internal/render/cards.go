@@ -211,6 +211,10 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 			}
 			out = append(out, crow{l: row, fr: fr, cursor: focused})
 		}
+		// The images the message carried, one a row under its text (plan 31).
+		for _, img := range e.Images {
+			out = append(out, crow{l: imageRow(img, cw), fr: fr})
+		}
 	case "assistant":
 		if k.result {
 			cw = cardContent(cardResult, w)

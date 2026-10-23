@@ -168,13 +168,31 @@ type SessionState struct {
 	ApprovalRequested string
 }
 
+// Attachment is an image attached to the owner's message (plan 31): its
+// file's path, which the application reads when it sends, its name, its
+// size and media type as sent, and what the sending changes ("converted
+// from BMP"). The image's bytes are never in the state.
+type Attachment struct {
+	Path  string
+	Name  string
+	Size  int64
+	Media string
+	Note  string
+}
+
+// pending says a sent message waits to be accepted: its text or its images.
+func (t TurnState) pending() bool { return t.Draft != "" || len(t.DraftImages) > 0 }
+
 // TurnState is the turn machine.
 type TurnState struct {
-	Phase            TurnPhase
-	Outcome          string // completed, failed or interrupted: the last turn's
-	Count            int    // turns submitted
-	ByCLI            bool   // the CLI started the current or last turn itself
-	Draft            string // the message written and not yet accepted
+	Phase   TurnPhase
+	Outcome string // completed, failed or interrupted: the last turn's
+	Count   int    // turns submitted
+	ByCLI   bool   // the CLI started the current or last turn itself
+	Draft   string // the message written and not yet accepted
+	// DraftImages are its attached images, until it is accepted (plan 31):
+	// a failed write gives them back to the editor with the text.
+	DraftImages      []Attachment
 	ForceStopOffered bool
 	Notice           string
 	SlashHeld        string // a Codex slash command held back once: the same text again is sent
@@ -200,6 +218,9 @@ type Entry struct {
 	Stage int
 	// Thought is a thinking entry's phase; nil for any other role (plan 22).
 	Thought *Thought
+	// Images are the images a user entry's message carried as image input,
+	// named from the attachments when the dashboard sent them (plan 31).
+	Images []event.Image
 }
 
 // Thought is one thinking phase of the orchestrator, the entry of role
@@ -568,6 +589,7 @@ type Command struct {
 	Text     string
 	Decision string
 	Answers  map[string]string // CmdAnswer of a question: question text to answer
+	Images   []Attachment      // CmdWrite and CmdRestoreDraft: the message's images (plan 31)
 }
 
 // Mode is the approval mode in force; Manual until the CLI reports another.

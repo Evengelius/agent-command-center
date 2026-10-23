@@ -350,7 +350,7 @@ func (r *run) close() event.Ended {
 func (r *run) send(text string) {
 	r.t.Helper()
 	r.st.Do(state.Send{Text: text})
-	if err := r.sess.Send(text); err != nil {
+	if err := r.sess.Send(provider.Message{Text: text}); err != nil {
 		r.t.Fatal(err)
 	}
 }
@@ -947,7 +947,7 @@ func TestExitMidTurn(t *testing.T) {
 	if s.Session.Phase != state.Crashed || s.Session.Reason != "the CLI exited unexpectedly" || s.Turn.Outcome != "failed" || s.Session.ExitCode != 3 {
 		t.Errorf("session %q %q, turn %q, code %d", s.Session.Phase, s.Session.Reason, s.Turn.Outcome, s.Session.ExitCode)
 	}
-	if err := r.sess.Send("again"); err == nil {
+	if err := r.sess.Send(provider.Message{Text: "again"}); err == nil {
 		t.Error("a send after the exit succeeded")
 	}
 }

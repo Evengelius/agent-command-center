@@ -111,9 +111,20 @@ type Ended struct {
 	Reason  string
 }
 
-// User is the payload of UserMessage: the text exactly as written.
+// User is the payload of UserMessage: the text exactly as written, and the
+// images the message carried as image input (plan 31).
 type User struct {
-	Text string
+	Text   string
+	Images []Image `json:",omitempty"` // left out of a mock file's line when none
+}
+
+// Image is an image a message carried: its file's name when the dashboard
+// knows it ("" when the line gives none), its media type and its bytes as
+// sent. The bytes themselves are never kept.
+type Image struct {
+	Name  string `json:",omitempty"`
+	Media string `json:",omitempty"`
+	Size  int    `json:",omitempty"`
 }
 
 // Delta is the payload of MessageDelta. Block is "text", "thinking",

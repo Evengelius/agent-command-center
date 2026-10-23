@@ -124,7 +124,11 @@ func (m *Mapper) In(raw []byte) []event.Event {
 			Content json.RawMessage `json:"content"`
 		}
 		_ = json.Unmarshal(l.Message, &msg)
-		return []event.Event{m.ev(event.UserMessage, event.Observed, "", raw, event.User{Text: contentText(msg.Content)})}
+		imgs := contentImages(msg.Content)
+		if len(imgs) > 0 {
+			raw = withoutImageData(raw) // the event keeps no image bytes (plan 31)
+		}
+		return []event.Event{m.ev(event.UserMessage, event.Observed, "", raw, event.User{Text: contentText(msg.Content), Images: imgs})}
 	case "control_request":
 		var req struct {
 			Subtype string `json:"subtype"`

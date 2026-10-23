@@ -112,6 +112,10 @@ type Options struct {
 	// (codex.Provider.Proxy); the application only shows it.
 	CodexProxy        string
 	CodexProxyProblem string
+	// PickImages opens the system's Open dialog for images and gives the
+	// files chosen, none when cancelled (plan 31); nil has no dialog: a click
+	// on "Upload from computer" says so.
+	PickImages func() ([]string, error)
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -159,6 +163,7 @@ type Model struct {
 	draftReady bool   // read: saves may start
 	draftTimer bool   // a save is due
 	draftSaved string // the text last saved or read
+	draftImgs  string // the images' paths last saved or read, joined (plan 31)
 	draftGen   int
 
 	// The project list (projects.go): nil when it is off.
@@ -186,6 +191,11 @@ type Model struct {
 
 	pasting  bool // between a paste's start and end markers
 	toastGen int  // the toast on screen; an older timer leaves it
+
+	// The draft's attached images (attach.go, plan 31), and the Open dialog
+	// open.
+	attach  []input.Image
+	picking bool
 
 	screen  *render.Screen // the last frame drawn: what the mouse points at
 	repaint bool           // the palette changed: the next frame draws every row
@@ -409,6 +419,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.draftDue()...)
 	case draftFailedMsg:
 		cmds = append(cmds, m.toast("draft not saved: "+msg.err.Error())...)
+	case pickedMsg:
+		cmds = append(cmds, m.picked(msg)...)
+	case inspectedMsg:
+		cmds = append(cmds, m.inspected(msg)...)
 	case leaveMsg:
 		return m, tea.Quit
 	case refreshMsg:
@@ -556,12 +570,19 @@ func (m *Model) command(c state.Command) tea.Cmd {
 		return m.start(c.ID)
 	case state.CmdWrite:
 		m.edit.Clear()
-		sess, text := m.sess, c.Text
-		return tea.Batch(m.draftSent(text), m.write(func() tea.Msg {
+		m.attach = nil
+		sess, text, imgs, lim := m.sess, c.Text, c.Images, m.limits()
+		return tea.Batch(m.draftSent(text, c.Images), m.write(func() tea.Msg {
 			if sess == nil {
 				return actionMsg{state.WriteFailed{Message: "no session"}}
 			}
-			if err := sess.Send(text); err != nil {
+			// The images read and checked again now, then sent with the text
+			// (plan 31); a file gone or changed keeps the draft.
+			msg, err := message(text, imgs, lim)
+			if err != nil {
+				return actionMsg{state.WriteFailed{Message: err.Error()}}
+			}
+			if err := sess.Send(msg); err != nil {
 				return actionMsg{state.WriteFailed{Message: err.Error()}}
 			}
 			return nil
@@ -624,6 +645,7 @@ func (m *Model) command(c state.Command) tea.Cmd {
 		} else {
 			m.edit.SetText(c.Text)
 		}
+		m.restoreImages(c.Images) // and its images, before any attached since (plan 31)
 	case state.CmdExit:
 		return tea.Quit
 	}

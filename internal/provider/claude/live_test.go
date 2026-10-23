@@ -89,7 +89,7 @@ func (l *live) dump(r *run, name string) {
 func (l *live) turn(r *run, text string, on func(event.Event)) (event.TurnEnd, []event.Event) {
 	l.t.Helper()
 	r.st.Do(state.Send{Text: text})
-	if err := r.sess.Send(text); err != nil {
+	if err := r.sess.Send(provider.Message{Text: text}); err != nil {
 		l.t.Fatal(err)
 	}
 	from := len(r.evs)
@@ -337,7 +337,7 @@ func TestLiveGate(t *testing.T) {
 	// (g) killed mid-turn by its job object, then resumed.
 	text := "Write the numbers from one to three hundred in words, one per line, and nothing else."
 	r2.st.Do(state.Send{Text: text})
-	if err := r2.sess.Send(text); err != nil {
+	if err := r2.sess.Send(provider.Message{Text: text}); err != nil {
 		t.Fatal(err)
 	}
 	if !r2.until(func(ev event.Event) bool {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
+	"github.com/Evengelius/agent-command-center/internal/provider"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -31,7 +32,7 @@ func TestUsageReadAroundTurns(t *testing.T) {
 		t.Errorf("the read left %d entries, %d stages, turn %s", len(r.st.Conversation), len(r.st.Stages), r.st.Turn.Phase)
 	}
 	// The owner's turn.
-	if err := r.sess.Send("hello"); err != nil {
+	if err := r.sess.Send(provider.Message{Text: "hello"}); err != nil {
 		t.Fatal(err)
 	}
 	r.st.Do(state.Send{Text: "hello"}) // as the application does, before the write
