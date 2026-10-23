@@ -98,3 +98,10 @@ Checks after these changes: build, vet, gofmt; the suite, 15 packages ok; the ra
 The independent review's third pass, on F2's change: no loss found; its two findings fixed (F3, and F2's order and second paste); its note on a restore writing the stored draft again unchanged, fixed too
 Not verified: a real network share and SMB's own time-outs (a held read and a failing read stand in); a real logoff or shutdown (F4)
 ```
+
+**The commit and the push (2026-10-23), after the owner's approval.** The
+owner approved plan 33 on 2026-10-23; commit bc5d92b (31 files: 26
+modified, 5 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+blocks above stay as they were reported.
