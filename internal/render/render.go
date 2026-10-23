@@ -66,6 +66,10 @@ type UI struct {
 	// PlusHover says the pointer is over its item (plan 30, the owner's
 	// image; ui-design.md, Input editor).
 	Plus, PlusHover bool
+	// Sixel says the terminal draws Sixel images, by its answer to the
+	// device attributes request: the attached images then show as
+	// thumbnails above their chips (plan 32, design D4).
+	Sixel bool
 	// The editor's send and newline keys in force, as the screen names them
 	// ("Ctrl+Enter"), in the configuration file's order (plan 21, item 5.1);
 	// none is the defaults. KeysProblem is why the file's keys were not used,

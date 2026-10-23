@@ -121,6 +121,7 @@ func fixedKeyTable() []keyGroup {
 			{"Backspace Delete", "delete; with Ctrl, a word"},
 			{"Ctrl+Z / Ctrl+Y", "undo / redo"},
 			{"Ctrl+X Ctrl+C Ctrl+V", "cut, copy, paste"},
+			{"Alt+V", "attach the clipboard's image (Ctrl+V too, when the clipboard holds no text)"},
 			{"Ctrl+Shift+X", "remove the last attached image (a click on a chip's ✕ removes it)"},
 			{"Tab", "insert a tab"},
 			{"PgUp PgDn", "scroll the conversation"},

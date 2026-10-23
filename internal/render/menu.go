@@ -70,17 +70,20 @@ func (sc *Screen) find(p byte) (x, y int, ok bool) {
 // frame's colour (a draft's own dashes are text); -1 when none.
 func (sc *Screen) editorRule(bandY int) int {
 	for y := bandY - 2; y >= 0; y-- {
-		rule, any := true, false
+		// The rule's own dashes, not a blank row: the preview's strip and an
+		// empty line of the draft are blank (plan 32).
+		rule, any, dash := true, false, false
 		for _, s := range sc.lines[y] {
 			if s.ref.panel != 'E' {
 				continue
 			}
 			any = true
+			dash = dash || strings.Contains(s.text, "─")
 			if strings.TrimSpace(s.text) != "" && (s.st != stFrame || strings.Trim(s.text, "─ ") != "") {
 				rule = false
 			}
 		}
-		if any && rule {
+		if any && rule && dash {
 			return y
 		}
 	}

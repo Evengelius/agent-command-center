@@ -12,7 +12,7 @@ import (
 // chips past the width fold into "+N more"; a sent message's image rows.
 func TestAttachRow(t *testing.T) {
 	defer UsePalette(pickTrue)
-	chips := []Attachment{{"one.png", "1 KB"}, {"two.jpg", "6 KB"}, {"three.gif", "2 KB"}}
+	chips := []Attachment{{Name: "one.png", Size: "1 KB"}, {Name: "two.jpg", Size: "6 KB"}, {Name: "three.gif", Size: "2 KB"}}
 	l := attachRow(chips, 80)
 	if got := strings.TrimRight(texts([]line{l}), "\n"); got != "  one.png · 1 KB ✕    two.jpg · 6 KB ✕    three.gif · 2 KB ✕ " {
 		t.Errorf("the row %q", got)

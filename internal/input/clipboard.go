@@ -3,6 +3,7 @@ package input
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -38,6 +39,47 @@ func (System) Write(text string) error {
 	defer cancel()
 	_, err := clipboard.Write(ctx, clipboard.FmtText, []byte(text))
 	return err
+}
+
+// ClipboardImages is a clipboard that also gives its image and its copied
+// files (plan 32, design D1); System is one, tests replace it.
+type ClipboardImages interface {
+	// Image is the clipboard's image as PNG bytes, nil when it holds none.
+	Image() ([]byte, error)
+	// Files are the paths of the files copied, nil when none.
+	Files() ([]string, error)
+}
+
+// pngFormat is the Windows clipboard's "PNG" format, the original bytes
+// that browsers, Snipping Tool and Office publish beside the bitmap
+// (doc/research/image-paste.md, The clipboard library).
+var pngFormat = clipboard.Register("image/png")
+
+// Image is the clipboard's image as PNG: the "PNG" format's bytes as they
+// are, else the bitmap converted by the library; nil when it holds
+// neither.
+func (System) Image() ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), clipboardTimeout)
+	defer cancel()
+	if b, err := clipboard.Read(ctx, pngFormat); err == nil && len(b) > 0 {
+		return b, nil
+	}
+	b, err := clipboard.Read(ctx, clipboard.FmtImage)
+	if errors.Is(err, clipboard.ErrNoData) {
+		return nil, nil
+	}
+	return b, err
+}
+
+// Files are the paths of the files copied (CF_HDROP), nil when none.
+func (System) Files() ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), clipboardTimeout)
+	defer cancel()
+	paths, err := clipboard.ReadFiles(ctx)
+	if errors.Is(err, clipboard.ErrNoData) {
+		return nil, nil
+	}
+	return paths, err
 }
 
 // OSC52 is the escape sequence that asks the terminal to set its clipboard.

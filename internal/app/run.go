@@ -31,7 +31,9 @@ var resetTerminal = consoleReset
 // (reliability.md, Separated parts, the dashboard's own crash). out is
 // what to print once the terminal is back.
 func Run(m *Model, opts ...tea.ProgramOption) (code int, out []string) {
-	_, err := tea.NewProgram(m, opts...).Run()
+	p := tea.NewProgram(m, opts...)
+	m.send = p.Send // the preview's timers post to the program (plan 32, design D5)
+	_, err := p.Run()
 	if win32Input {
 		resetTerminal(win32InputOff) // after a panic too
 	}

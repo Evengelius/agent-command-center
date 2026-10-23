@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"runtime"
@@ -30,11 +31,13 @@ type (
 		err   error
 	}
 	// inspectedMsg is the files read and checked: the images accepted and a
-	// note for each refused. restore marks the stored draft's images.
+	// note for each refused. restore marks the stored draft's images;
+	// thumbs are the images' thumbnails by key (plan 32, design D4).
 	inspectedMsg struct {
 		imgs    []input.Image
 		refused []string
 		restore bool
+		thumbs  map[string]thumbSixel
 	}
 )
 
@@ -85,17 +88,19 @@ func (m *Model) picked(msg pickedMsg) []tea.Cmd {
 	return []tea.Cmd{inspectImages(msg.paths, inputLimits(m.limits()), false)}
 }
 
-// inspectImages reads and checks each file, outside the update loop.
+// inspectImages reads and checks each file, outside the update loop, and
+// encodes its thumbnail for the preview (plan 32, design D5).
 func inspectImages(paths []string, lim input.ImageLimits, restore bool) tea.Cmd {
 	return func() tea.Msg {
-		out := inspectedMsg{restore: restore}
+		out := inspectedMsg{restore: restore, thumbs: map[string]thumbSixel{}}
 		for _, p := range paths {
-			img, err := input.InspectImage(p, lim)
+			img, im, err := input.InspectPreview(p, lim)
 			if err != nil {
 				out.refused = append(out.refused, filepath.Base(p)+": "+err.Error())
 				continue
 			}
 			out.imgs = append(out.imgs, img)
+			out.thumbs[img.Path] = thumbsOf(im)
 		}
 		return out
 	}
@@ -107,6 +112,7 @@ func inspectImages(paths []string, lim input.ImageLimits, restore bool) tea.Cmd 
 // sending changes.
 func (m *Model) inspected(msg inspectedMsg) []tea.Cmd {
 	lim := m.limits()
+	m.setThumbs(msg.thumbs) // those not attached are dropped after this update
 	notes := append([]string(nil), msg.refused...)
 	for _, img := range msg.imgs {
 		switch {
@@ -173,7 +179,11 @@ func (m *Model) chips() []render.Attachment {
 	}
 	out := make([]render.Attachment, len(m.attach))
 	for i, a := range m.attach {
-		out[i] = render.Attachment{Name: a.Name, Size: input.FmtBytes(a.Sent)}
+		format := a.Format
+		if format == "" {
+			format = strings.ToUpper(strings.TrimPrefix(a.Media, "image/"))
+		}
+		out[i] = render.Attachment{Name: a.Name, Size: input.FmtBytes(a.Sent), Pixels: m.thumbs[a.Path] != thumbSixel{}, Format: format}
 	}
 	return out
 }
@@ -219,12 +229,23 @@ func imagePaths(imgs []input.Image) []string {
 
 // message reads the message's images again as they are now and builds the
 // message: a file gone, changed past a limit, or the images past the
-// message's bytes fail the send, the draft kept with its images.
-func message(text string, imgs []state.Attachment, lim provider.ImageLimits) (provider.Message, error) {
+// message's bytes fail the send, the draft kept with its images. A pasted
+// image comes from its bytes in memory, pasted by key (plan 32, design D3).
+func message(text string, imgs []state.Attachment, lim provider.ImageLimits, pasted map[string][]byte) (provider.Message, error) {
 	msg := provider.Message{Text: text}
 	var total int64
 	for _, a := range imgs {
-		img, data, err := input.LoadImage(a.Path, inputLimits(lim))
+		var img input.Image
+		var data []byte
+		var err error
+		switch b, ok := pasted[a.Path]; {
+		case ok:
+			img, data, _, err = input.InspectData(a.Name, b, inputLimits(lim))
+		case isPasted(a.Path):
+			err = errors.New("the pasted image was not kept")
+		default:
+			img, data, err = input.LoadImage(a.Path, inputLimits(lim))
+		}
 		if err != nil {
 			return provider.Message{}, fmt.Errorf("%s: %v", a.Name, err)
 		}

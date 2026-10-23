@@ -26,10 +26,14 @@ type EditorView struct {
 }
 
 // Attachment is an image attached to the draft as its chip shows it: the
-// file's name and its size as sent (plan 31, design D4).
+// file's name and its size as sent (plan 31, design D4); Pixels when the
+// dashboard has its thumbnail to draw, else the preview shows Format's name
+// in a box (plan 32, design D4).
 type Attachment struct {
-	Name string
-	Size string
+	Name   string
+	Size   string
+	Pixels bool
+	Format string
 }
 
 // TabWidth is the cells a tab takes on screen; the text keeps the tab
@@ -151,8 +155,14 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 	out := []line{rule(w)}
 	if len(v.Attach) > 0 {
 		// The attachments' row, under the rule, within the editor's half of B
-		// (plan 31, design D4).
-		out = append(out, attachRow(v.Attach, w))
+		// (plan 31, design D4); above it, when the terminal draws Sixel
+		// images, their thumbnails (plan 32, design D4).
+		row, starts := attachLayout(v.Attach, w)
+		if cols, rows := ThumbCells(ui.Height); ui.Sixel && rows > 0 {
+			out = append(out, thumbStrip(v.Attach, starts, cols, rows, w)...)
+			maxRows = max(maxRows-rows, minRows)
+		}
+		out = append(out, row)
 		maxRows = max(maxRows-1, minRows)
 	}
 	out = append(out, draftRows(s, ui, w, minRows, maxRows)...)

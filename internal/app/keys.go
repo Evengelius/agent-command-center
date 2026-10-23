@@ -332,15 +332,29 @@ func (m *Model) editKey(e *input.Editor, k tea.KeyPressMsg, oneLine bool) []tea.
 		e.Home()
 	case "end":
 		e.End()
+	case "alt+v":
+		// The clipboard's images attached, its text never (plan 32, design D1).
+		return m.pasteImages(false)
 	case "ctrl+v":
 		// A terminal that sends a raw Ctrl+V instead of a bracketed paste:
-		// read the system clipboard (ui-design.md, Input editor).
+		// read the system clipboard (ui-design.md, Input editor): its text,
+		// else its copied files or its image (plan 32, design D2).
+		m.ctrlVDown = true
 		if m.opt.Clipboard == nil {
 			return nil
 		}
-		cb := m.opt.Clipboard
+		cb, ci := m.opt.Clipboard, m.clipImages()
+		images := ci != nil && m.sess != nil && m.limits().MaxCount > 0
 		return []tea.Cmd{func() tea.Msg {
 			text, err := cb.Read()
+			if images && (err != nil || text == "") {
+				if files, ferr := ci.Files(); ferr == nil && len(files) > 0 {
+					return pathsMsg{text: joinPaths(files), files: files}
+				}
+				if data, ierr := ci.Image(); ierr == nil && len(data) > 0 {
+					return clipMsg{data: data, ctrlV: true}
+				}
+			}
 			if err != nil {
 				return toastMsg{"paste failed: " + err.Error()}
 			}

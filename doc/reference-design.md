@@ -373,3 +373,24 @@ the band and the hovered item on a new active ground, the image's
 indigo; the terminal asked for every mouse motion while the menu is
 open, so the hover follows the pointer. What differs: the tail, which a
 one-cell grid cannot draw; the box's fill, the background itself.
+
+## The image preview
+
+`10-chat-image-preview.png` (926x308), sent with amendment 32 of the
+brief (plan 32): the chat's message box after the owner pasted an image.
+Above the text, a 150x150 thumbnail: the image cut from its centre to a
+square, its corners rounded by about 7 pixels, a 1-pixel light-grey
+border (`#CCCCCB` on the white box); the text starts 31 pixels under it;
+the send and voice icons at the right of the last row. The owner: paste
+an image in the terminal chat as here; a preview before sending as here.
+
+What plan 32 takes from it: each attached image as a square thumbnail,
+the thumbnails side by side one cell apart above the chips (the owner, on
+the screenshots: the space between them "way shorter"), each cut from
+its centre, its corners rounded, a 1-pixel border, drawn with Sixel in
+Windows Terminal, 14 columns by 7 rows (140x140 image pixels, the
+terminal giving a cell 10x20 of them) from 50 rows, 10 by 5 below. What
+differs: the border in the frame's colour, the image's light grey
+suiting a white box and not the dark one; plan 31's chips under the
+thumbnails, between them and the text; no blank row under them, rows
+being scarce.

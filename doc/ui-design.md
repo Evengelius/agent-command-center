@@ -2295,6 +2295,45 @@ provider: it has no provider code and sends a string to part 5's caller
   message could not be sent: x.png: the file is gone"). The stored draft
   lists its images' paths beside it; a restart restores the ones still
   there and names the ones gone.
+- **Pasted images** (plan 32, brief amendment 32;
+  [doc/research/image-paste.md](research/image-paste.md)): Alt+V attaches
+  what the clipboard holds as images, its copied files first, each checked
+  as an upload is, else its image (the "PNG" format's original bytes, else
+  the bitmap as PNG), else the toast "no image on the clipboard"; it never
+  inserts text and never sends. Ctrl+V pastes text as before; Windows
+  Terminal keeps its press for its own paste, and when the clipboard holds
+  no text it pastes nothing and forwards only the V key's release
+  (undocumented, probe P32a): the dashboard, seeing that release with no
+  press and no paste within 200 ms, attaches the clipboard's image as
+  Alt+V does. A paste that is exactly the paths of the files the clipboard
+  holds (Windows Terminal pastes a copied file's path) attaches them when
+  every one is a supported image, and goes in as text otherwise. A pasted
+  image is "pasted-image-N.png" (N from 1 in a run), held in memory as PNG
+  bytes, never written to a file, dropped when its chip is removed or its
+  message accepted; the same bytes twice are "already attached"; the
+  stored draft lists it by name, and a restart says it was pasted, not
+  kept.
+- **The preview** (plan 32;
+  [reference-design.md](reference-design.md#the-image-preview)): when the
+  terminal answers the device attributes request (`ESC[c`, sent once at
+  start) with Sixel graphics (attribute 4), a strip of thumbnails lies
+  between the editor's rule and the chips' row, side by side in the
+  attachments' order, one cell apart (the owner: the space between them
+  "way shorter"), the first above the first chip at its first cell, as
+  many as the width holds, past the chips folded into "+N more": 14
+  columns by 7 rows (140x140 image pixels, Windows Terminal giving a cell
+  10x20 of them) from 50 rows, 10 by 5 (100x100) from 30 to 49, none
+  under 30. The
+  image is cut from its centre to a square, scaled by area averaging, its
+  corners rounded (8 pixels, 6 at 100) and transparent, a 1-pixel border
+  in the frame's colour. The frame keeps the strip's cells blank (panel
+  'T', the image's index); the dashboard draws the images over them with
+  Sixel, the cursor saved and restored, inside synchronized output, 50 ms
+  after the frame that showed them and again 250 ms later, and again
+  after any frame that changes a strip row; a place an image left is
+  written over with the frame's own cells, which erases it. A WebP, which
+  nothing here decodes, gets a box of text with "WebP" in it. Without
+  Sixel, the chips alone.
 - **While a turn runs**: editable, not sendable; "turn running: the draft
   waits · Ctrl+C interrupt" in the row's middle (ASM-15). Enter then does
   nothing but flash that line.
@@ -2321,6 +2360,9 @@ provider: it has no provider code and sends a string to part 5's caller
   application neither suppresses them nor asks the owner to (TI 3.1).
 - A paste over 20 lines stays fully in the buffer and editable; the editor
   shows it normally (the folding is only for sent messages in B).
+- An image is pasted by Alt+V, or by Ctrl+V when the clipboard holds no
+  text; a paste of exactly the copied files' paths attaches them when they
+  are all images (Input editor, Pasted images; plan 32).
 
 ### Budget
 

@@ -92,11 +92,28 @@ func (m *Model) draftLoaded(msg draftLoadedMsg) []tea.Cmd {
 			m.edit.SetText(msg.text)
 		}
 	}
-	cmds := m.toast("draft restored")
-	if len(msg.paths) > 0 {
+	var files, gone []string
+	for _, p := range msg.paths {
+		if isPasted(p) {
+			gone = append(gone, strings.TrimPrefix(p, pastedPrefix))
+		} else {
+			files = append(files, p)
+		}
+	}
+	note := "draft restored"
+	switch len(gone) {
+	case 0:
+	case 1:
+		note += "; " + gone[0] + " was pasted, not kept"
+	default:
+		note += "; " + strings.Join(gone, ", ") + " were pasted, not kept"
+	}
+	cmds := m.toast(note)
+	if len(files) > 0 {
 		// Its images, read and checked again: a file deleted since is said
-		// and left out (plan 31, design D6).
-		cmds = append(cmds, inspectImages(msg.paths, inputLimits(m.limits()), true))
+		// and left out (plan 31, design D6); a pasted image's bytes were
+		// never stored (plan 32, design D3).
+		cmds = append(cmds, inspectImages(files, inputLimits(m.limits()), true))
 	}
 	return cmds
 }

@@ -4092,3 +4092,44 @@ attachments in the editor, the transmission through both adapters, the
 generated test images, the deterministic tests, the screenshots, and a
 live test on each CLI once the owner approves it; nothing is committed
 until the owner has reviewed the implementation and the results.
+
+## Amendment 32, 2026-10-23: image paste and preview, for plan 32
+
+After plan 31 was approved and pushed, the owner pasted an image into
+this conversation (a golden retriever on a lawn, not kept in the
+repository) and sent a screenshot of the chat's message box holding it
+as a thumbnail above the text, kept as
+`references/10-chat-image-preview.png` (926x308) and described in
+[reference-design.md](reference-design.md#the-image-preview). The owner,
+word for word:
+
+````text
+Very good, now I also want to be allow to copy and paste image in the terminal chat  just like I did here
+
+Is there a way btw to have a preview before sending like here on chat?
+````
+
+Taken as plan 32 (plan.md, Plan 32): an image copied to the clipboard,
+or an image file copied in Explorer, attached to the draft by a paste as
+an upload is (plan 31), and sent only when the owner submits; the
+question taken as a request, since the answer is yes: Windows Terminal
+draws images (Sixel), so each attached image shows as a thumbnail above
+its chip before the message is sent, as in the owner's image. Windows
+Terminal keeps Ctrl+V for its own text paste, so the research came first
+(doc/research/image-paste.md) to settle which keys reach the dashboard;
+nothing is committed until the owner has reviewed the implementation and
+the screenshots.
+
+On the screenshots, before approving, the owner sent a close-up of the
+strip showing two thumbnails far apart, each above its chip (not kept:
+it shows the dashboard as plan 32 first drew it), word for word:
+
+````text
+This is all good but i have one remark before approving and commit
+
+Look, there is too much space between the two images, it should be way shorter
+````
+
+Taken as a correction of plan 32's design D4: the thumbnails side by
+side, one cell apart, the first above the first chip, as many as the
+width holds.

@@ -197,6 +197,30 @@ type Model struct {
 	attach  []input.Image
 	picking bool
 
+	// Pasted images (paste.go, plan 32): their PNG bytes and sums by key,
+	// held in memory only, and the run's count for their names; the paste
+	// keys: a Ctrl+V press seen, the terminal's pastes counted and the time
+	// of the last, Ctrl+V's lone release waiting.
+	pasted     map[string][]byte
+	pastedSum  map[string][32]byte
+	pasteN     int
+	ctrlVDown  bool
+	pasteCount int
+	lastPaste  time.Time
+	pasteWait  int
+	waitPastes int
+
+	// The preview (preview.go, plan 32): each attachment's thumbnail by key,
+	// the last frame's thumbnails' signature and its generation, the
+	// program's Send for the timers View sets, and, with no program (a
+	// test), the drawings asked for.
+	thumbs   map[string]thumbSixel
+	thumbSig string
+	thumbGen int
+	drawn    []render.Thumb // where images were drawn last, to repaint once vacated
+	send     func(tea.Msg)
+	kicks    []int
+
 	screen  *render.Screen // the last frame drawn: what the mouse points at
 	repaint bool           // the palette changed: the next frame draws every row
 	drag    drag
@@ -289,7 +313,9 @@ func (m *Model) State() *state.State { return m.s }
 func (m *Model) Init() tea.Cmd {
 	cmds := append(m.pending, m.timers()...)
 	if win32Input {
-		cmds = append(cmds, tea.Raw(win32InputOn))
+		// win32-input-mode, then the device attributes request: the answer
+		// says whether the terminal draws Sixel images (plan 32, design D4).
+		cmds = append(cmds, tea.Raw(win32InputOn), tea.Raw(askAttributes))
 	}
 	m.pending = nil
 	return tea.Batch(cmds...)
@@ -303,6 +329,7 @@ func (m *Model) View() tea.View {
 	}
 	m.screen = render.Draw(m.s, m.ui)
 	v := tea.NewView(m.screen.StringAfter(prev))
+	m.previewFrame() // the thumbnails drawn again after a frame that changed their rows (plan 32)
 	v.AltScreen = true
 	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
@@ -320,6 +347,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	if updateHook != nil {
 		cmds = updateHook(m, msg)
+	}
+	if attrs, ok := deviceAttributes(msg); ok {
+		m.attributesAnswered(attrs)
 	}
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -385,11 +415,23 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.PasteEndMsg:
 		m.pasting = false
 	case tea.PasteMsg:
-		m.paste(msg.Content)
+		cmds = append(cmds, m.terminalPaste(msg.Content)...)
 	case pasteMsg:
 		m.paste(msg.text)
 	case tea.KeyPressMsg:
 		cmds = append(cmds, m.key(msg)...)
+	case tea.KeyReleaseMsg:
+		cmds = append(cmds, m.keyReleased(msg)...)
+	case clipMsg:
+		cmds = append(cmds, m.clipped(msg)...)
+	case pastedMsg:
+		cmds = append(cmds, m.pastedImage(msg)...)
+	case pasteWaitMsg:
+		cmds = append(cmds, m.pasteWaited(msg)...)
+	case pathsMsg:
+		cmds = append(cmds, m.pastedPaths(msg)...)
+	case thumbDrawMsg:
+		cmds = append(cmds, m.drawThumbs(msg)...)
 	case tea.MouseMsg:
 		cmds = append(cmds, m.mouse(msg)...)
 	case copiedMsg:
@@ -430,6 +472,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// values as they are, each with its own age (no zero, no guess).
 	}
 	cmds = append(cmds, m.lockSync()...)
+	m.pruneImages()
 	m.syncUI()
 	m.markLive()
 	m.markActivity()
@@ -572,13 +615,14 @@ func (m *Model) command(c state.Command) tea.Cmd {
 		m.edit.Clear()
 		m.attach = nil
 		sess, text, imgs, lim := m.sess, c.Text, c.Images, m.limits()
+		pasted := m.pastedFor(imgs)
 		return tea.Batch(m.draftSent(text, c.Images), m.write(func() tea.Msg {
 			if sess == nil {
 				return actionMsg{state.WriteFailed{Message: "no session"}}
 			}
 			// The images read and checked again now, then sent with the text
 			// (plan 31); a file gone or changed keeps the draft.
-			msg, err := message(text, imgs, lim)
+			msg, err := message(text, imgs, lim, pasted)
 			if err != nil {
 				return actionMsg{state.WriteFailed{Message: err.Error()}}
 			}

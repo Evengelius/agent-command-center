@@ -59,43 +59,74 @@ const (
 // decoding, its conversion when the providers do not take it as is, and
 // the limits; it keeps nothing of the bytes.
 func InspectImage(path string, lim ImageLimits) (Image, error) {
-	img, _, err := readImage(path, lim)
+	img, _, _, err := readImage(path, lim)
 	return img, err
+}
+
+// InspectPreview is InspectImage with the decoded image, for the preview's
+// thumbnail (plan 32, design D4); nil for a WebP, which nothing here
+// decodes.
+func InspectPreview(path string, lim ImageLimits) (Image, image.Image, error) {
+	img, _, im, err := readImage(path, lim)
+	return img, im, err
 }
 
 // LoadImage is the image's bytes as sent, read and checked again now: the
 // file may have changed or gone since it was attached.
 func LoadImage(path string, lim ImageLimits) (Image, []byte, error) {
-	return readImage(path, lim)
+	img, data, _, err := readImage(path, lim)
+	return img, data, err
+}
+
+// InspectData reads and checks a pasted image's bytes as InspectImage does
+// a file's (plan 32, design D3): name is what it is shown and sent as; the
+// bytes as sent and the decoded image come back with it. Nothing is
+// written anywhere.
+func InspectData(name string, b []byte, lim ImageLimits) (Image, []byte, image.Image, error) {
+	img := Image{Name: name, Size: int64(len(b))}
+	switch {
+	case len(b) == 0:
+		return img, nil, nil, errors.New("an empty image")
+	case img.Size > maxInspect:
+		return img, nil, nil, fmt.Errorf("%s: too large to read as an image (over %s)", FmtBytes(img.Size), FmtBytes(maxInspect))
+	}
+	return decodeImage(img, b, name, lim)
 }
 
 // readImage reads the file and does what InspectImage and LoadImage share.
-func readImage(path string, lim ImageLimits) (Image, []byte, error) {
+func readImage(path string, lim ImageLimits) (Image, []byte, image.Image, error) {
 	img := Image{Path: path, Name: filepath.Base(path)}
 	st, err := os.Stat(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return img, nil, errors.New("the file is gone")
+			return img, nil, nil, errors.New("the file is gone")
 		}
-		return img, nil, errors.New("the file cannot be read: " + err.Error())
+		return img, nil, nil, errors.New("the file cannot be read: " + err.Error())
 	}
 	if st.IsDir() {
-		return img, nil, errors.New("a folder, not an image")
+		return img, nil, nil, errors.New("a folder, not an image")
 	}
 	img.Size = st.Size()
 	if img.Size == 0 {
-		return img, nil, errors.New("an empty file")
+		return img, nil, nil, errors.New("an empty file")
 	}
 	if img.Size > maxInspect {
-		return img, nil, fmt.Errorf("%s: too large to read as an image (over %s)", FmtBytes(img.Size), FmtBytes(maxInspect))
+		return img, nil, nil, fmt.Errorf("%s: too large to read as an image (over %s)", FmtBytes(img.Size), FmtBytes(maxInspect))
 	}
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return img, nil, errors.New("the file cannot be read: " + err.Error())
+		return img, nil, nil, errors.New("the file cannot be read: " + err.Error())
 	}
+	return decodeImage(img, b, path, lim)
+}
+
+// decodeImage is what a file's reading and a pasted image's share: the
+// format by the bytes, the decoding and the conversion, the limits. The
+// decoded image comes back too, nil for a WebP.
+func decodeImage(img Image, b []byte, path string, lim ImageLimits) (Image, []byte, image.Image, error) {
 	format, err := sniffImage(b, path)
 	if err != nil {
-		return img, nil, err
+		return img, nil, nil, err
 	}
 	img.Format = format
 	var data []byte
@@ -119,7 +150,7 @@ func readImage(path string, lim ImageLimits) (Image, []byte, error) {
 		err = errors.New("not an image")
 	}
 	if err != nil {
-		return img, nil, err
+		return img, nil, nil, err
 	}
 	img.Sent = int64(len(data))
 	if err := img.check(lim); err != nil {
@@ -127,17 +158,17 @@ func readImage(path string, lim ImageLimits) (Image, []byte, error) {
 		// the provider's limits, as the models would scale it anyway, and
 		// said so; a WebP, which nothing here decodes, stays refused.
 		if im == nil {
-			return img, nil, err
+			return img, nil, nil, err
 		}
 		if data, err = fit(&img, im, lim); err != nil {
-			return img, nil, err
+			return img, nil, nil, err
 		}
 		img.Sent = int64(len(data))
 		if err := img.check(lim); err != nil {
-			return img, nil, err
+			return img, nil, nil, err
 		}
 	}
-	return img, data, nil
+	return img, data, im, nil
 }
 
 // check applies the provider's limits.
