@@ -252,3 +252,10 @@ Evidence in `scratchpad\term\out-p31-live-codex-echo\`: `results.txt`,
 byte (checked). Codex's history keeps this run's message too, image
 included, in a third file under `~/.codex/sessions`
 (`rollout-2026-10-23T01-47-43-….jsonl`), left as the first two.
+
+**The commit and the push (2026-10-23), after the owner's approval.** The
+owner approved plan 31 on 2026-10-23; commit 8e2a721 (69 files: 34
+modified, 35 added, 8 of them golden frames) and the approval commit were
+pushed to `origin`; `origin/main` equals `main`, the working tree is
+clean, and the author is `Evengelius <molimoabel@gmail.com>`, with no
+attribution line: PASS. The blocks above stay as they were reported.
