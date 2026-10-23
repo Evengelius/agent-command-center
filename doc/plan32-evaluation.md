@@ -114,3 +114,10 @@ Verdict: DONE, waiting for the owner's review
 Screenshots in `scratchpad\term\out-p32\gap-max\` and `gap-120x40\`
 (`three.png`, `typed2.png`); the first pair in `gap-max-dup\` and
 `gap-120x40-dup\`.
+
+**The commit and the push (2026-10-23), after the owner's approval.** The
+owner approved plan 32 on 2026-10-23; commit b56d23e (34 files: 20
+modified, 14 added, 4 of them golden frames) and the approval commit were
+pushed to `origin`; `origin/main` equals `main`, the working tree is
+clean, and the author is `Evengelius <molimoabel@gmail.com>`, with no
+attribution line: PASS. The blocks above stay as they were reported.

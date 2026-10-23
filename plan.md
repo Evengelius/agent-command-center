@@ -15,7 +15,8 @@ plan 23, `git show a3bfe5d:plan.md` for plan 24, `git show cb8f76d:plan.md`
 for plan 25, `git show a9a5145:plan.md` for plan 26, `git show 041e7b8:plan.md`
 for plan 27, `git show 8fe0077:plan.md` for plan 28, `git show d696f22:plan.md`
 for plan 29, `git show 6025513:plan.md` for plan 30, `git show
-8e2a721:plan.md` for plan 31), and its results in its evaluation file.
+8e2a721:plan.md` for plan 31, `git show b56d23e:plan.md` for plan 32), and its
+results in its evaluation file.
 
 ## The owner's standing decisions
 
@@ -89,209 +90,10 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 32 - Image paste and preview
+## No plan active
 
-Brief amendment 32 (2026-10-23): paste an image into the terminal chat as
-in the owner's chat, and a preview before sending like the chat's
-(`references/10-chat-image-preview.png`,
-[reference-design.md](doc/reference-design.md#the-image-preview)). The
-criteria below were written before the code; nothing is committed until
-the owner has reviewed the implementation and the screenshots.
-
-### Research (D0, [doc/research/image-paste.md](doc/research/image-paste.md))
-
-- **Keys (probe P32a, Windows Terminal 1.23.20211.0).** The owner's
-  settings bind Ctrl+V to the terminal's own paste, Ctrl+Shift+V too.
-  With an image alone on the clipboard both paste nothing: the terminal
-  keeps the V key's press and forwards its release with Ctrl held
-  (`ESC[86;47;22;0;40;1_`), which is undocumented. With a file copied in
-  Explorer they paste its full path as a bracketed paste; with text, the
-  text. Alt+V and Ctrl+Alt+V reach the application as key presses
-  whatever the clipboard holds. Claude Code gives Alt+V to its image
-  paste on Windows for this reason.
-- **Images (probe P32b).** The terminal draws Sixel images; a cell holds
-  10x20 of their pixels whatever the font (200x100 pixels covered 20
-  columns by 5 rows); text or spaces written into a cell erase the image
-  there, and cells left alone keep it.
-- **The renderer (Bubble Tea v2.1.0, ultraviolet).** A changed line is
-  rewritten from its first to its last changed cell, the cells between
-  included; at each frame tick the raw sequences queued with `tea.Raw`
-  go out before the frame. The terminal's answer to the device
-  attributes request (`ESC[c`) reaches the model as ultraviolet's own
-  event, untranslated.
-- **The clipboard (golang.design/x/clipboard v0.11.0, approved).** It
-  reads an image as PNG (`FmtImage`, from CF_DIBV5 or CF_DIB), the
-  original bytes of the Windows "PNG" format that browsers and Snipping
-  Tool publish (registered as `image/png`), and copied files
-  (`ReadFiles`, CF_HDROP).
-
-### Design
-
-- **D1 Alt+V** attaches what the clipboard holds as images: copied files
-  first, each through plan 31's checks by content (a non-image refused by
-  name); else the "PNG" format's bytes; else the bitmap as PNG; else the
-  toast "no image on the clipboard". It never inserts text and never
-  sends.
-- **D2 Ctrl+V** pastes text as before. When the terminal keeps its press
-  and forwards only its release (an image alone on the clipboard), the
-  dashboard, seeing the release with no press and no paste within 200
-  ms, attaches the clipboard's image as Alt+V does: undocumented
-  behaviour, labelled so in the code and the docs; Alt+V works without
-  it. When a paste is exactly the paths of the files the clipboard holds
-  and every one is a supported image, they are attached instead of
-  their paths inserted; otherwise the text goes in, as today. Where the
-  terminal sends Ctrl+V's press, the dashboard's own paste reads the
-  clipboard: its text, else its image.
-- **D3 A pasted image** is named "pasted-image-N.png" (N from 1 in a
-  run), held in memory as PNG bytes and never written to a file, checked
-  as an upload is (by content, the provider's limits, scaled down when
-  over), shown by plan 31's chip and sent as plan 31's images are; the
-  same bytes twice are "already attached"; its bytes are dropped when its
-  chip is removed or its message accepted. The stored draft lists it by
-  name as pasted: restored, the draft's text and files come back, and a
-  toast says the pasted image was not kept.
-- **D4 The preview.** When the terminal answers the device attributes
-  request with Sixel graphics (attribute 4, asked once at start), a strip
-  of thumbnails lies between the editor's rule and the chips' row, side by
-  side, one cell apart, the first above the first chip at its left edge
-  (corrected on the owner's remark, below; first each above its chip, at
-  the chip's left edge): 14 columns by 7 rows
-  (140x140 image pixels) when the dashboard has 50 rows or more, 10 by 5
-  (100x100) from 30 to 49 rows, no strip under 30; the strip's rows come
-  out of zone B's conversation. Each image is cut from its centre to a
-  square, scaled by area averaging, its corners rounded (8 pixels at 140,
-  6 at 100) and transparent, with a 1-pixel border in the frame's colour.
-  A WebP, which nothing here decodes, gets a box of text with "WebP" in
-  it. Without Sixel, plan 31's chips alone.
-- **D5 Drawing.** The frame keeps the strip's cells blank, marked as the
-  thumbnails' (panel 'T', the image's index); the dashboard draws the
-  images over them in one raw sequence (the cursor saved, each
-  thumbnail's position and its Sixel, the cursor restored, the whole
-  inside synchronized output), 50 ms after the last frame that changed a
-  strip row, so that frame is out first, and again 300 ms after it. Any
-  later frame that changes a strip row (a selection, a resize, a
-  full-screen view closed, the focus moving) is followed by the same
-  drawing. Each image's Sixel is encoded once per size, when it is
-  attached, away from the screen's thread.
-- **D6 Keys.** F1's editor group: "Alt+V attach the clipboard's image
-  (Ctrl+V too, when the clipboard holds no text)"; the footer is the
-  owner's approved row, unchanged.
-- **D7 Docs.** ui-design.md (Input editor: the paste, the preview),
-  architecture.md (Images: the paste, the preview), reference-design.md
-  (the image), brief.md (amendment 32), the research, AGENTS.md (status),
-  `doc/plan32-evaluation.md`; golden frames of the strip.
-
-### Criteria
-
-- 32.1 TestPasteImage (`internal/app`, a fake clipboard): Alt+V with image
-  data attaches "pasted-image-1.png" with its size, the draft's text and
-  cursor unchanged, nothing sent; the same bytes again: "already
-  attached"; other bytes: "pasted-image-2.png"; copied files, a PNG and a
-  JPEG: both attached by name; a copied text file: refused with its
-  reason; text alone: the toast "no image on the clipboard", nothing
-  changed; Enter: the session receives the text and the pasted image's
-  exact PNG bytes as image/png, the chips gone.
-- 32.2 TestPasteCtrlV (`internal/app`): the release of Ctrl+V without its
-  press and no paste: after 200 ms the image attached; the release then a
-  paste within 200 ms: the text inserted, nothing attached; the press
-  then the release: the text pasted once, nothing attached; a paste equal
-  to the clipboard's file paths, all images: attached, nothing inserted;
-  with one that is not an image: the text inserted, nothing attached.
-- 32.3 TestPastedDraft (`internal/app`): a draft holding a pasted image
-  and a file, stored and restored by a new model: the text and the file
-  back, the toast "pasted-image-1.png was pasted, not kept"; the stored
-  files hold no image byte.
-- 32.4 TestSixel (`internal/render`): the encoder's output, read back by
-  the test's own decoder, gives the image's size from its raster
-  attributes, each opaque pixel within the palette's error of its colour,
-  each transparent pixel unset, at most 256 colours. TestThumbnail
-  (`internal/input`): the 320x160 drawing gives a 140x140 square cut from
-  its centre (the green square at its middle), transparent corners, the
-  border's pixels in the frame's colour; a 100x100 likewise.
-- 32.5 TestPreviewStrip (`internal/render`): Sixel on, two attachments: at
-  200x60 seven blank rows between the rule and the chips, panel 'T' items
-  0 and 1 of 14x7 cells, the first at its chip's column, the second one
-  cell after it (corrected on the owner's remark; first each at its
-  chip's column); at 120x40
-  five rows, 10x5 cells; at 80x24 the frame equals the one without Sixel;
-  without Sixel no strip at any size; a WebP's box reads "WebP"; zone B's
-  conversation has the strip's rows fewer.
-- 32.6 TestPreviewDraw (`internal/app`): before the terminal's answer, no
-  drawing; after an answer holding 4 and an attached image, one raw
-  sequence 50 ms after the frame: ESC 7, each thumbnail's position (CUP
-  to its first cell) and its Sixel, ESC 8, inside ESC[?2026h and
-  ESC[?2026l; again 300 ms after; a frame changing a strip row (a
-  selection over it): drawn again; a frame changing other rows only: not;
-  the image removed: no more drawing; an answer without 4: no strip.
-- 32.7 Golden frames added: the preview at 120x40 and 200x60; every other
-  frame unchanged.
-- 32.8 Checks: go build, go vet, gofmt; the suite; the race detector on
-  the changed packages; the timing step alone within every target.
-- 32.9 Windows Terminal, the executable built from this tree in mock mode,
-  maximised at 208x59, then at 120x40, the owner's clipboard saved first
-  and restored after: the generated PNG copied as a bitmap, then Ctrl+V:
-  its chip "pasted-image-1.png" and its thumbnail drawn (the squares
-  visible in the strip); a file copied, then Alt+V: a second chip and
-  thumbnail; text typed; a selection dragged over the strip and released,
-  F1 opened and closed: the thumbnails back each time; a chip's ✕: its
-  thumbnail gone; Enter: the message sent, its entry listing the images;
-  screenshots of each step.
-- 32.10 Docs as D7; every changed text file read byte by byte (no BOM, no
-  CR); git status lists the intended files only; nothing committed.
-
-A live turn with a pasted image is not part of this plan: the image goes
-out by plan 31's path, proved live on both CLIs; one can run on the
-owner's approval.
-
-### Progress
-
-Corrections made as the work went, each with its reason:
-- D5: a place an image left (its chip removed, the message sent, the
-  editor grown) is written over with the frame's own cells, which erases
-  the image, before the images of the frame are drawn. A first run in
-  Windows Terminal left both images on the screen after the send: their
-  cells were blank before and after, so the renderer never rewrote them
-  (P32b: cells left alone keep an image).
-- D5: the "+" menu stands on the editor's rule found by its dashes
-  (`editorRule`, plan 30): the strip's blank rows were taken for the rule,
-  which would have set the menu on the strip; TestPreviewStrip checks it,
-  and fails with the old search.
-- 32.6: the device attributes answer, recorded from Windows Terminal with
-  win32-input-mode on (`\x1b[?61;4;6;7;14;21;22;23;24;28;32;42;52c`,
-  probe P32a's da1 part), is also fed to the real program with Ctrl+V's
-  lone release (TestWin32PasteRelease).
-- 32.7: four frames added, the golden test drawing each scenario at four
-  sizes; at 80x24 and 79x24 they equal the attachments' frames, no strip
-  under 30 rows.
-- D4 and 32.5, on the owner's remark on the screenshots ("there is too
-  much space between the two images, it should be way shorter", brief
-  amendment 32): the thumbnails side by side, one cell apart, the first
-  above the first chip, as many as the width holds, past the chips
-  folded into "+N more"; each above its own chip had put the wide chips'
-  spacing between them.
-
-- [x] D0 the research (probes P32a and P32b,
-  `scratchpad\term\out-p32probe-*`).
-- [x] D1 to D3 the paste (`internal/app/paste.go`, `internal/input`
-  clipboard and InspectData) and its tests (TestPasteImage,
-  TestPasteCtrlV, TestPastePaths, TestPastedDraft, TestWin32PasteRelease).
-- [x] D4 and D5 the preview (`internal/render/sixel.go`, the strip in
-  `attach.go`, `internal/input/imagethumb.go`, `internal/app/preview.go`)
-  and its tests (TestSixel, TestRegion, TestPreviewStrip, TestThumbnail,
-  TestPreviewDraw).
-- [x] The golden frames (four added, no other changed), the checks: build,
-  vet, gofmt, the suite, the race run on input, render and app, the timing
-  step alone 7 of 7 (the long session timed in turn with the previous
-  commit's tree: the same figures).
-- [x] The screenshots (32.9): two prototype runs, then the final runs at
-  208x59 and 120x40 once the workstation was unlocked
-  (`scratchpad\term\out-p32\paste-max\`, `paste-120x40\`), the owner's
-  clipboard saved and restored in each.
-- [x] D7 and the evaluation (`doc/plan32-evaluation.md`: 10 of 10 PASS).
-- [x] The owner's remark: the thumbnails one cell apart, TestPreviewStrip
-  corrected, the suite, screenshots at 208x59 and 120x40 (the
-  evaluation's follow-up).
-- [ ] The owner's review; then the commit.
+Plan 32 was approved and closed on 2026-10-23 (Closed plans, below). The
+next plan starts when the owner asks for one.
 
 ## Closed plans
 
@@ -596,3 +398,22 @@ Windows Terminal, live turns on Claude Code (Haiku 5.5) and Codex
 checking the echo fix
 ([`doc/plan31-evaluation.md`](doc/plan31-evaluation.md)); commit 8e2a721,
 then the approval commit.
+
+## Plan 32 - Image paste and preview
+
+Brief amendment 32: paste an image as in the owner's chat, and a preview
+before sending. Alt+V attaches the clipboard's images (copied files, the
+"PNG" format's bytes, else the bitmap as PNG); Ctrl+V pastes text as
+before and, when Windows Terminal keeps its press for want of text,
+attaches the image on the key's lone release (undocumented, probe P32a);
+a paste of the copied files' paths attaches them when all are images;
+a pasted image is held in memory only. With Sixel graphics, the images
+show as thumbnails between the rule and the chips, rounded squares cut
+from their centre, 14x7 cells from 50 rows, 10x5 from 30, side by side
+one cell apart (the owner's remark on the screenshots), drawn after the
+frame and again after any frame that changes their rows, a vacated
+place written over with the frame's cells. Approved on 2026-10-23: 10 of
+10 PASS, four golden frames added, Windows Terminal at 208x59 and
+120x40 with the owner's clipboard saved and restored, the remark in a
+follow-up ([`doc/plan32-evaluation.md`](doc/plan32-evaluation.md));
+commit b56d23e, then the approval commit.
