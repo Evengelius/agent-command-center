@@ -445,6 +445,7 @@ type State struct {
 	Startup          StartupState
 	Context          Context
 	Session          SessionState
+	Models           Models // the session's models and their settings (plan 34)
 	Turn             TurnState
 	Stages           []Stage // one per turn, in order
 	Conversation     []Entry
@@ -577,6 +578,7 @@ const (
 	CmdRestoreDraft  CommandKind = "restore-draft"  // put Text back in the editor
 	CmdExit          CommandKind = "exit"           // leave the application
 	CmdSetApprovals  CommandKind = "set-approvals"  // ask for Auto (Decision auto) or Manual (Decision manual) approvals
+	CmdModels        CommandKind = "models"         // ask for the model settings of Change (plan 34)
 )
 
 // The approval modes (plan 12, item 2).
@@ -593,6 +595,7 @@ type Command struct {
 	Decision string
 	Answers  map[string]string // CmdAnswer of a question: question text to answer
 	Images   []Attachment      // CmdWrite and CmdRestoreDraft: the message's images (plan 31)
+	Change   ModelChange       // CmdModels: the model settings asked for (plan 34)
 }
 
 // Mode is the approval mode in force; Manual until the CLI reports another.

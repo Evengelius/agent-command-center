@@ -7,6 +7,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
+	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -69,18 +70,34 @@ func quiet(t *testing.T) *state.State {
 	return s
 }
 
+// highUltracode reports High and Ultracode in force, the owner's image's
+// pill (plan 29), as a settings read would (plan 34).
+func highUltracode(s *state.State) *state.State {
+	s.Models.InForce = event.Settings{Model: s.Session.Model, EffortKnown: true, Effort: "high",
+		UltracodeKnown: true, Ultracode: true, UltracodeAvailable: true}
+	return s
+}
+
 // TestEditorRow is plan 29's criterion 29.1 (brief amendment 29, the owner's
 // image of the input editor): under the draft a separator, then the row
 // with the "+" and the model pill on the ground, the middle text when the
-// status line had something to say, and "↯ Auto" at the right end.
+// status line had something to say, and "↯ Auto" at the right end. Since
+// plan 34 the pill's effort and Ultracode are the ones in force: the
+// owner's image's "High · Ultracode" once a read reports them, the model
+// alone before.
 func TestEditorRow(t *testing.T) {
 	defer UsePalette(pickTrue)
-	idle := quiet(t)
 	now := appClock
-	model := modelName(idle.Session.Model)
-	if model == "" || model == idle.Session.Model || strings.Contains(model, "claude") {
-		t.Fatalf("the quota mock's model %q names %q", idle.Session.Model, model)
+	bare := quiet(t)
+	model := modelName(bare.Session.Model)
+	if model == "" || model == bare.Session.Model || strings.Contains(model, "claude") {
+		t.Fatalf("the quota mock's model %q names %q", bare.Session.Model, model)
 	}
+	bareRows, _, _ := editorTail(t, bare, UI{Width: 120, Height: 40, Now: now, Focus: "B"})
+	if head := "  +     " + model + " "; !strings.HasPrefix(bareRows[3], head) || strings.TrimSpace(bareRows[3][len(head):]) != "↯ Auto" {
+		t.Errorf("no settings read: the row %q, want %q, spaces, \"↯ Auto\"", bareRows[3], head)
+	}
+	idle := highUltracode(quiet(t))
 	pill := " " + model + " High · Ultracode "
 	for _, size := range [][2]int{{80, 24}, {120, 40}, {208, 59}} {
 		ui := UI{Width: size[0], Height: size[1], Now: now, Focus: "B"}
@@ -133,7 +150,7 @@ func TestEditorRow(t *testing.T) {
 	// The turn running: the status in the middle where it fits beside the
 	// pills, alone where it does not; with a draft of two lines, the count
 	// before it.
-	busy := quiet(t)
+	busy := highUltracode(quiet(t))
 	busy.Turn.Phase = state.Running
 	const running = "turn running: the draft waits · Ctrl+C interrupt"
 	rows, _, _ = editorTail(t, busy, UI{Width: 208, Height: 59, Now: now, Focus: "B"})
@@ -178,6 +195,30 @@ func TestEditorRow(t *testing.T) {
 		}
 		if inner, editor := b.bottom-b.top-1, b.bottom-rule; rule < 0 || editor > inner/2 || inner-editor < inner/2 {
 			t.Errorf("%v: the editor takes %d of B's %d inner rows with a 40-line draft", size, editor, inner)
+		}
+	}
+}
+
+// TestEditorRowGap is plan 34's review: a middle text beside the pills
+// keeps three cells before "↯ Auto", as after the pill; one that would come
+// closer has the row alone.
+func TestEditorRowGap(t *testing.T) {
+	s := highUltracode(quiet(t))
+	for w := 60; w <= 130; w++ {
+		for n := 1; n <= w; n++ {
+			middle := strings.Repeat("x", n)
+			text := strings.TrimSuffix(texts([]line{inputRow(s, middle, w, false)}), "\n")
+			i := strings.Index(text, "↯")
+			if i < 0 {
+				if strings.TrimSpace(text) != middle {
+					t.Fatalf("width %d, a middle of %d: the row alone %q", w, n, text)
+				}
+				continue
+			}
+			before := strings.TrimRight(text[:i], " ")
+			if !strings.HasSuffix(before, middle) || len(text[:i])-len(before) < 3 {
+				t.Fatalf("width %d, a middle of %d: %q", w, n, text)
+			}
 		}
 	}
 }

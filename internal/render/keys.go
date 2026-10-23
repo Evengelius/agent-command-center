@@ -60,6 +60,7 @@ func fixedKeyTable() []keyGroup {
 			{"F2", "go to the oldest pending approval"},
 			{"F3", "the file in front in the file viewer; else the Explorer; in them, close"},
 			{"F4", "approvals Manual / Auto"},
+			{"Alt+P", "the model selector (a click on the pill too)"},
 			{"F6 / Shift+F6", "next / previous zone (B, C, A)"},
 			{"Tab / Shift+Tab", "next / previous zone, outside the editor"},
 			{"Esc", "close the overlay, leave zoom, inspection or a full view, clear the selection, back to the input"},
@@ -112,6 +113,14 @@ func fixedKeyTable() []keyGroup {
 			{"/", "the quick open: type to narrow, Enter opens, Esc back"},
 			{"Esc", "close the folder the cursor is in; at the top, close"},
 			{"F3", "close, back to the dashboard"},
+		}},
+		{"THE MODEL SELECTOR (Alt+P or a click on the pill)", [][2]string{
+			{"↑ ↓ Home End", "move over the models, More models, Effort and Ultracode; over the levels while the effort list is open"},
+			{"Enter, Space", "choose the model, expand or collapse More models, open the effort list, turn Ultracode on or off, pick the level"},
+			{"PgUp PgDn", "scroll the list a page; the wheel scrolls too"},
+			{"Esc", "close the effort list, then the selector"},
+			{"Alt+P", "close the selector"},
+			{"any other key", "close the selector, then act as usual (Ctrl+Q quits)"},
 		}},
 		{"THE EDITOR", [][2]string{
 			{"← → ↑ ↓ Home End", "move; Ctrl+Home and Ctrl+End the whole draft"},

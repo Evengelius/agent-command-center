@@ -331,13 +331,24 @@ func (m *Model) View() tea.View {
 		prev, m.repaint = nil, false // its rows hold the old palette's colours
 	}
 	m.screen = render.Draw(m.s, m.ui)
+	if m.ui.Models.Open && (!m.screen.Selector.Shown || m.ui.Models.Effort && !m.screen.Selector.Effort) {
+		// The frame had no room for the selector or its effort list (a draft
+		// grown under it, a turn's status in the pill's place, a full view):
+		// it closes, so no key acts on what is not on screen (plan 34,
+		// design D9). Nothing of it was drawn, so the frame stands.
+		if m.screen.Selector.Shown {
+			m.ui.Models.Effort = false
+		} else {
+			m.closeModels()
+		}
+	}
 	v := tea.NewView(m.screen.StringAfter(prev))
 	m.previewFrame() // the thumbnails drawn again after a frame that changed their rows (plan 32)
 	v.AltScreen = true
 	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
-		if m.ui.Plus {
-			v.MouseMode = tea.MouseModeAllMotion // the "+" menu's hover follows the pointer (plan 30)
+		if m.ui.Plus || m.ui.Models.Open {
+			v.MouseMode = tea.MouseModeAllMotion // the menu's or the selector's hover follows the pointer (plans 30, 34)
 		}
 	}
 	v.WindowTitle = "Agent Command Center"
@@ -421,6 +432,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.PasteEndMsg:
 		m.pasting = false
 	case tea.PasteMsg:
+		m.closeModels() // a paste goes on to the editor, as a key the selector does not take (plan 34)
 		cmds = append(cmds, m.terminalPaste(msg.Content)...)
 	case pasteMsg:
 		m.paste(msg.text)
@@ -665,6 +677,8 @@ func (m *Model) command(c state.Command) tea.Cmd {
 			}
 			return nil
 		}, actionMsg{state.ApprovalFailed{Message: "too many writes waiting"}})
+	case state.CmdModels:
+		return m.modelsCmd(c.Change)
 	case state.CmdInterrupt:
 		sess := m.sess
 		return tea.Batch(m.write(func() tea.Msg {

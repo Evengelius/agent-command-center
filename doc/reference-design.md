@@ -394,3 +394,65 @@ differs: the border in the frame's colour, the image's light grey
 suiting a white box and not the dark one; plan 31's chips under the
 thumbnails, between them and the text; no blank row under them, rows
 being scarce.
+
+## The model selector
+
+`11-model-selector.webp` (1354x1162), sent with amendment 34 of the brief
+(plan 34): the popup a click on the editor row's model pill opens, which
+the owner calls the final approved visual specification. Colours read
+from its pixels (the median of each element's strokes).
+
+- A box on a near-black ground (`#131519`, the page around it `#0F1014`),
+  a lavender border (`#CA92F2`) about 3 px wide with rounded corners, and
+  a small tail at the bottom-left pointing down, in the border's colour.
+- The top row: "CLAUDE MODELS" in bold lavender (`#CC97F2`) at the left,
+  "Current session" in grey (`#9299A9`) at the right.
+- Five models, each two lines: the name in white, the description under
+  it in grey (`#848FA2`): "Default (recommended)" / "Opus 5.5 · Best for
+  everyday, complex tasks"; "Fable 5.1" / "For your toughest challenges";
+  "Opus 5.5" / "For complex work and everyday tasks"; "Sonnet 5.5" /
+  "Most efficient for simpler tasks"; "Haiku 5.5" / "Fastest for quick
+  answers". The names line up, the descriptions under them. From one
+  model's name to the next is 2.75 times the line height; from the header
+  to the first name, 1.8.
+- The second model, Fable 5.1, lies on a band (`#342B47`) with rounded
+  corners across the box's inner width, a pink "▶" (`#E286D0`) before its
+  name, its description lighter on the band (`#A3A3BF`) and a white "✓"
+  at the band's right end, level with the name.
+- A thin grey line (`#5E616D`), "▶ More models" in white with a white "›"
+  at the right end, a second line.
+- "Effort:" in white, then a dark rounded box (`#232631`) reading "XHigh"
+  in white with a white chevron at its right.
+- "Ultracode" in white, "Enables dynamic workflows" in grey (`#878D9F`),
+  and at the right end a lavender pill toggle (`#CA84FB`) with a white
+  knob at its right: on.
+- The bottom border closely beneath the Ultracode row: no footer, no
+  further row.
+
+What plan 34 takes from it, in cells, the box's top-left corner at column
+0 and row 0, the box W cells wide:
+
+| Element | Cells | Colour |
+| - | - | - |
+| Border | rounded box-drawing corners and lines; "▾" in the bottom edge at column 1, above the pill's first cell | `#CA92F2` |
+| Header, row 1 | "CLAUDE MODELS" or "CODEX MODELS", bold, from column 2; "Current session" ending at column W-3 | `#CA92F2`; `#9299A9` |
+| Models, from row 3 | a name row and a description row, both from column 5, one blank row between models (the image's 2.75 lines rounded to 3) | names in the bright white of the palette; descriptions `#848FA2` |
+| Cursor | the band from column 2 to column W-3 over the model's two rows, "▶" at column 3 of the name row | band `#342B47`, "▶" `#E286D0`, the description on the band in the muted grey of the palette |
+| Model in force | "✓" at column W-5 of its name row | the bright white |
+| Separators | a line from column 2 to column W-3, right under the last model, and right under "More models" | `#5E616D` |
+| More models | "▶" (collapsed) or "▼" (expanded) at column 3, "More models" at column 5, "›" at column W-5 | the bright white |
+| Effort, two rows under the second line | "Effort:" at column 3; the box from column 13, 14 cells, its level at column 14 and "⌄" at column 25 | white; box `#232631` |
+| Ultracode, two rows under the effort | "Ultracode" at column 3, "Enables dynamic workflows" at column 13, the toggle in columns W-9 to W-4 | white; `#878D9F`; track `#CA84FB`, knob white |
+| Bottom edge | the row right under the Ultracode row | `#CA92F2` |
+
+W is 63 (the image's width over its cells) or the longest name or
+description plus 12, whichever is larger; 25 rows in all for Claude Code's
+five models with More models, 23 for Codex's, which has no Ultracode row.
+
+What differs: one size of type, the terminal's, where the image's names
+and header are larger than its descriptions; the 2.75 lines between
+models rounded to three rows; the tail drawn as "▾" in the bottom edge,
+where plan 30's menu, the same one-cell grid, left its tail out; the
+box's ground the dashboard's own background, as plan 30's; the band's
+and the box's corners square, a cell being the smallest unit; the toggle
+a run of half blocks around the knob "●".

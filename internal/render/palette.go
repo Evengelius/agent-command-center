@@ -41,6 +41,21 @@ var (
 	cPill      = colour{"#3B1531", ""}   // the "F2 to answer" pill (plan 20)
 	cActive    = colour{"#272745", "4"}  // the "+" pressed and the menu item under the mouse (plan 30, the owner's image)
 
+	// The model selector (plan 34, the owner's image; reference-design.md,
+	// The model selector), each read from the image's pixels: the frame,
+	// the header and the tail; "Current session"; the descriptions; the
+	// cursor's band; its pink "▶"; the separators; the effort box; the
+	// toggle's track on, and off.
+	cModelFrame  = colour{"#CA92F2", "13"}
+	cModelAside  = colour{"#9299A9", "8"}
+	cModelDesc   = colour{"#848FA2", "8"}
+	cModelBand   = colour{"#342B47", "5"}
+	cModelMark   = colour{"#E286D0", "13"}
+	cModelRule   = colour{"#5E616D", "8"}
+	cModelBox    = colour{"#232631", ""}
+	cModelToggle = colour{"#CA84FB", "13"}
+	cModelOff    = colour{"#3B3F51", "8"}
+
 	// The violet of thinking (plan 22, design 2): the live card's border, its
 	// bar's fill, the fill's lit leading edge, the mid shade (and the
 	// expressions' lavender), the dim shade of the entrance and the exit, and
@@ -116,6 +131,12 @@ var (
 		}
 		return out
 	}()
+
+	// The model selector (plan 34): its frame, its bold header, "Current
+	// session", the descriptions, the cursor's "▶", the separators, and the
+	// toggle's half-block ends on and off.
+	stModelFrame, stModelHead, stModelAside, stModelDesc, stModelMark, stModelRule = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	stModelTrackEnd, stModelOffEnd                                                 = new(lipgloss.Style), new(lipgloss.Style)
 
 	stMdHeading = stTitle
 	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
@@ -197,6 +218,14 @@ func paint() {
 	paintStyle(stThinkWordDim, fg(cThinkDim).Bold(true))
 	paintStyle(stThinkLit, fg(cThinkEdge).Bold(true))
 	paintStyle(stBrightBold, fg(cBright).Bold(true))
+	paintStyle(stModelFrame, fg(cModelFrame))
+	paintStyle(stModelHead, fg(cModelFrame).Bold(true))
+	paintStyle(stModelAside, fg(cModelAside))
+	paintStyle(stModelDesc, fg(cModelDesc))
+	paintStyle(stModelMark, fg(cModelMark))
+	paintStyle(stModelRule, fg(cModelRule))
+	paintStyle(stModelTrackEnd, fg(cModelToggle))
+	paintStyle(stModelOffEnd, fg(cModelOff))
 	if sixteen { // no ground to spare: the pill is its bold pink text
 		paintStyle(stPill, stAttentionBold.Background(lipgloss.NoColor{}))
 		paintStyle(stPillEnd, lipgloss.NewStyle())
@@ -230,7 +259,13 @@ var (
 	// activeGround is the "+" menu's: the band while the menu is open and
 	// the item under the mouse (plan 30, design D2 and D3).
 	activeGround = &ground{c: cActive, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	grounds      = []*ground{toolGround, activeGround}
+	// The model selector's grounds (plan 34): the cursor's band, the effort
+	// box, the toggle's track on and off.
+	bandGround  = &ground{c: cModelBand, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	boxGround   = &ground{c: cModelBox, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	trackGround = &ground{c: cModelToggle, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	offGround   = &ground{c: cModelOff, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	grounds     = []*ground{toolGround, activeGround, bandGround, boxGround, trackGround, offGround}
 )
 
 // active is st on the active ground (plan 30).

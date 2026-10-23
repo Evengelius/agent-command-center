@@ -1,0 +1,60 @@
+ >_ AGENT COMMAND CENTER     ■ claude-fable-5-1                                                                                                                             ◆ MOCK — not a live session
+ ▣ claude-models.jsonl   ..\..\testdata\mock\claude-models.jsonl                                                                                                                              Mock data
+╭──────────────────────────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
+│ A · ORCHESTRATOR                                     ││ Waiting for instructions                                                                                                                     │
+│ ✿ Claude Fable 5.1                            ○ IDLE ││ Ready to work on this project.                                                                                                               │
+│ ──────────────────────────────────────────────────── ││                                                                                                                                              │
+│ STAGES · inferred from activity                      ││                                                                                                                                              │
+│ ○ (stages appear as turns run)                       ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││                                                                                                                                              │
+│                                                      ││       ╭─────────────────────────────────────────────────────────────────╮                                                                    │
+│                                                      ││       │ CLAUDE MODELS                                   Current session │                                                                    │
+│                                                      ││       │                                                                 │                                                                    │
+│                                                      ││       │    Default (recommended)                                        │                                                                    │
+│                                                      ││       │    Opus 5.5 · Best for everyday, complex tasks                  │                                                                    │
+│                                                      ││       │                                                                 │                                                                    │
+│                                                      ││       │    Opus 5.5                                                     │                                                                    │
+│                                                      ││       │    For complex work and everyday tasks                          │                                                                    │
+│                                                      ││       │                                                                 │                                                                    │
+│                                                      ││       │    Fable 5.1                                                ✓   │                                                                    │
+│                                                      ││       │    For your toughest challenges                                 │                                                                    │
+│                                                      ││       │                                                                 │                                                                    │
+│                                                      ││       │    Sonnet 5.5                                                   │                                                                    │
+│                                                      ││       │    Most efficient for simpler tasks                             │                                                                    │
+│                                                      ││       │            ╭──────────────╮                                     │                                                                    │
+│ ──────────────────────────────────────────────────── ││       │    Haiku 5.│ Low          │                                     │                                                                    │
+│ ✦ TELEMETRY                            Enter details ││       │    Fastest │ Medium       │s                                    │                                                                    │
+│ ▾ SESSION USAGE                                      ││       │ ───────────│ High         │──────────────────────────────────── │                                                                    │
+│   CONTEXT            │ TOKENS        │ EST. COST     ││       │  ▶ More mod│ XHigh        │                                 ›   │                                                                    │
+│   N/A                │ N/A           │ N/A           ││       │ ───────────│ Max        ✓ │──────────────────────────────────── │                                                                    │
+│   no turn yet        │ no result yet │ no result yet ││       │            ╰──────────────╯                                     │                                                                    │
+│                                                      ││       │  Effort:    Max        ⌄                                        │                                                                    │
+│ ▾ QUOTA WINDOWS                                      ││       │                                                                 │                                                                    │
+│   Session (5hr)                                  N/A ││       │  Ultracode Enables dynamic workflows                    ▐   ●▌  │                                                                    │
+│   no report yet                                      ││ ──────╰▾────────────────────────────────────────────────────────────────╯─────────────────────────────────────────────────────────────────── │
+│                                                      ││ >  Ask Mock data anything…                                                                                                                   │
+│   Weekly (7 day)                                 N/A ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│   no report yet                                      ││   +     Fable 5.1 Max · Ultracode                                                                                                    ↯ Auto  │
+╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                                                                                                    0 ACTIVE · 0 DONE │
+│ no agents yet: they appear as the CLI starts them                                                                                                                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit

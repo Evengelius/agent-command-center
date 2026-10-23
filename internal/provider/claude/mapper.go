@@ -43,11 +43,26 @@ type Mapper struct {
 	usageReads   int
 	usageStarted bool
 	usageOpen    bool
+	// The session's models and their settings (plan 34, models.go): the
+	// initialize response's models; the model the last set_model asked for
+	// and the one set_model last took; the changes written and not yet
+	// answered; whether a change's answer calls for a read, and the reads
+	// written for one (by request id); the last read; the effort variable
+	// in the CLI's environment.
+	catalogue   []event.ModelEntry
+	asked       string
+	chosen      string
+	changes     int
+	readDue     bool
+	readAnswers bool
+	answering   map[string]bool
+	inForce     event.Settings
+	effortVar   string
 }
 
 // NewMapper returns an empty mapper.
 func NewMapper() *Mapper {
-	return &Mapper{pending: map[string]string{}, models: map[string]string{}, streamIDs: map[string]string{}}
+	return &Mapper{pending: map[string]string{}, models: map[string]string{}, streamIDs: map[string]string{}, answering: map[string]bool{}}
 }
 
 type line struct {
@@ -135,8 +150,15 @@ func (m *Mapper) In(raw []byte) []event.Event {
 		}
 		_ = json.Unmarshal(l.Request, &req)
 		m.pending[l.RequestID] = req.Subtype
-		if req.Subtype == "interrupt" {
+		switch req.Subtype {
+		case "interrupt":
 			m.interrupted = true
+		case "set_model", "apply_flag_settings":
+			m.change(req.Subtype, l.Request)
+		case "get_settings":
+			if m.readDue { // the read a change's answer called for (plan 34)
+				m.answering[l.RequestID], m.readDue = m.readAnswers, false
+			}
 		}
 		return []event.Event{m.ev(event.Sent, event.Observed, "", raw, event.Write{What: req.Subtype, RequestID: l.RequestID})}
 	case "control_response":
@@ -996,15 +1018,42 @@ func (m *Mapper) controlResponse(l line, raw []byte) []event.Event {
 	what := m.pending[resp.RequestID]
 	delete(m.pending, resp.RequestID)
 	if resp.Subtype == "error" {
-		if what == "set_permission_mode" {
+		switch what {
+		case "set_permission_mode":
 			// Zone B shows the refusal; the mode in force is unchanged (plan 12, item 2).
 			return []event.Event{m.ev(event.ApprovalMode, event.Observed, "", raw, event.Mode{Refused: true, Text: what + " refused by Claude Code: " + resp.Error})}
+		case "set_model", "apply_flag_settings":
+			return m.changeAnswered(what, true, resp.Error, raw)
+		case "get_settings":
+			// The settings in force are not known; a change waiting for
+			// this read is settled with it (plan 34).
+			s := event.Settings{Source: what, Undocumented: true, Text: what + " refused by Claude Code: " + resp.Error}
+			if m.answering[resp.RequestID] {
+				delete(m.answering, resp.RequestID)
+				s.Answers = m.changes == 0
+			}
+			return []event.Event{m.ev(event.ModelSettings, event.Observed, "", raw, s)}
 		}
 		return []event.Event{m.ev(event.Error, event.Observed, "", raw, event.Problem{Message: what + " refused by Claude Code: " + resp.Error})}
 	}
 	switch what {
 	case "initialize":
-		return []event.Event{m.ev(event.SessionReady, event.Observed, "", raw, event.Ready{Detail: "initialize response"})}
+		evs := []event.Event{m.ev(event.SessionReady, event.Observed, "", raw, event.Ready{Detail: "initialize response"})}
+		if c := catalogue(resp.Response); len(c) > 0 {
+			// The session's models (plan 34): the Agent SDK's ModelInfo.
+			m.catalogue = c
+			evs = append(evs, m.ev(event.ModelsListed, event.Observed, "", raw, event.Models{Entries: c, Source: "initialize"}))
+		}
+		return evs
+	case "set_model", "apply_flag_settings":
+		return m.changeAnswered(what, false, "", raw)
+	case "get_settings":
+		s, line := m.settingsRead(resp.RequestID, resp.Response)
+		if m.answering[resp.RequestID] {
+			delete(m.answering, resp.RequestID)
+			s.Answers = m.changes == 0
+		}
+		return []event.Event{m.ev(event.ModelSettings, event.Observed, "", line, s)}
 	case "get_context_usage":
 		var c struct {
 			Total     float64 `json:"totalTokens"`

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -75,6 +76,22 @@ func childEnv(base []string, h provider.Host) []string {
 	return env
 }
 
+// envValue is the variable's value in env, the names compared without case
+// as Windows does; the dashboard's own environment when env is nil, which
+// the child then inherits.
+func envValue(env []string, name string) string {
+	if env == nil {
+		env = os.Environ()
+	}
+	v := ""
+	for _, kv := range env {
+		if k, val, ok := strings.Cut(kv, "="); ok && strings.EqualFold(k, name) {
+			v = val // the last one wins, as in the process the child gets
+		}
+	}
+	return v
+}
+
 // Session is one running `claude -p` process.
 type Session struct {
 	p     proc.Process
@@ -85,6 +102,7 @@ type Session struct {
 	m      *Mapper               //
 	inputs map[string]pendingReq // pending approval id -> its request
 	reqs   int                   // control requests sent
+	reads  int                   // get_settings requests sent (plan 34)
 
 	wmu      sync.Mutex // one write at a time
 	inClosed atomic.Bool
@@ -115,6 +133,7 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext, env []
 	}
 	s := &Session{p: pr, stdin: pr.Stdin(), step: step, m: NewMapper(), inputs: map[string]pendingReq{},
 		q: pipe.NewQueue(now), exited: make(chan struct{})}
+	s.m.SetEffortVar(envValue(env, EffortVar))
 	s.q.Push(event.Event{Provider: ProviderID, Kind: event.SessionSpawned, Origin: event.Observed,
 		Payload: event.Spawned{Argv: append([]string{sc.Executable}, argv...), Dir: sc.ProjectPath}})
 	go s.q.Forward()
@@ -165,17 +184,28 @@ func (s *Session) read(r io.Reader) {
 				for _, ev := range evs {
 					s.q.Push(ev)
 				}
+				due := s.m.ReadDue()
 				s.mu.Unlock()
+				if due {
+					// A change was answered: the read that says what is in
+					// force (plan 34).
+					s.readSettings()
+				}
 				break
 			}
-			// The handshake's answer: its events are held while "/usage" is
-			// written, so the usage report is asked for before the owner can
-			// write anything, and its Sent event follows session.ready (plan
-			// 24, amendment 23; P24u). A failed write is an event of its own.
+			// The handshake's answer: its events are held while the settings
+			// read and "/usage" are written, so both are asked for before the
+			// owner can write anything, and their Sent events follow
+			// session.ready (plan 24, amendment 23; P24u; plan 34). A failed
+			// write is an event of its own.
 			held := s.q.Hold(evs)
 			s.mu.Unlock()
+			serr := s.control("get_settings", "")
 			werr := s.readUsage()
 			s.q.Release(held, true)
+			if serr != nil {
+				s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "model settings not asked for: " + serr.Error()}})
+			}
 			if werr != nil {
 				s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "usage report not asked for: " + werr.Error()}})
 			}
@@ -305,8 +335,16 @@ func (s *Session) writeWith(msg any, in func([]byte) []event.Event) error {
 // control sends one control request; body is its fields after the subtype.
 func (s *Session) control(subtype, body string) error {
 	s.mu.Lock()
-	s.reqs++
-	id := "req_" + strconv.Itoa(s.reqs)
+	var id string
+	if subtype == "get_settings" {
+		// The settings reads have their own numbers (plan 34), so they never
+		// shift the numbers of the session's other requests.
+		s.reads++
+		id = "read_" + strconv.Itoa(s.reads)
+	} else {
+		s.reqs++
+		id = "req_" + strconv.Itoa(s.reqs)
+	}
 	s.mu.Unlock()
 	req := `{"subtype":"` + subtype + `"`
 	if body != "" {
@@ -406,18 +444,66 @@ func (s *Session) Answer(id, decision string) error {
 // Interrupt asks Claude Code to end the running turn.
 func (s *Session) Interrupt() error { return s.control("interrupt", "") }
 
-// Refresh asks for the context usage (undocumented, INT 4), then for the
-// usage report (plan 24): both after each turn.
+// Refresh asks for the context usage (undocumented, INT 4), the model
+// settings in force (undocumented, plan 34) and the usage report (plan
+// 24): all three after each turn.
 func (s *Session) Refresh() error {
 	if err := s.control("get_context_usage", ""); err != nil {
+		return err
+	}
+	if err := s.control("get_settings", ""); err != nil {
 		return err
 	}
 	return s.readUsage()
 }
 
+// readSettings asks for the model settings in force: get_settings, which
+// Claude Code answers itself with no model call (plan 34, P34c). A write
+// that fails while the session is still open is an event of its own.
+func (s *Session) readSettings() {
+	if err := s.control("get_settings", ""); err != nil && !s.closing.Load() && !s.inClosed.Load() {
+		s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "model settings not asked for: " + err.Error()}})
+	}
+}
+
+// SetModelSettings asks for a model, an effort or Ultracode, for this
+// session only (plan 34): set_model for the model, apply_flag_settings for
+// the effort and Ultracode, both documented. An effort carries Ultracode as
+// the last read gave it, since a level asked for alone turns Ultracode off
+// (P34c3). The read after each answer says what is in force.
+func (s *Session) SetModelSettings(r provider.ModelRequest) error {
+	if r.Model != "" {
+		b, _ := json.Marshal(r.Model)
+		if err := s.control("set_model", `"model":`+string(b)); err != nil {
+			return err
+		}
+	}
+	flags := map[string]any{}
+	if r.Effort != "" {
+		flags["effortLevel"] = r.Effort
+		if r.Ultracode == nil {
+			s.mu.Lock()
+			on, known := s.m.UltracodeInForce()
+			s.mu.Unlock()
+			if known {
+				flags["ultracode"] = on
+			}
+		}
+	}
+	if r.Ultracode != nil {
+		flags["ultracode"] = *r.Ultracode
+	}
+	if len(flags) == 0 {
+		return nil
+	}
+	b, _ := json.Marshal(flags)
+	return s.control("apply_flag_settings", `"settings":`+string(b))
+}
+
 // Capabilities of Claude Code 2.1 in way A.
 func (s *Session) Capabilities() provider.Capabilities {
-	return provider.Capabilities{SubagentText: true, APICost: true, Questions: true, ResumeHistory: true, AutoApprovals: true, Images: imageLimits}
+	return provider.Capabilities{SubagentText: true, APICost: true, Questions: true, ResumeHistory: true, AutoApprovals: true, Images: imageLimits,
+		Models: true, Ultracode: true}
 }
 
 // Close closes stdin, then terminates the CLI, then kills its tree, each

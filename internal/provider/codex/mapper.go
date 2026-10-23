@@ -32,6 +32,20 @@ type Mapper struct {
 	interrupted bool
 	steps       steps             // where the orchestrator's model steps begin (plan 22, X5)
 	totals      map[string]string // each thread's last usage total, as sent, to know a repeat (plan 22)
+	// The session's models (plan 34, models.go): the pages read so far of
+	// the listing under way, the last whole list; the turn/start requests
+	// that carried a change; whether a thread/read is due (readForChange
+	// when it answers a change), written (readSent), and the reads that
+	// answer a change, by request id.
+	listing       []event.ModelEntry
+	cursors       map[string]bool // the listing's cursors so far, to stop one that repeats
+	nextPage      string          // the cursor of the page the session asks for next, "" for none
+	catalogue     []event.ModelEntry
+	carried       map[string]bool
+	readDue       bool
+	readForChange bool
+	readSent      bool
+	answering     map[string]bool
 }
 
 type serverReq struct {
@@ -40,7 +54,8 @@ type serverReq struct {
 
 // NewMapper returns an empty mapper.
 func NewMapper() *Mapper {
-	return &Mapper{pending: map[string]string{}, server: map[string]serverReq{}, files: map[string]string{}, totals: map[string]string{}}
+	return &Mapper{pending: map[string]string{}, server: map[string]serverReq{}, files: map[string]string{}, totals: map[string]string{},
+		carried: map[string]bool{}, answering: map[string]bool{}}
 }
 
 type rpc struct {
@@ -125,6 +140,9 @@ func (m *Mapper) In(raw []byte) []event.Event {
 			} `json:"input"`
 			Reviewer string          `json:"approvalsReviewer"`
 			Sandbox  json.RawMessage `json:"sandboxPolicy"`
+			Cursor   string          `json:"cursor"`
+			Model    string          `json:"model"`
+			Effort   string          `json:"effort"`
 		}
 		_ = json.Unmarshal(r.Params, &p)
 		switch r.Method {
@@ -132,6 +150,18 @@ func (m *Mapper) In(raw []byte) []event.Event {
 			m.main = ""
 		case "thread/resume":
 			m.main, m.session = p.ThreadID, p.ThreadID
+		case "model/list":
+			if p.Cursor == "" { // a new listing begins (plan 34)
+				m.listing, m.cursors = nil, map[string]bool{}
+			}
+		case "turn/start":
+			if id != "" && (p.Model != "" || p.Effort != "") {
+				m.carried[id] = true // a model or effort change goes with this turn (plan 34)
+			}
+		case "thread/read":
+			if id != "" && m.readSent {
+				m.answering[id], m.readSent = true, false
+			}
 		}
 		agent := m.agentOf(p.ThreadID)
 		var out []event.Event
@@ -256,9 +286,35 @@ func (m *Mapper) response(r rpc, raw []byte) []event.Event {
 			what = "request " + id
 		}
 		msg := problemMessage(r.Error)
-		refused := m.ev(event.Error, event.Observed, "", "", "", raw, event.Problem{Message: what + " refused by Codex: " + msg})
-		if method == "account/rateLimits/read" {
+		p := event.Problem{Message: what + " refused by Codex: " + msg}
+		// A refused turn/start started no turn: the message goes back to the
+		// editor (plan 34).
+		p.TurnRefused = method == "turn/start"
+		refused := m.ev(event.Error, event.Observed, "", "", "", raw, p)
+		switch method {
+		case "account/rateLimits/read":
 			return m.rateLimitsRefused(msg, refused, raw)
+		case "turn/start":
+			if m.carried[id] {
+				// The change it carried is not taken either (plan 34): zone B
+				// says why; the settings in force are unchanged.
+				delete(m.carried, id)
+				return []event.Event{refused, m.ev(event.ModelSettings, event.Observed, "", "", "", raw, event.Settings{Source: method, Answers: true, Refused: true,
+					Text: "the model change was not taken: " + p.Message})}
+			}
+		case "model/list":
+			if len(m.catalogue) == 0 {
+				// No list yet: the selector says why rather than wait for one
+				// (plan 34).
+				m.listing = nil
+				return []event.Event{refused, m.ev(event.ModelsListed, event.Observed, "", "", "", raw, event.Models{Source: method, Problem: p.Message})}
+			}
+		case "thread/read":
+			if m.answering[id] {
+				delete(m.answering, id)
+				return []event.Event{refused, m.ev(event.ModelSettings, event.Observed, "", "", "", raw, event.Settings{Source: method, Answers: true,
+					Text: "the model and effort in force are not known: " + msg})}
+			}
 		}
 		return []event.Event{refused}
 	}
@@ -289,7 +345,17 @@ func (m *Mapper) response(r rpc, raw []byte) []event.Event {
 		_ = json.Unmarshal(r.Result, &s)
 		e := m.status("", raw, "turn accepted", "")
 		e.Turn = s.Turn.ID
+		if m.carried[id] {
+			// The turn took the change it carried: thread/read says what
+			// is in force (plan 34).
+			delete(m.carried, id)
+			m.readDue, m.readForChange = true, true
+		}
 		return []event.Event{e}
+	case "model/list":
+		return m.listPage(r.Result, raw)
+	case "thread/read":
+		return m.threadRead(id, r.Result, raw)
 	case "turn/interrupt":
 		return []event.Event{m.status("", raw, "interrupt acknowledged", "")}
 	}
@@ -305,6 +371,7 @@ func (m *Mapper) threadStart(r rpc, raw []byte) []event.Event {
 			CliVersion string `json:"cliVersion"`
 		} `json:"thread"`
 		Model          string          `json:"model"`
+		Effort         *string         `json:"reasoningEffort"`
 		Cwd            string          `json:"cwd"`
 		CliVersion     string          `json:"cliVersion"`
 		Sandbox        json.RawMessage `json:"sandbox"`
@@ -320,6 +387,8 @@ func (m *Mapper) threadStart(r rpc, raw []byte) []event.Event {
 	return []event.Event{
 		m.ev(event.SessionReady, event.Observed, "", "", "", raw, event.Ready{Detail: "thread/start response"}),
 		m.ev(event.SessionStarted, event.Observed, "", "", "", raw, st),
+		// The model and effort the thread starts with (plan 34, P34x).
+		m.ev(event.ModelSettings, event.Observed, "", "", "", raw, settingsOf(s.Model, s.Effort, "thread/start")),
 	}
 }
 
@@ -426,6 +495,9 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 		Failure   string          `json:"failureReason"`
 		TokenUse  json.RawMessage `json:"tokenUsage"`
 		Limits    json.RawMessage `json:"rateLimits"`
+		FromModel string          `json:"fromModel"`
+		ToModel   string          `json:"toModel"`
+		Reason    json.RawMessage `json:"reason"`
 	}
 	if len(r.Params) > 0 {
 		if err := json.Unmarshal(r.Params, &p); err != nil {
@@ -436,6 +508,18 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 	switch r.Method {
 	case "thread/started":
 		return m.threadStarted(p.Thread, raw)
+	case "model/rerouted":
+		// Codex answered a turn with another model (plan 34): zone B says so,
+		// and thread/read shows what the thread is configured with since.
+		why := namedValue(p.Reason)
+		text := "Codex answered with " + p.ToModel + " instead of " + p.FromModel
+		if why != "" {
+			text += " (" + why + ")"
+		}
+		if agent == "" {
+			m.readDue = true
+		}
+		return []event.Event{m.ev(event.StatusChanged, event.Observed, agent, p.TurnID, "", raw, event.Status{Status: "notice", Detail: text})}
 	case "thread/status/changed":
 		var s struct {
 			Type        string   `json:"type"`

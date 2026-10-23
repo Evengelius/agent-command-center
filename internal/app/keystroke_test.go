@@ -3,6 +3,7 @@
 package app
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,10 +13,10 @@ import (
 )
 
 // The timing step (evaluation.md, Keystroke timing; seven tests since plan
-// 22): test 6's measures, on the wall clock with the garbage collector on,
+// 22, eight since plan 34): test 6's measures, on the wall clock with the garbage collector on,
 // run on their own, never in parallel with the other packages' tests:
 //
-//	go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame)$' -count=1 -v
+//	go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame)$' -count=1 -v
 //
 // Each starts with warmUp untimed keys, so the first frames' allocations and
 // caches are not counted; the target stays 16 ms at the 95th percentile, and
@@ -68,6 +69,58 @@ func TestKeystrokeToFrame(t *testing.T) {
 	t.Logf("keystroke-to-frame in the draft window, 10,000-line draft, %d keys: p50 %v, p95 %v, max %v (target p95 ≤ %v)", len(ds), p50, p95, worst, keystrokeTarget)
 	if p95 > keystrokeTarget {
 		overTarget(t, "draft window: p95 %v over the %v target", p95, keystrokeTarget)
+	}
+}
+
+// TestSelectorToFrame is plan 34's criterion 19: the model selector of
+// P34c's session, opened and closed with Alt+P, and its cursor moved down
+// and up through the expanded list, each key timed to its frame, at
+// 120x40 and at the acc tab's 208x59.
+func TestSelectorToFrame(t *testing.T) {
+	h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-models.jsonl")}})
+	h.settle()
+	for _, size := range []tea.WindowSizeMsg{{Width: 120, Height: 40}, {Width: 208, Height: 59}} {
+		h.send(size)
+		toggle := key('p', tea.ModAlt)
+		for i := 0; i < warmUp; i++ {
+			frameTime(h, toggle)
+		}
+		var open []time.Duration
+		for i := 0; i < 400; i++ {
+			open = append(open, frameTime(h, toggle))
+		}
+		if !h.m.ui.Models.Open {
+			h.send(toggle)
+		}
+		h.send(key(tea.KeyDown, 0))
+		h.send(key(tea.KeyDown, 0))
+		h.send(key(tea.KeyDown, 0))
+		h.send(key(tea.KeyEnter, 0)) // More models expanded
+		if !h.m.ui.Models.More {
+			t.Fatalf("%dx%d: More models not expanded", size.Width, size.Height)
+		}
+		var move []time.Duration
+		for i := 0; i < warmUp+400; i++ {
+			k := key(tea.KeyDown, 0)
+			if i/12%2 == 1 {
+				k = key(tea.KeyUp, 0)
+			}
+			if d := frameTime(h, k); i >= warmUp {
+				move = append(move, d)
+			}
+		}
+		h.send(key(tea.KeyEsc, 0))
+		for _, m := range []struct {
+			what string
+			ds   []time.Duration
+		}{{"Alt+P", open}, {"↑↓ in the expanded list", move}} {
+			p50, p95, worst := percentile(m.ds, 0.50), percentile(m.ds, 0.95), percentile(m.ds, 1)
+			t.Logf("model selector, %s at %dx%d, %d keys after %d warm-up: p50 %v, p95 %v, max %v (target p95 ≤ %v)",
+				m.what, size.Width, size.Height, len(m.ds), warmUp, p50, p95, worst, keystrokeTarget)
+			if p95 > keystrokeTarget {
+				overTarget(t, "%s at %dx%d: p95 %v over the %v target", m.what, size.Width, size.Height, p95, keystrokeTarget)
+			}
+		}
 	}
 }
 

@@ -68,6 +68,9 @@ type Screen struct {
 	ARows map[int]string
 	// fileLines are the file the viewer shows, for its selection (panel F).
 	fileLines []string
+	// Selector is what the frame showed of the model selector's list (plan
+	// 34), zero when it is closed.
+	Selector SelectorShown
 }
 
 // PaneView is what a pane of zone A or C showed (plan 5, item 5).
@@ -119,6 +122,10 @@ func Draw(s *state.State, ui UI) *Screen {
 	if s.Screen == state.ScreenDashboard && ui.Plus && !WindowOpen(ui) && !ui.DraftWin.Open && !ui.Keys && !ui.Worktrees.Open &&
 		ui.Width >= MinWidth && ui.Height >= MinHeight {
 		plusMenu(sc, ui) // the "+" menu over zone B (plan 30)
+	}
+	if s.Screen == state.ScreenDashboard && ui.Models.Open && !ui.Plus && !WindowOpen(ui) && !ui.DraftWin.Open && !ui.Keys && !ui.Worktrees.Open &&
+		ui.Width >= MinWidth && ui.Height >= MinHeight {
+		modelSelector(sc, s, ui) // the model selector over zone B (plan 34)
 	}
 	if s.Screen == state.ScreenDashboard && WindowOpen(ui) && !ui.Keys && !ui.Worktrees.Open &&
 		ui.Width >= MinWidth && ui.Height >= MinHeight {

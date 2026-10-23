@@ -21,7 +21,7 @@
 │ ✦ TELEMETRY        Enter details ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
 │ ▾ SESSION USAGE                  ││ ▎                                                                                │
 │   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
-│   Tokens 31.5k session total     ││ ▎ │ ◡ Connecting dots...                                                00:12 │  │
+│   Tokens 31.5k session total     ││ ▎ │ ◡ Smoothing...                                                      00:12 │  │
 │   Est. cost $0.00 API-equiv.     ││ ▎ │                                                                           │  │
 │                                  ││ ▎ │ ≈ 2,450 thinking tokens · live estimate                                   │  │
 │ ▾ QUOTA WINDOWS                  ││ ▎ │                                                                           │  │
@@ -31,7 +31,7 @@
 │                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
 │   Weekly (7 day)            50%† ││ >  Claude Code is processing your request…                                       │
 │   ███████████████░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 9d 5h                ││   turn running: the draft waits · Ctrl+C interrupt                               │
+│   Resets in 9d 5h                ││   +     Haiku 5.5    turn running: the draft waits · Ctrl+C interrupt    ↯ Auto  │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │

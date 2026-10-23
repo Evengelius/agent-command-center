@@ -714,3 +714,56 @@ generated with 0.145.0.
 - **Not verified:** a resume (the 0.145.0 README says the usage is
   replayed; no recording has one); the schema of 0.163.0 (the 0.163.0 README
   names neither token usage nor reasoning).
+
+## 13. Models and reasoning effort (plan 34, 2026-10-23)
+
+Codex CLI 0.163.0; the app-server schema the installed CLI generates
+(`codex app-server generate-json-schema --out`, with and without
+`--experimental`); `openai/codex` at `rust-v0.163.0`
+(`codex-rs/app-server/README.md`,
+`codex-rs/app-server/src/request_processors/turn_processor.rs`,
+`codex-rs/app-server/src/bespoke_event_handling.rs`,
+`codex-rs/tui/src/app_server_session.rs`); probe P34x, which starts no
+turn (`probes/README.md`).
+
+- **`model/list`** (stable) takes `cursor`, `limit` and `includeHidden`
+  ("include models that are hidden from the default picker list") and
+  answers `data` and `nextCursor` ("If None, there are no more items to
+  return"). Each `Model`: `id`, `model`, `displayName`, `description`,
+  `hidden`, `isDefault`, `supportedReasoningEfforts`
+  [{`reasoningEffort`, `description`}], `defaultReasoningEffort`,
+  `inputModalities`, `serviceTiers`, `upgrade`, `upgradeInfo`,
+  `availabilityNux`, `availableAccessPrograms`, `multiAgentVersion`.
+  P34x, `limit` 1: seven pages, `nextCursor` "1" to "6", then null; the
+  default page holds the same 7 models (`gpt-6.1-sol` default,
+  `gpt-6-astra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`,
+  `gpt-5.6-terra`, `gpt-5.6-luna`), `includeHidden` 10 (`gpt-6-chat-
+  thinking`, "for the paid CCA experiment", `gpt-reserve` and
+  `codex-auto-review`). Low to max on all seven, "ultra" ("Maximum
+  reasoning with automatic task delegation", P6m) on five; defaults "low"
+  or "medium". No field marks an older model (`upgrade` null on all). The
+  catalogue changed since P6m (2026-10-15: three `gpt-5.6` models). The
+  TUI asks with `includeHidden: true` and no cursor.
+- **The model in force.** `thread/start` without a model took the
+  configured `gpt-6-sol` with `reasoningEffort` "high" (P34x), not the
+  catalogue's default; `thread/read` (stable) answers `thread.model` and
+  `thread.reasoningEffort`, "Current configured model when loaded".
+- **Changing it.** `turn/start` takes `model` and `effort`: "Override the
+  model for this turn and subsequent turns" (stable; the server previews
+  the overrides and refuses an invalid one, "invalid thread settings
+  override"). `thread/settings/update` (only in the `--experimental`
+  schema) sets `model` and `effort` "for subsequent turns" and "only
+  acknowledges that the update was queued"; `thread/settings/updated`
+  follows when the settings changed (`ThreadSettingsApplied`). The TUI
+  sends it "every time the user changes model, effort, or mode", falling
+  back when a server lacks it. P34x: without the opt-in it is refused,
+  `-32600` "thread/settings/update requires experimentalApi capability";
+  with `capabilities.experimentalApi`, `{}` at once, then
+  `thread/settings/updated` with the model and effort, which `thread/read`
+  shows; an unknown model (`gpt-not-a-model-34`) and an unknown effort
+  ("extreme") were taken the same way. No `thread/settings/updated`
+  reached the stable client of P12x-switch after a `turn/start` that
+  changed the reviewer.
+- **Not verified:** a turn with a changed model or effort (P34x starts no
+  turn); what the experimental opt-in changes for the rest of a session
+  (approvals, items), which the dashboard therefore does not ask for.

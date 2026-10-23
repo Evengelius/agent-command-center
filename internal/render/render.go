@@ -66,6 +66,9 @@ type UI struct {
 	// PlusHover says the pointer is over its item (plan 30, the owner's
 	// image; ui-design.md, Input editor).
 	Plus, PlusHover bool
+	// Models is the model selector the pill opens (plan 34, the owner's
+	// image; reference-design.md, The model selector).
+	Models ModelsView
 	// Sixel says the terminal draws Sixel images, by its answer to the
 	// device attributes request: the attached images then show as
 	// thumbnails above their chips (plan 32, design D4).

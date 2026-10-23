@@ -14,7 +14,7 @@
 │ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for up to 3.1s · 83 reasoning tokens         02:00:06  inferred   │
 │ ✦ TELEMETRY        Enter details ││ ▎                                                                                │
 │ ▾ SESSION USAGE                  ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
-│   Context 6% of 258.4k █░░░░░░░░ ││ ▎ │ ◜ Pondering...                                                      00:00 │  │
+│   Context 6% of 258.4k █░░░░░░░░ ││ ▎ │ ◜ Untangling...                                                     00:00 │  │
 │   Tokens 15.1k session total     ││ ▎ │                                                                           │  │
 │   Est. cost N/A Codex reports n… ││ ▎ │                                                                           │  │
 │ ▾ QUOTA WINDOWS                  ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │

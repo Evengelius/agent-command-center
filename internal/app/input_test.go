@@ -68,6 +68,11 @@ func (f *fakeClaude) Spawn(sp proc.Spec) (proc.Process, error) {
 				out = `{"type":"system","subtype":"init","cwd":` + string(cwd) + `,"session_id":"s-input","model":"claude-haiku-5-5","permissionMode":"default"}` + "\n" +
 					`{"type":"result","subtype":"success","is_error":false,"duration_ms":1,"result":"ok","session_id":"s-input"}` + "\n"
 			}
+			if out == "" {
+				// Nothing to answer (the settings read of plan 34): an empty
+				// write on the pipe would block until the adapter reads.
+				continue
+			}
 			if _, err := io.WriteString(outW, out); err != nil {
 				return
 			}

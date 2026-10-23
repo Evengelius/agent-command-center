@@ -63,6 +63,13 @@ type Session struct {
 	closed bool
 	seq    uint64
 	now    func() time.Time
+	// What the replay showed (plan 34): the CLI its events came from, the
+	// models listed and the settings in force, which SetModelSettings
+	// answers from.
+	cli      string
+	models   []event.ModelEntry
+	settings event.Settings
+	next     provider.ModelRequest // a Codex file's change, until the next message
 }
 
 func (s *Session) replay(evs []Timed, speed float64) {
@@ -107,9 +114,34 @@ func (s *Session) emitLocked(ev event.Event) bool {
 	ev.Seq, ev.At, ev.Origin = s.seq, s.now(), event.Mock
 	if ev.Provider == "" {
 		ev.Provider = ProviderID
+	} else if s.cli == "" && ev.Provider != ProviderID {
+		s.cli = ev.Provider
+	}
+	switch p := ev.Payload.(type) {
+	case event.Models:
+		s.models = p.Entries
+	case event.Settings:
+		if !p.Refused {
+			s.settings = merged(s.settings, p)
+		}
 	}
 	s.ch <- ev
 	return true
+}
+
+// merged is the settings in force after a report: the fields it gives
+// replace the earlier ones.
+func merged(cur, p event.Settings) event.Settings {
+	if p.Model != "" {
+		cur.Model, cur.Choice = p.Model, p.Choice
+	}
+	if p.EffortKnown {
+		cur.Effort, cur.EffortKnown, cur.EffortLock = p.Effort, true, p.EffortLock
+	}
+	if p.UltracodeKnown {
+		cur.Ultracode, cur.UltracodeAvailable, cur.UltracodeKnown = p.Ultracode, p.UltracodeAvailable, true
+	}
+	return cur
 }
 
 // Events are the replayed events, then the ones Send and Answer add.
@@ -128,6 +160,13 @@ func (s *Session) Send(msg provider.Message) error {
 		s.emit(event.Event{Kind: event.TurnCompleted, Payload: event.TurnEnd{Outcome: "completed", Subtype: "mock"}})
 	if !ok {
 		return errors.New("the mock session is closed")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if next := s.next; next != (provider.ModelRequest{}) {
+		// A Codex file's change goes with the message (plan 34).
+		s.next = provider.ModelRequest{}
+		return s.applyLocked(next)
 	}
 	return nil
 }
@@ -158,6 +197,74 @@ func (s *Session) SetApprovalMode(bool) error {
 	return errors.New("the mock session has no approval mode")
 }
 
+// SetModelSettings answers a change as the replayed CLI would, with no CLI
+// (plan 34): a Claude Code file's at once, a Codex file's with the next
+// message (Send). The settings asked for are reported in force, from the
+// last ones the file or an earlier change gave. Every event it adds has
+// origin mock.
+func (s *Session) SetModelSettings(r provider.ModelRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cli == "codex" {
+		if r.Model != "" {
+			s.next.Model = r.Model
+		}
+		if r.Effort != "" {
+			s.next.Effort = r.Effort
+		}
+		return nil
+	}
+	return s.applyLocked(r)
+}
+
+// applyLocked reports the settings a change gives as in force.
+func (s *Session) applyLocked(r provider.ModelRequest) error {
+	cur := s.settings
+	if r.Model != "" {
+		cur.Model, cur.Choice = r.Model, r.Model
+		for _, e := range s.models {
+			if e.ID == r.Model {
+				cur.Model = e.Model
+				if len(e.Efforts) == 0 {
+					cur.Effort = ""
+				}
+			}
+		}
+		cur.UltracodeAvailable = cur.UltracodeKnown && s.ultracodeOn(cur.Model)
+		if !cur.UltracodeAvailable {
+			cur.Ultracode = false
+		}
+	}
+	if r.Effort != "" {
+		cur.Effort, cur.EffortKnown = r.Effort, true
+	}
+	if r.Ultracode != nil && cur.UltracodeAvailable {
+		cur.Ultracode = *r.Ultracode
+	}
+	cur.Source, cur.Undocumented, cur.Answers, cur.Refused, cur.Text = "mock", false, true, false, ""
+	if !s.emitLocked(event.Event{Kind: event.ModelSettings, Payload: cur}) {
+		return errors.New("the mock session is closed")
+	}
+	s.settings = cur
+	return nil
+}
+
+// ultracodeOn says the model takes Ultracode in the mock: as Claude Code, a
+// model whose levels include "xhigh" (model-config, "When ultracode is
+// available").
+func (s *Session) ultracodeOn(model string) bool {
+	for _, e := range s.models {
+		if e.Model == model {
+			for _, l := range e.Efforts {
+				if l == "xhigh" {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // Refresh has nothing to read.
 func (s *Session) Refresh() error { return nil }
 
@@ -166,7 +273,13 @@ func (s *Session) Refresh() error { return nil }
 // with Claude Code's limits, the stricter, so the editor's attachments can
 // be shown and sent nowhere (plan 31).
 func (s *Session) Capabilities() provider.Capabilities {
-	return provider.Capabilities{Images: provider.ImageLimits{MaxCount: 100, MaxBytes: 7_400_000, MaxTotal: 7_400_000, MaxSide: 8000}}
+	s.mu.Lock()
+	cli := s.cli
+	s.mu.Unlock()
+	// The models are offered as the replayed CLI offers them (plan 34): a
+	// change answered at once, Ultracode for Claude Code's files only.
+	return provider.Capabilities{Images: provider.ImageLimits{MaxCount: 100, MaxBytes: 7_400_000, MaxTotal: 7_400_000, MaxSide: 8000},
+		Models: true, ModelsNextTurn: cli == "codex", Ultracode: cli == "claude-code"}
 }
 
 // Close stops the replay and ends the session with session.ended, the last

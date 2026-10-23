@@ -179,6 +179,9 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 		// what the status line said; the idle hint goes, the keys being the
 		// footer's and the key page's.
 		var middle []string
+		if p := s.PendingLabel(); p != "" {
+			middle = append(middle, p) // Codex's change for the next turn (plan 34, design D4)
+		}
 		if v.Total > 1 {
 			middle = append(middle, lineCount(v))
 		}
@@ -194,22 +197,17 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 }
 
 // inputRow is the row under the draft (plan 29, design D1): a margin
-// cell, " + " on the ground, three cells, the pill " <model> High ·
-// Ultracode " on the ground, the middle text in grey three cells after it,
-// and "↯ Auto " at the right end. The "+", the pill and "Auto" are the
-// owner's placeholders for a file to add, the model and the effort
-// selections, with no function yet (design D2); the pill names the
-// session's model as zone B's speaker does, "High · Ultracode" are its
-// placeholders. A middle text that does not fit beside the pills has the
-// row alone, as the status line had. The band is panel '+', so a click on
-// it opens the menu; while the menu is open (plan 30, design D2) it lies
-// on the active ground with the "+" in the lavender-white.
+// cell, " + " on the ground, three cells, the model pill on the ground,
+// the middle text in grey three cells after it, and "↯ Auto " at the right
+// end. The pill shows the model, the effort and Ultracode in force (plan
+// 34, design D7) and opens the model selector, its cells panel M; "Auto"
+// stays the owner's placeholder (plan 29, design D2). A middle text that
+// does not fit beside the pills, three cells on either side, has the row
+// alone, as the status line had. The band is panel '+', so a click on it
+// opens the menu; while the menu is open (plan 30, design D2) it lies on
+// the active ground with the "+" in the lavender-white.
 func inputRow(s *state.State, middle string, w int, open bool) line {
-	model := "model N/A"
-	if m := s.Session.Model; m != "" {
-		model = modelName(m)
-	}
-	pill := line{deco(" "+model+" High", stText), deco(" · ", stMdBullet), deco("Ultracode ", stYou)}
+	pill := modelPill(s)
 	left := line{deco(" ", stNone)}
 	band := span{text: " + ", st: stText, ref: ref{panel: '+', kind: refDeco}}
 	if open {
@@ -222,7 +220,9 @@ func inputRow(s *state.State, middle string, w int, open bool) line {
 	left = append(left, grounded(pill, pill.width())...)
 	right := line{deco("↯ Auto ", stText)}
 	if middle != "" {
-		if left.width()+3+textWidth(middle)+right.width() > w {
+		// Three cells before "↯ Auto" too, as after the pill: a middle that
+		// would touch it has the row alone (plan 34's review).
+		if left.width()+3+textWidth(middle)+3+right.width() > w {
 			return plain("  "+middle, stGrey)
 		}
 		left = append(left, deco("   ", stNone), sp(middle, stGrey))

@@ -958,3 +958,82 @@ over the same recordings; the documentation read on 2026-10-21.
 - **Not verified:** Sonnet (every recording but P22o runs Haiku, and P22o
   runs Opus); a resume of a session that thought, with partial messages; a
   subagent thinking while the orchestrator thinks.
+
+## 13. Models, effort and Ultracode (plan 34, 2026-10-23)
+
+Claude Code 2.1.303; the Agent SDK reference (`agent-sdk/typescript`,
+`ModelInfo`, `setModel`, `applyFlagSettings`), `model-config` ("Adjust
+effort level", "Organization effort limits", "Restrict model selection")
+and `workflows` ("Let Claude decide with ultracode", "Turn workflows
+off"), read 2026-10-23; the CLI's own schema strings; probes P34c, P34c2
+and P34c3, which send no message (`probes/README.md`).
+
+- **The catalogue** is the `initialize` response's `models`, documented as
+  `ModelInfo` {`value`, `resolvedModel`, `displayName`, `description`,
+  `supportsEffort`, `supportedEffortLevels`, `supportsAdaptiveThinking`,
+  `supportsFastMode`, `supportsAutoMode`} (also returned by the SDK's
+  `supportedModels()`). P34c: 13 entries on the owner's Max account, the
+  aliases first (`default`, `opus`, `fable`, `sonnet`, `haiku`, whose
+  `value` differs from `resolvedModel`), then eight full ids; Opus 4.6
+  and Sonnet 4.6 take low, medium, high and max, Haiku 4.5 no level, the
+  others low to max. The descriptions differ from P303a's (another
+  account): they are the CLI's to give. The CLI hides from its picker what
+  `availableModels` or organisation restrictions exclude (`model-config`).
+- **`set_model {model}`** (documented `setModel`; the CLI's schema:
+  "Omitted, null, or 'default' resets to the session default model")
+  changes the session's model at once: answered in 3 to 1,530 ms (P34c,
+  the longest for `claude-opus-4-6`); "Model 'claude-not-a-model-34' not
+  found" as an error. It writes no settings file (P34c, the configuration
+  check: settings.json identical). `default` returns to the account's
+  default (Opus 5.5), not to the `model` of the owner's settings
+  (`fable`), as the SDK reference says.
+- **`apply_flag_settings {settings}`** (documented `applyFlagSettings`)
+  writes the session's flag layer only: `effortLevel` and `ultracode`
+  "applied on the next turn", `model` at once. It answers success without
+  checking a value: `effortLevel: "extreme"` was taken and dropped (P34c).
+  `update_settings` is the request that writes files, never sent.
+- **`get_settings`** (in the CLI's schema: "Returns the effective merged
+  settings and the raw per-source settings"; absent from the
+  documentation, so undocumented) answers `effective`, `sources` and
+  `applied` {`model`, `effort`, `advisor`, `ultracode`,
+  `ultracodeRequested`, `ultracodeAvailable`}: "Runtime-resolved values
+  after env overrides, session state, and model-specific defaults ...
+  what will actually be sent to the API"; `ultracodeAvailable`: "Whether
+  ultracode can be turned on for the session: dynamic workflows are
+  enabled and the model supports it. Hosts should offer an Ultracode
+  control only while this is true." Answered in 6 to 50 ms, no model call.
+  `effective` and `sources` carry the whole of the owner's settings,
+  `env` included: the dashboard keeps `applied`, the `model` of
+  `effective` and one variable of its `env`, nothing else.
+- **Effort in force.** `CLAUDE_CODE_EFFORT_LEVEL` outranks every other
+  effort setting (`model-config`). The owner's user settings set it in
+  their `env` block, and `applied.effort` read "max" before and after
+  every change (P34c, the session's own variables dropped). Set to "auto"
+  for one process with `--settings`, `applied.effort` read null whatever
+  was asked (P34c2); emptied, each level applied: Fable 5.1 started at the
+  "xhigh" of its `modelSettings`, "low", "max", "high", "medium" followed
+  the requests, Opus 4.6 ran "xhigh" as "high", Haiku 5.5 took "xhigh",
+  and `effortLevel: null` gave Haiku 5.5's default, "medium" (P34c3).
+- **Ultracode.** "A Claude Code setting rather than a model effort level"
+  that plans a dynamic workflow for each substantive task, set per session
+  with the `ultracode` key (`--settings` or `apply_flag_settings`), on or
+  off without changing the effort since 2.1.284; `--effort ultracode`
+  also sets "xhigh". Unavailable when workflows are off (`disableWorkflows`,
+  `CLAUDE_CODE_DISABLE_WORKFLOWS`, the organisation's policy, or
+  `enableWorkflows: false`; on Pro they start off) or when the model has no
+  "xhigh" (`workflows`, `model-config`). The owner's settings have
+  `enableWorkflows: true` and `ultracode: true`: P34c started with
+  `applied.ultracode` true and available. Observed against the
+  documentation: an `apply_flag_settings` with `effortLevel` alone turned
+  Ultracode off, each time without the variable (P34c3, "low" and
+  "medium") and from the second change on with it (P34c's "max", P34c2's
+  "max" and "medium"; the first, "low", left it on);
+  `{effortLevel: "high", ultracode: true}` kept it on; `ultracode` alone
+  never changed the effort; Opus 4.6 read `ultracodeAvailable` false.
+  `ultracode: null` turns it off, as `false` does, whatever the settings
+  file says.
+- **Not verified:** an organisation's effort cap (`maxEffortLevel`) or
+  model allowlist on these accounts; whether `supportedEffortLevels` leaves
+  out levels above a cap; a turn after a change (the probes send no
+  message: the documentation says the effort and Ultracode apply from the
+  next turn, the model at once).

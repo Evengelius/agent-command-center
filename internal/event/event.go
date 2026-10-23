@@ -42,6 +42,8 @@ const (
 	Error            Kind = "error"
 	StatusChanged    Kind = "status.changed"
 	ApprovalMode     Kind = "approvals.mode"    // the approval mode in force (plan 12, item 2)
+	ModelsListed     Kind = "models.listed"     // the models the CLI offers the session (plan 34)
+	ModelSettings    Kind = "models.settings"   // the model, effort and Ultracode in force, or a change's answer (plan 34)
 	ToolDecision     Kind = "tool.decision"     // who decided a tool call's permission (plan 12, item 2; undocumented for Claude Code)
 	ReviewUpdated    Kind = "approvals.review"  // an auto-review's progress or verdict ([UNSTABLE] in Codex)
 	ReviewWarning    Kind = "approvals.warning" // Codex's guardianWarning: kept in the event log only
@@ -301,10 +303,13 @@ type PlanStep struct {
 	Status string
 }
 
-// Problem is the payload of Error and Retry.
+// Problem is the payload of Error and Retry. TurnRefused marks the CLI's
+// refusal of the owner's message: no turn started, so it goes back to the
+// editor (plan 34).
 type Problem struct {
-	Message   string
-	WillRetry bool
+	Message     string
+	WillRetry   bool
+	TurnRefused bool `json:",omitempty"`
 }
 
 // The approval modes the adapters name (plan 12, item 2); any other word of a
@@ -327,6 +332,62 @@ type Mode struct {
 	// Sandbox is the sandbox that comes with the mode, when the dashboard
 	// names one per turn (Codex, plan 12 addendum); empty leaves it as is.
 	Sandbox string `json:",omitempty"`
+}
+
+// Models is the payload of ModelsListed (plan 34): the models the CLI offers
+// the session, in its order, and the request they come from; Problem says
+// why the list is cut short or missing, in the CLI's words.
+type Models struct {
+	Entries []ModelEntry
+	Source  string // "initialize" (Claude Code) or "model/list" (Codex)
+	Problem string `json:",omitempty"`
+}
+
+// ModelEntry is one model the CLI offers: what selects it (Claude Code's
+// value, Codex's id), the model it runs (Claude Code's resolvedModel,
+// Codex's model), its name and description as the CLI gives them, its
+// effort levels in the CLI's order (none when it takes none), the level the
+// CLI names its default and whether the CLI marks it the default model
+// (both Codex's only).
+type ModelEntry struct {
+	ID            string
+	Model         string
+	Name          string
+	Description   string
+	Efforts       []string `json:",omitempty"`
+	DefaultEffort string   `json:",omitempty"`
+	Default       bool     `json:",omitempty"`
+}
+
+// Settings is the payload of ModelSettings (plan 34): the model settings the
+// CLI reports in force, each as far as the read gives it, or the answer to a
+// change the dashboard asked for.
+type Settings struct {
+	// Model is the model id in force; Choice the ModelEntry.ID that selects
+	// it, "" when no entry does or the read cannot tell.
+	Model  string `json:",omitempty"`
+	Choice string `json:",omitempty"`
+	// Effort is the level in force when EffortKnown; "" then means the CLI
+	// sends none. EffortLock names what sets it outside the dashboard (the
+	// CLAUDE_CODE_EFFORT_LEVEL variable), which the dashboard does not change.
+	Effort      string `json:",omitempty"`
+	EffortKnown bool   `json:",omitempty"`
+	EffortLock  string `json:",omitempty"`
+	// Ultracode in force and whether it can be turned on, when
+	// UltracodeKnown (Claude Code only).
+	Ultracode          bool `json:",omitempty"`
+	UltracodeAvailable bool `json:",omitempty"`
+	UltracodeKnown     bool `json:",omitempty"`
+	// Source is the read the values come from; Undocumented marks one the
+	// CLI's documentation does not list (Claude Code's get_settings).
+	Source       string `json:",omitempty"`
+	Undocumented bool   `json:",omitempty"`
+	// Answers marks the answer to a change asked for: the request is settled
+	// whatever it gives. Refused marks a refusal, its Text for zone B; the
+	// settings in force are unchanged.
+	Answers bool   `json:",omitempty"`
+	Refused bool   `json:",omitempty"`
+	Text    string `json:",omitempty"`
 }
 
 // Verdict is the payload of ToolDecision: the permission decision the CLI

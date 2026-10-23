@@ -177,6 +177,14 @@ func (s *State) Do(a Action) []Command {
 		return s.answer(a)
 	case ToggleApprovals:
 		return s.toggleApprovals(a)
+	case ChooseModel:
+		return s.chooseModel(a)
+	case ChooseEffort:
+		return s.chooseEffort(a)
+	case ChooseUltracode:
+		return s.chooseUltracode(a)
+	case ModelsFailed:
+		s.modelsFailed(a)
 	case ApprovalFailed:
 		s.Session.ApprovalRequested = ""
 		s.Turn.Notice = "approvals not changed: " + a.Message

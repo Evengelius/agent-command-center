@@ -90,6 +90,7 @@ type Session struct {
 	from      string                // the refused model, until the new thread starts
 	fallback  bool                  // the fallback is due once the line's events are queued
 	dir       string                // the project directory, the cwd of config/read
+	change    provider.ModelRequest // the model and effort the next turn/start carries (plan 34)
 
 	wmu      sync.Mutex // one write at a time
 	inClosed atomic.Bool
@@ -308,6 +309,10 @@ func (s *Session) react(l []byte, evs []event.Event) func() {
 				if err := s.request("config/read", map[string]any{"cwd": s.dir, "includeLayers": false}); err != nil {
 					s.problem("config/read not sent: " + err.Error())
 				}
+				// The session's models, every page (plan 34, P34x).
+				if err := s.request("model/list", map[string]any{}); err != nil {
+					s.problem("model/list not sent: " + err.Error())
+				}
 				s.startThread()
 			}
 		case "thread/start", "thread/resume":
@@ -326,7 +331,20 @@ func (s *Session) react(l []byte, evs []event.Event) func() {
 				}
 			}
 		case "model/list":
-			model := defaultModel(w.Result)
+			if cursor := s.m.NextPage(); cursor != "" {
+				// The next page (plan 34): the mapper keeps the list and stops
+				// a cursor that repeats.
+				next = func() {
+					if err := s.request("model/list", map[string]any{"cursor": cursor}); err != nil {
+						s.problem("model/list not sent: " + err.Error())
+					}
+				}
+				break
+			}
+			if s.from == "" {
+				break // the session's models: no refused model waits for the list
+			}
+			model := s.m.DefaultModel()
 			if model == "" {
 				from := s.from
 				s.from = ""
@@ -338,6 +356,26 @@ func (s *Session) react(l []byte, evs []event.Event) func() {
 			s.pin = model
 			s.prov.setFallbackModel(model)
 			next = s.startThread
+		}
+	}
+	if s.m.TakeReadDue() {
+		// A turn took a model or effort change, or was rerouted: thread/read
+		// says what the thread is configured with now (plan 34).
+		read := func() {
+			s.mu.Lock()
+			thread := s.thread
+			s.mu.Unlock()
+			if thread == "" {
+				return
+			}
+			if err := s.request("thread/read", map[string]any{"threadId": thread}); err != nil {
+				s.problem("thread/read not sent: " + err.Error())
+			}
+		}
+		if prev := next; prev != nil {
+			next = func() { prev(); read() }
+		} else {
+			next = read
 		}
 	}
 	if s.fallback {
@@ -358,27 +396,6 @@ func (s *Session) react(l []byte, evs []event.Event) func() {
 
 func approvalMethod(m string) bool {
 	return m == "item/commandExecution/requestApproval" || m == "item/fileChange/requestApproval"
-}
-
-// defaultModel is the model model/list marks as default and does not hide.
-func defaultModel(result json.RawMessage) string {
-	var r struct {
-		Data []struct {
-			ID        string `json:"id"`
-			Model     string `json:"model"`
-			Hidden    bool   `json:"hidden"`
-			IsDefault bool   `json:"isDefault"`
-		} `json:"data"`
-	}
-	if json.Unmarshal(result, &r) != nil {
-		return ""
-	}
-	for _, d := range r.Data {
-		if d.IsDefault && !d.Hidden {
-			return first(d.Model, d.ID)
-		}
-	}
-	return ""
 }
 
 // startThread starts the main thread, or resumes the one the session context
@@ -514,9 +531,11 @@ var imageLimits = provider.ImageLimits{MaxCount: 100, MaxBytes: 20_000_000, MaxT
 // (UserInput, the app-server v2 schema; plan 31).
 func (s *Session) Send(msg provider.Message) error {
 	s.mu.Lock()
-	thread, reviewer := s.thread, s.reviewerLocked()
+	thread, reviewer, change := s.thread, s.reviewerLocked(), s.change
+	s.change = provider.ModelRequest{}
 	s.mu.Unlock()
 	if thread == "" {
+		s.keepChange(change)
 		return errors.New("no Codex thread to send to yet")
 	}
 	input := make([]map[string]string, 0, len(msg.Images)+1)
@@ -526,9 +545,50 @@ func (s *Session) Send(msg provider.Message) error {
 	if msg.Text != "" || len(msg.Images) == 0 {
 		input = append(input, map[string]string{"type": "text", "text": msg.Text})
 	}
-	return s.request("turn/start", map[string]any{"threadId": thread,
+	params := map[string]any{"threadId": thread,
 		"input": input, "approvalsReviewer": reviewer,
-		"sandboxPolicy": map[string]string{"type": turnSandbox[reviewer]}, "summary": turnSummary})
+		"sandboxPolicy": map[string]string{"type": turnSandbox[reviewer]}, "summary": turnSummary}
+	// A model or effort change asked for since the last turn goes with this
+	// one, "for this turn and subsequent turns" (plan 34).
+	if change.Model != "" {
+		params["model"] = change.Model
+	}
+	if change.Effort != "" {
+		params["effort"] = change.Effort
+	}
+	err := s.request("turn/start", params)
+	if err != nil {
+		s.keepChange(change)
+	}
+	return err
+}
+
+// keepChange puts back a change a turn/start did not carry, unless another
+// was asked for since.
+func (s *Session) keepChange(c provider.ModelRequest) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.change == (provider.ModelRequest{}) {
+		s.change = c
+	}
+}
+
+// SetModelSettings writes nothing: the model and effort go with the next
+// turn/start, which is when Codex takes them (plan 34; doc/research/
+// codex-cli.md, section 13). Codex has no Ultracode.
+func (s *Session) SetModelSettings(r provider.ModelRequest) error {
+	if r.Ultracode != nil {
+		return errors.New("Codex has no Ultracode")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if r.Model != "" {
+		s.change.Model = r.Model
+	}
+	if r.Effort != "" {
+		s.change.Effort = r.Effort
+	}
+	return nil
 }
 
 // Answer answers a pending approval with one of Codex's decisions, echoing
@@ -567,7 +627,8 @@ func (s *Session) Refresh() error { return s.request("account/rateLimits/read", 
 // is decided per request by the mapper: offered unless the request's
 // availableDecisions omits acceptForSession (plan 5, item 8; plan 8).
 func (s *Session) Capabilities() provider.Capabilities {
-	return provider.Capabilities{SubagentText: true, QuotaWithoutTurn: true, AutoApprovals: true, Images: imageLimits}
+	return provider.Capabilities{SubagentText: true, QuotaWithoutTurn: true, AutoApprovals: true, Images: imageLimits,
+		Models: true, ModelsNextTurn: true}
 }
 
 // Close closes stdin, then terminates the CLI, then kills its tree, each

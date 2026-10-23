@@ -66,7 +66,7 @@ func TestUsageReads(t *testing.T) {
 				t.Errorf("zone A lacks %q before any turn:\n%s", want, f)
 			}
 		}
-		if got, want := stdinKinds(w), []string{"control_request/initialize", "usage"}; strings.Join(got, " ") != strings.Join(want, " ") {
+		if got, want := stdinKinds(w), []string{"control_request/initialize", "control_request/get_settings", "usage"}; strings.Join(got, " ") != strings.Join(want, " ") {
 			t.Errorf("written at startup: %q, want %q", got, want)
 		}
 		// A turn: its end asks for the context usage and the report again,
@@ -80,7 +80,9 @@ func TestUsageReads(t *testing.T) {
 		h.send(tea.PasteMsg{Content: "again"})
 		h.send(key(tea.KeyEnter, 0))
 		h.settle()
-		want := []string{"control_request/initialize", "usage", "user", "control_request/get_context_usage", "usage", "user"}
+		// The settings reads of plan 34: after the handshake and with the
+		// context usage.
+		want := []string{"control_request/initialize", "control_request/get_settings", "usage", "user", "control_request/get_context_usage", "control_request/get_settings", "usage", "user"}
 		if got := stdinKinds(w); strings.Join(got, " ") != strings.Join(want, " ") {
 			t.Errorf("written: %q, want %q", got, want)
 		}

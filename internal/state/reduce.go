@@ -189,6 +189,17 @@ func (s *State) apply(ev event.Event) []Command {
 			return s.crash(ev, "handshake failed: "+p.Message, true)
 		}
 		s.Errors = appendBounded(s.Errors, ErrorEntry{Seq: ev.Seq, At: ev.At, Agent: ev.Agent, Message: p.Message, Retry: ev.Kind == event.Retry}, MaxErrors)
+		if p.TurnRefused && s.Turn.Phase == Submitted {
+			// The CLI refused the message: no turn started, and it goes back
+			// to the editor, as after a failed write (plan 34). Zone B says so
+			// under the owner's entry, which the write had added.
+			s.Turn.Phase, s.Turn.Outcome, s.Turn.Notice = Idle, "failed", "the message could not be sent: "+p.Message
+			s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "notice", Text: "the message was not sent: " + p.Message + "; it is back in the editor",
+				Origin: ev.Origin, At: ev.At, Stage: s.stage()})
+			if s.Turn.pending() {
+				return []Command{s.restoreDraft()}
+			}
+		}
 		if ev.Kind == event.Retry {
 			s.Retries++
 			if a := s.Agents[ev.Agent]; a != nil {
@@ -201,6 +212,12 @@ func (s *State) apply(ev event.Event) []Command {
 		return nil
 	case event.Mode:
 		s.approvalMode(ev, p)
+		return nil
+	case event.Models:
+		s.models(p)
+		return nil
+	case event.Settings:
+		s.modelSettings(ev, p)
 		return nil
 	case event.Verdict:
 		s.verdict(ev, p)
@@ -224,6 +241,9 @@ func (s *State) spawned() []Command {
 	if s.Session.Phase == "" || s.Session.Phase == Spawning {
 		s.Session.Phase = Handshaking
 		s.Screen = ScreenDashboard
+		// A new process lists its models and reports its settings itself
+		// (plan 34, design D10): nothing of an earlier one is shown.
+		s.Models = Models{}
 	}
 	return nil
 }
@@ -286,6 +306,7 @@ func (s *State) ended(ev event.Event, p event.Ended) []Command {
 			// editor, so the draft saved on the way out keeps it (ASM-23).
 			cmds = append(cmds, s.restoreDraft())
 		}
+		s.dropModelChange(ev)
 		// Closed by the owner: what runs is interrupted, not failed (plan 22,
 		// criterion 1.6).
 		s.endAll(ev, "interrupted")
@@ -314,6 +335,7 @@ func (s *State) crash(ev event.Event, reason string, close bool) []Command {
 		// as after a failed write (ASM-23).
 		cmds = append(cmds, s.restoreDraft())
 	}
+	s.dropModelChange(ev)
 	if s.Turn.Phase != Idle {
 		s.Turn.Phase, s.Turn.Outcome = Idle, "failed"
 	}

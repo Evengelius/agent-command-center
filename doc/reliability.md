@@ -78,6 +78,8 @@ not emitted by this CLI or version, not yet received, or malformed.
 | `retry` | not counted (both are **D**, not observed) | retries "N/A (none reported)" until one arrives |
 | `error` | the other error fields still count (TEL) | the counter |
 | `status.changed` | no compaction or MCP status shown | nothing extra |
+| `models.listed` | Claude Code: an `initialize` response without `models`; Codex: a `model/list` page refused (before any list: no list) or unreadable (the list stays unfinished); a page cursor that comes back, or a hundredth page, ends the list there, the models so far kept, the reason an error | no selector: the pill keeps the model in force, and its click or Alt+P says "the session has not listed its models yet", or "no model list: <the CLI's words>" for a refused page (plan 34) |
+| `models.settings` | Claude Code: `get_settings` refused or unanswered (undocumented, so a version could drop it); Codex: nothing after `thread/start` until a turn carries a change | the pill keeps the last values read, else the session's model, no effort while none is known, no Ultracode; the Ultracode row dimmed, "Ultracode's state is not known: <reason>"; a change asked for is answered with the CLI's words in zone B, never shown as applied (plan 34) |
 | `unrecognised` | never absent: anything unknown lands here | counted in the details view, where the last 20 are named with their time, type, reason and line (plan 25; the count left zone A's notes in plan 26), listed in Raw events |
 
 ### Integration sources
@@ -122,8 +124,11 @@ INT 7):
   execution). Memory over a long session is measured by test 11
   (`TestLongSession`), which replays a long generated session.
 - Codex can refuse a request with `-32001` when overloaded (INT 1): the
-  command fails visibly ("Codex busy: request refused, try again"), the draft
-  is restored, and nothing is retried automatically.
+  refusal is an error with Codex's words, and nothing is retried
+  automatically. A refused `turn/start` starts no turn: since plan 34 (the
+  review's finding) the turn ends, "the message could not be sent:
+  turn/start refused by Codex: <its words>", and the draft is restored;
+  before, the turn stayed "Submitted" and only Ctrl+Q was left.
 
 ### The file viewer
 
@@ -179,7 +184,8 @@ reset shown N/A.
 | Model-scoped weekly windows | the `/usage` report's `weekly_scoped` rows, `scope.model.display_name` naming the model ("Fable limit"; documented; plan 24, amendment 23), and `rate_limit_event`: a `unifiedWindows` key or a `rateLimitType` of the form `seven_day_<model>` (a key that is no model's, `seven_day_overage_included` on 2.1.303 since 2026-10-22, is skipped: plan 25; **U** for `unifiedWindows`, marked †; `seven_day_opus` and `seven_day_sonnet` are documented `rateLimitType` values: claude-code.md, section 7; TEL CC); metric `quota.7d.<model>` | shown as "<Model> limit" only once reported, never assumed from the model or the plan: no report, no row; past the reset "N/A (window reset)", as the quota row above |
 | Reset times | `resetsAt` | with the window |
 | Overage | `overageStatus` and related | "N/A (not reported)", shown apart from quota |
-| Model | `system/init`, per message | a subagent whose text is not forwarded: "model N/A" |
+| Model | `system/init`, per message; since plan 34 the `get_settings` read below | a subagent whose text is not forwarded: "model N/A" |
+| Model, effort and Ultracode in force (plan 34) | `get_settings` `applied` (undocumented, marked † in the details view), read after the handshake, each change's answer and each turn; the effort's variable `CLAUDE_CODE_EFFORT_LEVEL` from the dashboard's environment or the read's `env`, its value only | before the first read "model N/A", no effort, no Ultracode in the pill; a refused read keeps the last values, its reason in the details view and, after a change, in zone B; an `apply_flag_settings` success for a level the CLI dropped (P34c, "extreme") is caught by the read: "Claude Code kept the effort Max (asked: …)" |
 | Agent reasoning effort | none: no event reports a subagent's effort | always "effort N/A (not reported)" in the inspection header (plan 6, item 6) |
 | Context | `get_context_usage` (undocumented at CLI level, marked †), read after each turn end, or derived from usage | if the request fails or is refused: derived, labelled "derived"; before the first turn: "N/A (no turn yet)"; while the first turn runs, before its result: "N/A (no result yet)" (plan 20, the owner's live review) |
 | Tokens | latest `result.modelUsage` | "N/A" before the first `result` |
@@ -210,6 +216,7 @@ reset shown N/A.
 | Reset times | `resetsAt` | with the window |
 | Plan and credits | `planType`, `credits` | API key: N/A. `rateLimitResetCredits` ids are never shown or logged |
 | Model | `thread/start`, `model/rerouted`; a child's `subAgentActivity.model` (Codex CLI 0.163.0, P7b), else the `model` of the `spawnAgent` call that created it, "Model requested for the spawned agent" (`collabAgentToolCall`, 0.163.0 generated schema; P7c, on the v2 backend, sent none and its `subAgentActivity` carried the model; P9a, on the v1 backend, recorded it; source "spawn request", plan 6, item 4; plan 9), which the agent's own report always replaces | older children: "model N/A" (ASM-14) |
+| Model and effort in force (plan 34) | `thread/start`'s `model` and `reasoningEffort`; `thread/read`'s `thread.model` and `thread.reasoningEffort` after a turn that carried a change, or after `model/rerouted` | a change asked for and not yet sent: the pill keeps the values in force, the editor row's middle "→ <model> <Effort> (next turn)"; a refused turn drops the change, said in zone B; a refused read keeps the last values, its reason in zone B |
 | Agent reasoning effort | a child's `subAgentActivity.reasoningEffort` (Codex CLI 0.163.0, P7b "high", P7c "low"), else the `reasoningEffort` of its `spawnAgent` call, "Reasoning effort requested for the spawned agent, when applicable" (generated schema; recorded by P9a, "low"; source "spawn request"), by the model's rule (plan 6, item 6) | older children: "effort N/A (not reported)" in the inspection header, nothing in C |
 | Context | `thread/tokenUsage/updated` per thread, raw value | before a thread's first model call: "N/A (no model call yet)" (CX-10 q7) |
 | Tokens | per-thread totals; session total derived | "N/A" before the first update |
@@ -352,13 +359,18 @@ be split without reading it, so a change there is reported, not classified.
 - Writes no file under `~/.claude`, `~/.codex`, `~/.claude.json`, or the
   project's `.claude\` or `.codex\`. Its own files (configuration, ASM-7) live
   in its own folder.
-- Sends no request that writes configuration: no Claude Code `set_model`, no
-  `--settings` with hooks; `set_permission_mode` only when the owner switches
-  Manual or Auto (plan 12), and it writes no settings file (P12c-switch,
-  CC-10 q11). No Codex `config/write`, `config/batchWrite`, or
-  `windowsSandbox/setupStart`; threads start read-only, and Auto turns ask
-  for `workspaceWrite` per turn, which writes no `trust_level` (plans 12
-  and 13, CX-10 q2; ASM-6).
+- Sends no request that writes configuration: no Claude Code
+  `update_settings`, no `--settings` with hooks; `set_permission_mode` only
+  when the owner switches Manual or Auto (plan 12), `set_model` and
+  `apply_flag_settings` only when the owner picks a model, an effort or
+  Ultracode (plan 34), and none writes a settings file (P12c-switch, CC-10
+  q11; P34c). No Codex `config/write`, `config/batchWrite`,
+  `thread/settings/update` (experimental) or `windowsSandbox/setupStart`;
+  threads start read-only, and Auto turns ask for `workspaceWrite` per
+  turn, which writes no `trust_level` (plans 12 and 13, CX-10 q2; ASM-6); a
+  model or effort the owner picks rides on the next `turn/start`, a
+  thread's setting "for this turn and subsequent turns" (the schema; not
+  run live with a model change: plan 34's live checks sent no message).
 - Offers no answer that persists a rule (see [Approvals](#approvals)).
 - Writes no proxy into a CLI's configuration. Codex's proxy, when
   `config.json` names one, goes only into the environment of the Codex
@@ -524,7 +536,7 @@ are the numbered questions in section 10 of
 | Workflows under `-p` (CC-10 q7) | closed, not depended on: the dashboard starts none; a `local_workflow` task shows in zone C as agent type "workflow" |
 | `/usage` over stream-json (CC-10 q9) | reopened and settled in plan 24 (amendment 23; P24u): answered locally with no model call; sent after the handshake and after each turn, its report the quota's primary source; context still from `get_context_usage` |
 | Whether `get_context_usage` costs anything (CC-10 q10) | settled (P14a): answered in 914 ms with no `assistant` message, `result` or `rate_limit_event` after it |
-| Whether `set_model` and `set_permission_mode` write settings (CC-10 q11) | settled for `set_permission_mode` (P12c-switch, settings identical); `set_model` closed, never sent (model configuration is outside the MVP, amendment 4) |
+| Whether `set_model` and `set_permission_mode` write settings (CC-10 q11) | settled for `set_permission_mode` (P12c-switch, settings identical); `set_model` closed, never sent (model configuration is outside the MVP, amendment 4), until plan 34 (amendment 34) sent it with `apply_flag_settings`: settled, neither writes a settings file (P34c, `settings.json` identical; the configuration check PASS around plan 34's live checks) |
 | Windows process handling: exit code 1 after stdin closes, `TerminateProcess` mid-turn, CRLF and UTF-8 through Go pipes (CC-10 q13) | settled: stdin closed exits 0 in 1.4 s, a job kill mid-turn ends in 41 ms with exit code 1 and resumes (plan 4, L1 (e), (g)); UTF-8 and CRLF byte for byte live (P14a) and by `TestEchoUnicode` (a fake CLI through the real pipes) |
 | The status line never runs under `-p` (CC-10 q14) | closed, not depended on: zone A's telemetry reads the stream |
 | A raw client skipping `initialize`, and an allow without `updatedInput` (CC-10 q2, the untried part) | closed, not needed: the adapter always sends `initialize` and echoes `updatedInput` (P2, P3b); a fixture test keeps both in the adapter |

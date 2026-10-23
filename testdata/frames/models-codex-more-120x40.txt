@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ codex-models.jsonl   ..\..\testdata\mock\codex-models.jsonl                                        Mock data 0.163.0
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
+│ A · ORCHESTRATOR                 ││ Waiting for instructions                                                         │
+│ ◆ GPT-6-sol               ○ IDLE ││ Ready to work on this project.                                                   │
+│ ──────────────────────────────── ││                                                                                  │
+│ STAGES · inferred from activity  ││                                                                                  │
+│ ○ (stages appear as turns run)   ││                                                                                  │
+│                                  ││       ╭──────────────────────────────────────────────────────────────╮           │
+│                                  ││       │ CODEX MODELS                                 Current session │           │
+│                                  ││       │                                                              │           │
+│                                  ││       │    GPT-6-Sol                                             ✓   │           │
+│                                  ││       │    Previous generation workhorse model.                      │           │
+│                                  ││       │                                                              │           │
+│                                  ││       │    GPT-6-Luna                                                │           │
+│                                  ││       │    Fast and affordable model for easier tasks.               │           │
+│                                  ││       │                                                              ┃           │
+│                                  ││       │    GPT-5.6-Sol                                               ┃           │
+│                                  ││       │    Older generation workhorse model.                         ┃           │
+│                                  ││       │ ──────────────────────────────────────────────────────────── ┃           │
+│                                  ││       │  ▼ More models                                           ›   ┃           │
+│ ──────────────────────────────── ││       │                                                              ┃           │
+│ ✦ TELEMETRY        Enter details ││       │    GPT-5.6-Terra                                             ┃           │
+│ ▾ SESSION USAGE                  ││       │    Older balanced model for straightforward work.            ┃           │
+│   Context N/A no model call yet  ││       │                                                              ┃           │
+│   Tokens N/A no update yet       ││       │    GPT-5.6-Luna                                              ┃           │
+│   Est. cost N/A Codex reports n… ││       │    Older fast and efficient model.                           ┃           │
+│                                  ││       │ ──────────────────────────────────────────────────────────── ┃           │
+│ ▾ QUOTA WINDOWS                  ││       │                                                              │           │
+│   Session (5hr)              N/A ││       │  Effort:    High       ⌄                                     │           │
+│   no report yet                  ││ ──────╰▾─────────────────────────────────────────────────────────────╯────────── │
+│                                  ││ >  Ask Mock data anything…                                                       │
+│   Weekly (7 day)             N/A ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   no report yet                  ││   +     GPT-6-Sol High                                                   ↯ Auto  │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
+│ no agents yet: they appear as the CLI starts them                                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

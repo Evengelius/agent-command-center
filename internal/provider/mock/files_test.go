@@ -50,6 +50,55 @@ var mockFiles = []struct {
 	// model-scoped window; "Fable limit" is the owner's (brief amendment
 	// 22), its key the documented seven_day_<model> form.
 	{"claude-quota-windows.jsonl", "p3b-claude-subagent-approval.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, claudeQuotaWindows},
+	// Plan 34: the model selector's lists, with no message sent. P34c up to
+	// its first settings read (the owner's 13 models, Fable 5.1 at Max with
+	// Ultracode); P34x's first run up to the thread's start (7 pages of one
+	// model, the thread on gpt-6-sol, High).
+	{"claude-models.jsonl", "p34c-claude-model-settings.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, claudeModels},
+	{"codex-models.jsonl", "p34x-codex-model-list-settings.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexModels},
+}
+
+// claudeModels is P34c's start: the process, the handshake and its models,
+// and the first get_settings answer; none of the changes after it. The
+// owner's SessionStart hook lines are left out: the probe kept only their
+// type, which would read as a failed hook.
+func claudeModels(t *testing.T, recs []fixture.Record) []fixture.Record {
+	var out []fixture.Record
+	for _, r := range recs {
+		if r.Dir != "meta" && r.Dir != "in" && r.Dir != "out" || strings.Contains(string(r.Msg), `"subtype":"hook_`) {
+			continue
+		}
+		out = append(out, r)
+		if r.Dir == "out" && strings.Contains(string(r.Msg), `"applied"`) {
+			return out
+		}
+	}
+	t.Fatal("P34c: no get_settings answer")
+	return nil
+}
+
+// codexModels is P34x's first run up to the thread's start, before its
+// thread/read: the process (its "run" record as the argv record the other
+// Codex recordings have), the handshake, model/list's pages and the thread.
+func codexModels(t *testing.T, recs []fixture.Record) []fixture.Record {
+	var out []fixture.Record
+	for _, r := range recs {
+		msg := string(r.Msg)
+		if r.Dir == "in" && strings.Contains(msg, `"method":"thread/read"`) {
+			return out
+		}
+		if r.Dir == "run" && len(out) == 0 {
+			r.Dir, r.Msg = "argv", []byte(`["app-server"]`)
+			out = append(out, r)
+			continue
+		}
+		if r.Dir != "in" && r.Dir != "out" || strings.Contains(msg, `"method":"account/`) || strings.Contains(msg, `"method":"remoteControl/`) {
+			continue
+		}
+		out = append(out, r)
+	}
+	t.Fatal("P34x: no thread/read")
+	return nil
 }
 
 // claudeQuotaWindows is P3b with every rate_limit_event's unifiedWindows

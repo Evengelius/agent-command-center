@@ -30,6 +30,13 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 			return nil
 		}
 	}
+	if m.ui.Models.Open && m.s.Screen == state.ScreenDashboard {
+		// The model selector takes its keys while it is open; any other key
+		// closes it and goes on (plan 34, design D9).
+		if cmds, done := m.modelsKey(k); done {
+			return cmds
+		}
+	}
 	if m.wt != nil {
 		return m.worktreesKey(k)
 	}
@@ -171,6 +178,11 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 	if k.String() == "f4" {
 		capable := m.sess != nil && m.sess.Capabilities().AutoApprovals
 		return m.do(state.ToggleApprovals{Capable: capable})
+	}
+	// Alt+P from any zone: the model selector, Claude Code's own key for its
+	// model picker (plan 34, design D9).
+	if k.String() == "alt+p" && !render.WindowOpen(m.ui) {
+		return m.toggleModels()
 	}
 	// F3: the file the entry or request on screen names, else the Explorer
 	// (plan 17, Opening; amendment 12).

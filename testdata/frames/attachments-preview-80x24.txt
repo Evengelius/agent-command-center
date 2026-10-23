@@ -16,7 +16,7 @@
 │   acc-image-upload-test.png · 1 KB ✕    acc-image-upload-test.jpg · 6 KB ✕   │
 │ > What colours and what text are in these images?                            │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│   +     Haiku 5.5 High · Ultracode    turn started by the CLI        ↯ Auto  │
+│   +     Haiku 5.5    turn started by the CLI                         ↯ Auto  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
 │  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │

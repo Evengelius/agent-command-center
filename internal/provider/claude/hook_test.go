@@ -68,8 +68,10 @@ func TestHookEventsOfP22o(t *testing.T) {
 	if len(quiet) != 3 || quiet[0] != 3 || quiet[1] != 4 || quiet[2] != 55 {
 		t.Errorf("lines with no event: %v, want 3, 4 and 55", quiet)
 	}
-	if len(per) != 57 || len(all) != 55 {
-		t.Errorf("%d records and %d events, want 57 and 55", len(per), len(all))
+	// 56: the initialize answer's models are an event of their own since
+	// plan 34.
+	if len(per) != 57 || len(all) != 56 {
+		t.Errorf("%d records and %d events, want 57 and 56", len(per), len(all))
 	}
 	for _, e := range all {
 		if strings.Contains(e.Raw, `"hook_`) || strings.Contains(e.Raw, "post_turn_summary") {

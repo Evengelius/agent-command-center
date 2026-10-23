@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-models.jsonl                                                Mock data
+ A no turn yet                                            (inferred)   F6: tree
+╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
+│ Waitin╭─────────────────────────────────────────────────────────────────╮    │
+│ Ready │ CLAUDE MODE╭──────────────╮                     Current session │    │
+│       │            │ Low          │                                     │    │
+│       │    Haiku 5.│ Medium       │                                     │    │
+│       │    Fastest │ High         │s                                    │    │
+│       │ ───────────│ XHigh        │──────────────────────────────────── ┃    │
+│       │  ▶ More mod│ Max        ✓ │                                 ›   │    │
+│       │            ╰──────────────╯                                     │    │
+│       │  Effort:    Max        ⌄                                        │    │
+│       │                                                                 │    │
+│       │  Ultracode Enables dynamic workflows                    ▐   ●▌  │    │
+│ ──────╰▾────────────────────────────────────────────────────────────────╯─── │
+│ >  Ask Mock data anything…                                                   │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   +     Fable 5.1 Max · Ultracode                                    ↯ Auto  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+│ no agents yet: they appear as the CLI starts them                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

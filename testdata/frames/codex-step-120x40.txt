@@ -13,7 +13,7 @@
 │                                  ││ ▎ CODEX  gpt-5.6-sol  02:00                                                      │
 │                                  ││ ▎                                                                                │
 │                                  ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
-│                                  ││ ▎ │ ◡ Smoothing...                                                      00:01 │  │
+│                                  ││ ▎ │ ◡ Pondering...                                                      00:01 │  │
 │                                  ││ ▎ │                                                                           │  │
 │                                  ││ ▎ │ Model working · reasoning tokens reported when the step ends              │  │
 │                                  ││ ▎ │                                                                           │  │

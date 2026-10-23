@@ -140,7 +140,11 @@ func play(next func() []byte) {
 		if json.Unmarshal(next(), &r) != nil {
 			continue
 		}
-		if r.Method == "model/list" && os.Getenv("ACC_FAKE_MODELS") != "" {
+		recorded := false // a script's own model/list answers first (plan 34)
+		for _, s := range segs {
+			recorded = recorded || !s.used && s.method == "model/list"
+		}
+		if r.Method == "model/list" && !recorded && os.Getenv("ACC_FAKE_MODELS") != "" {
 			b, _ := os.ReadFile(os.Getenv("ACC_FAKE_MODELS"))
 			var m map[string]json.RawMessage
 			_ = json.Unmarshal(b, &m)
@@ -643,12 +647,13 @@ func TestHandshakeApprovalInterrupt(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
-		`{"id":4,"method":"account/rateLimits/read"}`,
-		turnLine(5, p6bThread, "make hello.txt"),
+		`{"id":3,"method":"model/list","params":{}}`,
+		`{"id":4,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":5,"method":"account/rateLimits/read"}`,
+		turnLine(6, p6bThread, "make hello.txt"),
 		`{"id":0,"result":{"decision":"accept"}}`,
-		turnLine(6, p6bThread, "count"),
-		`{"id":7,"method":"turn/interrupt","params":{"threadId":"` + p6bThread + `","turnId":"` + p6bTurn2 + `"}}`,
+		turnLine(7, p6bThread, "count"),
+		`{"id":8,"method":"turn/interrupt","params":{"threadId":"` + p6bThread + `","turnId":"` + p6bTurn2 + `"}}`,
 	})
 }
 
@@ -708,13 +713,14 @@ func TestModelFallback(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
-		`{"id":4,"method":"account/rateLimits/read"}`,
-		turnLine(5, p6Thread, "make hello.txt"),
-		`{"id":6,"method":"model/list","params":{}}`,
-		`{"id":7,"method":"thread/start","params":{"model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
-		`{"id":8,"method":"account/rateLimits/read"}`,
-		turnLine(9, p6bThread, "make hello.txt"),
+		`{"id":3,"method":"model/list","params":{}}`,
+		`{"id":4,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":5,"method":"account/rateLimits/read"}`,
+		turnLine(6, p6Thread, "make hello.txt"),
+		`{"id":7,"method":"model/list","params":{}}`,
+		`{"id":8,"method":"thread/start","params":{"model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":9,"method":"account/rateLimits/read"}`,
+		turnLine(10, p6bThread, "make hello.txt"),
 		`{"id":0,"result":{"decision":"accept"}}`,
 	})
 }
@@ -731,9 +737,14 @@ func TestNoSecondFallback(t *testing.T) {
 	r.wait(event.TurnCompleted)
 	r.until(func(event.Event) bool { return false }, 300*time.Millisecond)
 	r.close()
+	// One model/list: the session's models at the start (plan 34), no
+	// fallback's.
+	lists := 0
 	for _, l := range r.written() {
 		if strings.Contains(l, "model/list") {
-			t.Errorf("a second fallback: %s", l)
+			if lists++; lists > 1 {
+				t.Errorf("a second fallback: %s", l)
+			}
 		}
 	}
 }
@@ -758,9 +769,10 @@ func TestChildApproval(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
-		`{"id":4,"method":"account/rateLimits/read"}`,
-		turnLine(5, p7Thread, "spawn two"),
+		`{"id":3,"method":"model/list","params":{}}`,
+		`{"id":4,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":5,"method":"account/rateLimits/read"}`,
+		turnLine(6, p7Thread, "spawn two"),
 		`{"id":0,"result":{"decision":"accept"}}`,
 	})
 }
@@ -885,8 +897,9 @@ func TestResume(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"thread/resume","params":{"threadId":"th-9","model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
-		`{"id":4,"method":"account/rateLimits/read"}`,
+		`{"id":3,"method":"model/list","params":{}}`,
+		`{"id":4,"method":"thread/resume","params":{"threadId":"th-9","model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":5,"method":"account/rateLimits/read"}`,
 	})
 }
 
@@ -1100,8 +1113,8 @@ func TestSetApprovalMode(t *testing.T) {
 	if err := r.sess.SetApprovalMode(true); err != nil {
 		t.Fatal(err)
 	}
-	if n := len(r.written()); n != 5 {
-		t.Errorf("%d lines written after SetApprovalMode, want the 5 of the handshake", n)
+	if n := len(r.written()); n != 6 {
+		t.Errorf("%d lines written after SetApprovalMode, want the 6 of the handshake", n)
 	}
 	r.send("make hello.txt")
 	req := r.wait(event.ApprovalRequest).Payload.(event.Approval)
@@ -1114,15 +1127,15 @@ func TestSetApprovalMode(t *testing.T) {
 	r.wait(event.TurnCompleted)
 	r.close()
 	got := r.written()
-	if len(got) != 7 || got[6] != `{"id":0,"result":{"decision":"accept"}}` {
+	if len(got) != 8 || got[7] != `{"id":0,"result":{"decision":"accept"}}` {
 		t.Fatalf("written %q", got)
 	}
 	// Auto is Codex's "Approve for me": auto_review with workspace-write
 	// (plan 12 addendum).
 	want := strings.NewReplacer(`"approvalsReviewer":"user"`, `"approvalsReviewer":"auto_review"`,
-		`"sandboxPolicy":{"type":"readOnly"}`, `"sandboxPolicy":{"type":"workspaceWrite"}`).Replace(turnLine(5, p6bThread, "make hello.txt"))
-	if got[5] != want {
-		t.Errorf("turn/start\n got %s\nwant %s", got[5], want)
+		`"sandboxPolicy":{"type":"readOnly"}`, `"sandboxPolicy":{"type":"workspaceWrite"}`).Replace(turnLine(6, p6bThread, "make hello.txt"))
+	if got[6] != want {
+		t.Errorf("turn/start\n got %s\nwant %s", got[6], want)
 	}
 	if s := r.st.Session.Sandbox; s != "workspaceWrite" {
 		t.Errorf("sandbox shown %q after the Auto turn, want workspaceWrite", s)

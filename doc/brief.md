@@ -4200,3 +4200,405 @@ change is told by the SHA-256 of its bytes rather than its size and
 time, and a new dashboard takes a stored draft of its own CLI before the
 newest of another. Nothing is committed until the owner has reviewed the
 implementation and the results.
+
+## Amendment 34, 2026-10-23: the model selector, its effort and Ultracode, for plan 34
+
+After plan 33 was approved and pushed, the owner asked, word for word:
+
+````text
+Agent Command Center — Model Selector, Effort & Ultracode
+Objective
+Implement the model-selection functionality in Agent Command Center using the attached approved design screenshot as the authoritative visual specification.
+The existing composer displays a model indicator, for example:
+`Fable 5.1 High · Ultracode`
+Clicking this indicator must open the model-selection popup shown in the attached screenshot.
+Strict requirement: reproduce the approved design faithfully. Do not redesign, enlarge, or reinterpret it.
+The application supports Claude Code and OpenAI Codex, but only one provider is active per session.
+The popup must therefore display the models and settings belonging to the currently active provider only.
+1. Strict Visual Design
+The attached screenshot defines the target appearance.
+Preserve exactly:
+
+* Compact popup positioned above the composer.
+* Dark background and lavender/purple border.
+* Rounded corners.
+* `CLAUDE MODELS` heading.
+* `Current session` aligned to the right.
+* Two-line model entries.
+* Purple highlighted selection with a checkmark.
+* Four or five main model choices initially visible.
+* Collapsible `More models` section.
+* Horizontal separators.
+* Compact effort dropdown.
+* Separate Ultracode toggle, when supported.
+* Typography, colors, spacing, and alignment.
+
+Bottom spacing — important
+The attached screenshot already has the correct bottom spacing.
+The bottom border must sit closely beneath the Ultracode row.
+Do not add:
+
+* An `Esc close` footer.
+* An empty footer row.
+* Additional bottom padding.
+* A separate action bar.
+* Unnecessary explanatory text.
+
+Clicking outside the popup closes it.
+Escape may also dismiss it, but no shortcut hint should be displayed.
+Everything outside this popup must remain unchanged.
+2. Provider-Specific Model Catalog
+Claude Code
+Display:
+`CLAUDE MODELS`
+List the models genuinely available to the current Claude Code session.
+Investigate the installed Claude Code version and its supported model-discovery and configuration interfaces.
+The screenshot's model names and descriptions illustrate the design; they must not become an unverified hardcoded catalog.
+Requirements:
+
+* Identify the actual configured default model.
+* Highlight the active model.
+* Display the selection checkmark.
+* Use authoritative model descriptions when available.
+* Show a compact selection of primary models.
+* Put additional supported models under `More models`.
+* Support scrolling without enlarging the popup.
+* Respect subscription, account, and organizational restrictions.
+
+If Claude Code does not expose an exhaustive model catalog, document that limitation and use only verified supported options.
+Do not fabricate models, descriptions, availability, or capabilities.
+OpenAI Codex
+Display:
+`CODEX MODELS`
+Use the existing Codex App Server integration.
+Retrieve the available models using `model/list`, including pagination when required.
+Use the actual returned metadata:
+
+* Model ID.
+* Display name.
+* Description.
+* Default model.
+* Supported reasoning efforts.
+* Default reasoning effort.
+* Model visibility and availability.
+
+Apply the same compact visual design.
+Do not show an Ultracode toggle for Codex.
+Never display Claude and Codex model catalogs simultaneously.
+Provider switching is outside this popup's scope.
+3. Model Selection Behavior
+When a model is selected:
+
+1. Verify its availability.
+2. Apply the change through the active provider's supported interface.
+3. Preserve the current session and conversation wherever supported.
+4. Confirm that the provider accepted the change.
+5. Update the selected-model indicator.
+6. Update the composer badge.
+7. Keep the orchestrator's displayed model consistent with the actual provider state.
+
+Preserve unsent text and image attachments.
+Do not silently restart the provider.
+Do not claim a model change succeeded until it is confirmed.
+If the selected model cannot be applied during an active session, report the limitation or safely defer the change.
+Handle provider errors and model fallbacks without displaying stale configuration.
+4. Effort Selection
+The effort selector must reflect the actual capabilities of the selected model and provider.
+Do not assume all models support identical effort levels.
+Claude Code
+Discover supported effort levels through the installed CLI's actual capabilities and configuration.
+Potential values include:
+
+* Low
+* Medium
+* High
+* XHigh
+* Max
+
+These are potential options, not a universal list.
+Only expose effort levels supported by the chosen model.
+Respect effective configuration overrides and organizational restrictions.
+The UI must display the actual effective effort level whenever it can be verified.
+Codex
+Use the selected model's `supportedReasoningEfforts` returned by `model/list`.
+Use `defaultReasoningEffort` when appropriate.
+Do not invent or remap effort levels.
+In particular, do not automatically give Codex Claude's effort choices.
+Design
+Preserve the compact dropdown from the screenshot:
+`Effort: [XHigh ▾]`
+The dropdown must list only valid effort levels.
+The selected value must remain visually clear.
+If a model does not support configurable effort, do not present a misleading interactive selector.
+5. Ultracode — Claude Code Only
+The attached screenshot defines the final approved presentation:
+Ultracode
+`Enables dynamic workflows`
+A purple toggle appears on the right.
+Critical visual requirement
+The exact description is `Enables dynamic workflows`.
+Do not use the previous text:
+`Ultracode sets XHigh effort`
+Keep the description's position, font size, color, and spacing exactly as shown.
+Do not alter the rest of the popup to accommodate this change.
+Effort independence
+For Claude Code 2.1.284 and later, Ultracode is a separate setting from reasoning effort.
+When supported, the user must be able to independently select:
+
+* A model.
+* Its reasoning effort.
+* Whether Ultracode is enabled.
+
+For example:
+`Fable 5.1 · Max · Ultracode`
+or:
+`Sonnet 5.5 · High · Ultracode`
+These are examples, not guarantees that every model supports every effort.
+Do not automatically change the user's chosen effort to XHigh when toggling Ultracode.
+Distinguish the independent Ultracode toggle from the `--effort ultracode` launch option, which may have additional effort-selection effects.
+Workflow configuration
+Investigate the actual installed Claude Code version and effective workflow configuration.
+Check the supported behavior of:
+
+* `ultracode`
+* `enableWorkflows`
+* `disableWorkflows`
+* Relevant environment or organizational restrictions.
+* Supported session-level changes.
+
+Use documented mechanisms.
+Do not assume that `enableWorkflows: true` must always be written. It may already be enabled by default or another authorized setting.
+Do not silently alter global configuration.
+If workflows are unavailable or disabled by an authoritative restriction, the toggle must not falsely indicate that Ultracode is operational.
+Activation behavior
+The toggle must perform a real supported configuration change.
+It must not merely update a local Boolean or modify the composer label.
+After activation or deactivation:
+
+* Verify the effective state when possible.
+* Preserve the selected effort.
+* Update the popup.
+* Update the composer badge.
+* Keep the provider session consistent.
+
+If the CLI does not support a safe live change, report that limitation and do not simulate success.
+Codex
+Do not display Ultracode in Codex sessions.
+Do not create an equivalent fictional setting.
+6. Composer Model Indicator
+The badge beneath the message input must reflect the effective model configuration.
+Examples:
+Claude Code
+`Fable 5.1 High · Ultracode`
+`Fable 5.1 Max · Ultracode`
+`Sonnet 5.5 Medium`
+Codex
+`GPT-6 Sol High`
+These are display examples only.
+The actual badge must use verified model and effort information.
+Append `Ultracode` only when it is genuinely enabled.
+Keep the existing compact pill design.
+Preserve the `+` upload control and the `Auto` indicator exactly as they are.
+Do not introduce unrelated functionality.
+7. Interaction and Navigation
+Support:
+
+* Opening the popup by clicking the composer model badge.
+* Clicking outside to dismiss.
+* Escape to dismiss.
+* Mouse selection.
+* Keyboard navigation.
+* Selecting a model.
+* Changing effort.
+* Toggling Ultracode where supported.
+* Expanding/collapsing `More models`.
+* Scrolling long lists.
+* Correct behavior at smaller terminal sizes.
+
+Keep the selected model visible when the popup opens.
+Preserve draft text, image attachments, keyboard focus, and conversation state.
+Interacting with the popup must never accidentally submit a message.
+8. Configuration Safety
+Before implementation, inspect the actual capabilities of both providers.
+Use documented interfaces and existing project integrations.
+Do not:
+
+* Invent provider capabilities.
+* Assume every model supports Max or XHigh.
+* Hardcode an obsolete model catalog.
+* Alter credentials.
+* Overwrite existing user settings unnecessarily.
+* Bypass organizational restrictions.
+* Modify unrelated global configuration.
+* Change session identity silently.
+* Introduce new provider integrations outside Claude Code and Codex.
+
+Record any configuration limitations accurately.
+9. Verification and Regression Tests
+Use deterministic tests and existing provider fixtures wherever possible.
+Verify:
+
+1. Claude Code shows only Claude models.
+2. Codex shows only Codex models.
+3. Model discovery uses authoritative sources.
+4. Default and active models are identified correctly.
+5. The selected model is highlighted.
+6. `More models` works without expanding the popup unnecessarily.
+7. Unsupported effort levels cannot be selected.
+8. Claude Code effort changes use supported mechanisms.
+9. Codex effort options match its model metadata.
+10. Ultracode remains independent of effort when supported.
+11. Ultracode correctly reflects workflow availability.
+12. Rejected settings preserve the previous effective configuration.
+13. Composer indicators update only after an accepted change.
+14. Mouse and keyboard interactions work.
+15. Clicking outside closes the popup.
+16. Closing the popup preserves text and attachments.
+17. Existing provider sessions remain stable.
+18. No regression is introduced elsewhere in Agent Command Center.
+
+Preserve the current performance requirements.
+Use offline tests wherever possible.
+Ask before live tests that consume provider quota.
+10. Strict Visual Acceptance
+Compare the implementation against the attached final screenshot.
+Verify:
+
+* Popup width.
+* Popup height.
+* Header alignment.
+* Model row spacing.
+* Selected-model highlight.
+* Checkmark placement.
+* `More models` row.
+* Divider positions.
+* Effort dropdown.
+* Ultracode toggle.
+* Exact description: `Enables dynamic workflows`.
+* Bottom padding.
+* Popup position relative to the composer.
+
+No extra footer. No excessive empty space. No provider tabs. No unnecessary visual changes.
+The popup must remain compact.
+Additional models must be accessible through scrolling and `More models`, not by enlarging the popup indefinitely.
+For Codex, reproduce the same design language while displaying only supported Codex-specific controls.
+11. Delivery Requirements
+Before declaring completion, provide:
+
+1. Implementation summary.
+2. Actual model-discovery mechanisms for Claude Code and Codex.
+3. Supported effort levels and how they are determined.
+4. Ultracode's actual activation and workflow behavior.
+5. Windows Terminal screenshots of both provider selectors.
+6. Screenshots with `More models` expanded.
+7. Functional and regression-test results.
+8. Remaining provider limitations, if any.
+
+Do not mark a setting operational if the provider did not actually accept or apply it.
+Do not commit until I have reviewed the implementation and screenshots.
+Final Instruction
+The attached screenshot is the final approved visual specification.
+Reproduce it faithfully while implementing genuine provider-specific model selection, reasoning effort, and Claude Code Ultracode control.
+The Ultracode description must read exactly: `Enables dynamic workflows`.
+Do not invent models or effort capabilities.
+Preserve the rest of Agent Command Center completely unchanged.
+````
+
+The request came with one image, the design it calls "the attached
+approved design screenshot", kept as
+`references/11-model-selector.webp` (1354x1162) and described in
+`doc/reference-design.md`, The model selector.
+
+The research the request asks for came first and changed nothing in the
+repository but its records: the installed Claude Code 2.1.303 and Codex
+CLI 0.163.0 (the last probed versions), their documentation and schemas,
+and four probes that send no message, so no model call (P34c, P34c2,
+P34c3 and P34x in `doc/research/probes/README.md`), with the
+configuration check before and after (PASS). What they found, in short:
+
+- Claude Code lists its models in the `initialize` response (`models`,
+  the documented `ModelInfo`: value, resolved model, display name,
+  description, the effort levels each takes); the session's model is
+  changed by `set_model`, its effort and Ultracode by
+  `apply_flag_settings` (both documented, session only: no settings file
+  written), and what is in force is read back by `get_settings`
+  (`applied`: model, effort, ultracode, whether Ultracode is available),
+  a request the CLI defines but its documentation does not list.
+- The owner's own Claude Code settings set `CLAUDE_CODE_EFFORT_LEVEL` in
+  their `env` block; that variable outranks every other effort setting,
+  so on this machine Claude Code keeps the effort it names whatever is
+  asked. The dashboard shows it and does not change it.
+- Changing the effort through `apply_flag_settings` alone turned
+  Ultracode off (2.1.303), against the documentation's statement for the
+  `/effort` slider; sending Ultracode's state with the effort keeps it.
+- Codex lists its models with `model/list`, paged by `nextCursor`, each
+  with its reasoning efforts and default effort; hidden models are left
+  out of the default list. A thread's model and effort change with the
+  next `turn/start` (stable); `thread/settings/update`, which applies
+  them at once, is refused without the experimental API opt-in and, with
+  it, accepted an unknown model and an unknown effort without error.
+
+Taken as plan 34 (plan.md, Plan 34). Nothing is committed until the
+owner has reviewed the implementation and the screenshots.
+
+## Amendment 35, 2026-10-24: the agent told its model and effort, during plan 34
+
+While reviewing plan 34, the owner saw that neither CLI's model could
+name the effort it ran at (Claude Code's answered from its request,
+Codex's from `config.toml`, its default), while the dashboard's pill
+showed what each CLI confirmed. The owner asked, word for word:
+
+````text
+Is there a way we fix this in our tool or not?
+````
+
+Told that both CLIs only let the dashboard tell the model through
+instructions fixed at a session's start (stale after a change) or a line
+added to a message, the owner wrote:
+
+````text
+How would it look like? Tell me first
+````
+
+After the design was described (below), the owner answered:
+
+````text
+Yes: add the announce opt-in to plan 34 as you described it (config.json models.announce, off by default; one line before the text of the first message after a confirmed change; grey in zone B; never in the draft), with its criteria and tests, then report.
+````
+
+The design as described and approved:
+
+- Off by default; on with `{"models": {"announce": true}}` in the
+  dashboard's own `config.json`, which the startup screen confirms on a
+  grey line.
+- Only the first message sent after the model, the effort or Ultracode
+  changes carries the line; several changes before it give one line with
+  the final state; a change back to what the last line said adds none;
+  the session's first message carries none.
+- One line before the message's text, naming what the CLI confirmed:
+  `[Agent Command Center] From this message on: model Sonnet 5.5
+  (claude-sonnet-5-5), effort Medium, Ultracode on.` For Codex, whose
+  change goes with that same message, what the message asks Codex to
+  use: `[Agent Command Center] From this message on: model GPT-6.1-Sol
+  (gpt-6.1-sol), effort High.`
+- Zone B shows the line as part of the owner's message, since it is
+  sent, drawn in grey as the dashboard's addition.
+- The draft never contains it: the editor and the stored draft keep the
+  text as typed; a send that fails, or a turn the CLI refuses, gives the
+  text back without the line, and the next send adds it again.
+- About 25 tokens a change; tests check the line on the wire with no
+  quota; a live message to see a model read it only with the owner's
+  approval.
+
+Taken into plan 34 (plan.md, Plan 34, design D11).
+
+After the report on the implementation, the owner withdrew it, word for
+word:
+
+````text
+I don't like it actually, remove this last implementation
+````
+
+The implementation was removed the same day: the setting, the line, its
+tests and its design text; nothing of it remains in the code
+(plan.md, Plan 34, design D11).

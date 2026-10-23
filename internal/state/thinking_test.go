@@ -725,8 +725,9 @@ func TestThinkingCodexP7(t *testing.T) {
 	}
 	// The second thought is a step that made a spawn and no reasoning: it
 	// stayed open into the next step (the marker at 9,632 ms opened none).
-	if th[1].MessageID != "step:34" {
-		t.Errorf("the second thought is %q, want the step opened by event 34", th[1].MessageID)
+	// Event 35: the thread start's model settings are an event since plan 34.
+	if th[1].MessageID != "step:35" {
+		t.Errorf("the second thought is %q, want the step opened by event 35", th[1].MessageID)
 	}
 	d := th[3].Thought
 	if !d.Dropped || d.Confirmed || !d.Inferred || d.Live() || d.HasTokens || d.Outcome != "" || d.Item != "" {

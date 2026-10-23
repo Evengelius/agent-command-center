@@ -2092,9 +2092,10 @@ The same file can name Codex's proxy (plan 22, amendment 19).
 | F2 | go to the oldest pending approval | ASM-9 |
 | F3 | the file the entry, full view or request in front names, in the [file viewer](#file-viewer); else the [Explorer](#explorer); in either, close back to the dashboard | plan 17; brief amendments 11 and 12 |
 | F4 | approvals Manual ⇄ Auto, from any focus; Manual at every launch, never saved | plan 12; brief amendment 8 |
+| Alt+P | open or close the [model selector](#input-editor), from any focus (Claude Code's own key for its model picker); the pill's click does the same | plan 34; brief amendment 34 |
 | F6 / Shift+F6 | next / previous zone (B, C, A) | ASM-9 |
 | Tab / Shift+Tab | next / previous zone, outside the editor (in the editor Tab inserts a tab) | ASM-9 |
-| Esc | close the "+" menu (plan 30), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
+| Esc | close the "+" menu (plan 30), the model selector's effort list, then the selector (plan 34), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
 | Shift+PgUp / Shift+PgDn | scroll the conversation from any focus | ASM-9 |
 | F12 | toggle mouse capture (native terminal selection when off) | TI 6.3 item 6 |
 | Ctrl+W | the [Worktrees](#worktrees) view of the session's repository: list, diff, merge, remove | plan 16; brief amendment 10 |
@@ -2162,6 +2163,17 @@ the console reads plain VT input after Ctrl+Q.
 | Esc | close the folder the cursor is in; at the top, close |
 | F3 | close, back to the dashboard |
 
+**The model selector** (Alt+P or a click on the pill, [Input editor](#input-editor))
+
+| Key | Action |
+| - | - |
+| ↑ ↓ Home End | move the cursor over the models, More models, Effort and Ultracode; over the levels while the effort list is open |
+| Enter, Space | act on the cursor's row: choose the model, expand or collapse More models, open the effort list, turn Ultracode on or off, pick the level |
+| PgUp PgDn | scroll the list a page; the wheel scrolls too |
+| Esc | close the effort list, then the selector |
+| Alt+P | close the selector |
+| any other key | close the selector, then act as usual (Ctrl+Q quits) |
+
 **The editor**: see [Input editor](#input-editor).
 
 ## Scrolling, collapsing, full screen
@@ -2219,26 +2231,32 @@ provider: it has no provider code and sends a string to part 5's caller
   a separator in the frame's colour:
 
   ```text
-   +     Haiku 5.5 High · Ultracode    12 lines · turn running: the draft waits · Ctrl+C interrupt    ↯ Auto
+   +     Fable 5.1 High · Ultracode    12 lines · turn running: the draft waits · Ctrl+C interrupt    ↯ Auto
   ```
 
   A margin cell; " + " on zone B's tool rows' ground (plan 19; the image's
   grey against the ground's), the "+" in the text colour; three cells; the
-  pill on the ground, " <model> High · Ultracode ": the model the session's
-  own as zone B's speaker names it ("Haiku 5.5", "Fable 5.1"; a Codex id as
-  given; "model N/A" before the CLI reports one), "High" in the text
-  colour, the dot in the title colour, "Ultracode" in violet bold (YOU's
-  colour); three cells after the pill, in grey, the draft's line count
-  once it passes one line, then what the status line said when it had
-  something to say (a turn running, "pasting…", a notice, the session's
-  phase, the quit question), joined by " · "; at the right end "↯ Auto"
-  and one cell. When the middle does not fit beside the pills, the row is
-  the middle alone, as the status line was; the configuration file's
-  problem keeps its red row alone (plan 21, item 5.1). The "+" opens its
-  menu (plan 30, the next bullet); "High · Ultracode" and "Auto" are the
-  owner's design placeholders for the model and the effort selections: no
-  key, no click, no event, no state behind them; a click on the row
-  elsewhere focuses the editor. The idle
+  pill on the ground, " <model> <Effort> · Ultracode " (plan 34, design
+  D7): the model in force by the name the CLI's list gives it ("Fable
+  5.1", "Sonnet 5.5", "GPT-6-Sol"; never Claude Code's "Default", which
+  names no model), else its id as zone B's speaker reads it, "model N/A"
+  before the CLI reports one; the effort in force as the selector labels
+  it ("High", "XHigh"), nothing while none is known; " · Ultracode" only
+  while Claude Code reports it on; the text in the text colour, the dot in
+  the title colour, "Ultracode" in violet bold (YOU's colour); three cells
+  after the pill, in grey, a Codex change waiting for the next message
+  ("→ GPT-6.1-Sol High (next turn)"), the draft's line count once it
+  passes one line, then what the status line said when it had something
+  to say (a turn running, "pasting…", a notice, the session's phase, the
+  quit question), joined by " · "; at the right end "↯ Auto" and one cell.
+  When the middle does not fit beside the pills, three cells on either
+  side (plan 34's review: never touching "↯ Auto"), the row is the middle
+  alone, as the status line was; the configuration file's problem keeps
+  its red row alone (plan 21, item 5.1). The "+" opens its menu (plan 30,
+  the next bullet), the pill the model selector (plan 34, the bullet after
+  it); "↯ Auto" stays the owner's design placeholder: no key, no click, no
+  event, no state behind it; a click on the row elsewhere focuses the
+  editor. The idle
   hint "Enter send · Ctrl+J newline" and "Ctrl+G draft window" went with
   the row: the footer and the F1 page keep the keys (the footer leaves the
   newline key out when it has no room). On 16 colours the ground is not
@@ -2265,6 +2283,113 @@ provider: it has no provider code and sends a string to part 5's caller
   it; Esc does nothing more, the other click and the other keys act as
   usual. The band is panel '+', the menu panel 'U'. On 16 colours the
   ground is not drawn, as zone B's grounds.
+- **The model selector** (plan 34, brief amendment 34;
+  [reference-design.md, The model selector](reference-design.md#the-model-selector)
+  for its cells and colours): a click on the pill, or Alt+P (Claude
+  Code's own key for its model picker), opens and closes a popup above
+  the editor's rule, its left edge one cell left of the pill, its bottom
+  edge on the rule with a "▾" above the pill's first cell (the box pushed
+  left by the screen's right edge, the "▾" stays above the pill). It
+  opens once the session has listed its models, from the pill on screen,
+  with room for two of its list's rows above the rule; otherwise a toast
+  says why: "the session has not listed its models yet", "no model list:
+  <the CLI's words>" for a list the CLI refused, "no model selection with
+  this session" for a session that lists none, "the model selector needs
+  the model pill on screen" (a full view; a turn's status too long to sit
+  beside the pill, which has the row alone, at 120x40 with the longer
+  pills), "no room for the model selector above the editor" (a draft as
+  tall as the editor allows at 80x24). A frame with no room for an open
+  selector closes it, so no key acts on what is not on screen.
+  Claude Code's, on the mock made from probe P34c:
+
+  ```text
+  ╭─────────────────────────────────────────────────────────────────╮
+  │ CLAUDE MODELS                                   Current session │
+  │                                                                 │
+  │    Default (recommended)                                        │
+  │    Opus 5.5 · Best for everyday, complex tasks                  │
+  │                                                                 │
+  │    Opus 5.5                                                     │
+  │    For complex work and everyday tasks                          │
+  │                                                                 │
+  │  ▶ Fable 5.1                                                ✓   │
+  │    For your toughest challenges                                 │
+  │                                                                 │
+  │    Sonnet 5.5                                                   │
+  │    Most efficient for simpler tasks                             │
+  │                                                                 │
+  │    Haiku 5.5                                                    │
+  │    Fastest for quick answers                                    │
+  │ ─────────────────────────────────────────────────────────────── │
+  │  ▶ More models                                              ›   │
+  │ ─────────────────────────────────────────────────────────────── │
+  │                                                                 │
+  │  Effort:    Max        ⌄                                        │
+  │                                                                 │
+  │  Ultracode Enables dynamic workflows                    ▐   ●▌  │
+  ╰▾────────────────────────────────────────────────────────────────╯
+  ```
+
+  - **The models**: the heading names the session's CLI, "CLAUDE MODELS"
+    or "CODEX MODELS", and the list is that CLI's own, in its order
+    (architecture.md, Model settings): the first five, then "More models"
+    with the others, collapsed ("▶"; "▼" expanded). Codex's default model
+    reads "(default)" after its name. The model in force has the "✓", the
+    cursor's row the band and a pink "▶"; the popup opens with the cursor
+    on the model in force, More models expanded when it lies there.
+    Expanding changes neither the popup's height nor its width: the list
+    scrolls inside, its scroll bar ("┃") on the right edge. The popup is
+    never taller than the rows above the editor's rule, zone B's title
+    left visible, nor wider than the screen.
+  - **Effort**: the box shows the level in force, as the pill does, and
+    "⌄"; Enter, Space or a click opens the list of the model's own levels
+    above it (for Codex, of the model waiting for the next message, if
+    one waits), the level in force with "✓", a Codex level waiting for
+    the next message with a grey "…". A model with no levels shows "N/A"
+    with no chevron and opens nothing. An effort `CLAUDE_CODE_EFFORT_LEVEL` holds shows its level
+    with no chevron, and a click puts "the effort is set by
+    CLAUDE_CODE_EFFORT_LEVEL (Max): the dashboard does not change it" in
+    zone B and sends nothing.
+  - **Ultracode**, Claude Code's only: "Ultracode", "Enables dynamic
+    workflows" and the toggle, on (the knob at the right of the violet
+    track) while Claude Code reports it on. While it reports it
+    unavailable, or its state is not known, the row is dimmed and its
+    toggle off, and a click puts the reason in zone B and sends nothing.
+  - **Keys** while it is open: ↑↓ move the cursor over the models, More
+    models, Effort and Ultracode (over the levels while the effort list
+    is open), Home and End to the first and the last; Enter or Space acts
+    on the cursor's row (chooses a model, expands or collapses More
+    models, opens the effort list, turns Ultracode on or off, picks a
+    level); PgUp and PgDn scroll a page; Esc closes the effort list, then
+    the popup; Alt+P closes it; a send key the configuration names acts as
+    Enter does. Any other key, and a paste, closes it and goes on, as the
+    "+" menu's. No key it takes reaches the editor, so the popup never
+    sends; Ctrl+Q still quits. The focus stays where it was.
+  - **Mouse**: the hover moves the cursor (every mouse motion asked for
+    while it is open, as the "+" menu's); a click on a row acts on it, on
+    the frame or a blank row does nothing; the wheel scrolls the list; a
+    click outside closes it and goes on. The pill is panel 'M', the popup
+    panel 'S'.
+  - **Only what the CLI accepted**: a choice changes nothing on screen by
+    itself. Claude Code's is sent at once, and the pill, the "✓", zone
+    B's speaker and zone A's model take a new value only from the
+    `get_settings` read that follows its answer; one change at a time, a
+    choice while one waits for its answer doing nothing; during a turn a
+    choice is not sent, zone B saying "Claude Code's model settings
+    change between turns: wait for the turn to end" (what a change does
+    to a running turn was not probed). Codex's waits for the next
+    message, the row's middle saying "→ <model> <Effort> (next turn)"
+    (choosing what is in force again cancels it), and its values come
+    from `thread/read` once that message's turn is accepted; a turn Codex
+    refuses gives the message back to the editor, "the message could not
+    be sent: turn/start refused by Codex: …", and zone B says under the
+    owner's entry "the message was not sent: …; it is back in the editor"
+    and "the model change was not taken: …". A refusal, or what the CLI kept of a
+    change, is a notice in zone B ("Model 'claude-not-a-model-34' not
+    found", "Claude Code kept the effort Max (asked: Low)"); a change
+    still waiting when the session ends is dropped, "the model change
+    asked for was not applied: the session ended". The draft, its images
+    and the focus stay as they were.
 - **Attached images** (plan 31, brief amendment 31; the formats and the
   providers' limits in [doc/research/image-input.md](research/image-input.md)
   and plan 31's matrix): a click on "Upload from computer" opens the

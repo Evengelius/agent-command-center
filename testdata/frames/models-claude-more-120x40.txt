@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-models.jsonl   ..\..\testdata\mock\claude-models.jsonl                                              Mock data
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
+│ A · ORCHESTRATOR                 ││ Waiting for instructions                                                         │
+│ ✿ Claude Fable 5.1        ○ IDLE ││ Ready to work on this project.                                                   │
+│ ──────────────────────────────── ││                                                                                  │
+│ STAGES · inferred from activity  ││       ╭─────────────────────────────────────────────────────────────────╮        │
+│ ○ (stages appear as turns run)   ││       │ CLAUDE MODELS                                   Current session │        │
+│                                  ││       │                                                                 │        │
+│                                  ││       │  ▼ More models                                              ›   │        │
+│                                  ││       │                                                                 │        │
+│                                  ││       │    Haiku 4.5                                                    │        │
+│                                  ││       │    Fastest for quick answers                                    │        │
+│                                  ││       │                                                                 │        │
+│                                  ││       │    Sonnet 5                                                     │        │
+│                                  ││       │    Efficient for routine tasks                                  ┃        │
+│                                  ││       │                                                                 ┃        │
+│                                  ││       │    Opus 5                                                       ┃        │
+│                                  ││       │    Best for everyday, complex tasks                             ┃        │
+│                                  ││       │                                                                 ┃        │
+│                                  ││       │    Fable 5                                                      ┃        │
+│ ──────────────────────────────── ││       │    Most capable for your hardest and longest-running tasks      ┃        │
+│ ✦ TELEMETRY        Enter details ││       │                                                                 │        │
+│ ▾ SESSION USAGE                  ││       │    Opus 4.8                                                     │        │
+│   Context N/A no turn yet        ││       │    Best for everyday, complex tasks                             │        │
+│   Tokens N/A no result yet       ││       │                                                                 │        │
+│   Est. cost N/A no result yet    ││       │                                                                 │        │
+│                                  ││       │  Effort:    Max        ⌄                                        │        │
+│ ▾ QUOTA WINDOWS                  ││       │                                                                 │        │
+│   Session (5hr)              N/A ││       │  Ultracode Enables dynamic workflows                    ▐   ●▌  │        │
+│   no report yet                  ││ ──────╰▾────────────────────────────────────────────────────────────────╯─────── │
+│                                  ││ >  Ask Mock data anything…                                                       │
+│   Weekly (7 day)             N/A ││ ──────────────────────────────────────────────────────────────────────────────── │
+│   no report yet                  ││   +     Fable 5.1 Max · Ultracode                                        ↯ Auto  │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
+│ no agents yet: they appear as the CLI starts them                                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

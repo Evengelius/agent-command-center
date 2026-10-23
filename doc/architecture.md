@@ -156,6 +156,9 @@ Session
   Interrupt() error                 cancel the running turn
   SetApprovalMode(auto bool) error  Manual or Auto approvals (plan 12): Claude Code at once,
                                     Codex from the next turn; refused where not supported
+  SetModelSettings(ModelRequest) error  a model, an effort or Ultracode (plan 34): Claude
+                                    Code at once, then read back; Codex with the next
+                                    turn; refused where not supported (Model settings)
   Refresh(TelemetryKind) error      on-demand reads (quota, context); never a timer
   Capabilities() Capabilities       what this CLI and version support (below)
   Close(ctx) error                  graceful, then forced (reliability.md)
@@ -165,14 +168,17 @@ Session
 pretends both CLIs are the same (AM4 D6 "Do not force all providers to
 expose identical telemetry"): streaming of subagent text, per-subagent model,
 quota without a turn, API-equivalent cost, clarification questions, plan
-steps, resume with history, allow-for-session, Manual or Auto approvals, and
+steps, resume with history, allow-for-session, Manual or Auto approvals,
 the limits on a message's images (`Images`: count, bytes an image and a
-message, pixels a side, patches; plan 31, doc/research/image-input.md). They
+message, pixels a side, patches; plan 31, doc/research/image-input.md), and
+the model selection (`Models`, `ModelsNextTurn`, `Ultracode`; plan 34). They
 are fixed per adapter (`internal/provider/claude/session.go`,
 `internal/provider/codex/session.go`, `internal/provider/mock/session.go`),
-not read from detection or the handshake, and one is read:
+not read from detection or the handshake, and these are read:
 `AutoApprovals`, which F4 needs to ask for Manual or Auto approvals
-(`internal/app/keys.go`). A value no event gives stays "N/A" with its reason,
+(`internal/app/keys.go`), and the three of the model selection, which open
+it, mark a change as waiting for the next message and show its Ultracode
+row (`internal/app/models.go`). A value no event gives stays "N/A" with its reason,
 whatever the flags. The other differences come from the provider id
 (plan 21, item 5.3; rewiring them to the flags would change nothing on
 screen):
@@ -188,6 +194,7 @@ screen):
 | zone B's speaker label, CLAUDE or CODEX (`providerLabel`) | `internal/render/dashboard.go` |
 | the Write and Edit sentence on a pending Claude Code request (`effect`) | `internal/render/approval.go` |
 | zone A's telemetry (zone D until plan 23): Codex's credits or Claude Code's overage, the concurrency limit's reason, the N/A reasons each CLI never reports | `internal/render/telemetry.go` |
+| the model selector's heading, CLAUDE MODELS or CODEX MODELS (`SelectorHeading`), and the CLI its notices name (`cliName`) | `internal/render/models.go`, `internal/state/models.go` |
 
 ### Claude Code adapter
 
@@ -200,6 +207,7 @@ screen):
 | Approvals | `can_use_tool` requests answered allow (echoing `updatedInput`) or deny with a message; `permission_suggestions` and `updatedPermissions` other than `session` never sent | INT 4; CC-4; P2, P3b |
 | Interrupt | `interrupt` control request | INT 5; P2 |
 | Telemetry | stream messages; "/usage" right after the handshake and, with `get_context_usage`, after each turn (plan 24, amendment 23) | TEL CC |
+| Models | the `initialize` response's `models` (documented `ModelInfo`) are the list; `get_settings` (undocumented, its ids `read_N`) after the handshake, after each change's answer and after each turn, reduced to `applied` and, from `effective`, the model and `env.CLAUDE_CODE_EFFORT_LEVEL`; a model by `set_model`, an effort by `apply_flag_settings {effortLevel, ultracode}` with the Ultracode in force, Ultracode by `apply_flag_settings {ultracode}`, all for the session only; `update_settings`, which writes settings files, is never sent ([Model settings](#model-settings)) | CC-13; P34c, P34c2, P34c3 |
 | Close | close stdin, wait 5 s, terminate, wait 5 s, kill | CC-4; INT 9 (no POSIX signals on Windows) |
 
 Permission mode: the startup screen asks nothing beyond the two questions
@@ -229,7 +237,8 @@ configuration is not touched (CC-11; P12c, P12c-switch).
 | - | - | - |
 | Detect | `codex.exe` on the PATH or in `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin`, the `.exe` resolved, not a `.cmd`; `codex --version` (`codex-cli 0.145.0`), with a 5 s timeout; no status command is used. A ChatGPT sign-in is told from an API key by the session's `account/rateLimits/read`, refused without a ChatGPT sign-in, which makes the quota "N/A (API key: ChatGPT sign-in needed)" (plan 21, item 5.2) | CX-2; P0 |
 | Start | `codex app-server` with `cmd.Dir` = project path, in the dashboard's environment. With `config.json`'s `codex.proxy` set, `HTTPS_PROXY` and `HTTP_PROXY` carry that address instead of any inherited value (plan 22, amendment 19). Then `initialize` (`clientInfo`) and `initialized`; `thread/start` with `sandbox`, `approvalPolicy` and `model`, **without `cwd`**: every dashboard run on a new, untrusted project left Codex's configuration identical, so no `trust_level` is written (CX-10 q2, settled in plan 14) | CX-4.1; INT 1; INT shape |
-| Model | the per-session model `gpt-5.6-sol` (the default `model/list` reports) is passed in `thread/start` only when the configured model is refused; the refusal is shown as received | P5, P6, P6b; CX-3.3 |
+| Model | the model `model/list` marks as default and does not hide (`gpt-6.1-sol` on Codex 0.163.0) is passed in `thread/start` only when the configured model is refused; the refusal is shown as received | P5, P6, P6b; CX-3.3; P34x |
+| Models | `model/list` right after `initialized`, every page (`cursor` from `nextCursor`; a cursor that comes back or a hundredth page ends the list there), hidden models left out; the settings in force from `thread/start`'s `model` and `reasoningEffort`, then from `thread/read` after a turn that carried a change or after `model/rerouted`; a change rides on the next `turn/start` as `model` and `effort` ("for this turn and subsequent turns"), kept for the next message when that write fails; the experimental `thread/settings/update` is never sent; no Ultracode ([Model settings](#model-settings)) | CX-13; P34x |
 | Converse | `turn/start {threadId, input:[{type:"text", text}]}`, with the reviewer and sandbox below and `summary: "auto"`: the reasoning summary asked for, so a step's reasoning item starts while the model works (plan 22, amendment 20) | CX-4.1; P6b; P22s |
 | Approvals | `item/commandExecution/requestApproval` and `item/fileChange/requestApproval` answered `accept`, `acceptForSession`, `decline` or `cancel`; an unknown request method gets a JSON-RPC error | INT 4; P6b, P7 |
 | Interrupt | `turn/interrupt {threadId, turnId}` | INT 5; P6b |
@@ -273,7 +282,11 @@ recorded or scripted event files through the same parts 2 to 4. It is not
 offered on the startup screen; it starts only with an explicit command-line
 flag, and every screen shows that it is mock data. The design and its
 isolation from live sessions are in
-[reliability.md, Mock mode](reliability.md#mock-mode).
+[reliability.md, Mock mode](reliability.md#mock-mode). A model change it
+answers itself, from the models and settings its file recorded: a Claude
+Code file's at once, a Codex file's with the next message, as each CLI
+does (plan 34; `testdata/mock/claude-models.jsonl` and
+`codex-models.jsonl`, made from probes P34c and P34x).
 
 ## Session context
 
@@ -445,6 +458,20 @@ amendment 32; doc/research/image-paste.md).
 | 2 and 3. State | the message's images ride on the write command and stay with the turn until it is accepted, a failed write giving them back; the owner's entry is named from them | `internal/state/actions.go`, `reduce.go` |
 | 1. Providers | `Send(provider.Message)`: Claude Code's base64 image blocks before the text, Codex's `image` inputs with data URLs; each adapter's mapper keeps the line it wrote without the image's bytes, and Codex's every line it reads too, since the app-server writes the message back with its images (the event, the log and the screen hold the media type and size) | `internal/provider/claude/images.go`, `codex/images.go` |
 | 4. Rendering | the chips' row under the editor's rule, the images under a sent message's text; with Sixel, the strip of the thumbnails' blank cells above the chips (panel 'T', ThumbCells by the terminal's rows) and the Sixel encoder (median cut to 255 colours, transparent pixels unset) | `internal/render/attach.go`, `editor.go`, `cards.go`, `sixel.go` |
+
+## Model settings
+
+Plan 34 (brief amendment 34; ui-design.md, Input editor, The model
+selector; the research in claude-code.md and codex-cli.md, section 13).
+The models come from the CLI, never from the code; the screen shows a
+model, an effort or Ultracode only once the CLI reports it in force.
+
+| Part | What it does | Where |
+| - | - | - |
+| 1. Providers | two events: `models.listed`, the CLI's own list (each entry's id, model, name, description, effort levels, default level), and `models.settings`, the settings in force (model, effort, Ultracode and its availability, the variable that holds the effort) or a change's answer (`Answers`, `Refused`, the CLI's words). Claude Code: the list from `initialize`; a change written at once and its answer followed by a `get_settings` read, whose event alone says what applied, the read reduced to the values above before it becomes an event so no other setting is logged or shown; `CLAUDE_CODE_EFFORT_LEVEL` read from the dashboard's environment and from the read's `env` (its value only). Codex: the list from every `model/list` page; a change kept by the session and written with the next `turn/start`, its answer followed by `thread/read`; a refused turn answers the change as refused | `internal/event/event.go`, `internal/provider/provider.go`, `claude/models.go`, `claude/mapper.go`, `claude/session.go`, `codex/models.go`, `codex/mapper.go`, `codex/session.go`, `mock/session.go` |
+| 2 and 3. State | `Models`: the list, the settings in force merged from the reports, the change asked for until its answer; the choices as actions (`ChooseModel`, `ChooseEffort`, `ChooseUltracode`), each checked against the list (a level the model lists, Ultracode only while available, no effort a variable holds) and handed to the session as a `CmdModels` command; one Claude Code change at a time, none while a turn runs; a Codex change waiting for the next message, a new choice adding to it and a choice of what is in force cancelling it; a refusal, or what the CLI kept, a notice in zone B; a change still waiting when the session ends dropped, said; a refused `turn/start` ending the submitted turn, the message given back; zone B's speaker and zone A's model follow the model in force; a new CLI process (a restart, a resume) starts with no list and no settings | `internal/state/models.go`, `reduce.go`, `actions.go` |
+| The application | the pill's click and Alt+P open the selector, on a screen with room for it, the focus left where it is; its keys (a configured send key as Enter), hover, clicks and wheel; a paste closes it; a frame that could not draw it, or its effort list, closes them (`View`), so no key acts unseen; a change written through the write queue, in order with the owner's messages, a failed hand-over a notice | `internal/app/models.go`, `app.go`, `keys.go`, `mouse.go` |
+| 4. Rendering | the pill from the settings in force; the popup over the dashboard, its list scrolled inside, the effort list, the Ultracode row, and what the frame drew of them (`Screen.Selector`); the rows' hit areas for the mouse (panels 'M' and 'S'); "→ … (next turn)" in the editor row's middle | `internal/render/models.go`, `editor.go`, `select.go` |
 
 ## Build order
 

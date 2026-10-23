@@ -48,6 +48,8 @@ func fake(mode string) {
 	// dashboard writes it after the handshake and after each turn (plan 24,
 	// amendment 23): every mode answers it on the way to the line it waits
 	// for, with a session window one point higher at each read.
+	// Likewise the settings reads (plan 34): every mode refuses them on the
+	// way, so a mode's own lines and their state stay as they were.
 	reads := 0
 	readLine := next
 	next = func() []byte {
@@ -58,8 +60,17 @@ func fake(mode string) {
 				Message struct {
 					Content json.RawMessage `json:"content"`
 				} `json:"message"`
+				RequestID string `json:"request_id"`
+				Request   struct {
+					Subtype string `json:"subtype"`
+				} `json:"request"`
 			}
-			if json.Unmarshal(l, &msg) != nil || msg.Type != "user" || string(msg.Message.Content) != `"/usage"` {
+			err := json.Unmarshal(l, &msg)
+			if err == nil && msg.Type == "control_request" && msg.Request.Subtype == "get_settings" && mode != "models" {
+				out(`{"type":"control_response","response":{"subtype":"error","request_id":` + quote(msg.RequestID) + `,"error":"fake: no settings"}}`)
+				continue
+			}
+			if err != nil || msg.Type != "user" || string(msg.Message.Content) != `"/usage"` {
 				return l
 			}
 			reads++
@@ -78,6 +89,8 @@ func fake(mode string) {
 		replayFixture(next, out, cwd)
 	case "ready": // answers the handshake, then reads
 		ready()
+	case "models": // the model settings as P34c and P34c3 showed them (plan 34)
+		fakeModels(next, out)
 	case "silent": // never answers the handshake
 	case "echo": // reads one user message, answers with an assistant message holding its content (CC-10 q13)
 		ready()
@@ -161,6 +174,87 @@ func fake(mode string) {
 }
 
 func quote(s string) string { b, _ := json.Marshal(s); return string(b) }
+
+// fakeModels answers as Claude Code 2.1.303 did with no message (P34c,
+// P34c3): the initialize answer lists five of P34c's models; set_model
+// changes the model, refusing one it does not know; apply_flag_settings
+// takes a level, run at the highest the model takes, and Ultracode, which a
+// level asked for alone turns off; get_settings says what is in force.
+func fakeModels(next func() []byte, out func(string)) {
+	type model struct {
+		resolved string
+		levels   []string
+	}
+	all := []string{"low", "medium", "high", "xhigh", "max"}
+	models := map[string]model{"default": {"claude-opus-5-5", all}, "opus": {"claude-opus-5-5", all}, "fable": {"claude-fable-5-1", all},
+		"claude-haiku-4-5-20251001": {"claude-haiku-4-5-20251001", nil}, "claude-opus-4-6": {"claude-opus-4-6", []string{"low", "medium", "high", "max"}}}
+	cur, effort, ultracode := models["fable"], "max", true
+	takes := func(l string) bool {
+		for _, x := range cur.levels {
+			if x == l {
+				return true
+			}
+		}
+		return false
+	}
+	for {
+		var m struct {
+			Type      string `json:"type"`
+			RequestID string `json:"request_id"`
+			Request   struct {
+				Subtype  string `json:"subtype"`
+				Model    string `json:"model"`
+				Settings struct {
+					Effort    *string `json:"effortLevel"`
+					Ultracode *bool   `json:"ultracode"`
+				} `json:"settings"`
+			} `json:"request"`
+		}
+		if json.Unmarshal(next(), &m) != nil || m.Type != "control_request" {
+			continue
+		}
+		ok := func(body string) {
+			out(`{"type":"control_response","response":{"subtype":"success","request_id":` + quote(m.RequestID) + `,"response":` + body + `}}`)
+		}
+		switch m.Request.Subtype {
+		case "initialize":
+			ok(`{"models":[` +
+				`{"value":"default","resolvedModel":"claude-opus-5-5","displayName":"Default (recommended)","description":"Opus 5.5 · Best for everyday, complex tasks","supportsEffort":true,"supportedEffortLevels":["low","medium","high","xhigh","max"]},` +
+				`{"value":"opus","resolvedModel":"claude-opus-5-5","displayName":"Opus 5.5","description":"Best for everyday, complex tasks","supportsEffort":true,"supportedEffortLevels":["low","medium","high","xhigh","max"]},` +
+				`{"value":"fable","resolvedModel":"claude-fable-5-1","displayName":"Fable 5.1","description":"For your toughest challenges","supportsEffort":true,"supportedEffortLevels":["low","medium","high","xhigh","max"]},` +
+				`{"value":"claude-haiku-4-5-20251001","resolvedModel":"claude-haiku-4-5-20251001","displayName":"Haiku 4.5","description":"Fastest for quick answers"},` +
+				`{"value":"claude-opus-4-6","resolvedModel":"claude-opus-4-6","displayName":"Opus 4.6","description":"Best for everyday, complex tasks","supportsEffort":true,"supportedEffortLevels":["low","medium","high","max"]}]}`)
+		case "set_model":
+			nm, known := models[m.Request.Model]
+			if !known {
+				out(`{"type":"control_response","response":{"subtype":"error","request_id":` + quote(m.RequestID) + `,"error":"Model '` + m.Request.Model + `' not found"}}`)
+				continue
+			}
+			cur = nm
+			ok(`{}`)
+		case "apply_flag_settings":
+			if l := m.Request.Settings.Effort; l != nil {
+				effort = *l
+				for effort == "xhigh" && !takes(effort) {
+					effort = "high" // the highest the model takes at or below it
+				}
+				ultracode = false // a level alone turns Ultracode off (P34c3)
+			}
+			if u := m.Request.Settings.Ultracode; u != nil {
+				ultracode = *u && takes("xhigh")
+			}
+			ok(`{}`)
+		case "get_settings":
+			e := quote(effort)
+			if len(cur.levels) == 0 {
+				e = "null"
+			}
+			avail := takes("xhigh")
+			ok(fmt.Sprintf(`{"effective":{"model":"fable","env":{"HTTPS_PROXY":"x"}},"applied":{"model":%q,"effort":%s,"ultracode":%t,"ultracodeRequested":%t,"ultracodeAvailable":%t}}`,
+				cur.resolved, e, ultracode && avail, ultracode, avail))
+		}
+	}
+}
 
 // usageReport is Claude Code's answer to "/usage" as P24u recorded it, with
 // the session window at pct: the page as text, and the report beside it.
@@ -348,12 +442,14 @@ func TestHandshakeAndTurn(t *testing.T) {
 		t.Fatal(err)
 	}
 	lines := strings.Split(strings.TrimSuffix(string(b), "\n"), "\n")
-	// The usage reads of plan 24 (amendment 23): after the handshake, and
-	// with the context usage in Refresh.
+	// The usage reads of plan 24 (amendment 23) and the settings reads of
+	// plan 34: after the handshake, and with the context usage in Refresh.
 	want := []string{
 		`{"request":{"subtype":"initialize","hooks":null},"request_id":"req_1","type":"control_request"}`,
+		`{"request":{"subtype":"get_settings"},"request_id":"read_1","type":"control_request"}`,
 		`{"message":{"content":"/usage","role":"user"},"parent_tool_use_id":null,"session_id":"default","type":"user"}`,
 		`{"request":{"subtype":"get_context_usage"},"request_id":"req_2","type":"control_request"}`,
+		`{"request":{"subtype":"get_settings"},"request_id":"read_2","type":"control_request"}`,
 		`{"message":{"content":"/usage","role":"user"},"parent_tool_use_id":null,"session_id":"default","type":"user"}`,
 		`{"message":{"content":` + quote(text) + `,"role":"user"},"parent_tool_use_id":null,"session_id":"default","type":"user"}`,
 		`{"response":{"request_id":"` + req.ID + `","response":{"behavior":"allow","updatedInput":` + string(req.Input) + `},"subtype":"success"},"type":"control_response"}`,
@@ -575,6 +671,7 @@ func TestSetApprovalMode(t *testing.T) {
 	}
 	want := []string{
 		`{"request":{"subtype":"initialize","hooks":null},"request_id":"req_1","type":"control_request"}`,
+		`{"request":{"subtype":"get_settings"},"request_id":"read_1","type":"control_request"}`,                         // plan 34
 		`{"message":{"content":"/usage","role":"user"},"parent_tool_use_id":null,"session_id":"default","type":"user"}`, // plan 24, amendment 23
 		`{"request":{"subtype":"set_permission_mode","mode":"auto"},"request_id":"req_2","type":"control_request"}`,
 		`{"request":{"subtype":"set_permission_mode","mode":"default"},"request_id":"req_3","type":"control_request"}`,

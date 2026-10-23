@@ -59,8 +59,10 @@ func TestGoldenFrames(t *testing.T) {
 	dashGit := func(t *testing.T, git input.Git) *harness {
 		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")}, Git: git})
 		h.settle()
-		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 155 { // 154 and the subagent's model (plan 5, item 7)
-			t.Fatalf("dashboard: screen %q, %d events, want 155", s.Screen, len(s.Log))
+		// 154, the subagent's model (plan 5, item 7) and the session's models
+		// (plan 34).
+		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 156 {
+			t.Fatalf("dashboard: screen %q, %d events, want 156", s.Screen, len(s.Log))
 		}
 		return h
 	}
@@ -68,8 +70,10 @@ func TestGoldenFrames(t *testing.T) {
 	codexDash := func(t *testing.T) *harness {
 		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "codex-subagents.jsonl")}})
 		h.settle()
-		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 182 { // 177 and the 5 steps Codex's adapter infers (plan 22)
-			t.Fatalf("codex dashboard: screen %q, %d events, want 182", s.Screen, len(s.Log))
+		// 177, the 5 steps Codex's adapter infers (plan 22) and the thread's
+		// model settings (plan 34).
+		if s := h.m.State(); s.Screen != state.ScreenDashboard || len(s.Log) != 183 {
+			t.Fatalf("codex dashboard: screen %q, %d events, want 183", s.Screen, len(s.Log))
 		}
 		return h
 	}
@@ -282,10 +286,43 @@ func TestGoldenFrames(t *testing.T) {
 		}
 		return h
 	}
+	// The model selector (plan 34): P34c's Claude Code session opened by a
+	// click on its pill, P34x's Codex session by Alt+P; then keys move the
+	// cursor to More models or Effort and Enter acts on it.
+	selector := func(mock string, keys ...tea.KeyPressMsg) func(*testing.T) *harness {
+		return func(t *testing.T) *harness {
+			h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", mock)}})
+			h.settle()
+			if mock == "claude-models.jsonl" {
+				x, y := at(t, h, "Fable 5.1 Max", 0)
+				mouseAt(t, h, click(x, y))
+				mouseAt(t, h, tea.MouseReleaseMsg{X: x, Y: y, Button: tea.MouseLeft})
+			} else {
+				h.send(key('p', tea.ModAlt))
+			}
+			if !h.m.ui.Models.Open {
+				t.Fatalf("%s: the selector did not open", mock)
+			}
+			for _, k := range keys {
+				h.send(k)
+			}
+			return h
+		}
+	}
+	down := func(n int) []tea.KeyPressMsg {
+		var ks []tea.KeyPressMsg
+		for range n {
+			ks = append(ks, key(tea.KeyDown, 0))
+		}
+		return append(ks, key(tea.KeyEnter, 0))
+	}
 	for _, sc := range []struct {
 		name string
 		rig  func(*testing.T) *harness
-	}{{"startup", startup}, {"dashboard", dash}, {"plus-menu", plusMenu}, {"attachments", attached}, {"attachments-sent", sent}, {"attachments-preview", preview}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))}} {
+	}{{"models-claude", selector("claude-models.jsonl")}, {"models-claude-more", selector("claude-models.jsonl", down(3)...)},
+		{"models-claude-effort", selector("claude-models.jsonl", down(4)...)}, {"models-codex", selector("codex-models.jsonl")},
+		{"models-codex-more", selector("codex-models.jsonl", down(3)...)},
+		{"startup", startup}, {"dashboard", dash}, {"plus-menu", plusMenu}, {"attachments", attached}, {"attachments-sent", sent}, {"attachments-preview", preview}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))}} {
 		for _, size := range sizes {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)

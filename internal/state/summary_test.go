@@ -31,8 +31,10 @@ func TestThinkingCodexP22s(t *testing.T) {
 		start, itemStart, end, span, tokens int64
 		summary, step                       string
 	}{
-		{5252, 6882, 9388, 4136, 28, "", "step:23"},
-		{9849, 11397, 14833, 4984, 36, "**Computing f(10)**", "step:71"},
+		// The steps' event numbers count the thread start's model
+		// settings, an event since plan 34.
+		{5252, 6882, 9388, 4136, 28, "", "step:24"},
+		{9849, 11397, 14833, 4984, 36, "**Computing f(10)**", "step:72"},
 	} {
 		e, x := th[i], th[i].Thought
 		if !x.Inferred || !x.Confirmed || x.Dropped || x.Live() || x.Outcome != "" || x.EndInferred || x.EndNext || x.Closed || e.Streaming {

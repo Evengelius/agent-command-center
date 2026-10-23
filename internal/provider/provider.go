@@ -83,6 +83,19 @@ type Capabilities struct {
 	// Images are the CLI's limits on a message's images (plan 31); a zero
 	// MaxCount is a CLI that takes none.
 	Images ImageLimits
+	// Models says the session lists its models and takes SetModelSettings,
+	// ModelsNextTurn that a change applies from the next turn (Codex), and
+	// Ultracode that the CLI has Claude Code's Ultracode (plan 34).
+	Models, ModelsNextTurn, Ultracode bool
+}
+
+// ModelRequest is a change of the session's model settings (plan 34); an
+// empty field keeps its setting. Model is the ID of a model the CLI listed,
+// Effort one of the levels that model takes, Ultracode Claude Code's.
+type ModelRequest struct {
+	Model     string
+	Effort    string
+	Ultracode *bool
 }
 
 // Provider is one agent CLI.
@@ -110,6 +123,10 @@ type Session interface {
 	// SetApprovalMode asks for Auto (true) or Manual (false) approvals; the mode
 	// in force is reported by events (plan 12, item 2).
 	SetApprovalMode(auto bool) error
+	// SetModelSettings asks for a model, an effort or Ultracode (plan 34):
+	// Claude Code at once, Codex with the next turn; the settings in force
+	// come back as events.
+	SetModelSettings(r ModelRequest) error
 	Capabilities() Capabilities
 	Close(ctx context.Context) error
 }

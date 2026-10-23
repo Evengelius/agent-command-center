@@ -4,24 +4,24 @@
 │ A · ORCHESTRATOR                                     ││                                                                                                                                              │
 │ ✿ Claude Haiku 5.5                       ✓ COMPLETED ││ ▎ YOU  11:30                                                                                                                                 │
 │ ──────────────────────────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into  │
-│ STAGES · inferred ╭─ Explorer ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── mock · 14 items ─╮                   │
+│ STAGES · inferred ╭─ Explorer ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── mock · 16 items ─╮                   │
 │ ✓ TURN 1          │ sample/viewer.go                                                                                                                                             │                   │
 │   Use the Agent to│ ▾ sample                                                                                                                                                  ●  │────────────────── │
 │   Agent · agent ge│     viewer.go                                                                                                                                             M  │                   │
 │                   │     viewer_test.go                                                                                                                                        D  │                   │
 │ ✓ TURN 2          │ ▸ tools                                                                                                                                                   D  │:30:00      mock   │
 │   started by the C│   claude-api-key-context-refused.jsonl                                                                                                                       │                   │
-│                   │   claude-quota-windows.jsonl                                                                                                                                 │ finishes.         │
-│                   │   claude-subagent-approval.jsonl                                                                                                                             │                   │
+│                   │   claude-models.jsonl                                                                                                                                        │ finishes.         │
+│                   │   claude-quota-windows.jsonl                                                                                                                                 │                   │
+│                   │   claude-subagent-approval.jsonl                                                                                                                             │:30:00      mock   │
 │                   │   claude-thinking-subagent.jsonl                                                                                                                             │:30:00      mock   │
 │                   │   claude-thinking.jsonl                                                                                                                                      │:30:00      mock   │
-│                   │   codex-api-key.jsonl                                                                                                                                     U  │:30:00      mock   │
-│                   │   codex-no-5h-window.jsonl                                                                                                                                   │                   │
-│                   │   codex-plan6-limits.jsonl                                                                                                                                !  │─────────────────╮ │
+│                   │   codex-api-key.jsonl                                                                                                                                     U  │                   │
+│                   │   codex-models.jsonl                                                                                                                                         │─────────────────╮ │
+│                   │   codex-no-5h-window.jsonl                                                                                                                                   │                 │ │
+│                   │   codex-plan6-limits.jsonl                                                                                                                                !  │3b\found.txt`.   │ │
 │                   │   codex-spawn-request.jsonl                                                                                                                               A  │                 │ │
-│                   │   codex-subagents.jsonl                                                                                                                                      │3b\found.txt`.   │ │
-│                   │                                                                                                                                                              │                 │ │
-│                   │                                                                                                                                                              │                 │ │
+│                   │   codex-subagents.jsonl                                                                                                                                      │                 │ │
 │                   │                                                                                                                                                              │─────────────────╯ │
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
@@ -50,7 +50,7 @@
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
 │                   │                                                                                                                                                              │                   │
-│                   │ ↑↓ PgUp PgDn Home End move · → open · ← close · Enter view file · / quick open · F1 keys · Esc back · F3 close                                       2 of 14 │                   │
+│                   │ ↑↓ PgUp PgDn Home End move · → open · ← close · Enter view file · / quick open · F1 keys · Esc back · F3 close                                       2 of 16 │                   │
 │                   ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯                   │
 │                                          │                                                                                                                                                           │
 │                                          │                                                                                                                                                           │

@@ -50,10 +50,24 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 		// A click on a chip's ✕ removes its image.
 		if mo.Button == tea.MouseLeft && !m.ui.DraftWin.Open {
 			switch p, item := m.screen.ItemAt(mo.X, mo.Y); {
+			case p == render.PillPanel:
+				// The model pill opens and closes the model selector (plan 34).
+				return m.toggleModels()
+			case m.ui.Models.Open && p == render.SelectorPanel:
+				return m.modelsClick(item)
 			case p == '+':
+				m.closeModels()
 				m.ui.Plus, m.ui.PlusHover = !m.ui.Plus, false
 				m.ui.Focus = "B"
 				return nil
+			case m.ui.Models.Open:
+				// A click outside closes the selector and goes on, as one
+				// outside the "+" menu does (plan 34, design D9).
+				m.closeModels()
+				if p == 'X' {
+					m.ui.Focus = "B"
+					return m.removeAttachment(item)
+				}
 			case m.ui.Plus:
 				m.ui.Plus, m.ui.PlusHover = false, false
 				if p == 'U' {
@@ -72,6 +86,11 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 		if m.ui.Plus && !m.drag.on {
 			m.ui.PlusHover = m.screen.PanelAt(mo.X, mo.Y) == 'U' // the hover (plan 30, design D3)
 		}
+		if m.ui.Models.Open && !m.drag.on {
+			if p, item := m.screen.ItemAt(mo.X, mo.Y); p == render.SelectorPanel {
+				m.modelsHover(item) // the cursor follows the pointer (plan 34, design D9)
+			}
+		}
 		if m.drag.on {
 			m.drag.moved = m.drag.moved || mo.X != m.drag.x || mo.Y != m.drag.y
 			m.extend(mo)
@@ -84,6 +103,17 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			return m.copySelection()
 		}
 	case tea.MouseWheelMsg:
+		if m.ui.Models.Open && m.screen.PanelAt(mo.X, mo.Y) == render.SelectorPanel {
+			// The wheel scrolls the selector's list (plan 34, design D8).
+			n := wheelRows
+			if mo.Button == tea.MouseWheelUp {
+				n = -wheelRows
+			}
+			if mo.Button == tea.MouseWheelUp || mo.Button == tea.MouseWheelDown {
+				m.scrollSelector(n)
+			}
+			return nil
+		}
 		if m.ui.DraftWin.Open {
 			if m.screen.PanelAt(mo.X, mo.Y) == 'E' && (mo.Button == tea.MouseWheelUp || mo.Button == tea.MouseWheelDown) {
 				mv := input.Down

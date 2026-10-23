@@ -40,6 +40,8 @@ func TestFixturesMatchRecordings(t *testing.T) {
 		"p303c-claude-default-to-auto.jsonl":            259,
 		"p303d-claude-question-answer.jsonl":            62,
 		"p303e-claude-interrupt-tool.jsonl":             88,
+		"p34c-claude-model-settings.jsonl":              57, // plan 34: Claude Code's models and settings, no message
+		"p34x-codex-model-list-settings.jsonl":          75, // plan 34: Codex's model/list pages and thread settings, no turn
 	}
 	copies, _ := filepath.Glob("../../testdata/probes/*.jsonl")
 	if len(copies) != len(want) {
