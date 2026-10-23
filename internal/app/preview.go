@@ -136,12 +136,12 @@ func (m *Model) previewSignature() string {
 	var b strings.Builder
 	var rows []int
 	for _, t := range ts {
-		key, pixels := "", false
+		key, pixels, sum := "", false, [32]byte{}
 		if t.Item < len(m.attach) {
-			key = m.attach[t.Item].Path
+			key, sum = m.attach[t.Item].Path, m.attach[t.Item].Sum // a file attached again: its new image (plan 33, design D7)
 			pixels = m.thumbs[key] != thumbSixel{}
 		}
-		fmt.Fprintf(&b, "%d %d %d %d %d %t %t %s\n", t.Item, t.X, t.Y, t.W, t.H, t.Text, pixels, key)
+		fmt.Fprintf(&b, "%d %d %d %d %d %t %t %s %x\n", t.Item, t.X, t.Y, t.W, t.H, t.Text, pixels, key, sum)
 		for y := t.Y; y < t.Y+t.H; y++ {
 			if !slices.Contains(rows, y) {
 				rows = append(rows, y)

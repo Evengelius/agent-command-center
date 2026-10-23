@@ -170,14 +170,17 @@ type SessionState struct {
 
 // Attachment is an image attached to the owner's message (plan 31): its
 // file's path, which the application reads when it sends, its name, its
-// size and media type as sent, and what the sending changes ("converted
-// from BMP"). The image's bytes are never in the state.
+// size and media type as sent, what the sending changes ("converted from
+// BMP"), and the SHA-256 of the file's bytes when it was attached, to tell
+// a file changed since (plan 33, design D7). The image's bytes are never in
+// the state.
 type Attachment struct {
 	Path  string
 	Name  string
 	Size  int64
 	Media string
 	Note  string
+	Sum   [32]byte
 }
 
 // pending says a sent message waits to be accepted: its text or its images.

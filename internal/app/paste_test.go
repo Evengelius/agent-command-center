@@ -2,7 +2,9 @@ package app
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"image/png"
@@ -267,9 +269,10 @@ func TestPastePaths(t *testing.T) {
 	}
 }
 
-// TestPastedDraft is criterion 32.3 (design D3): the stored draft lists a
-// pasted image by name and holds none of its bytes; restored, the text and
-// the file come back and the toast says the pasted image was not kept.
+// TestPastedDraft was criterion 32.3 (design D3); since plan 33 (design D8,
+// criterion 33.13) the stored draft keeps a pasted image's bytes in one
+// file of its folder, named by their SHA-256, and in no other; restored,
+// the text, the pasted image and the file come back in their order.
 func TestPastedDraft(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		files, err := imagetest.WriteAll(t.TempDir())
@@ -289,26 +292,38 @@ func TestPastedDraft(t *testing.T) {
 			t.Fatalf("attached %+v", h.m.attach)
 		}
 		project := h.m.State().Context.Project
-		paths, err := d.LoadImages(project)
-		if err != nil || len(paths) != 2 || paths[0] != "pasted:pasted-image-1.png" || paths[1] != files["jpg"] {
-			t.Fatalf("stored images %q, %v", paths, err)
+		sum := sha256.Sum256(pngA)
+		kept := hex.EncodeToString(sum[:]) + ".png"
+		paths := draftList(t, d, project)
+		if len(paths) != 2 || paths[0] != "pasted:pasted-image-1.png#"+hex.EncodeToString(sum[:]) || paths[1] != files["jpg"] {
+			t.Fatalf("stored images %q", paths)
 		}
-		// No byte of the image in the stored files, raw or in base64.
+		// The image's bytes in its one file, in no other, raw or in base64.
 		_ = filepath.Walk(d.Dir, func(path string, info os.FileInfo, err error) error {
 			if err != nil || info.IsDir() {
 				return err
 			}
 			b, _ := os.ReadFile(path)
+			if filepath.Base(path) == kept {
+				if !bytes.Equal(b, pngA) {
+					t.Errorf("%s differs from the pasted bytes", path)
+				}
+				return nil
+			}
 			if bytes.Contains(b, pngA[8:72]) || bytes.Contains(b, []byte(base64.StdEncoding.EncodeToString(pngA)[:64])) {
 				t.Errorf("%s holds the pasted image", path)
 			}
 			return nil
 		})
+		h.crash()
 		h2 := wireRig(t, &wireClaude{}, Options{Drafts: &d, Cwd: cwd, Clipboard: c})
-		if h2.m.edit.Text() != "kept" || len(h2.m.attach) != 1 || h2.m.attach[0].Name != "acc-image-upload-test.jpg" {
+		if h2.m.edit.Text() != "kept" || len(h2.m.attach) != 2 || h2.m.attach[0].Name != "pasted-image-1.png" || h2.m.attach[1].Name != "acc-image-upload-test.jpg" {
 			t.Errorf("restored: draft %q, %+v", h2.m.edit.Text(), h2.m.attach)
 		}
-		if !strings.Contains(h2.m.ui.Toast, "pasted-image-1.png was pasted, not kept") {
+		if !bytes.Equal(h2.m.pasted["pasted:pasted-image-1.png"], pngA) {
+			t.Error("the restored pasted image differs from the pasted bytes")
+		}
+		if h2.m.ui.Toast != "draft restored" {
 			t.Errorf("toast %q", h2.m.ui.Toast)
 		}
 	})

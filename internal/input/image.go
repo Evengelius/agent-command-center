@@ -2,6 +2,7 @@ package input
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"image"
@@ -43,7 +44,8 @@ type Image struct {
 	Media  string // the media type as sent: image/png, image/jpeg, image/gif, image/webp
 	Width  int
 	Height int
-	Note   string // what the sending changes: "animated: …", "orientation applied", "converted from BMP"
+	Note   string   // what the sending changes: "animated: …", "orientation applied", "converted from BMP"
+	Sum    [32]byte // the SHA-256 of the file's or the pasted bytes, as read (plan 33, design D7)
 }
 
 const (
@@ -83,7 +85,7 @@ func LoadImage(path string, lim ImageLimits) (Image, []byte, error) {
 // bytes as sent and the decoded image come back with it. Nothing is
 // written anywhere.
 func InspectData(name string, b []byte, lim ImageLimits) (Image, []byte, image.Image, error) {
-	img := Image{Name: name, Size: int64(len(b))}
+	img := Image{Name: name, Size: int64(len(b)), Sum: sha256.Sum256(b)}
 	switch {
 	case len(b) == 0:
 		return img, nil, nil, errors.New("an empty image")
@@ -91,6 +93,19 @@ func InspectData(name string, b []byte, lim ImageLimits) (Image, []byte, image.I
 		return img, nil, nil, fmt.Errorf("%s: too large to read as an image (over %s)", FmtBytes(img.Size), FmtBytes(maxInspect))
 	}
 	return decodeImage(img, b, name, lim)
+}
+
+// Unreachable says a file's drive or share cannot be reached at all (a
+// network share gone offline, a drive unplugged), as against a file gone
+// from a folder that answers (plan 33). Windows reports a server it cannot
+// find as a path that does not exist, so a failed read alone cannot tell.
+func Unreachable(path string) bool {
+	vol := filepath.VolumeName(path)
+	if vol == "" {
+		return false
+	}
+	_, err := os.Stat(vol + string(filepath.Separator))
+	return err != nil
 }
 
 // readImage reads the file and does what InspectImage and LoadImage share.
@@ -117,6 +132,7 @@ func readImage(path string, lim ImageLimits) (Image, []byte, image.Image, error)
 	if err != nil {
 		return img, nil, nil, errors.New("the file cannot be read: " + err.Error())
 	}
+	img.Sum = sha256.Sum256(b)
 	return decodeImage(img, b, path, lim)
 }
 

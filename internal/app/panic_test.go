@@ -64,9 +64,8 @@ func TestPanic(t *testing.T) {
 			t.Errorf("output lacks %q:\n%s", want, got)
 		}
 	}
-	stored, err := input.Drafts{Dir: drafts}.Load(project)
-	if err != nil || stored != draftText {
-		t.Errorf("stored draft %q (%v); want %q", stored, err, draftText)
+	if stored := draftFile(t, input.Drafts{Dir: drafts}, project); string(stored) != draftText {
+		t.Errorf("stored draft %q; want %q", stored, draftText)
 	}
 	if _, err := os.Stat(eof); err != nil {
 		t.Errorf("the fake CLI saw no end of input: %v", err)

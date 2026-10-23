@@ -200,10 +200,11 @@ func TestAttachmentsDraft(t *testing.T) {
 		h.send(tea.PasteMsg{Content: "kept"})
 		upload(t, h)
 		project := h.m.State().Context.Project
-		if paths, err := d.LoadImages(project); err != nil || len(paths) != 2 {
-			t.Fatalf("stored images %q, %v", paths, err)
+		if paths := draftList(t, d, project); len(paths) != 2 {
+			t.Fatalf("stored images %q", paths)
 		}
 		// The first model dropped as a crash would; one image deleted since.
+		h.crash()
 		if err := os.Remove(gone); err != nil {
 			t.Fatal(err)
 		}

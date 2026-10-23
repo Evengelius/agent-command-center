@@ -24,8 +24,9 @@ const (
 // resetTerminal writes a reset to the console; tests replace it.
 var resetTerminal = consoleReset
 
-// Run runs the program to its end, then writes the draft, closes the
-// session and says how to resume it. Bubble Tea recovers a panic in Update,
+// Run runs the program to its end, then writes the draft and lets it go
+// for the project's next start (plan 33, design D1), closes the session
+// and says how to resume it. Bubble Tea recovers a panic in Update,
 // in View or in a command, restores the terminal and returns
 // tea.ErrProgramPanic; the same steps follow, and the code is ExitPanic
 // (reliability.md, Separated parts, the dashboard's own crash). out is
@@ -37,7 +38,7 @@ func Run(m *Model, opts ...tea.ProgramOption) (code int, out []string) {
 	if win32Input {
 		resetTerminal(win32InputOff) // after a panic too
 	}
-	if derr := m.flushDraft(); derr != nil {
+	if derr := m.letDraftGo(); derr != nil {
 		out = append(out, "the draft could not be saved: "+derr.Error())
 	}
 	m.Shutdown()

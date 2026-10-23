@@ -90,10 +90,333 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 33 - Unsent drafts and images through crashes and restarts
 
-Plan 32 was approved and closed on 2026-10-23 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 33 (2026-10-23): the owner asked whether unsent image
+attachments survive a crash, a forced termination, a restart and a
+resumed session, and approved the investigation's nine corrections,
+pasted images kept on disk until their message is accepted (item 8).
+The criteria below were written before the code; nothing is committed
+until the owner has reviewed the implementation and the results.
+
+### The investigation (2026-10-23, nothing changed)
+
+A scratch copy of e5796cb: 24 deterministic tests, four of them the real
+program in a child process; Windows Terminal at 156x44 maximised and at
+120x40, a scratch build with drafts on in mock mode, three generated
+images through the Open dialog. The evidence stays in the session's
+scratchpad (`plan33\tree\internal\app\zz_recovery*_test.go`,
+`term\out-p33\`).
+
+- **Safe.** A clean quit, a panic and a closed window store the text and
+  the images, even within the 500 ms save delay: Go turns the console's
+  CTRL_CLOSE_EVENT into SIGTERM, Bubble Tea into a quit, and the process
+  ended by itself in 125 ms (exit code 0). A restart restores the text,
+  the files in order with their names (Unicode, spaces) and the
+  thumbnails, and the images sent afterwards are the files' bytes. Ctrl+R
+  after a CLI crash keeps every unsent attachment and resends a message
+  that was in flight. A file deleted after attaching makes the send fail
+  with the draft kept, and a restart drops it with a note. The acceptance
+  deletes the stored draft; no temporary file was ever left.
+- **Failing.** (1) Back after a failed start kept the attachments, sent
+  with the next session's message, in another project too. (2) Two
+  dashboards on one project shared one stored draft: one's accepted
+  message deleted the other's. (3) A hard kill lost the last 500 ms of
+  changes, images included. (4) What was typed or attached while a sent
+  message waited for its acceptance was stored only at the acceptance or
+  a clean exit. (5) Saving an image-only draft deleted its images list
+  before writing it again. (6) A damaged images list hid the text for the
+  run and turned drafts off. (7) A file replaced after attaching was sent
+  with its new bytes under the old preview. And by plan 32's design D3, a
+  pasted image never survived a restart.
+
+### Design
+
+- **D1 One stored draft per dashboard.** The drafts folder
+  (`%LOCALAPPDATA%\agent-command-center\drafts`) holds one folder per
+  dashboard's draft, `<P>-<K>`: P the SHA-256 of the project's path as
+  before (cleaned, lower-cased), K 16 random hexadecimal digits. It holds
+  `lock`, `draft.txt` (the text, byte for byte), `images.json` (the
+  images list) and the pasted images' files (D8). The dashboard whose
+  draft it is holds `lock` open with no sharing and writes its CLI's id in
+  it; a folder whose `lock` nobody holds is a stored draft waiting for its
+  project, told the way plan 16's session registry tells a running
+  session, by a file held open. At a session's start the dashboard takes
+  one stored draft of its project: one of its own CLI first (a Claude
+  Code draft back in Claude Code, a Codex one in Codex), then the newest
+  by its last save; taking it is opening its `lock` with no sharing, so
+  two dashboards never take the same one. The others stay, and the
+  restore's toast counts them ("1 more stored draft of this project").
+  A draft from before plan 33 (`<P>.txt`, `<P>.images.json` beside the
+  folders) is taken as one of any CLI, moved into a new folder. A new
+  draft's folder is made at its first save. The dashboard lets its draft
+  go, once written, when it quits, goes Back or ends; a folder holding no
+  draft is then deleted. Drafts stay off in mock mode.
+- **D2 Back** after a failed start writes the draft, lets it go, and
+  forgets the attachments, their pasted bytes and their thumbnails with
+  the text: the next session, in any project, starts without them, and
+  the same project's next start restores them.
+- **D3 Attachments saved at once.** Attaching, pasting or removing an
+  image writes the draft at once; typing keeps the 500 ms pacing.
+- **D4 While a sent message waits for the CLI's acceptance**, the stored
+  draft is that message followed by what was typed and attached since:
+  the texts joined by a newline, the sent images first, none twice, as a
+  clean exit stores it already; the acceptance leaves what was typed
+  since. A failed send or a crash gives the message back to the editor as
+  before; an image-only message given back no longer puts a newline
+  before what was typed since.
+- **D5 The save** writes the pasted images' files first, then
+  `images.json`, then `draft.txt`, each through a temporary file renamed
+  over the old one; an empty text removes `draft.txt` only, an empty list
+  `images.json` only; a pasted image's file the list no longer names is
+  deleted last.
+- **D6 A damaged images list** is renamed `images.json.unreadable` in its
+  folder (deleted with the draft) and the text restored, with the toast
+  "draft restored; its images list was unreadable and was set aside";
+  drafts stay on. A text that cannot be read keeps today's rule: drafts
+  off for the run, said on the screen.
+- **D7 A file changed since it was attached.** The SHA-256 of a file's
+  bytes is kept when it is attached or restored. At the send, a file
+  whose bytes differ is refused: "the message could not be sent:
+  shot.png: changed since it was attached; attached again as it is now",
+  the draft kept, and the dashboard reads the file again, its chip and
+  thumbnail replaced in place ("shot.png: updated"): the next send sends
+  what the preview shows. Attaching the same file again by hand does the
+  same; an unchanged one is "already attached" as before. The bytes
+  rather than the report's size and time: a file saved again unchanged
+  is not refused, and an edit keeping both is not missed.
+- **D8 Pasted images kept until their message is accepted** (amending
+  plan 32's D3): a pasted image is written as `<sha256>.png` in the
+  dashboard's draft folder when the draft is saved, listed as
+  `pasted:pasted-image-N.png#<sha256>`; its bytes stay in memory as
+  before, and nothing else is written. A restart restores it with its
+  name, its bytes (checked against the SHA-256) and its thumbnail; the
+  next paste is numbered after it. Its file is deleted when its chip is
+  removed or its message accepted (D5). A stored copy missing or not
+  matching is said ("pasted-image-1.png: its stored copy is missing",
+  "...is damaged") and left out; a plan 32 entry (`pasted:name`, no
+  SHA-256) is said as before ("was pasted, not kept").
+- **D9 The sweep**, at each session's start before a draft is taken: in
+  each draft folder nobody holds, the temporary `.draft-*` files and the
+  pasted images' files its list does not name are deleted, and the
+  folder when it holds no draft; a folder without `lock` is left a minute
+  (it is being made); a `.draft-*` file beside the folders (a version
+  before plan 33) is deleted once a minute old. A held folder is never
+  touched.
+- **D10 Docs.** brief.md (amendment 33), architecture.md (ASM-23, the
+  Input row), ui-design.md (the stored draft, Back, pasted images, the
+  changed file), reliability.md (the draft in Resumption), AGENTS.md
+  (status), `doc/plan33-evaluation.md`.
+
+### Criteria
+
+- 33.1 TestDraftSlots (`internal/input`): nothing in the drafts folder
+  before the first save; the first save makes one folder named 64
+  hexadecimal digits, "-", 16 more, holding `lock` (the CLI's id),
+  `draft.txt` (byte for byte) and `images.json`; while it is held, a
+  second store of the project takes nothing and leaves every file of it;
+  let go, the next store of the project takes it, text and list
+  unchanged, its name kept; two let go, one per CLI: a Claude Code store
+  takes the Claude Code one, a Codex store the Codex one; two of one CLI:
+  the newer, the other counted (1); a `<P>.txt` and `<P>.images.json`
+  from before: taken, moved into a new folder, none left beside it; a
+  draft let go empty: its folder deleted.
+- 33.2 TestTwoDashboards (`internal/app`): two dashboards on one project,
+  each with text and an image: two folders; one's message accepted: the
+  other's stored draft unchanged byte for byte; each CLI started again
+  restores its own text and image.
+- 33.3 TestBackForgetsAttachments (`internal/app`): Esc on "The session
+  could not start" with a file and a pasted image attached: no
+  attachment, pasted bytes or thumbnail left; that project's stored draft
+  holds the text, the file's path and the pasted image's file; a session
+  in another project starts without them and sends none; the first
+  project again: the text, the file and the pasted image restored once,
+  no "already attached".
+- 33.4 TestAttachSavesNow (`internal/app`, the save timer never firing):
+  after two files from the dialog, Alt+V's image and the first file's ✕,
+  the stored list equals the chips each time (2, 3, then 2 entries), the
+  pasted image's file there; typed text alone is stored only when the
+  timer fires. A child process killed (TerminateProcess) as soon as its
+  list is on disk, under 500 ms after its last image: the next run
+  restores every image.
+- 33.5 TestDraftWhileWaiting (`internal/app`): a message ("sent" and file
+  A) waiting for its acceptance, then "typed", A and B attached: stored
+  "sent\ntyped" with A then B, A once; a crash then: a new model restores
+  "sent\ntyped", A and B; the acceptance instead: stored "typed" with A
+  and B. An image-only message given back after "x" was typed: the
+  editor holds "x".
+- 33.6 TestImageOnlySave (`internal/input`): a save with images and no
+  text leaves `images.json` and no `draft.txt`; text, then no text, with
+  the same images: `images.json` after each save; no text and no images:
+  nothing left but `lock`.
+- 33.7 TestDamagedImagesList (`internal/app`): `images.json` holding
+  `["C:\\half`: the text restored, the toast "draft restored; its images
+  list was unreadable and was set aside", `images.json.unreadable` with
+  the same bytes, drafts on (the next change stored).
+- 33.8 TestChangedFile (`internal/app`): a file rewritten with other bytes
+  after attaching: no message written, the notice "the message could not
+  be sent: shot.png: changed since it was attached; attached again as it
+  is now", the text and the chip kept, the toast "shot.png: updated", its
+  thumbnail from the new bytes; Enter: the new bytes sent; the same file
+  attached again by hand: unchanged "already attached", changed "updated"
+  with one chip; a file rewritten with the same bytes: sent.
+- 33.9 TestPastedKept (`internal/app`): Alt+V: `<sha256>.png` in the
+  dashboard's folder, equal to the pasted bytes, listed as
+  `pasted:pasted-image-1.png#<sha256>`, no other file holding them; a new
+  model in the project restores "pasted-image-1.png" and its thumbnail,
+  and Enter sends the same bytes; the next paste is "pasted-image-2.png";
+  the chip's ✕ deletes the file; an accepted message's file deleted; a
+  file altered on disk: "pasted-image-1.png: its stored copy is damaged",
+  not attached; a plan 32 entry: "pasted-image-1.png was pasted, not
+  kept".
+- 33.10 TestDraftSweep (`internal/input`): at a store's start, in a
+  folder let go, a `.draft-*` file and a pasted image's file it does not
+  list deleted, its draft kept; a folder let go holding only `lock`:
+  deleted; a held folder: every file kept; beside the folders, a
+  `.draft-*` two minutes old deleted, one just written kept.
+- 33.11 The recovery matrix (`internal/app`, child processes: the real
+  program, the fake Claude Code, a draft of text, three generated files,
+  one named in Unicode and one with spaces, and a pasted image): ended by
+  a panic, by the quit a closed console becomes, by TerminateProcess
+  after the saves, and by TerminateProcess under 500 ms after the last
+  image: each next run restores the four images in order with their
+  names and bytes, and the text but what was typed in the last 500 ms
+  before a TerminateProcess. TestCodexRestart: a Codex (scripted)
+  session's text, two files and a pasted image restored, the images sent
+  byte for byte.
+- 33.12 Windows Terminal (a scratch build of this tree with drafts on in
+  mock mode, maximised, then at 120x40; the owner's clipboard saved first
+  and restored after): three generated files through the Open dialog, a
+  generated PNG pasted with Ctrl+V, text typed; the window closed about
+  200 ms after the last key: the next run shows the text, the four
+  images' chips and their four thumbnails; the same with TerminateProcess
+  instead: the four images back; no `.draft-*` file left.
+- 33.13 Unchanged elsewhere: the golden frames; go build, go vet, gofmt;
+  the suite, TestDraftAcceptedDeletes and TestPastedDraft changed as D4
+  and D8 say; the race detector on `internal/input`, `internal/state` and
+  `internal/app`; the timing step alone within every target.
+- 33.14 Docs as D10; every changed text file read byte by byte (no BOM,
+  no CR); git status lists the intended files only; nothing committed.
+
+No live run: nothing in how a message reaches either CLI changes.
+
+### Progress
+
+Corrections made as the work went, each with its reason:
+- D7 and 33.8: the refusal attaches the changed file again itself, where
+  the criteria first had the owner attach it again by hand. The notice is
+  too long to share the editor's row with the pills, so plan 29's rule
+  gives it the row alone and the "+" band is not there until the next
+  send: the Open dialog was out of reach just when the notice asked for
+  it.
+
+- Saves refused by Windows: a run of the recovery matrix stored three of
+  its four images and never the fourth. The child's own check read
+  `images.json` while a save renamed over it, and Windows refuses a
+  rename over a file another program holds open without sharing its
+  deletion (an antivirus, an indexer and Go's `os.Open` do so); the save
+  failed once and nothing tried it again until the next change. The
+  store now tries a refused rename or delete again for about a second
+  (TestSaveWhileRead), and the app tries a failed save again every
+  second while it fails, the toast "draft not saved: ..." each time
+  (TestDraftSaveRetried).
+- 33.11: the pasted image and the three files have different bytes (the
+  generated PNG files had the same bytes as the drawing first pasted, so
+  the byte check could not tell them apart).
+- D2, found on reading the code again: a stored draft's images read back
+  after that draft was let go (Back while they were read) went into the
+  editor Back had just emptied; the reading now names its draft and is
+  dropped when that draft is no longer the dashboard's
+  (TestStaleRestoreDropped).
+- The independent review (the `verifier` agent) found four defects, all
+  fixed:
+  - D4: Enter again while a message waits for its acceptance is refused,
+    but the state took the refused text as the turn's draft, in place of
+    the waiting message (since the MVP: a crash then gave back the wrong
+    text); with D4 the stored draft took it too, and the waiting
+    message's pasted copy was deleted. A refused send no longer replaces
+    a waiting message (the state's turn test; TestDraftWhileWaiting's
+    second Enter).
+  - D8: a stored draft's image past this session's limits (a Codex draft
+    of two 4 MB pasted images in Claude Code, which sends 7.4 MB a
+    message) was refused at the restore and its pasted copy deleted by
+    the next save. A restored image is attached whatever the limits, the
+    toast saying the draft holds more than the session sends, and the
+    send refuses the message with the reason, its count now checked as
+    its bytes were (TestRestoreOverLimits).
+  - D1: a stored draft whose lock another program held a moment was
+    passed over in silence. Taking it is tried again for about a second,
+    then said ("a stored draft of this project is in use: the next start
+    takes it") and counted; a pasted copy's read is tried again the same
+    way (TestTakeWhileOpen, TestDraftInUse).
+  - D5: a pasted image's file that could not be deleted failed the save
+    after the draft was written; that deletion is now done when it can,
+    by the next save or the sweep (TestPruneWhileOpen).
+- Its second pass confirmed the four fixes and found one more defect,
+  fixed: the wait for a held lock also waited a second for a draft
+  another dashboard had just taken, then called it in use. A lock that
+  refuses the unshared open but can still be read is open in another
+  program and is waited for, within one second for the whole start; one
+  that cannot be read is another dashboard's and is left at once
+  (TestTakeOwned). Its notes, taken too: a start that meets another
+  start's sweep looks at the lock once more 20 ms later; the toast about
+  the session's limits is shown only when the images were read with
+  those limits known, the send saying it otherwise; the send's count
+  check is tested (TestRestoreOverCount).
+- The owner's questions on the evaluation's "Not verified" list
+  (2026-10-23): a Codex session resumed with Ctrl+R with images attached,
+  simulated (TestCodexResumeImages); a stored draft whose images lie on a
+  path that does not answer, simulated with a read held by the test
+  (TestRestoreSlowPath): it lost what was typed and attached while the
+  read hung, a crash, a quit or Back then, since nothing was saved during
+  the read. Saves now go on while the stored draft's images are read
+  back, listing them first as stored; once read, they take their place
+  before the ones attached meanwhile (TestRestoreSlowPathAnswers). A
+  Windows logoff or shutdown cannot be simulated without ending the
+  owner's session or a second Windows account; the dashboard loads
+  user32 from its start (seen on a running one), so Windows sends it no
+  logoff or shutdown console event, and the two ways it can end it, its
+  console closed or the process ended, are 33.12's.
+- The review's third pass, on that change, found no loss and two more
+  gaps, fixed: a stored draft's file whose read fails at last because its
+  share stays offline was dropped from the draft (Windows calls a server
+  it cannot find a path that does not exist); a file whose drive or share
+  cannot be reached is now kept, its chip "not reachable", the send
+  refused with "its folder cannot be reached" until it answers or the
+  chip is removed (TestRestoreShareOffline). And the order changed when
+  the read answered while a message waited, and an image the stored
+  draft held could be pasted twice: the waiting message's images come
+  first, then the stored draft's, then the new ones, before and after the
+  read, and such a paste is "already attached" (TestRestoreSlowPathWaiting).
+  The stored list is compared as a save writes it, so a restore no longer
+  writes it again unchanged.
+
+- [x] Brief amendment 33, this plan, AGENTS.md's status.
+- [x] D1, D5, D6, D9 the store (`internal/input/draft*.go`) and its tests
+  (TestDraftSlots, TestDraftKey, TestImageOnlySave, TestDraftPasted,
+  TestDamagedList, TestDraftSweep, TestSaveWhileRead, TestDraftImages).
+- [x] D2 to D4 and D8 in the app (`internal/app/draft.go`, `paste.go`,
+  `keys.go`, `run.go`, `app.go`) and their tests (TestTwoDashboards,
+  TestBackForgetsAttachments, TestAttachSavesNow, TestDraftWhileWaiting,
+  TestDamagedImagesList, TestPastedKept, TestDraftSaveRetried; the
+  updated TestDraftAcceptedDeletes and TestPastedDraft).
+- [x] D7 the changed file (`internal/input/image.go`, `internal/state`,
+  `internal/app/attach.go`, `preview.go`) and TestChangedFile.
+- [x] The recovery matrix (TestRecovery, TestCodexRestart).
+- [x] Windows Terminal: the window closed and the process killed, each
+  maximised and at 120x40, then a restart
+  (`scratchpad\term\out-p33b\`).
+- [x] The independent review, two passes; its five defects fixed.
+- [x] The checks (33.13) on the final code: the suite, the race detector
+  on input, state and app (0 races), the timing step alone (7 of 7); the
+  Windows Terminal runs made again with the final build.
+- [x] D10 and the evaluation (`doc/plan33-evaluation.md`: 14 of 14 PASS).
+- [x] The owner's questions before approving: Codex resumed with images,
+  a path that does not answer and a share that stays offline simulated
+  and passing after the fixes above; a logoff or shutdown not simulated,
+  what decides it checked (the evaluation's follow-up: 3 PASS, 1 not
+  run); the checks and the Windows Terminal runs made again.
+- [ ] The owner's review; then the commit.
 
 ## Closed plans
 

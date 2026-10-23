@@ -2,7 +2,9 @@ package app
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,7 +21,8 @@ import (
 // the clipboard holds no text, its release alone attaches the clipboard's
 // image; a paste that is exactly the paths of the files the clipboard holds
 // attaches them when every one is an image. A pasted image's bytes stay in
-// memory, never in a file; nothing is ever sent by a paste.
+// memory, and in the stored draft's folder until its message is accepted or
+// its chip removed (plan 33, design D8); nothing is ever sent by a paste.
 
 type (
 	// clipMsg is what the clipboard held when a paste asked for images:
@@ -129,6 +132,12 @@ func (m *Model) pastedImage(msg pastedMsg) []tea.Cmd {
 			return m.toast(a.Name + ": already attached")
 		}
 	}
+	for _, e := range m.unread {
+		// The stored draft's pasted images still being read back (plan 33).
+		if name, sum, ok := input.ParsePasted(e); ok && sum == hex.EncodeToString(msg.sum[:]) {
+			return m.toast(name + ": already attached")
+		}
+	}
 	m.pasteN++
 	img := msg.img
 	img.Name = fmt.Sprintf("pasted-image-%d.png", m.pasteN)
@@ -138,6 +147,49 @@ func (m *Model) pastedImage(msg pastedMsg) []tea.Cmd {
 	}
 	m.pasted[img.Path], m.pastedSum[img.Path] = msg.data, msg.sum
 	return m.inspected(inspectedMsg{imgs: []input.Image{img}, thumbs: map[string]thumbSixel{img.Path: msg.thumb}})
+}
+
+// pastedBack takes the stored draft's pasted images back (plan 33, design
+// D8): each under its name with its bytes and SHA-256, unless this run
+// pasted other bytes under that name meanwhile, when it takes the next
+// name; the run's count goes past the names restored.
+func (m *Model) pastedBack(msg inspectedMsg) inspectedMsg {
+	if m.pasted == nil {
+		m.pasted, m.pastedSum = map[string][]byte{}, map[string][32]byte{}
+	}
+	for i, img := range msg.imgs {
+		b, ok := msg.pasted[img.Path]
+		if !ok {
+			continue
+		}
+		if n, ok := pastedNumber(img.Name); ok && n > m.pasteN {
+			m.pasteN = n
+		}
+		if sum, taken := m.pastedSum[img.Path]; taken && sum != img.Sum {
+			m.pasteN++
+			old := img.Path
+			img.Name = fmt.Sprintf("pasted-image-%d.png", m.pasteN)
+			img.Path = pastedPrefix + img.Name
+			msg.thumbs[img.Path] = msg.thumbs[old]
+			delete(msg.thumbs, old)
+			msg.imgs[i] = img
+		}
+		m.pasted[img.Path], m.pastedSum[img.Path] = b, img.Sum
+	}
+	return msg
+}
+
+// pastedNumber is N of "pasted-image-N.png".
+func pastedNumber(name string) (int, bool) {
+	s, ok := strings.CutPrefix(name, "pasted-image-")
+	if !ok {
+		return 0, false
+	}
+	if s, ok = strings.CutSuffix(s, ".png"); !ok {
+		return 0, false
+	}
+	n, err := strconv.Atoi(s)
+	return n, err == nil
 }
 
 // terminalPaste is the terminal's bracketed paste: text for the draft as

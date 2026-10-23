@@ -31,15 +31,36 @@ type (
 		err   error
 	}
 	// inspectedMsg is the files read and checked: the images accepted and a
-	// note for each refused. restore marks the stored draft's images;
-	// thumbs are the images' thumbnails by key (plan 32, design D4).
+	// note for each refused. restore marks the stored draft's images, store
+	// the draft they come from; thumbs are the images' thumbnails by key
+	// (plan 32, design D4); pasted the bytes of the pasted images among
+	// them, from their stored copies (plan 33, design D8).
 	inspectedMsg struct {
 		imgs    []input.Image
 		refused []string
 		restore bool
+		store   *draftStore
+		limited bool // read with the session's limits known: sized as a send sizes them
 		thumbs  map[string]thumbSixel
+		pasted  map[string][]byte
 	}
 )
+
+// changedFile is a send refused for a file whose bytes changed since it was
+// attached (plan 33, design D7): the draft is given back, the file read and
+// attached again as it is now, and the next send sends what its preview
+// shows.
+type changedFile struct{ name, path string }
+
+func (e changedFile) Error() string {
+	return e.name + ": changed since it was attached; attached again as it is now"
+}
+
+// refusedMsg is that refusal: the failed write, then the file read again.
+type refusedMsg struct {
+	a    state.Action
+	path string
+}
 
 // limits are the session's limits on a message's images; none before the
 // session starts.
@@ -108,16 +129,46 @@ func inspectImages(paths []string, lim input.ImageLimits, restore bool) tea.Cmd 
 
 // inspected attaches the images accepted, in the order chosen, after the
 // ones already attached: one already attached, or one past the message's
-// count or bytes, is not; the toast says what was refused and what the
-// sending changes.
+// count or bytes, is not; a file attached whose bytes changed since takes
+// its place again (plan 33, design D7); the toast says what was refused and
+// what the sending changes.
 func (m *Model) inspected(msg inspectedMsg) []tea.Cmd {
+	if msg.store != nil && msg.store != m.draft {
+		return nil // a draft let go since (Back): its images stay in it (plan 33)
+	}
 	lim := m.limits()
+	if len(msg.pasted) > 0 {
+		msg = m.pastedBack(msg)
+	}
 	m.setThumbs(msg.thumbs) // those not attached are dropped after this update
 	notes := append([]string(nil), msg.refused...)
+	var since []input.Image
+	if msg.restore {
+		// The stored draft's images take their place first, before those
+		// attached while they were read back (plan 33).
+		since, m.attach = m.attach, nil
+	}
 	for _, img := range msg.imgs {
+		i := m.attachedAt(img.Path)
 		switch {
-		case m.attachedAt(img.Path) >= 0:
+		case i >= 0 && !isPasted(img.Path) && img.Sum != m.attach[i].Sum:
+			if lim.MaxTotal > 0 && m.attachBytes()-m.attach[i].Sent+img.Sent > lim.MaxTotal {
+				notes = append(notes, fmt.Sprintf("%s: over %s of images a message", img.Name, input.FmtBytes(lim.MaxTotal)))
+				continue
+			}
+			m.attach[i] = img
+			notes = append(notes, img.Name+": updated")
+		case i >= 0:
 			notes = append(notes, img.Name+": already attached")
+		case msg.restore:
+			// A stored draft's image past this session's limits (one
+			// stored by another CLI) is attached all the same: a pasted
+			// image has no other copy, and the send says what is over
+			// (plan 33).
+			m.attach = append(m.attach, img)
+			if img.Note != "" {
+				notes = append(notes, img.Name+": "+img.Note)
+			}
 		case lim.MaxCount > 0 && len(m.attach) >= lim.MaxCount:
 			notes = append(notes, fmt.Sprintf("%s: over %d images a message", img.Name, lim.MaxCount))
 		case lim.MaxTotal > 0 && m.attachBytes()+img.Sent > lim.MaxTotal:
@@ -127,6 +178,19 @@ func (m *Model) inspected(msg inspectedMsg) []tea.Cmd {
 			if img.Note != "" {
 				notes = append(notes, img.Name+": "+img.Note)
 			}
+		}
+	}
+	if msg.restore {
+		for _, a := range since {
+			if m.attachedAt(a.Path) < 0 {
+				m.attach = append(m.attach, a)
+			}
+		}
+		m.unread = nil // read back: saved as attached from now on
+		// Read before the session's limits were known, the images were not
+		// sized as a send sizes them: the send says it then, if it must.
+		if msg.limited && (lim.MaxCount > 0 && len(m.attach) > lim.MaxCount || lim.MaxTotal > 0 && m.attachBytes() > lim.MaxTotal) {
+			notes = append(notes, "more than this session sends in a message: remove some before sending")
 		}
 	}
 	cmds := m.draftChanged()
@@ -183,7 +247,13 @@ func (m *Model) chips() []render.Attachment {
 		if format == "" {
 			format = strings.ToUpper(strings.TrimPrefix(a.Media, "image/"))
 		}
-		out[i] = render.Attachment{Name: a.Name, Size: input.FmtBytes(a.Sent), Pixels: m.thumbs[a.Path] != thumbSixel{}, Format: format}
+		size := input.FmtBytes(a.Sent)
+		if a.Sent == 0 {
+			// A stored draft's file whose drive or share cannot be reached:
+			// kept, never read, so no size (plan 33).
+			size, format = "not reachable", "offline"
+		}
+		out[i] = render.Attachment{Name: a.Name, Size: size, Pixels: m.thumbs[a.Path] != thumbSixel{}, Format: format}
 	}
 	return out
 }
@@ -195,7 +265,7 @@ func (m *Model) sentImages() []state.Attachment {
 	}
 	out := make([]state.Attachment, len(m.attach))
 	for i, a := range m.attach {
-		out[i] = state.Attachment{Path: a.Path, Name: a.Name, Size: a.Sent, Media: a.Media, Note: a.Note}
+		out[i] = state.Attachment{Path: a.Path, Name: a.Name, Size: a.Sent, Media: a.Media, Note: a.Note, Sum: a.Sum}
 	}
 	return out
 }
@@ -209,7 +279,7 @@ func (m *Model) restoreImages(as []state.Attachment) {
 	since := m.attach
 	m.attach = nil
 	for _, a := range as {
-		m.attach = append(m.attach, input.Image{Path: a.Path, Name: a.Name, Sent: a.Size, Media: a.Media, Note: a.Note})
+		m.attach = append(m.attach, input.Image{Path: a.Path, Name: a.Name, Sent: a.Size, Media: a.Media, Note: a.Note, Sum: a.Sum})
 	}
 	for _, a := range since {
 		if m.attachedAt(a.Path) < 0 {
@@ -228,11 +298,15 @@ func imagePaths(imgs []input.Image) []string {
 }
 
 // message reads the message's images again as they are now and builds the
-// message: a file gone, changed past a limit, or the images past the
-// message's bytes fail the send, the draft kept with its images. A pasted
-// image comes from its bytes in memory, pasted by key (plan 32, design D3).
+// message: a file gone, changed since it was attached (its bytes' SHA-256,
+// plan 33, design D7) or past a limit, or the images past the message's
+// count or bytes fail the send, the draft kept with its images. A pasted image comes
+// from its bytes in memory, pasted by key (plan 32, design D3).
 func message(text string, imgs []state.Attachment, lim provider.ImageLimits, pasted map[string][]byte) (provider.Message, error) {
 	msg := provider.Message{Text: text}
+	if lim.MaxCount > 0 && len(imgs) > lim.MaxCount {
+		return provider.Message{}, fmt.Errorf("%d images, over %d a message", len(imgs), lim.MaxCount)
+	}
 	var total int64
 	for _, a := range imgs {
 		var img input.Image
@@ -244,7 +318,13 @@ func message(text string, imgs []state.Attachment, lim provider.ImageLimits, pas
 		case isPasted(a.Path):
 			err = errors.New("the pasted image was not kept")
 		default:
-			img, data, err = input.LoadImage(a.Path, inputLimits(lim))
+			img, data, err = loadImage(a.Path, inputLimits(lim))
+			if err != nil && unreachable(a.Path) {
+				err = errors.New("its folder cannot be reached") // not "gone": a share offline (plan 33)
+			}
+			if err == nil && a.Sum != ([32]byte{}) && img.Sum != a.Sum {
+				return provider.Message{}, changedFile{a.Name, a.Path}
+			}
 		}
 		if err != nil {
 			return provider.Message{}, fmt.Errorf("%s: %v", a.Name, err)

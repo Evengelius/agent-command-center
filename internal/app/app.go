@@ -165,6 +165,8 @@ type Model struct {
 	draftSaved string // the text last saved or read
 	draftImgs  string // the images' paths last saved or read, joined (plan 31)
 	draftGen   int
+	unread     []string // the stored draft's images still being read back, as it lists them (plan 33)
+	retrying   bool     // a failed save is due to be tried again (plan 33)
 
 	// The project list (projects.go): nil when it is off.
 	projects     *projectStore
@@ -198,7 +200,8 @@ type Model struct {
 	picking bool
 
 	// Pasted images (paste.go, plan 32): their PNG bytes and sums by key,
-	// held in memory only, and the run's count for their names; the paste
+	// in memory and in the stored draft's folder (plan 33, design D8), and
+	// the run's count for their names; the paste
 	// keys: a Ctrl+V press seen, the terminal's pastes counted and the time
 	// of the last, Ctrl+V's lone release waiting.
 	pasted     map[string][]byte
@@ -360,6 +363,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if render.UsePalette(lipgloss.Complete(msg.Profile)) {
 			m.repaint = true
 		}
+	case refusedMsg:
+		cmds = append(cmds, m.do(msg.a)...) // the draft given back, then its changed file read again
+		cmds = append(cmds, inspectImages([]string{msg.path}, inputLimits(m.limits()), false))
 	case actionMsg:
 		validating := m.s.Startup.Phase == state.Validating
 		cmds = append(cmds, m.do(msg.a)...)
@@ -460,7 +466,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case draftSaveMsg:
 		cmds = append(cmds, m.draftDue()...)
 	case draftFailedMsg:
-		cmds = append(cmds, m.toast("draft not saved: "+msg.err.Error())...)
+		cmds = append(cmds, m.draftFailed(msg)...)
+	case draftRetryMsg:
+		cmds = append(cmds, m.draftRetried()...)
 	case pickedMsg:
 		cmds = append(cmds, m.picked(msg)...)
 	case inspectedMsg:
@@ -616,13 +624,17 @@ func (m *Model) command(c state.Command) tea.Cmd {
 		m.attach = nil
 		sess, text, imgs, lim := m.sess, c.Text, c.Images, m.limits()
 		pasted := m.pastedFor(imgs)
-		return tea.Batch(m.draftSent(text, c.Images), m.write(func() tea.Msg {
+		return tea.Batch(m.draftWrite(), m.write(func() tea.Msg {
 			if sess == nil {
 				return actionMsg{state.WriteFailed{Message: "no session"}}
 			}
 			// The images read and checked again now, then sent with the text
-			// (plan 31); a file gone or changed keeps the draft.
+			// (plan 31); a file gone or changed keeps the draft, a changed
+			// one attached again as it is now (plan 33, design D7).
 			msg, err := message(text, imgs, lim, pasted)
+			if cf, ok := err.(changedFile); ok {
+				return refusedMsg{state.WriteFailed{Message: err.Error()}, cf.path}
+			}
 			if err != nil {
 				return actionMsg{state.WriteFailed{Message: err.Error()}}
 			}
@@ -684,12 +696,8 @@ func (m *Model) command(c state.Command) tea.Cmd {
 	case state.CmdDraftAccepted:
 		return m.draftAccepted()
 	case state.CmdRestoreDraft:
-		if typed := m.edit.Text(); typed != "" {
-			m.edit.SetText(c.Text + "\n" + typed) // typed since the send: both kept
-		} else {
-			m.edit.SetText(c.Text)
-		}
-		m.restoreImages(c.Images) // and its images, before any attached since (plan 31)
+		m.edit.SetText(joinDraft(c.Text, m.edit.Text())) // typed since the send: both kept
+		m.restoreImages(c.Images)                        // and its images, before any attached since (plan 31)
 	case state.CmdExit:
 		return tea.Quit
 	}

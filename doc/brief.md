@@ -4133,3 +4133,70 @@ Look, there is too much space between the two images, it should be way shorter
 Taken as a correction of plan 32's design D4: the thumbnails side by
 side, one cell apart, the first above the first chip, as many as the
 width holds.
+
+## Amendment 33, 2026-10-23: unsent drafts and images through crashes and restarts, for plan 33
+
+After plan 32 was approved and pushed, the owner asked, word for word:
+
+````text
+The image upload and clipboard paste functionality works well.
+I have one important reliability question:
+Are unsent image attachments safely preserved if Agent Command Center crashes, is forcibly terminated, or the session is resumed?
+Please investigate the current implementation and verify the following:
+
+1. Crash recovery: If the application crashes while images are attached to an unsent message, are both the images and the text draft recoverable?
+2. Application restart: Do attachments reappear correctly in the composer, including their previews, after restarting the application?
+3. Session resume: Are unsent attachments preserved when resuming the same Claude Code or Codex session?
+4. Attachment integrity: Are the original image bytes, filenames, and attachment order preserved without corruption or duplication?
+5. Temporary files: What happens if the original image is moved or deleted after attachment? Does recovery depend on temporary files that may disappear?
+6. Cleanup: Are attachments deleted only when appropriate, without prematurely losing unsent images or retaining abandoned files indefinitely?
+
+Investigate before making any corrections.
+Use generated test images and deterministic crash/restart tests wherever possible. Do not use my personal files or consume live provider quota unnecessarily.
+Distinguish verified behavior from assumptions and untested scenarios.
+Report:
+
+* What is already implemented and working.
+* Which scenarios pass or fail.
+* Any confirmed data-loss risks or regressions.
+* Recommended corrections, if necessary.
+
+Do not modify the implementation yet. Report your findings first and wait for my approval before making changes.
+Preserve the existing image-preview design and upload functionality for both Claude Code and Codex.
+````
+
+The investigation changed nothing in the repository: in a scratch copy
+of e5796cb, 24 deterministic tests (four of them the real program in a
+child process, ended by a panic, by the quit a closed console becomes
+and by TerminateProcess) and Windows Terminal runs (the window closed or
+the process killed about 190 ms after the last key, then a restart),
+with generated images, a fake clipboard and no CLI started. Its report
+found the common cases safe, seven scenarios failing, and recommended
+nine corrections, quoted as the owner read them:
+
+````text
+1. Back after a failed start clears the attachments, pasted bytes and thumbnails along with the text. They stay in that project's saved draft.
+2. Keep one saved draft per dashboard instead of per project. A new dashboard restores the newest draft of a dashboard that is no longer running; plan 16's session registry knows which ones are.
+3. Save at once when attachments change (attach, paste, remove). Typing keeps the 500 ms pacing.
+4. While a message waits for the CLI's acceptance, save it together with what was typed and attached since, without doubles. A clean exit already does this.
+5. Save an image-only draft without first deleting its image list.
+6. If the image list is damaged, restore the text anyway, set the damaged list aside, say so, and keep drafts on.
+7. If a file changed since it was attached (size or modification time), refuse the send with "attach it again" and keep the draft.
+8. Your decision: keep pasted images in the drafts folder under %LOCALAPPDATA% (your account only) until the message is accepted or the chip is removed, and sweep leftovers at start. This reverses plan 32's memory-only choice. I recommend it, because a pasted screenshot often has no other copy.
+9. At start, remove stale .draft-* temporary files. Only a kill during a save can leave one, and none appeared in these runs.
+````
+
+The owner, word for word:
+
+````text
+Approved: start a plan for corrections 1 to 9 as recommended, pasted images kept on disk until the message is accepted (item 8).
+````
+
+Taken as plan 33 (plan.md, Plan 33): the nine corrections, the image
+preview and the upload unchanged for both CLIs; item 8 amends plan 32's
+design D3 (a pasted image held in memory only). Two details go further
+than the report's words, each for a reason given in the plan: a file's
+change is told by the SHA-256 of its bytes rather than its size and
+time, and a new dashboard takes a stored draft of its own CLI before the
+newest of another. Nothing is committed until the owner has reviewed the
+implementation and the results.

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -21,14 +22,47 @@ import (
 // spaces, blank lines, wide characters, emoji, controls and a NUL.
 const draftText = "\tfirst line   \n\n日本語 👍🏽 e\u0301\n\x1b[31mred\x00end \t"
 
-// draftFile is the stored draft's bytes, or nil without one.
-func draftFile(t *testing.T, d input.Drafts, project string) []byte {
+// draftSlots are the project's draft folders (plan 33, design D1).
+func draftSlots(t *testing.T, d input.Drafts, project string) []string {
 	t.Helper()
-	p, err := d.Path(project)
+	es, err := os.ReadDir(d.Dir)
+	if os.IsNotExist(err) {
+		return nil
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := os.ReadFile(p)
+	var out []string
+	for _, e := range es {
+		if e.IsDir() && strings.HasPrefix(e.Name(), input.DraftKey(project)+"-") {
+			out = append(out, filepath.Join(d.Dir, e.Name()))
+		}
+	}
+	return out
+}
+
+// draftSlot is the project's one draft folder, "" without one.
+func draftSlot(t *testing.T, d input.Drafts, project string) string {
+	t.Helper()
+	switch s := draftSlots(t, d, project); len(s) {
+	case 0:
+		return ""
+	case 1:
+		return s[0]
+	default:
+		t.Fatalf("%d drafts of the project: %v", len(s), s)
+		return ""
+	}
+}
+
+// draftFile is the stored draft's bytes, or nil without one.
+func draftFile(t *testing.T, d input.Drafts, project string) []byte {
+	t.Helper()
+	dir := draftSlot(t, d, project)
+	if dir == "" {
+		return nil
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "draft.txt"))
 	if os.IsNotExist(err) {
 		return nil
 	}
@@ -36,6 +70,27 @@ func draftFile(t *testing.T, d input.Drafts, project string) []byte {
 		t.Fatal(err)
 	}
 	return b
+}
+
+// draftList is the stored draft's images list, nil without one.
+func draftList(t *testing.T, d input.Drafts, project string) []string {
+	t.Helper()
+	dir := draftSlot(t, d, project)
+	if dir == "" {
+		return nil
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "images.json"))
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out []string
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatalf("images list %s: %v", b, err)
+	}
+	return out
 }
 
 // TestCrashAndResume is step 4, check 3.
@@ -139,6 +194,7 @@ func TestDraftRestored(t *testing.T) {
 			t.Fatalf("stored draft %q", got)
 		}
 		// The first model is dropped as a crash would: no shutdown, no flush.
+		h.crash()
 
 		w2 := &wireClaude{}
 		h2 := wireRig(t, w2, Options{Drafts: &d, Cwd: cwd})
@@ -159,7 +215,8 @@ func TestDraftRestored(t *testing.T) {
 }
 
 // TestDraftAcceptedDeletes is step 4, check 4: the draft is deleted only once
-// Claude Code accepted the message; until then the file holds it.
+// Claude Code accepted the message; until then the file holds it, and what
+// is typed meanwhile after it (plan 33, design D4, criterion 33.13).
 func TestDraftAcceptedDeletes(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		d := input.Drafts{Dir: t.TempDir()}
@@ -174,11 +231,14 @@ func TestDraftAcceptedDeletes(t *testing.T) {
 		if got := draftFile(t, d, project); !bytes.Equal(got, []byte(draftText)) {
 			t.Fatalf("stored draft %q while the message waits; want the message", got)
 		}
-		h.send(typed('x')) // typed while it waits: not saved over the message
-		if got := draftFile(t, d, project); !bytes.Equal(got, []byte(draftText)) {
-			t.Fatalf("stored draft %q after typing while the message waits", got)
+		h.send(typed('x')) // typed while it waits: stored after the message (plan 33, design D4)
+		if got := draftFile(t, d, project); !bytes.Equal(got, []byte(draftText+"\nx")) {
+			t.Fatalf("stored draft %q after typing while the message waits; want the message, then what was typed", got)
 		}
 		h.send(key(tea.KeyBackspace, 0))
+		if got := draftFile(t, d, project); !bytes.Equal(got, []byte(draftText)) {
+			t.Fatalf("stored draft %q after the typing was erased", got)
+		}
 		// P2 lines 7 to 9: init, status, then the answer starts: accepted.
 		replay(t, h, w.last(), probe(t, "p2-claude-conversation.jsonl"), 7, 9)
 		if s := h.m.State(); s.Turn.Phase != state.Running {
@@ -215,23 +275,23 @@ func TestDraftFailedSendKeeps(t *testing.T) {
 }
 
 // TestDraftPath is step 4, check 4: drafts live in the user's local
-// application data, one file per project named by the SHA-256 of its path.
+// application data, in folders named by the SHA-256 of the project's path
+// (plan 33, design D1: one folder per dashboard's draft).
 func TestDraftPath(t *testing.T) {
 	local := os.Getenv("LOCALAPPDATA")
 	if local == "" {
 		t.Skip("LOCALAPPDATA is not set: not Windows")
 	}
+	dir, err := input.DraftDir()
+	if err != nil || dir != filepath.Join(local, "agent-command-center", "drafts") {
+		t.Errorf("drafts folder %s, %v", dir, err)
+	}
 	project := `C:\Work\Some Project\`
-	p, err := input.Drafts{}.Path(project)
-	if err != nil {
-		t.Fatal(err)
-	}
 	sum := sha256.Sum256([]byte(strings.ToLower(filepath.Clean(project))))
-	want := filepath.Join(local, "agent-command-center", "drafts", hex.EncodeToString(sum[:])+".txt")
-	if p != want {
-		t.Errorf("draft path\n got %s\nwant %s", p, want)
+	if got := input.DraftKey(project); got != hex.EncodeToString(sum[:]) {
+		t.Errorf("draft key\n got %s\nwant %x", got, sum)
 	}
-	if q, _ := (input.Drafts{}).Path(`c:\work\some project`); q != p {
+	if q := input.DraftKey(`c:\work\some project`); q != input.DraftKey(project) {
 		t.Errorf("the same project in another case: %s", q)
 	}
 }

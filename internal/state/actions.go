@@ -296,7 +296,12 @@ func (s *State) restoreDraft() Command {
 }
 
 func (s *State) send(a Send) []Command {
-	s.Turn.Draft, s.Turn.DraftImages = a.Text, a.Images
+	if s.Turn.Phase != Submitted || !s.Turn.pending() {
+		// A message waiting for its acceptance keeps its place: a refused
+		// send never stands in for it, nor in the stored draft or a
+		// crash's restore (plan 33).
+		s.Turn.Draft, s.Turn.DraftImages = a.Text, a.Images
+	}
 	if s.Session.Phase != Ready {
 		s.Turn.Notice = "not sent: the session is " + string(s.Session.Phase) + "; the draft is kept"
 		return nil

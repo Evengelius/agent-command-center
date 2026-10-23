@@ -943,6 +943,15 @@ var invalids = []machineCase{
 		b.eq("hint", b.s.Turn.Notice, "turn running: wait, or interrupt")
 		b.eq("draft kept", b.s.Turn.Draft, "second")
 		b.eq("turn", b.s.Turn.Phase, Running)
+		// A message waiting for its acceptance keeps its place (plan 33).
+		c := newBench(b.t).ready()
+		c.do(Send{Text: "first", Images: []Attachment{{Path: `C:\a.png`, Name: "a.png"}}})
+		c.do(Send{Text: "second"})
+		c.eq("refused", c.kinds(), "")
+		c.eq("hint", c.s.Turn.Notice, "turn running: wait, or interrupt")
+		c.eq("waiting message", c.s.Turn.Draft, "first")
+		c.eq("its images", len(c.s.Turn.DraftImages), 1)
+		c.eq("turn", c.s.Turn.Phase, Submitted)
 	}},
 	{"Turn", "an interrupt while `Idle` or `Submitted`-without-events is a no-op with a notice", func(b *bench) {
 		b.ready().do(Interrupt{})

@@ -180,28 +180,31 @@ func TestImageFit(t *testing.T) {
 }
 
 // TestDraftImages is design D6: the stored draft's images are listed beside
-// it, read back in order, and gone with the draft.
+// it, read back in order, and gone with the draft (plan 33: in its folder).
 func TestDraftImages(t *testing.T) {
 	d := Drafts{Dir: t.TempDir()}
 	paths := []string{`C:\photos\a b.png`, `C:\photos\é.jpg`}
-	if err := d.Save("proj", "text"); err != nil {
+	s, _, err := d.Take("proj", "claude-code")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := d.SaveImages("proj", paths); err != nil {
+	if err := s.Save("text", paths, nil); err != nil {
 		t.Fatal(err)
 	}
-	got, err := d.LoadImages("proj")
-	if err != nil || strings.Join(got, "|") != strings.Join(paths, "|") {
-		t.Fatalf("loaded %q, %v", got, err)
+	s.Release()
+	s, st, err := d.Take("proj", "claude-code")
+	if err != nil || st.Text != "text" || strings.Join(st.Images, "|") != strings.Join(paths, "|") {
+		t.Fatalf("taken %+v, %v", st, err)
 	}
-	if err := d.Delete("proj"); err != nil {
+	if err := s.Save("", nil, nil); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := d.LoadImages("proj"); err != nil || got != nil {
-		t.Errorf("after Delete: %q, %v", got, err)
+	s.Release()
+	if _, st, err := d.Take("proj", "claude-code"); err != nil || st.Text != "" || st.Images != nil {
+		t.Errorf("after the empty save: %+v, %v", st, err)
 	}
-	if got, err := d.LoadImages("other"); err != nil || got != nil {
-		t.Errorf("no list: %q, %v", got, err)
+	if _, st, err := d.Take("other", "claude-code"); err != nil || st.Images != nil {
+		t.Errorf("no list: %+v, %v", st, err)
 	}
 }
 

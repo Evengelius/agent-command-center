@@ -236,7 +236,7 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 	case "esc":
 		if m.s.Startup.Phase == state.StartFailed {
 			cmds := m.do(state.Back{})
-			m.closeSession()
+			cmds = append(cmds, m.closeSession()...)
 			m.focusMessage()
 			return cmds
 		}
@@ -304,17 +304,24 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 }
 
 // closeSession forgets a failed session after Back; its process was already
-// closed by the crash.
-func (m *Model) closeSession() {
+// closed by the crash. Its draft is written and let go, for that project's
+// next start; the editor forgets it, text and images, for the next
+// session may be in another project (plan 33, design D2).
+func (m *Model) closeSession() []tea.Cmd {
 	if m.cancel != nil {
 		m.cancel()
 	}
 	m.sess, m.cancel = nil, nil
 	m.closeWindows()
 	m.ui.DraftWin = render.DraftWindow{}
-	m.ui.Explorer = render.ExplorerView{} // the next session may be in another project
-	m.draft = nil                         // the stored draft stays on disk for the next start
+	m.ui.Explorer = render.ExplorerView{}
+	err := m.letDraftGo()
 	m.edit.Clear()
+	m.attach, m.pasted, m.pastedSum, m.thumbs = nil, nil, nil, nil
+	if err != nil {
+		return m.toast("the draft could not be saved: " + err.Error())
+	}
+	return nil
 }
 
 // editKey applies an editing key; oneLine refuses newlines (the path field).

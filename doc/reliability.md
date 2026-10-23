@@ -319,7 +319,9 @@ Without losing the session (B3.4):
   own `--resume` in another terminal remains (INT 6).
 - **If the dashboard itself fails** (killed, crashed or panicking): the
   draft is on disk (ASM-23) and offered back on the next start in the same
-  project; a panic restores the terminal, saves the draft and closes the CLI
+  project, its images with it, pasted ones included; a kill loses at most
+  the last 500 ms of typing, an image being written as it is attached
+  (plan 33); a panic restores the terminal, saves the draft and closes the CLI
   through its input before exiting with code 2; on quit, crash and panic the
   session id and the CLI's own resume command are printed. The job object
   ends the CLI when the dashboard dies (ASM-19); a turn killed that way

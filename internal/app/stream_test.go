@@ -58,6 +58,7 @@ type scriptSession struct {
 	interrupts int
 	auto       bool   // Capabilities().AutoApprovals
 	modes      []bool // the SetApprovalMode calls, in order
+	maxCount   int    // Capabilities().Images.MaxCount when set (plan 33)
 }
 
 func newScriptSession() *scriptSession { return &scriptSession{events: make(chan event.Event, 4096)} }
@@ -91,8 +92,13 @@ func (s *scriptSession) Interrupt() error {
 }
 func (s *scriptSession) Refresh() error { return nil }
 func (s *scriptSession) Capabilities() provider.Capabilities {
-	// Claude Code's limits on images (plan 31), so attachments can be tested.
-	return provider.Capabilities{AutoApprovals: s.auto, Images: provider.ImageLimits{MaxCount: 100, MaxBytes: 7_400_000, MaxTotal: 7_400_000, MaxSide: 8000}}
+	// Claude Code's limits on images (plan 31), so attachments can be tested;
+	// maxCount, when set, the images a message takes (plan 33).
+	count := 100
+	if s.maxCount > 0 {
+		count = s.maxCount
+	}
+	return provider.Capabilities{AutoApprovals: s.auto, Images: provider.ImageLimits{MaxCount: count, MaxBytes: 7_400_000, MaxTotal: 7_400_000, MaxSide: 8000}}
 }
 func (s *scriptSession) SetApprovalMode(auto bool) error {
 	s.mu.Lock()

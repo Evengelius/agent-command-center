@@ -47,13 +47,29 @@ func newHarness(t *testing.T, opt Options) *harness {
 	h.exec(h.m.Init())
 	t.Cleanup(func() {
 		// What Run does at the end, and the write queue's worker stopped:
-		// a bubble (synctest) ends only once its goroutines have.
+		// a bubble (synctest) ends only once its goroutines have. The
+		// draft's lock is closed as the process's end closes it, so the
+		// test's folders can be deleted.
 		h.m.Shutdown()
 		if h.m.writes != nil {
 			close(h.m.writes)
 		}
+		h.crash()
 	})
 	return h
+}
+
+// crash leaves the model as a killed process leaves it: its draft's lock
+// closed by the system, every file as it is, nothing written after (plan
+// 33, design D1). A test dropping a model "as a crash would" calls it
+// before the next model of the project starts.
+func (h *harness) crash() {
+	if ds := h.m.draft; ds != nil {
+		ds.mu.Lock()
+		ds.gone = true
+		ds.slot.Abandon()
+		ds.mu.Unlock()
+	}
 }
 
 func (h *harness) exec(c tea.Cmd) {

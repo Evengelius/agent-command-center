@@ -2292,9 +2292,65 @@ provider: it has no provider code and sends a string to part 5's caller
   a message of images alone included; each image is read and checked
   again as it is sent, and a file gone or changed past a limit fails the
   send, the text and the images back in the editor with the reason ("the
-  message could not be sent: x.png: the file is gone"). The stored draft
-  lists its images' paths beside it; a restart restores the ones still
-  there and names the ones gone.
+  message could not be sent: x.png: the file is gone"). A file whose bytes
+  changed since it was attached (their SHA-256, kept when it was attached)
+  fails it too, "x.png: changed since it was attached; attached again as
+  it is now": the dashboard reads it again and replaces its chip and
+  thumbnail in place ("x.png: updated"), so the next send sends what the
+  preview shows; attaching that file again by hand does the same, and an
+  unchanged one is "already attached" (plan 33, design D7). The stored
+  draft lists its images beside its text; a restart restores the ones
+  still there and names the ones gone.
+- **The stored draft** (ASM-23; plan 33, brief amendment 33): each
+  dashboard's draft has a folder of its own in
+  `%LOCALAPPDATA%\agent-command-center\drafts`, named by the SHA-256 of
+  the project's path and a random key, holding the text byte for byte
+  (`draft.txt`), the images list (`images.json`: files' paths, pasted
+  images as `pasted:pasted-image-N.png#<sha256>`), the pasted images'
+  files (`<sha256>.png`) and `lock`, which the dashboard holds open with
+  no sharing while the draft is its own, its CLI's id in it. Typing is
+  saved at most every 500 ms; attaching, pasting or removing an image at
+  once. While a sent message waits for the CLI's acceptance, the stored
+  draft is that message, then what was typed and attached since (the
+  texts joined by a newline, no image twice); the acceptance leaves what
+  was typed since. Quitting, a panic, a closed window and Back write the
+  draft and let it go; a draft let go, or left by a dashboard killed,
+  waits for its project: a session's start takes one of its own CLI
+  first, then the newest, and says how many more wait ("draft restored ·
+  1 more stored draft of this project"); two dashboards on one project
+  each keep their own. One whose lock another program has open a moment
+  (an antivirus, an indexer) is waited for, a second at most for the
+  whole start, then said ("a stored draft of this project is in use: the
+  next start takes it"); one another dashboard has just taken is left at
+  once. A stored draft's images are attached
+  whatever this session's limits (a draft stored by the other CLI), the
+  toast saying "more than this session sends in a message: remove some
+  before sending", and the send refuses the message with the reason
+  until some are removed. Enter again while a message waits for its
+  acceptance is refused and leaves that message in place. A draft from before plan 33 (`<sha256>.txt` and
+  `.images.json` beside the folders) is taken into a folder. A save
+  Windows refuses because another program holds the file is tried again
+  for about a second, then said ("draft not saved: ...") and tried again
+  every second while it fails. An images list that cannot be read is
+  set aside as `images.json.unreadable` and the text restored, "draft
+  restored; its images list was unreadable and was set aside". While a
+  stored draft's images are read back, however long that takes (a
+  network share gone offline), saves go on, listing them first as
+  stored, after a message waiting for its acceptance; once read, they
+  take their place before the ones attached meanwhile; pasting again one
+  of them is "already attached". A stored file whose drive or share
+  cannot be reached is kept: its chip reads "name · not reachable", its
+  thumbnail's box "offline", the toast "x.jpg: its folder cannot be
+  reached; kept in the draft", and the send is refused with "x.jpg: its
+  folder cannot be reached" until it answers or the chip is removed; a
+  file gone from a folder that answers is left out, said. At each
+  start, folders nobody holds lose their temporary `.draft-*` files and
+  the pasted images' files their list does not name, and are deleted
+  when they hold no draft.
+- **Back** after a failed start writes the draft and lets it go, and the
+  editor forgets the text, the images, their pasted bytes and their
+  thumbnails: the next session, in any project, starts without them, and
+  the project's next start restores them (plan 33, design D2).
 - **Pasted images** (plan 32, brief amendment 32;
   [doc/research/image-paste.md](research/image-paste.md)): Alt+V attaches
   what the clipboard holds as images, its copied files first, each checked
@@ -2308,11 +2364,15 @@ provider: it has no provider code and sends a string to part 5's caller
   Alt+V does. A paste that is exactly the paths of the files the clipboard
   holds (Windows Terminal pastes a copied file's path) attaches them when
   every one is a supported image, and goes in as text otherwise. A pasted
-  image is "pasted-image-N.png" (N from 1 in a run), held in memory as PNG
-  bytes, never written to a file, dropped when its chip is removed or its
-  message accepted; the same bytes twice are "already attached"; the
-  stored draft lists it by name, and a restart says it was pasted, not
-  kept.
+  image is "pasted-image-N.png" (N from 1 in a run, after the restored
+  ones), held in memory as PNG bytes and, since plan 33 (design D8), kept
+  in the stored draft's folder as `<sha256>.png` until its message is
+  accepted or its chip removed, nowhere else; the same bytes twice are
+  "already attached". A restart restores it with its name, its bytes
+  checked against the SHA-256, and its thumbnail; a copy missing or not
+  matching is said ("pasted-image-1.png: its stored copy is damaged") and
+  left out; a draft of plan 32, whose pasted images were never kept, says
+  "pasted-image-1.png was pasted, not kept".
 - **The preview** (plan 32;
   [reference-design.md](reference-design.md#the-image-preview)): when the
   terminal answers the device attributes request (`ESC[c`, sent once at
