@@ -22,9 +22,9 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: plan 34 active since 2026-10-23, the model selector, its effort
-and Ultracode (brief amendment 34).** Plans 1 to 33 (research; architecture and reliability; proposal; the
-MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live; nothing left open; recent projects, favourites and a project browser; git worktree management; a file viewer, an Explorer and the draft in a window; an adaptive layout; zone B as the centerpiece; strict conformance to the owner's two approved templates; what the review of d84e5d4 found; a live thinking indicator in zone B; the acc launcher in the project; zone A with the telemetry and the usage report read; the unrecognised lines named; zone A without notes; zone C with the execution timeline; the top right after the owner's image; the input editor's row after the owner's image; the "+" menu after the owner's image; image upload; image paste and preview; unsent drafts and images through crashes and restarts) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
+**Status: no plan active since 2026-10-24, when the owner approved plan
+34, the model selector, its effort and Ultracode (brief amendment 34).** Plans 1 to 34 (research; architecture and reliability; proposal; the
+MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live; nothing left open; recent projects, favourites and a project browser; git worktree management; a file viewer, an Explorer and the draft in a window; an adaptive layout; zone B as the centerpiece; strict conformance to the owner's two approved templates; what the review of d84e5d4 found; a live thinking indicator in zone B; the acc launcher in the project; zone A with the telemetry and the usage report read; the unrecognised lines named; zone A without notes; zone C with the execution timeline; the top right after the owner's image; the input editor's row after the owner's image; the "+" menu after the owner's image; image upload; image paste and preview; unsent drafts and images through crashes and restarts; the model selector, its effort and Ultracode) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
 plan's progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.
 
@@ -153,9 +153,10 @@ and need the owner's approval where it says so. tmux is not used.
   switching, session profiles, orchestration settings), except recent
   projects, favourites and a project browser, which the owner asked for in
   amendment 9 (plan 15), git worktree management, asked for in amendment 10
-  (plan 16), and a file viewer in the terminal with an Explorer of the
+  (plan 16), a file viewer in the terminal with an Explorer of the
   project, which replace the editor integration (amendments 11 and 12,
-  plan 17). The ones left out are
+  plan 17), and the session's model, effort and Ultracode selection,
+  asked for in amendment 34 (plan 34). The ones left out are
   **[Nice to have]**: future improvements, never listed as remaining, built
   only if the owner asks for one in a new plan (`plan.md`, Nice to have).
 - **Dependencies are fixed** at the four the owner approved on 2026-10-16

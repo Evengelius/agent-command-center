@@ -16,7 +16,8 @@ for plan 25, `git show a9a5145:plan.md` for plan 26, `git show 041e7b8:plan.md`
 for plan 27, `git show 8fe0077:plan.md` for plan 28, `git show d696f22:plan.md`
 for plan 29, `git show 6025513:plan.md` for plan 30, `git show
 8e2a721:plan.md` for plan 31, `git show b56d23e:plan.md` for plan 32, `git show
-bc5d92b:plan.md` for plan 33), and its results in its evaluation file.
+bc5d92b:plan.md` for plan 33, `git show 47b50ce:plan.md` for plan 34), and its
+results in its evaluation file.
 
 ## The owner's standing decisions
 
@@ -74,7 +75,9 @@ none is listed as remaining, until the owner asks for one in a new plan
 remain below. Recent projects, favourites and a project browser were plan 15
 (amendment 9); git worktree management was plan 16 (amendment 10). The
 automatic VS Code integration was replaced by the owner with a file viewer in
-the terminal, plan 17 (amendment 11).
+the terminal, plan 17 (amendment 11). The session's model, effort and
+Ultracode selection was plan 34 (amendment 34); configuring models beyond the
+session stays below.
 
 - **[Nice to have]** Advanced model configuration.
 - **[Nice to have]** Cross-provider agent collaboration.
@@ -90,364 +93,10 @@ the terminal, plan 17 (amendment 11).
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 34 - The model selector, its effort and Ultracode
+## No plan active
 
-Brief amendment 34 (the owner's request, 2026-10-23) and its image,
-`references/11-model-selector.webp` (reference-design.md, The model
-selector): a click on the editor row's model pill opens the active CLI's
-models with the effort and, for Claude Code, Ultracode; a choice is
-applied through the CLI's own interface and shown once the CLI reports it
-in force. Nothing is committed until the owner has reviewed the
-implementation and the screenshots.
-
-### What the research found
-
-Sources: the installed Claude Code 2.1.303 and Codex CLI 0.163.0 (the
-versions last probed); the Agent SDK reference and the `model-config` and
-`workflows` pages (read 2026-10-23); Codex's app-server schema as the
-installed CLI generates it (`codex app-server generate-json-schema`, with
-and without `--experimental`) and its source at `rust-v0.163.0`; four
-probes that send no message, so no model call (P34c, P34c2, P34c3 and
-P34x in `doc/research/probes/README.md`; the configuration check PASS
-around them). The details: `doc/research/claude-code.md` and
-`doc/research/codex-cli.md`, "Models, effort and Ultracode (plan 34)".
-
-1. Claude Code's catalogue is the `initialize` response's `models`, the
-   documented `ModelInfo` (`value`, `resolvedModel`, `displayName`,
-   `description`, `supportsEffort`, `supportedEffortLevels`): 13 entries
-   on the owner's account, five aliases first (Default (recommended), Opus
-   5.5, Fable 5.1, Sonnet 5.5, Haiku 5.5), then eight full model ids. The
-   descriptions change with the account (P303a's and P34c's differ).
-2. `set_model {model}` (documented, `setModel`) changes the model at
-   once: answered in 3 to 1,530 ms; an unknown model is refused ("Model
-   'claude-not-a-model-34' not found"). `apply_flag_settings {settings}`
-   (documented, `applyFlagSettings`) takes `effortLevel` and `ultracode`
-   for the session only. Neither writes a settings file (P34c: settings.json
-   identical).
-3. `get_settings` (in the CLI's own schema, absent from the documentation:
-   undocumented) answers `applied`: `model`, `effort`, `ultracode`,
-   `ultracodeRequested` and `ultracodeAvailable` ("Hosts should offer an
-   Ultracode control only while this is true"), in 6 to 50 ms, with no
-   model call. It is the only source of the effort and Ultracode in force:
-   `apply_flag_settings` answers success even for a level it then drops
-   ("extreme", P34c).
-4. The owner's Claude Code settings set `CLAUDE_CODE_EFFORT_LEVEL` in their
-   `env` block; the variable outranks every other effort setting
-   (`model-config`, "Adjust effort level"), and `applied.effort` stayed
-   "max" through every change (P34c). With the variable emptied for one
-   process (P34c3), each level asked for applied, Opus 4.6 ran "xhigh" as
-   "high" (the documented fallback), and clearing the level gave the
-   model's default.
-5. Changing `effortLevel` alone turned Ultracode off (P34c3 after "low" and
-   "medium", P34c after "max"), where the documentation says a level picked
-   in `/effort` leaves it as it was; `{effortLevel, ultracode}` in one
-   request kept it (P34c3). Turning Ultracode on or off left the effort as
-   it was. Ultracode is unavailable on a model without "xhigh" (Opus 4.6,
-   `ultracodeAvailable` false) and when workflows are off (documented).
-6. Codex's catalogue is `model/list`, paged: one model a page gave
-   `nextCursor` "1" to "6", then none (P34x); 7 visible models, 10 with
-   `includeHidden` (an experiment, a reserve model, the auto-review model).
-   Each has `displayName`, `description`, `isDefault`,
-   `supportedReasoningEfforts` (low to max, "ultra" on five of them) and
-   `defaultReasoningEffort`; no field marks a model as older.
-7. A Codex thread starts on the configured model (`gpt-6-sol`, "high",
-   P34x), not the catalogue's default (`gpt-6.1-sol`); `thread/read` reads
-   both back with no model call. `turn/start` takes `model` and `effort`
-   "for this turn and subsequent turns" (stable). The immediate
-   `thread/settings/update` is refused without the experimental API
-   ("thread/settings/update requires experimentalApi capability"); with
-   it, it took an unknown model and an unknown effort, both echoed by
-   `thread/settings/updated` (P34x), so it confirms no more than a turn
-   does.
-
-### Design
-
-- **D1. Where the choices come from.** Claude Code: the `initialize`
-  response's models; the settings in force read by `get_settings` after
-  the handshake, after each change and after each turn, its answer reduced
-  to `applied` (and, from `effective`, the model and the one variable of
-  D5) before it becomes an event, so no other setting reaches the screen.
-  Codex: every page of `model/list` without hidden models; the settings in
-  force from the `thread/start` response, then from `thread/read` after a
-  turn that carried a change. The details view names each source, the
-  undocumented `get_settings` marked "†". No model list is written in the
-  code: the mock provider replays the probes' lists. The CLIs' own lists
-  already leave out what an account or an organisation excludes.
-- **D2. The main list and More models.** The first five models in the
-  CLI's order are the list, the others under More models, collapsed. On
-  the owner's accounts: Claude Code's five aliases, then eight models;
-  Codex's four GPT-6 models and GPT-5.6-Sol, then GPT-5.6-Terra and
-  GPT-5.6-Luna. Codex's default model reads "(default)" after its name.
-  The model in force is visible at opening: under More models, the section
-  opens expanded and scrolled to it.
-- **D3. Claude Code's changes.** A model: `set_model` with the entry's
-  value. An effort: `apply_flag_settings` with `effortLevel` and the
-  Ultracode in force (finding 5). Ultracode: `apply_flag_settings` with
-  `ultracode` alone. Each answer is followed by `get_settings`; the pill,
-  the check and zone A's and zone B's model take a new value only from
-  that read. A refusal, or a read that shows another value than the one
-  asked for, leaves the screen as the read shows it and puts the CLI's
-  words, or what it kept, in zone B as a notice.
-- **D4. Codex's changes go with the next message** (finding 7): the model
-  and effort asked for are sent with the next `turn/start`; until then
-  the pill shows what is in force and the editor row's middle "→ <model>
-  <effort> (next turn)", as plan 12 shows Codex's approvals. Once that
-  `turn/start` is answered, `thread/read`, and the pill takes its values;
-  a refused turn leaves them. A model change sends an effort the new model
-  lists: the one in force when it lists it, else its default. The
-  experimental `thread/settings/update` is not used.
-- **D5. Effort.** The list is the chosen model's own levels (Claude Code's
-  `supportedEffortLevels`, Codex's `supportedReasoningEfforts`), in the
-  CLI's order, labelled Low, Medium, High, XHigh, Max, Ultra (another word
-  with its first letter upper), Codex's default one followed by
-  "(default)". A model without levels shows "N/A" in the box with no
-  chevron, not clickable. When `CLAUDE_CODE_EFFORT_LEVEL` is set, in the
-  dashboard's environment or in a settings `env` block `get_settings`
-  reports, the box shows the level in force without the chevron, and a
-  click puts the reason in zone B and sends nothing.
-- **D6. Ultracode, Claude Code only.** The row reads "Ultracode" and
-  "Enables dynamic workflows"; its toggle shows the Ultracode in force.
-  While `ultracodeAvailable` is false or unknown the row is dimmed, its
-  toggle off, and a click puts the reason in zone B and sends nothing.
-  Codex has no such row.
-- **D7. The pill.** " <model> <Effort>", then " · Ultracode" only while it
-  is in force: Claude Code's model by the catalogue's name for the model in
-  force (else its id, read as zone B's speaker reads it), Codex's by its
-  display name; no effort while none is known. The "+" band, the middle and
-  "↯ Auto" are unchanged. The pill carries no "†" (the owner's examples
-  have none); the details view does.
-- **D8. The popup** (reference-design.md, The model selector, for the
-  columns and colours): its bottom edge on the editor's rule, its left
-  edge one cell left of the pill, a "▾" in the bottom edge above the
-  pill's first cell; "CLAUDE MODELS" or "CODEX MODELS", "Current session"
-  at the right; each model two rows, its name and its description, one
-  blank row between models; the row under the cursor on the band with a
-  pink "▶", the model in force with "✓"; separators around "More models";
-  the effort row; the Ultracode row; the bottom edge on the next row. At
-  least 63 cells wide, wider for a longer description, never wider than
-  the screen; the list scrolls inside, the right edge its scroll bar, the
-  popup no taller than the rows above the editor's rule.
-- **D9. Keys and mouse.** A click on the pill, or Alt+P (Claude Code's own
-  key for its model picker), opens and closes it. While it is open: ↑↓
-  move the cursor over the models, More models, Effort and Ultracode;
-  Enter or Space acts on it; PgUp, PgDn and the wheel scroll; Esc closes
-  the effort list, then the popup; the pointer's hover moves the cursor
-  (all mouse motion asked for, as plan 30's menu); a click on a row acts
-  on it; a click outside closes it and goes on, as plan 30's. No key it
-  takes reaches the editor, and Enter never sends; Ctrl+Q still quits.
-- **D10. What does not change.** No settings file, `config.toml` or
-  credential is written or read; no restart; the session id and the
-  conversation stay; the draft, its images and the focus stay; `--effort
-  ultracode` is not used. A restarted or resumed CLI starts with what its
-  own settings give, shown as read.
-- **D11. The agent told its settings** (brief amendment 35, 2026-10-24),
-  withdrawn: an opt-in line telling the agent its model and effort before
-  the first message after a change was built and checked (criteria 22 to
-  26 PASS), then removed the same day at the owner's word ("I don't like
-  it actually, remove this last implementation"); nothing of it remains in
-  the code.
-
-### Criteria
-
-Checked by tests unless marked WT (Windows Terminal screenshots) or live
-(the real CLIs with no message sent: no model call).
-
-1. Claude Code's catalogue: from P34c's `initialize` answer, the popup
-   lists Default (recommended), Opus 5.5, Fable 5.1, Sonnet 5.5 and Haiku
-   5.5 with P34c's descriptions, then More models with the 8 others in
-   P34c's order; its heading "CLAUDE MODELS"; no Codex model.
-2. Codex's catalogue: a fake app-server answering one model a page with
-   P34x's cursors receives 7 `model/list` requests (no cursor, then "1" to
-   "6"); the popup lists GPT-6.1-Sol (default), GPT-6-Astra, GPT-6-Sol,
-   GPT-6-Luna and GPT-5.6-Sol, then More models with GPT-5.6-Terra and
-   GPT-5.6-Luna; its heading "CODEX MODELS"; none of the 3 hidden models;
-   no Ultracode row.
-3. In force at the start: with P34c's first `get_settings`, Fable 5.1 has
-   the check and the band and the pill reads " Fable 5.1 Max · Ultracode ";
-   with P34x's thread start, GPT-6-Sol has them and the pill reads
-   " GPT-6-Sol High ".
-4. A model in force under More models (Opus 4.6) opens the popup with More
-   models expanded and its row on screen.
-5. Expanding More models changes neither the popup's height nor its width;
-   the list scrolls by the wheel, PgUp, PgDn and the cursor.
-6. Effort: Fable 5.1 offers Low, Medium, High, XHigh and Max; Opus 4.6
-   Low, Medium, High and Max; Haiku 4.5 none (the box "N/A", no chevron,
-   a click sends nothing); Codex's GPT-6-Luna Low to Max without Ultra,
-   GPT-6-Sol with Ultra, "(default)" after Medium for both.
-7. Claude Code's requests as written: a model, `set_model` with the
-   entry's value; an effort, `apply_flag_settings` with `effortLevel` and
-   the `ultracode` in force; Ultracode, `apply_flag_settings` with
-   `ultracode` alone; each answer followed by `get_settings`.
-8. Locked effort: with `CLAUDE_CODE_EFFORT_LEVEL` in the reported `env`,
-   the box shows "Max" without a chevron, and a click writes nothing to
-   the CLI and puts the reason in zone B.
-9. Codex's change: after a choice nothing is written to the app-server
-   until the next message; that message's `turn/start` carries `model`
-   and `effort` (the new model's default when it lacks the effort in
-   force); meanwhile the editor row shows "→ GPT-6.1-Sol High (next
-   turn)" for GPT-6.1-Sol chosen with High in force; after its answer,
-   `thread/read` is sent and its values reach the pill.
-10. Ultracode independent of effort: turning it on with Max in force sends
-    no effort, and P34c3's read keeps the pill at Max.
-11. Ultracode's availability: with `ultracodeAvailable` false (P34c3, Opus
-    4.6) the row is dimmed, its toggle off, and a click writes nothing;
-    the pill shows Ultracode only while `applied.ultracode` is true.
-12. Refusals: P34c's `set_model` error leaves the check, the pill and
-    zone B's speaker as they were and shows "Model
-    'claude-not-a-model-34' not found" in zone B; an `apply_flag_settings`
-    success whose read shows the old value leaves the old value shown and
-    says so in zone B.
-13. Only after acceptance: between a choice and the read that confirms
-    it, the pill and the check show the old values, for both CLIs.
-14. Keys: Alt+P opens and closes; ↑↓, Enter, Space, PgUp, PgDn and Esc act
-    as D9; Enter with a draft written never sends it (no write command).
-15. Mouse: a click on the pill opens; the hover moves the band; clicks
-    choose a model, expand More models, open the effort list and pick a
-    level, and turn Ultracode on and off; a click outside closes the popup
-    and goes on.
-16. The draft kept: opening, using and closing the popup leaves the
-    draft's text, its attachments and the focus as they were.
-17. The session kept: no change restarts the CLI; Claude Code's session id
-    and Codex's thread id are the same before and after.
-18. No regression: `go build ./...`, `go vet ./...`, `gofmt -l .` empty,
-    `go test ./...` all ok; the race detector over input, state, app and
-    the adapters, 0 races; the golden frames changed only by the pill's
-    real values, each changed frame reviewed.
-19. Performance: the timing step 8 of 8 within its budgets, its new
-    `TestSelectorToFrame` timing Alt+P and the cursor in the expanded list
-    at 120x40 and 208x59 (p95 ≤ 16 ms).
-20. Visual (WT, mock, maximised and 120x40): Claude Code's popup and
-    Codex's, each collapsed and with More models expanded, match
-    `references/11-model-selector.webp` on every point of
-    reference-design.md's list: colours, columns and rows, the band, "▶"
-    and "✓", the separators, "More models" and its "›", the effort box,
-    the toggle, the description "Enables dynamic workflows", the bottom
-    edge right under the Ultracode row, no footer, the position over the
-    pill.
-21. Live, no message: on Claude Code 2.1.303 the dashboard lists the
-    owner's 13 models with Fable 5.1 checked and Max locked by the owner's
-    variable; a model change and Ultracode on and off are confirmed by
-    `get_settings`; on Codex 0.163.0, the 7 models with GPT-6-Sol checked;
-    the configuration check PASS before and after.
-
-Added by brief amendment 35 (design D11), then withdrawn with it
-(2026-10-24): criteria 22 to 26, on the setting, the line in Claude Code's
-and Codex's messages, the draft kept as typed and zone B's grey line, all
-PASS before the removal (`doc/plan34-evaluation.md`, the amendment 35
-block).
-
-### Steps
-
-1. Research (done 2026-10-23): the findings above, probes P34c, P34c2,
-   P34c3 and P34x, this plan.
-2. Records: brief amendment 34 (done); reference-design.md's section; the
-   research and probe records; AGENTS.md's status.
-3. Events and adapters: `event.Models` and `event.Settings`; Claude Code's
-   catalogue, `get_settings` reduced, its requests and reads; Codex's paged
-   `model/list`, the next turn's model and effort, `thread/read`; the mock
-   provider's lists from the probes and its local answers.
-4. State: the catalogue, the settings in force, a change asked for, the
-   actions and commands.
-5. Rendering and input: the pill, the popup, the effort list, the keys and
-   the mouse, the details view's sources.
-6. Tests: unit, wire (the real adapters over fakes replaying the probes),
-   golden frames, race, timing.
-7. WT screenshots; the live checks with no message; the evaluation
-   (`doc/plan34-evaluation.md`); the report.
-8. Amendment 35 (design D11): built, checked, then withdrawn by the owner
-   and removed (2026-10-24).
-
-### Progress
-
-- 2026-10-23: step 1 done; step 2 in progress.
-- 2026-10-23: steps 2 to 5 done: the records (brief, reference design,
-  research, probes); `event.Models` and `event.Settings`; Claude Code's
-  catalogue, `get_settings` read reduced to `applied`, `set_model` and
-  `apply_flag_settings` with Ultracode carried; Codex's paged `model/list`,
-  the next turn's model and effort, `thread/read`, reroutes; the mock's
-  local answers and two mock files from P34c and P34x; the state's
-  `Models`; the pill, the selector, the effort list, Alt+P, keys, mouse.
-  Step 6 in progress: the suite, the new tests and golden frames pass; the
-  race detector 0 races (its five 80x24 selector frames failed only because
-  they were rewritten during the run: to run again); `TestSelectorToFrame`
-  p95 1.1 to 2.7 ms. Step 7 begun: Windows Terminal screenshots (mock,
-  maximised 188x53 and 120x40, both CLIs, More models, the effort list,
-  Codex's change for the next turn) and the live checks with no message
-  (Claude Code 2.1.303: 10 of 10 PASS; Codex 0.163.0: 8 of 8 PASS;
-  configuration PASS both).
-- 2026-10-23: the race detector over every package, 0 races; the docs
-  (ui-design.md, architecture.md, events-and-state.md, reliability.md).
-  The independent review (`verifier`) found four defects and six doubts,
-  all fixed, each with a test that fails without its fix:
-  1. an open selector the frame could not draw (a tall draft at 80x24, a
-     turn's status in the pill's place, a full view) still took keys and
-     could change the model unseen: it now opens only with room for it
-     ("no room for the model selector on this screen"), and a frame that
-     cannot draw it, or its effort list, closes it;
-  2. Alt+P moved the focus to zone B (design D10 keeps it): no longer;
-  3. a `turn/start` Codex refused (a carried change it rejects) left the
-     turn "Submitted", only Ctrl+Q left: the turn now ends, the message
-     goes back to the editor, and zone B says the change was not taken;
-  4. a middle text that just fitted touched "↯ Auto" at 80x24: three
-     cells before it now, the four frames back to the last commit's row;
-  a. `model/list` followed a cursor that came back without end, and a
-     refused page left "has not listed its models yet" for good: a
-     repeated cursor or a hundredth page ends the list, a refused page
-     gives the toast "no model list: <the CLI's words>";
-  b. the effort box and the list's "✓" showed Codex's level asked for:
-     both show the level in force, the asked level a grey "…"; a model's
-     "✓" stays while a choice of it again waits;
-  c. the "▾" left the pill when the box was pushed left: it follows it;
-  d. a configured send key closed the popup and sent the draft: it acts
-     as Enter there; a paste closes the popup and goes to the draft;
-  e. Claude Code changes during a turn (not probed) are not sent, zone B
-     saying they wait for the turn's end;
-  f. a change waiting when the session ends is dropped, said in zone B.
-  Also added: the tests criteria 1, 4, 5, 6, 14 and 16 lacked
-  (TestSelectorScroll, TestEffortList, TestSelectorKeepsDraft), Alt+P and
-  the selector's keys on the F1 page, and the selector tests on the
-  virtual clock (14 s to 0.4 s). The review's second pass confirmed the
-  ten fixes and found three small points, fixed: zone B kept a refused
-  message's entry with no word (a notice under it now says it was not
-  sent and is back in the editor); a second refused choice repeated the
-  same notice (no longer); while a turn's status has the editor row alone
-  (plan 29, at 120x40 with the longer pills) the pill is off screen, so
-  the selector does not open: the toast now says it needs the pill on
-  screen, rather than "no room" (plan 29's row is kept).
-- 2026-10-23: steps 6 and 7 done on the final code: the suite (623
-  top-level tests, 588 on the last commit), the race detector over every
-  package (0 races), the timing step alone (8 of 8; the long session timed
-  in turn against the last commit, no difference); Windows Terminal
-  screenshots again with the final build; the live checks again (Claude
-  Code 11 of 11 with every one of the 13 models on screen, Codex 9 of 9,
-  configuration PASS). `doc/plan34-evaluation.md`: 20 PASS, 1 FAIL (34.18:
-  the golden frames changed beyond the pill's values, explained, no
-  regression; an exception for the owner). Waiting for the owner's review;
-  nothing committed.
-- 2026-10-23: at the owner's request ("the goal is to control it through
-  my tool"), `CLAUDE_CODE_EFFORT_LEVEL` removed from the env block of
-  `~/.claude/settings.json`, nothing else in the file changed. Live, no
-  message: the effort box opens and Low, then Max, are set and confirmed,
-  Ultracode kept (11 of 11, configuration PASS; the evaluation's
-  follow-up block). New Claude Code sessions now start at the file's
-  per-model levels (Fable 5.1 XHigh, Opus 5.5 High), not Max. The owner's
-  own session then confirmed it with real turns: Claude Code's transcript
-  records `output_config.effort` "max" before the change and "medium" on
-  every request from the next message on.
-- 2026-10-24: step 8 done (brief amendment 35, design D11): the
-  `models.announce` setting (`input.LoadAnnounce`, its startup line and
-  problem), the line before the text written of the first message after a
-  change (`state/announce.go`; never in the draft; due again after a
-  give-back; none before a slash command), zone B's grey line and zone A's
-  turn name without it. Criteria 22 to 26 PASS (the evaluation's
-  amendment 35 block): 634 top-level tests, the race detector on the four
-  changed packages 0 races, no golden frame changed. Waiting for the
-  owner's review; nothing committed.
-- 2026-10-24: amendment 35 withdrawn by the owner ("I don't like it
-  actually, remove this last implementation"): its code, tests and design
-  text removed (the files it added deleted, the others back to plan 34's
-  code before it); the brief, this plan and the evaluation keep the
-  record.
+Plan 34 was approved and closed on 2026-10-24 (Closed plans, below). The
+next plan starts when the owner asks for one.
 
 ## Closed plans
 
@@ -791,3 +440,24 @@ lost data, and a logoff was not simulated. Approved on 2026-10-23: 14 of
 14 PASS and the follow-up
 ([`doc/plan33-evaluation.md`](doc/plan33-evaluation.md)); commit
 bc5d92b, then the approval commit.
+
+## Plan 34 - The model selector, its effort and Ultracode
+
+Brief amendment 34: a click on the editor row's model pill, or Alt+P,
+opens the active CLI's own models with the effort and, for Claude Code,
+Ultracode, after the owner's image. Claude Code's list comes from
+`initialize`, its changes go by `set_model` and `apply_flag_settings`
+and are read back by the undocumented `get_settings`; Codex's list from
+every page of `model/list`, its changes ride the next `turn/start`,
+read back by `thread/read`. The screen shows a value only once the CLI
+reports it in force; an effort held by `CLAUDE_CODE_EFFORT_LEVEL` is
+shown and never changed; Claude Code's changes wait for a turn's end. An
+independent review found four defects and six doubts, fixed, and three
+small points on its second pass. At the owner's request
+`CLAUDE_CODE_EFFORT_LEVEL` was removed from their Claude Code settings,
+and the dashboard then set the effort live; amendment 35, an opt-in line
+telling the agent its settings, was built and withdrawn. Approved on
+2026-10-24: 20 of 21 PASS, 34.18 (golden frames changed beyond the
+pill's values) accepted
+([`doc/plan34-evaluation.md`](doc/plan34-evaluation.md)); commit
+47b50ce, then the approval commit.

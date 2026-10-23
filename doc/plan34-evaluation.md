@@ -153,3 +153,10 @@ and the live checks were made first with the build before the fixes
 same), then once more with the final build after a step was added to the
 live harness, L34.4b, which pages through the expanded list and finds
 every model's name on screen: the results above.
+
+**The commit and the push (2026-10-24), after the owner's approval.** The
+owner approved plan 34 on 2026-10-24, the exception 34.18 accepted; commit
+47b50ce (167 files: 125 modified, 42 added) and the approval commit were
+pushed to `origin`; `origin/main` equals `main`, the working tree is
+clean, and the author is `Evengelius <molimoabel@gmail.com>`, with no
+attribution line: PASS. The blocks above stay as they were reported.
