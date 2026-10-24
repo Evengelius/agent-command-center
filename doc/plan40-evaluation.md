@@ -67,3 +67,10 @@ Not verified:
   0.163.0, the last probed version).
 - Claude Code's empty text block becoming a notice with no text: never
   recorded; checked by the hand-made test alone.
+
+**The commit and the push (2026-10-24), after the owner's approval.** The
+owner approved plan 40 on 2026-10-24; commit 4158751 (9 files: 7
+modified, 2 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+blocks above stay as they were reported.
