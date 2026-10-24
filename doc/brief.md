@@ -5413,3 +5413,44 @@ Yes: make it plan 41. Drop the authorization from review rows rated low risk, as
 ````
 
 Taken as plan 41 (plan.md, Plan 41).
+
+## Amendment 43, 2026-10-24: the mouse in zone B, a click to fold and a double click to open, for plan 42
+
+After plan 41 was approved and pushed, the owner sent two screenshots of
+zone B (`40.png`: a thinking entry folded, "▸ ✓ Thought for 0.3s · 25
+thinking tokens", its time and "observed" at the right; `41.png`: the same
+entry unfolded by the keyboard, its three detail rows, "▾", the entry
+cursor's "▸" in the margin and its hint "Enter full view · ← fold · ↑↓
+entries · Esc back" in the attention colour) and wrote, word for word:
+
+````text
+Ok now something else, See my image
+
+For the moment if I want to get there from zone B text zone, I have to type up arrow, until that location and then right arrow to unfold it, and it is nice. I like this approach and implementation, very well done.
+````
+
+Then two more (`42.png`: the folded thinking entry again; `43.png`: a
+Claude Code turn with its two call rows, "✓ Agent  general-purpose · List
+dir, write found.txt" and "✓ general-purpose · Write  C:\Users\…\found.txt"
+"allowed by you"), word for word:
+
+````text
+What I would like now, is that you add another approach, on click of the mouse on it.
+
+Clicking on a element :
+
+If it is a foldable item => upon clicking on it with the mouse, and not necessary on its  foldable icon like ">" or "v", it unfolds it so we can see the content.
+
+Else => does nothing
+
+Double clicking on a element => second image where you see :
+
+Agent general-purpose...
+general-purpose Write...
+
+=> It acs like "enter" keyboard" => So we can see the full views
+
+And since it is the mouse approach, there is no need to display waht is in red, like Esc back, etc. => This is the keyboard approach.
+````
+
+Taken as plan 42 (plan.md, Plan 42).

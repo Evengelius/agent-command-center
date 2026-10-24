@@ -351,6 +351,7 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	conv, rows, top, starts := conversation(s, ui, inner, room)
 	var shown []line // only the rows shown are drawn
 	var folds map[int]string
+	var entries map[int]int
 	for j, c := range conv {
 		shown = append(shown, c.draw())
 		if c.fold != "" {
@@ -358,6 +359,12 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 				folds = map[int]string{}
 			}
 			folds[j] = c.fold
+		}
+		if c.entry > 0 {
+			if entries == nil {
+				entries = map[int]int{}
+			}
+			entries[j] = c.entry
 		}
 	}
 	if len(shown) < room {
@@ -369,7 +376,7 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 		shown[room-1] = spread(trimTail(shown[room-1]), decoLine(fmt.Sprintf("↓ %d new", n), stProgress), inner)
 	}
 	if sc != nil {
-		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold, Starts: starts, Folds: folds}
+		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold, Starts: starts, Folds: folds, Entries: entries}
 	}
 	body := append(shown, editor...)
 	focused := ui.Focus == "B" || ui.Focus == ""

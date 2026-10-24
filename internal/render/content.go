@@ -325,7 +325,8 @@ type crow struct {
 	first  bool // the source line's first row
 	p      *rowStyle
 	fn     func() line // a row drawn only when shown
-	fold   string      // a fold row's run (plan 19)
+	fold   string      // a click's fold in ui.Unfolded: a run's row (plan 19), a thinking summary row (plan 42)
+	entry  int         // the entry, 1-based, whose own content the row shows; 0 none (plan 42)
 	fr     *frame      // the card it is drawn in; nil for none (plan 20)
 	cursor bool        // the entry cursor's row: ▸ in the card's margin
 	sep    bool        // the rule between two messages (amendment 17)

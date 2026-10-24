@@ -1088,8 +1088,16 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   move between such entries, B scrolling to keep the marked row in view; ↓
   past the newest, Esc or a typed character return to the input (the
   character is typed there). With a draft, ↑ moves in the draft as before.
-  A mouse click is not used, except on a run's row (plan 19): a click on a
-  row starts a selection. Enter shows the entry
+  The mouse (plan 42, brief amendment 43): a click anywhere on a foldable
+  item's row, a run's row (plan 19) or a thinking phase's summary row,
+  unfolds it, or folds it again; a double click on any row of an entry
+  Enter shows whole opens that view, the fold its first click toggled back
+  as it was (on a run's row the second click adds nothing), and on an
+  approval's rows, pending or answered, the approval whole, as Enter on
+  its card does. Neither puts
+  the cursor anywhere, nor shows its hints: those are the keyboard's. A
+  click on any other row starts a selection, as before; a double click
+  there selects a word. Enter shows the entry
   whole, full screen (→ only expands a folded run, as it unfolds in zone
   A: it opens nothing; the owner's live review, 2026-10-20), as the approval's full view does: a message with
   its time and line count, every line; a tool with its name, status,
@@ -1217,7 +1225,8 @@ reports decides what is shown (claude-code.md and codex-cli.md, section
   Durations: one decimal under 10 s, seconds under a minute, then "1m
   05s".
 - **Details**: → on a summary row unfolds its details under it (▾), ←
-  folds them, Enter shows the phase whole: its start and end and how each
+  folds them; a click anywhere on the row does either, with no key hint
+  (plan 42); Enter, or a double click, shows the phase whole: its start and end and how each
   is known (observed, or the step's start inferred), each count's source
   and scope ("exact, for this phase · message_delta
   usage.output_tokens_details.thinking_tokens"), the last live estimate,
@@ -2867,7 +2876,9 @@ Mouse selection in any panel, with clean text (AM3 M3; TI 6.3):
   scrolls when the pointer leaves it upward or downward. (Lip Gloss's
   `Compositor.Hit` was not needed.)
 - A plain click focuses the panel and selects nothing; double-click selects
-  a word, triple-click a line; Shift+click extends. In the editor the mouse
+  a word, triple-click a line, except on a row of an entry zone B shows
+  whole on Enter, which a double click opens (plan 42; a drag still
+  selects it); Shift+click extends. In the editor the mouse
   sets the editor's own selection, and Shift+arrows extend it.
 - Copy on release by default (configurable; ASM-22), or Ctrl+Shift+C, or Ctrl+C
   while a selection exists. Without a selection, Ctrl+C keeps its interrupt

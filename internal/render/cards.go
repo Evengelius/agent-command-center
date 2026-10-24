@@ -194,6 +194,7 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 			return out
 		}
 	}
+	body := len(out) // the entry's own rows start here, below its labels and fold row
 	switch e.Role {
 	case "user":
 		ls := entryLines(s, e)
@@ -270,6 +271,11 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 		out = cardText(out, wc, fr, i, entryLines(s, e), cw, line{deco("· ", stGrey)}, line{deco("  ", stGrey)}, stGrey, false)
 	default:
 		out = cardText(out, wc, fr, i, entryLines(s, e), cw, line{deco("· ", stProgress)}, line{deco("  ", stProgress)}, stProgress, false)
+	}
+	// Its own rows say whose they are: a double click on one opens the entry
+	// as Enter does (plan 42, design D4).
+	for j := body; j < len(out); j++ {
+		out[j].entry = i + 1
 	}
 	return out
 }

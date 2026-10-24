@@ -829,7 +829,8 @@ func thoughtRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int,
 	case thinkSettle:
 		out = append(out, crow{l: summaryRow(s, ui, i, e, cw, k, false, settleLit(ui, e.Thought)), fr: fr})
 	case thinkSummary:
-		out = append(out, crow{fn: func() line { return summaryRow(s, ui, i, e, cw, k, focused, 0) }, fr: fr, cursor: focused})
+		// A click anywhere on the row opens or folds its details (plan 42).
+		out = append(out, crow{fn: func() line { return summaryRow(s, ui, i, e, cw, k, focused, 0) }, fold: ThoughtKey(e), fr: fr, cursor: focused})
 		if k.details {
 			out = detailRows(out, ui.Wrap, i, e, cw, fr)
 		}

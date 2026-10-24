@@ -95,10 +95,128 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 42 - The mouse in zone B: a click to fold, a double click to open
 
-Plan 41 was approved and closed on 2026-10-24 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 43 (2026-10-24): beside the keyboard's path, which the
+owner approved and which stays as it is, a click on a foldable item of
+zone B unfolds it, a double click on an entry opens its full view as Enter
+does, and the mouse shows none of the keyboard's hints. The criteria below
+were written before the code; nothing is committed until the owner has
+reviewed the result.
+
+### What was found
+
+- Zone B has two foldable items, both kept in `ui.Unfolded` and opened
+  or folded by the application's `unfold`: a run of calls, its fold row
+  "▸ N earlier tool events · Expand" (plan 19), which a click anywhere on
+  the row already toggles; and an ended thinking phase's summary row, its
+  details (plan 22, design 8), which only the keyboard opens (→ on the
+  entry cursor, ← folds). A click on any other row focuses B and starts a
+  selection (`internal/app/mouse.go`, `press`).
+- Enter on the entry cursor shows its entry whole, full screen
+  (`openView`): the entries the cursor stops on (`render.Targets`) are a
+  tool call (an Agent call too), a review, a failure, a message of the
+  owner's longer than its fold, a thinking phase's summary row, and a
+  folded run's row, on which Enter unfolds instead. An assistant message,
+  an approval card and the session's state are not among them.
+- A double click on the same cell within 400 ms selects a word, a triple
+  click a line (ui-design.md, Selection and copy).
+- The hint in the attention colour ("Enter full view · ← fold · ↑↓
+  entries · Esc back") and the margin's "▸" belong to the entry cursor
+  (`ui.Entry`); the details' fold state does not. The mouse can unfold
+  without them.
+
+### Design
+
+- **D1. A click** (the left button) anywhere on a foldable item's row in
+  zone B, its text, its time or its ▸, unfolds it; a click on it unfolded
+  folds it again, as a run's row has done since plan 19. Its rows open
+  under it and B holds its view, as with →. A click on any other row does
+  what it did: B takes the focus, a drag selects; nothing unfolds or opens.
+- **D2. A double click** on a row of an entry Enter shows whole (an Agent
+  or other call, a review, a failure, a long message of the owner's, a
+  thinking phase's summary or detail rows) opens its full view, as Enter
+  does from the entry cursor; on an approval's rows, pending or answered,
+  the approval whole, as Enter does from its card (amended in step 5:
+  43.png's "general-purpose · Write … allowed by you" row is an answered
+  approval, not a call); on a summary row, the fold its first click
+  toggled goes back as it was. On a run's fold row the second click adds
+  nothing to the first. On any other row (an assistant message, a short
+  message of the owner's, a label) a double click still selects a word
+  and a triple click a line. On the rows a double click now opens, it
+  selected a word until now (plan 5, item 6: a word of a failed call's
+  error; TestFailedToolRow takes the new rule); a drag still selects and
+  copies them.
+- **D3. No keyboard hints for the mouse**: a click or a double click puts
+  the entry cursor nowhere and takes it off any entry it was on, so no
+  "▸" in the margin and no hint in the attention colour; Esc from a full
+  view the mouse opened returns to B with no cursor. The keyboard's path
+  (↑ ↓, →, ←, Enter, Esc, their hints) is unchanged.
+- **D4.** The render marks, for the rows in view, a thinking summary row
+  with its details' key, as a run's fold row is marked, and each row of an
+  entry's own content with that entry; labels, rules and blank rows carry
+  none. Nothing drawn changes: no golden frame moves.
+
+### Criteria
+
+1. **42.1 A click unfolds**: on a thinking summary row, a click on its
+   summary text, on its time at the right and on its ▸ each unfolds its
+   details ("▾", the detail rows under it); a second click folds them; the
+   entry cursor stays off (no "▸" in the margin, no "Enter full view" nor
+   "Esc back" in the frame); B's view holds; a run's fold row still
+   toggles on a click anywhere on it.
+2. **42.2 Else nothing**: a click on a call row, a review row, an
+   assistant message, a message of the owner's and a speaker label
+   unfolds nothing and opens nothing; a drag from a message still selects
+   its text.
+3. **42.3 A double click opens** (amended in step 5, the approval added):
+   on an Agent call row, a Write call row, a review row, a failure row, a
+   long message of the owner's and a thinking summary row, the frame is
+   that entry's full view, the one Enter opens from the entry cursor; on
+   an answered approval's row, the approval whole; on the summary row, its
+   details are as before the double click; Esc returns to B with no entry
+   cursor and no hint.
+4. **42.4 Selection kept**: a double click on an assistant message's word
+   selects that word and opens nothing; a triple click selects its line; a
+   double click on a run's fold row toggles it once and opens nothing.
+5. **42.5 The keyboard unchanged**: ↑ to the summary row, → unfolds with
+   the hint, ← folds, Enter opens, Esc returns with the cursor on the
+   entry, as before; the golden frames unchanged.
+6. **42.6 The checks**: build, vet and gofmt clean; `go test ./...` ok;
+   `-race` on render and app ok; the timing step alone within its
+   targets; the new checks run against the change broken on purpose, each
+   caught.
+7. **42.7 Windows Terminal**: real mouse clicks on a recorded session,
+   plan 41's build and the new one, maximised in the acc tab's profile
+   (208x59) and at 120x40: a click on a thinking summary row unfolds it
+   with no hint; a double click on a call row opens its full view; Esc
+   returns with no hint.
+
+### Steps
+
+1. The finding, brief amendment 43, the criteria.
+2. The render's marks and the application's clicks; their tests.
+3. The documents.
+4. The checks.
+5. Windows Terminal; the evaluation (`doc/plan42-evaluation.md`); the
+   report.
+
+### Progress
+
+- 2026-10-24: step 1 done.
+- 2026-10-24: steps 2 and 3 done: the render marks a thinking summary row
+  with its details' key and each entry's own rows with the entry
+  (`content.go`, `cards.go`, `thinking.go`, `dashboard.go`, `select.go`);
+  the application's `convClick` and `opens` (`mouse.go`); TestConvClickMarks,
+  TestThinkingClicks, TestEntryClicks, TestFoldRowDoubleClick; TestFailedToolRow
+  takes the new rule; `doc/ui-design.md` (Expanding, Thinking's details,
+  Selection and copy).
+- 2026-10-24: steps 4 and 5 done: the checks pass, 12 breakages caught;
+  Windows Terminal with real clicks showed 43.png's Write row to be an
+  answered approval, which a double click did not open: D2 and 42.3
+  amended, the approval opened as Enter opens it from its card; the
+  evaluation, `doc/plan42-evaluation.md`: 7 criteria, 7 PASS. Waiting for
+  the owner's review; nothing committed.
 
 ## Closed plans
 

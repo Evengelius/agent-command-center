@@ -232,6 +232,9 @@ type Model struct {
 	repaint bool           // the palette changed: the next frame draws every row
 	drag    drag
 	click   clicks
+	// clickFold is what the last click on a fold row of zone B changed, so a
+	// double click there undoes it before opening the entry (plan 42).
+	clickFold clickFold
 }
 
 // Messages.

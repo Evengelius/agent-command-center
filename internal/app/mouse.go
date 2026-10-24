@@ -33,6 +33,14 @@ type clicks struct {
 	n    int
 }
 
+// clickFold is a fold a click toggled in zone B, and B's view as it was
+// before (plan 42).
+type clickFold struct {
+	key       string
+	hold      bool
+	top, seen int
+}
+
 // mouse handles a mouse message on the dashboard.
 func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 	if m.s.Screen != state.ScreenDashboard || m.screen == nil || m.wt != nil {
@@ -218,13 +226,11 @@ func (m *Model) press(mo tea.Mouse) {
 	}
 	m.click.at, m.click.x, m.click.y = now, mo.X, mo.Y
 
-	// A click on a run's fold row expands it, or folds it again (plan 19).
-	if c := m.screen.Conv; p == 'B' && m.click.n == 1 {
-		if key, ok := c.Folds[mo.Y-c.Y]; ok {
-			m.unfold(key, !m.ui.Unfolded[key])
-			m.ui.Sel = render.Selection{}
-			return
-		}
+	// Zone B's clicks on its foldable items and double clicks on its entries
+	// (plan 19; plan 42).
+	if c := m.screen.Conv; p == 'B' && m.convClick(c, mo.Y-c.Y) {
+		m.ui.Sel = render.Selection{}
+		return
 	}
 	// A click on a row of zone A with a node puts the cursor on it; on
 	// TELEMETRY it opens the details, on a section's heading it folds or
@@ -264,6 +270,59 @@ func (m *Model) press(mo tea.Mouse) {
 	}
 	m.drag = drag{on: true, panel: p, a0: start, a1: end, x: mo.X, y: mo.Y, moved: m.click.n > 1}
 	m.setSelection(start, end, true)
+}
+
+// convClick handles a press on zone B's conversation row r, counted from
+// its first row shown (plan 42, brief amendment 43): a click on a foldable
+// item's row, a run of calls (plan 19) or a thinking phase's summary row,
+// unfolds it or folds it again; a double click on a row of an entry Enter
+// shows whole opens it full screen, as Enter does, the fold its first click
+// toggled back as it was; on a fold row a second click adds nothing.
+// Neither puts the entry cursor anywhere: the mouse shows none of the
+// keyboard's hints (design D3). false leaves the press to the selection.
+func (m *Model) convClick(c render.ConvView, r int) bool {
+	key, fold := c.Folds[r]
+	id, n := "", 0
+	if m.click.n == 2 {
+		id, n = m.opens(c.Entries[r])
+	}
+	switch {
+	case m.click.n == 1 && fold:
+		m.clickFold = clickFold{key: key, hold: m.ui.ConvHold, top: m.ui.ConvTop, seen: m.ui.ConvSeen}
+		m.unfold(key, !m.ui.Unfolded[key])
+	case id != "" || n > 0:
+		if f := m.clickFold; fold && f.key == key {
+			m.unfold(key, !m.ui.Unfolded[key])
+			m.ui.ConvHold, m.ui.ConvTop, m.ui.ConvSeen = f.hold, f.top, f.seen
+		}
+		m.openView(id, n)
+		m.click.n = 0 // a third press starts afresh, on the full view
+	case m.click.n >= 2 && fold:
+		// The fold row's first click did it.
+	default:
+		return false
+	}
+	m.ui.Entry = 0
+	return true
+}
+
+// opens is what a double click on conversation entry n (1-based; 0 none)
+// shows whole, as Enter does: an approval by its id, as from its card; an
+// entry the entry cursor stops on, by n; neither when Enter shows none.
+func (m *Model) opens(n int) (id string, entry int) {
+	if n < 1 || n > len(m.s.Conversation) {
+		return "", 0
+	}
+	if e := m.s.Conversation[n-1]; e.Role == "approval" {
+		if m.s.Approvals[e.MessageID] != nil {
+			return e.MessageID, 0
+		}
+		return "", 0
+	}
+	if render.Targets(m.s, m.ui)[n-1] {
+		return "", n
+	}
+	return "", 0
 }
 
 // extend moves the selection's free end to the pointer, clamped to the

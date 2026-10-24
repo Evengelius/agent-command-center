@@ -13,8 +13,9 @@ import (
 
 // TestFailedToolRow is plan 5, item 6, criteria 4 and 5, through the
 // application: the failed call's row in B copies its name and its error as
-// two lines, a double click selects a word of the error, and the entry cursor
-// opens item 4's viewer on the call.
+// two lines, a double click opens item 4's viewer on the call (plan 42,
+// brief amendment 43; it selected a word of the error until then), and so
+// does the entry cursor.
 func TestFailedToolRow(t *testing.T) {
 	const errLine = "exit status 1: FAIL pkg/a"
 	rig := func(t *testing.T) (inputRig, *fakeClipboard, *time.Time) {
@@ -47,8 +48,14 @@ func TestFailedToolRow(t *testing.T) {
 				mouseAt(t, h, click(x+2, y))
 				mouseAt(t, h, tea.MouseReleaseMsg{X: x + 2, Y: y, Button: tea.MouseLeft})
 			}
-			if clip.last() != "status" {
-				t.Errorf("copied %q, want %q", clip.last(), "status")
+			f := h.frame()
+			for _, want := range []string{"◀ back (Esc)", "✗ Bash", "failed ·", errLine, "more output"} {
+				if !strings.Contains(f, want) {
+					t.Errorf("the double click opened no viewer with %q:\n%s", want, f)
+				}
+			}
+			if clip.last() != "" {
+				t.Errorf("copied %q, want nothing", clip.last())
 			}
 		})
 	})

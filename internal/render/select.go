@@ -44,9 +44,14 @@ type ConvView struct {
 	// Starts are each entry's first row, then the end of the entries: the
 	// entry cursor keeps its entry in view.
 	Starts []int
-	// Folds are the fold rows in view, by their row from Top, with their
-	// run's key: a click on one expands or folds it (plan 19).
+	// Folds are the fold rows in view, by their row from Top, with their key
+	// in ui.Unfolded: a click on one expands or folds it, a run's row (plan
+	// 19) or a thinking phase's summary row (plan 42).
 	Folds map[int]string
+	// Entries are the rows in view that show an entry's own content, by
+	// their row from Top, with the entry, 1-based: a double click on one
+	// opens it as Enter does when Enter can (plan 42).
+	Entries map[int]int
 }
 
 // Screen is a drawn frame that still knows what each cell shows, so a mouse
