@@ -74,3 +74,10 @@ Not verified:
   model call.
 - A double click on a pending approval in Windows Terminal: checked by
   TestEntryClicks alone, the recording's approval being answered.
+
+**The commit and the push (2026-10-24), after the owner's approval.** The
+owner approved plan 42 on 2026-10-24; commit 11f794d (15 files: 12
+modified, 3 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+blocks above stay as they were reported.
