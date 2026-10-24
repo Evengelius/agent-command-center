@@ -140,7 +140,12 @@ func inspectMessages(s *state.State, a *state.Agent, w int) []line {
 		start += " · " + firstLine(a.Description)
 	}
 	out := []line{timed(clockSec(a.StartedAt), plain(start, stText), "observed", w)}
+	drawn := 0
 	for _, e := range a.Messages {
+		if noText(e) {
+			continue // no row with no text (plan 40, design D1)
+		}
+		drawn++
 		// AI text takes zone B's Markdown styles, on the rows wrap draws
 		// (ui-design.md, Markdown; plan 5, item 11); a notice stays plain.
 		ps := paragraphs(e.Text)
@@ -180,7 +185,7 @@ func inspectMessages(s *state.State, a *state.Agent, w int) []line {
 	for _, hl := range a.History {
 		out = append(out, detail(hl, w))
 	}
-	if len(a.Messages) == 0 {
+	if drawn == 0 {
 		out = append(out, detail("no message from this agent yet", w))
 	}
 	return out

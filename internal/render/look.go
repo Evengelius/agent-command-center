@@ -375,6 +375,12 @@ func thinkingMark(e state.Entry) bool {
 	return e.Role == "assistant" && e.Text == "" && e.Thinking
 }
 
+// noText is an agent's entry with no text to show: an assistant entry
+// holding only a thinking mark, a message that ended empty, a notice with
+// none. Zone C's timeline and the inspection's Messages tab draw none, as
+// zone B draws no thinking mark (plan 40, design D1).
+func noText(e state.Entry) bool { return strings.TrimSpace(e.Text) == "" }
+
 // runKey names a run of calls by its first call, stable as the run grows.
 func runKey(e state.Entry) string {
 	if e.MessageID != "" {

@@ -95,10 +95,92 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 40 - No empty rows in zone C's execution timeline
 
-Plan 39 was approved and closed on 2026-10-24 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 41 (2026-10-24): on Codex, zone C's execution timeline
+showed a subagent's rows "assistant │" with no text. The criteria below
+were written before the code; nothing is committed until the owner has
+reviewed the result.
+
+### What was found
+
+- Since plan 22 (amendment 20) every Codex turn asks for reasoning
+  summaries, and a subagent's thread streams them too: each reasoning
+  item's `item/reasoning/summaryTextDelta` is a thinking delta
+  (`internal/provider/codex/mapper.go`), and the state keeps a subagent's
+  thinking as an assistant entry holding only its thinking mark, its text
+  empty (`internal/state/reduce.go`, `delta`: "A subagent's message keeps
+  its mark").
+- Zone B never draws such an entry (plan 22, design 1: `thinkingMark`,
+  `internal/render/look.go`); zone C's timeline (plan 27) and the
+  inspection's Messages tab draw every entry of the agent, so each of the
+  subagent's reasoning steps became a row with no text: four in the
+  owner's run, one before each of the subagent's tool steps and its last
+  message.
+- No recording has it: P7 and P7b (Codex subagents) asked for no
+  summaries, P22s (summaries) has no subagent, and the mocks show none;
+  Claude Code's subagent messages in P303b carry their text.
+
+### Design
+
+- **D1.** Zone C's timeline and the inspection's Messages tab draw no
+  entry with no text: an assistant entry holding only a thinking mark, a
+  message that ended empty, or a notice with none (Claude Code's mapper
+  passes a subagent's empty text block on as one, never recorded), as
+  zone B draws no thinking mark; a rule only between two drawn entries; a
+  timeline with none drawn reads "no activity yet", the inspection "no
+  message from this agent yet". The state keeps its entries as they are.
+- **D2.** Nothing else changes: zone B, the agents' cards, every entry
+  with text, the golden frames.
+
+### Criteria
+
+1. **40.1 The reproduction**: P7b's run with P22s's reasoning lines
+   replayed on a child thread (the same notifications, its thread and
+   turn) gives that child entries holding only a thinking mark; against
+   the code before the fix the new test finds rows with no text in zone
+   C's timeline and in the inspection (it fails).
+2. **40.2 The timeline after the fix**: no entry row with no text; every
+   entry with text drawn, in order, with its time; no rule at the top or
+   twice in a row; a subagent with only thinking so far reads "no
+   activity yet".
+3. **40.3 The inspection's Messages tab**: no timed row with no text; "no
+   message from this agent yet" when no message has text.
+4. **40.4 Unchanged**: zone B, the mocks' timelines, the golden frames.
+5. **40.5 The checks**: build, vet and gofmt clean; `go test ./...` ok;
+   `-race` on render ok; the timing step alone within its targets; the
+   new checks run once against the fix removed.
+6. **40.6 Windows Terminal**: the reproduction as a scratch mock, before
+   (plan 39's build) and after, maximised and at 120x40: zone C's
+   timeline with and without the rows with no text.
+
+### Steps
+
+1. The finding and the reproduction; brief amendment 41.
+2. The fix and its tests.
+3. Windows Terminal on the scratch mock; the evaluation
+   (`doc/plan40-evaluation.md`); the documents; the report.
+
+### Progress
+
+- 2026-10-24: step 1 done. The reproduction, TestTimelineNoEmptyRows
+  (`internal/render/timeline_test.go`), replays P7b through the Codex
+  mapper with P22s's reasoning item after each of the first child's two
+  reasoning items; on the code before the fix it found the rows with no
+  text in the timeline, in the frame at 120x40 and 200x60, in the
+  inspection and with only thinking (40.1).
+- 2026-10-24: step 2 done. `noText` (`internal/render/look.go`), used by
+  the timeline (`zonec.go`) and the inspection (`inspect.go`). D1 widened
+  while writing it, from assistant entries to every entry with no text, as
+  40.2 reads: Claude Code's mapper passes a subagent's empty text block on
+  as a notice with none (TestTimelineNoTextEntries). Build, vet, gofmt,
+  `go test ./...`, `-race` on render and the timing step alone pass; 8
+  breakages of the fix, each caught.
+- 2026-10-24: step 3 done: Windows Terminal on the scratch mock, before
+  (plan 39's build) and after, maximised and at 120x40;
+  `doc/ui-design.md` (the timeline, the Messages tab) updated; the
+  evaluation, `doc/plan40-evaluation.md`: 6 criteria, 6 PASS. Waiting for
+  the owner's review; nothing committed.
 
 ## Closed plans
 

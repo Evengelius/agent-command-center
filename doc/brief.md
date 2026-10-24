@@ -5357,3 +5357,20 @@ The images, measured (`scratchpad\plan39\measure`; the two popups
   rounded ends, the lightning `#E982F6` at the left, "Auto" in `#DBD9E6`.
 
 Taken as plan 39 (plan.md, Plan 39).
+
+## Amendment 41, 2026-10-24: no empty rows in zone C's execution timeline, for plan 40
+
+After plan 39 was approved and pushed, the owner ran demo scenario 1 on
+Codex in the dashboard and sent a screenshot of the result (`38.png`:
+zone C's execution timeline for the Codex subagent "/root/list_directory",
+four rows "assistant │" with no text, at 14:37:31, 14:37:34, 14:37:39 and
+14:37:43, then the subagent's last message at 14:37:45), and wrote, word
+for word:
+
+````text
+I noticed an issue with codex while running the demo scenario 1 : Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into a new file named found.txt with the Write tool, and report the names. Then tell me in one line what it found.
+
+If you see zone C - Execution Timeline, there are empty fields, it shouldn't be like that.
+````
+
+Taken as plan 40 (plan.md, Plan 40).

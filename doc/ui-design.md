@@ -1403,16 +1403,20 @@ cards, and the execution timeline on the right.
   with "tool: commandExecution" give 52 at 208 and 45 at 120.
 - **The execution timeline**, the right panel: the selected agent's
   entries (its messages, then its history lines), the newest last, one
-  entry each: the time "17:11:31" in grey, the role in its colour padded to
-  9 cells ("notice" in zone B's speaker blue, "assistant" in its result
-  green, any other role grey), a grey vertical bar, then the text wrapped
-  onto at most two rows of the room left, the second cut with "…" when the
-  text goes on, the bar drawn on both rows; a rule across the panel in the
-  frame's colour between entries, none after the last. The panel shows the
-  tail; the wheel scrolls it (panel P, by rows), and while it is held away
-  from the tail the heading's right end reads "↑ n ↓ m · End follows" in
-  place of the status. "no activity yet" in grey when the agent has no
-  entry. The agent's model with its source and its effort, which the
+  entry each, none for an entry with no text (plan 40, brief amendment
+  41: a Codex subagent's thinking marks, which its reasoning summaries
+  leave since plan 22, a message that ended empty, a notice with none;
+  zone B draws no thinking mark either): the time "17:11:31" in grey, the
+  role in its colour padded to 9 cells ("notice" in zone B's speaker blue,
+  "assistant" in its result green, any other role grey), a grey vertical
+  bar, then the text wrapped onto at most two rows of the room left, the
+  second cut with "…" when the text goes on, the bar drawn on both rows; a
+  rule across the panel in the frame's colour between two drawn entries,
+  none before the first or after the last. The panel shows the tail; the
+  wheel scrolls it (panel P, by rows), and while it is held away from the
+  tail the heading's right end reads "↑ n ↓ m · End follows" in place of
+  the status. "no activity yet" in grey when the agent has no entry to
+  draw. The agent's model with its source and its effort, which the
   preview's heading carried until plan 26, are the inspection's; the rows
   carry no origin label, the role names the source.
 - **Height**: 4 rows while no agent is in play. With agents in play from
@@ -1515,8 +1519,10 @@ Enter on an agent in A or C opens it full screen (AM2 C5, C6, C8, U7; B2.3):
 ```
 
 - **Tabs** (← → or 1 to 4): **Messages** (its text, as the CLI delivered it;
-  for Claude Code whole messages, forwarded); **Tools** (each call with its
-  input, status, duration and result, including test output: AM2 C6);
+  for Claude Code whole messages, forwarded; no row for an entry with no
+  text, and "no message from this agent yet" while none has text, plan
+  40); **Tools** (each call with its input, status, duration and result,
+  including test output: AM2 C6);
   **Diff** (its file changes: Codex `fileChange` diffs observed, Claude Code
   diffs derived from `Edit` and `Write` inputs and labelled "derived");
   **Raw events** (the agent's raw event lines, for diagnosis, unrecognised

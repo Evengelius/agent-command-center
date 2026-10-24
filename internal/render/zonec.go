@@ -361,9 +361,9 @@ func agentColumns(agents []*state.Agent, lw, right int) agentCols {
 // timeline is the selected agent's execution timeline, w cells wide and h
 // rows tall (design D3): its status for the heading's right end, or the
 // rows out of view while the pane is held away from its tail, and the rows
-// in view: one entry each of the agent's messages, then its history lines,
-// the newest last, a rule between entries. The rows are panel P's, which
-// the wheel scrolls.
+// in view: one entry each of the agent's messages with text (plan 40,
+// design D1), then its history lines, the newest last, a rule between
+// entries. The rows are panel P's, which the wheel scrolls.
 func timeline(s *state.State, ui UI, w, h int, sc *Screen) (status line, rows []line) {
 	a := s.Agents[ui.Selected]
 	if a == nil {
@@ -377,6 +377,9 @@ func timeline(s *state.State, ui UI, w, h int, sc *Screen) (status line, rows []
 	}
 	var all []line
 	for _, e := range a.Messages {
+		if noText(e) {
+			continue
+		}
 		if len(all) > 0 {
 			all = append(all, timelineRule(w))
 		}
