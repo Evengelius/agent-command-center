@@ -1,5 +1,5 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ▣ codex-subagents.jsonl                    approvals Manual → Auto (next turn)
+ ▣ codex-subagents.jsonl          approvals Ask for approval → Approve for me …
  A ✓ Turn 1 › ✓ /root/list_files › ✓ /root/create_found   (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
 │ ▎  ✓ collabAgent:wait                                   11:30:00      mock   │
@@ -15,7 +15,7 @@
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Ask Mock data anything…                                                   │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│   +     gpt-5.6-sol High                                             ↯ Auto  │
+│   +     gpt-5.6-sol High                               ✋ Ask for approval   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
 │  ✓ /root/create_found model N/A   completed                   0s   77.3k tok │

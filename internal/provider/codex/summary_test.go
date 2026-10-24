@@ -216,7 +216,7 @@ func TestTurnStartAsksForSummaries(t *testing.T) {
 			for k := range m.Params {
 				keys[k] = true
 			}
-			want := map[string]bool{"threadId": true, "input": true, "approvalsReviewer": true, "sandboxPolicy": true, "summary": true}
+			want := map[string]bool{"threadId": true, "input": true, "approvalPolicy": true, "approvalsReviewer": true, "sandboxPolicy": true, "summary": true} // the policy since plan 39
 			if len(keys) != len(want) {
 				t.Errorf("turn/start %d: parameters %v, want %v", turns, keys, want)
 			}
@@ -256,7 +256,7 @@ func TestAutoTurnStartAsksForSummaries(t *testing.T) {
 	r, _ := start(t, "replay", nil, "", probe("p6b-codex-app-server.jsonl"))
 	r.wait(event.SessionStarted)
 	r.limits()
-	if err := r.sess.SetApprovalMode(true); err != nil {
+	if err := r.sess.SetApprovalMode(event.ModeAuto); err != nil {
 		t.Fatal(err)
 	}
 	r.send("make hello.txt")

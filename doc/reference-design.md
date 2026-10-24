@@ -327,7 +327,8 @@ What plan 28 takes from it: the project bar's right end is the provider's
 name and version alone while approvals are Manual with no change asked;
 the mode shows there only while it is Auto or changing, since amendment
 8 made Auto visible on purpose. What it keeps: the title row, zone B's
-edge and its state word, the footer's "F4 Manual/Auto" and the key page.
+edge and its state word, the footer's "F4 Manual/Auto" ("F4 modes" since
+plan 39) and the key page.
 
 ## The input editor's row
 
@@ -345,7 +346,8 @@ design only for now, no functionality.
 
 What plan 29 takes from it: the helper line's key hints go; the row holds
 the "+" and the pill on zone B's tool rows' ground (the image's grey,
-`#1D2129`, against the ground's `#1E2133`), "↯ Auto" at the right end, a
+`#1D2129`, against the ground's `#1E2133`), "↯ Auto" at the right end (the
+mode pill since plan 39, [The modes selector](#the-modes-selector)), a
 separator above the row; the pill names the session's real model, "High
 · Ultracode" standing as the owner's placeholders until an effort and a
 mode have a source. What it keeps: the editor's dynamic statuses (a turn
@@ -499,3 +501,52 @@ level asked for and not yet in force is ringed, a held effort greyed,
 which the images do not show; the thumb glides between levels (180 ms);
 without Sixel the slider is text, its gradient a ground a cell, its thumb
 two half circles as tall as the pill.
+
+## The modes selector
+
+Brief amendment 40 (plan 39): three images, "authoritative visual design
+references", the popups lossy WebP of 1254x1254 pixels, the pill 258x92:
+
+- `35.webp`, Claude Code's popup: a charcoal ground `#111518`, a thin
+  border near `#B064F4` with rounded corners and a "V" let into the bottom
+  edge near its right end; "MODES" in `#B86AF6`, bold, and "Current
+  session" in `#A0AECC` on the first row; four options, each an outline
+  icon at the left in `#AEBCDC` (a raised hand, code brackets, a scroll,
+  a lightning), its title in `#F0F0F2` and its description, two lines
+  (three for Auto), in `#95A3BF`, broken after "approval", "selected",
+  "and", "that" and "pause" (32 characters at most a line). Auto selected:
+  a rounded rectangle of `#2E2842` from above its title to below its last
+  line, nearly the box's width, its title `#F2EFF6`, its description
+  `#B09FD5`, its lightning `#E874F2`, a white check (`#F6F2F8`) at the
+  right.
+- `36.webp`, Codex's popup: the same box with three options, a hand, a
+  shield with a prompt, a hexagon with "!"; Approve for me selected, its
+  shield `#EEE0FA`; Full access's hexagon `#F4C46E` and title `#F5C673`,
+  its description muted; the descriptions broken after "files",
+  "detected" and "internet" (35 characters at most).
+- `37.png`, the composer's pill: a fill of `#21223A`, a thin `#7E4AE1`
+  outline with rounded corners (their radius 0.36 of its height), the
+  lightning `#E982F6` at the left, "Auto" in `#DBD9E6`, no chevron.
+
+What plan 39 takes from them: the box in cells, W = 19 + the longest
+description line, the heading row, a half row before each option and
+after the last, the titles and descriptions at column 11, the colours
+above, the selected option's band, the check, Full access's amber; the
+icons as the dashboard's own drawings on a 24-unit grid, the band's
+rounded ends and the check as Sixel images in two strips beside the
+text, so the band can move under the pointer without redrawing them; the
+pill as a Sixel image a row high, its title drawn by GDI at 13 pixels.
+Read back from Windows Terminal's screenshots (plan 39's evaluation,
+39.14), every colour of the box and the pill is within 3 levels of the
+image's, but the anti-aliased label's brightest pixel (10).
+
+What differs: the terminal's monospace font for the images' proportional
+one, and its cells for their free layout, so the gaps between options are
+half rows; the pill's title is larger against its height than the
+image's, which would be unreadable at one row; the "V" is the frame's
+"▾" above the pill's middle; the box's ground also fills the outer half
+of its frame's cells, a halo of half a cell barely darker than the
+terminal's own ground (`#111518` against `#0C0C0C`); the images show no
+hover, no greyed option and no confirmation, which follow the same
+colours (the hovered option on the band without the check; the
+confirmation's heading and Turn on Full access in amber).

@@ -99,20 +99,21 @@ func TestToggleDraw(t *testing.T) {
 		}
 		n++
 		place := fmt.Sprintf("\x1b[%d;%dH", tg.Y+1, tg.X+1)
-		if raws := drawn(h, thumbDrawMsg{gen: h.m.kicks[n-1]}); len(raws) != 1 || !strings.Contains(raws[0], place) || strings.Contains(raws[0], "\x1bP") {
+		if raws := drawn(h, thumbDrawMsg{gen: h.m.kicks[n-1]}); len(raws) != 1 || !strings.Contains(raws[0], place) || strings.Contains(withoutPill(t, h, raws[0]), "\x1bP") {
 			t.Errorf("the vacated place: %q", trunc(raws))
 		}
 		h.send(typed('y'))
 		h.frame()
-		if len(h.m.kicks) != n || len(h.m.drawn) != 0 {
-			t.Errorf("once the selector closed: %d drawings asked, %d images left", len(h.m.kicks)-n, len(h.m.drawn))
+		if len(h.m.kicks) != n || len(h.m.drawn) != 1 || h.m.drawn[0].Item != -5 {
+			t.Errorf("once the selector closed: %d drawings asked, images left %+v, want the mode pill's alone", len(h.m.kicks)-n, h.m.drawn)
 		}
 
-		// Without Sixel: the text toggle, from one cell to the left, clicked.
+		// Without Sixel: the text toggle, from one cell to the left, clicked;
+		// the pill's image goes, its place repainted once (plan 39).
 		h.send(PrimaryDeviceAttributesEvent{61, 6})
 		h.send(key('p', tea.ModAlt))
 		h.frame()
-		if h.m.screen.Toggle.Shown || len(h.m.kicks) != n {
+		if h.m.screen.Toggle.Shown || len(h.m.kicks) != n+1 {
 			t.Errorf("without Sixel: the toggle %+v, %d drawings asked", h.m.screen.Toggle, len(h.m.kicks)-n)
 		}
 		if x, y := toggleAt(t, h); x != tg.X-1 || y != tg.Y {

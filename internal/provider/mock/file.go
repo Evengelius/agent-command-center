@@ -42,7 +42,7 @@ func init() {
 		event.Marker{}, event.Completed{}, event.Tool{}, event.Agent{}, event.AgentKeys{}, event.Approval{},
 		event.Metrics{}, event.TurnEnd{}, event.Diff{}, event.Problem{}, event.Status{}, event.Write{},
 		event.Line{}, event.Unknown{}, event.Mode{}, event.Verdict{}, event.Review{},
-		event.Models{}, event.Settings{},
+		event.Models{}, event.Settings{}, event.ModeLimits{},
 	} {
 		t := reflect.TypeOf(p)
 		payloads[t.Name()] = t

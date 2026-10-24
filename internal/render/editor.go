@@ -146,8 +146,8 @@ func (v EditorView) selected(line, off int) bool {
 // editorLines is the editor at B's bottom edge: a rule, the draft, a
 // separator, then the row of the owner's image (plan 29, brief amendment
 // 29; ui-design.md, Input editor): the "+" and the model pill on the tool
-// rows' ground, "↯ Auto" at the right end, and in the free middle what the
-// status line said when it had something to say. It grows with its content
+// rows' ground, the mode pill at the right end (plan 39), and in the free
+// middle what the status line said when it had something to say. It grows with its content
 // from minRows up to maxRows, then scrolls to keep the cursor in view
 // (ui-design.md, Input editor, Size).
 func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
@@ -188,7 +188,7 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 		if status != idleHint(ui) {
 			middle = append(middle, status)
 		}
-		out = append(out, rule(w), inputRow(s, strings.Join(middle, " · "), w, ui.Plus))
+		out = append(out, rule(w), inputRow(s, strings.Join(middle, " · "), w, ui.Plus, ui.Sixel && !ui.PillNoFont))
 	}
 	for i := range out {
 		out[i] = out[i].fit(w) // the padding is the editor's: a click on it goes to the editor
@@ -198,15 +198,16 @@ func editorLines(s *state.State, ui UI, w, minRows, maxRows int) []line {
 
 // inputRow is the row under the draft (plan 29, design D1): a margin
 // cell, " + " on the ground, three cells, the model pill on the ground,
-// the middle text in grey three cells after it, and "↯ Auto " at the right
-// end. The pill shows the model, the effort and Ultracode in force (plan
-// 34, design D7) and opens the model selector, its cells panel M; "Auto"
-// stays the owner's placeholder (plan 29, design D2). A middle text that
+// the middle text in grey three cells after it, and the mode pill and a
+// cell at the right end. The pill shows the model, the effort and Ultracode in force (plan
+// 34, design D7) and opens the model selector, its cells panel M; the mode
+// pill at the right end shows the mode in force and opens the modes
+// selector, panel Q (plan 39, design D7). A middle text that
 // does not fit beside the pills, three cells on either side, has the row
 // alone, as the status line had. The band is panel '+', so a click on it
 // opens the menu; while the menu is open (plan 30, design D2) it lies on
 // the active ground with the "+" in the lavender-white.
-func inputRow(s *state.State, middle string, w int, open bool) line {
+func inputRow(s *state.State, middle string, w int, open, sixel bool) line {
 	pill := modelPill(s)
 	left := line{deco(" ", stNone)}
 	band := span{text: " + ", st: stText, ref: ref{panel: '+', kind: refDeco}}
@@ -218,11 +219,16 @@ func inputRow(s *state.State, middle string, w int, open bool) line {
 	}
 	left = append(left, deco("   ", stNone))
 	left = append(left, grounded(pill, pill.width())...)
-	right := line{deco("↯ Auto ", stText)}
+	right := modePill(s, sixel, false) // the mode pill (plan 39, design D7)
 	if middle != "" {
-		// Three cells before "↯ Auto" too, as after the pill: a middle that
-		// would touch it has the row alone (plan 34's review).
-		if left.width()+3+textWidth(middle)+3+right.width() > w {
+		// Three cells before the mode pill too, as after the model pill: a
+		// middle that would touch it takes the pill's title away, and one that
+		// would touch its icon alone has the row alone (plan 34's review).
+		fits := func() bool { return left.width()+3+textWidth(middle)+3+right.width() <= w }
+		if !fits() {
+			right = modePill(s, sixel, true)
+		}
+		if !fits() {
 			return plain("  "+middle, stGrey)
 		}
 		left = append(left, deco("   ", stNone), sp(middle, stGrey))

@@ -84,7 +84,8 @@ func highUltracode(s *state.State) *state.State {
 // status line had something to say, and "↯ Auto" at the right end. Since
 // plan 34 the pill's effort and Ultracode are the ones in force: the
 // owner's image's "High · Ultracode" once a read reports them, the model
-// alone before.
+// alone before. Since plan 39 the right end is the mode pill, the mode in
+// force (here Manual), on the ground as the model pill, and one cell.
 func TestEditorRow(t *testing.T) {
 	defer UsePalette(pickTrue)
 	now := appClock
@@ -93,9 +94,10 @@ func TestEditorRow(t *testing.T) {
 	if model == "" || model == bare.Session.Model || strings.Contains(model, "claude") {
 		t.Fatalf("the quota mock's model %q names %q", bare.Session.Model, model)
 	}
+	const modePill = " ✋ Manual "
 	bareRows, _, _ := editorTail(t, bare, UI{Width: 120, Height: 40, Now: now, Focus: "B"})
-	if head := "  +     " + model + " "; !strings.HasPrefix(bareRows[3], head) || strings.TrimSpace(bareRows[3][len(head):]) != "↯ Auto" {
-		t.Errorf("no settings read: the row %q, want %q, spaces, \"↯ Auto\"", bareRows[3], head)
+	if head := "  +     " + model + " "; !strings.HasPrefix(bareRows[3], head) || strings.TrimSpace(bareRows[3][len(head):]) != strings.TrimSpace(modePill) {
+		t.Errorf("no settings read: the row %q, want %q, spaces, %q", bareRows[3], head, modePill)
 	}
 	idle := highUltracode(quiet(t))
 	pill := " " + model + " High · Ultracode "
@@ -112,15 +114,16 @@ func TestEditorRow(t *testing.T) {
 		}
 		row := rows[3]
 		head := "  +    " + pill
-		if !strings.HasPrefix(row, head) || strings.TrimSpace(row[len(head):]) != "↯ Auto" {
-			t.Errorf("%v: the row %q, want %q, spaces, \"↯ Auto\"", size, row, head)
+		if !strings.HasPrefix(row, head) || !strings.HasSuffix(row, modePill+"  ") || strings.TrimSpace(row[len(head):]) != strings.TrimSpace(modePill) {
+			t.Errorf("%v: the row %q, want %q, spaces, %q, a cell and the margin", size, row, head, modePill)
 		}
-		// The "+" and the pill on the ground, the margin, the gap and the
-		// rest not.
+		// The "+", the pill and the mode pill on the ground, the margins, the
+		// gaps and the cell after the mode pill not.
 		g := groundCells(ls[3])
+		end := textWidth(strings.TrimRight(row, " ")) + 1 // the mode pill's last cell, its space, and one
 		for i := off; i < len(g); i++ {
 			c := i - off
-			want := c >= 1 && c <= 3 || c >= 7 && c < 7+textWidth(pill)
+			want := c >= 1 && c <= 3 || c >= 7 && c < 7+textWidth(pill) || c >= end-textWidth(modePill) && c < end
 			if g[i] != want {
 				t.Errorf("%v: cell %d of the row on the ground %v, want %v:\n%s", size, c, g[i], want, row)
 				break
@@ -129,7 +132,7 @@ func TestEditorRow(t *testing.T) {
 		for _, c := range []struct {
 			text string
 			st   *lipgloss.Style
-		}{{" + ", tint(stText)}, {" " + model + " High", tint(stText)}, {" · ", tint(stMdBullet)}, {"Ultracode ", tint(stYou)}, {"↯ Auto ", stText}} {
+		}{{" + ", tint(stText)}, {" " + model + " High", tint(stText)}, {" · ", tint(stMdBullet)}, {"Ultracode ", tint(stYou)}, {modePill, tint(stText)}} {
 			if x, ok := spanFrom(ls[3], off, c.text); !ok || x.st != c.st {
 				t.Errorf("%v: %q styled %v, want %v", size, c.text, x.st, c.st)
 			}
@@ -142,7 +145,7 @@ func TestEditorRow(t *testing.T) {
 	}
 	ui := UI{Width: 120, Height: 40, Now: now, Focus: "B", Editor: EditorView{Lines: lines, Total: 12, Line: 11}}
 	rows, ls, off := editorTail(t, idle, ui)
-	if !strings.Contains(rows[3], "Ultracode    12 lines") || !strings.HasSuffix(strings.TrimRight(rows[3], " "), "↯ Auto") {
+	if !strings.Contains(rows[3], "Ultracode    12 lines") || !strings.HasSuffix(strings.TrimRight(rows[3], " "), strings.TrimSpace(modePill)) {
 		t.Errorf("a 12-line draft: the row %q", rows[3])
 	} else if x, _ := spanFrom(ls[3], off, "12 lines"); x.st != stGrey {
 		t.Errorf("the count styled %v, want stGrey", x.st)
@@ -154,7 +157,7 @@ func TestEditorRow(t *testing.T) {
 	busy.Turn.Phase = state.Running
 	const running = "turn running: the draft waits · Ctrl+C interrupt"
 	rows, _, _ = editorTail(t, busy, UI{Width: 208, Height: 59, Now: now, Focus: "B"})
-	if !strings.Contains(rows[3], "Ultracode    "+running) || !strings.HasSuffix(strings.TrimRight(rows[3], " "), "↯ Auto") {
+	if !strings.Contains(rows[3], "Ultracode    "+running) || !strings.HasSuffix(strings.TrimRight(rows[3], " "), strings.TrimSpace(modePill)) {
 		t.Errorf("208x59, the turn running: the row %q", rows[3])
 	}
 	rows, _, _ = editorTail(t, busy, UI{Width: 208, Height: 59, Now: now, Focus: "B", Editor: EditorView{Lines: []string{"a", "b"}, Total: 2, Line: 1}})
@@ -200,15 +203,15 @@ func TestEditorRow(t *testing.T) {
 }
 
 // TestEditorRowGap is plan 34's review: a middle text beside the pills
-// keeps three cells before "↯ Auto", as after the pill; one that would come
-// closer has the row alone.
+// keeps three cells before the mode pill (plan 39; "↯ Auto" before it), as
+// after the model pill; one that would come closer has the row alone.
 func TestEditorRowGap(t *testing.T) {
 	s := highUltracode(quiet(t))
 	for w := 60; w <= 130; w++ {
 		for n := 1; n <= w; n++ {
 			middle := strings.Repeat("x", n)
-			text := strings.TrimSuffix(texts([]line{inputRow(s, middle, w, false)}), "\n")
-			i := strings.Index(text, "↯")
+			text := strings.TrimSuffix(texts([]line{inputRow(s, middle, w, false, false)}), "\n")
+			i := strings.Index(text, " ✋") // the mode pill's first cell
 			if i < 0 {
 				if strings.TrimSpace(text) != middle {
 					t.Fatalf("width %d, a middle of %d: the row alone %q", w, n, text)

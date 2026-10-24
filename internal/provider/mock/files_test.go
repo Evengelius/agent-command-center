@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/fixture"
@@ -494,17 +495,59 @@ func TestMockFiles(t *testing.T) {
 	}
 }
 
-// A mock session offers no Manual or Auto switch (plan 12, item 2).
-func TestMockHasNoApprovalMode(t *testing.T) {
+// TestMockModes is plan 39's design D10 and criterion 39.12: a mock session
+// takes its file's CLI's modes, each answered at once, and refuses the
+// other CLI's; one whose CLI is not known yet takes none (plan 12, item 2).
+func TestMockModes(t *testing.T) {
 	s, err := (&mock.Provider{}).Start(context.Background(), provider.SessionContext{Mock: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer s.Close(context.Background())
-	if s.Capabilities().AutoApprovals {
-		t.Error("the mock offers Auto approvals")
+	if s.Capabilities().Modes || s.SetApprovalMode(event.ModeAuto) == nil {
+		t.Error("a mock session with no CLI took a mode")
 	}
-	if s.SetApprovalMode(true) == nil {
-		t.Error("the mock accepted a mode")
+	for _, c := range []struct {
+		file      string
+		modes, no []string
+	}{
+		{"claude-models.jsonl", []string{event.ModeAcceptEdits, event.ModePlan, event.ModeAuto, event.ModeManual}, []string{event.ModeFull, event.ModeCustom}},
+		{"codex-models.jsonl", []string{event.ModeAuto, event.ModeFull, event.ModeManual}, []string{event.ModeAcceptEdits, event.ModePlan, event.ModeCustom}},
+	} {
+		t.Run(c.file, func(t *testing.T) {
+			timed, err := mock.Load(filepath.Join("..", "..", "..", "testdata", "mock", c.file))
+			if err != nil {
+				t.Fatal(err)
+			}
+			s, err := (&mock.Provider{Events: timed}).Start(context.Background(), provider.SessionContext{Mock: true})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close(context.Background())
+			for range timed {
+				<-s.Events()
+			}
+			if !s.Capabilities().Modes {
+				t.Fatal("no modes")
+			}
+			for _, m := range c.modes {
+				if err := s.SetApprovalMode(m); err != nil {
+					t.Fatal(err)
+				}
+				select {
+				case ev := <-s.Events():
+					if p, ok := ev.Payload.(event.Mode); !ok || ev.Kind != event.ApprovalMode || p.Mode != m || !p.Answers {
+						t.Errorf("%s answered with %s %+v", m, ev.Kind, ev.Payload)
+					}
+				case <-time.After(5 * time.Second):
+					t.Fatalf("%s not answered", m)
+				}
+			}
+			for _, m := range c.no {
+				if s.SetApprovalMode(m) == nil {
+					t.Errorf("took %q", m)
+				}
+			}
+		})
 	}
 }

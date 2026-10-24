@@ -236,8 +236,8 @@ func codexRigWith(t *testing.T, opt Options) inputRig {
 			enc := json.NewEncoder(&b)
 			enc.SetEscapeHTML(false)
 			_ = enc.Encode(map[string]any{"id": json.RawMessage(m.ID), "method": "turn/start", "params": map[string]any{
-				"approvalsReviewer": "user", "threadId": "th-input", "input": []map[string]string{{"type": "text", "text": want}},
-				"sandboxPolicy": map[string]string{"type": "readOnly"}, "summary": "auto"}}) // plan 22, amendment 20
+				"approvalPolicy": "on-request", "approvalsReviewer": "user", "threadId": "th-input", "input": []map[string]string{{"type": "text", "text": want}},
+				"sandboxPolicy": map[string]string{"type": "readOnly"}, "summary": "auto"}}) // plan 22, amendment 20; the policy, plan 39
 			if got := ls[i] + "\n"; got != b.String() {
 				t.Errorf("stdin line\n got %q\nwant %q", got, b.String())
 			}
@@ -350,7 +350,7 @@ func TestCodexApprovalCards(t *testing.T) {
 	}{
 		{'a', []string{`{"id":0,"result":{"decision":"accept"}}`}, state.Allowed},
 		{'d', []string{`{"id":0,"result":{"decision":"decline"}}`}, state.Denied},
-		{'c', []string{`{"id":0,"result":{"decision":"cancel"}}`, `{"id":7,"method":"turn/interrupt","params":{"threadId":"` + p6bThread + `","turnId":"01a14117-b213-7692-a2f6-654541dd8c8f"}}`}, state.Denied},
+		{'c', []string{`{"id":0,"result":{"decision":"cancel"}}`, `{"id":8,"method":"turn/interrupt","params":{"threadId":"` + p6bThread + `","turnId":"01a14117-b213-7692-a2f6-654541dd8c8f"}}`}, state.Denied},
 	} {
 		t.Run(string(c.key), func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
@@ -477,7 +477,7 @@ func TestCodexCrashAndResume(t *testing.T) {
 			t.Fatalf("spawns %q; want app-server twice", argv)
 		}
 		got := w.written(skip)
-		if len(got) < 5 || got[4] != `{"id":4,"method":"thread/resume","params":{"threadId":"th-crash","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}` {
+		if len(got) < 6 || got[5] != `{"id":5,"method":"thread/resume","params":{"threadId":"th-crash","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}` {
 			t.Errorf("after Ctrl+R:\n%s", strings.Join(got, "\n"))
 		}
 		if n := len(w.method("thread/start")); n != 1 {

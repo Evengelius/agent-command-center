@@ -443,7 +443,7 @@ how:
 | "▶ subagent" and "▶ tool" kinds, the narration before the Agent call (Template 2) | The real tool's name ("Agent", "Bash") and the agent's identity; the events' order | The real events decide the content |
 | Turns 2 to 4 "○ pending" and the agent's tool history in zone A (Template 2) | The real stages; A's content unchanged | Nothing invented; the owner's section 8 keeps A's model |
 | A wrench on approved rows, a circled "!" on a failed one (Template 1) | ✓ and ✗ | No single-cell glyph in Windows Terminal's font; the status symbols of [Colours and symbols](#colours-and-symbols) |
-| "1 line · Ctrl+G draft window" on the input row, no status row (Template 1) | Since plan 29 the owner's row under a separator (amendment 29): the "+" box, the model pill, "↯ Auto", and in its middle the editor's messages ("turn running: the draft waits", quit confirmations) and the line count past one line | The row is where the messages were; the keys are the footer's and the F1 page's |
+| "1 line · Ctrl+G draft window" on the input row, no status row (Template 1) | Since plan 29 the owner's row under a separator (amendment 29): the "+" box, the model pill, the mode pill (since plan 39; "↯ Auto" before it), and in its middle the editor's messages ("turn running: the draft waits", quit confirmations) and the line count past one line | The row is where the messages were; the keys are the footer's and the F1 page's |
 | A failed call's path, "failed" at the right (Template 1) | Its path, then its error, "failed" and the time at the right | The error is what needs a look, copyable (plan 5, item 6); it keeps half the row (the owner's live review, 2026-10-20) |
 
 ## Project bar
@@ -530,7 +530,7 @@ hold more states).
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Ask Mock data anything…                                                   │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│   +     Haiku 5.5 High · Ultracode                                   ↯ Auto  │
+│   +     Haiku 5.5 High · Ultracode                               ✋ Manual   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
 │  ● general-purpose haiku-5-5   waiting: approval              6s   21.2k tok │
@@ -578,7 +578,7 @@ hold more states).
 │   Resets in 14h 39m              ││ ──────────────────────────────────────────────────────────────────────────────── │
 │   Weekly (7 day)            47%† ││ >  Ask Mock data anything…                                                       │
 │   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 1d 20h               ││   +     Haiku 5.5 High · Ultracode                                       ↯ Auto  │
+│   Resets in 1d 20h               ││   +     Haiku 5.5 High · Ultracode                                   ✋ Manual   │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    1 ACTIVE · 0 DONE │
@@ -675,7 +675,7 @@ hold more states).
 │                                                      ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │   Weekly (7 day)                                47%† ││ >  Ask Mock data anything…                                                                                                                   │
 │   ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 1d 20h                                   ││   +     Haiku 5.5 High · Ultracode                                                                                                   ↯ Auto  │
+│   Resets in 1d 20h                                   ││   +     Haiku 5.5 High · Ultracode                                                                                               ✋ Manual   │
 ╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                                                                                                    1 ACTIVE · 0 DONE │
@@ -693,7 +693,7 @@ hold more states).
 │                                          │                                                                                                                                                           │
 │                                          │                                                                                                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit          
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 modes · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit                
 ```
 
 - A grows to 56 columns (28% of 200), and with B to 49 rows (60 less the
@@ -2091,11 +2091,11 @@ The same file can name Codex's proxy (plan 22, amendment 19).
 | Ctrl+G | open the draft in the [draft window](#draft-window), in the terminal; in it Ctrl+F full screen, Esc back | TI 8 (both CLIs use Ctrl+G); brief amendment 13 |
 | F2 | go to the oldest pending approval | ASM-9 |
 | F3 | the file the entry, full view or request in front names, in the [file viewer](#file-viewer); else the [Explorer](#explorer); in either, close back to the dashboard | plan 17; brief amendments 11 and 12 |
-| F4 | approvals Manual ⇄ Auto, from any focus; Manual at every launch, never saved | plan 12; brief amendment 8 |
+| F4 | open or close the [modes selector](#input-editor), from any focus; the mode pill's click does the same; Manual (Ask for approval) at every launch, never saved | plan 12; plan 39; brief amendments 8 and 40 |
 | Alt+P | open or close the [model selector](#input-editor), from any focus (Claude Code's own key for its model picker); the pill's click does the same | plan 34; brief amendment 34 |
 | F6 / Shift+F6 | next / previous zone (B, C, A) | ASM-9 |
 | Tab / Shift+Tab | next / previous zone, outside the editor (in the editor Tab inserts a tab) | ASM-9 |
-| Esc | close the "+" menu (plan 30), the model selector (plan 34), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
+| Esc | close the "+" menu (plan 30), the model selector (plan 34), the modes selector (plan 39; from its Full access confirmation, back to the modes), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
 | Shift+PgUp / Shift+PgDn | scroll the conversation from any focus | ASM-9 |
 | F12 | toggle mouse capture (native terminal selection when off) | TI 6.3 item 6 |
 | Ctrl+W | the [Worktrees](#worktrees) view of the session's repository: list, diff, merge, remove | plan 16; brief amendment 10 |
@@ -2251,15 +2251,16 @@ provider: it has no provider code and sends a string to part 5's caller
   once it
   passes one line, then what the status line said when it had something
   to say (a turn running, "pasting…", a notice, the session's phase, the
-  quit question), joined by " · "; at the right end "↯ Auto" and one cell.
-  When the middle does not fit beside the pills, three cells on either
-  side (plan 34's review: never touching "↯ Auto"), the row is the middle
-  alone, as the status line was; the configuration file's problem keeps
+  quit question), joined by " · "; at the right end the mode pill (plan
+  39, [the modes selector](#input-editor) below) and one cell. When the
+  middle does not fit beside the pills, three cells on either side (plan
+  34's review: never touching the mode pill), the mode pill shows its icon
+  alone, and where even that leaves no room the row is the middle alone,
+  as the status line was; the configuration file's problem keeps
   its red row alone (plan 21, item 5.1). The "+" opens its menu (plan 30,
   the next bullet), the pill the model selector (plan 34, the bullet after
-  it); "↯ Auto" stays the owner's design placeholder: no key, no click, no
-  event, no state behind it; a click on the row elsewhere focuses the
-  editor. The idle
+  it), the mode pill the modes selector (plan 39, the one after that); a
+  click on the row elsewhere focuses the editor. The idle
   hint "Enter send · Ctrl+J newline" and "Ctrl+G draft window" went with
   the row: the footer and the F1 page keep the keys (the footer leaves the
   newline key out when it has no room). On 16 colours the ground is not
@@ -2463,6 +2464,135 @@ provider: it has no provider code and sends a string to part 5's caller
     still waiting when the session ends is dropped, "the model change
     asked for was not applied: the session ended". The draft, its images
     and the focus stay as they were.
+- **The modes selector** (plan 39, brief amendment 40;
+  [reference-design.md, The modes selector](reference-design.md#the-modes-selector)
+  for its images and colours): the editor row's right end is the mode
+  pill, the mode in force as the session's CLI reports it. With Sixel it
+  is an image over its blank cells (as many as its title needs, 7 for
+  Auto): a fill of `#21223A` with a thin `#7E4AE1` outline and rounded
+  corners, the mode's icon, Auto's lightning in `#E982F6`, Full access's
+  in amber, the others' in `#DBD9E6`, and its title in `#DBD9E6` (Full
+  access's amber) drawn by Windows' GDI in Cascadia Mono (Consolas where
+  it is missing) 13 pixels high; no chevron. Without Sixel, or with
+  neither font, " <icon> <title> " on the pills' ground (" ↯ Auto ",
+  " ✋ Manual "). Where a middle text leaves no room for the title, the
+  icon alone (3 cells with Sixel). A click on the pill, or F4, opens and
+  closes a popup above it, its bottom edge on the editor's rule, its right
+  edge on the cell after the pill (zone B's margin left free), a "▾" above
+  the pill's middle cell. Claude Code's, on the mock made from probe P34c
+  with Auto in force, without Sixel:
+
+  ```text
+  ╭─────────────────────────────────────────────────╮
+  │  MODES                         Current session  │
+  │                                                 │
+  │   ✋     Manual                                 │
+  │          Claude will ask for approval           │
+  │          before making each edit                │
+  │                                                 │
+  │   </>    Edit automatically                     │
+  │          Claude will edit your selected         │
+  │          text or the whole file                 │
+  │                                                 │
+  │   ▤      Plan                                   │
+  │          Claude will explore the code and       │
+  │          present a plan before editing          │
+  │▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄│
+  │   ↯      Auto                               ✓   │
+  │          Claude will approve actions that       │
+  │          pass a safety check and pause          │
+  │          for anything risky                     │
+  │▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀│
+  ╰─────────────────────────────────────────────▾───╯
+  ```
+
+  - **The modes**: the session's CLI's own, never the other's, in the
+    images' order. Claude Code's: Manual (`default`), Edit automatically
+    (`acceptEdits`), Plan (`plan`) and Auto (`auto`). Codex's, as
+    OpenAI's Codex extension for VS Code sets them: Ask for approval (the
+    read-only sandbox, `on-request`, the owner reviewing: the dashboard's
+    start, plan 12's Manual), Approve for me (the workspace-write sandbox,
+    `on-request`, Codex's auto-review) and Full access
+    (`dangerFullAccess`, `never`). Each with its icon (the dashboard's own
+    outline drawings after the owner's images), its title and its
+    description in the owner's words, broken where the images break them
+    (what the CLIs actually do differs in places: plan 39's evaluation). A
+    mode Codex's managed requirements leave out (`configRequirements/read`)
+    is greyed, never lit, skipped by the keys, and takes no choice, zone B
+    saying why.
+  - **Cells**: W = 19 + the longest description line (51 for Claude
+    Code's, 54 for Codex's); "MODES" at column 3 and "Current session"
+    ending at W-3 on the first row; then each option after a half row, its
+    title at column 11 and its description lines under it; a half row after
+    the last; every cell on the box's ground or the band. The ground
+    `#111518`, the frame `#B064F4`, "MODES" `#B86AF6` bold, "Current
+    session" `#A0AECC`, titles `#F0F0F2`, descriptions `#95A3BF`, icons
+    `#AEBCDC`.
+  - **Highlight**: the mode in force lies on the band, `#2E2842`, from
+    the middle of the half row above its title to the middle of the one
+    below its last line, its title `#F2EFF6`, its description `#B09FD5`,
+    its icon in its accent colour (Auto's `#E874F2`, the others'
+    `#EEE0FA`), a white check (`#F6F2F8`) at its right; the cursor's
+    option, the keys' or the pointer's, on the same band without the
+    check, its colours its own; two lit options side by side share the
+    half row between them. Full access is amber in every state. With Sixel
+    the icons, the check and the band's rounded ends are two images, the
+    left strip (columns 1 to 10) and the right one (W-6 to W-2), over
+    cells that never change, so a hover changes only the cells between
+    them, the half rows' "▄", "▀" or "█" in the band's colour; the strips
+    are drawn again after a frame that changes their rows, as the toggle
+    (plan 35) is. Without Sixel the same cells, the icons as text ("✋",
+    "</>", "▤", "↯", "⛨", "⚠"), the check "✓", the band from edge to edge.
+  - **Full access** asks first: choosing it puts a confirmation in the
+    box's place, "TURN ON FULL ACCESS?" in amber, then Turn on Full access
+    with what it allows ("Codex will run commands and edit any file on this
+    computer, with internet access, without asking.") and Cancel ("Keep
+    <the mode in force>"), the cursor on Cancel. Cancel and Esc go back to
+    the modes, the cursor on Full access; Esc again, F4 or a click outside
+    close it; only Turn on Full access asks for the change, and the state
+    takes no Full access choice that is not confirmed. Cancel lies on the
+    rows Full access had, so the second click of a double click lands on
+    Cancel or a half row; the pointer's next report after the box changes
+    is where it rests, so a pointer at rest never moves the cursor onto Turn
+    on Full access.
+  - **Keys** while it is open: ↑↓ move the cursor over the options that
+    take a choice, Home and End to the first and the last, nothing past
+    the ends; Enter or Space, or a send key the configuration names,
+    chooses; Esc closes it (from the confirmation, back to the modes), F4
+    too; any other key, and a paste, closes it and goes on. No key it takes
+    reaches the editor; the focus, the draft and its images stay as they
+    were.
+  - **Mouse**: a click on an option chooses it, on the heading, the frame
+    or a half row does nothing; the hover (every motion asked for while it
+    is open) moves the cursor onto an option, a half row leaving it where
+    it is, and the pointer onto the heading, the frame or out of the box
+    puts it back on the mode in force, so the pointer leaving an option
+    takes its highlight away; plan 36's rule holds (opened by F4, the first
+    report is where the pointer rests); the wheel over the box scrolls
+    nothing; a click outside closes it and goes on. The mode pill is panel
+    'Q', the box panel 'O'.
+  - **Room**: it opens only where its rows fit between zone B's title and
+    the editor's rule (Claude Code's 21 rows, Codex's 16: neither at
+    80x24); otherwise a toast: "no room for the modes above the editor",
+    "the modes need the mode pill on screen" (a full view, or a status too
+    long for the pills), "no modes with this session". A frame that loses
+    the room closes it. The "+" menu and the model selector close it, and
+    it closes them: one popup at a time.
+  - **Only what the CLI reports**: a choice changes nothing by itself.
+    Claude Code's goes at once as `set_permission_mode`. Codex's, between
+    turns, goes at once as `thread/settings/update` with the mode's three
+    settings, as VS Code's extension sends it; during a turn it waits for
+    the turn's end; a Codex that refuses the update takes it with the next
+    message, every `turn/start` carrying the mode in force. The pill, the
+    check and the project bar ("approvals <title>", "<title> → <title> …"
+    while a change waits, "(next turn)" while Codex keeps it for the next
+    message) change only when the CLI reports the mode: Claude Code's
+    answer and `system/status`, Codex's `thread/settings/updated` or the
+    turn that carries it. A refusal leaves them, zone B saying why in the
+    CLI's words ("the mode was not changed: …"). Codex's settings outside
+    the three read as "Custom"; a mode Claude Code reports outside its four
+    (`bypassPermissions`, `dontAsk`) is named in the pill, no option
+    checked.
 - **Attached images** (plan 31, brief amendment 31; the formats and the
   providers' limits in [doc/research/image-input.md](research/image-input.md)
   and plan 31's matrix): a click on "Upload from computer" opens the

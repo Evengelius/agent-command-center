@@ -1037,3 +1037,36 @@ and P34c3, which send no message (`probes/README.md`).
   out levels above a cap; a turn after a change (the probes send no
   message: the documentation says the effort and Ultracode apply from the
   next turn, the model at once).
+
+## 14. Permission modes (plan 39, 2026-10-24)
+
+Probe P39c (`doc/research/probes/p39c-claude-permission-modes.jsonl`;
+Claude Code 2.1.303 through stream-json, no message sent, so no model
+call; the configuration check PASS before and after):
+
+- **The modes the CLI takes.** The control request `set_permission_mode`
+  with `default`, `acceptEdits`, `plan` and `auto`: each answered
+  `{"mode": ...}` within 3 ms, then a `system/status` carrying the new
+  `permissionMode`, none for a mode already in force. Another word is
+  refused, the CLI listing its own: "Cannot set permission mode: must be
+  one of acceptEdits, auto, bypassPermissions, default, dontAsk, plan".
+- **Where the mode in force shows.** `initialize`'s answer gives
+  `current_permission_mode` (`default` here) and no list of modes;
+  `system/init` its `permissionMode` with the first message (plan 12);
+  then each answer and `system/status`.
+- **What the owner's descriptions say against what the CLI does**,
+  reported and not changed (brief amendment 40): `acceptEdits` approves
+  file edits without asking wherever the edit is, and the CLI has no
+  "selected text" ("Claude will edit your selected text or the whole
+  file"); `default` asks before commands too, not only before edits
+  ("before making each edit"); `plan` presents its plan as an
+  `ExitPlanMode` request the owner approves ("present a plan before
+  editing"). `auto` is plan 12's Auto: the classifier's approvals (section
+  11).
+- **Live, plan 39 (L39, 2026-10-24):** the dashboard's popup asked for
+  each of the four in turn; each came into force 0.3 to 0.5 s after the
+  choice (two key presses included), the project bar naming it, and back
+  to Manual; the configuration check PASS.
+- **Not verified:** `bypassPermissions` and `dontAsk` (the dashboard
+  never asks for them; a session reporting one shows its word);
+  `ExitPlanMode` in a turn (no message was sent).

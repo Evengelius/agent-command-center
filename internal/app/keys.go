@@ -37,6 +37,12 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 			return cmds
 		}
 	}
+	if m.ui.Modes.Open && m.s.Screen == state.ScreenDashboard {
+		// The modes selector, the same way (plan 39, design D8).
+		if cmds, done := m.modesKey(k); done {
+			return cmds
+		}
+	}
 	if m.wt != nil {
 		return m.worktreesKey(k)
 	}
@@ -173,11 +179,10 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 		m.openOverlay()
 		return nil
 	}
-	// F4 from any zone, with a card open too: Manual or Auto approvals (plan 12,
-	// item 2).
-	if k.String() == "f4" {
-		capable := m.sess != nil && m.sess.Capabilities().AutoApprovals
-		return m.do(state.ToggleApprovals{Capable: capable})
+	// F4 from any zone, with a card open too: the modes selector (plan 39,
+	// design D8), where plan 12's F4 switched Manual and Auto.
+	if k.String() == "f4" && !render.WindowOpen(m.ui) {
+		return m.toggleModes()
 	}
 	// Alt+P from any zone: the model selector, Claude Code's own key for its
 	// model picker (plan 34, design D9).

@@ -214,21 +214,25 @@ func TestModeRequested(t *testing.T) {
 	if s.Mode() != state.ModeManual {
 		t.Fatalf("mode %q", s.Mode())
 	}
-	cmds := s.Do(state.ToggleApprovals{Capable: true})
+	cmds := s.Do(state.ChooseMode{Mode: state.ModeAuto, Capable: true})
 	if len(cmds) != 1 || cmds[0].Kind != state.CmdSetApprovals || cmds[0].Decision != state.ModeAuto || s.Session.ApprovalRequested != state.ModeAuto {
 		t.Fatalf("cmds %+v requested %q", cmds, s.Session.ApprovalRequested)
 	}
-	// A second press asks for the other mode, relative to the request.
-	if cmds = s.Do(state.ToggleApprovals{Capable: true}); cmds[0].Decision != state.ModeManual || s.Session.ApprovalRequested != "" {
-		t.Fatalf("second press: %+v requested %q", cmds, s.Session.ApprovalRequested)
+	// The mode in force chosen again cancels the request (plan 39); with
+	// nothing asked it asks for nothing.
+	if cmds = s.Do(state.ChooseMode{Mode: state.ModeManual, Capable: true}); len(cmds) != 1 || cmds[0].Decision != state.ModeManual || s.Session.ApprovalRequested != "" {
+		t.Fatalf("back: %+v requested %q", cmds, s.Session.ApprovalRequested)
 	}
-	s.Do(state.ToggleApprovals{Capable: true})
+	if cmds = s.Do(state.ChooseMode{Mode: state.ModeManual, Capable: true}); cmds != nil {
+		t.Fatalf("the mode in force asked for again: %+v", cmds)
+	}
+	s.Do(state.ChooseMode{Mode: state.ModeAuto, Capable: true})
 	apply(s, 10, event.ApprovalMode, event.Mode{Mode: event.ModeAuto, Answers: true})
 	if s.Mode() != state.ModeAuto || s.Session.ApprovalRequested != "" {
 		t.Fatalf("answered: mode %q requested %q", s.Mode(), s.Session.ApprovalRequested)
 	}
 	// Refusal: the mode stays, the request clears, zone B says why.
-	s.Do(state.ToggleApprovals{Capable: true})
+	s.Do(state.ChooseMode{Mode: state.ModeManual, Capable: true})
 	apply(s, 11, event.ApprovalMode, event.Mode{Refused: true, Text: "set_permission_mode refused by Claude Code: nope"})
 	if s.Mode() != state.ModeAuto || s.Session.ApprovalRequested != "" {
 		t.Fatalf("refused: mode %q requested %q", s.Mode(), s.Session.ApprovalRequested)
@@ -247,16 +251,16 @@ func TestModeRequested(t *testing.T) {
 	}
 }
 
-func TestToggleRefused(t *testing.T) {
+func TestChooseModeRefused(t *testing.T) {
 	s := start(t, event.Started{SessionID: "s"})
-	if cmds := s.Do(state.ToggleApprovals{Capable: false}); cmds != nil || s.Turn.Notice == "" || s.Session.ApprovalRequested != "" {
+	if cmds := s.Do(state.ChooseMode{Mode: state.ModeAuto, Capable: false}); cmds != nil || s.Turn.Notice == "" || s.Session.ApprovalRequested != "" {
 		t.Errorf("no capability: %+v %q", cmds, s.Turn.Notice)
 	}
 	n := state.New()
-	if cmds := n.Do(state.ToggleApprovals{Capable: true}); cmds != nil || n.Turn.Notice == "" {
+	if cmds := n.Do(state.ChooseMode{Mode: state.ModeAuto, Capable: true}); cmds != nil || n.Turn.Notice == "" {
 		t.Errorf("not ready: %+v %q", cmds, n.Turn.Notice)
 	}
-	s.Do(state.ToggleApprovals{Capable: true})
+	s.Do(state.ChooseMode{Mode: state.ModeAuto, Capable: true})
 	s.Do(state.ApprovalFailed{Message: "broken pipe"})
 	if s.Session.ApprovalRequested != "" || !strings.Contains(s.Turn.Notice, "broken pipe") {
 		t.Errorf("failed write: requested %q notice %q", s.Session.ApprovalRequested, s.Turn.Notice)

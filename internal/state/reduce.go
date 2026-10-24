@@ -212,6 +212,8 @@ func (s *State) apply(ev event.Event) []Command {
 		return nil
 	case event.Mode:
 		s.approvalMode(ev, p)
+	case event.ModeLimits:
+		s.Session.ModesUnavailable = p.Unavailable
 		return nil
 	case event.Models:
 		s.models(p)
@@ -968,10 +970,20 @@ func (s *State) inForce(mode string) {
 // (met or not), or a refusal, which leaves the mode as it was (plan 12,
 // item 2).
 func (s *State) approvalMode(ev event.Event, p event.Mode) {
-	if p.Refused {
-		s.Session.ApprovalRequested = ""
+	if p.Refused || p.NextTurn {
+		// A refusal leaves the mode as it was; a CLI that takes the mode with
+		// the next message keeps the change waiting (plan 39). Zone B says
+		// which, in the CLI's words.
+		if p.Refused {
+			s.Session.ApprovalRequested = ""
+		} else {
+			s.Session.ModeNextTurn = true
+		}
 		list := s.messages(ev.Agent)
 		*list = append(*list, Entry{Seq: ev.Seq, Role: "notice", Agent: ev.Agent, Text: p.Text, Origin: ev.Origin, At: ev.At})
+		return
+	}
+	if p.Mode == "" {
 		return
 	}
 	s.inForce(p.Mode)

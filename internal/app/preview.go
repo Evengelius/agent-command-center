@@ -132,21 +132,38 @@ func (m *Model) previewFrame() {
 // previewSignature is what the frame's images depend on: the thumbnails'
 // items, places and images, the Ultracode toggle's place and state (plan
 // 35, design D2), the effort slider's place and look (plan 37, design D1),
-// and the rows they lie on as drawn.
+// the modes selector's strips and the mode pill (plan 39, designs D6 and
+// D7), and the rows they lie on as drawn.
 func (m *Model) previewSignature() string {
 	ts, tg, sl := m.screen.Thumbs(), m.screen.Toggle, m.screen.Slider
-	if len(ts) == 0 && !tg.Shown && !sl.Shown {
+	md, mp := m.screen.Modes, m.screen.ModePill
+	if len(ts) == 0 && !tg.Shown && !sl.Shown && !md.Strips && !mp.Shown {
 		return ""
 	}
 	var b strings.Builder
 	var rows []int
+	addRows := func(y, h int) {
+		for ; h > 0; y, h = y+1, h-1 {
+			if !slices.Contains(rows, y) {
+				rows = append(rows, y)
+			}
+		}
+	}
 	if tg.Shown {
 		fmt.Fprintf(&b, "toggle %d %d %t %t %t\n", tg.X, tg.Y, tg.On, tg.Usable, tg.Band)
-		rows = append(rows, tg.Y)
+		addRows(tg.Y, 1)
 	}
 	if sl.Shown {
 		fmt.Fprintf(&b, "slider %d %d %+v\n", sl.X, sl.Y, sl.Look)
-		rows = append(rows, sl.Y)
+		addRows(sl.Y, 1)
+	}
+	if md.Strips {
+		fmt.Fprintf(&b, "modes %d %d %d %+v %+v\n", md.LeftX, md.RightX, md.Y, md.Left, md.Right)
+		addRows(md.Y, md.Left.Rows)
+	}
+	if mp.Shown {
+		fmt.Fprintf(&b, "pill %d %d %+v\n", mp.X, mp.Y, mp.Look)
+		addRows(mp.Y, 1)
 	}
 	for _, t := range ts {
 		key, pixels, sum := "", false, [32]byte{}
@@ -155,11 +172,7 @@ func (m *Model) previewSignature() string {
 			pixels = m.thumbs[key] != thumbSixel{}
 		}
 		fmt.Fprintf(&b, "%d %d %d %d %d %t %t %s %x\n", t.Item, t.X, t.Y, t.W, t.H, t.Text, pixels, key, sum)
-		for y := t.Y; y < t.Y+t.H; y++ {
-			if !slices.Contains(rows, y) {
-				rows = append(rows, y)
-			}
-		}
+		addRows(t.Y, t.H)
 	}
 	slices.Sort(rows)
 	for _, y := range rows {
@@ -288,8 +301,9 @@ func (m *Model) drawSlide(msg slideMsg) []tea.Cmd {
 // an image was drawn and no thumbnail of this frame takes, written over
 // with what the frame holds there, which erases the image (a cell the
 // renderer leaves alone keeps it, probe P32b); then each thumbnail's image
-// at its first cell, and the Ultracode toggle's (plan 35). It records where
-// images now lie.
+// at its first cell, the Ultracode toggle's (plan 35), the effort slider's
+// (plan 37), the modes selector's strips and the mode pill (plan 39). It
+// records where images now lie.
 func (m *Model) thumbSequence() string {
 	var now []render.Thumb
 	var draw strings.Builder
@@ -324,6 +338,26 @@ func (m *Model) thumbSequence() string {
 			now = append(now, render.Thumb{Item: -2, X: sl.X, Y: sl.Y, W: render.SliderCells, H: 1})
 		} else {
 			m.slide = slide{}
+		}
+		if md := m.screen.Modes; md.Strips {
+			// The modes selector's strips on their blank cells (plan 39,
+			// design D6), opaque: nothing to write first.
+			fmt.Fprintf(&draw, "\x1b[%d;%dH%s\x1b[%d;%dH%s", md.Y+1, md.LeftX+1, render.StripSixel(md.Left),
+				md.Y+1, md.RightX+1, render.StripSixel(md.Right))
+			now = append(now, render.Thumb{Item: -3, X: md.LeftX, Y: md.Y, W: render.ModesStripCells(false), H: md.Left.Rows},
+				render.Thumb{Item: -4, X: md.RightX, Y: md.Y, W: render.ModesStripCells(true), H: md.Right.Rows})
+		}
+		if mp := m.screen.ModePill; mp.Shown {
+			// The mode pill on its blank cells (plan 39, design D7), those
+			// written first, as the toggle's: its corners are transparent.
+			if label, err := m.pillLabel(mp.Look.Title); err != nil {
+				m.ui.PillNoFont = true // the next frame draws the pill as text
+			} else {
+				w := render.ModePillCells(mp.Look)
+				fmt.Fprintf(&draw, "\x1b[%d;%dH%s\x1b[%d;%dH%s", mp.Y+1, mp.X+1, m.screen.Region(mp.X, mp.Y, w),
+					mp.Y+1, mp.X+1, render.PillSixel(mp.Look, label))
+				now = append(now, render.Thumb{Item: -5, X: mp.X, Y: mp.Y, W: w, H: 1})
+			}
 		}
 	}
 	var clear strings.Builder

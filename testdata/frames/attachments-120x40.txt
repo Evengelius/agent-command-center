@@ -23,7 +23,7 @@
 │   Resets in 14h 40m              ││   acc-image-upload-test.png · 1 KB ✕    acc-image-upload-test.jpg · 6 KB ✕       │
 │   Weekly (7 day)            47%† ││ > What colours and what text are in these images?                                │
 │   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 1d 20h               ││   +     Haiku 5.5    turn started by the CLI                             ↯ Auto  │
+│   Resets in 1d 20h               ││   +     Haiku 5.5    turn started by the CLI                         ✋ Manual   │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │

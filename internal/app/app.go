@@ -10,6 +10,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"image"
 	"io"
 	"os"
 	"path/filepath"
@@ -224,6 +225,8 @@ type Model struct {
 	send     func(tea.Msg)
 	kicks    []int
 	slide    slide // the effort slider's glide (plan 37)
+	// pillLabels are the mode pill's titles as GDI drew them (plan 39).
+	pillLabels map[string]*image.Alpha
 
 	screen  *render.Screen // the last frame drawn: what the mouse points at
 	repaint bool           // the palette changed: the next frame draws every row
@@ -339,13 +342,18 @@ func (m *Model) View() tea.View {
 		// it was drawn, so the frame stands.
 		m.closeModels()
 	}
+	if m.ui.Modes.Open && !m.screen.Modes.Shown {
+		// The same for the modes selector (plan 39, design D9), and when
+		// another popup or a window took its place.
+		m.closeModes()
+	}
 	v := tea.NewView(m.screen.StringAfter(prev))
 	m.previewFrame() // the thumbnails drawn again after a frame that changed their rows (plan 32)
 	v.AltScreen = true
 	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
-		if m.ui.Plus || m.ui.Models.Open {
-			v.MouseMode = tea.MouseModeAllMotion // the menu's or the selector's hover follows the pointer (plans 30, 34)
+		if m.ui.Plus || m.ui.Models.Open || m.ui.Modes.Open {
+			v.MouseMode = tea.MouseModeAllMotion // the menu's or a selector's hover follows the pointer (plans 30, 34, 39)
 		}
 	}
 	v.WindowTitle = "Agent Command Center"
@@ -430,6 +438,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.pasting = false
 	case tea.PasteMsg:
 		m.closeModels() // a paste goes on to the editor, as a key the selector does not take (plan 34)
+		m.closeModes()  // and the modes selector's (plan 39)
 		cmds = append(cmds, m.terminalPaste(msg.Content)...)
 	case pasteMsg:
 		m.paste(msg.text)
@@ -666,12 +675,12 @@ func (m *Model) command(c state.Command) tea.Cmd {
 			return nil
 		}, actionMsg{state.AnswerFailed{ID: id, Message: "too many writes waiting"}})
 	case state.CmdSetApprovals:
-		sess, auto := m.sess, c.Decision == state.ModeAuto
+		sess, mode := m.sess, c.Decision
 		return m.write(func() tea.Msg {
 			if sess == nil {
 				return actionMsg{state.ApprovalFailed{Message: "no session"}}
 			}
-			if err := sess.SetApprovalMode(auto); err != nil {
+			if err := sess.SetApprovalMode(mode); err != nil {
 				return actionMsg{state.ApprovalFailed{Message: err.Error()}}
 			}
 			return nil

@@ -39,7 +39,7 @@
 │                                                      ││   acc-image-upload-test.png · 1 KB ✕    acc-image-upload-test.jpg · 6 KB ✕                                                                   │
 │   Weekly (7 day)                                47%† ││ > What colours and what text are in these images?                                                                                            │
 │   ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 1d 20h                                   ││   +     Haiku 5.5    turn started by the CLI                                                                                         ↯ Auto  │
+│   Resets in 1d 20h                                   ││   +     Haiku 5.5    turn started by the CLI                                                                                     ✋ Manual   │
 ╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                                                                                                    0 ACTIVE · 1 DONE │
@@ -57,4 +57,4 @@
 │                                          │                                                                                                                                                           │
 │                                          │                                                                                                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
- Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit
+ Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 modes · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit

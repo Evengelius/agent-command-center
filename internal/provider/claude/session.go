@@ -502,7 +502,7 @@ func (s *Session) SetModelSettings(r provider.ModelRequest) error {
 
 // Capabilities of Claude Code 2.1 in way A.
 func (s *Session) Capabilities() provider.Capabilities {
-	return provider.Capabilities{SubagentText: true, APICost: true, Questions: true, ResumeHistory: true, AutoApprovals: true, Images: imageLimits,
+	return provider.Capabilities{SubagentText: true, APICost: true, Questions: true, ResumeHistory: true, Modes: true, Images: imageLimits,
 		Models: true, Ultracode: true}
 }
 
@@ -547,15 +547,19 @@ func (s *Session) waitExit() bool {
 	}
 }
 
-// SetApprovalMode asks Claude Code for the auto permission mode or, for
-// Manual, the default one, at once; the response says which is in force
-// (plan 12, item 2; P12c-switch).
-func (s *Session) SetApprovalMode(auto bool) error {
-	mode := "default"
-	if auto {
-		mode = "auto"
+// permissionModes are Claude Code's permission modes by the dashboard's
+// words: the four of the modes selector (plan 39; P39c, 2.1.303 takes each).
+var permissionModes = map[string]string{event.ModeManual: "default", event.ModeAcceptEdits: "acceptEdits", event.ModePlan: "plan", event.ModeAuto: "auto"}
+
+// SetApprovalMode asks Claude Code for one of its permission modes at once;
+// the response and the system/status that follows say which is in force
+// (plan 12, item 2; P12c-switch; plan 39, P39c).
+func (s *Session) SetApprovalMode(mode string) error {
+	m, ok := permissionModes[mode]
+	if !ok {
+		return fmt.Errorf("Claude Code has no mode %q", mode)
 	}
-	return s.control("set_permission_mode", `"mode":"`+mode+`"`)
+	return s.control("set_permission_mode", `"mode":"`+m+`"`)
 }
 
 // AnswerQuestion answers a pending, readable question request: it allows it

@@ -79,14 +79,17 @@ type Capabilities struct {
 	PlanSteps        bool
 	ResumeHistory    bool
 	AllowForSession  bool
-	AutoApprovals    bool // the session can switch between Manual and Auto approvals (plan 12)
+	// Modes says the session takes SetApprovalMode with its CLI's own modes,
+	// the catalog of the modes selector (plan 39; plan 12's Manual and Auto).
+	Modes bool
 	// Images are the CLI's limits on a message's images (plan 31); a zero
 	// MaxCount is a CLI that takes none.
 	Images ImageLimits
 	// Models says the session lists its models and takes SetModelSettings,
 	// ModelsNextTurn that a change asked for now applies from the next turn
 	// (Codex while its turn runs, or for good without thread/settings/update;
-	// plan 38), and Ultracode that the CLI has Claude Code's Ultracode
+	// plan 38), a mode asked for too (plan 39), and Ultracode that the CLI
+	// has Claude Code's Ultracode
 	// (plan 34). They are read at each choice: ModelsNextTurn changes.
 	Models, ModelsNextTurn, Ultracode bool
 }
@@ -122,9 +125,11 @@ type Session interface {
 	AnswerQuestion(approvalID string, answers map[string]string) error
 	Interrupt() error
 	Refresh() error
-	// SetApprovalMode asks for Auto (true) or Manual (false) approvals; the mode
-	// in force is reported by events (plan 12, item 2).
-	SetApprovalMode(auto bool) error
+	// SetApprovalMode asks for one of the CLI's modes, by the dashboard's word
+	// (event.ModeManual, ModeAuto, ModeAcceptEdits, ModePlan, ModeFull); the
+	// mode in force is reported by events (plan 12, item 2; plan 39). A mode
+	// the CLI does not have is refused.
+	SetApprovalMode(mode string) error
 	// SetModelSettings asks for a model, an effort or Ultracode (plan 34):
 	// at once between turns, Codex's during a turn at the turn's end and,
 	// without thread/settings/update, with the next turn (plan 38); the

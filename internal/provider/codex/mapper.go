@@ -49,12 +49,19 @@ type Mapper struct {
 	// A change written and not yet answered (plan 38, models.go): the
 	// thread/settings/update requests by id, and whether a change sent by
 	// one of them or by a turn/start still waits for its answer.
-	updates     map[string]bool
+	updates     map[string]updateKind
 	outstanding bool
+	// modeOutstanding: a mode written by thread/settings/update and not yet
+	// answered (plan 39).
+	modeOutstanding bool
 	// replies are the CLI's requests the session answers itself, other than
 	// approvals, by id: their answers map as writes (currentTime/read).
 	replies map[string]string
 }
+
+// updateKind is what a thread/settings/update carried: a model or effort
+// change (plan 38), a mode (plan 39), or both.
+type updateKind struct{ model, mode bool }
 
 type serverReq struct {
 	agent, turn, item, tool string
@@ -63,7 +70,7 @@ type serverReq struct {
 // NewMapper returns an empty mapper.
 func NewMapper() *Mapper {
 	return &Mapper{pending: map[string]string{}, server: map[string]serverReq{}, files: map[string]string{}, totals: map[string]string{},
-		carried: map[string]bool{}, answering: map[string]bool{}, updates: map[string]bool{}, replies: map[string]string{}}
+		carried: map[string]bool{}, answering: map[string]bool{}, updates: map[string]updateKind{}, replies: map[string]string{}}
 }
 
 type rpc struct {
@@ -147,6 +154,7 @@ func (m *Mapper) In(raw []byte) []event.Event {
 				Path string `json:"path"`
 			} `json:"input"`
 			Reviewer string          `json:"approvalsReviewer"`
+			Policy   string          `json:"approvalPolicy"`
 			Sandbox  json.RawMessage `json:"sandboxPolicy"`
 			Cursor   string          `json:"cursor"`
 			Model    string          `json:"model"`
@@ -167,11 +175,13 @@ func (m *Mapper) In(raw []byte) []event.Event {
 				m.carried[id] = true // a model or effort change goes with this turn (plan 34)
 				m.outstanding = true
 			}
-		case "thread/settings/update": // a change written at once (plan 38)
+		case "thread/settings/update": // a change written at once (plans 38 and 39)
+			k := updateKind{model: p.Model != "" || p.Effort != "", mode: len(p.Sandbox) > 0 || p.Policy != "" || p.Reviewer != ""}
 			if id != "" {
-				m.updates[id] = true
+				m.updates[id] = k
 			}
-			m.outstanding = true
+			m.outstanding = m.outstanding || k.model
+			m.modeOutstanding = m.modeOutstanding || k.mode
 		case "thread/read":
 			if id != "" && m.readSent {
 				m.answering[id], m.readSent = true, false
@@ -201,10 +211,11 @@ func (m *Mapper) In(raw []byte) []event.Event {
 			m.interrupted = true
 		}
 		out = append(out, m.ev(event.Sent, event.Observed, agent, p.TurnID, "", raw, event.Write{What: r.Method, RequestID: id}))
-		if r.Method == "turn/start" && p.Reviewer != "" {
-			// The reviewer in force for this turn (plan 12, item 2), with the
-			// sandbox the turn names (plan 12 addendum).
-			out = append(out, m.ev(event.ApprovalMode, event.Observed, agent, "", "", raw, event.Mode{Mode: reviewerMode(p.Reviewer), Sandbox: namedValue(p.Sandbox)}))
+		if r.Method == "turn/start" && (p.Reviewer != "" || len(p.Sandbox) > 0) {
+			// The mode in force for this turn (plan 12, item 2; plan 39): its
+			// sandbox, policy and reviewer, with the sandbox the turn names
+			// (plan 12 addendum).
+			out = append(out, m.ev(event.ApprovalMode, event.Observed, agent, "", "", raw, event.Mode{Mode: codexMode(namedValue(p.Sandbox), p.Policy, p.Reviewer), Sandbox: namedValue(p.Sandbox)}))
 		}
 		return out
 	case r.hasID():
@@ -323,16 +334,46 @@ func (m *Mapper) response(r rpc, raw []byte) []event.Event {
 					Text: "the model change was not taken: " + p.Message})}
 			}
 		case "thread/settings/update":
+			k, seen := m.updates[id]
 			delete(m.updates, id)
-			m.outstanding = false
+			if !seen {
+				k.model = true // as plan 38 read every update
+			}
+			if k.model {
+				m.outstanding = false
+			}
+			if k.mode {
+				m.modeOutstanding = false
+			}
+			var out []event.Event
 			if unsupported(r.Error, method) {
 				// No change at once with this Codex: the change waits for the
-				// next turn/start, as every later one (plan 38, design D4).
-				return []event.Event{m.ev(event.ModelSettings, event.Observed, "", "", "", raw, event.Settings{Source: method, NextTurn: true,
-					Text: "Codex takes model changes with the next message: " + p.Message})}
+				// next turn/start, as every later one (plan 38, design D4;
+				// plan 39).
+				if k.model {
+					out = append(out, m.ev(event.ModelSettings, event.Observed, "", "", "", raw, event.Settings{Source: method, NextTurn: true,
+						Text: "Codex takes model changes with the next message: " + p.Message}))
+				}
+				if k.mode {
+					out = append(out, m.ev(event.ApprovalMode, event.Observed, "", "", "", raw, event.Mode{NextTurn: true,
+						Text: "Codex takes mode changes with the next message: " + p.Message}))
+				}
+				return out
 			}
-			return []event.Event{refused, m.ev(event.ModelSettings, event.Observed, "", "", "", raw, event.Settings{Source: method, Answers: true, Refused: true,
-				Text: "the model change was not taken: " + p.Message})}
+			out = append(out, refused)
+			if k.model {
+				out = append(out, m.ev(event.ModelSettings, event.Observed, "", "", "", raw, event.Settings{Source: method, Answers: true, Refused: true,
+					Text: "the model change was not taken: " + p.Message}))
+			}
+			if k.mode {
+				out = append(out, m.ev(event.ApprovalMode, event.Observed, "", "", "", raw, event.Mode{Refused: true,
+					Text: "the mode was not changed: " + p.Message}))
+			}
+			return out
+		case "configRequirements/read":
+			// An older Codex without the read: every mode shown, Codex
+			// refusing what it does not allow (plan 39, design D1).
+			return []event.Event{m.status("", raw, "", "configRequirements/read refused: "+msg)}
 		case "model/list":
 			if len(m.catalogue) == 0 {
 				// No list yet: the selector says why rather than wait for one
@@ -389,6 +430,8 @@ func (m *Mapper) response(r rpc, raw []byte) []event.Event {
 		return m.threadRead(id, r.Result, raw)
 	case "turn/interrupt":
 		return []event.Event{m.status("", raw, "interrupt acknowledged", "")}
+	case "configRequirements/read":
+		return []event.Event{m.modeLimits(r.Result, raw)}
 	case "thread/settings/update":
 		// Queued, not yet applied: thread/settings/updated answers the change
 		// (plan 38, design D2; P38x).
@@ -419,7 +462,8 @@ func (m *Mapper) threadStart(r rpc, raw []byte) []event.Event {
 	}
 	m.main, m.session = s.Thread.ID, s.Thread.ID
 	st := event.Started{SessionID: s.Thread.ID, Model: s.Model, Cwd: first(s.Cwd, s.Thread.Cwd), Version: first(s.Thread.CliVersion, s.CliVersion),
-		Sandbox: namedValue(s.Sandbox), ApprovalPolicy: namedValue(s.ApprovalPolicy), ApprovalMode: reviewerMode(s.Reviewer)}
+		Sandbox: namedValue(s.Sandbox), ApprovalPolicy: namedValue(s.ApprovalPolicy),
+		ApprovalMode: codexMode(namedValue(s.Sandbox), namedValue(s.ApprovalPolicy), s.Reviewer)}
 	return []event.Event{
 		m.ev(event.SessionReady, event.Observed, "", "", "", raw, event.Ready{Detail: "thread/start response"}),
 		m.ev(event.SessionStarted, event.Observed, "", "", "", raw, st),
@@ -1313,17 +1357,4 @@ func (m *Mapper) configRead(raw []byte) ([]event.Event, bool) {
 		item.Text, item.Value, item.Unit = event.LimitPerBackend, 0, ""
 	}
 	return []event.Event{m.ev(event.Telemetry, event.Observed, "", "", "", kept, event.Metrics{Items: []event.Metric{item}})}, true
-}
-
-// reviewerMode is an approvalsReviewer as the dashboard names the mode: user
-// is Manual, auto_review is Auto, any other as given; "" when not reported
-// (plan 12, item 2).
-func reviewerMode(reviewer string) string {
-	switch reviewer {
-	case reviewerUser:
-		return event.ModeManual
-	case reviewerAuto:
-		return event.ModeAuto
-	}
-	return reviewer
 }

@@ -59,7 +59,7 @@ func fixedKeyTable() []keyGroup {
 			{"Ctrl+W", "worktrees: list, diff, merge, remove"},
 			{"F2", "go to the oldest pending approval"},
 			{"F3", "the file in front in the file viewer; else the Explorer; in them, close"},
-			{"F4", "approvals Manual / Auto"},
+			{"F4", "the modes selector (a click on the mode pill too)"},
 			{"Alt+P", "the model selector (a click on the pill too)"},
 			{"F6 / Shift+F6", "next / previous zone (B, C, A)"},
 			{"Tab / Shift+Tab", "next / previous zone, outside the editor"},

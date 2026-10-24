@@ -42,12 +42,20 @@ type (
 		ID, Decision string
 		Answers      map[string]string // a question's answers: question text to answer (plan 14, item 1)
 	}
-	AnswerFailed    struct{ ID, Message string }
-	CancelTurn      struct{ ID string }      // c on an approval card: cancel it, then interrupt the turn
-	ToggleApprovals struct{ Capable bool }   // F4: switch between Manual and Auto approvals; Capable is the session's AutoApprovals
-	ApprovalFailed  struct{ Message string } // the request for another mode could not be written
-	CloseTimeout    struct{}
-	Tick            struct{ At time.Time }
+	AnswerFailed struct{ ID, Message string }
+	CancelTurn   struct{ ID string } // c on an approval card: cancel it, then interrupt the turn
+	// ChooseMode asks for one of the session's CLI's modes (plan 39);
+	// Codex's Full access only Confirmed; Capable is the session's Modes,
+	// NextTurn its ModelsNextTurn: the mode goes with the next message.
+	ChooseMode struct {
+		Mode      string
+		Confirmed bool
+		Capable   bool
+		NextTurn  bool
+	}
+	ApprovalFailed struct{ Message string } // the request for another mode could not be written
+	CloseTimeout   struct{}
+	Tick           struct{ At time.Time }
 )
 
 func (Launch) action()           {}
@@ -69,7 +77,7 @@ func (ForceStop) action()        {}
 func (Answer) action()           {}
 func (AnswerFailed) action()     {}
 func (CancelTurn) action()       {}
-func (ToggleApprovals) action()  {}
+func (ChooseMode) action()       {}
 func (ApprovalFailed) action()   {}
 func (CloseTimeout) action()     {}
 func (Tick) action()             {}
@@ -175,8 +183,8 @@ func (s *State) Do(a Action) []Command {
 		}
 	case Answer:
 		return s.answer(a)
-	case ToggleApprovals:
-		return s.toggleApprovals(a)
+	case ChooseMode:
+		return s.chooseMode(a)
 	case ChooseModel:
 		return s.chooseModel(a)
 	case ChooseEffort:
@@ -187,7 +195,7 @@ func (s *State) Do(a Action) []Command {
 		s.modelsFailed(a)
 	case ApprovalFailed:
 		s.Session.ApprovalRequested = ""
-		s.Turn.Notice = "approvals not changed: " + a.Message
+		s.Turn.Notice = "mode not changed: " + a.Message
 	case CancelTurn:
 		return s.cancelTurn(a)
 	case AnswerFailed:
@@ -463,34 +471,6 @@ func (s *State) lastSeq() uint64 {
 		return s.Log[n-1].Seq
 	}
 	return 0
-}
-
-// toggleApprovals switches to the other mode than the one asked for last, or
-// in force. Only a ready session whose CLI can switch is asked; otherwise
-// zone B says why and nothing is sent (plan 12, item 2).
-func (s *State) toggleApprovals(a ToggleApprovals) []Command {
-	switch {
-	case s.Session.Phase != Ready:
-		s.Turn.Notice = "approvals not changed: the session is " + strings.ToLower(string(s.Session.Phase))
-		return nil
-	case !a.Capable:
-		s.Turn.Notice = "approvals not changed: no Manual/Auto switch here"
-		return nil
-	}
-	cur := s.Mode()
-	if s.Session.ApprovalRequested != "" {
-		cur = s.Session.ApprovalRequested
-	}
-	target := ModeAuto
-	if cur == ModeAuto {
-		target = ModeManual
-	}
-	s.Session.ApprovalRequested = target
-	if target == s.Mode() {
-		s.Session.ApprovalRequested = ""
-	}
-	s.Turn.Notice = ""
-	return []Command{{Kind: CmdSetApprovals, Decision: target}}
 }
 
 // missingAnswer says why answers do not answer the question request ap: one

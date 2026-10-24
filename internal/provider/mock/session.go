@@ -3,6 +3,8 @@ package mock
 import (
 	"context"
 	"errors"
+	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -200,9 +202,26 @@ func (s *Session) Interrupt() error {
 	return nil
 }
 
-// SetApprovalMode: a mock session has no approvals to switch.
-func (s *Session) SetApprovalMode(bool) error {
-	return errors.New("the mock session has no approval mode")
+// mockModes are the modes a mock session takes, its file's CLI's
+// (plan 39, design D10).
+var mockModes = map[string][]string{
+	"claude-code": {event.ModeManual, event.ModeAcceptEdits, event.ModePlan, event.ModeAuto},
+	"codex":       {event.ModeManual, event.ModeAuto, event.ModeFull},
+}
+
+// SetApprovalMode answers a mode of its file's CLI at once, as Claude Code
+// and Codex with thread/settings/update do, with no CLI (plan 39, design
+// D10); any other is refused. Its event has origin mock.
+func (s *Session) SetApprovalMode(mode string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !slices.Contains(mockModes[s.cli], mode) {
+		return fmt.Errorf("the mock session's CLI has no mode %q", mode)
+	}
+	if !s.emitLocked(event.Event{Kind: event.ApprovalMode, Payload: event.Mode{Mode: mode, Answers: true}}) {
+		return errors.New("the mock session is closed")
+	}
+	return nil
 }
 
 // SetModelSettings answers a change as the replayed CLI would, with no CLI
@@ -289,7 +308,7 @@ func (s *Session) Capabilities() provider.Capabilities {
 	// change answered at once unless the file shows Codex taking it with the
 	// next message (plan 38), Ultracode for Claude Code's files only.
 	return provider.Capabilities{Images: provider.ImageLimits{MaxCount: 100, MaxBytes: 7_400_000, MaxTotal: 7_400_000, MaxSide: 8000},
-		Models: true, ModelsNextTurn: cli == "codex" && nextTurn, Ultracode: cli == "claude-code"}
+		Models: true, ModelsNextTurn: cli == "codex" && nextTurn, Ultracode: cli == "claude-code", Modes: mockModes[cli] != nil}
 }
 
 // Close stops the replay and ends the session with session.ended, the last

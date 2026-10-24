@@ -61,15 +61,29 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			case m.ui.Models.Open && p == render.SelectorPanel:
 				m.modelsPointer(mo.X, mo.Y)
 				return m.modelsClick(item)
+			case p == render.ModePillPanel:
+				// The mode pill opens and closes the modes selector (plan 39,
+				// design D8), the same way.
+				cmds := m.toggleModes()
+				if m.ui.Modes.Open {
+					m.modesPointer(mo.X, mo.Y)
+				}
+				return cmds
+			case m.ui.Modes.Open && p == render.ModesPanel:
+				m.modesPointer(mo.X, mo.Y)
+				return m.modesClick(item)
 			case p == '+':
 				m.closeModels()
+				m.closeModes()
 				m.ui.Plus, m.ui.PlusHover = !m.ui.Plus, false
 				m.ui.Focus = "B"
 				return nil
-			case m.ui.Models.Open:
+			case m.ui.Models.Open || m.ui.Modes.Open:
 				// A click outside closes the selector and goes on, as one
-				// outside the "+" menu does (plan 34, design D9).
+				// outside the "+" menu does (plan 34, design D9; plan 39,
+				// design D8).
 				m.closeModels()
+				m.closeModes()
 				if p == 'X' {
 					m.ui.Focus = "B"
 					return m.removeAttachment(item)
@@ -99,6 +113,13 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 				m.modelsHover(item)
 			}
 		}
+		if m.ui.Modes.Open && !m.drag.on {
+			// The modes selector's the same way, its highlight leaving with
+			// the pointer (plan 39, design D8).
+			if item, moved := m.modesPointer(mo.X, mo.Y); moved {
+				m.modesHover(item)
+			}
+		}
 		if m.drag.on {
 			m.drag.moved = m.drag.moved || mo.X != m.drag.x || mo.Y != m.drag.y
 			m.extend(mo)
@@ -121,6 +142,9 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 				m.scrollSelector(n)
 			}
 			return nil
+		}
+		if m.ui.Modes.Open && m.screen.PanelAt(mo.X, mo.Y) == render.ModesPanel {
+			return nil // the modes box has nothing to scroll, and zone B under it stays (plan 39)
 		}
 		if m.ui.DraftWin.Open {
 			if m.screen.PanelAt(mo.X, mo.Y) == 'E' && (mo.Button == tea.MouseWheelUp || mo.Button == tea.MouseWheelDown) {

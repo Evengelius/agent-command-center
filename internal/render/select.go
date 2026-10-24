@@ -77,6 +77,10 @@ type Screen struct {
 	// Slider is where the frame left the effort slider's image to be drawn
 	// (plan 37), zero when there is none.
 	Slider SliderShown
+	// Modes is what the frame showed of the modes selector, and ModePill
+	// where it left the mode pill's image (plan 39), zero when none.
+	Modes    ModesShown
+	ModePill ModePillShown
 }
 
 // PaneView is what a pane of zone A or C showed (plan 5, item 5).
@@ -133,6 +137,10 @@ func Draw(s *state.State, ui UI) *Screen {
 		ui.Width >= MinWidth && ui.Height >= MinHeight {
 		modelSelector(sc, s, ui) // the model selector over zone B (plan 34)
 	}
+	if s.Screen == state.ScreenDashboard && ui.Modes.Open && !ui.Plus && !ui.Models.Open && !WindowOpen(ui) && !ui.DraftWin.Open && !ui.Keys && !ui.Worktrees.Open &&
+		ui.Width >= MinWidth && ui.Height >= MinHeight {
+		modesBox(sc, s, ui) // the modes selector over zone B (plan 39)
+	}
 	if s.Screen == state.ScreenDashboard && WindowOpen(ui) && !ui.Keys && !ui.Worktrees.Open &&
 		ui.Width >= MinWidth && ui.Height >= MinHeight {
 		floatWindow(s, ui, sc)
@@ -141,6 +149,19 @@ func Draw(s *state.State, ui UI) *Screen {
 		ui.Width >= MinWidth && ui.Height >= MinHeight {
 		x, y, ww, hh := DraftRect(ui)
 		sc.place(draftWindow(s, ui, ww, hh), x, y, ww)
+	}
+	if ui.Sixel && !ui.PillNoFont && s.Screen == state.ScreenDashboard {
+		// The mode pill's image over its blank cells, whole or compact,
+		// wherever the frame left them uncovered (plan 39, design D7).
+		if x, y, ok := sc.find(ModePillPanel); ok {
+			look := modePillLook(s)
+			if _, item := sc.ItemAt(x, y); item == itemCompactPill {
+				look.Title = ""
+			}
+			if sc.spanWidth(ModePillPanel, y) == ModePillCells(look) {
+				sc.ModePill = ModePillShown{Shown: true, X: x, Y: y, Look: look}
+			}
+		}
 	}
 	if !ui.Sel.Empty() && ui.Sel.From.Panel != 'E' {
 		for i, l := range sc.lines {

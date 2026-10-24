@@ -89,7 +89,7 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	ls = append(ls, zoneC(s, ui, w, ch, sc)...) // the whole width, its timeline inside (plan 27)
 	hints := sendNewline(ui) + " · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit"
 	if wide {
-		hints = sendNewline(ui) + " · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 Manual/Auto · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
+		hints = sendNewline(ui) + " · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 modes · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
 	}
 	if lipgloss.Width(hints)+1 > w {
 		// The key page (F1) lists the newline key: the room goes to the end
@@ -243,19 +243,19 @@ func approvalsSpans(s *state.State) line {
 	if (cur == "" || cur == state.ModeManual) && req == "" {
 		return nil
 	}
-	l := line{sp("approvals ", stGrey), sp(state.ModeLabel(cur), modeStyle(cur))}
+	l := line{sp("approvals ", stGrey), sp(s.ModeTitle(cur), modeStyle(cur))}
 	if req != "" {
 		suffix := " …"
-		if s.CLI() == "codex" {
-			suffix = " (next turn)"
+		if s.Session.ModeNextTurn {
+			suffix = " (next turn)" // Codex's change waits for the next message (plan 39)
 		}
-		l = append(l, sp(" → ", stGrey), sp(state.ModeLabel(req), modeStyle(req)), sp(suffix, stGrey))
+		l = append(l, sp(" → ", stGrey), sp(s.ModeTitle(req), modeStyle(req)), sp(suffix, stGrey))
 	}
 	return l
 }
 
 func modeStyle(mode string) *lipgloss.Style {
-	if mode == state.ModeAuto {
+	if mode == state.ModeAuto || mode == state.ModeFull {
 		return stAttentionBold
 	}
 	return stText

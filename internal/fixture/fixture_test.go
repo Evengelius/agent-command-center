@@ -44,6 +44,8 @@ func TestFixturesMatchRecordings(t *testing.T) {
 		"p34x-codex-model-list-settings.jsonl":          75, // plan 34: Codex's model/list pages and thread settings, no turn
 		"p38x-codex-settings.jsonl":                     40, // plan 38: thread/settings/update with the experimental API, no turn
 		"p38t-codex-turn-settings.jsonl":                73, // plan 38: the same, then one turn and a command approval
+		"p39c-claude-permission-modes.jsonl":            23, // plan 39: Claude Code's permission modes, no message
+		"p39x-codex-permission-modes.jsonl":             48, // plan 39: Codex's three presets through thread/settings/update, no turn
 	}
 	copies, _ := filepath.Glob("../../testdata/probes/*.jsonl")
 	if len(copies) != len(want) {

@@ -81,6 +81,23 @@ var (
 	cThinkMid    = colour{"#C4B5FD", "13"}
 	cThinkDim    = colour{"#4C4470", "8"}
 	cThinkTrack  = colour{"#2E2A47", "8"}
+
+	// The modes selector (plan 39; brief amendment 40's measures): the
+	// box's ground, its frame, "MODES", "Current session", a title, a
+	// description, the band, the selected option's title and description,
+	// an unavailable option's text, Full access's amber, an icon in text.
+	cModesGround   = colour{"#111518", "0"}
+	cModesFrame    = colour{"#B064F4", "13"}
+	cModesHead     = colour{"#B86AF6", "13"}
+	cModesAside    = colour{"#A0AECC", "7"}
+	cModesTitle    = colour{"#F0F0F2", "15"}
+	cModesDesc     = colour{"#95A3BF", "7"}
+	cModesBand     = colour{"#2E2842", "8"}
+	cModesSelTitle = colour{"#F2EFF6", "15"}
+	cModesSelDesc  = colour{"#B09FD5", "13"}
+	cModesOff      = colour{"#5A6170", "8"}
+	cModesWarn     = colour{"#F5C673", "11"}
+	cModesIcon     = colour{"#AEBCDC", "7"}
 )
 
 // modelColours colours a model by its family; any other model is text.
@@ -158,6 +175,12 @@ var (
 	// dots on the track, the fill and the gradient; a held thumb.
 	stSliderTrackEnd, stSliderFillEnd, stSliderLockEnd, stSliderTopLeft, stSliderTopRight = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 	stSliderDot, stSliderDotFill, stSliderDotTop, stSliderLockKnob                        = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	// The modes selector (plan 39): its frame, its heading and the
+	// confirmation's, "Current session", the halves' band, a title, a
+	// description, an unavailable option's text, the amber, the selected
+	// option's title and description, an icon in text.
+	stModesFrame, stModesHead, stModesWarnHead, stModesAside, stModesHalf, stModesTitle = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	stModesDesc, stModesOff, stModesWarn, stModesSelTitle, stModesSelDesc, stModesIcon  = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 
 	stMdHeading = stTitle
 	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
@@ -258,6 +281,18 @@ func paint() {
 	paintStyle(stSliderDotFill, fg(cSliderDotFill))
 	paintStyle(stSliderDotTop, fg(cSliderDotTop))
 	paintStyle(stSliderLockKnob, fg(cSliderLockKnob))
+	paintStyle(stModesFrame, fg(cModesFrame))
+	paintStyle(stModesHead, fg(cModesHead).Bold(true))
+	paintStyle(stModesWarnHead, fg(cModesWarn).Bold(true))
+	paintStyle(stModesAside, fg(cModesAside))
+	paintStyle(stModesHalf, fg(cModesBand))
+	paintStyle(stModesTitle, fg(cModesTitle))
+	paintStyle(stModesDesc, fg(cModesDesc))
+	paintStyle(stModesOff, fg(cModesOff))
+	paintStyle(stModesWarn, fg(cModesWarn))
+	paintStyle(stModesSelTitle, fg(cModesSelTitle))
+	paintStyle(stModesSelDesc, fg(cModesSelDesc))
+	paintStyle(stModesIcon, fg(cModesIcon))
 	if sixteen { // no ground to spare: the pill is its bold pink text
 		paintStyle(stPill, stAttentionBold.Background(lipgloss.NoColor{}))
 		paintStyle(stPillEnd, lipgloss.NewStyle())
@@ -301,7 +336,10 @@ var (
 	sliderTrackGround = &ground{c: cSliderTrack, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	sliderFillGround  = &ground{c: cSliderFill, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	sliderLockGround  = &ground{c: cSliderLockFill, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	grounds           = []*ground{toolGround, activeGround, bandGround, trackGround, offGround, dimGround, sliderTrackGround, sliderFillGround, sliderLockGround}
+	// The modes selector's grounds (plan 39): the box's and the band's.
+	modesGround     = &ground{c: cModesGround, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	modesBandGround = &ground{c: cModesBand, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	grounds         = []*ground{toolGround, activeGround, bandGround, trackGround, offGround, dimGround, sliderTrackGround, sliderFillGround, sliderLockGround, modesGround, modesBandGround}
 )
 
 // active is st on the active ground (plan 30).

@@ -95,10 +95,237 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 39 - The permission modes selector after the owner's images
 
-Plan 38 was approved and closed on 2026-10-24 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 40 (2026-10-24): the editor row's right-hand "Auto"
+becomes the mode pill of the owner's third image, and opens a "MODES"
+popup after the first two: the active CLI's own permission modes, each
+applied through the CLI and shown only once the CLI reports it in force;
+Codex's Full access only after an explicit confirmation. The criteria
+below were written before the code; nothing is committed until the owner
+has reviewed the screenshots and the results.
+
+### What the probe found
+
+P39c and P39x (doc/research/probes/README.md; no model call; the
+configuration check PASS before and after):
+
+- Claude Code 2.1.303 takes `set_permission_mode` with `default`,
+  `acceptEdits`, `plan` and `auto`: each answered `{"mode": ...}` within
+  3 ms, then a `system/status` with its `permissionMode` (none for the
+  mode already in force); an unknown mode is refused with the CLI's list,
+  "must be one of acceptEdits, auto, bypassPermissions, default, dontAsk,
+  plan". The initialize response gives `current_permission_mode`
+  ("default") and no list of modes.
+- Codex 0.163.0 (the opt-in of plan 38): `configRequirements/read`
+  answers `requirements: null` (no managed restriction here);
+  `thread/settings/update` takes each of VS Code's three presets, answered
+  `{}` and then `thread/settings/updated` with the `approvalPolicy`,
+  `approvalsReviewer` and `sandboxPolicy` asked for: Ask for approval as
+  VS Code's default (`workspaceWrite`, `on-request`, `user`), Approve for
+  me (`workspaceWrite`, `on-request`, `auto_review`), Full access
+  (`dangerFullAccess`, `never`, `user`), and back to the dashboard's start
+  (`readOnly`, `on-request`, `user`); a change of nothing is not notified.
+- OpenAI's Codex extension for VS Code (`openai.chatgpt` 26.1021.22027,
+  read 2026-10-24): "Ask for approval" names both its read-only and its
+  workspace-write modes with `on-request` and the user reviewing,
+  "Approve for me" the workspace-write sandbox with Codex's auto-review,
+  "Full access" `dangerFullAccess` with `never`, behind a confirmation
+  dialog; a mode the managed requirements leave out is disabled.
+- What the owner's descriptions say against what the CLIs do, reported
+  and not changed (amendment 40, "report the discrepancy before changing
+  the approved wording"): Claude Code's `acceptEdits` approves file edits
+  without asking, wherever the edit is, and the CLI has no "selected
+  text"; `default` asks before commands too, not only before edits;
+  `plan` presents its plan as an `ExitPlanMode` request the owner
+  approves. Codex's Ask for approval is the read-only sandbox the
+  dashboard starts with (plan 12): Codex asks before any edit, inside the
+  project too, more than "edit external files"; VS Code's default for the
+  same label is workspace-write.
+
+### Design
+
+- **D1. The catalogs.** Each CLI's own modes, in this order, never the
+  other's; titles and descriptions the owner's, broken where the images
+  break them:
+  - Claude Code: Manual (`default`, hand), Edit automatically
+    (`acceptEdits`, code brackets), Plan (`plan`, document), Auto
+    (`auto`, lightning).
+  - Codex: Ask for approval (`readOnly`, `on-request`, `user`, hand),
+    Approve for me (`workspaceWrite`, `on-request`, `auto_review`, a
+    shield with a prompt), Full access (`dangerFullAccess`, `never`,
+    `user`, a hexagon with "!", amber).
+  The session gives its list; Codex's from `configRequirements/read`: a
+  mode whose sandbox or policy the requirements leave out is shown
+  greyed and takes no choice, zone B saying why.
+- **D2. The mode in force**, only from the CLI: Claude Code's
+  `system/init`, the answers to `set_permission_mode` and `system/status`;
+  Codex's `thread/start`, `thread/settings/updated` and the `turn/start`
+  the dashboard writes, a combination outside the three read as
+  "Custom". The pill and the check show it; a mode the catalog does not
+  have (Claude Code's `bypassPermissions`, `dontAsk`) is named in the
+  pill, no row checked.
+- **D3. A change.** A choice asks for the mode (`ChooseMode`); Claude
+  Code writes `set_permission_mode` at once; Codex writes
+  `thread/settings/update` with the mode's sandbox, policy and reviewer
+  between turns, during a turn at its end, and every `turn/start` carries
+  the mode in force (plan 12's rule, now three settings); a refused update
+  leaves Codex's changes to the next `turn/start`, as before. The mode
+  changes on screen only when the CLI reports it; a refusal leaves the
+  mode, the check and the pill as they were, zone B saying why. F4,
+  plan 12's Manual/Auto key, opens the popup.
+- **D4. Full access** is never asked for without a confirmation: choosing
+  it puts a confirmation box in the popup's place, "TURN ON FULL ACCESS?"
+  in amber, what it allows, and two rows, Turn on Full access, then Cancel
+  (the cursor's), Cancel on the rows Full access had, so the second click
+  of a double click on Full access lands on Cancel or a half row; the
+  pointer's next report after the box changes is where it rests, not a
+  hover. Esc, Cancel or a click outside send nothing; only Turn on Full
+  access sends the change. The state takes no Full access choice that is
+  not confirmed.
+- **D5. The popup** (reference-design.md, The modes selector): above the
+  mode pill, its bottom edge on the editor's rule with "▾" above the
+  pill's middle cell, its right edge at the pill's right end or the
+  screen's; W = 19 + the longest description line (51 for Claude Code,
+  54 for Codex). Row 1: "MODES" at column 3, "Current session" ending at
+  W-3; then a half row, and each option: its title at column 11 and its
+  description lines under it, a half row between options and after the
+  last. The ground `#111518`, the frame `#B064F4`, the colours of brief
+  amendment 40. The selected option's rows, from the half row above it
+  to the half row below, lie on `#2E2842` with rounded corners, its title
+  `#F2EFF6`, its description `#B09FD5`, its icon in its accent colour, a
+  white check at the right; the cursor's (the pointer's or the keys')
+  the same ground without the check, its text as it was; one on the
+  other draws once, with its check. Full access keeps its amber icon and
+  title in every state.
+- **D6. Drawn with Sixel**, as plans 35 and 37: two images over blank
+  cells that never change, the left strip (columns 1 to 10: the
+  highlight's rounded left edge and the icons) and the right strip
+  (columns W-6 to W-2: the checks and the right edge), each the popup's
+  item rows high; between them, text cells whose ground carries the
+  highlight, and in the half rows "▄", "▀" or "█" in its colour, so a
+  hover changes only cells between the strips and never erases them.
+  Without Sixel: the same cells, the icons as text, square corners.
+- **D7. The composer pill** (the third image): with Sixel an image over
+  the row's last blank cells: a fill of `#21223A` with a thin `#7E4AE1`
+  outline and rounded corners (radius 0.36 of its height, as the image's),
+  the mode's icon (the lightning `#E982F6`; Full access's amber), and the
+  mode's title in `#DBD9E6` rasterised in Cascadia Mono by Windows' GDI
+  (the font Windows Terminal draws with), a little smaller than the
+  terminal's text, the image's proportions being too small to read in one
+  row; no chevron. Without Sixel, or with no font to draw the title: the
+  icon and the title as text on the pill's ground, " ↯ Auto " (plan 29's
+  glyph). The model pill, the "+", the middle text and every other row
+  unchanged. The project bar's "approvals" names the modes by their
+  titles, "(next turn)" only while Codex keeps the change for the next
+  message.
+- **D8. Keys and mouse.** A click on the mode pill or F4 opens the popup
+  (Alt+P and the model selector unchanged), the cursor on the mode in
+  force; ↑ ↓ Home End move it over the options; Enter or Space chooses;
+  Esc, F4 or a click outside closes (the click goes on); the pointer's
+  hover moves the cursor onto another option only (plan 36's rule); a
+  click chooses. The draft, its images and the focus stay as they were.
+- **D9. Room.** The popup opens only where its rows fit above the editor's
+  rule within zone B; otherwise a toast says why.
+- **D10. The mock** offers its file's CLI's modes and answers a change at
+  once, so both popups can be shown without a CLI.
+
+### Criteria
+
+1. **39.1 Probes** P39c and P39x recorded and sanitized as found above;
+   the configuration check PASS before and after.
+2. **39.2 The catalogs**: a Claude Code session's popup lists exactly
+   Manual, Edit automatically, Plan, Auto, a Codex session's exactly Ask
+   for approval, Approve for me, Full access, with the owner's titles and
+   descriptions word for word, broken as the images break them.
+3. **39.3 The mode in force from the CLI**: Claude Code's init, answers
+   and status, and Codex's thread start, notifications and turn starts,
+   give the modes of D1, Custom otherwise; the pill and the check follow
+   them alone, and a mode asked for changes neither until the CLI reports
+   it.
+4. **39.4 A change**: Claude Code writes `set_permission_mode` with
+   `default`, `acceptEdits`, `plan` or `auto` once; Codex between turns
+   writes `thread/settings/update` with the mode's three settings once,
+   and the next `turn/start` carries them; during a turn nothing until its
+   end; a refusal from either CLI leaves the mode, the check and the pill,
+   zone B saying why.
+5. **39.5 Full access**: no command without the confirmation; Cancel, Esc
+   and a click outside send nothing; Turn on Full access sends
+   `dangerFullAccess`, `never`, `user`; a requirements list without
+   `danger-full-access` or `never` greys the row and sends nothing; the
+   adapter never writes `dangerFullAccess` otherwise.
+6. **39.6 The popup's cells** (render tests, both CLIs, 120x40 and
+   200x60): "MODES" alone as the heading at column 3, "Current session"
+   ending at W-3, W 51 and 54, the titles at column 11, the rows of D5,
+   the bottom edge on the editor's rule with "▾" above the pill's middle;
+   no other text.
+7. **39.7 Highlight and hover**: the selected option's cells on `#2E2842`
+   from its upper half row to its lower one, its check, its colours; the
+   cursor's option the same ground with no check and its own colours; the
+   pointer leaving an option takes its highlight away, the selected one's
+   stays; Full access amber in every state.
+8. **39.8 The images**: the strips' pixels (the icons in their colours at
+   their places, the highlight's rounded edges meeting the text cells'
+   ground, the white check) and the pill's (fill, outline, round ends,
+   icon, the label's pixels where the raster puts them), each checked
+   against code broken on purpose.
+9. **39.9 The composer pill**: the mode in force's icon and title, its
+   cells blank under the image, no chevron; the rest of the editor row
+   and the model pill unchanged (golden frames).
+10. **39.10 Keys and mouse** as D8, through the application: the cursor,
+    Enter, Esc, F4, a click on an option, a click outside, the hover rule;
+    the draft and its images unchanged after each.
+11. **39.11 Room**: no popup where its rows do not fit, a toast instead.
+12. **39.12 The mock**: a change answered at once, for both CLIs' files.
+13. **39.13 The checks**: build, vet and gofmt clean; `go test ./...` ok;
+    `-race` on the changed packages ok; the golden frames changed only
+    where the pill and the popup are; the timing step alone within its
+    targets; every new check run once against code broken on purpose.
+    Amended in step 4: also where F4's footer hint names the modes ("F4
+    modes"), where the project bar names a Codex mode by its title
+    ("approvals Approve for me", "(next turn)" only while Codex keeps the
+    change), and where a long status now keeps the pills, the mode pill as
+    its icon alone (design D7), each a consequence of the design.
+14. **39.14 Windows Terminal on the mocks**, 120x40 and maximised: both
+    popups, an unselected option hovered, the selected one with its
+    check, the pill, the Full access confirmation; colours read from the
+    screenshots against the references'.
+15. **39.15 Live, no model call**: the dashboard on Claude Code and on
+    Codex through the logging wrapper; each mode chosen in the popup
+    comes into force as the CLI reports it, Full access only after the
+    confirmation, and back to the starting mode; the configuration check
+    before and after.
+
+### Steps
+
+1. The probe (P39c, P39x) and the images measured: the findings above;
+   brief amendment 40.
+2. The events, the adapters, the state and the mock.
+3. The popup, its images, the pill and the GDI label; the application.
+4. Tests and the checks; WT on the mocks; the live check; the evaluation
+   (`doc/plan39-evaluation.md`); the docs; the report.
+
+### Progress
+
+- 2026-10-24: step 1 done (P39c, P39x; brief amendment 40).
+- 2026-10-24: step 2 done: `event.Mode` and `ModeLimits`, the adapters'
+  `SetApprovalMode(mode)` (Claude Code's four words; Codex's three presets
+  through `thread/settings/update`, plan 38's rules, `configRequirements/read`),
+  the state's catalogs and `ChooseMode`, the mock's modes.
+- 2026-10-24: step 3 done: the popup, its strips and the pill as Sixel
+  images, the GDI label (`input.TextMask`), the application (F4, the pill's
+  click, keys, hover, the confirmation, Sixel drawing). Refined while
+  building, the design updated above: D4's order and pointer rule, D7's
+  corners, label size, compact pill and text fallback; the project bar's
+  "(next turn)" only while Codex keeps the change (it said so for every
+  Codex change, wrong since plan 38).
+- 2026-10-24: step 4 done: the tests and the checks (676 tests, `-race`,
+  the timing step, 48 mutation checks: 47 caught, one equivalent),
+  Windows Terminal on the mocks (both sizes) and the live check (L39, both
+  CLIs, PASS), all on the final build; the documents updated; criterion
+  39.13 amended (above); the evaluation in `doc/plan39-evaluation.md`, 15
+  PASS. Waiting for the owner's review of the screenshots and the results;
+  nothing committed.
 
 ## Closed plans
 

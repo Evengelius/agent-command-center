@@ -4946,3 +4946,414 @@ Approved: plan 37 is approved. Commit it (review git status and git diff first, 
 ````
 
 Taken as plan 38 (plan.md, Plan 38).
+
+## Amendment 40, 2026-10-24: the permission modes selector after the owner's images, for plan 39
+
+After plan 38 was approved and pushed, the owner sent three images, two
+popups headed "MODES" (Claude Code's four modes, Auto selected; Codex's
+three, Approve for me selected) and the composer's "Auto" pill, and
+wrote, word for word:
+
+````text
+Agent Command Center — Permission Modes Selector
+Objective
+Implement the permission-mode selector in Agent Command Center, using the three attached images as authoritative visual design references.
+These screenshots define the exact appearance of:
+
+1. The Claude Code MODES popup.
+2. The OpenAI Codex MODES popup.
+3. The compact Auto pill in the composer.
+
+Your task is to reproduce these designs as faithfully as technically possible in Windows Terminal, while implementing genuine provider-specific permission-mode selection.
+This is a strictly scoped feature. Do not redesign unrelated parts of Agent Command Center.
+1. Strict Visual Design — Non-Negotiable
+The three attached images are the final approved designs.
+Preserve:
+
+* Dark charcoal popup background.
+* Thin lavender/purple rounded border.
+* Compact dimensions.
+* `MODES` heading in purple.
+* `Current session` aligned to the top-right.
+* Each option's icon, name, and two-line description where applicable.
+* Exact relative spacing and alignment.
+* Highlighted selection background.
+* White checkmark aligned to the right of the selected option.
+* Small downward pointer connecting the popup to its composer control.
+* Consistent typography and muted secondary descriptions.
+
+Popup positioning
+The popup must open above the right-hand mode pill, not above the model selector.
+It must remain anchored to that control.
+Clicking outside closes the popup.
+Escape may also close it, but do not add an `Esc close` footer.
+Strict restrictions
+Do not add:
+
+* Provider-specific titles such as `CLAUDE MODES` or `CODEX MODES`.
+* Provider-switching tabs.
+* Extra buttons.
+* Search fields.
+* Unnecessary separators.
+* Additional descriptions.
+* Empty footer rows.
+* Excessive padding or unused space.
+
+The heading must be exactly `MODES` for both providers.
+2. Claude Code — First Reference Image
+When the active session uses Claude Code, display the popup shown in the first attached image.
+Header
+Left: `MODES`
+Right: `Current session`
+Options
+Display the following modes when supported by the actual installed Claude Code version and session configuration.
+Manual
+Icon: Hand.
+Title: `Manual`
+Description:
+`Claude will ask for approval before making each edit`
+Edit automatically
+Icon: Code brackets.
+Title: `Edit automatically`
+Description:
+`Claude will edit your selected text or the whole file`
+Plan
+Icon: Document/plan.
+Title: `Plan`
+Description:
+`Claude will explore the code and present a plan before editing`
+Auto
+Icon: Lightning bolt.
+Title: `Auto`
+Description:
+`Claude will approve actions that pass a safety check and pause for anything risky`
+Selected-state design
+In the first reference image, Auto is selected.
+It has:
+
+* A purple/lavender tinted rectangular background.
+* Soft rounded corners.
+* A lavender lightning icon.
+* White title.
+* Lavender-tinted description.
+* White checkmark on the right.
+
+Reproduce this treatment exactly.
+Other unselected options remain on the normal dark background.
+Functional mapping
+Map these display names to the actual supported Claude Code permission modes.
+Investigate the installed Claude Code CLI rather than assuming that labels from an extension map directly to identical CLI behavior.
+For example, verify the semantics and availability of:
+
+* `default` / Manual.
+* `acceptEdits`.
+* `plan`.
+* `auto`.
+
+If actual permission behavior differs from the screenshot's description, report the discrepancy before changing the approved wording.
+Do not fabricate capabilities or claim that a mode is active when the provider has not accepted it.
+3. OpenAI Codex — Second Reference Image
+When the active session uses OpenAI Codex, display the popup shown in the second attached image.
+The design must be visually identical in style to the Claude popup, but contain Codex-specific options.
+Header
+Left: `MODES`
+Right: `Current session`
+Options
+Ask for approval
+Icon: Hand.
+Title: `Ask for approval`
+Description:
+`Always ask to edit external files and use the internet`
+Approve for me
+Icon: Terminal/shield.
+Title: `Approve for me`
+Description:
+`Only ask for actions detected as potentially unsafe`
+Full access
+Icon: Warning symbol in a hexagonal outline.
+Title: `Full access`
+Description:
+`Unrestricted access to the internet and any file on your computer`
+Selected-state design
+In the second reference image, Approve for me is selected.
+It uses the same:
+
+* Purple highlighted background.
+* Rounded corners.
+* White checkmark.
+* Selected-text styling.
+
+Full access styling
+Preserve the warning color from the reference:
+
+* Amber/yellow icon.
+* Amber/yellow title.
+* Muted description.
+
+Do not replace the warning color with purple simply for consistency.
+The warning color has a semantic purpose.
+Functional mapping
+Codex permission modes must be based on the actual supported Codex configuration and App Server integration.
+Investigate the appropriate combination of:
+
+* Sandbox mode.
+* Approval policy.
+* Approval reviewer.
+* Session-level configuration capabilities.
+* Account and organizational restrictions.
+
+Do not assume that `Approve for me` is equivalent to simply enabling `on-request` approvals.
+Verify whether automatic approval review is supported and enabled for the current session.
+Full access must never be enabled silently.
+Require an explicit confirmation before any transition that removes sandbox restrictions or disables approval safeguards.
+Do not bypass managed security restrictions.
+If a mode cannot safely be applied to the current running Codex session, report that limitation rather than simulating success.
+4. Third Reference Image — Composer Mode Pill
+The third image defines the approved composer control.
+For the currently selected Auto mode, it must display:
+`⚡ Auto`
+Required appearance
+
+* Compact horizontal pill.
+* Fully rounded corners.
+* Dark violet tinted background.
+* Thin lavender/purple outline.
+* Purple lightning icon.
+* Light-colored label.
+* Matching internal padding.
+
+Do not include an upward or downward chevron.
+Do not add extra symbols.
+Dynamic behavior
+The pill must reflect the active mode of the current provider.
+For example, after selecting another supported mode, update the label and corresponding icon while preserving the approved pill design.
+Do not display a mode that is not actually active.
+Scope isolation
+The composer model indicator on the left must remain exactly unchanged.
+Preserve:
+
+* The `+` upload button.
+* The model and effort badge.
+* Ultracode indicator.
+* Image attachments and previews.
+* Input field.
+* Existing message-submission behavior.
+
+Only the right-hand mode pill is within scope.
+5. Hover Effects — Critical Visual Requirement
+One of the most important requirements is reproducing the hover-background effect shown in the attached references.
+When the mouse moves over a selectable mode, its row must receive a background highlight matching the reference's purple/lavender color treatment.
+Default state
+An unselected, non-hovered item has:
+
+* Dark background.
+* Normal text colors.
+* Muted description.
+* No selection checkmark.
+
+Hovered state
+When the mouse enters the row:
+
+* Apply the reference's purple-tinted background.
+* Preserve the rounded rectangular shape.
+* Keep text clearly legible.
+* Retain consistent horizontal padding.
+* Do not change the popup dimensions.
+* Do not shift neighboring options.
+* Do not alter the actual selected mode.
+
+When the pointer leaves, the hover highlight must disappear unless the item is selected.
+Selected state
+The selected item must retain its purple background and white checkmark.
+This must remain visible even when the mouse is elsewhere.
+Hover and selection are two separate states.
+Hovering a selected item
+If an already selected item is hovered, maintain its selection appearance with at most a subtle theme-consistent emphasis.
+Never hide its checkmark.
+Color fidelity
+Use the supplied images to match the purple background and border colors as closely as Windows Terminal's true-color rendering allows.
+Do not replace the effect with:
+
+* Gray.
+* Bright blue.
+* Orange.
+* Default terminal reverse-video highlighting.
+* A completely different theme color.
+
+Preserve the application's existing color language.
+If practical, sample the reference images' background colors and compare the resulting actual Windows Terminal screenshots.
+Mouse interaction
+Verify that mouse movement is correctly detected within the popup.
+Mouse hover must not interfere with:
+
+* Clicking an option.
+* Selecting or copying conversation text.
+* Keyboard navigation.
+* Focus restoration when closing the popup.
+
+If the existing terminal mouse-capture behavior imposes limitations, investigate them rather than silently omitting hover support.
+6. Provider-Specific Options
+This requirement is fundamental.
+The application runs either Claude Code or Codex in a session, never both simultaneously.
+Consequently:
+
+* Claude Code sessions show only supported Claude Code modes.
+* Codex sessions show only supported Codex modes.
+* Never mix the two catalogs.
+* Never show options merely because they exist in the other provider's interface.
+* Respect the current CLI version, session capabilities, and effective security policy.
+
+The references define the visual presentation, not proof of capability.
+Do not invent options.
+If the installed provider does not support a mode, report the limitation and represent availability accurately instead of displaying a non-functional option.
+7. Mode Selection and State Management
+When the user selects a mode:
+
+1. Identify the active provider.
+2. Validate the requested mode against its actual capabilities.
+3. Apply the change through the supported provider integration.
+4. Confirm that the change has been accepted.
+5. Update the selected row and checkmark.
+6. Update the composer mode pill.
+7. Keep all other UI state intact.
+
+Failure handling
+If the provider rejects the change:
+
+* Preserve the previous effective mode.
+* Do not move the checkmark to an inactive mode.
+* Do not show a false success state.
+* Display a concise explanation.
+
+Session consistency
+Preserve:
+
+* Conversation history.
+* Active provider session.
+* Selected model.
+* Reasoning effort.
+* Ultracode configuration.
+* Unsent draft.
+* Attached images.
+* Agent-monitoring state.
+
+Do not restart the provider or reset context merely to update the popup.
+If a safe mode change requires restarting the provider, report that limitation before taking action.
+Security
+Never silently elevate permissions.
+Do not automatically select Full access.
+Do not change global configuration or persistent security policies without authorization.
+Do not weaken sandbox restrictions to make a mode-selection test pass.
+8. Keyboard and Mouse Navigation
+Support:
+
+* Clicking the composer mode pill to open the popup.
+* Clicking outside to close it.
+* Escape to close.
+* Mouse hover.
+* Mouse selection.
+* Keyboard navigation through the options.
+* Clear selected-state feedback.
+* Correct focus restoration.
+
+Keep the popup positioned above its trigger.
+The popup must not overlap the composer unpredictably or extend outside the usable terminal viewport.
+Do not introduce unnecessary additional controls.
+9. Verification and Regression Tests
+Use deterministic tests and existing provider fixtures wherever possible.
+Visual verification
+Compare the actual implementation against all three images.
+Verify:
+
+1. The heading is exactly `MODES`.
+2. `Current session` is correctly right-aligned.
+3. Claude displays four options where supported.
+4. Codex displays three options where supported.
+5. Icons match the references as closely as possible.
+6. Text and descriptions are aligned.
+7. Hover backgrounds reproduce the reference styling.
+8. Selected backgrounds remain visible after mouse exit.
+9. Checkmarks appear only on selected options.
+10. Full access retains its warning appearance.
+11. Popup borders, dimensions and pointer match the references.
+12. No unnecessary empty space is introduced.
+13. The composer mode pill matches the third image.
+14. The composer pill has no chevron.
+
+Functional verification
+Verify:
+
+1. Each available mode maps to a real provider capability.
+2. Selecting a supported mode updates the effective configuration.
+3. Rejected changes preserve the previous state.
+4. Claude and Codex modes are never mixed.
+5. Security restrictions remain enforced.
+6. Permission requests still appear correctly when required.
+7. Keyboard navigation works.
+8. Hover and click behavior work.
+9. Popup dismissal preserves the current input and attachments.
+10. Existing provider integrations remain stable.
+
+Regression verification
+Preserve:
+
+* Zones A, B and C.
+* Conversation rendering.
+* Thinking indicators.
+* Image upload and clipboard paste.
+* Model selection.
+* Effort slider.
+* Ultracode toggle.
+* Agent monitoring.
+* Telemetry.
+* Draft recovery.
+* Existing permission handling.
+
+Do not weaken existing tests to obtain a PASS result.
+10. Required Evidence
+Before declaring completion:
+
+* Capture the implemented Claude Code popup in Windows Terminal.
+* Capture the implemented Codex popup.
+* Capture the compact composer mode pill.
+* Capture the hover state of an unselected option.
+* Capture the selected state with a visible checkmark.
+* Verify the mode changes against the actual provider behavior.
+* Run the relevant regression suite.
+* Report any genuine provider limitations.
+
+Compare these screenshots directly against the three attached design references.
+Correct actionable discrepancies before reporting visual conformance.
+Do not commit until I have reviewed the screenshots and implementation results.
+Final Instruction
+The three attached images are authoritative design specifications.
+Reproduce them as faithfully as technically possible.
+The popup must remain compact, maintain the existing purple/dark theme, and reproduce the reference hover and selected-state backgrounds.
+Display only the supported permission modes of the currently active provider.
+The composer pill must match the third reference exactly, without a chevron.
+Preserve every unrelated component of Agent Command Center.
+Visual fidelity, real provider behavior, security, and regression-free integration are all required.
+````
+
+The images, measured (`scratchpad\plan39\measure`; the two popups
+1254x1254 pixels, lossy WebP, the pill 258x92):
+
+- Both popups: a charcoal ground `#111518`, a thin border near `#B064F4`
+  with rounded corners, "MODES" in `#B86AF6` and "Current session" in
+  `#A0AECC` on the first row, each option's outline icon on the left in
+  `#AEBCDC`, its title in `#F0F0F2` and its description, two lines (three
+  for Claude Code's Auto), in `#95A3BF`; the selected option on a rounded
+  rectangle of `#2E2842` with its title `#F2EFF6`, its description
+  `#B09FD5` and a white check (`#F6F2F8`) at the right; a "V" in the
+  bottom edge near its right end.
+- Claude Code's: the selected Auto's lightning in `#E874F2`; the
+  descriptions broken after "approval", "selected", "and", "that" and
+  "pause" (32 characters at most a line).
+- Codex's: the selected Approve for me's shield in `#EEE0FA`; Full
+  access's hexagon `#F4C46E` and title `#F5C673`, its description muted;
+  the descriptions broken after "files", "detected" and "internet" (35 at
+  most).
+- The pill: a fill of `#21223A` with a thin `#7E4AE1` outline and fully
+  rounded ends, the lightning `#E982F6` at the left, "Auto" in `#DBD9E6`.
+
+Taken as plan 39 (plan.md, Plan 39).

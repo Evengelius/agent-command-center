@@ -156,7 +156,7 @@ func TestGoldenFrames(t *testing.T) {
 	}
 	codexRequested := func(t *testing.T) *harness {
 		h := codexDash(t)
-		h.m.State().Do(state.ToggleApprovals{Capable: true})
+		h.m.State().Do(state.ChooseMode{Mode: state.ModeAuto, Capable: true})
 		if h.m.State().Session.ApprovalRequested != state.ModeAuto {
 			t.Fatalf("requested %q", h.m.State().Session.ApprovalRequested)
 		}

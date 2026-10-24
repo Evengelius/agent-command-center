@@ -277,6 +277,16 @@ Approval machine):
   request's `availableDecisions` omits it (plan 8).
 - If writing the answer fails (the pipe closed), the session is `Crashed`
   and the approval `Expired`.
+- **The modes are the CLI's own** (plan 39, brief amendment 40): the
+  dashboard never changes a mode by itself; every session starts in
+  Manual (Claude Code's `default`; Codex's Ask for approval, the read-only
+  sandbox); a mode the owner chooses is sent through the CLI and shown in
+  force only once the CLI reports it, a refusal leaving the mode as it was.
+  Codex's Full access, no sandbox and no approval, is asked for only after
+  the owner confirms it in the popup's confirmation, the state refusing it
+  unconfirmed; a mode the managed requirements leave out takes no choice;
+  the adapter writes `dangerFullAccess` only as Full access's preset, which
+  a test guard checks on every line the Codex tests write.
 
 ## Interruption and cancellation
 
@@ -361,13 +371,17 @@ be split without reading it, so a change there is reported, not classified.
   in its own folder.
 - Sends no request that writes configuration: no Claude Code
   `update_settings`, no `--settings` with hooks; `set_permission_mode` only
-  when the owner switches Manual or Auto (plan 12), `set_model` and
+  when the owner chooses a mode (plans 12 and 39), `set_model` and
   `apply_flag_settings` only when the owner picks a model, an effort or
   Ultracode (plan 34), and none writes a settings file (P12c-switch, CC-10
   q11; P34c). No Codex `config/write`, `config/batchWrite` or
-  `windowsSandbox/setupStart`; threads start read-only, and Auto turns ask
-  for `workspaceWrite` per turn, which writes no `trust_level` (plans 12
-  and 13, CX-10 q2; ASM-6); a model or effort the owner picks is a
+  `windowsSandbox/setupStart`; threads start read-only, and Approve for me
+  asks for `workspaceWrite`, which writes no `trust_level` (plans 12 and
+  13, CX-10 q2; ASM-6), and Full access, once the owner confirms it, for
+  `dangerFullAccess`, each a thread's setting written between turns with
+  `thread/settings/update` and carried by every `turn/start`, neither
+  writing a configuration file (P39x and plan 39's live check left the
+  configuration identical); a model or effort the owner picks is a
   thread's setting "for subsequent turns", written between turns with the
   experimental `thread/settings/update` (plan 38) or carried by the next
   `turn/start` ("for this turn and subsequent turns"), and neither writes

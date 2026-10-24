@@ -21,6 +21,7 @@ import (
 
 	"github.com/Evengelius/agent-command-center/internal/input"
 	"github.com/Evengelius/agent-command-center/internal/input/imagetest"
+	"github.com/Evengelius/agent-command-center/internal/render"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -403,7 +404,7 @@ func TestPreviewDraw(t *testing.T) {
 		n := len(h.m.kicks)
 		raws = drawn(h, thumbDrawMsg{gen: h.m.kicks[n-1]})
 		place := fmt.Sprintf("\x1b[%d;%dH", th.Y+1, th.X+1)
-		if len(raws) != 1 || !strings.Contains(raws[0], place) || strings.Contains(raws[0], "\x1bP") {
+		if len(raws) != 1 || !strings.Contains(raws[0], place) || strings.Contains(withoutPill(t, h, raws[0]), "\x1bP") {
 			t.Errorf("the vacated place: %q", trunc(raws))
 		}
 		h.send(typed('y'))
@@ -432,6 +433,37 @@ func drawn(h *harness, msg thumbDrawMsg) []string {
 		}
 	}
 	return out
+}
+
+// pillDrawing is the mode pill's part of a drawing on the current frame, ""
+// when the frame shows no pill image (plan 39, design D7): its title drawn
+// by GDI 13 pixels high from one pixel down.
+func pillDrawing(h *harness) string {
+	mp := h.m.screen.ModePill
+	if !mp.Shown {
+		return ""
+	}
+	label, err := input.TextMask(mp.Look.Title, 13, 1, render.SixelCellH)
+	if err != nil {
+		return ""
+	}
+	w := render.ModePillCells(mp.Look)
+	at := fmt.Sprintf("%c[%d;%dH", 0x1b, mp.Y+1, mp.X+1)
+	return at + h.m.screen.Region(mp.X, mp.Y, w) + at + render.PillSixel(mp.Look, label)
+}
+
+// withoutPill is a drawing without the mode pill's part, which every
+// drawing on a dashboard with Sixel holds; the pill there once.
+func withoutPill(t *testing.T, h *harness, raw string) string {
+	t.Helper()
+	pill := pillDrawing(h)
+	if pill == "" {
+		return raw
+	}
+	if n := strings.Count(raw, pill); n != 1 {
+		t.Errorf("the pill drawn %d times in %q", n, trunc([]string{raw}))
+	}
+	return strings.Replace(raw, pill, "", 1)
 }
 
 // trunc shortens raw sequences for a failure's message.
@@ -500,7 +532,8 @@ func TestWin32PasteRelease(t *testing.T) {
 	if len(m.attach) != 1 || m.attach[0].Name != "pasted-image-1.png" {
 		t.Errorf("attached %+v", m.attach)
 	}
-	if len(m.drawn) != 1 || m.drawn[0].W != 10 || m.drawn[0].H != 5 {
-		t.Errorf("drawn %+v, want one thumbnail of 10x5 cells", m.drawn)
+	// The thumbnail, and the mode pill (plan 39), Item -5.
+	if len(m.drawn) != 2 || m.drawn[0].W != 10 || m.drawn[0].H != 5 || m.drawn[1].Item != -5 {
+		t.Errorf("drawn %+v, want one thumbnail of 10x5 cells and the mode pill", m.drawn)
 	}
 }

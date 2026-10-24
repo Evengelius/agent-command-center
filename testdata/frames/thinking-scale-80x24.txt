@@ -16,7 +16,7 @@
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Claude Code is processing your request…                                   │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│   turn running: the draft waits · Ctrl+C interrupt                           │
+│   +     Haiku 5.5    turn running: the draft waits · Ctrl+C interrupt    ↯   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
 │ no agents yet: they appear as the CLI starts them                            │

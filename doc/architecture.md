@@ -154,8 +154,11 @@ Session
   Answer(ApprovalID, Decision) error  allow / deny / allow-for-session where offered
   AnswerQuestion(QuestionID, Answers) error   where the CLI supports it
   Interrupt() error                 cancel the running turn
-  SetApprovalMode(auto bool) error  Manual or Auto approvals (plan 12): Claude Code at once,
-                                    Codex from the next turn; refused where not supported
+  SetApprovalMode(mode string) error  one of the CLI's modes (plan 12; plan 39): Claude
+                                    Code at once (set_permission_mode); Codex at once
+                                    between turns (thread/settings/update), at a turn's
+                                    end during one, with the next turn where Codex
+                                    refuses it; another CLI's mode refused
   SetModelSettings(ModelRequest) error  a model, an effort or Ultracode (plan 34): Claude
                                     Code at once, then read back; Codex at once between
                                     turns (the experimental thread/settings/update,
@@ -171,7 +174,8 @@ Session
 pretends both CLIs are the same (AM4 D6 "Do not force all providers to
 expose identical telemetry"): streaming of subagent text, per-subagent model,
 quota without a turn, API-equivalent cost, clarification questions, plan
-steps, resume with history, allow-for-session, Manual or Auto approvals,
+steps, resume with history, allow-for-session, the CLI's own modes (`Modes`,
+plan 39),
 the limits on a message's images (`Images`: count, bytes an image and a
 message, pixels a side, patches; plan 31, doc/research/image-input.md), and
 the model selection (`Models`, `ModelsNextTurn`, `Ultracode`; plan 34). They
@@ -179,10 +183,10 @@ are fixed per adapter (`internal/provider/claude/session.go`,
 `internal/provider/codex/session.go`, `internal/provider/mock/session.go`),
 not read from detection or the handshake, but for `ModelsNextTurn`, which a
 Codex session reports while its main turn runs and for good once Codex
-refused `thread/settings/update` (plan 38), read at each choice; these are
-read:
-`AutoApprovals`, which F4 needs to ask for Manual or Auto approvals
-(`internal/app/keys.go`), and the three of the model selection, which open
+refused `thread/settings/update` (plan 38), and which a mode asked for
+follows too (plan 39), read at each choice; these are read:
+`Modes`, which F4 and the mode pill need to open the modes selector
+(`internal/app/modes.go`), and the three of the model selection, which open
 it, mark a change as waiting for the next message and show its Ultracode
 row (`internal/app/models.go`). A value no event gives stays "N/A" with its reason,
 whatever the flags. The other differences come from the provider id
@@ -222,11 +226,14 @@ CLI's own default, which prompts through the dashboard (CC-3 "Permission
 modes"; ASM-4). It never passes a mode weaker than the owner's settings would
 apply, and shows the `permissionMode` that `system/init` reports.
 
-Manual or Auto (plan 12, brief amendment 8): every session starts Manual
-(`default`); F4 sends the `set_permission_mode` control request, `auto` or
-`default`, and the project bar shows the mode Claude Code confirms (the
-control response, then `system/status` `permissionMode`), "→ Auto …" while
-it is asked, and a notice if it is refused. In Auto, an action the
+The modes (plan 12, brief amendment 8; plan 39, brief amendment 40):
+every session starts Manual (`default`); the modes selector sends the
+`set_permission_mode` control request, `default`, `acceptEdits`, `plan` or
+`auto` (P39c: each answered within 3 ms, then reported by `system/status`;
+another word refused with the CLI's list), and the mode pill and the
+project bar show the mode Claude Code confirms (the control response, then
+`system/status` `permissionMode`), "→ Auto …" while it is asked, and a
+notice if it is refused. In Auto, an action the
 classifier allows runs without a card; one it would pause still arrives as
 `can_use_tool` and is a card as in Manual. A tool result's
 `tool_result_meta[].permission_decision` with `reason_type:"classifier"`
@@ -258,16 +265,29 @@ Sandbox and approval policy: `sandbox: "read-only"` and
 configuration hashes unchanged; every file change then asks through the
 dashboard (`item/fileChange/requestApproval`, P6b), which is what AM4 W3 asks
 for. `workspace-write` is **not** used in Manual (CX-3, "Configuration
-write to avoid"; ASM-6); Auto's turns use it, below. The sandbox the
+write to avoid"; ASM-6); Approve for me uses it, and Full access
+`dangerFullAccess` once the owner confirms it (plan 39), below. The sandbox the
 `thread/start` response reports is shown in the project bar; a downgrade on
 Windows is visible, never hidden (INT 9).
 
-Manual or Auto (plan 12, brief amendment 8): every session starts Manual,
-`approvalsReviewer: "user"` on `thread/start`; F4 sets the reviewer the
-next `turn/start` carries, `auto_review` or `user`; Codex echoes the
-reviewer only on `thread/start`, so a turn's change is never confirmed. The
-project bar shows "→ Auto (next turn)" until that message is sent, then the
-new mode. In Auto, the escalations Codex's reviewer handles never reach the
+The modes (plan 12, brief amendment 8; plan 39, brief amendment 40):
+every session starts Ask for approval (plan 12's Manual), the read-only
+sandbox with `on-request` and `approvalsReviewer: "user"` on
+`thread/start`. The modes selector's three are the presets OpenAI's Codex
+extension for VS Code sets, a sandbox, an approval policy and a reviewer:
+Ask for approval (`readOnly`, `on-request`, `user`), Approve for me
+(`workspaceWrite`, `on-request`, `auto_review`) and Full access
+(`dangerFullAccess`, `never`, `user`), the last asked for only once the
+owner confirms it. Between turns a choice writes the experimental
+`thread/settings/update` with the three, answered by the
+`thread/settings/updated` that follows (P39x); during the main turn it
+waits for the turn's end; with a Codex that refuses the update as one it
+does not take, it goes with the next `turn/start`, as plan 38's model
+changes. Every `turn/start` carries the mode in force. `configRequirements/read`,
+once after `config/read`, gives the managed requirements: a mode whose
+sandbox or policy they leave out is greyed (none here: `requirements:
+null`). Settings outside the three read as Custom; a `turn/start` naming no
+sandbox (P12x's) is read by its reviewer, as plan 12 read it. In Auto, the escalations Codex's reviewer handles never reach the
 dashboard; its `item/autoApprovalReview/started` and `.../completed`
 notifications ([UNSTABLE] in the schema) become one zone B entry per
 review, "auto-review approved · risk low · …"; `guardianWarning` repeats it
@@ -487,6 +507,22 @@ model, an effort or Ultracode only once the CLI reports it in force.
 | 2 and 3. State | `Models`: the list, the settings in force merged from the reports, the change asked for until its answer; the choices as actions (`ChooseModel`, `ChooseEffort`, `ChooseUltracode`), each checked against the list (a level the model lists, Ultracode only while available, no effort a variable holds) and handed to the session as a `CmdModels` command; a change taking effect at once, Claude Code's and Codex's between turns (plan 38), one at a time and none while a turn runs, a Codex one of what is in force asking nothing; a change waiting for the next message, Codex's during a turn or after the next-turn event, which turns the change waiting for its answer into one (plan 38), a new choice adding to it and a choice of what is in force cancelling it; a refusal, or what the CLI kept, a notice in zone B; a change still waiting when the session ends dropped, said; a refused `turn/start` ending the submitted turn, the message given back; zone B's speaker and zone A's model follow the model in force; a new CLI process (a restart, a resume) starts with no list and no settings | `internal/state/models.go`, `reduce.go`, `actions.go` |
 | The application | the pill's click and Alt+P open the selector, on a screen with room for it, the focus left where it is; its keys (a configured send key as Enter; on Effort, ← and → asking for the level before or after the one the slider shows, plan 37), hover, clicks (on a slider's cell, its level) and wheel, the hover only onto another row than the pointer's last reported one, the first report after Alt+P only recording it (`ModelsView.Pointer`, plan 36); a paste closes it; a frame that could not draw it closes it (`View`), so no key acts unseen; a change written through the write queue, in order with the owner's messages, a failed hand-over a notice; with Sixel, the Ultracode toggle's image drawn over its cells with the preview's thumbnails, after the frame and after any frame that changes its row or its state, its cells written first in the same synchronized output, its place written over once it goes (plan 35), and the effort slider's the same way, its thumb gliding to a new level in force in 180 ms, drawn every 30 ms (`slideMsg`), its clock from the frame that changed the label (plan 37) | `internal/app/models.go`, `app.go`, `keys.go`, `mouse.go`, `preview.go` |
 | 4. Rendering | the pill from the settings in force; the popup over the dashboard, its list scrolled inside, the Effort and Ultracode rows on shared columns, and what the frame drew of them (`Screen.Selector`); the effort slider (plan 37): with Sixel, 17 blank cells on the ground whatever the band, each pill cell carrying its nearest level, their place and the slider's look (`Screen.Slider`), its image of 170x20 pixels (`SliderImage`), and its Sixel, made once a look on a level (`SliderSixel`); without, 16 text cells (`sliderText`); the rows' hit areas for the mouse (panels 'M' and 'S'); "→ … (next turn)" in the editor row's middle; the Ultracode toggle: with Sixel, five blank cells on the ground whatever the band and their place and the toggle's state (`Screen.Toggle`), its image of 50x20 pixels, the pill in the first 40 and the band's last cell after it (`ToggleImage`), and its Sixel, made once a state (`ToggleSixel`); without, five cells of Powerline's half circles (plan 35) | `internal/render/models.go`, `slider.go`, `toggle.go`, `editor.go`, `select.go` |
+
+## Permission modes
+
+Plan 39 (brief amendment 40; ui-design.md, Input editor, The modes
+selector; reference-design.md, The modes selector; P39c and P39x). The
+modes are each CLI's own, applied through the CLI; the screen shows a mode
+in force only once the CLI reports it, and Codex's Full access is asked
+for only after the owner confirms it.
+
+| Part | What it does | Where |
+| - | - | - |
+| 1. Providers | `SetApprovalMode(mode)`, the dashboard's word (`event.ModeManual`, `ModeAcceptEdits`, `ModePlan`, `ModeAuto`, `ModeFull`); the events `approvals.mode` (`event.Mode`: the mode in force, an answer, a refusal or Codex taking it with the next message, in the CLI's words) and `approvals.allowed` (`event.ModeLimits`: the modes the requirements leave out, with why). Claude Code: `set_permission_mode` with its word, another refused unwritten. Codex: the three presets (`modePresets`), `thread/settings/update` between turns, at a turn's end during one, with the next `turn/start` after a refusal it does not take; `codexMode` naming the settings Codex reports; `configRequirements/read` once. The mock: its file's CLI's modes, each answered at once | `internal/event/event.go`, `internal/provider/provider.go`, `claude/session.go`, `claude/mapper.go`, `codex/session.go`, `codex/mapper.go`, `codex/models.go`, `mock/session.go` |
+| 2 and 3. State | the catalogs (`ModeOptions`: titles, descriptions, icons, the warning colour); `ChooseMode` checked (the session ready and capable, the CLI's own mode, not left out, Full access confirmed) and handed over as `CmdSetApprovals`; the mode asked for until the CLI reports it (`ApprovalRequested`, `ModeNextTurn`), a refusal or the next-turn fallback a notice in zone B; `ModesUnavailable` from the requirements | `internal/state/modes.go`, `reduce.go`, `actions.go`, `state.go` |
+| The application | F4 and the mode pill's click open the selector, on a screen with room for it, one popup at a time; its keys, the hover (plan 36's rule; back to the mode in force off the options), clicks and the Full access confirmation (`modesAct`, `OpenConfirm`, the pointer's next report a baseline); a paste and a frame without room close it; the change written through the write queue; with Sixel, the strips' and the pill's images drawn after the frame with the preview's, the pill's title raster cached a title (`pillLabel`), a pill without a font drawn as text (`UI.PillNoFont`) | `internal/app/modes.go`, `app.go`, `keys.go`, `mouse.go`, `preview.go` |
+| 4. Rendering | the mode pill (`modePill`: with Sixel blank cells for `PillImage`, compact where the middle leaves no room for its title; without, text) and its place (`Screen.ModePill`); the box (`modesBox`): its rows, half rows and colours, the band, the confirmation, its place above the pill (`modesPlace`), its items for the mouse (panels 'O' and 'Q'); with Sixel, the strips' blank cells and their looks (`Screen.Modes`), the strips' images (`StripImage`: the band's rounded ends, the icons, the check) and the Sixel of each, made once a look (`StripSixel`, `PillSixel`) | `internal/render/modes.go`, `modesimage.go`, `editor.go`, `select.go`, `palette.go` |
+| Input | the pill's title drawn by Windows' GDI in Cascadia Mono, Consolas where it is missing, as a coverage mask (`TextMask`; an error elsewhere, the pill then text) | `internal/input/textmask_windows.go`, `textmask_other.go` |
 
 ## Build order
 

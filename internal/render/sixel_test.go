@@ -175,7 +175,18 @@ func TestPreviewStrip(t *testing.T) {
 		}
 		thumbs := on.Thumbs()
 		if tc.rows == 0 {
-			if len(thumbs) != 0 || texts(on.lines) != texts(plain.lines) {
+			// The frame the same as without Sixel but for the mode pill, an
+			// image over blank cells (plan 39): every other row, and its row
+			// up to the pill.
+			onRows, plainRows := strings.Split(texts(on.lines), "\n"), strings.Split(texts(plain.lines), "\n")
+			px, py, ok := on.find(ModePillPanel)
+			qx, qy, _ := plain.find(ModePillPanel) // the text pill, wider
+			px = min(px, qx)
+			same := ok && qy == py && len(onRows) == len(plainRows) && cellSlice(onRows[py], 0, px) == cellSlice(plainRows[py], 0, px)
+			for y := range onRows {
+				same = same && (y == py || onRows[y] == plainRows[y])
+			}
+			if len(thumbs) != 0 || !same {
 				t.Errorf("%dx%d: a strip under 30 rows", tc.w, tc.h)
 			}
 			continue

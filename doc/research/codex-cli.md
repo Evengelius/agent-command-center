@@ -792,3 +792,47 @@ turn (`probes/README.md`).
 - **Not verified:** what an update does to a running turn (the dashboard
   writes none during one); what `currentTime/read` is asked for (none
   came).
+
+## 14. Permission modes (plan 39, 2026-10-24)
+
+Probe P39x (`doc/research/probes/p39x-codex-permission-modes.jsonl`;
+Codex CLI 0.163.0 app-server with plan 38's experimental opt-in, no turn,
+so no model call; the configuration check PASS before and after), and
+OpenAI's Codex extension for VS Code (`openai.chatgpt` 26.1021.22027, read
+2026-10-24):
+
+- **The extension's three modes** set a sandbox, an approval policy and
+  who reviews approvals: "Ask for approval" names both its read-only and
+  its workspace-write sandbox with `on-request` and the user reviewing;
+  "Approve for me" the workspace-write sandbox, `on-request` and Codex's
+  auto-review (`auto_review`; `guardian_subagent` read as the same);
+  "Full access" `dangerFullAccess` with `never`, behind a confirmation
+  dialog. A mode the managed requirements leave out is disabled.
+- **The requirements.** `configRequirements/read` answers
+  `{"supportsIndependentSpeedModes": true, "requirements": null}`: no
+  managed restriction here. With requirements, `allowedSandboxModes`
+  (kebab case) and `allowedApprovalPolicies` list what is allowed.
+- **A change between turns.** `thread/settings/update` with
+  `sandboxPolicy` (its type alone), `approvalPolicy` and
+  `approvalsReviewer`, answered `{}` within 3 ms, then
+  `thread/settings/updated` with the three in force (a workspace-write
+  policy with its `writableRoots` and `networkAccess`): VS Code's
+  workspace-write "Ask for approval", Approve for me, Full access, and back
+  to read-only all taken; an update that changes nothing is answered and
+  not notified. Plan 38's rules hold: during a turn the dashboard writes
+  none until its end, and a Codex that refuses the method takes the mode
+  with the next `turn/start`.
+- **What the owner's descriptions say against what Codex does**, reported
+  and not changed (brief amendment 40): the dashboard's Ask for approval is
+  the read-only sandbox it starts with (plan 12), so Codex asks before any
+  edit, inside the project too, more than "Always ask to edit external
+  files and use the internet"; VS Code's default for the same label is
+  workspace-write.
+- **Live, plan 39 (L39, 2026-10-24):** through the logging wrapper, each
+  choice wrote one `thread/settings/update` with its preset and read its
+  `thread/settings/updated` (0.5 s from the key for Approve for me and Ask
+  for approval, 0.9 s for Full access's four keys); the confirmation, Esc
+  and Esc wrote nothing; no `turn/start`; `dangerFullAccess` written
+  once; the configuration check PASS.
+- **Not verified:** a Codex with managed requirements (none on this
+  account); what Full access does in a turn (no turn was run).

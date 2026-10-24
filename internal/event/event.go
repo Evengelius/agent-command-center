@@ -42,6 +42,7 @@ const (
 	Error            Kind = "error"
 	StatusChanged    Kind = "status.changed"
 	ApprovalMode     Kind = "approvals.mode"    // the approval mode in force (plan 12, item 2)
+	ModesAllowed     Kind = "approvals.allowed" // the modes the CLI's policy leaves out (plan 39)
 	ModelsListed     Kind = "models.listed"     // the models the CLI offers the session (plan 34)
 	ModelSettings    Kind = "models.settings"   // the model, effort and Ultracode in force, or a change's answer (plan 34)
 	ToolDecision     Kind = "tool.decision"     // who decided a tool call's permission (plan 12, item 2; undocumented for Claude Code)
@@ -312,11 +313,18 @@ type Problem struct {
 	TurnRefused bool `json:",omitempty"`
 }
 
-// The approval modes the adapters name (plan 12, item 2); any other word of a
-// CLI is carried as given.
+// The approval modes the adapters name (plan 12, item 2; plan 39): Manual
+// (Claude Code's default, Codex's Ask for approval), Auto (Claude Code's
+// auto, Codex's Approve for me), Claude Code's acceptEdits and plan, Codex's
+// Full access, and Custom for a Codex combination outside its three; any
+// other word of a CLI is carried as given.
 const (
-	ModeManual = "manual"
-	ModeAuto   = "auto"
+	ModeManual      = "manual"
+	ModeAuto        = "auto"
+	ModeAcceptEdits = "acceptEdits"
+	ModePlan        = "plan"
+	ModeFull        = "full"
+	ModeCustom      = "custom"
 )
 
 // Mode is the payload of ApprovalMode: the mode in force, manual, auto, or
@@ -332,6 +340,18 @@ type Mode struct {
 	// Sandbox is the sandbox that comes with the mode, when the dashboard
 	// names one per turn (Codex, plan 12 addendum); empty leaves it as is.
 	Sandbox string `json:",omitempty"`
+	// NextTurn says the CLI takes the mode asked for with the next message,
+	// not at once, its Text for zone B: a Codex that refuses
+	// thread/settings/update (plan 39). It answers nothing: the change waits.
+	NextTurn bool `json:",omitempty"`
+}
+
+// ModeLimits is the payload of ModesAllowed (plan 39): the session's modes
+// its CLI does not allow, each with the CLI's reason (Codex's managed
+// requirements); none listed, every mode of the catalog is allowed.
+type ModeLimits struct {
+	Unavailable map[string]string `json:",omitempty"`
+	Source      string
 }
 
 // Models is the payload of ModelsListed (plan 34): the models the CLI offers

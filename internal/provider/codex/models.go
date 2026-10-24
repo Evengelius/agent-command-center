@@ -159,8 +159,11 @@ func (m *Mapper) settingsUpdated(params json.RawMessage, raw []byte) []event.Eve
 	var p struct {
 		ThreadID string `json:"threadId"`
 		Settings struct {
-			Model  string  `json:"model"`
-			Effort *string `json:"effort"`
+			Model    string          `json:"model"`
+			Effort   *string         `json:"effort"`
+			Policy   json.RawMessage `json:"approvalPolicy"`
+			Reviewer string          `json:"approvalsReviewer"`
+			Sandbox  json.RawMessage `json:"sandboxPolicy"`
 		} `json:"threadSettings"`
 	}
 	_ = json.Unmarshal(params, &p)
@@ -169,7 +172,82 @@ func (m *Mapper) settingsUpdated(params json.RawMessage, raw []byte) []event.Eve
 	}
 	s := settingsOf(p.Settings.Model, p.Settings.Effort, "thread/settings/updated")
 	s.Answers, m.outstanding = m.outstanding, false
-	return []event.Event{m.ev(event.ModelSettings, event.Observed, "", "", "", raw, s)}
+	out := []event.Event{m.ev(event.ModelSettings, event.Observed, "", "", "", raw, s)}
+	// The mode in force, by its three settings, the answer to a mode written
+	// when one waits (plan 39, design D2).
+	sandbox := namedValue(p.Settings.Sandbox)
+	if mode := codexMode(sandbox, policyValue(p.Settings.Policy), p.Settings.Reviewer); mode != "" {
+		out = append(out, m.ev(event.ApprovalMode, event.Observed, "", "", "", raw, event.Mode{Mode: mode, Sandbox: sandbox, Answers: m.modeOutstanding}))
+		m.modeOutstanding = false
+	}
+	return out
+}
+
+// policyValue is an approval policy as given, a word; an object (Codex's
+// granular policy) is no preset's, read as Custom.
+func policyValue(raw json.RawMessage) string {
+	var v string
+	if len(raw) == 0 || string(raw) == "null" {
+		return ""
+	}
+	if json.Unmarshal(raw, &v) == nil {
+		return v
+	}
+	return "granular"
+}
+
+// modeLimits reads configRequirements/read's answer (plan 39, design D1;
+// P39x): a mode whose sandbox or approval policy the managed requirements
+// leave out is unavailable, with why; none when no requirement is set.
+func (m *Mapper) modeLimits(result json.RawMessage, raw []byte) event.Event {
+	var r struct {
+		Requirements *struct {
+			Sandboxes []json.RawMessage `json:"allowedSandboxModes"`
+			Policies  []json.RawMessage `json:"allowedApprovalPolicies"`
+		} `json:"requirements"`
+	}
+	_ = json.Unmarshal(result, &r)
+	limits := event.ModeLimits{Source: "configRequirements/read"}
+	allowed := func(list []json.RawMessage, v string) bool {
+		for _, x := range list {
+			if policyValue(x) == v {
+				return true
+			}
+		}
+		return false
+	}
+	if q := r.Requirements; q != nil {
+		for mode, p := range modePresets {
+			var why []string
+			if sb := kebab(p.sandbox); q.Sandboxes != nil && !allowed(q.Sandboxes, sb) {
+				why = append(why, "the sandbox "+sb)
+			}
+			if q.Policies != nil && !allowed(q.Policies, p.policy) {
+				why = append(why, "the approval policy "+p.policy)
+			}
+			if len(why) > 0 {
+				if limits.Unavailable == nil {
+					limits.Unavailable = map[string]string{}
+				}
+				limits.Unavailable[mode] = "Codex's requirements do not allow " + strings.Join(why, " or ")
+			}
+		}
+	}
+	return m.ev(event.ModesAllowed, event.Observed, "", "", "", raw, limits)
+}
+
+// kebab writes a sandbox type as the requirements name it: readOnly is
+// read-only.
+func kebab(v string) string {
+	var b strings.Builder
+	for _, r := range v {
+		if r >= 'A' && r <= 'Z' {
+			b.WriteByte('-')
+			r += 'a' - 'A'
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }
 
 // unsupported says Codex refused method as one it does not take: VS Code's

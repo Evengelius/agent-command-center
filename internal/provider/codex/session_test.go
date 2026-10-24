@@ -475,30 +475,32 @@ func forbidden(line string) string {
 	return ""
 }
 
-// turnSandboxForbidden checks turn/start's sandboxPolicy and takes it out of
-// params when allowed: the one writable sandbox ever sent is Codex's own
-// "Approve for me", workspaceWrite with no other field and only with the
-// auto_review reviewer (plan 12 addendum); otherwise readOnly, nothing else.
+// turnSandboxForbidden checks the sandboxPolicy of turn/start and
+// thread/settings/update and takes it out of params when allowed: one of the
+// modes selector's three presets exactly, its sandbox (the type alone), its
+// approval policy and its reviewer (plan 39, design D1; plan 12 addendum):
+// readOnly with on-request and the owner reviewing, workspaceWrite with
+// on-request and Codex's auto_review, dangerFullAccess with never and the
+// owner; nothing else, and on no other method.
 func turnSandboxForbidden(method string, params any) string {
 	p, ok := params.(map[string]any)
 	if !ok || p["sandboxPolicy"] == nil {
 		return ""
 	}
-	if method != "turn/start" {
+	if method != "turn/start" && method != "thread/settings/update" {
 		return "sandboxPolicy on " + method
 	}
 	sp, ok := p["sandboxPolicy"].(map[string]any)
 	if !ok || len(sp) != 1 {
 		return fmt.Sprintf("sandboxPolicy %v", p["sandboxPolicy"])
 	}
-	switch sp["type"] {
-	case "readOnly":
-	case "workspaceWrite":
-		if p["approvalsReviewer"] != "auto_review" {
-			return fmt.Sprintf("sandbox workspaceWrite with reviewer %v", p["approvalsReviewer"])
-		}
-	default:
+	presets := map[any][2]string{"readOnly": {"on-request", "user"}, "workspaceWrite": {"on-request", "auto_review"}, "dangerFullAccess": {"never", "user"}}
+	want, ok := presets[sp["type"]]
+	if !ok {
 		return fmt.Sprintf("sandbox %v", sp["type"])
+	}
+	if p["approvalPolicy"] != want[0] || p["approvalsReviewer"] != want[1] {
+		return fmt.Sprintf("sandbox %v with policy %v and reviewer %v", sp["type"], p["approvalPolicy"], p["approvalsReviewer"])
 	}
 	delete(p, "sandboxPolicy")
 	return ""
@@ -521,6 +523,15 @@ func TestForbiddenCheck(t *testing.T) {
 		`{"id":5,"method":"turn/start","params":{"approvalsReviewer":"auto_review","sandboxPolicy":{"type":"workspaceWrite","writableRoots":["C:\\"]},"threadId":"t"}}`,
 		`{"id":5,"method":"turn/start","params":{"approvalsReviewer":"auto_review","sandboxPolicy":{"type":"dangerFullAccess"},"threadId":"t"}}`,
 		`{"id":2,"method":"thread/start","params":{"sandboxPolicy":{"type":"readOnly"}}}`,
+		// Plan 39: a mode's settings other than one of the three presets.
+		`{"id":5,"method":"turn/start","params":{"approvalPolicy":"on-request","approvalsReviewer":"user","sandboxPolicy":{"type":"dangerFullAccess"},"threadId":"t"}}`,
+		`{"id":5,"method":"turn/start","params":{"approvalPolicy":"never","approvalsReviewer":"user","sandboxPolicy":{"type":"workspaceWrite"},"threadId":"t"}}`,
+		`{"id":5,"method":"turn/start","params":{"approvalsReviewer":"user","sandboxPolicy":{"type":"readOnly"},"threadId":"t"}}`,
+		`{"id":7,"method":"thread/settings/update","params":{"threadId":"t","sandboxPolicy":{"type":"workspaceWrite"},"approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":7,"method":"thread/settings/update","params":{"threadId":"t","sandboxPolicy":{"type":"dangerFullAccess"},"approvalPolicy":"never","approvalsReviewer":"auto_review"}}`,
+		`{"id":7,"method":"thread/settings/update","params":{"threadId":"t","sandboxPolicy":{"type":"dangerFullAccess","networkAccess":true},"approvalPolicy":"never","approvalsReviewer":"user"}}`,
+		`{"id":7,"method":"thread/settings/update","params":{"threadId":"t","sandboxPolicy":{"type":"externalSandbox"},"approvalPolicy":"never","approvalsReviewer":"user"}}`,
+		`{"id":7,"method":"thread/fork","params":{"threadId":"t","sandboxPolicy":{"type":"readOnly"},"approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
 	} {
 		if forbidden(l) == "" {
 			t.Errorf("not caught: %s", l)
@@ -528,8 +539,13 @@ func TestForbiddenCheck(t *testing.T) {
 	}
 	for _, l := range []string{
 		`{"id":2,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
-		`{"id":5,"method":"turn/start","params":{"approvalsReviewer":"user","sandboxPolicy":{"type":"readOnly"},"threadId":"t"}}`,
-		`{"id":5,"method":"turn/start","params":{"approvalsReviewer":"auto_review","sandboxPolicy":{"type":"workspaceWrite"},"threadId":"t"}}`,
+		`{"id":5,"method":"turn/start","params":{"approvalPolicy":"on-request","approvalsReviewer":"user","sandboxPolicy":{"type":"readOnly"},"threadId":"t"}}`,
+		`{"id":5,"method":"turn/start","params":{"approvalPolicy":"on-request","approvalsReviewer":"auto_review","sandboxPolicy":{"type":"workspaceWrite"},"threadId":"t"}}`,
+		`{"id":5,"method":"turn/start","params":{"approvalPolicy":"never","approvalsReviewer":"user","sandboxPolicy":{"type":"dangerFullAccess"},"threadId":"t"}}`,
+		`{"id":7,"method":"thread/settings/update","params":{"threadId":"t","sandboxPolicy":{"type":"readOnly"},"approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":7,"method":"thread/settings/update","params":{"threadId":"t","sandboxPolicy":{"type":"workspaceWrite"},"approvalPolicy":"on-request","approvalsReviewer":"auto_review"}}`,
+		`{"id":7,"method":"thread/settings/update","params":{"threadId":"t","sandboxPolicy":{"type":"dangerFullAccess"},"approvalPolicy":"never","approvalsReviewer":"user"}}`,
+		`{"id":7,"method":"thread/settings/update","params":{"threadId":"t","effort":"low"}}`,
 		`{"id":0,"result":{"decision":"cancel"}}`,
 		`{"error":{"code":-32601,"message":"x"},"id":9}`,
 	} {
@@ -554,12 +570,18 @@ func TestNoForbiddenMethodInSource(t *testing.T) {
 				}
 			}
 		}
-		if strings.Count(string(b), `"cwd"`) > 1 || strings.Contains(string(b), "workspace-write") || strings.Contains(string(b), "danger-full-access") || strings.Contains(string(b), "dangerFullAccess") {
+		if strings.Count(string(b), `"cwd"`) > 1 || strings.Contains(string(b), "workspace-write") || strings.Contains(string(b), "danger-full-access") {
 			t.Errorf("%s names cwd or a writable sandbox", f)
 		}
-		// The one writable sandbox: Auto's turns (turnSandbox; plan 12 addendum).
-		if n := strings.Count(string(b), `"workspaceWrite"`); n > 1 || (n == 1 && !strings.Contains(string(b), `reviewerAuto: "workspaceWrite"`)) {
-			t.Errorf("%s names workspaceWrite other than for Auto's turns", f)
+		// The writable sandboxes: Approve for me's and Full access's presets,
+		// once each (plan 39, design D1; plan 12 addendum).
+		for word, preset := range map[string]*regexp.Regexp{
+			`"workspaceWrite"`:   regexp.MustCompile(`event\.ModeAuto:\s+\{"workspaceWrite", "on-request", reviewerAuto\}`),
+			`"dangerFullAccess"`: regexp.MustCompile(`event\.ModeFull:\s+\{"dangerFullAccess", "never", reviewerUser\}`),
+		} {
+			if n := strings.Count(string(b), word); n > 1 || n == 1 && !preset.Match(b) {
+				t.Errorf("%s names %s other than in its mode's preset", f, word)
+			}
 		}
 	}
 }
@@ -576,11 +598,12 @@ const (
 // for (plan 38, design D1). The keys come sorted, as the encoder writes a map.
 const initLine = `{"id":1,"method":"initialize","params":{"capabilities":{"experimentalApi":true},"clientInfo":{"name":"agent_command_center","title":"Agent Command Center","version":"dev"}}}`
 
-// turnLine is the turn/start line the session writes for text: Manual's
-// reviewer and sandbox, and the reasoning summary every turn asks for (plan
-// 22, amendment 20). The keys come sorted, as the encoder writes a map.
+// turnLine is the turn/start line the session writes for text: Ask for
+// approval's policy, reviewer and sandbox (plan 39), and the reasoning
+// summary every turn asks for (plan 22, amendment 20). The keys come
+// sorted, as the encoder writes a map.
 func turnLine(id int, thread, text string) string {
-	return `{"id":` + strconv.Itoa(id) + `,"method":"turn/start","params":{"approvalsReviewer":"user","input":[{"text":` + quote(text) + `,"type":"text"}],"sandboxPolicy":{"type":"readOnly"},"summary":"auto","threadId":"` + thread + `"}}`
+	return `{"id":` + strconv.Itoa(id) + `,"method":"turn/start","params":{"approvalPolicy":"on-request","approvalsReviewer":"user","input":[{"text":` + quote(text) + `,"type":"text"}],"sandboxPolicy":{"type":"readOnly"},"summary":"auto","threadId":"` + thread + `"}}`
 }
 
 // TestHandshakeApprovalInterrupt replays P6b through the real process
@@ -653,13 +676,14 @@ func TestHandshakeApprovalInterrupt(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"model/list","params":{}}`,
-		`{"id":4,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
-		`{"id":5,"method":"account/rateLimits/read"}`,
-		turnLine(6, p6bThread, "make hello.txt"),
+		`{"id":3,"method":"configRequirements/read"}`,
+		`{"id":4,"method":"model/list","params":{}}`,
+		`{"id":5,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":6,"method":"account/rateLimits/read"}`,
+		turnLine(7, p6bThread, "make hello.txt"),
 		`{"id":0,"result":{"decision":"accept"}}`,
-		turnLine(7, p6bThread, "count"),
-		`{"id":8,"method":"turn/interrupt","params":{"threadId":"` + p6bThread + `","turnId":"` + p6bTurn2 + `"}}`,
+		turnLine(8, p6bThread, "count"),
+		`{"id":9,"method":"turn/interrupt","params":{"threadId":"` + p6bThread + `","turnId":"` + p6bTurn2 + `"}}`,
 	})
 }
 
@@ -719,14 +743,15 @@ func TestModelFallback(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"model/list","params":{}}`,
-		`{"id":4,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
-		`{"id":5,"method":"account/rateLimits/read"}`,
-		turnLine(6, p6Thread, "make hello.txt"),
-		`{"id":7,"method":"model/list","params":{}}`,
-		`{"id":8,"method":"thread/start","params":{"model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
-		`{"id":9,"method":"account/rateLimits/read"}`,
-		turnLine(10, p6bThread, "make hello.txt"),
+		`{"id":3,"method":"configRequirements/read"}`,
+		`{"id":4,"method":"model/list","params":{}}`,
+		`{"id":5,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":6,"method":"account/rateLimits/read"}`,
+		turnLine(7, p6Thread, "make hello.txt"),
+		`{"id":8,"method":"model/list","params":{}}`,
+		`{"id":9,"method":"thread/start","params":{"model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":10,"method":"account/rateLimits/read"}`,
+		turnLine(11, p6bThread, "make hello.txt"),
 		`{"id":0,"result":{"decision":"accept"}}`,
 	})
 }
@@ -775,10 +800,11 @@ func TestChildApproval(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"model/list","params":{}}`,
-		`{"id":4,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
-		`{"id":5,"method":"account/rateLimits/read"}`,
-		turnLine(6, p7Thread, "spawn two"),
+		`{"id":3,"method":"configRequirements/read"}`,
+		`{"id":4,"method":"model/list","params":{}}`,
+		`{"id":5,"method":"thread/start","params":{"sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":6,"method":"account/rateLimits/read"}`,
+		turnLine(7, p7Thread, "spawn two"),
 		`{"id":0,"result":{"decision":"accept"}}`,
 	})
 }
@@ -903,9 +929,10 @@ func TestResume(t *testing.T) {
 		initLine,
 		`{"method":"initialized"}`,
 		`{"id":2,"method":"config/read","params":{"cwd":"<dir>","includeLayers":false}}`,
-		`{"id":3,"method":"model/list","params":{}}`,
-		`{"id":4,"method":"thread/resume","params":{"threadId":"th-9","model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
-		`{"id":5,"method":"account/rateLimits/read"}`,
+		`{"id":3,"method":"configRequirements/read"}`,
+		`{"id":4,"method":"model/list","params":{}}`,
+		`{"id":5,"method":"thread/resume","params":{"threadId":"th-9","model":"gpt-5.6-sol","sandbox":"read-only","approvalPolicy":"on-request","approvalsReviewer":"user"}}`,
+		`{"id":6,"method":"account/rateLimits/read"}`,
 	})
 }
 
@@ -1102,25 +1129,40 @@ func TestConfigReadOnce(t *testing.T) {
 	}
 }
 
-// TestSetApprovalMode is plan 12, item 2, criteria 1 and 2 and 3: Manual at
-// every launch (thread/start carries approvalsReviewer user), SetApprovalMode
-// writes nothing at once, the next turn/start carries auto_review, and that
-// turn puts Auto in force in the state.
+// TestSetApprovalMode is plan 12, item 2 (Manual at every launch:
+// thread/start carries approvalsReviewer user) and plan 39's criterion
+// 39.4: between turns SetApprovalMode writes thread/settings/update with
+// Approve for me's three settings at once; P6b's Codex never answers it,
+// so the next turn/start carries them, and that turn puts the mode in
+// force. A word that is not one of Codex's three is refused, unwritten.
 func TestSetApprovalMode(t *testing.T) {
 	r, _ := start(t, "replay", nil, "", probe("p6b-codex-app-server.jsonl"))
 	r.wait(event.SessionStarted)
 	r.limits()
-	if !r.sess.Capabilities().AutoApprovals {
-		t.Error("Codex does not offer Auto approvals")
+	if !r.sess.Capabilities().Modes {
+		t.Error("Codex does not offer its modes")
 	}
 	if r.st.Mode() != state.ModeManual {
 		t.Errorf("mode %q at launch", r.st.Mode())
 	}
-	if err := r.sess.SetApprovalMode(true); err != nil {
+	for _, m := range []string{event.ModeAcceptEdits, event.ModePlan, event.ModeCustom, "", "bypassPermissions"} {
+		if r.sess.SetApprovalMode(m) == nil {
+			t.Errorf("Codex took the mode %q", m)
+		}
+	}
+	if err := r.sess.SetApprovalMode(event.ModeAuto); err != nil {
 		t.Fatal(err)
 	}
-	if n := len(r.written()); n != 6 {
-		t.Errorf("%d lines written after SetApprovalMode, want the 6 of the handshake", n)
+	update := `{"id":7,"method":"thread/settings/update","params":{"threadId":"` + p6bThread + `","sandboxPolicy":{"type":"workspaceWrite"},"approvalPolicy":"on-request","approvalsReviewer":"auto_review"}}`
+	deadline := time.Now().Add(5 * time.Second)
+	for len(r.written()) < 8 && time.Now().Before(deadline) {
+		time.Sleep(20 * time.Millisecond)
+	}
+	if got := r.written(); len(got) != 8 || got[7] != update {
+		t.Errorf("after SetApprovalMode, want the handshake's 7 lines and\n%s\ngot %q", update, got)
+	}
+	if r.st.Mode() != state.ModeManual {
+		t.Errorf("mode %q before Codex reported one", r.st.Mode())
 	}
 	r.send("make hello.txt")
 	req := r.wait(event.ApprovalRequest).Payload.(event.Approval)
@@ -1133,17 +1175,108 @@ func TestSetApprovalMode(t *testing.T) {
 	r.wait(event.TurnCompleted)
 	r.close()
 	got := r.written()
-	if len(got) != 8 || got[7] != `{"id":0,"result":{"decision":"accept"}}` {
+	if len(got) != 10 || got[9] != `{"id":0,"result":{"decision":"accept"}}` {
 		t.Fatalf("written %q", got)
 	}
 	// Auto is Codex's "Approve for me": auto_review with workspace-write
 	// (plan 12 addendum).
 	want := strings.NewReplacer(`"approvalsReviewer":"user"`, `"approvalsReviewer":"auto_review"`,
-		`"sandboxPolicy":{"type":"readOnly"}`, `"sandboxPolicy":{"type":"workspaceWrite"}`).Replace(turnLine(6, p6bThread, "make hello.txt"))
-	if got[6] != want {
-		t.Errorf("turn/start\n got %s\nwant %s", got[6], want)
+		`"sandboxPolicy":{"type":"readOnly"}`, `"sandboxPolicy":{"type":"workspaceWrite"}`).Replace(turnLine(8, p6bThread, "make hello.txt"))
+	if got[8] != want {
+		t.Errorf("turn/start\n got %s\nwant %s", got[8], want)
 	}
 	if s := r.st.Session.Sandbox; s != "workspaceWrite" {
 		t.Errorf("sandbox shown %q after the Auto turn, want workspaceWrite", s)
 	}
+}
+
+// p39xScript is P39x without the updates the adapter never writes: its
+// first, VS Code's workspace-write "Ask for approval", and its last, a
+// change of nothing.
+func p39xScript(t *testing.T) string {
+	t.Helper()
+	b, err := os.ReadFile(probe("p39x-codex-permission-modes.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var recs []string
+	skip := false
+	for _, l := range strings.Split(strings.TrimSpace(string(b)), "\n") {
+		var rec record
+		if err := json.Unmarshal([]byte(l), &rec); err != nil {
+			t.Fatal(err)
+		}
+		if rec.Dir == "step" {
+			skip = strings.Contains(string(rec.Msg), `"Ask for approval"`) || strings.Contains(string(rec.Msg), `"read-only, no change"`)
+		}
+		if !skip {
+			recs = append(recs, l)
+		}
+	}
+	return script(t, recs...)
+}
+
+// TestModesBetweenTurns replays P39x, Codex 0.163.0 taking each preset with
+// thread/settings/update (plan 39, criteria 39.3 to 39.5): each change asked
+// for in the state, written once with its three settings, in force only
+// once thread/settings/updated reports it, Full access included once
+// confirmed; the requirements read once, none left out.
+func TestModesBetweenTurns(t *testing.T) {
+	r, _ := start(t, "replay", nil, "", p39xScript(t))
+	r.wait(event.SessionStarted)
+	thread := r.st.Session.ID
+	if r.st.Mode() != state.ModeManual || thread == "" {
+		t.Fatalf("mode %q on thread %q at launch", r.st.Mode(), thread)
+	}
+	if cmds := r.st.Do(state.ChooseMode{Mode: event.ModeFull, Capable: true}); cmds != nil {
+		t.Fatalf("Full access asked for unconfirmed: %+v", cmds)
+	}
+	from := state.ModeManual
+	for step, c := range []struct{ mode, sandbox, policy, reviewer string }{
+		{event.ModeAuto, "workspaceWrite", "on-request", "auto_review"},
+		{event.ModeFull, "dangerFullAccess", "never", "user"},
+		{event.ModeManual, "readOnly", "on-request", "user"},
+	} {
+		cmds := r.st.Do(state.ChooseMode{Mode: c.mode, Confirmed: true, Capable: true})
+		if len(cmds) != 1 || cmds[0].Kind != state.CmdSetApprovals || cmds[0].Decision != c.mode {
+			t.Fatalf("%s: commands %+v", c.mode, cmds)
+		}
+		if err := r.sess.SetApprovalMode(cmds[0].Decision); err != nil {
+			t.Fatal(err)
+		}
+		if r.st.Mode() != from || r.st.Session.ApprovalRequested != c.mode {
+			t.Errorf("%s: mode %q requested %q before Codex reported", c.mode, r.st.Mode(), r.st.Session.ApprovalRequested)
+		}
+		ev := r.waitFor(c.mode+" in force", func(ev event.Event) bool {
+			p, ok := ev.Payload.(event.Mode)
+			return ok && p.Mode != ""
+		})
+		if p := ev.Payload.(event.Mode); p.Mode != c.mode || !p.Answers || p.Sandbox != c.sandbox {
+			t.Errorf("%s: reported %+v", c.mode, p)
+		}
+		if r.st.Mode() != c.mode || r.st.Session.ApprovalRequested != "" {
+			t.Errorf("%s: mode %q requested %q after the report", c.mode, r.st.Mode(), r.st.Session.ApprovalRequested)
+		}
+		var updates []string
+		for _, l := range r.written() {
+			if strings.Contains(l, `"method":"thread/settings/update"`) {
+				updates = append(updates, l)
+			}
+		}
+		want := `"method":"thread/settings/update","params":{"threadId":"` + thread + `","sandboxPolicy":{"type":"` + c.sandbox + `"},"approvalPolicy":"` + c.policy + `","approvalsReviewer":"` + c.reviewer + `"}}`
+		if n := len(updates); n != step+1 || !strings.HasSuffix(updates[n-1], want) {
+			t.Errorf("%s: updates written %q\nwant %d, the last ...%s", c.mode, updates, step+1, want)
+		}
+		from = c.mode
+	}
+	n := 0
+	for _, l := range r.written() {
+		if strings.Contains(l, `"method":"configRequirements/read"`) {
+			n++
+		}
+	}
+	if n != 1 || len(r.st.Session.ModesUnavailable) != 0 {
+		t.Errorf("%d requirements reads, modes left out %v", n, r.st.Session.ModesUnavailable)
+	}
+	r.close()
 }

@@ -56,9 +56,9 @@ type scriptSession struct {
 	questions  []string            // AnswerQuestion calls: the approval ids
 	qanswers   []map[string]string // and their answers
 	interrupts int
-	auto       bool   // Capabilities().AutoApprovals
-	modes      []bool // the SetApprovalMode calls, in order
-	maxCount   int    // Capabilities().Images.MaxCount when set (plan 33)
+	auto       bool     // Capabilities().Modes
+	modes      []string // the SetApprovalMode calls, in order
+	maxCount   int      // Capabilities().Images.MaxCount when set (plan 33)
 	// The model selector (plan 34): the capabilities it reports, and the
 	// SetModelSettings calls, in order.
 	models, nextTurn, ultracode bool
@@ -102,13 +102,13 @@ func (s *scriptSession) Capabilities() provider.Capabilities {
 	if s.maxCount > 0 {
 		count = s.maxCount
 	}
-	return provider.Capabilities{AutoApprovals: s.auto, Images: provider.ImageLimits{MaxCount: count, MaxBytes: 7_400_000, MaxTotal: 7_400_000, MaxSide: 8000},
+	return provider.Capabilities{Modes: s.auto, Images: provider.ImageLimits{MaxCount: count, MaxBytes: 7_400_000, MaxTotal: 7_400_000, MaxSide: 8000},
 		Models: s.models, ModelsNextTurn: s.nextTurn, Ultracode: s.ultracode}
 }
-func (s *scriptSession) SetApprovalMode(auto bool) error {
+func (s *scriptSession) SetApprovalMode(mode string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.modes = append(s.modes, auto)
+	s.modes = append(s.modes, mode)
 	return nil
 }
 func (s *scriptSession) SetModelSettings(r provider.ModelRequest) error {

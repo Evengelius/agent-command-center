@@ -84,7 +84,7 @@ type Session struct {
 	thread    string                // the main thread, "" while none is usable
 	turn      string                // the running main turn
 	model     string                // the model the main thread reports
-	reviewer  string                // the approvals reviewer in force: reviewerUser, or reviewerAuto once asked for
+	mode      string                // the mode turn/start carries (modePresets): manual, auto or full; "" is manual
 	refused   bool                  // the running turn failed with the model refused
 	fellBack  bool                  // the model fallback ran: never twice
 	from      string                // the refused model, until the new thread starts
@@ -103,6 +103,10 @@ type Session struct {
 	flush             bool
 	inModel, inEffort string
 	now               func() time.Time
+	// Plan 39: a mode asked for and not yet in force, written at once or at
+	// the main turn's end as the model change is (modeSent once written).
+	modeAsk  string
+	modeSent bool
 
 	wmu      sync.Mutex // one write at a time
 	inClosed atomic.Bool
@@ -263,6 +267,10 @@ func (s *Session) track(ev event.Event) {
 		}
 	case event.Settings:
 		s.settings(p)
+	case event.Mode:
+		if ev.Agent == "" {
+			s.approvalMode(p)
+		}
 	}
 	switch {
 	case ev.Kind == event.TurnStarted && ev.Agent == "" && ev.Turn != "":
@@ -275,7 +283,7 @@ func (s *Session) track(ev event.Event) {
 		s.refused = false
 		// A change asked for during the turn is written now (plan 38,
 		// design D3); after a refused model it waits for the new thread.
-		s.flush = s.instant && s.change != (provider.ModelRequest{}) && !s.sent && s.thread != ""
+		s.flush = s.instant && s.thread != "" && (s.change != (provider.ModelRequest{}) && !s.sent || s.modeAsk != "" && !s.modeSent)
 	}
 }
 
@@ -295,6 +303,29 @@ func (s *Session) settings(p event.Settings) {
 		s.instant, s.sent = false, false
 	case p.Source == "thread/settings/updated" && p.Answers, p.Source == "thread/settings/update" && p.Refused:
 		s.change, s.sent = provider.ModelRequest{}, false
+	}
+}
+
+// approvalMode follows what Codex reports of the mode (plan 39): one of the
+// three in force is what turn/start carries from now on, a change answered
+// or refused no longer waits, and a refused thread/settings/update leaves the
+// mode asked for to the next turn/start. Called with mu held.
+func (s *Session) approvalMode(p event.Mode) {
+	switch {
+	case p.NextTurn:
+		s.instant = false
+		if s.modeAsk != "" {
+			s.mode, s.modeAsk, s.modeSent = s.modeAsk, "", false
+		}
+	case p.Refused:
+		s.modeAsk, s.modeSent = "", false
+	case p.Answers || p.Mode != "":
+		if _, ok := modePresets[p.Mode]; ok {
+			s.mode = p.Mode
+		}
+		if p.Answers {
+			s.modeAsk, s.modeSent = "", false
+		}
 	}
 }
 
@@ -367,6 +398,11 @@ func (s *Session) react(l []byte, evs []event.Event) func() {
 				if err := s.request("config/read", map[string]any{"cwd": s.dir, "includeLayers": false}); err != nil {
 					s.problem("config/read not sent: " + err.Error())
 				}
+				// The managed requirements, for the modes they leave out (plan
+				// 39, design D1; P39x).
+				if err := s.request("configRequirements/read", nil); err != nil {
+					s.problem("configRequirements/read not sent: " + err.Error())
+				}
 				// The session's models, every page (plan 34, P34x).
 				if err := s.request("model/list", map[string]any{}); err != nil {
 					s.problem("model/list not sent: " + err.Error())
@@ -420,10 +456,15 @@ func (s *Session) react(l []byte, evs []event.Event) func() {
 		// The main turn ended with a change asked for during it: written now
 		// (plan 38, design D3).
 		s.flush = false
-		thread, change := s.thread, s.change
-		s.sent = true
+		thread, change, mode := s.thread, provider.ModelRequest{}, ""
+		if s.change != (provider.ModelRequest{}) && !s.sent {
+			change, s.sent = s.change, true
+		}
+		if s.modeAsk != "" && !s.modeSent {
+			mode, s.modeSent = s.modeAsk, true // and a mode asked for during it (plan 39)
+		}
 		up := func() {
-			if err := s.writeUpdate(thread, change); err != nil {
+			if err := s.writeUpdate(thread, change, mode); err != nil {
 				s.problem("thread/settings/update not sent, the change waits for the next message: " + err.Error())
 			}
 		}
@@ -477,7 +518,7 @@ func approvalMethod(m string) bool {
 // names, with the fallback model once there is one.
 func (s *Session) startThread() {
 	s.mu.Lock()
-	p := threadParams{ThreadID: s.resume, Model: s.pin, Sandbox: Sandbox, ApprovalPolicy: ApprovalPolicy, ApprovalsReviewer: s.reviewerLocked()}
+	p := threadParams{ThreadID: s.resume, Model: s.pin, Sandbox: Sandbox, ApprovalPolicy: ApprovalPolicy, ApprovalsReviewer: presetOf(s.mode).reviewer}
 	s.resume = ""
 	s.mu.Unlock()
 	method := "thread/start"
@@ -606,14 +647,21 @@ var imageLimits = provider.ImageLimits{MaxCount: 100, MaxBytes: 20_000_000, MaxT
 // (UserInput, the app-server v2 schema; plan 31).
 func (s *Session) Send(msg provider.Message) error {
 	s.mu.Lock()
-	thread, reviewer, change := s.thread, s.reviewerLocked(), s.change
+	thread, change := s.thread, s.change
 	// The change goes with this turn, also one written at once whose
 	// thread/settings/updated has not come: never left waiting (plan 38,
-	// design D2). From here to the turn's end, changes wait for it (D3).
+	// design D2). From here to the turn's end, changes wait for it (D3). So
+	// does a mode asked for and not yet in force (plan 39).
 	s.change, s.sent, s.starting = provider.ModelRequest{}, false, thread != ""
+	mode, asked := s.mode, s.modeAsk
+	if asked != "" {
+		mode, s.modeAsk, s.modeSent = asked, "", false
+	}
+	preset := presetOf(mode)
 	s.mu.Unlock()
 	if thread == "" {
 		s.keepChange(change)
+		s.keepMode(asked)
 		return errors.New("no Codex thread to send to yet")
 	}
 	input := make([]map[string]string, 0, len(msg.Images)+1)
@@ -624,8 +672,8 @@ func (s *Session) Send(msg provider.Message) error {
 		input = append(input, map[string]string{"type": "text", "text": msg.Text})
 	}
 	params := map[string]any{"threadId": thread,
-		"input": input, "approvalsReviewer": reviewer,
-		"sandboxPolicy": map[string]string{"type": turnSandbox[reviewer]}, "summary": turnSummary}
+		"input": input, "approvalsReviewer": preset.reviewer, "approvalPolicy": preset.policy,
+		"sandboxPolicy": map[string]string{"type": preset.sandbox}, "summary": turnSummary}
 	// A model or effort change asked for since the last turn goes with this
 	// one, "for this turn and subsequent turns" (plan 34).
 	if change.Model != "" {
@@ -640,8 +688,19 @@ func (s *Session) Send(msg provider.Message) error {
 		s.starting = false
 		s.mu.Unlock()
 		s.keepChange(change)
+		s.keepMode(asked)
 	}
 	return err
+}
+
+// keepMode puts back a mode a turn/start did not carry, unless another was
+// asked for since (plan 39).
+func (s *Session) keepMode(m string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.modeAsk == "" {
+		s.modeAsk = m
+	}
 }
 
 // keepChange puts back a change a turn/start did not carry, unless another
@@ -677,7 +736,7 @@ func (s *Session) SetModelSettings(r provider.ModelRequest) error {
 	thread := s.thread
 	s.sent = true
 	s.mu.Unlock()
-	if err := s.writeUpdate(thread, r); err != nil {
+	if err := s.writeUpdate(thread, r, ""); err != nil {
 		s.mu.Lock()
 		s.change = provider.ModelRequest{}
 		s.mu.Unlock()
@@ -692,15 +751,35 @@ type settingsUpdate struct {
 	ThreadID string `json:"threadId"`
 	Model    string `json:"model,omitempty"`
 	Effort   string `json:"effort,omitempty"`
+	// A mode's three settings (plan 39), all or none.
+	SandboxPolicy     *sandboxPolicy `json:"sandboxPolicy,omitempty"`
+	ApprovalPolicy    string         `json:"approvalPolicy,omitempty"`
+	ApprovalsReviewer string         `json:"approvalsReviewer,omitempty"`
+}
+
+// sandboxPolicy is a SandboxPolicy as the dashboard writes it: its type
+// alone.
+type sandboxPolicy struct {
+	Type string `json:"type"`
 }
 
 // writeUpdate writes thread/settings/update for the change; one not written
 // waits for the next turn/start instead.
-func (s *Session) writeUpdate(thread string, c provider.ModelRequest) error {
-	err := s.request("thread/settings/update", settingsUpdate{ThreadID: thread, Model: c.Model, Effort: c.Effort})
+func (s *Session) writeUpdate(thread string, c provider.ModelRequest, mode string) error {
+	u := settingsUpdate{ThreadID: thread, Model: c.Model, Effort: c.Effort}
+	if mode != "" {
+		p := presetOf(mode)
+		u.SandboxPolicy, u.ApprovalPolicy, u.ApprovalsReviewer = &sandboxPolicy{Type: p.sandbox}, p.policy, p.reviewer
+	}
+	err := s.request("thread/settings/update", u)
 	if err != nil {
 		s.mu.Lock()
-		s.sent = false
+		if c != (provider.ModelRequest{}) {
+			s.sent = false
+		}
+		if mode != "" {
+			s.modeSent = false
+		}
 		s.mu.Unlock()
 	}
 	return err
@@ -748,7 +827,7 @@ func (s *Session) Capabilities() provider.Capabilities {
 	s.mu.Lock()
 	next := !s.instant || s.busy()
 	s.mu.Unlock()
-	return provider.Capabilities{SubagentText: true, QuotaWithoutTurn: true, AutoApprovals: true, Images: imageLimits,
+	return provider.Capabilities{SubagentText: true, QuotaWithoutTurn: true, Modes: true, Images: imageLimits,
 		Models: true, ModelsNextTurn: next}
 }
 
@@ -800,29 +879,100 @@ const (
 	reviewerAuto = "auto_review"
 )
 
-// turnSandbox is the sandbox each turn/start carries with its reviewer. Auto
-// is Codex's own "Approve for me" (codex --approve-for-me sets the reviewer
-// auto_review, the policy on-request and the workspace-writing sandbox), so
-// its turns run in workspaceWrite with no other field; Manual turns stay
-// readOnly, as the thread starts (plan 12 addendum; P12x-sandbox). Codex
-// keeps a turn's sandbox for the turns after it, so every turn sends it.
-var turnSandbox = map[string]string{reviewerUser: "readOnly", reviewerAuto: "workspaceWrite"}
+// modePreset is the settings that make one of Codex's modes: its sandbox,
+// its approval policy and who reviews approvals.
+type modePreset struct{ sandbox, policy, reviewer string }
 
-func (s *Session) reviewerLocked() string {
-	if s.reviewer == "" {
-		return reviewerUser
-	}
-	return s.reviewer
+// modePresets are Codex's three modes of the modes selector, as OpenAI's
+// Codex extension for VS Code sets them (plan 39, design D1; P39x): Ask for
+// approval the read-only sandbox the dashboard starts with (plan 12's
+// Manual), Approve for me Codex's own auto-review in the workspace-writing
+// sandbox (plan 12's Auto: codex --approve-for-me sets the same), Full
+// access no sandbox and no approval, which the state asks for only once the
+// owner confirms it (design D4). Codex keeps a turn's settings for the
+// turns after it, so every turn/start carries the mode's three.
+var modePresets = map[string]modePreset{
+	event.ModeManual: {"readOnly", "on-request", reviewerUser},
+	event.ModeAuto:   {"workspaceWrite", "on-request", reviewerAuto},
+	event.ModeFull:   {"dangerFullAccess", "never", reviewerUser},
 }
 
-// SetApprovalMode writes nothing: the reviewer goes with the next
-// turn/start, which is when the change is in force (plan 12, item 2).
-func (s *Session) SetApprovalMode(auto bool) error {
+// presetOf is the mode's settings, Ask for approval's for "" or a word
+// Codex has no preset for.
+func presetOf(mode string) modePreset {
+	if p, ok := modePresets[mode]; ok {
+		return p
+	}
+	return modePresets[event.ModeManual]
+}
+
+// codexMode names the mode three settings make, as VS Code's extension
+// reads them (plan 39, design D2): one of the presets, an unnamed policy
+// read as on-request (plan 12's turn/start sent none), Codex's other
+// auto-reviewer ("guardian_subagent") as auto_review, Custom otherwise; ""
+// when no sandbox and no reviewer is given. A turn/start that names no
+// sandbox (plan 12's before its addendum, P12x) is read by its reviewer
+// alone, as plan 12 read it.
+func codexMode(sandbox, policy, reviewer string) string {
+	switch reviewer {
+	case "guardian_subagent":
+		reviewer = reviewerAuto
+	case "":
+		if sandbox == "" {
+			return ""
+		}
+		reviewer = reviewerUser
+	}
+	if sandbox == "" {
+		switch reviewer {
+		case reviewerUser:
+			return event.ModeManual
+		case reviewerAuto:
+			return event.ModeAuto
+		}
+		return event.ModeCustom
+	}
+	norm := func(v string) string { return strings.ToLower(strings.ReplaceAll(v, "-", "")) }
+	if policy == "" {
+		policy = "on-request"
+	}
+	for mode, p := range modePresets {
+		if norm(sandbox) == norm(p.sandbox) && policy == p.policy && reviewer == p.reviewer {
+			return mode
+		}
+	}
+	return event.ModeCustom
+}
+
+// SetApprovalMode asks for one of Codex's modes (plan 39, design D3):
+// between turns it writes thread/settings/update with the mode's settings
+// at once, answered by the thread/settings/updated that follows (plan 38's
+// path); during the main turn it waits for the turn's end; with a Codex
+// that refused the update it goes with the next turn/start, which is when
+// the change is in force (plan 12, item 2).
+func (s *Session) SetApprovalMode(mode string) error {
+	if _, ok := modePresets[mode]; !ok {
+		return fmt.Errorf("Codex has no mode %q", mode)
+	}
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.reviewer = reviewerUser
-	if auto {
-		s.reviewer = reviewerAuto
+	if !s.instant {
+		s.mode, s.modeAsk = mode, ""
+		s.mu.Unlock()
+		return nil
+	}
+	s.modeAsk = mode
+	if s.busy() || s.thread == "" {
+		s.mu.Unlock()
+		return nil
+	}
+	thread := s.thread
+	s.modeSent = true
+	s.mu.Unlock()
+	if err := s.writeUpdate(thread, provider.ModelRequest{}, mode); err != nil {
+		s.mu.Lock()
+		s.modeAsk = ""
+		s.mu.Unlock()
+		return err
 	}
 	return nil
 }

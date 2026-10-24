@@ -171,7 +171,7 @@ func TestSliderDraw(t *testing.T) {
 		h.send(key(tea.KeyEsc, 0))
 		h.frame()
 		raws := drawnBy(h, thumbDrawMsg{gen: h.m.kicks[len(h.m.kicks)-1]})
-		if len(raws) != 1 || !strings.Contains(raws[0], place) || strings.Contains(raws[0], "\x1bP") || h.m.slide != (slide{}) {
+		if len(raws) != 1 || !strings.Contains(raws[0], place) || strings.Contains(withoutPill(t, h, raws[0]), "\x1bP") || h.m.slide != (slide{}) {
 			t.Errorf("closed: %q, the glide %+v", trunc(raws), h.m.slide)
 		}
 	})

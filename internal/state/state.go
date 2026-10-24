@@ -163,9 +163,15 @@ type SessionState struct {
 	// ApprovalMode is the mode in force: ModeManual, ModeAuto or the CLI's own
 	// word; "" before the CLI reports, which reads as Manual, the mode the
 	// dashboard starts with. ApprovalRequested is a change asked for and not
-	// yet in force, "" when none (plan 12, item 2).
+	// yet in force, "" when none (plan 12, item 2); ModeNextTurn says it
+	// goes with the next message (Codex during a turn, or without
+	// thread/settings/update; plan 39).
 	ApprovalMode      string
 	ApprovalRequested string
+	ModeNextTurn      bool
+	// ModesUnavailable are the session's modes its CLI's policy leaves out,
+	// with why (Codex's requirements; plan 39).
+	ModesUnavailable map[string]string
 }
 
 // Attachment is an image attached to the owner's message (plan 31): its
@@ -577,11 +583,11 @@ const (
 	CmdDraftAccepted CommandKind = "draft-accepted" // the CLI accepted the message: delete its draft
 	CmdRestoreDraft  CommandKind = "restore-draft"  // put Text back in the editor
 	CmdExit          CommandKind = "exit"           // leave the application
-	CmdSetApprovals  CommandKind = "set-approvals"  // ask for Auto (Decision auto) or Manual (Decision manual) approvals
+	CmdSetApprovals  CommandKind = "set-approvals"  // ask for the mode Decision, one of the session's CLI's (plan 39)
 	CmdModels        CommandKind = "models"         // ask for the model settings of Change (plan 34)
 )
 
-// The approval modes (plan 12, item 2).
+// The approval modes (plan 12, item 2; plan 39, modes.go).
 const (
 	ModeManual = event.ModeManual
 	ModeAuto   = event.ModeAuto
@@ -604,16 +610,4 @@ func (s *State) Mode() string {
 		return ModeManual
 	}
 	return s.Session.ApprovalMode
-}
-
-// ModeLabel writes a mode as the project bar shows it: Manual, Auto, or the
-// CLI's own word for another.
-func ModeLabel(mode string) string {
-	switch mode {
-	case "", ModeManual:
-		return "Manual"
-	case ModeAuto:
-		return "Auto"
-	}
-	return mode
 }

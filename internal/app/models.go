@@ -52,6 +52,7 @@ func (m *Model) toggleModels() []tea.Cmd {
 		return m.toast("no room for the model selector above the editor")
 	}
 	m.ui.Plus, m.ui.PlusHover = false, false
+	m.closeModes()
 	m.ui.Models = render.OpenSelector(m.s, c.Ultracode, h)
 	return nil
 }

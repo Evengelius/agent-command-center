@@ -22,6 +22,21 @@ import (
 // column 0.
 type zoneBox struct{ top, bottom, left, right int }
 
+// cellSlice is row's text from cell column from to column to, a wide
+// character counted as the cells it takes (the mode pill's hand; plan 39).
+func cellSlice(row string, from, to int) string {
+	var b strings.Builder
+	x := 0
+	for _, r := range row {
+		w := textWidth(string(r))
+		if x >= from && x+w <= to {
+			b.WriteRune(r)
+		}
+		x += w
+	}
+	return b.String()
+}
+
 func zoneBoxes(rows []string) map[string]zoneBox {
 	out := map[string]zoneBox{}
 	for y, r := range rows {
@@ -330,10 +345,7 @@ func TestCompactEditor(t *testing.T) {
 			ui := UI{Width: size[0], Height: size[1], Focus: "B", Editor: EditorView{Lines: c.lines, Total: max(len(c.lines), 1)}}
 			rows := strings.Split(texts(Draw(s, ui).lines), "\n")
 			b := zoneBoxes(rows)["B"]
-			inner := func(y int) string {
-				cells := []rune(rows[y])
-				return strings.TrimSpace(string(cells[b.left+1 : b.right]))
-			}
+			inner := func(y int) string { return strings.TrimSpace(cellSlice(rows[y], b.left+1, b.right)) }
 			isRule := func(y int) bool { txt := inner(y); return txt != "" && strings.Trim(txt, "─") == "" }
 			// The row is B's last inner row, the separator above it (plan 29),
 			// the draft's rows above that up to the editor's rule.
@@ -346,9 +358,12 @@ func TestCompactEditor(t *testing.T) {
 			}
 			got := sep - rule - 1 // the rows between the rule and the separator
 			last := inner(b.bottom - 1)
-			// The row holds the pills and "↯ Auto", or its middle text alone
-			// where that does not fit beside them (80x24 with the count).
-			if !isRule(sep) || rule < 0 || got != c.rows || !strings.HasPrefix(inner(rule+1), ">") || strings.HasPrefix(last, "+") != strings.HasSuffix(last, "↯ Auto") {
+			// The row holds the pills, the mode pill at its end, whole or its
+			// icon alone (plan 39), or its middle text alone where that does
+			// not fit beside them.
+			pill := strings.HasSuffix(last, strings.TrimSpace(texts([]line{modePill(s, false, false)}))) ||
+				strings.HasSuffix(last, strings.TrimSpace(texts([]line{modePill(s, false, true)})))
+			if !isRule(sep) || rule < 0 || got != c.rows || !strings.HasPrefix(inner(rule+1), ">") || strings.HasPrefix(last, "+") != pill {
 				t.Errorf("%v, %d lines: %d input rows under the rule (row %d), want %d; first %q, the row %q:\n%s", size, len(c.lines), got, rule, c.rows, inner(rule+1), last, strings.Join(rows, "\n"))
 			}
 			if c.count != "" && !strings.Contains(last, c.count) || c.count == "" && strings.Contains(last, "line") {

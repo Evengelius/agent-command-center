@@ -69,10 +69,17 @@ type UI struct {
 	// Models is the model selector the pill opens (plan 34, the owner's
 	// image; reference-design.md, The model selector).
 	Models ModelsView
+	// Modes is the modes selector the mode pill opens (plan 39, the
+	// owner's images; reference-design.md, The modes selector).
+	Modes ModesView
 	// Sixel says the terminal draws Sixel images, by its answer to the
 	// device attributes request: the attached images then show as
 	// thumbnails above their chips (plan 32, design D4).
 	Sixel bool
+	// PillNoFont says the mode pill's title could not be rasterised (no
+	// Cascadia Mono nor Consolas): the pill is drawn as text even with
+	// Sixel (plan 39, design D7).
+	PillNoFont bool
 	// The editor's send and newline keys in force, as the screen names them
 	// ("Ctrl+Enter"), in the configuration file's order (plan 21, item 5.1);
 	// none is the defaults. KeysProblem is why the file's keys were not used,
