@@ -93,3 +93,13 @@ Evidence outside the repository, in the session's scratchpad
 `term\out-p38-live\` (the live run's results, screenshots and
 configuration check), `live\log-p38\` (the wrapper's log),
 `term\p38live.ps1`.
+
+**The commit and the push (2026-10-24), after the owner's approval.** The
+owner approved plan 38 on 2026-10-24; commit dc9c6d9 (38 files: 28
+modified, 10 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. One
+comment of `SetModelSettings` was reworded before the commit, after the
+checks: the build's bytes are unchanged (`fb82d4c2e9946cef…`) and the
+Codex package's tests pass again. The blocks above stay as they were
+reported.

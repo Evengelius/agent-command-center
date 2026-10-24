@@ -18,7 +18,8 @@ for plan 29, `git show 6025513:plan.md` for plan 30, `git show
 8e2a721:plan.md` for plan 31, `git show b56d23e:plan.md` for plan 32, `git show
 bc5d92b:plan.md` for plan 33, `git show 47b50ce:plan.md` for plan 34, `git show
 b43cf46:plan.md` for plan 35, `git show c0cebc4:plan.md` for plan 36, `git show
-31c22ef:plan.md` for plan 37), and its results in its evaluation file.
+31c22ef:plan.md` for plan 37, `git show dc9c6d9:plan.md` for plan 38), and its
+results in its evaluation file.
 
 ## The owner's standing decisions
 
@@ -94,203 +95,10 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 38 - Instant Codex model and effort changes, as in VS Code
+## No plan active
 
-Brief amendment 39 (2026-10-24): a Codex model or effort change takes
-effect at once, as Claude Code's does, through Codex's experimental
-`thread/settings/update`, as OpenAI's Codex extension for VS Code does;
-one or two live Codex turns approved. The criteria below were written
-before the code; the probe comes first. Nothing is committed until the
-owner has reviewed the result.
-
-### What the probe found
-
-P38x and P38t (doc/research/probes/README.md; Codex CLI 0.163.0, the
-dashboard's handshake with the opt-in, the configuration check PASS
-before and after each):
-
-- Each `thread/settings/update` was answered `{}` 2 to 5 ms after it,
-  and `thread/settings/updated` came 1 to 3 ms after the `{}`, with the
-  model and effort asked for (`threadSettings.model`, `.effort`).
-- An update to the effort in force brought no notification in 1.5 s:
-  Codex notifies only a change that changes something (D2's rule that a
-  choice of what is in force asks nothing).
-- An update of the model alone kept the effort ("low"): D2's model change
-  carrying an effort the model lists stays.
-- A `thread/read` written right after the `{}` showed the new effort.
-- The `turn/start` the dashboard sends (with `summary` "auto") brought a
-  `thread/settings/updated` of its own, no change of the model or effort
-  waiting: a notification answers a change only when one waits.
-- The one turn (GPT-6-Luna at "low", set by an update just before) ran at
-  that model and effort: its rollout's one `turn_context` reads
-  GPT-6-Luna and "low".
-- The command approval came as plan 8 recorded it, `availableDecisions`
-  accept, the execpolicy amendment and cancel, no `additionalPermissions`;
-  `acceptForSession`, not in the list, was taken anyway (the dashboard
-  keeps offering what the list offers). No `currentTime/read` came.
-- Two notifications no earlier recording had, both in the stable schema
-  too: `turn/moderationMetadata` (the turn's moderation flags) and
-  `thread/readState/changed` (an unread marker); the mapper has neither
-  (D5).
-
-### Design
-
-- **D1. The opt-in.** The dashboard's `initialize` carries
-  `capabilities: {experimentalApi: true}`, as VS Code's Codex extension's
-  does. Codex marks that API experimental: it is labelled so wherever it
-  is used (architecture.md, ui-design.md, codex-cli.md, the code's
-  comments), and the dashboard keeps working without it (D4).
-- **D2. A change between turns** is written at once:
-  `thread/settings/update` with the thread's id and only what the change
-  asks for (`model`, `effort`). Codex answers `{}`, then
-  `thread/settings/updated` (P34x: 0 to 2 ms later); the dashboard reads
-  that notification's `threadSettings.model` and `.effort` for the main
-  thread, nothing else, as the settings in force and the change's answer,
-  and the screen changes then: the pill, "Effort (<level>)", the slider's
-  thumb gliding (plan 37), no ring and no "(next turn)". As with Claude
-  Code, one change waits for its answer at a time; a choice of what is in
-  force asks nothing (Codex notifies no change that changes nothing,
-  P38x). A model change still carries an effort the new
-  model lists (plan 34, design D4: Codex keeps the thread's effort across
-  a model change, P34x). Until its notification comes, the change is also
-  kept for the next `turn/start`, its stable override, whose `thread/read`
-  then answers it (plan 34): a notification that never comes leaves the
-  change to the next message, never waiting for good.
-- **D3. A change during a turn** waits for the turn's end. While the main
-  turn runs, from its `turn/start` to its `turn/completed`, the session
-  reports its changes as next-turn ones (`ModelsNextTurn`), so the
-  selector rings the level asked for and the editor row reads
-  "→ … (next turn)", as today; once the turn ends, the session writes the
-  waiting change as D2 does, and its notification answers it. A running
-  turn's settings never change, so zone B never names a model the turn
-  did not use.
-- **D4. The fallback.** A Codex that refuses `thread/settings/update` as
-  unknown (VS Code's rule: JSON-RPC -32601, "method not found", "unknown
-  method" or "unknown variant" naming the method) or as needing the
-  opt-in (Codex 0.163.0's -32600 "thread/settings/update requires
-  experimentalApi capability", P34x) takes every change of the session
-  with the next message, as plan 34 does: the change asked for waits for
-  the next message (ring, "(next turn)"), and zone B says once why, in
-  Codex's words. Any other refusal refuses the change: zone B says so,
-  the settings in force are unchanged, and nothing is kept for the next
-  message.
-- **D5. What else the opt-in changes** (0.163.0's
-  `app-server generate-json-schema`, with and without `--experimental`):
-  one more server request, `currentTime/read` `{threadId}`, answered
-  `{currentTimeAt: <now in whole Unix seconds>}`, as VS Code answers it,
-  and logged; the command approval's `availableDecisions`, read since
-  plan 8, and `additionalPermissions`, which VS Code does not read,
-  checked live with an approval (P38t: as plan 8 recorded it); otherwise
-  only fields the dashboard does not read, none removed, no enum value
-  changed. `turn/moderationMetadata` and `thread/readState/changed`, first
-  seen in P38t and in the stable schema too, are logged as statuses, not
-  counted as unrecognised.
-- **D6. The mock.** A Codex mock file answers a change at once, as Codex
-  0.163.0 does with the opt-in; one whose events show
-  `thread/settings/update` refused answers it with the next message: the
-  new `codex-models-next-turn.jsonl`, P34x's first run up to that
-  refusal.
-
-### Criteria
-
-1. **38.1 Probe P38x** (Codex 0.163.0, the dashboard's handshake with the
-   opt-in, no turn): recorded and sanitized in `doc/research/probes` and
-   `testdata/probes`; `thread/settings/update` `{effort: "low"}` answered
-   `{}`, then `thread/settings/updated` with `effort` "low" within 50 ms;
-   a model-only update keeps the effort; whether an update to the effort
-   in force brings a notification, and what a `thread/read` written
-   right after `{}` reports, recorded; the configuration check before and
-   after PASS.
-2. **38.2 The update**, adapter tests on recorded lines: the `initialize`
-   line carries `"capabilities":{"experimentalApi":true}`; between turns,
-   `SetModelSettings({Effort: "low"})` writes exactly
-   `thread/settings/update` `{"threadId":<the thread>,"effort":"low"}`
-   and no `turn/start`; P38x's notification replayed gives
-   `ModelSettings` {Model, Effort "low", Source "thread/settings/updated",
-   Answers true}; the update's `{}` gives no settings event; a
-   notification with no change waiting gives Answers false; another
-   thread's notification gives no settings event.
-3. **38.3 During a turn**: `Capabilities().ModelsNextTurn` true from the
-   main `turn/start` written to its `turn/completed`, false otherwise; a
-   change asked in between writes nothing until `turn/completed`, then one
-   `thread/settings/update` with the whole waiting change, answered by its
-   notification.
-4. **38.4 The fallback**: the answers -32600 "thread/settings/update
-   requires experimentalApi capability", -32601 "Method not found" and an
-   "unknown variant `thread/settings/update`" message each give
-   `ModelSettings` {NextTurn true, Text with Codex's words}, after which
-   `ModelsNextTurn` stays true and the next `turn/start` carries the
-   change; a -32602 refusal gives {Answers, Refused, Text}, and the next
-   `turn/start` carries no change.
-5. **38.5 The backstop**: an update acknowledged with no notification is
-   carried by the next `turn/start`, whose `thread/read` answers it
-   (Answers true).
-6. **38.6 `currentTime/read`**: answered
-   `{"id":<as received>,"result":{"currentTimeAt":<the session clock's
-   Unix seconds>}}`; the request maps to a status event, not an
-   unrecognised one, and the reply to a `Sent` event, no approval
-   resolved.
-7. **38.7 The state**: a Codex choice between turns (NextTurn false) is
-   asked once and answered by the notification, with no notice; a second
-   before the answer asks nothing; a model choice carries an effort the
-   model lists (the one in force if it lists it, else its default); a
-   choice of what is in force asks nothing (amended in step 2: Codex's
-   only, Claude Code answering such a change as before, which plan 36's
-   TestSelectorPointerAtRest relies on); the
-   fallback's event turns the waiting change into a next-turn one
-   ("→ … (next turn)") with one notice; zone B's "change between turns"
-   notice names the session's CLI; Claude Code's other tests unchanged.
-8. **38.8 The application**, with a session taking changes at once: ← on
-   Effort asks once, and its answer moves the slider with no ring and no
-   "(next turn)"; with the session reporting next-turn changes, the ring
-   and "(next turn)" as before.
-9. **38.9 The checks**: build, vet and gofmt clean; `go test ./...` ok;
-   `-race` on codex, state and app ok; no golden frame changed but the
-   Explorer's and the quick open's, which list `testdata/mock` and so
-   its new file, 17 items in place of 16 (amended in step 2: D6's file);
-   the timing step alone within its targets; P38x's and P38t's recordings
-   through `TestEveryLineMaps` with no unrecognised line.
-10. **38.10 Live, P38t** (approved, one turn): with the opt-in, after an
-    update to another model and effort "low", one turn whose rollout's
-    `turn_context` (its model and effort alone read) shows that model and
-    "low"; a command approval answered `acceptForSession` runs the
-    command and the turn completes; any `currentTime/read` answered; the
-    configuration check before and after PASS.
-11. **38.11 Live in Windows Terminal** (approved, one turn): the dashboard
-    on Codex 0.163.0 in a temporary project, through the logging wrapper:
-    ← on Effort changes "Effort (<level>)" and the slider with no ring and
-    no "(next turn)" before any message, the wrapper logging the update
-    and its notification; one message, its rollout's `turn_context`
-    showing that effort; the configuration check before and after PASS;
-    screenshots.
-12. **38.12 Windows Terminal on the mocks**: `codex-models.jsonl`,
-    GPT-6-Sol's six levels by ← and →, each in force at once with no ring;
-    `codex-models-next-turn.jsonl`, the ring and "(next turn)" as in plan
-    37; screenshots at 120x40 and maximised.
-
-### Steps
-
-1. The probe: P38x (no turn), then P38t (the first approved turn); the
-   findings above.
-2. The adapter (the opt-in, the update and its notification, the turn's
-   end, the fallback, `currentTime/read`), the state, the mock.
-3. Tests and the checks; WT on the mocks; the live run in WT (the second
-   approved turn); the evaluation (`doc/plan38-evaluation.md`); the docs;
-   the report.
-
-### Progress
-
-- 2026-10-24: plan written; step 1 in progress.
-- 2026-10-24: step 1 done (P38x, then P38t, the first approved turn);
-  step 2 in progress.
-- 2026-10-24: steps 2 and 3 done: the adapter (the opt-in, the update and
-  its notification, the turn's end, the fallback, the backstop,
-  `currentTime/read`, the two new notifications), the state, the mock and
-  `codex-models-next-turn.jsonl`; the tests, 16 mutation checks, the
-  checks; WT on the mocks; the live run in WT (the second approved turn);
-  the evaluation, `doc/plan38-evaluation.md`, 12 criteria: 12 PASS (38.7
-  and 38.9 amended in step 2); the docs. Nothing committed: waiting for
-  the owner's review.
+Plan 38 was approved and closed on 2026-10-24 (Closed plans, below). The
+next plan starts when the owner asks for one.
 
 ## Closed plans
 
@@ -697,3 +505,16 @@ and control columns; ← → and a click on the slider ask for a level.
 Approved on 2026-10-24: 9 of 9 PASS
 ([`doc/plan37-evaluation.md`](doc/plan37-evaluation.md)); commit
 31c22ef, then the approval commit.
+
+## Plan 38 - Instant Codex model and effort changes, as in VS Code
+
+Brief amendment 39: a Codex model or effort change took effect only with
+the next message, where VS Code's Codex extension changes it at once. The
+dashboard now asks for Codex's experimental API at initialize, as that
+extension does, and writes a change between turns at once with
+`thread/settings/update`, the `thread/settings/updated` that follows
+putting it in force (P38x: 1 to 3 ms); a change asked during a turn is
+written at its end; a Codex that refuses the update takes every change
+with the next message, as before. Approved on 2026-10-24: 12 of 12 PASS
+([`doc/plan38-evaluation.md`](doc/plan38-evaluation.md)); commit
+dc9c6d9, then the approval commit.
