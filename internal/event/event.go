@@ -388,6 +388,11 @@ type Settings struct {
 	Answers bool   `json:",omitempty"`
 	Refused bool   `json:",omitempty"`
 	Text    string `json:",omitempty"`
+	// NextTurn says the CLI takes the change asked for, and every later one,
+	// with the next message, not at once, its Text for zone B: a Codex that
+	// refuses thread/settings/update (plan 38, design D4). It answers
+	// nothing: the change still waits.
+	NextTurn bool `json:",omitempty"`
 }
 
 // Verdict is the payload of ToolDecision: the permission decision the CLI

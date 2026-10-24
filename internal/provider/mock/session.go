@@ -69,7 +69,11 @@ type Session struct {
 	cli      string
 	models   []event.ModelEntry
 	settings event.Settings
-	next     provider.ModelRequest // a Codex file's change, until the next message
+	// nextTurn: the file shows Codex taking changes with the next message
+	// (a refused thread/settings/update; plan 38, design D6), which keeps
+	// a change in next until the next message.
+	nextTurn bool
+	next     provider.ModelRequest
 }
 
 func (s *Session) replay(evs []Timed, speed float64) {
@@ -121,6 +125,9 @@ func (s *Session) emitLocked(ev event.Event) bool {
 	case event.Models:
 		s.models = p.Entries
 	case event.Settings:
+		if p.NextTurn {
+			s.nextTurn = true
+		}
 		if !p.Refused {
 			s.settings = merged(s.settings, p)
 		}
@@ -164,7 +171,8 @@ func (s *Session) Send(msg provider.Message) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if next := s.next; next != (provider.ModelRequest{}) {
-		// A Codex file's change goes with the message (plan 34).
+		// A change of a Codex file that takes them with the next message goes
+		// with the message (plan 34; plan 38, design D6).
 		s.next = provider.ModelRequest{}
 		return s.applyLocked(next)
 	}
@@ -198,14 +206,15 @@ func (s *Session) SetApprovalMode(bool) error {
 }
 
 // SetModelSettings answers a change as the replayed CLI would, with no CLI
-// (plan 34): a Claude Code file's at once, a Codex file's with the next
-// message (Send). The settings asked for are reported in force, from the
-// last ones the file or an earlier change gave. Every event it adds has
-// origin mock.
+// (plan 34): at once, as Claude Code and Codex with thread/settings/update
+// do (plan 38), or, for a Codex file that shows the update refused, with
+// the next message (Send). The settings asked for are reported in force,
+// from the last ones the file or an earlier change gave. Every event it
+// adds has origin mock.
 func (s *Session) SetModelSettings(r provider.ModelRequest) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.cli == "codex" {
+	if s.cli == "codex" && s.nextTurn {
 		if r.Model != "" {
 			s.next.Model = r.Model
 		}
@@ -274,12 +283,13 @@ func (s *Session) Refresh() error { return nil }
 // be shown and sent nowhere (plan 31).
 func (s *Session) Capabilities() provider.Capabilities {
 	s.mu.Lock()
-	cli := s.cli
+	cli, nextTurn := s.cli, s.nextTurn
 	s.mu.Unlock()
 	// The models are offered as the replayed CLI offers them (plan 34): a
-	// change answered at once, Ultracode for Claude Code's files only.
+	// change answered at once unless the file shows Codex taking it with the
+	// next message (plan 38), Ultracode for Claude Code's files only.
 	return provider.Capabilities{Images: provider.ImageLimits{MaxCount: 100, MaxBytes: 7_400_000, MaxTotal: 7_400_000, MaxSide: 8000},
-		Models: true, ModelsNextTurn: cli == "codex", Ultracode: cli == "claude-code"}
+		Models: true, ModelsNextTurn: cli == "codex" && nextTurn, Ultracode: cli == "claude-code"}
 }
 
 // Close stops the replay and ends the session with session.ended, the last

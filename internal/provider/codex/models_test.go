@@ -15,7 +15,8 @@ import (
 // Plan 34 (brief amendment 34): the session's models from every page of
 // model/list, hidden ones left out; the model and effort in force from the
 // thread's start and from thread/read; a change carried by the next
-// turn/start. P34x started no turn.
+// turn/start, since plan 38 with a Codex that refuses thread/settings/update
+// (settings_test.go). P34x started no turn.
 
 const p34x = "p34x-codex-model-list-settings.jsonl"
 
@@ -114,10 +115,13 @@ func pages(t *testing.T) []string {
 }
 
 // TestModelChangeWire is criteria 2, 9, 13 and 17 through the real process
-// plumbing: the session follows model/list's cursors to the last page; a
-// change writes nothing until the next message, whose turn/start carries
-// the model and the effort; the answer to that turn calls for thread/read,
-// whose values are then in force, on the same thread.
+// plumbing, with a Codex that refuses thread/settings/update as P34x's first
+// run did (plan 38, criterion 38.4): the session follows model/list's
+// cursors to the last page; a change written at once is refused, said in
+// the next-turn event, and every change goes with the next message, whose
+// turn/start carries the model and the effort; the answer to that turn
+// calls for thread/read, whose values are then in force, on the same
+// thread.
 func TestModelChangeWire(t *testing.T) {
 	const thread = "th-34"
 	recs := append([]string{handshake[0], handshake[1], handshake[2]}, pages(t)...)
@@ -125,6 +129,8 @@ func TestModelChangeWire(t *testing.T) {
 		`{"dir":"in","msg":{"id":2,"method":"thread/start"}}`,
 		`{"dir":"out","msg":{"id":2,"result":{"thread":{"id":"`+thread+`"},"model":"gpt-6-sol","reasoningEffort":"high","cwd":"<probe-work>","sandbox":{"type":"readOnly"},"approvalPolicy":"on-request"}}}`,
 		handshake[5], handshake[6],
+		`{"dir":"in","msg":{"id":8,"method":"thread/settings/update","params":{"threadId":"`+thread+`"}}}`,
+		`{"dir":"out","msg":{"id":8,"error":{"code":-32600,"message":"thread/settings/update requires experimentalApi capability"}}}`,
 		`{"dir":"in","msg":{"id":9,"method":"turn/start","params":{"threadId":"`+thread+`"}}}`,
 		`{"dir":"out","msg":{"id":9,"result":{"turn":{"id":"tu-1","status":"inProgress","items":[]}}}}`,
 		`{"dir":"out","msg":{"method":"turn/started","params":{"threadId":"`+thread+`","turn":{"id":"tu-1","status":"inProgress","items":[]}}}}`,
@@ -147,8 +153,19 @@ func TestModelChangeWire(t *testing.T) {
 	if err := r.sess.SetModelSettings(provider.ModelRequest{Model: "gpt-6.1-sol", Effort: "high"}); err != nil {
 		t.Fatal(err)
 	}
-	if n := len(r.written()); n != before {
-		t.Errorf("%d lines written by the change, want none before the next message", n-before)
+	fell := r.waitFor("the next-turn event", func(ev event.Event) bool {
+		s, ok := ev.Payload.(event.Settings)
+		return ok && s.NextTurn
+	}).Payload.(event.Settings)
+	if fell != (event.Settings{Source: "thread/settings/update", NextTurn: true,
+		Text: "Codex takes model changes with the next message: thread/settings/update refused by Codex: thread/settings/update requires experimentalApi capability"}) {
+		t.Errorf("the next-turn event %+v", fell)
+	}
+	if !r.sess.Capabilities().ModelsNextTurn {
+		t.Error("after the refusal a change does not wait for the next turn")
+	}
+	if n := len(r.written()); n != before+1 {
+		t.Errorf("%d lines written by the change, want the refused update alone before the next message", n-before)
 	}
 	r.send("hello")
 	answer := r.waitFor("the change's answer", func(ev event.Event) bool {

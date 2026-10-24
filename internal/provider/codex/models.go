@@ -3,6 +3,7 @@ package codex
 import (
 	"encoding/json"
 	"strconv"
+	"strings"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
 )
@@ -10,10 +11,15 @@ import (
 // The session's models and their effort (plan 34; doc/research/codex-cli.md,
 // section 13): the models from every page of model/list, hidden ones left
 // out; the model and effort in force from the thread/start answer, then
-// from thread/read after a turn that carried a change. A change goes with
-// the next turn/start ("for this turn and subsequent turns", stable): the
-// immediate thread/settings/update needs the experimental API and confirms
-// no more (P34x).
+// from thread/settings/updated, and from thread/read after a turn that
+// carried a change. A change between turns is written at once with
+// thread/settings/update, Codex's experimental API, which the session asks
+// for at initialize as OpenAI's Codex extension for VS Code does (plan 38,
+// design D1); it is answered by the thread/settings/updated that follows
+// (P38x: 1 to 3 ms after the update's {}). A change during a turn waits
+// for its end; with a Codex that refuses the update, every change goes with
+// the next turn/start ("for this turn and subsequent turns", stable), as in
+// plan 34 (design D4).
 
 // listedModel is one model of a model/list page.
 type listedModel struct {
@@ -130,14 +136,57 @@ func (m *Mapper) threadRead(id string, result json.RawMessage, raw []byte) []eve
 		} `json:"thread"`
 	}
 	_ = json.Unmarshal(result, &r)
-	answers := m.answering[id]
+	// The read answers its change unless a thread/settings/updated did first
+	// (plan 38).
+	answers := m.answering[id] && m.outstanding
 	delete(m.answering, id)
 	if r.Thread.ID != "" && m.main != "" && r.Thread.ID != m.main {
 		return []event.Event{m.status("", raw, "", "thread/read of another thread")}
 	}
 	s := settingsOf(r.Thread.Model, r.Thread.Effort, "thread/read")
-	s.Answers = answers
+	if answers {
+		s.Answers, m.outstanding = true, false
+	}
 	return []event.Event{m.ev(event.ModelSettings, event.Observed, "", "", "", raw, s)}
+}
+
+// settingsUpdated maps thread/settings/updated (Codex's experimental API,
+// plan 38): the main thread's model and effort in force, nothing else of
+// its settings, the answer to the change written when one waits (design
+// D2). A turn/start that changes another setting brings one too (P38t:
+// its summary).
+func (m *Mapper) settingsUpdated(params json.RawMessage, raw []byte) []event.Event {
+	var p struct {
+		ThreadID string `json:"threadId"`
+		Settings struct {
+			Model  string  `json:"model"`
+			Effort *string `json:"effort"`
+		} `json:"threadSettings"`
+	}
+	_ = json.Unmarshal(params, &p)
+	if p.ThreadID != "" && m.main != "" && p.ThreadID != m.main {
+		return []event.Event{m.status(m.agentOf(p.ThreadID), raw, "", "thread/settings/updated of another thread")}
+	}
+	s := settingsOf(p.Settings.Model, p.Settings.Effort, "thread/settings/updated")
+	s.Answers, m.outstanding = m.outstanding, false
+	return []event.Event{m.ev(event.ModelSettings, event.Observed, "", "", "", raw, s)}
+}
+
+// unsupported says Codex refused method as one it does not take: VS Code's
+// rule (JSON-RPC -32601, "method not found", or "unknown method" or
+// "unknown variant" naming the method; openai.chatgpt 26.1021.22027), or
+// Codex 0.163.0's -32600 "... requires experimentalApi capability" when
+// the opt-in is not taken (P34x). Plan 38, design D4.
+func unsupported(raw json.RawMessage, method string) bool {
+	var e struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	}
+	_ = json.Unmarshal(raw, &e)
+	msg := strings.ToLower(e.Message)
+	named := strings.Contains(msg, strings.ToLower(method))
+	return e.Code == -32601 || strings.Contains(msg, "method not found") ||
+		named && (strings.Contains(msg, "unknown method") || strings.Contains(msg, "unknown variant") || strings.Contains(msg, "requires experimentalapi"))
 }
 
 // TakeReadDue says a turn that carried a change was answered, or a turn

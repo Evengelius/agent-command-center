@@ -278,7 +278,8 @@ func (m *Model) cursorTo(kind byte, model int) bool {
 }
 
 // modelsCmd hands a change to the session through the write queue, in
-// order with the owner's messages: Codex's goes with the next one.
+// order with the owner's messages; the session writes it at once or keeps
+// it for the next one (plan 38).
 func (m *Model) modelsCmd(c state.ModelChange) tea.Cmd {
 	sess := m.sess
 	req := provider.ModelRequest{Model: c.Choice, Effort: c.Effort, Ultracode: c.Ultracode}

@@ -42,6 +42,8 @@ func TestFixturesMatchRecordings(t *testing.T) {
 		"p303e-claude-interrupt-tool.jsonl":             88,
 		"p34c-claude-model-settings.jsonl":              57, // plan 34: Claude Code's models and settings, no message
 		"p34x-codex-model-list-settings.jsonl":          75, // plan 34: Codex's model/list pages and thread settings, no turn
+		"p38x-codex-settings.jsonl":                     40, // plan 38: thread/settings/update with the experimental API, no turn
+		"p38t-codex-turn-settings.jsonl":                73, // plan 38: the same, then one turn and a command approval
 	}
 	copies, _ := filepath.Glob("../../testdata/probes/*.jsonl")
 	if len(copies) != len(want) {

@@ -43,7 +43,18 @@ func countRaw(evs []event.Event, k event.Kind, method string) int {
 	return n
 }
 
-var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl", "p7c-codex-spawn-model.jsonl", "p9a-codex-spawn-request.jsonl", "p12x-codex-auto-review.jsonl", "p12x-switch-codex-user-to-auto-review.jsonl", "p12x-sandbox-codex-turn-workspace-write.jsonl", "p22s-codex-reasoning-summary.jsonl"}
+var appServer = []string{"p6-codex-app-server.jsonl", "p6b-codex-app-server.jsonl", "p7-codex-subagents.jsonl", "p7b-codex-subagents.jsonl", "p7c-codex-spawn-model.jsonl", "p9a-codex-spawn-request.jsonl", "p12x-codex-auto-review.jsonl", "p12x-switch-codex-user-to-auto-review.jsonl", "p12x-sandbox-codex-turn-workspace-write.jsonl", "p22s-codex-reasoning-summary.jsonl",
+	"p34x-codex-model-list-settings.jsonl", "p38x-codex-settings.jsonl", "p38t-codex-turn-settings.jsonl"}
+
+// annotation says a record is a probe driver's own note, not a line of the
+// protocol: the runs, steps and results plans 34 and 38 recorded.
+func annotation(dir string) bool {
+	switch dir {
+	case "run", "step", "note", "rollout", "done":
+		return true
+	}
+	return false
+}
 
 // quietLine says a recorded line is one the adapter knows and gives no event
 // for: a reasoning summary's part added, whose text comes in the delta and in
@@ -65,6 +76,9 @@ func TestEveryLineMaps(t *testing.T) {
 			t.Errorf("%s: %d results for %d lines", name, len(per), len(recs))
 		}
 		for i, evs := range per {
+			if annotation(recs[i].Dir) {
+				continue
+			}
 			if len(evs) == 0 && !quietLine(recs[i].Msg) {
 				t.Errorf("%s line %d: no event", name, i+1)
 			}

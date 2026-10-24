@@ -2245,8 +2245,10 @@ provider: it has no provider code and sends a string to part 5's caller
   it ("High", "XHigh"), nothing while none is known; " · Ultracode" only
   while Claude Code reports it on; the text in the text colour, the dot in
   the title colour, "Ultracode" in violet bold (YOU's colour); three cells
-  after the pill, in grey, a Codex change waiting for the next message
-  ("→ GPT-6.1-Sol High (next turn)"), the draft's line count once it
+  after the pill, in grey, a Codex change waiting for the next message,
+  one asked during a turn or, once Codex refused `thread/settings/update`,
+  any (plan 38) ("→ GPT-6.1-Sol High (next turn)"), the draft's line count
+  once it
   passes one line, then what the status line said when it had something
   to say (a turn running, "pasting…", a notice, the session's phase, the
   quit question), joined by " · "; at the right end "↯ Auto" and one cell.
@@ -2359,8 +2361,11 @@ provider: it has no provider code and sends a string to part 5's caller
     giving the progression; at the highest (Max for Claude Code's models,
     Ultra for a Codex model that lists it) a purple gradient with specks
     lights the whole pill. A level asked for and not yet in force is
-    ringed: a Codex level waiting for the next message, a Claude Code
-    change waiting for its answer. The thumb moves only when the CLI
+    ringed: a Codex level waiting for the next message (one asked during
+    a turn, or any once Codex refused `thread/settings/update`; plan 38),
+    a change waiting for its answer (Claude Code's, and Codex's between
+    turns for the milliseconds before its notification). The thumb moves
+    only when the CLI
     reports the level in force, and glides there in 180 ms, drawn every
     30 ms, its clock from the frame that changes the label, so that its
     first drawing, once that frame is out, is already on its way. A model
@@ -2434,10 +2439,21 @@ provider: it has no provider code and sends a string to part 5's caller
     choice while one waits for its answer doing nothing; during a turn a
     choice is not sent, zone B saying "Claude Code's model settings
     change between turns: wait for the turn to end" (what a change does
-    to a running turn was not probed). Codex's waits for the next
-    message, the row's middle saying "→ <model> <Effort> (next turn)"
-    (choosing what is in force again cancels it), and its values come
-    from `thread/read` once that message's turn is accepted; a turn Codex
+    to a running turn was not probed). Codex's, between turns, is sent at
+    once too, with Codex's experimental `thread/settings/update` as
+    OpenAI's Codex extension for VS Code sends it, and its values come
+    from the `thread/settings/updated` Codex sends right after (plan 38,
+    P38x: 1 to 3 ms after the update's answer): the same rules, and a
+    choice of what is in force asks nothing, Codex notifying no change
+    that changes nothing. During a turn Codex's waits for the turn's end,
+    the row's middle saying "→ <model> <Effort> (next turn)" (choosing
+    what is in force again cancels it), and is sent when the turn ends,
+    zone B saying "Codex's model settings change between turns: wait for
+    the turn to end" only for a choice made as the turn ended. A Codex
+    that refuses the update takes every change with the next message,
+    zone B saying once "Codex takes model changes with the next message:
+    …", and its values come from `thread/read` once that message's turn
+    is accepted; a turn Codex
     refuses gives the message back to the editor, "the message could not
     be sent: turn/start refused by Codex: …", and zone B says under the
     owner's entry "the message was not sent: …; it is back in the editor"

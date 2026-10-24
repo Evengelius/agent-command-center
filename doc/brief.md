@@ -4901,3 +4901,48 @@ the thumb, with eleven specks of 2 to 4 pixels, pale lavender to
 A probe drew the slider at those proportions in Windows Terminal 1.23,
 beside each image scaled to a terminal row (plan.md, Plan 37). Taken as
 plan 37 (plan.md, Plan 37).
+
+## Amendment 39, 2026-10-24: instant Codex model and effort changes, as in VS Code, for plan 38
+
+After plan 37's report, with two screenshots of the model selector on
+Codex, the owner wrote, word for word:
+
+````text
+I have one request,
+
+It is also working great on codex, however the change is not instant like in claude code, but on the next turn,
+
+Is it possible to make it like claude code ? Because now it shows this white circle symbolizing next tur
+````
+
+Told that a change at once needs `thread/settings/update`, which Codex
+offers only to a client that opts into its experimental API
+(doc/research/codex-cli.md, section 13; P34x), the owner wrote:
+
+````text
+Before doing that, you talked about experimental things, well in VSCode it works fine, there is not this "next turn", so i suppose it must be the same for our tool
+````
+
+What OpenAI's Codex extension for VS Code does (`openai.chatgpt`
+26.1021.22027, the copy installed here, read on 2026-10-24; studied,
+nothing copied):
+
+- Its `initialize` carries `capabilities.experimentalApi: true`
+  (`out/extension.js`).
+- A model or effort change sends `thread/settings/update` at once, with
+  the thread's id and the settings changed. When Codex answers that the
+  method is unknown (JSON-RPC -32601, "method not found", or "unknown
+  method" or "unknown variant" naming it), the extension marks the method
+  unsupported and keeps the change for the conversation's next turn
+  (`webview/assets/src-622b307a9baf.js`, its check in
+  `app-initial-13f932cb2f13.js`).
+- It applies `thread/settings/updated` to the conversation's state, and
+  answers Codex's request `currentTime/read` with the time.
+
+Approving plan 37, the owner then wrote:
+
+````text
+Approved: plan 37 is approved. Commit it (review git status and git diff first, no attribution line, propose the message), then the closing commit and push to origin. Then start plan 38 (instant Codex changes, as in VS Code); its one or two live Codex turns are approved.
+````
+
+Taken as plan 38 (plan.md, Plan 38).

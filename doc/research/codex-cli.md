@@ -764,6 +764,31 @@ turn (`probes/README.md`).
   ("extreme") were taken the same way. No `thread/settings/updated`
   reached the stable client of P12x-switch after a `turn/start` that
   changed the reviewer.
-- **Not verified:** a turn with a changed model or effort (P34x starts no
-  turn); what the experimental opt-in changes for the rest of a session
-  (approvals, items), which the dashboard therefore does not ask for.
+- **Plan 38 (P38x, P38t, 2026-10-24; the dashboard's handshake with the
+  opt-in).** Each `thread/settings/update` was answered `{}` 2 to 5 ms
+  after it, then `thread/settings/updated` came 1 to 3 ms after the `{}`
+  with the model and effort asked for; an update to the effort in force
+  brought none in 1.5 s; the model alone kept the effort; a `thread/read`
+  written right after the `{}` showed the new effort; the dashboard's
+  `turn/start` (`summary` "auto") brought a `thread/settings/updated` of
+  its own. One turn after an update to GPT-6-Luna at "low" ran at them:
+  its rollout's one `turn_context` reads GPT-6-Luna, "low". With the
+  opt-in the command approval came as P8's (`availableDecisions` accept,
+  the execpolicy amendment, cancel; no `additionalPermissions`), and
+  `acceptForSession`, not in the list, was taken; no `currentTime/read`
+  came; `turn/moderationMetadata` and `thread/readState/changed`, in the
+  stable schema too, appeared. The schemas (`generate-json-schema` with
+  and without `--experimental`, 0.163.0): one more server request,
+  `currentTime/read` (`{threadId}`, answered `{currentTimeAt}` in whole
+  Unix seconds); 67 more client methods, `thread/settings/update` among
+  them; the command approval's `additionalPermissions` and
+  `availableDecisions`; otherwise added response fields, none removed, no
+  enum value changed. OpenAI's Codex extension for VS Code
+  (`openai.chatgpt` 26.1021.22027, read 2026-10-24) asks for the opt-in,
+  sends the update at each change, and keeps the change for the next turn
+  when Codex answers -32601, "method not found", or "unknown method" or
+  "unknown variant" naming the method. The dashboard does the same since
+  plan 38.
+- **Not verified:** what an update does to a running turn (the dashboard
+  writes none during one); what `currentTime/read` is asked for (none
+  came).

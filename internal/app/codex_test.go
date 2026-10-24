@@ -3,6 +3,7 @@ package app
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"io"
@@ -36,7 +37,17 @@ type wireCodex struct {
 	procs  []*wireProc
 	thread string // the thread thread/start reports
 	auto   bool
+	// models answers model/list with wireModels, starts the thread on
+	// GPT-6-Sol at High, and answers thread/settings/update as P38x's Codex
+	// did, {} then thread/settings/updated, or, with refuse, as P34x's
+	// Codex without the experimental API (plan 38).
+	models, refuse bool
 }
+
+// wireModels are three of P34x's models with their levels.
+const wireModels = `[{"id":"gpt-6.1-sol","model":"gpt-6.1-sol","displayName":"GPT-6.1-Sol","description":"Latest workhorse model","supportedReasoningEfforts":[{"reasoningEffort":"low"},{"reasoningEffort":"medium"},{"reasoningEffort":"high"},{"reasoningEffort":"xhigh"},{"reasoningEffort":"max"},{"reasoningEffort":"ultra"}],"defaultReasoningEffort":"low","isDefault":true},` +
+	`{"id":"gpt-6-sol","model":"gpt-6-sol","displayName":"GPT-6-Sol","description":"Previous workhorse model","supportedReasoningEfforts":[{"reasoningEffort":"low"},{"reasoningEffort":"medium"},{"reasoningEffort":"high"},{"reasoningEffort":"xhigh"},{"reasoningEffort":"max"},{"reasoningEffort":"ultra"}],"defaultReasoningEffort":"medium"},` +
+	`{"id":"gpt-6-luna","model":"gpt-6-luna","displayName":"GPT-6-Luna","description":"Fast","supportedReasoningEfforts":[{"reasoningEffort":"low"},{"reasoningEffort":"medium"},{"reasoningEffort":"high"},{"reasoningEffort":"xhigh"},{"reasoningEffort":"max"}],"defaultReasoningEffort":"medium"}]`
 
 func (w *wireCodex) Spawn(sp proc.Spec) (proc.Process, error) {
 	inR, inW := io.Pipe()
@@ -51,11 +62,12 @@ func (w *wireCodex) Spawn(sp proc.Spec) (proc.Process, error) {
 		sc := bufio.NewScanner(inR)
 		sc.Buffer(make([]byte, 64<<10), 64<<20)
 		turns := 0
+		model, effort := "gpt-6-sol", "high" // the thread's settings, with models
 		for sc.Scan() {
 			l := sc.Text()
 			w.mu.Lock()
 			w.lines = append(w.lines, l)
-			thread, auto := w.thread, w.auto
+			thread, auto, models, refuse := w.thread, w.auto, w.models, w.refuse
 			w.mu.Unlock()
 			var m struct {
 				ID     json.RawMessage `json:"id"`
@@ -67,9 +79,25 @@ func (w *wireCodex) Spawn(sp proc.Spec) (proc.Process, error) {
 			_ = json.Unmarshal([]byte(l), &m)
 			id := string(m.ID)
 			started := func(th string) {
+				if models {
+					p.emit(`{"id":` + id + `,"result":{"thread":{"id":"` + th + `"},"model":"` + model + `","reasoningEffort":"` + effort + `","cwd":` + quote(sp.Dir) + `,"approvalPolicy":"on-request","sandbox":{"type":"readOnly"}}}`)
+					return
+				}
 				p.emit(`{"id":` + id + `,"result":{"thread":{"id":"` + th + `"},"model":"gpt-5.6-sol","cwd":` + quote(sp.Dir) + `,"approvalPolicy":"on-request","sandbox":{"type":"readOnly"}}}`)
 			}
 			switch {
+			case m.Method == "model/list" && models:
+				p.emit(`{"id":` + id + `,"result":{"data":` + wireModels + `,"nextCursor":null}}`)
+			case m.Method == "thread/settings/update" && refuse:
+				p.emit(`{"id":` + id + `,"error":{"code":-32600,"message":"thread/settings/update requires experimentalApi capability"}}`)
+			case m.Method == "thread/settings/update" && models:
+				var u struct {
+					Params struct{ Model, Effort string } `json:"params"`
+				}
+				_ = json.Unmarshal([]byte(l), &u)
+				model, effort = cmp.Or(u.Params.Model, model), cmp.Or(u.Params.Effort, effort)
+				p.emit(`{"id":`+id+`,"result":{}}`,
+					`{"method":"thread/settings/updated","params":{"threadId":"`+m.Params.ThreadID+`","threadSettings":{"model":"`+model+`","effort":"`+effort+`"}}}`)
 			case m.Method == "initialize":
 				p.emit(`{"id":` + id + `,"result":{"userAgent":"fake"}}`)
 			case m.Method == "thread/start":

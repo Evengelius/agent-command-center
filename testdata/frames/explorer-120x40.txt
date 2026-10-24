@@ -2,7 +2,7 @@
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                 ││                                                                                  │
-│ ✿ Claude H╭─ Explorer ───────────────────────────────────────────────────────────────── mock · 16 items ─╮           │
+│ ✿ Claude H╭─ Explorer ───────────────────────────────────────────────────────────────── mock · 17 items ─╮           │
 │ ──────────│ sample/viewer.go                                                                             │    mock   │
 │ STAGES · i│ ▾ sample                                                                                  ●  │           │
 │ ✓ TURN 1  │     viewer.go                                                                             M  │nd write   │
@@ -15,12 +15,12 @@
 │ ✦ TELEMETR│   claude-thinking-subagent.jsonl                                                             │─────────╮ │
 │ ▾ SESSION │   claude-thinking.jsonl                                                                      │         │ │
 │   Context │   codex-api-key.jsonl                                                                     U  │.md`,    │ │
-│   Tokens 1│   codex-models.jsonl                                                                         │         │ │
-│   Est. cos│   codex-no-5h-window.jsonl                                                                   │         │ │
-│ ▾ QUOTA WI│   codex-plan6-limits.jsonl                                                                !  │         │ │
-│   Session │   codex-spawn-request.jsonl                                                               A  │─────────╯ │
-│   ████████│   codex-subagents.jsonl                                                                      │           │
-│   Resets i│                                                                                              │────────── │
+│   Tokens 1│   codex-models-next-turn.jsonl                                                               │         │ │
+│   Est. cos│   codex-models.jsonl                                                                         │         │ │
+│ ▾ QUOTA WI│   codex-no-5h-window.jsonl                                                                   │         │ │
+│   Session │   codex-plan6-limits.jsonl                                                                !  │─────────╯ │
+│   ████████│   codex-spawn-request.jsonl                                                               A  │           │
+│   Resets i│   codex-subagents.jsonl                                                                      │────────── │
 │   Weekly (│                                                                                              │           │
 │   ████████│                                                                                              │────────── │
 │   Resets i│                                                                                              │   ↯ Auto  │
@@ -32,7 +32,7 @@
 │  ✓  genera│                                                                                              │ beta.md   │
 │     00:00 │                                                                                              │           │
 │           │                                                                                              │           │
-│           │ ↑↓ move · → open · ← close · Enter view · / quick open · Esc back · F3 close         2 of 16 │           │
+│           │ ↑↓ move · → open · ← close · Enter view · / quick open · Esc back · F3 close         2 of 17 │           │
 │           ╰──────────────────────────────────────────────────────────────────────────────────────────────╯           │
 │                                          │                                                                           │
 │                                          │                                                                           │

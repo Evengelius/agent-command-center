@@ -56,6 +56,90 @@ var mockFiles = []struct {
 	// model, the thread on gpt-6-sol, High).
 	{"claude-models.jsonl", "p34c-claude-model-settings.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, claudeModels},
 	{"codex-models.jsonl", "p34x-codex-model-list-settings.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexModels},
+	// Plan 38, design D6: P34x's first run up to its refused
+	// thread/settings/update, a Codex without the experimental API, which
+	// takes every change with the next message.
+	{"codex-models-next-turn.jsonl", "p34x-codex-model-list-settings.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexModelsNextTurn},
+}
+
+// codexModelsNextTurn is P34x's first run up to the refusal of its
+// thread/settings/update, the thread/read written before it left out, as
+// codexModels leaves account and remote-control lines out.
+func codexModelsNextTurn(t *testing.T, recs []fixture.Record) []fixture.Record {
+	var out []fixture.Record
+	for _, r := range recs {
+		msg := string(r.Msg)
+		if r.Dir == "run" && len(out) == 0 {
+			r.Dir, r.Msg = "argv", []byte(`["app-server"]`)
+			out = append(out, r)
+			continue
+		}
+		if r.Dir != "in" && r.Dir != "out" || strings.Contains(msg, `"method":"account/`) || strings.Contains(msg, `"method":"remoteControl/`) ||
+			strings.Contains(msg, `"method":"thread/read"`) || strings.HasPrefix(msg, `{"id":12,"result"`) {
+			continue
+		}
+		out = append(out, r)
+		if strings.Contains(msg, "requires experimentalApi capability") {
+			return out
+		}
+	}
+	t.Fatal("P34x: no refused thread/settings/update")
+	return nil
+}
+
+// TestMockCodexChanges is plan 38's design D6: a Codex file answers a change
+// at once, as Codex with thread/settings/update; one whose events show the
+// update refused takes it with the next message, as plan 34's Codex.
+func TestMockCodexChanges(t *testing.T) {
+	for _, c := range []struct {
+		file     string
+		nextTurn bool
+	}{{"codex-models.jsonl", false}, {"codex-models-next-turn.jsonl", true}} {
+		t.Run(c.file, func(t *testing.T) {
+			timed, err := mock.Load(filepath.Join("..", "..", "..", "testdata", "mock", c.file))
+			if err != nil {
+				t.Fatal(err)
+			}
+			s, err := (&mock.Provider{Events: timed}).Start(context.Background(), provider.SessionContext{Mock: true})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer s.Close(context.Background())
+			for range timed {
+				<-s.Events()
+			}
+			if got := s.Capabilities().ModelsNextTurn; got != c.nextTurn {
+				t.Errorf("ModelsNextTurn %v, want %v", got, c.nextTurn)
+			}
+			if err := s.SetModelSettings(provider.ModelRequest{Effort: "low"}); err != nil {
+				t.Fatal(err)
+			}
+			answered := func() (event.Settings, bool) {
+				for {
+					select {
+					case ev := <-s.Events():
+						if p, ok := ev.Payload.(event.Settings); ok && p.Answers {
+							return p, true
+						}
+					default:
+						return event.Settings{}, false
+					}
+				}
+			}
+			p, ok := answered()
+			if ok == c.nextTurn || ok && (p.Effort != "low" || p.Model != "gpt-6-sol") {
+				t.Errorf("after the change: answered %v %+v", ok, p)
+			}
+			if c.nextTurn {
+				if err := s.Send(provider.Message{Text: "hello"}); err != nil {
+					t.Fatal(err)
+				}
+				if p, ok := answered(); !ok || p.Effort != "low" {
+					t.Errorf("after the message: answered %v %+v", ok, p)
+				}
+			}
+		})
+	}
 }
 
 // claudeModels is P34c's start: the process, the handshake and its models,

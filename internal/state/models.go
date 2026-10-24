@@ -110,6 +110,20 @@ func (s *State) dropModelChange(ev event.Event) {
 // the change asked for (a refusal, or what the CLI kept of it, said in zone
 // B), or a read that could not tell.
 func (s *State) modelSettings(ev event.Event, p event.Settings) {
+	if p.NextTurn {
+		// The CLI takes the change with the next message, not at once (a
+		// Codex that refuses thread/settings/update; plan 38, design D4): the
+		// change waits as plan 34's did, and zone B says why.
+		if a := s.Models.Asked; a != nil {
+			c := *a
+			c.NextTurn = true
+			s.Models.Asked = &c
+		}
+		if p.Text != "" {
+			s.modelNotice(ev, p.Text)
+		}
+		return
+	}
 	if p.Refused {
 		s.Models.Asked = nil
 		if p.Text != "" {
@@ -199,7 +213,8 @@ func (s *State) modelNotice(ev event.Event, text string) {
 
 // chooseModel asks for a listed model. A Codex change takes, with it, an
 // effort the new model lists: the one in force when it lists it, else its
-// default (plan 34, design D4).
+// default (plan 34, design D4), at once or with the next message, Codex
+// keeping the thread's effort across a model change (P34x, P38x).
 func (s *State) chooseModel(a ChooseModel) []Command {
 	e := s.Models.Entry(a.ID)
 	if e == nil || !s.modelsOpen(a.NextTurn) {
@@ -207,7 +222,7 @@ func (s *State) chooseModel(a ChooseModel) []Command {
 	}
 	c := s.change(a.NextTurn)
 	c.Choice = e.ID
-	if a.NextTurn {
+	if a.NextTurn || s.CLI() == "codex" {
 		effort := c.Effort
 		if effort == "" {
 			effort = s.Models.InForce.Effort
@@ -268,10 +283,10 @@ func (s *State) chooseUltracode(a ChooseUltracode) []Command {
 }
 
 // modelsOpen says a change can be asked for now: a ready session, and no
-// change of Claude Code's waiting for its answer. Claude Code's changes
-// take effect at once, so they wait for the turn's end, which zone B says:
-// what a change does to a running turn was not probed (plan 34, P34c sent
-// no message).
+// change taking effect at once waiting for its answer. Such changes, Claude
+// Code's and Codex's between turns (plan 38), wait for the turn's end,
+// which zone B says: what a change does to a running turn was not probed
+// (plan 34, P34c sent no message).
 func (s *State) modelsOpen(nextTurn bool) bool {
 	if s.Session.Phase != Ready || len(s.Models.Entries) == 0 {
 		return false
@@ -280,7 +295,7 @@ func (s *State) modelsOpen(nextTurn bool) bool {
 		return true
 	}
 	if s.Turn.Phase != Idle {
-		s.modelNotice(event.Event{At: s.lastAt()}, "Claude Code's model settings change between turns: wait for the turn to end")
+		s.modelNotice(event.Event{At: s.lastAt()}, s.cliName()+"'s model settings change between turns: wait for the turn to end")
 		return false
 	}
 	return s.Models.Asked == nil
@@ -296,16 +311,18 @@ func (s *State) change(nextTurn bool) ModelChange {
 }
 
 // ask records the change and hands it to the session. A Codex change that
-// asks for what is in force cancels the waiting one.
+// asks for what is in force cancels the waiting one, with the next message,
+// or asks for nothing at once: Codex notifies no update that changes
+// nothing (plan 38, P38x). Claude Code answers such a change as any other.
 func (s *State) ask(c ModelChange) []Command {
-	if c.NextTurn {
-		in := s.Models.InForce
-		if (c.Choice == "" || c.Choice == in.Choice) && (c.Effort == "" || c.Effort == in.Effort) {
-			s.Models.Asked = nil
-		} else {
-			s.Models.Asked = &c
-		}
-	} else {
+	in := s.Models.InForce
+	same := (c.Choice == "" || c.Choice == in.Choice) && (c.Effort == "" || c.Effort == in.Effort) && c.Ultracode == nil
+	switch {
+	case c.NextTurn && same:
+		s.Models.Asked = nil
+	case same && s.CLI() == "codex":
+		return nil
+	default:
 		s.Models.Asked = &c
 	}
 	return []Command{{Kind: CmdModels, Change: c}}

@@ -84,8 +84,10 @@ type Capabilities struct {
 	// MaxCount is a CLI that takes none.
 	Images ImageLimits
 	// Models says the session lists its models and takes SetModelSettings,
-	// ModelsNextTurn that a change applies from the next turn (Codex), and
-	// Ultracode that the CLI has Claude Code's Ultracode (plan 34).
+	// ModelsNextTurn that a change asked for now applies from the next turn
+	// (Codex while its turn runs, or for good without thread/settings/update;
+	// plan 38), and Ultracode that the CLI has Claude Code's Ultracode
+	// (plan 34). They are read at each choice: ModelsNextTurn changes.
 	Models, ModelsNextTurn, Ultracode bool
 }
 
@@ -124,8 +126,9 @@ type Session interface {
 	// in force is reported by events (plan 12, item 2).
 	SetApprovalMode(auto bool) error
 	// SetModelSettings asks for a model, an effort or Ultracode (plan 34):
-	// Claude Code at once, Codex with the next turn; the settings in force
-	// come back as events.
+	// at once between turns, Codex's during a turn at the turn's end and,
+	// without thread/settings/update, with the next turn (plan 38); the
+	// settings in force come back as events.
 	SetModelSettings(r ModelRequest) error
 	Capabilities() Capabilities
 	Close(ctx context.Context) error

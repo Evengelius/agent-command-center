@@ -90,7 +90,19 @@ type Session struct {
 	from      string                // the refused model, until the new thread starts
 	fallback  bool                  // the fallback is due once the line's events are queued
 	dir       string                // the project directory, the cwd of config/read
-	change    provider.ModelRequest // the model and effort the next turn/start carries (plan 34)
+	change    provider.ModelRequest // the model and effort asked for and not yet answered: the next turn/start carries them (plan 34)
+	// Plan 38 (models.go): instant while Codex takes thread/settings/update,
+	// a change between turns then written at once; sent once the change is
+	// written so and waits for its thread/settings/updated; starting from
+	// the main turn/start written to its turn's end; flush when that turn
+	// ended with a change waiting; inModel and inEffort what Codex last
+	// reported in force.
+	instant           bool
+	sent              bool
+	starting          bool
+	flush             bool
+	inModel, inEffort string
+	now               func() time.Time
 
 	wmu      sync.Mutex // one write at a time
 	inClosed atomic.Bool
@@ -151,7 +163,7 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext) (*Sess
 		now = time.Now
 	}
 	s := &Session{prov: p, p: pr, stdin: pr.Stdin(), step: step, m: NewMapper(), calls: map[string]string{}, dir: sc.ProjectPath,
-		approvals: map[string]pendingReq{}, resume: sc.ResumeID, pin: p.fallbackModel(),
+		approvals: map[string]pendingReq{}, resume: sc.ResumeID, pin: p.fallbackModel(), instant: true, now: now,
 		q: pipe.NewQueue(now), exited: make(chan struct{})}
 	s.q.Push(event.Event{Provider: ProviderID, Kind: event.SessionSpawned, Origin: event.Observed,
 		Payload: event.Spawned{Argv: append([]string{sc.Executable}, argv...), Dir: sc.ProjectPath}})
@@ -168,11 +180,17 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext) (*Sess
 		case <-s.exited:
 		}
 	}()
-	if err := s.request("initialize", map[string]any{"clientInfo": clientInfo}); err != nil {
+	// Codex's experimental API, for thread/settings/update (plan 38, design
+	// D1), asked for as OpenAI's Codex extension for VS Code asks for it.
+	if err := s.request("initialize", map[string]any{"clientInfo": clientInfo, "capabilities": initCapabilities}); err != nil {
 		s.problem("initialize not sent: " + err.Error())
 	}
 	return s, nil
 }
+
+// initCapabilities are the capabilities initialize asks for: Codex's
+// experimental API, which marks itself experimental (plan 38).
+var initCapabilities = map[string]bool{"experimentalApi": true}
 
 // push queues one event of the adapter's own.
 func (s *Session) push(ev event.Event) {
@@ -240,18 +258,49 @@ func (s *Session) track(ev event.Event) {
 			strings.Contains(msg, "'"+strings.ToLower(s.model)+"'") && strings.Contains(msg, "not supported") {
 			s.refused = true
 		}
+		if p.TurnRefused {
+			s.starting = false // no turn started
+		}
+	case event.Settings:
+		s.settings(p)
 	}
 	switch {
 	case ev.Kind == event.TurnStarted && ev.Agent == "" && ev.Turn != "":
 		s.turn = ev.Turn
 	case ev.Kind == event.TurnCompleted && ev.Agent == "":
-		s.turn = ""
+		s.turn, s.starting = "", false
 		if s.refused && !s.fellBack && s.pin == "" {
 			s.fellBack, s.from, s.thread, s.fallback = true, s.model, "", true
 		}
 		s.refused = false
+		// A change asked for during the turn is written now (plan 38,
+		// design D3); after a refused model it waits for the new thread.
+		s.flush = s.instant && s.change != (provider.ModelRequest{}) && !s.sent && s.thread != ""
 	}
 }
+
+// settings follows what Codex reports of the model settings (plan 38): the
+// values in force; a change answered, or refused, no longer waits; a
+// refused thread/settings/update leaves every change to the next turn/start
+// (design D4). Called with mu held.
+func (s *Session) settings(p event.Settings) {
+	if p.Model != "" {
+		s.inModel = p.Model
+	}
+	if p.EffortKnown {
+		s.inEffort = p.Effort
+	}
+	switch {
+	case p.NextTurn:
+		s.instant, s.sent = false, false
+	case p.Source == "thread/settings/updated" && p.Answers, p.Source == "thread/settings/update" && p.Refused:
+		s.change, s.sent = provider.ModelRequest{}, false
+	}
+}
+
+// busy says the main turn runs: from its turn/start written to its end.
+// Called with mu held.
+func (s *Session) busy() bool { return s.starting || s.turn != "" }
 
 // wire is what react reads of a line: enough to tell a request, a response
 // and a notification apart.
@@ -274,6 +323,15 @@ func (s *Session) react(l []byte, evs []event.Event) func() {
 	failed := len(w.Error) > 0 && string(w.Error) != "null"
 	var next func()
 	switch {
+	case w.Method == "currentTime/read" && hasID:
+		// The time in whole Unix seconds, as OpenAI's Codex extension for VS
+		// Code answers it (plan 38, design D5).
+		id, at := w.ID, s.now().Unix()
+		next = func() {
+			if err := s.write(map[string]any{"id": id, "result": map[string]int64{"currentTimeAt": at}}); err != nil {
+				s.problem("the reply to currentTime/read was not sent: " + err.Error())
+			}
+		}
 	case w.Method != "" && hasID:
 		if !approvalMethod(w.Method) {
 			id, method := w.ID, w.Method
@@ -356,6 +414,23 @@ func (s *Session) react(l []byte, evs []event.Event) func() {
 			s.pin = model
 			s.prov.setFallbackModel(model)
 			next = s.startThread
+		}
+	}
+	if s.flush {
+		// The main turn ended with a change asked for during it: written now
+		// (plan 38, design D3).
+		s.flush = false
+		thread, change := s.thread, s.change
+		s.sent = true
+		up := func() {
+			if err := s.writeUpdate(thread, change); err != nil {
+				s.problem("thread/settings/update not sent, the change waits for the next message: " + err.Error())
+			}
+		}
+		if prev := next; prev != nil {
+			next = func() { prev(); up() }
+		} else {
+			next = up
 		}
 	}
 	if s.m.TakeReadDue() {
@@ -532,7 +607,10 @@ var imageLimits = provider.ImageLimits{MaxCount: 100, MaxBytes: 20_000_000, MaxT
 func (s *Session) Send(msg provider.Message) error {
 	s.mu.Lock()
 	thread, reviewer, change := s.thread, s.reviewerLocked(), s.change
-	s.change = provider.ModelRequest{}
+	// The change goes with this turn, also one written at once whose
+	// thread/settings/updated has not come: never left waiting (plan 38,
+	// design D2). From here to the turn's end, changes wait for it (D3).
+	s.change, s.sent, s.starting = provider.ModelRequest{}, false, thread != ""
 	s.mu.Unlock()
 	if thread == "" {
 		s.keepChange(change)
@@ -558,6 +636,9 @@ func (s *Session) Send(msg provider.Message) error {
 	}
 	err := s.request("turn/start", params)
 	if err != nil {
+		s.mu.Lock()
+		s.starting = false
+		s.mu.Unlock()
 		s.keepChange(change)
 	}
 	return err
@@ -573,22 +654,56 @@ func (s *Session) keepChange(c provider.ModelRequest) {
 	}
 }
 
-// SetModelSettings writes nothing: the model and effort go with the next
-// turn/start, which is when Codex takes them (plan 34; doc/research/
-// codex-cli.md, section 13). Codex has no Ultracode.
+// SetModelSettings takes the change asked for, whole (plan 38; doc/research/
+// codex-cli.md, section 13): between turns it writes it at once with
+// thread/settings/update, answered by the thread/settings/updated that
+// follows (design D2); during a turn it waits for the turn's end (D3); with
+// a Codex that refused the update, it goes with the next turn/start, which
+// is when Codex takes it (plan 34; D4). A change that asks only for what
+// Codex reports in force cancels the one waiting. Codex has no Ultracode.
 func (s *Session) SetModelSettings(r provider.ModelRequest) error {
 	if r.Ultracode != nil {
 		return errors.New("Codex has no Ultracode")
 	}
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	if r.Model != "" {
-		s.change.Model = r.Model
+	if (r.Model == "" || r.Model == s.inModel) && (r.Effort == "" || r.Effort == s.inEffort) {
+		r = provider.ModelRequest{} // Codex notifies no update that changes nothing (P38x)
 	}
-	if r.Effort != "" {
-		s.change.Effort = r.Effort
+	s.change = r
+	if !s.instant || s.busy() || s.thread == "" || r == (provider.ModelRequest{}) {
+		s.mu.Unlock()
+		return nil
+	}
+	thread := s.thread
+	s.sent = true
+	s.mu.Unlock()
+	if err := s.writeUpdate(thread, r); err != nil {
+		s.mu.Lock()
+		s.change = provider.ModelRequest{}
+		s.mu.Unlock()
+		return err
 	}
 	return nil
+}
+
+// settingsUpdate is thread/settings/update's params (experimental): the
+// thread and only what the change asks for.
+type settingsUpdate struct {
+	ThreadID string `json:"threadId"`
+	Model    string `json:"model,omitempty"`
+	Effort   string `json:"effort,omitempty"`
+}
+
+// writeUpdate writes thread/settings/update for the change; one not written
+// waits for the next turn/start instead.
+func (s *Session) writeUpdate(thread string, c provider.ModelRequest) error {
+	err := s.request("thread/settings/update", settingsUpdate{ThreadID: thread, Model: c.Model, Effort: c.Effort})
+	if err != nil {
+		s.mu.Lock()
+		s.sent = false
+		s.mu.Unlock()
+	}
+	return err
 }
 
 // Answer answers a pending approval with one of Codex's decisions, echoing
@@ -625,10 +740,16 @@ func (s *Session) Refresh() error { return s.request("account/rateLimits/read", 
 
 // Capabilities of Codex CLI 0.145 through app-server. Allow for the session
 // is decided per request by the mapper: offered unless the request's
-// availableDecisions omits acceptForSession (plan 5, item 8; plan 8).
+// availableDecisions omits acceptForSession (plan 5, item 8; plan 8). A
+// model change applies at once between turns, from the next turn while the
+// main turn runs or for good once Codex refused thread/settings/update
+// (plan 38, designs D3 and D4).
 func (s *Session) Capabilities() provider.Capabilities {
+	s.mu.Lock()
+	next := !s.instant || s.busy()
+	s.mu.Unlock()
 	return provider.Capabilities{SubagentText: true, QuotaWithoutTurn: true, AutoApprovals: true, Images: imageLimits,
-		Models: true, ModelsNextTurn: true}
+		Models: true, ModelsNextTurn: next}
 }
 
 // Close closes stdin, then terminates the CLI, then kills its tree, each

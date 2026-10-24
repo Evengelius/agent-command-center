@@ -2,7 +2,7 @@
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
 │ A · ORCHESTRATOR                 ││                                                                                  │
-│ ✿ Claude H╭─ Quick open ────────────────────────────────────────────────────────────────────── 13 files ─╮           │
+│ ✿ Claude H╭─ Quick open ────────────────────────────────────────────────────────────────────── 14 files ─╮           │
 │ ──────────│ › vi▌                                                                                        │    mock   │
 │ STAGES · i│ ▸ sample/viewer.go                                                                           │           │
 │ ✓ TURN 1  │                                                                                              │nd write   │

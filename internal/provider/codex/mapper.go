@@ -46,6 +46,14 @@ type Mapper struct {
 	readForChange bool
 	readSent      bool
 	answering     map[string]bool
+	// A change written and not yet answered (plan 38, models.go): the
+	// thread/settings/update requests by id, and whether a change sent by
+	// one of them or by a turn/start still waits for its answer.
+	updates     map[string]bool
+	outstanding bool
+	// replies are the CLI's requests the session answers itself, other than
+	// approvals, by id: their answers map as writes (currentTime/read).
+	replies map[string]string
 }
 
 type serverReq struct {
@@ -55,7 +63,7 @@ type serverReq struct {
 // NewMapper returns an empty mapper.
 func NewMapper() *Mapper {
 	return &Mapper{pending: map[string]string{}, server: map[string]serverReq{}, files: map[string]string{}, totals: map[string]string{},
-		carried: map[string]bool{}, answering: map[string]bool{}}
+		carried: map[string]bool{}, answering: map[string]bool{}, updates: map[string]bool{}, replies: map[string]string{}}
 }
 
 type rpc struct {
@@ -157,7 +165,13 @@ func (m *Mapper) In(raw []byte) []event.Event {
 		case "turn/start":
 			if id != "" && (p.Model != "" || p.Effort != "") {
 				m.carried[id] = true // a model or effort change goes with this turn (plan 34)
+				m.outstanding = true
 			}
+		case "thread/settings/update": // a change written at once (plan 38)
+			if id != "" {
+				m.updates[id] = true
+			}
+			m.outstanding = true
 		case "thread/read":
 			if id != "" && m.readSent {
 				m.answering[id], m.readSent = true, false
@@ -195,6 +209,11 @@ func (m *Mapper) In(raw []byte) []event.Event {
 		return out
 	case r.hasID():
 		id := idString(r.ID)
+		if what, ok := m.replies[id]; ok {
+			// The session's own answer to a request that is no approval.
+			delete(m.replies, id)
+			return []event.Event{m.ev(event.Sent, event.Observed, "", "", "", raw, event.Write{What: what + " reply", RequestID: id})}
+		}
 		req, ok := m.server[id]
 		if !ok && len(r.Error) > 0 && string(r.Error) != "null" {
 			// The error the dashboard returns for a request it does not handle.
@@ -299,9 +318,21 @@ func (m *Mapper) response(r rpc, raw []byte) []event.Event {
 				// The change it carried is not taken either (plan 34): zone B
 				// says why; the settings in force are unchanged.
 				delete(m.carried, id)
+				m.outstanding = false
 				return []event.Event{refused, m.ev(event.ModelSettings, event.Observed, "", "", "", raw, event.Settings{Source: method, Answers: true, Refused: true,
 					Text: "the model change was not taken: " + p.Message})}
 			}
+		case "thread/settings/update":
+			delete(m.updates, id)
+			m.outstanding = false
+			if unsupported(r.Error, method) {
+				// No change at once with this Codex: the change waits for the
+				// next turn/start, as every later one (plan 38, design D4).
+				return []event.Event{m.ev(event.ModelSettings, event.Observed, "", "", "", raw, event.Settings{Source: method, NextTurn: true,
+					Text: "Codex takes model changes with the next message: " + p.Message})}
+			}
+			return []event.Event{refused, m.ev(event.ModelSettings, event.Observed, "", "", "", raw, event.Settings{Source: method, Answers: true, Refused: true,
+				Text: "the model change was not taken: " + p.Message})}
 		case "model/list":
 			if len(m.catalogue) == 0 {
 				// No list yet: the selector says why rather than wait for one
@@ -358,6 +389,11 @@ func (m *Mapper) response(r rpc, raw []byte) []event.Event {
 		return m.threadRead(id, r.Result, raw)
 	case "turn/interrupt":
 		return []event.Event{m.status("", raw, "interrupt acknowledged", "")}
+	case "thread/settings/update":
+		// Queued, not yet applied: thread/settings/updated answers the change
+		// (plan 38, design D2; P38x).
+		delete(m.updates, id)
+		return []event.Event{m.status("", raw, "settings update acknowledged", "")}
 	}
 	return []event.Event{m.status("", raw, "response", method)}
 }
@@ -422,6 +458,13 @@ func (m *Mapper) serverRequest(r rpc, raw []byte) []event.Event {
 		tool = "commandExecution"
 	case "item/fileChange/requestApproval":
 		tool = "fileChange"
+	case "currentTime/read":
+		// Codex's experimental API (plan 38, design D5): the session answers
+		// it with the time, as OpenAI's Codex extension for VS Code does.
+		var p ids
+		_ = json.Unmarshal(r.Params, &p)
+		m.replies[idString(r.ID)] = r.Method
+		return []event.Event{m.status(m.agentOf(p.ThreadID), raw, "current time asked", "")}
 	default:
 		return []event.Event{m.ev(event.Unrecognised, event.Observed, "", "", "", raw, event.Unknown{Type: "serverRequest/" + r.Method, Reason: "server request the dashboard does not handle"})}
 	}
@@ -627,6 +670,16 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 	case "account/updated":
 		// First seen in P7b (Codex 0.163.0): the sign-in mode and plan.
 		return []event.Event{m.status("", raw, "account updated", "")}
+	case "thread/settings/updated":
+		return m.settingsUpdated(r.Params, raw)
+	case "turn/moderationMetadata":
+		// First seen in P38t (Codex 0.163.0), in the stable schema too: the
+		// turn's moderation flags, logged (plan 38, design D5).
+		return []event.Event{m.status(agent, raw, "moderation metadata", "")}
+	case "thread/readState/changed":
+		// First seen in P38t, in the stable schema too: the thread's first
+		// unread position, for clients that mark threads read; logged.
+		return []event.Event{m.status(agent, raw, "read state changed", "")}
 	}
 	return []event.Event{m.unknown(raw, r.Method, "")}
 }

@@ -216,7 +216,7 @@ reset shown N/A.
 | Reset times | `resetsAt` | with the window |
 | Plan and credits | `planType`, `credits` | API key: N/A. `rateLimitResetCredits` ids are never shown or logged |
 | Model | `thread/start`, `model/rerouted`; a child's `subAgentActivity.model` (Codex CLI 0.163.0, P7b), else the `model` of the `spawnAgent` call that created it, "Model requested for the spawned agent" (`collabAgentToolCall`, 0.163.0 generated schema; P7c, on the v2 backend, sent none and its `subAgentActivity` carried the model; P9a, on the v1 backend, recorded it; source "spawn request", plan 6, item 4; plan 9), which the agent's own report always replaces | older children: "model N/A" (ASM-14) |
-| Model and effort in force (plan 34) | `thread/start`'s `model` and `reasoningEffort`; `thread/read`'s `thread.model` and `thread.reasoningEffort` after a turn that carried a change, or after `model/rerouted` | a change asked for and not yet sent: the pill keeps the values in force, the editor row's middle "→ <model> <Effort> (next turn)"; a refused turn drops the change, said in zone B; a refused read keeps the last values, its reason in zone B |
+| Model and effort in force (plan 34) | `thread/start`'s `model` and `reasoningEffort`; `thread/settings/updated`'s `threadSettings.model` and `.effort` (experimental, plan 38); `thread/read`'s `thread.model` and `thread.reasoningEffort` after a turn that carried a change, or after `model/rerouted` | a change asked for and not yet sent: the pill keeps the values in force, the editor row's middle "→ <model> <Effort> (next turn)"; a refused turn drops the change, said in zone B; a refused read keeps the last values, its reason in zone B |
 | Agent reasoning effort | a child's `subAgentActivity.reasoningEffort` (Codex CLI 0.163.0, P7b "high", P7c "low"), else the `reasoningEffort` of its `spawnAgent` call, "Reasoning effort requested for the spawned agent, when applicable" (generated schema; recorded by P9a, "low"; source "spawn request"), by the model's rule (plan 6, item 6) | older children: "effort N/A (not reported)" in the inspection header, nothing in C |
 | Context | `thread/tokenUsage/updated` per thread, raw value | before a thread's first model call: "N/A (no model call yet)" (CX-10 q7) |
 | Tokens | per-thread totals; session total derived | "N/A" before the first update |
@@ -364,13 +364,15 @@ be split without reading it, so a change there is reported, not classified.
   when the owner switches Manual or Auto (plan 12), `set_model` and
   `apply_flag_settings` only when the owner picks a model, an effort or
   Ultracode (plan 34), and none writes a settings file (P12c-switch, CC-10
-  q11; P34c). No Codex `config/write`, `config/batchWrite`,
-  `thread/settings/update` (experimental) or `windowsSandbox/setupStart`;
-  threads start read-only, and Auto turns ask for `workspaceWrite` per
-  turn, which writes no `trust_level` (plans 12 and 13, CX-10 q2; ASM-6); a
-  model or effort the owner picks rides on the next `turn/start`, a
-  thread's setting "for this turn and subsequent turns" (the schema; not
-  run live with a model change: plan 34's live checks sent no message).
+  q11; P34c). No Codex `config/write`, `config/batchWrite` or
+  `windowsSandbox/setupStart`; threads start read-only, and Auto turns ask
+  for `workspaceWrite` per turn, which writes no `trust_level` (plans 12
+  and 13, CX-10 q2; ASM-6); a model or effort the owner picks is a
+  thread's setting "for subsequent turns", written between turns with the
+  experimental `thread/settings/update` (plan 38) or carried by the next
+  `turn/start` ("for this turn and subsequent turns"), and neither writes
+  a configuration file (P38x and P38t left `config.toml` identical; P38t's
+  turn ran at the model and effort an update set).
 - Offers no answer that persists a rule (see [Approvals](#approvals)).
 - Writes no proxy into a CLI's configuration. Codex's proxy, when
   `config.json` names one, goes only into the environment of the Codex

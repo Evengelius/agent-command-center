@@ -460,6 +460,10 @@ func forbidden(line string) string {
 		return why
 	}
 	if len(m.Result) > 0 {
+		var r map[string]json.RawMessage
+		if json.Unmarshal(m.Result, &r) == nil && len(r) == 1 && r["currentTimeAt"] != nil {
+			return "" // currentTime/read's reply, the one answer that is no decision (plan 38)
+		}
 		var d struct {
 			Decision any `json:"decision"`
 		}
@@ -568,7 +572,9 @@ const (
 	p7Child   = "01a1419a-4212-7712-b732-30b9c9bd385c"
 )
 
-const initLine = `{"id":1,"method":"initialize","params":{"clientInfo":{"name":"agent_command_center","title":"Agent Command Center","version":"dev"}}}`
+// initLine is the session's initialize, with Codex's experimental API asked
+// for (plan 38, design D1). The keys come sorted, as the encoder writes a map.
+const initLine = `{"id":1,"method":"initialize","params":{"capabilities":{"experimentalApi":true},"clientInfo":{"name":"agent_command_center","title":"Agent Command Center","version":"dev"}}}`
 
 // turnLine is the turn/start line the session writes for text: Manual's
 // reviewer and sandbox, and the reasoning summary every turn asks for (plan
