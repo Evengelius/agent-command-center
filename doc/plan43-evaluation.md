@@ -133,3 +133,10 @@ Not verified:
 - Erasure beside a wide character in a running turn, on screen: the
   Windows Terminal check typed a key on an idle session; the running
   turn's case is checked by TestWideRowsKept on the real program's output.
+
+**The commit and the push (2026-10-25), after the owner's approval.** The
+owner approved plan 43 on 2026-10-25; commit 48bde52 (132 files: 122
+modified, 10 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+blocks above stay as they were reported.

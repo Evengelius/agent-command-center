@@ -95,261 +95,10 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 43 - A right activity sidebar with the Explorer docked
+## No plan active
 
-Brief amendment 44 (2026-10-24): a narrow activity sidebar right of zone B
-with two icons, Explorer and Skills; the existing Explorer docked between
-zone B and the sidebar, shown and hidden by F3 and by its icon; the icons'
-inactive, hover and selected looks after the owner's two images
-(`references/12-sidebar-collapsed.png`, `references/13-sidebar-explorer.webp`);
-Skills visual only. The criteria below were written before the code;
-nothing is committed until the owner has reviewed the result.
-
-### What was found
-
-A read-only mapping (three scans, 2026-10-24; scratchpad `plan43/map.md`):
-
-- **Layout** (`internal/render/dashboard.go`, `dashboard`): below 100
-  columns a narrow stack (zone A one row, zone B, zone C); from 100 zone A
-  takes `max(round(0.28 w), 36)` columns and zone B the rest, joined by
-  `beside`, zone C full width under them, the footer last. Zone B is 84
-  wide at 120x40, 112 at 156x44, 144 at 200x60, 150 at 208x59. Zone B's
-  editor row needs about 51 columns for its two pills. Popups (model
-  selector, modes box, "+" menu) are clamped to the screen's width, not to
-  zone B. 86 golden frames show zone B; 64 of them are 100 columns or more.
-- **Explorer** (plan 17; `internal/render/explorer.go`,
-  `internal/app/explorer.go`): F3 opens it as a window centred over the
-  dashboard (`FileRect`, `floatWindow`); while open it takes every key and
-  mouse event and counts as a window (`WindowOpen`), which turns off F4,
-  Alt+P, the "+" menu, the selectors and paste to zone B. Its rows, cursor,
-  listing (`input.ListDir`), git marks, keys (↑ ↓ PgUp PgDn Home End → ←
-  Enter Esc /) and the viewer it opens are independent of the window's
-  geometry; `explorerWindow` adds the frame, a path row and a footer. F3
-  first opens the file the entry in front names (`f3`), else the Explorer.
-- **Images and pointer**: images are drawn at 10x20 pixels a cell over
-  constant blank cells and redrawn when their look changes
-  (`previewSignature`, `thumbSequence`); helpers `fillRounded`,
-  `strokePaths`, `iconShape`, `blend`. The mouse reports motion without a
-  button only while a popup is open (all-motion, 1003); each motion report
-  costs an `Update` and a full `View`; `tea.WithFilter` can drop a message
-  before both. A pointer at rest may report a wandering cell (plan 36): only
-  a change of item may count as a hover.
-- **The references** (measured, `scratchpad/plan43/fg.ps1`): the sidebar a
-  box of its own, about 8 cells wide; each icon a square tile about 6
-  cells by 3 rows; the selected Explorer tile a dark fill `#181C30`, a thin
-  purple outline `#7A4EBA`, a lavender accent bar `#A272F1` on its left
-  edge, its icon (a tree: a trunk and two folders) light grey-blue
-  `#A6B3C6`; the Skills icon (three linked nodes) muted grey `#6F7C88`, no
-  tile; the Explorer panel about 30 cells at the reference's scale, a header
-  "EXPLORER" `#A785DD` with a chevron at the right, a rule, the root row
-  (chevron, open-folder icon, the project's name), folders with a chevron,
-  a blue folder icon `#6CA1DB` and a light name, files a grey document
-  icon `#A3B1C9`.
-
-### Design
-
-- **D1. Layout.** From 100 columns the upper row becomes zone A | zone B |
-  the Explorer panel when shown | the sidebar, zone A's width and place
-  unchanged, the sidebar `8` columns wide on the far right, zone C full
-  width under all of them, the footer last. The panel is
-  `clamp(round(0.15 w), 26, 36)` columns; it docks when zone B keeps at
-  least 64 columns; otherwise (compact) it takes zone B's place while it is
-  shown. Below 100 columns (the narrow stack) there is no sidebar and the
-  shown Explorer takes zone B's place. No zone is narrower than 5 columns.
-- **D2. The sidebar.** A box with the zones' thin grey border and no
-  title; two square tiles, 6 cells by 3 rows, the Explorer's on the box's
-  rows 1-3 and Skills' on rows 5-7, centred. With Sixel each tile is an
-  image (60x60 pixels) over constant blank cells, its look one of
-  inactive, hover, selected, selected and hovered; without Sixel a text
-  form (a glyph, a band ground, a "▎" accent). No text label, no tooltip.
-- **D3. The looks**, from the references and the theme: inactive, no
-  tile, the icon `#6F7C88`; hover, a rounded tile of the selectors' hover
-  ground, the icon brighter; selected (Explorer while the panel is shown),
-  the rounded tile `#181C30` with its `#7A4EBA` outline, the `#A272F1`
-  accent bar on its left edge, the icon `#A6B3C6`; selected and hovered,
-  the selected tile a shade lighter. The Explorer icon a tree (a trunk, two
-  folders), Skills three linked nodes, both drawn with the existing helpers
-  on the same grid and weight.
-- **D4. Hover.** While the sidebar shows, the mouse reports every motion
-  (1003); only a change of tile under the pointer changes the hover (plan
-  36's rule); a filter before `Update` drops a motion report that changes
-  no hover while no popup is open and no drag runs, so idle motion costs no
-  frame. Hover never changes what is selected.
-- **D5. Showing and hiding.** `ui.Explorer.Open` is the one state. F3 on
-  the dashboard, a click on the Explorer tile and a click on the panel's
-  chevron toggle it; opening gives the panel the keyboard focus, closing
-  gives it back to zone B. F3 keeps its file meaning where it had one (a
-  focused approval card, an entry shown whole, or the entry cursor on a
-  call naming a file opens that file in the viewer, plan 17); from the
-  viewer or the quick open, F3 closes them and toggles the panel; from the
-  inspection or the details view, F3 closes it and shows the panel; from a
-  zoomed zone, which covers the panel as they do, F3 ends the zoom and
-  shows it (step 4, the review). A click on the Skills tile does nothing:
-  no state, focus or selection changes.
-- **D6. The panel**, docked, reusing the Explorer's rows, listing, git
-  marks, cursor and keys: a header row "EXPLORER" in the title colour,
-  bold, with "⌄" at its right end; a rule; the root row "⌄ 🗀 <project>"
-  (the project folder's name); the tree under it, one step deeper,
-  folders "›" or "⌄", a folder icon in blue and the name, files a document
-  icon in grey and the name, git marks at the right as before. The path
-  row and footer of the old window go: its keys go to the global footer
-  while the panel has the focus, git's failure note to the panel's last
-  row. Rows scroll inside the panel, the header, rule and root row stay.
-  Its border is the title colour while it has the focus, grey otherwise.
-- **D7. Keys and focus.** The panel has its own focus; F6 and Tab go B →
-  the panel (when shown) → C → A. With the focus on it the Explorer's keys
-  work as before, except that Esc on a top-level row gives the focus back
-  to zone B and leaves the panel shown. A click on a row moves its cursor
-  or opens it as before, the wheel scrolls it only over the panel, a click
-  in zone B gives B the focus. Enter on a file opens the floating viewer;
-  Esc from it returns to the panel. Where the panel takes zone B's place,
-  zone B taking the focus hides it (the compact rule, step 3), so the focus
-  is never on a zone not drawn. While the panel has the focus or takes zone
-  B's place, the footer shows a waiting approval first, and in zone B's
-  place a quit question before it (step 4, the review).
-- **D8. Not a window.** The docked panel is no longer a floating window
-  (`WindowOpen` leaves it out): F4, Alt+P, the "+" menu, the selectors,
-  paste and the draft keep working while it is shown; opening and closing
-  it keep the draft, the attachments and B's scroll. The viewer and the
-  quick open stay floating windows. With the focus on the docked panel the
-  draft beside it keeps the clipboard: a paste, Alt+V and Ctrl+C on the
-  draft's selection act on the draft, as when the old window left B the
-  focus; in zone B's place a paste goes nowhere and Ctrl+C interrupts, as
-  from zones A and C. F2 from the panel, the viewer or the quick open
-  leaves the panel as it is (step 4, the review).
-- **D9. Popups** (the model selector, the modes box, the "+" menu) stay
-  inside zone B: clamped to its right edge, never over the panel or the
-  sidebar. One wider than zone B keeps its width and extends left over
-  zone A, as the model selector did at 100 and 101 columns before: from
-  100 to 109 columns, and beside the panel docked at 136 to 138 (step 4,
-  the review: narrowing it would cut its Effort row).
-- **D10. Unchanged**: zone A, zone C, the footer's place, zone B's
-  internal design (only narrower), every shortcut but F3's toggle; the
-  footer and F1 say "F3 Explorer".
-- **D11. Images beside wide characters** (step 4, the review's
-  verification): Bubble Tea clears its buffer before each frame, and
-  ultraviolet repaints every touched row holding a wide character from
-  column 0, changed or not, which erases the tiles beside a ✅ in zone A or
-  B until a frame changes their rows. A third patch of the vendored copy
-  (`third_party/ultraviolet/PATCHES.md`) leaves such a row alone when
-  unchanged and otherwise writes it only up to its last changed cell. The
-  images are also drawn again after every size report, the same size
-  included: Bubble Tea erases the screen for each.
-
-### Criteria
-
-1. **43.1 Collapsed layout** at 120x40, 156x44, 200x60 and 208x59: the
-   sidebar 8 columns wide right of zone B on the upper rows only, zone A
-   as before (same width, same rows), zone B `w - A - 8`, zone C full
-   width and as before, the footer last.
-2. **43.2 Expanded layout**: the panel `clamp(round(0.15 w), 26, 36)`
-   wide between zone B and the sidebar at 156x44, 200x60 and 208x59
-   (zone B 78, 106 and 111); at 120x40 (zone B would be 50) it takes zone
-   B's place, the sidebar kept; at 80x24 no sidebar, the panel in zone B's
-   place; zone A and C as before; TestFrameInvariants from 80 to 240
-   columns: no width under 5, every row exactly the screen's width.
-3. **43.3 The sidebar's tiles**: exactly two, Explorer then Skills, 6x3
-   cells on the box's rows 1-3 and 5-7, centred; with Sixel blank cells
-   that never change under the images, without Sixel the text form in
-   each look.
-4. **43.4 The images**: from their pixels, selected: fill within 6
-   levels of `#181C30`, outline of `#7A4EBA`, an accent bar of `#A272F1` on
-   the left edge, the icon `#A6B3C6`; hover: the hover ground, the icon
-   brighter than inactive; inactive: transparent ground, icon `#6F7C88`;
-   the Explorer icon a trunk and two folders, Skills three nodes and their
-   links; rounded corners.
-5. **43.5 Hover**: all-motion while the sidebar shows; a motion onto a
-   tile hovers it, off it unhovers it, a report wandering within one tile
-   changes nothing; hovering Skills while Explorer is selected keeps
-   Explorer selected; a motion that changes no hover reaches neither
-   `Update` nor `View` (counted); a timing test of motion within the 16 ms
-   target.
-6. **43.6 Toggle**: F3 and a click on the Explorer tile open the panel
-   (focus on it, the tile selected) and close it (focus to B, zone B's
-   width back); the chevron's click closes it; the same state either way;
-   a click on Skills changes nothing; F3's file meaning kept in its three
-   cases; F3 from the viewer, the quick open, the inspection and the
-   details view as D5 says, and from a zoomed zone (added in step 4).
-7. **43.7 The panel's content**: header "EXPLORER" (title colour, bold)
-   and "⌄" at its right; the rule; the root row with the project's own
-   name; the tree of the real folder (a test project with folders and
-   files), folders and files with their chevrons, icons and styles; git
-   marks; scrolling keeps the header, rule and root row.
-8. **43.8 The Explorer's behaviour kept**: its existing tests' keys,
-   listing, marks, deleted entries, stale listing, quick open, the viewer
-   and back, against the docked panel; Esc on a top-level row gives B the
-   focus with the panel shown; the wheel over zone B does not move the
-   panel; the state (folders, cursor, marks) survives hiding and showing;
-   the compact rule (added in step 3); F2 from the panel, the viewer or the
-   quick open keeps the panel (added in step 4).
-9. **43.9 Not a window**: with the panel shown, F4 opens the modes box,
-   Alt+P the model selector, a click the "+" menu, a paste reaches the
-   draft; the draft, the attachments and B's scroll are the same before
-   opening, while shown and after closing. With the focus on the docked
-   panel, a paste and Alt+V reach the draft and Ctrl+C copies its selection
-   without interrupting the turn; in zone B's place, neither (added in
-   step 4).
-10. **43.10 Focus and hints**: F6 and Tab through B, the panel, C and A;
-    the panel's border in the title colour while focused, grey otherwise;
-    the footer shows the panel's keys while it has the focus; the footer
-    and F1 say "F3 Explorer"; a waiting approval and, in zone B's place, a
-    quit question come first in the footer (added in step 4).
-11. **43.11 Popups inside zone B**: the model selector, the modes box and
-    the "+" menu end at zone B's right edge or before it, with the panel
-    shown and hidden, at 120x40 to 208x59; one no wider than zone B starts
-    at its left edge or after it, a wider one ends at its right edge, from
-    100x40 (amended in step 4).
-12. **43.12 Unchanged elsewhere**: every golden frame change explained by
-    a script: zone A's rows and zone C's rows identical to before, zone B
-    narrower with the same content reflowed, the new columns; the frames
-    under 100 columns change only where the Explorer was shown.
-13. **43.13 The checks**: build, vet and gofmt clean; `go test ./...` ok;
-    `-race` on render, app and input ok; the timing step alone within its
-    targets, with the motion test; breakages of the new code caught by
-    tests.
-14. **43.14 Windows Terminal**, the acc tab's profile (208x59) and
-    120x40, real keys and clicks: the collapsed sidebar, the panel shown,
-    each tile hovered, Explorer selected, F3 showing and hiding; the
-    colours read from the screenshots against the references'.
-15. **43.15 Images beside wide characters** (added in step 4, D11): the
-    real program at 208x59 with Sixel, a list of ✅ beside both tiles: a key
-    typed and a running turn's spinner frames write none of those rows;
-    the patched renderer's own test; the module's upstream tests pass;
-    Windows Terminal: the tiles stay after typing, where step 3's build
-    erased them.
-
-### Steps
-
-1. The finding, brief amendment 44, the criteria.
-2. The layout, the docked panel, its keys, focus and mouse, F3 (text
-   tiles).
-3. The tiles' images, hover and the motion filter.
-4. An independent review of the result; its findings fixed.
-5. The checks; Windows Terminal; the documents; the evaluation
-   (`doc/plan43-evaluation.md`); the report.
-
-### Progress
-
-- 2026-10-24: step 1 done. Step 2 done: the layout, the docked panel, its
-  keys, focus and mouse, F3, the text tiles; 66 golden frames rewritten,
-  each change explained by a script. Step 3 done: the tiles' images, the
-  hover, the motion filter, the compact rule. Step 4 done: a review in
-  three lenses (layout, interaction, pointer) and a verification of its one
-  medium finding. That finding (the tiles' images redrawn ten times a
-  second in a running turn) was refuted as deliberate and cheap, and the
-  verification found D11's erasure instead; the low findings fixed or
-  decided (D5, D7, D8, D9, the hover after a press held off a tile, the
-  timing step's motion test), D11 patched, each fix tested and checked by
-  a mutation run (13 breakages, all caught).
-- 2026-10-25: step 5 done: the checks on the final tree, Windows Terminal
-  at 208x59 and 120x40, the documents (ui-design.md's Right sidebar and
-  Explorer, its layouts redrawn; reference-design.md; architecture.md;
-  PATCHES.md; the timing step with TestMotionToFrame), and
-  `doc/plan43-evaluation.md`: 15 criteria, 15 PASS. A mutation run that
-  wrote into the tree was cut short by a stop of the session and left nine
-  files zero-filled; they were rebuilt and proved byte for byte by the
-  `git diff` hash, and the mutations now run through `go test -overlay`.
-  Waiting for the owner's review; nothing committed.
+Plan 43 was approved and closed on 2026-10-25 (Closed plans, below). The
+next plan starts when the owner asks for one.
 
 ## Closed plans
 
@@ -821,3 +570,19 @@ of the keyboard's hints. On those rows a double click no longer selects a
 word; a drag still does. Approved on 2026-10-24: 7 of 7 PASS
 ([`doc/plan42-evaluation.md`](doc/plan42-evaluation.md)); commit
 11f794d, then the approval commit.
+
+## Plan 43 - A right activity sidebar with the Explorer docked
+
+Brief amendment 44: a narrow activity sidebar right of zone B, from 100
+columns, with the Explorer's and Skills' icons after the owner's two
+images. The Explorer, a floating window since plan 17, is a panel docked
+between zone B and the sidebar where zone B keeps 64 columns, and in zone
+B's place where it does not and under 100 columns; F3 and the Explorer's
+icon show and hide that one panel, the focus with it, F3 keeping its file
+meaning. The icons' four looks are Sixel images, their hover from
+every motion reported, filtered before Update; Skills is a placeholder.
+The review led to a third patch of the vendored ultraviolet: a row
+holding a wide character is written only as far as it changed, so the
+icons beside it stay. Approved on 2026-10-25: 15 of 15 PASS
+([`doc/plan43-evaluation.md`](doc/plan43-evaluation.md)); commit
+48bde52, then the approval commit.
