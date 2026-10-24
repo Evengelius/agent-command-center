@@ -246,6 +246,24 @@ func (m *Model) modelsClick(item int) []tea.Cmd {
 	return nil
 }
 
+// modelsPointer records the selector's item under the pointer at (x, y),
+// -1 outside the selector, and says whether the pointer came onto another
+// item than the last report's. A terminal reports a pointer moved by
+// software, even one at rest, once the selector asks for every motion,
+// and those reports wander a cell; so only a change of item is a hover,
+// and the selector opened by a key, which does not know where the pointer
+// is, takes its first report as where it rests (plan 36, design D1).
+func (m *Model) modelsPointer(x, y int) (item int, moved bool) {
+	v := &m.ui.Models
+	item = -1
+	if p, it := m.screen.ItemAt(x, y); p == render.SelectorPanel {
+		item = it
+	}
+	moved = v.PointerKnown && item != v.Pointer
+	v.Pointer, v.PointerKnown = item, true
+	return item, moved
+}
+
 // modelsHover moves the cursor, or the effort list's, to the item under
 // the pointer (design D9).
 func (m *Model) modelsHover(item int) {

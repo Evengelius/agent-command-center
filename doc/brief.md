@@ -4622,3 +4622,20 @@ A probe in Windows Terminal 1.23 compared drawings (plan.md, Plan 35):
 text with Powerline's rounded ends keeps a small knob, or one as tall as
 the track; a 40x20-pixel Sixel image, 4 cells, with a 16-pixel knob,
 matches the image's proportions. Taken as plan 35 (plan.md, Plan 35).
+
+## Amendment 37, 2026-10-24: the selector's cursor and a pointer that has not moved, for plan 36
+
+After plan 35 was approved and pushed, the report named what its checks
+had seen outside the plan (doc/plan35-evaluation.md): Alt+P reopened the
+model selector with its cursor on the Ultracode row, under a pointer left
+resting there, so Enter would have turned Ultracode off rather than act
+on the model in force. Told that the mouse had not moved, the terminal
+reporting where the pointer was and the selector taking that for a hover,
+the owner wrote, word for word:
+
+````text
+ok lets fix that
+````
+
+Taken as plan 36 (plan.md, Plan 36): the probe first, to see what the
+terminal sends, then the fix.

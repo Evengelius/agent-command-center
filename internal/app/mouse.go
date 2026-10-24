@@ -51,9 +51,15 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 		if mo.Button == tea.MouseLeft && !m.ui.DraftWin.Open {
 			switch p, item := m.screen.ItemAt(mo.X, mo.Y); {
 			case p == render.PillPanel:
-				// The model pill opens and closes the model selector (plan 34).
-				return m.toggleModels()
+				// The model pill opens and closes the model selector (plan 34),
+				// which then knows the pointer lies outside it (plan 36).
+				cmds := m.toggleModels()
+				if m.ui.Models.Open {
+					m.modelsPointer(mo.X, mo.Y)
+				}
+				return cmds
 			case m.ui.Models.Open && p == render.SelectorPanel:
+				m.modelsPointer(mo.X, mo.Y)
 				return m.modelsClick(item)
 			case p == '+':
 				m.closeModels()
@@ -87,8 +93,10 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			m.ui.PlusHover = m.screen.PanelAt(mo.X, mo.Y) == 'U' // the hover (plan 30, design D3)
 		}
 		if m.ui.Models.Open && !m.drag.on {
-			if p, item := m.screen.ItemAt(mo.X, mo.Y); p == render.SelectorPanel {
-				m.modelsHover(item) // the cursor follows the pointer (plan 34, design D9)
+			// The cursor follows the pointer onto another row (plan 34, design
+			// D9), not a report of where it rests (plan 36, design D1).
+			if item, moved := m.modelsPointer(mo.X, mo.Y); moved && item > 0 {
+				m.modelsHover(item)
 			}
 		}
 		if m.drag.on {

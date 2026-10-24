@@ -28,6 +28,13 @@ type ModelsView struct {
 	Effort    bool // the effort list open over the box
 	Level     int  // the effort list's cursor, an index into the model's levels
 	Ultracode bool // the CLI has Ultracode (Capabilities.Ultracode): its row is drawn
+	// Pointer is the item under the mouse pointer as the last mouse report
+	// gave it (0 on the frame or a blank row, -1 outside the selector);
+	// PointerKnown says a report came since the selector opened. The
+	// cursor follows the pointer onto another item only (plan 36, design
+	// D1).
+	Pointer      int
+	PointerKnown bool
 }
 
 // SelectorShown is what the last frame showed of the selector's list: its

@@ -2387,7 +2387,15 @@ provider: it has no provider code and sends a string to part 5's caller
     while it is open, as the "+" menu's); a click on a row acts on it, on
     the frame or a blank row does nothing; the wheel scrolls the list; a
     click outside closes it and goes on. The pill is panel 'M', the popup
-    panel 'S'.
+    panel 'S'. The hover moves the cursor only when the pointer comes
+    onto another row than the last report's (plan 36, brief amendment
+    37): Windows Terminal reports a pointer that software put down,
+    without its moving, once the popup asks for every motion, those
+    reports wandering a cell; so the first report after Alt+P only says
+    where the pointer rests, and the popup opens on the model in force
+    whatever lies under the pointer. Opened by a click on the pill, the
+    popup knows the pointer is there, and the first row it enters takes
+    the cursor.
   - **Only what the CLI accepted**: a choice changes nothing on screen by
     itself. Claude Code's is sent at once, and the pill, the "✓", zone
     B's speaker and zone A's model take a new value only from the

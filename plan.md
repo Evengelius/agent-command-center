@@ -93,10 +93,94 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 36 - The selector's cursor and a pointer that has not moved
 
-Plan 35 was approved and closed on 2026-10-24 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 37 (2026-10-24): Alt+P could open the model selector
+with its cursor on the row under a pointer that had not moved, so that
+Enter acted on that row (in plan 35's run, turned Ultracode off) rather
+than on the model in force. The criteria below were written before the
+code; nothing is committed until the owner has reviewed the result.
+
+### What the probe found
+
+P36a, Windows Terminal 1.23 at 120x40 on the mock
+(`scratchpad\term\p35demo.ps1 -trace`, Bubble Tea's `TEA_TRACE` of every
+sequence in and out; `scratchpad\term\out-p36`): the pointer left over
+the Ultracode row three ways, then Esc and Alt+P four times.
+
+- A, the harness's click on the toggle, which puts the pointer there
+  with `SetCursorPos` (no pointer event reaches the terminal): at the
+  first reopen, right after the selector turned motion reports on
+  (`?1003h`), the terminal sent three reports of the resting pointer,
+  `\x1b[<35;106;30M`, `…;107;30M`, `…;106;30M` (a cell to the right and
+  back), and the cursor went to the Ultracode row; the three reopens
+  after it had no report and stayed on Fable 5.1.
+- B, the pointer moved there by `SendInput` (as a mouse moves) while the
+  selector was open: one report, the hover of plan 34; then four
+  reopens, no report, the cursor on Fable 5.1 each time.
+- C, moved there by `SendInput` while the selector was closed: four
+  reopens, no report, the cursor on Fable 5.1 each time.
+
+A physical mouse did not bring it about here; a pointer moved by
+software (`SetCursorPos`, as remote desktops and mouse utilities do)
+did, and its reports wander a cell, so ignoring the first report alone
+would not do.
+
+### Design
+
+- **D1. The row under the pointer.** While the selector is open, the
+  application keeps the selector's item under the pointer as the last
+  mouse report gave it (0 on its frame or a blank row, none outside the
+  selector). A motion report moves the cursor, or the effort list's,
+  only when it puts the pointer over another item than that one; on the
+  same item it changes nothing. The selector opened by a key does not
+  know where the pointer is: its first report only records the item. A
+  press or release records the item too, so a selector opened by a click
+  on the pill knows the pointer lies outside it, and the first row the
+  pointer enters takes the cursor, as before.
+- **D2. Unchanged:** a click acts on the row under it; the wheel
+  scrolls; the "+" menu's hover (plan 30), whose item never lies under
+  the pointer that opens it.
+
+### Criteria
+
+Checked by tests unless marked WT (Windows Terminal).
+
+1. Alt+P, then motion reports at the toggle's cell, a cell to its
+   right and back (the probe's three): the cursor stays on the model in
+   force; Enter then acts on it, asking for that model and for no
+   Ultracode change.
+2. Then a report over Sonnet 5.5's row moves the cursor there, and one
+   back over the Ultracode row moves it to Ultracode.
+3. The cursor moved by ↓ stays where it is when a report comes over the
+   row the pointer was already reported on.
+4. The selector opened by a click on the pill: the first report over a
+   model's row moves the cursor there (TestSelectorMouse unchanged).
+5. The effort list open: a report over another level moves its cursor
+   there; a report again over the same level does not move it back after
+   ↑ or ↓.
+6. No regression: build, vet, gofmt clean; the suite; the race detector
+   on app; no golden frame changed; the timing step's
+   `TestSelectorToFrame` within target.
+7. WT, at 120x40: variant A (the probe's trigger) gives 4 of 4 reopens
+   on the model in force, its trace showing the reports that came;
+   variants B and C 4 of 4; a real move onto a model's row moves the
+   cursor there.
+
+### Steps
+
+1. Probe (done 2026-10-24): P36a above; brief amendment 37.
+2. D1 in the application; the tests.
+3. The checks; WT; the evaluation (`doc/plan36-evaluation.md`); the
+   docs (ui-design.md, the selector's mouse); the report.
+
+### Progress
+
+- 2026-10-24: step 1 done; step 2 in progress.
+- 2026-10-24: steps 2 and 3 done: D1 in the application
+  (`ModelsView.Pointer`, `modelsPointer`), the tests, the checks, WT on
+  both builds; the evaluation, `doc/plan36-evaluation.md`, 7 criteria:
+  7 PASS; the docs. Nothing committed: waiting for the owner's review.
 
 ## Closed plans
 
