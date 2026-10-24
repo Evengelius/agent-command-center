@@ -13,15 +13,17 @@ import (
 // sets its hover, a click on its item closes it and does nothing else, a
 // click on the band again opens it, Esc closes it and is consumed, a click
 // elsewhere closes it and goes on, any other key closes it and acts; the
-// view asks for every mouse motion only while the menu is open.
+// view asks for every mouse motion while the menu is open, and since plan
+// 43 (design D4) while the sidebar shows, as at 120x40 here (under 100
+// columns, cell motion with the menu closed: TestSideMotionMode).
 func TestPlusMenuMouse(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		r, _, _ := selectRig(t)
 		h := r.h
 		h.send(tea.PasteMsg{Content: "draft"})
 		frame := func() string { return plainText(h.m.View().Content) }
-		if h.m.View().MouseMode != tea.MouseModeCellMotion {
-			t.Fatalf("mouse mode %v before the menu, want cell motion", h.m.View().MouseMode)
+		if h.m.View().MouseMode != tea.MouseModeAllMotion {
+			t.Fatalf("mouse mode %v before the menu, the sidebar shown, want all motion", h.m.View().MouseMode)
 		}
 		x, y := at(t, h, "+     ", 0) // the band, then the gap before the pill
 		press := func(px, py int) {
@@ -50,8 +52,8 @@ func TestPlusMenuMouse(t *testing.T) {
 		if h.m.ui.Plus || strings.Contains(frame(), "Upload from computer") || h.m.edit.Text() != "draft" || len(r.sent()) != sent || h.m.ui.Focus != "B" {
 			t.Errorf("a click on the item: open %v, draft %q, %d sent, focus %q", h.m.ui.Plus, h.m.edit.Text(), len(r.sent()), h.m.ui.Focus)
 		}
-		if h.m.View().MouseMode != tea.MouseModeCellMotion {
-			t.Errorf("mouse mode %v after the menu, want cell motion", h.m.View().MouseMode)
+		if h.m.View().MouseMode != tea.MouseModeAllMotion {
+			t.Errorf("mouse mode %v after the menu, the sidebar shown, want all motion", h.m.View().MouseMode)
 		}
 		// The band again, then Esc.
 		press(x+1, y)

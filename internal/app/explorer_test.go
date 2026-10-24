@@ -30,9 +30,11 @@ func treeNames(v render.ExplorerView) []string {
 	return out
 }
 
-// TestExplorerOpen is plan 17, criterion 5.3: F3 with no file in front
-// opens the Explorer on the project's top level, folders first, a
-// credential file left out, the project's name on its edge.
+// TestExplorerOpen is plan 17, criterion 5.3, docked since plan 43 (design
+// D6): F3 with no file in front shows the Explorer's panel with the focus,
+// the project's top level under the root row that names the project's
+// folder, folders first, a credential file left out; its keys in the
+// footer.
 func TestExplorerOpen(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h, root := explorerRig(t, &fakeGit{})
@@ -42,11 +44,11 @@ func TestExplorerOpen(t *testing.T) {
 		if got := treeNames(v); !v.Open || strings.Join(got, ",") != strings.Join(want, ",") {
 			t.Fatalf("the Explorer: open %v, rows %q", v.Open, got)
 		}
-		if v.Name != filepath.Base(root) || v.Cursor != "" || h.m.ui.File.Open || h.m.ui.Finder.Open {
-			t.Errorf("name %q, cursor %q, viewer %v, quick open %v", v.Name, v.Cursor, h.m.ui.File.Open, h.m.ui.Finder.Open)
+		if v.Name != filepath.Base(root) || v.Cursor != "" || h.m.ui.File.Open || h.m.ui.Finder.Open || h.m.ui.Focus != "R" {
+			t.Errorf("name %q, cursor %q, viewer %v, quick open %v, focus %q", v.Name, v.Cursor, h.m.ui.File.Open, h.m.ui.Finder.Open, h.m.ui.Focus)
 		}
 		frame := plainText(h.m.View().Content)
-		for _, s := range []string{"Explorer", "5 items", "▸ docs", "main.go", "Esc back · F3 close"} {
+		for _, s := range []string{"EXPLORER", "⌄ 🗀  " + filepath.Base(root), "› 🗀  docs", "🗎  main.go", "Esc back", "F3 Explorer"} {
 			if !strings.Contains(frame, s) {
 				t.Errorf("%q not drawn:\n%s", s, frame)
 			}
@@ -57,10 +59,14 @@ func TestExplorerOpen(t *testing.T) {
 	})
 }
 
-// TestExplorerKeys is plan 17, criteria 5.4 and 5.5: → and Enter open a
-// folder, ← closes it or goes to its folder, Esc closes the folder the
-// cursor is in, then the Explorer; / opens the quick open, whose Esc comes
-// back; F3 and F2 close every window; a paste is dropped, the draft kept.
+// TestExplorerKeys is plan 17, criteria 5.4 and 5.5, docked since plan 43
+// (designs D5 and D7): → and Enter open a folder, ← closes it or goes to
+// its folder, Esc closes the folder the cursor is in, then gives zone B the
+// focus, which at 120x40, the panel in zone B's place, hides it (plan 43's
+// compact rule; docked, the panel is kept: TestExplorerDocked); / opens the
+// quick open, whose Esc comes back; F3 shows the panel as it was left and
+// hides it; F3 in the viewer or the quick open closes it and hides the
+// panel, F2 closes them all; a paste is dropped, the draft kept.
 func TestExplorerKeys(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h, _ := explorerRig(t, &fakeGit{})
@@ -115,17 +121,17 @@ func TestExplorerKeys(t *testing.T) {
 		if h.m.ui.Finder.Open || !v.Open {
 			t.Fatalf("Esc in the quick open: quick open %v, Explorer %v", h.m.ui.Finder.Open, v.Open)
 		}
-		h.send(key(tea.KeyEscape, 0)) // at the top: closed
-		if v.Open {
-			t.Fatal("Esc at the top left the Explorer open")
+		h.send(key(tea.KeyEscape, 0)) // at the top: zone B's focus, the panel in its place hidden
+		if v.Open || h.m.ui.Focus != "B" || !strings.Contains(h.frame(), "B · CONVERSATION") {
+			t.Fatalf("Esc at the top: Explorer %v, focus %q", v.Open, h.m.ui.Focus)
 		}
 		h.send(key(tea.KeyF3, 0)) // as it was left
-		if !v.Open || v.Cursor != "docs" {
-			t.Fatalf("F3 again: open %v, cursor %q", v.Open, v.Cursor)
+		if !v.Open || v.Cursor != "docs" || h.m.ui.Focus != "R" {
+			t.Fatalf("F3 from zone B: open %v, cursor %q, focus %q", v.Open, v.Cursor, h.m.ui.Focus)
 		}
 		h.send(key(tea.KeyF3, 0))
-		if v.Open || h.m.ui.File.Open || h.m.ui.Finder.Open {
-			t.Fatal("F3 in the Explorer left a window open")
+		if v.Open || h.m.ui.File.Open || h.m.ui.Finder.Open || h.m.ui.Focus != "B" {
+			t.Fatalf("F3 in the Explorer: open %v, a window open, or the focus %q", v.Open, h.m.ui.Focus)
 		}
 		if got := h.m.edit.Text(); got != "draft" {
 			t.Errorf("the draft: %q", got)
@@ -145,12 +151,14 @@ func TestExplorerKeys(t *testing.T) {
 					h, _ := explorerRig(t, &fakeGit{})
 					h.send(key(tea.KeyF3, 0))
 					c.to(h)
-					if !render.WindowOpen(h.m.ui) {
-						t.Fatal("no window open")
+					if !h.m.ui.Explorer.Open || c.name != "the Explorer" && !render.WindowOpen(h.m.ui) {
+						t.Fatalf("the panel shown %v, a window open %v", h.m.ui.Explorer.Open, render.WindowOpen(h.m.ui))
 					}
 					h.send(k)
-					if render.WindowOpen(h.m.ui) || h.m.ui.Explorer.Open {
-						t.Errorf("%s left a window: viewer %v, quick open %v, Explorer %v", k.String(),
+					// F3 hides the panel too; F2 closes the windows and keeps the
+					// panel, which is none (plan 43's review, design D8).
+					if render.WindowOpen(h.m.ui) || h.m.ui.Explorer.Open != (k.String() == "f2") {
+						t.Errorf("%s: viewer %v, quick open %v, Explorer %v", k.String(),
 							h.m.ui.File.Open, h.m.ui.Finder.Open, h.m.ui.Explorer.Open)
 					}
 				}
@@ -159,9 +167,11 @@ func TestExplorerKeys(t *testing.T) {
 	}
 }
 
-// TestExplorerBack is plan 17, criterion 5.5: Esc in the viewer goes back
-// to the Explorer, its cursor on the file and each folder above it open,
-// a file opened from a tool entry too; F3 there closes every window.
+// TestExplorerBack is plan 17, criterion 5.5, docked since plan 43 (design
+// D7): Esc in the viewer goes back to the Explorer's panel with the focus,
+// its cursor on the file and each folder above it open, a file opened from
+// a tool entry too; Esc at its top gives zone B the focus, which at 120x40
+// hides the panel in zone B's place (plan 43's compact rule).
 func TestExplorerBack(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h, _ := explorerRig(t, &fakeGit{})
@@ -178,8 +188,8 @@ func TestExplorerBack(t *testing.T) {
 		}
 		h.send(key(tea.KeyEscape, 0))
 		v := h.m.ui.Explorer
-		if h.m.ui.File.Open || !v.Open || v.Cursor != "src/Main.java" || !v.Opened["src"] {
-			t.Fatalf("Esc in the viewer: viewer %v, Explorer %v, cursor %q", h.m.ui.File.Open, v.Open, v.Cursor)
+		if h.m.ui.File.Open || !v.Open || v.Cursor != "src/Main.java" || !v.Opened["src"] || h.m.ui.Focus != "R" {
+			t.Fatalf("Esc in the viewer: viewer %v, Explorer %v, cursor %q, focus %q", h.m.ui.File.Open, v.Open, v.Cursor, h.m.ui.Focus)
 		}
 	})
 	synctest.Test(t, func(t *testing.T) {
@@ -195,16 +205,16 @@ func TestExplorerBack(t *testing.T) {
 		}
 		h.send(key(tea.KeyEscape, 0))
 		v := h.m.ui.Explorer
-		if h.m.ui.File.Open || !v.Open || v.Cursor != "docs/readme.md" || !v.Opened["docs"] || v.Dirs["docs"] == nil {
-			t.Fatalf("Esc after a tool entry: viewer %v, Explorer %v, cursor %q, opened %v", h.m.ui.File.Open, v.Open, v.Cursor, v.Opened)
+		if h.m.ui.File.Open || !v.Open || v.Cursor != "docs/readme.md" || !v.Opened["docs"] || v.Dirs["docs"] == nil || h.m.ui.Focus != "R" {
+			t.Fatalf("Esc after a tool entry: viewer %v, Explorer %v, cursor %q, opened %v, focus %q", h.m.ui.File.Open, v.Open, v.Cursor, v.Opened, h.m.ui.Focus)
 		}
 		if !strings.Contains(plainText(h.m.View().Content), "readme.md") {
 			t.Error("the file's row is not drawn")
 		}
 		h.send(key(tea.KeyEscape, 0)) // docs closed
-		h.send(key(tea.KeyEscape, 0)) // closed
-		if h.m.ui.Explorer.Open {
-			t.Error("two Esc left the Explorer open")
+		h.send(key(tea.KeyEscape, 0)) // zone B's focus, the panel in its place hidden
+		if h.m.ui.Explorer.Open || h.m.ui.Explorer.Opened["docs"] || h.m.ui.Focus != "B" {
+			t.Errorf("two Esc: Explorer %v, docs open %v, focus %q", h.m.ui.Explorer.Open, h.m.ui.Explorer.Opened["docs"], h.m.ui.Focus)
 		}
 	})
 }
@@ -306,14 +316,11 @@ func TestExplorerStale(t *testing.T) {
 	})
 }
 
-// TestExplorerMouse is plan 17, criterion 5.8: the wheel moves the cursor,
-// a click puts it on a row, a click on the cursor's row is Enter; nothing
-// is selected and a click outside the window does nothing.
 // TestExplorerDeleted is plan 17, criterion 6.3: the deleted paths git
-// reports listed; on a deleted file the path row says so, and Enter or a
-// click on the cursor's row opens nothing; → opens a deleted folder without
-// reading the disk, Esc closes it; the Explorer opened again reads no
-// deleted folder.
+// reports listed; a deleted file's row with its D (the panel has no path
+// row since plan 43, design D6), and Enter or a click on the cursor's row
+// opens nothing; → opens a deleted folder without reading the disk, Esc
+// closes it; the Explorer opened again reads no deleted folder.
 func TestExplorerDeleted(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h, _ := explorerRig(t, &fakeGit{marks: input.GitMarks{Files: map[string]byte{"gone/a.txt": 'D', "old.go": 'D', "src/lost.go": 'D'}}})
@@ -325,7 +332,7 @@ func TestExplorerDeleted(t *testing.T) {
 		}
 		h.send(key(tea.KeyEnd, 0))
 		frame := plainText(h.m.View().Content)
-		if v.Cursor != "old.go" || !strings.Contains(frame, "old.go · deleted, not on disk") || !strings.Contains(frame, "old.go") {
+		if v.Cursor != "old.go" || !rowHas(frame, "old.go", "D") || !rowHas(frame, "gone", "D") {
 			t.Fatalf("the cursor on old.go: %q\n%s", v.Cursor, frame)
 		}
 		h.send(key(tea.KeyEnter, 0))
@@ -361,6 +368,10 @@ func TestExplorerDeleted(t *testing.T) {
 	})
 }
 
+// TestExplorerMouse is plan 17, criterion 5.8, on the docked panel (plan
+// 43, design D7): the wheel over it moves the cursor, a click puts it on a
+// row, a click on the cursor's row is Enter; nothing is selected and a
+// click outside every panel does nothing.
 func TestExplorerMouse(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h, _ := explorerRig(t, &fakeGit{})

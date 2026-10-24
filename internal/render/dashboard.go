@@ -27,6 +27,73 @@ const (
 // it, rounded, at least 36.
 func zoneAWidth(w int) int { return max((w*zoneAShare+50)/100, zoneAMin) }
 
+// The Explorer's panel, docked between zone B and the sidebar from 100
+// columns (plan 43, design D1): its share of the width in percent, rounded,
+// its least and most columns, and the columns zone B keeps beside it; with
+// fewer, the panel takes zone B's place while it is shown.
+const (
+	panelShare = 15
+	panelMin   = 26
+	panelMax   = 36
+	dockMinB   = 64
+)
+
+// explorerWidth is the docked panel's width at w columns.
+func explorerWidth(w int) int { return min(max((w*panelShare+50)/100, panelMin), panelMax) }
+
+// geometry is the dashboard's layout at the UI's size (plan 20; plan 43,
+// design D1): under 100 columns zone A's line, then B and C full width;
+// from 100 the upper row's columns, zone A, zone B, the Explorer's panel
+// and the sidebar, over C. A width is 0 for what is not drawn: the panel
+// while hidden, zone B while the panel takes its place, zone A's column and
+// the sidebar under 100 columns.
+type geometry struct {
+	narrow    bool
+	upper, ch int // the upper row's rows (B's under the narrow layout's line), zone C's
+	aw, bw    int // zone A's columns, zone B's
+	pw, sw    int // the panel's columns, the sidebar's
+}
+
+// layout is the dashboard's geometry for the state and the UI.
+func layout(s *state.State, ui UI) geometry {
+	w, h := ui.Width, ui.Height
+	inPlay := s.AgentsInPlay()
+	if w < standardWidth {
+		region := h - 4 // the bars, zone A's line and the footer
+		ch := cHeight(inPlay, region, 0, true)
+		g := geometry{narrow: true, upper: region - ch, ch: ch, bw: w}
+		if ui.Explorer.Open {
+			g.bw, g.pw = 0, w // no sidebar: the panel in zone B's place
+		}
+		return g
+	}
+	minB := 12
+	if w >= wideWidth {
+		minB = 14
+	}
+	region := h - 3 // the bars and the footer
+	ch := cHeight(inPlay, region, minB, false)
+	g := geometry{upper: region - ch, ch: ch, aw: zoneAWidth(w), sw: sideWidth}
+	g.bw = w - g.aw - g.sw
+	if ui.Explorer.Open {
+		if pw := explorerWidth(w); g.bw-pw >= dockMinB {
+			g.bw, g.pw = g.bw-pw, pw
+		} else {
+			g.bw, g.pw = 0, g.bw // compact: the panel in zone B's place
+		}
+	}
+	return g
+}
+
+// ExplorerCompact says the Explorer's panel is shown in zone B's place, no
+// zone B drawn: under 100 columns, or where zone B would keep fewer than
+// dockMinB columns beside it (plan 43, design D1). There zone B taking the
+// focus hides the panel, the application's compact rule.
+func ExplorerCompact(s *state.State, ui UI) bool {
+	g := layout(s, ui)
+	return g.pw > 0 && g.bw == 0
+}
+
 // dashboard draws the working screen at the layout the width selects.
 func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	w, h := ui.Width, ui.Height
@@ -57,36 +124,42 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	// Plan 20 (brief amendment 16): A and B share the upper row, their bottom
 	// borders on one row; C spans the whole width under both. C is sized by
 	// the agents in play (plan 18). Zone D is gone since plan 24: its rows
-	// are A's and B's, its values in A's telemetry pane.
-	inPlay := s.AgentsInPlay()
-	if w < standardWidth {
+	// are A's and B's, its values in A's telemetry pane. Since plan 43
+	// (amendment 44, design D1) the sidebar ends the upper row, the
+	// Explorer's panel before it while shown.
+	g := layout(s, ui)
+	if g.narrow {
 		// The fallback under 100 columns: A as one row, B and C full width.
 		ls = append(ls, zoneALine(s, w))
-		region := h - len(ls) - 1
-		ch := cHeight(inPlay, region, 0, true)
-		bh := region - ch
 		if ui.Focus == "A" { // the tree takes B's and C's place until F6 leaves it
 			sc.AY = len(ls)
-			ls = append(ls, zoneA(s, ui, w, bh+ch, sc)...)
+			ls = append(ls, zoneA(s, ui, w, g.upper+g.ch, sc)...)
 			return append(ls, keyHints(w, ui, "↑↓ move · ←→ fold · Enter inspect or details · F6 zone · Esc back to the input"))
 		}
 		sc.Conv.Y = len(ls) + 1
-		ls = append(ls, zoneB(s, ui, w, bh, editorMinRows, sc)...)
-		ls = append(ls, zoneC(s, ui, w, ch, sc)...)
-		return append(ls, keyHints(w, ui, footer(s, ui, sendNewline(ui)+" · F6 zone · F2 approve · F3 Explorer · F1 keys")))
+		sc.B, sc.Panel = Cols{W: g.bw}, Cols{W: g.pw}
+		if g.pw > 0 {
+			ls = append(ls, explorerPanel(ui, w, g.upper)...) // no sidebar: the panel in zone B's place
+		} else {
+			ls = append(ls, zoneB(s, ui, w, g.upper, editorMinRows, sc)...)
+		}
+		ls = append(ls, zoneC(s, ui, w, g.ch, sc)...)
+		return append(ls, keyFooter(s, ui, w, g.pw > 0, sendNewline(ui)+" · F6 zone · F2 approve · F3 Explorer · F1 keys"))
 	}
 
-	aw, minB := zoneAWidth(w), 12
-	if wide {
-		minB = 14
-	}
-	region := h - len(ls) - 1 // A and B, then C
-	ch := cHeight(inPlay, region, minB, false)
-	top := region - ch
 	sc.Conv.Y = len(ls) + 1
 	sc.AY = len(ls)
-	ls = append(ls, beside(zoneA(s, ui, aw, top, sc), zoneB(s, ui, w-aw, top, editorMinRows, sc))...)
-	ls = append(ls, zoneC(s, ui, w, ch, sc)...) // the whole width, its timeline inside (plan 27)
+	upper := [][]line{zoneA(s, ui, g.aw, g.upper, sc)}
+	if g.bw > 0 {
+		upper = append(upper, zoneB(s, ui, g.bw, g.upper, editorMinRows, sc))
+	}
+	if g.pw > 0 {
+		upper = append(upper, explorerPanel(ui, g.pw, g.upper))
+	}
+	upper = append(upper, sidebar(ui, g.sw, g.upper))
+	sc.B, sc.Panel, sc.Side = Cols{g.aw, g.bw}, Cols{g.aw + g.bw, g.pw}, Cols{g.aw + g.bw + g.pw, g.sw}
+	ls = append(ls, beside(upper...)...)
+	ls = append(ls, zoneC(s, ui, w, g.ch, sc)...) // the whole width, its timeline inside (plan 27)
 	hints := sendNewline(ui) + " · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit"
 	if wide {
 		hints = sendNewline(ui) + " · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 modes · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit"
@@ -96,7 +169,7 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		// of the line, Ctrl+Q quit (plan 17, F3 in the footer; plan 29).
 		hints = strings.Replace(hints, ui.newlineKeys()[0]+" newline · ", "", 1)
 	}
-	return append(ls, keyHints(w, ui, footer(s, ui, hints)))
+	return append(ls, keyFooter(s, ui, w, g.bw == 0, hints))
 }
 
 // editorMinRows is the input's least height: one row under the rule, then
@@ -105,7 +178,9 @@ const editorMinRows = 1
 
 // footer is the bottom line's key hints: B's entry cursor's while it is on,
 // C's while C has the focus (plan 20: C has no hint row of its own), A's
-// while A has it (plan 24: A has none either), else the dashboard's.
+// while A has it (plan 24: A has none either), the Explorer's while its
+// panel has it (plan 43, design D6: the window's footer gone), else the
+// dashboard's.
 func footer(s *state.State, ui UI, hints string) string {
 	switch {
 	case ui.Entry > 0 && ui.Focus == "B" && ui.Card == "":
@@ -114,6 +189,8 @@ func footer(s *state.State, ui UI, hints string) string {
 		return "↑↓ select · Enter inspect · z zoom · PgUp PgDn Home End scroll · F6 zone · Esc back to the input · F1 keys"
 	case ui.Focus == "A":
 		return aFooter
+	case ui.Focus == "R" && ui.Explorer.Open:
+		return explorerHints(ui.Width)
 	}
 	return hints
 }
@@ -123,6 +200,23 @@ func boolInt(b bool) int {
 		return 1
 	}
 	return 0
+}
+
+// keyFooter is the footer row: the key hints, except where the Explorer's
+// panel takes zone B's place (noB), hiding its editor's status row and its
+// cards, or has the focus: there the quit question (noB) and then a waiting
+// approval come first, in the attention colour, as in the old window's
+// footer (plan 43's review).
+func keyFooter(s *state.State, ui UI, w int, noB bool, hints string) line {
+	if ui.Toast == "" && !ui.MouseOff {
+		switch {
+		case noB && s.QuitAsked:
+			return plain(" "+editorStatus(s, ui), stAttentionBold).fit(w)
+		case (noB || ui.Focus == "R" && ui.Explorer.Open) && anyPending(s):
+			return plain(" ◆ approval waiting · F2 to answer", stAttentionBold).fit(w)
+		}
+	}
+	return keyHints(w, ui, footer(s, ui, hints))
 }
 
 // keyHints is the bottom line; a toast takes its place for a moment.

@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
 // treeText is the tree's rows, each as its indent and name.
@@ -121,12 +119,14 @@ func TestExplorerMarks(t *testing.T) {
 		if l.width() != 30 || strings.Contains(plainOf(l), "M") {
 			t.Errorf("an ignored row, cursor %v: %q", cur, plainOf(l))
 		}
-		if st := l[2].st; st != either(cur, stExpRowGrey, stGrey) {
+		if x, ok := spanOf(l, "a.o"); !ok || x.st != either(cur, stExpRowGrey, stGrey) {
 			t.Errorf("an ignored row, cursor %v: its name not dimmed", cur)
 		}
 	}
+	// Plan 43, design D6: one step under the root row, "⌄" before an open
+	// folder, its icon, two spaces, the name; the marker at the right.
 	l := explorerRow(g, ExplorerRow{Path: "src", Name: "src", Dir: true, Open: true}, false, 20)
-	if got := plainOf(l); got != "▾ src             ● " {
+	if got := plainOf(l); got != "  ⌄ 🗀  src        ● " {
 		t.Errorf("an open dirty folder: %q", got)
 	}
 }
@@ -175,16 +175,32 @@ func TestExplorerDeleted(t *testing.T) {
 	}
 	for _, cur := range []bool{false, true} {
 		l := explorerRow(g, rows[15], cur, 20)
-		if got := plainOf(l); got != "  main.go         D " {
+		if got := plainOf(l); got != "    🗎  main.go    D " {
 			t.Errorf("a deleted file, cursor %v: %q", cur, got)
 		}
-		if l[2].st != either(cur, stExpRowFailed, stFailed) || l[len(l)-2].st != either(cur, stExpRowFailed, stFailed) {
+		if x, _ := spanOf(l, "main.go"); x.st != either(cur, stExpRowFailed, stFailed) || l[len(l)-2].st != either(cur, stExpRowFailed, stFailed) {
 			t.Errorf("a deleted file, cursor %v: its name or its D not red", cur)
 		}
 	}
-	v.Cursor = "gone/a"
-	if body := texts(explorerWindow(state.New(), UI{Width: 80, Height: 24, Explorer: v}, 60, 22)); !strings.Contains(body, "gone/a/ · deleted, not on disk") {
-		t.Errorf("the path row of a deleted folder:\n%s", body)
+	// The path row is gone with the window (plan 43, design D6): the panel
+	// shows the deleted folder under the cursor by its red name and red D.
+	v.Open, v.Cursor = true, "gone/a"
+	panel := explorerPanel(UI{Width: 80, Height: 24, Focus: "R", Explorer: v}, 40, 22)
+	var name, mark *span
+	for _, l := range panel {
+		for i, x := range l {
+			if x.ref.panel == ExplorerPanel && x.ref.item == 11 { // gone/a, rows[10]
+				switch x.text {
+				case "a":
+					name = &l[i]
+				case "D":
+					mark = &l[i]
+				}
+			}
+		}
+	}
+	if name == nil || mark == nil || name.st != stExpRowFailed || mark.st != stExpRowFailed {
+		t.Errorf("the deleted folder under the cursor: its name %v and its D %v, want both red on the cursor row:\n%s", name, mark, texts(panel))
 	}
 }
 

@@ -479,19 +479,25 @@ One line under the title (AM4 W1; architecture.md, Session context):
 Three layouts, chosen by the terminal's width: narrow below 100 columns,
 standard from 100 to 159, wide from 160; widths and splits below are
 ASM-12, as plan 20 set them after the owner's two templates (brief,
-amendment 16) and plan 24 moved them for zone A's telemetry (amendment 22).
-The layout is recomputed on every resize message; the state does not
-change.
+amendment 16), plan 24 moved them for zone A's telemetry (amendment 22) and
+plan 43 added the activity sidebar (amendment 44). The layout is recomputed
+on every resize message; the state does not change.
 
-From 100 columns A and B share the upper row: the same height, their top
-borders on the row under the project bar, their bottom borders on one row.
-A takes 28% of the width, rounded, at least 36 columns (36 at 120, 44 at
-156, 45 at 160, 56 at 200, 58 at 208), B the rest. C spans the whole width
-under them, and the key footer is the last row. The rows A, B and C share
-are the height less the two bars and the footer; zone D, which sat under C
-until plan 23, is gone, and its rows went to A and B. Under 100 columns A
-is one row under the project bar, F6 opening it, its telemetry included,
-over B and C, and B and C are full width.
+From 100 columns A, B and the [right sidebar](#right-sidebar) share the
+upper row, the [Explorer](#explorer)'s panel between B and the sidebar
+while it shows: the same height, their top borders on the row under the
+project bar, their bottom borders on one row. A takes 28% of the width,
+rounded, at least 36 columns (36 at 120, 44 at 156, 45 at 160, 56 at 200,
+58 at 208), the sidebar 8 columns on the far right, B the rest (76 at 120,
+104 at 156, 136 at 200, 142 at 208). The shown panel takes
+`clamp(round(0.15 w), 26, 36)` columns from B where B keeps at least 64
+(from 136 columns: B 64 at 136, 78 at 156, 106 at 200, 111 at 208), else
+B's place. C spans the whole width under them, and the key footer is the
+last row. The rows A, B and C share are the height less the two bars and
+the footer; zone D, which sat under C until plan 23, is gone, and its rows
+went to A and B. Under 100 columns A is one row under the project bar, F6
+opening it, its telemetry included, over B and C; B and C are full width,
+with no sidebar, and the shown Explorer takes B's place.
 
 C's height follows the agents in play (plan 18, kept by plan 20;
 [events-and-state.md](events-and-state.md#zone-cs-height)): with none, 3
@@ -507,7 +513,12 @@ rows C leaves.
 The frames below are the renderer's own, drawn from the recorded P3b
 session in mock mode stopped at the subagent's Write request, Template 2's
 state (`testdata\mock\claude-subagent-approval.jsonl`; the golden frames
-hold more states).
+hold more states), written by `TestDocFrames` (`ACC_DOC_FRAMES` naming a
+folder) and last redrawn by plan 43. The recording names no effort, so the
+model pill reads "Haiku 5.5"; a session that reports its settings adds
+them, as "Haiku 5.5 High · Ultracode" ([Input editor](#input-editor)). The
+sidebar's tiles show in their text form here, as in every golden frame
+(drawn without Sixel); Windows Terminal draws them as images.
 
 ### Narrow, 80x24
 
@@ -530,7 +541,7 @@ hold more states).
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Ask Mock data anything…                                                   │
 │ ──────────────────────────────────────────────────────────────────────────── │
-│   +     Haiku 5.5 High · Ultracode                               ✋ Manual   │
+│   +     Haiku 5.5                                                ✋ Manual   │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 1 ACTIVE · 0 DONE ─╮
 │  ● general-purpose haiku-5-5   waiting: approval              6s   21.2k tok │
@@ -549,37 +560,38 @@ hold more states).
   box fills B; the narration above it is a scroll away.
 - C is one row an agent, at most 5 rows; more are reached by scrolling or
   zoom.
+- No sidebar under 100 columns: F3 shows the Explorer in B's place.
 
 ### Standard, 120x40
 
 ```text
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session 
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300 
-╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                 ││ ▎ CLAUDE  Haiku 5.5  11:30                                                       │
-│ ✿ Haiku 5.5      ! AGENT WAITING ││ ▎  ✓ Agent  general-purpose · List directory and write fo…  11:30:06      mock   │
-│ ──────────────────────────────── ││ ▎                                                                                │
-│ STAGES · inferred from activity  ││ ▎ I've launched the subagent in the background to list the directory and write   │
-│ ✓ TURN 1                      4s ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
-│   Use the Agent tool to launch … ││ ▎                                                                                │
-│   Agent · agent general-purpose  ││ ▎  ✓ general-purpose · Bash  ls -p "<probe…  allowed by you 11:30:08      mock   │
-│                                  ││ ▎                                                                                │
-│                                  ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
-│                                  ││ ▎ │ ! APPROVAL · general-purpose · Write                          11:30  mock │  │
-│ ──────────────────────────────── ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                                   │  │
-│ ✦ TELEMETRY        Enter details ││ ▎ │ ▸ Preview of found.txt (2 lines)                                          │  │
-│ ▾ SESSION USAGE                  ││ ▎ │  1 │ alpha.txt                                                            │  │
-│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎ │  2 │ beta.md                                                              │  │
-│   Tokens 61.9k session total     ││ ▎ │ This will create or overwrite the file at                                 │  │
-│   Est. cost $0.00 API-equiv.     ││ ▎ │ `<probe-root>\probe-work\p3b\found.txt` with the above content.           │  │
-│ ▾ QUOTA WINDOWS                  ││ ▎ │ ▐ F2 to answer ▌                                                          │  │
-│   Session (5hr)             35%† ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
-│   ███████████░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
-│   Resets in 14h 39m              ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Weekly (7 day)            47%† ││ >  Ask Mock data anything…                                                       │
-│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 1d 20h               ││   +     Haiku 5.5 High · Ultracode                                   ✋ Manual   │
-╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ ▎ CLAUDE  Haiku 5.5  11:30                                               ││      │
+│ ✿ Haiku 5.5      ! AGENT WAITING ││ ▎  ✓ Agent  general-purpose · List directory and …  11:30:06      mock   ││  ≡   │
+│ ──────────────────────────────── ││ ▎                                                                        ││      │
+│ STAGES · inferred from activity  ││ ▎ I've launched the subagent in the background to list the directory     ││      │
+│ ✓ TURN 1                      4s ││ ▎ and write `found.txt`. I'll report its result when it finishes.        ││      │
+│   Use the Agent tool to launch … ││ ▎                                                                        ││  ⑂   │
+│   Agent · agent general-purpose  ││ ▎  ✓ general-purpose · Bash  ls -p…  allowed by you 11:30:08      mock   ││      │
+│                                  ││ ▎                                                                        ││      │
+│                                  ││ ▎ ╭───────────────────────────────────────────────────────────────────╮  ││      │
+│                                  ││ ▎ │ ! APPROVAL · general-purpose · Write                  11:30  mock │  ││      │
+│ ──────────────────────────────── ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                           │  ││      │
+│ ✦ TELEMETRY        Enter details ││ ▎ │ ▸ Preview of found.txt (2 lines)                                  │  ││      │
+│ ▾ SESSION USAGE                  ││ ▎ │  1 │ alpha.txt                                                    │  ││      │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎ │  2 │ beta.md                                                      │  ││      │
+│   Tokens 61.9k session total     ││ ▎ │ This will create or overwrite the file at                         │  ││      │
+│   Est. cost $0.00 API-equiv.     ││ ▎ │ `<probe-root>\probe-work\p3b\found.txt` with the above content.   │  ││      │
+│ ▾ QUOTA WINDOWS                  ││ ▎ │ ▐ F2 to answer ▌                                                  │  ││      │
+│   Session (5hr)             35%† ││ ▎ ╰───────────────────────────────────────────────────────────────────╯  ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Resets in 14h 39m              ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)            47%† ││ >  Ask Mock data anything…                                               ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 1d 20h               ││   +     Haiku 5.5                                            ✋ Manual   ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    1 ACTIVE · 0 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
@@ -595,16 +607,17 @@ hold more states).
  Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit            
 ```
 
-- A, 36 columns here (the least; 28% of 120 is 34), and B end on the same
-  row, 33 rows from the row under the project bar: the height less the two
-  bars, C's four rows and the footer. A's frame carries no title; inside
-  it, "A · ORCHESTRATOR" alone on its row, then the model row, the model at
-  the left and the orchestrator's status at the right end of that same row
-  ("! AGENT WAITING": the turn completed and the subagent waits for the
-  owner; the title "Claude Haiku 5.5" does not fit beside it, so the row
-  takes the short name), a rule, "STAGES · inferred from activity" and a
-  block a turn, here TURN 1 folded, being closed: its prompt's first line,
-  cut with "…", and one grey row naming its items.
+- A, 36 columns here (the least; 28% of 120 is 34), B, 76, and the
+  sidebar, 8, end on the same row, 25 rows from the row under the project
+  bar: the height less the two bars, C's 12 rows and the footer. A's
+  frame carries no title; inside it, "A · ORCHESTRATOR" alone on its row,
+  then the model row, the model at the left and the orchestrator's status
+  at the right end of that same row ("! AGENT WAITING": the turn completed
+  and the subagent waits for the owner; the title "Claude Haiku 5.5" does
+  not fit beside it, so the row takes the short name), a rule, "STAGES ·
+  inferred from activity" and a block a turn, here TURN 1 folded, being
+  closed: its prompt's first line, cut with "…", and one grey row naming
+  its items.
 - Under the tree's free rows, a rule and the telemetry pane in its compact
   form, since zone C's 12 rows leave A 25 (plan 27): "✦ TELEMETRY" with
   "Enter details" at its right end; "▾ SESSION USAGE", three rows at this
@@ -617,6 +630,11 @@ hold more states).
   narrow bar of its colour, its header on its own row and its body under it,
   a thin rule between messages (amendment 17); the input sits at B's
   bottom edge under its rule.
+- The sidebar, right of B ([Right sidebar](#right-sidebar)): the
+  Explorer's tile "≡" on its box's rows 1 to 3 and Skills' "⑂" on rows 5
+  to 7, both inactive. The Explorer shown would take B's place here (B
+  would keep 50 columns beside its 26), as golden frame `explorer` at
+  120x40 shows.
 - C is full width and 12 rows (plan 27): inside its frame the header "C ·
   LIVE AGENTS" with "1 ACTIVE · 0 DONE", a rule, then "AGENTS" over the
   cards' panel (40 cells, as wide as the card) and "EXECUTION TIMELINE"
@@ -624,59 +642,59 @@ hold more states).
   the agent's card, " ●  general-purpose     │  haiku-5-5" over "00:06
   21.2k tok   │  tool: Write", left of the panels' line, "no activity yet"
   right of it (the mock's subagent has sent no message yet).
-- The footer names F3 at every size: "F3 Explorer", the Explorer F3 opens
-  when no file is in front ("F3 file" while B's entry cursor is on an entry
-  that names one). When the whole line does not fit, as at 120 columns, it
-  leaves out "Ctrl+J newline", which B's input shows above it, so that
-  "Ctrl+Q quit" stays visible (from 108 columns here, from 173 in the wide
-  layout) (plan 17).
+- The footer names F3 at every size: "F3 Explorer", the Explorer's panel
+  F3 shows or hides when no file is in front ("F3 file" while B's entry
+  cursor is on an entry that names one). When the whole line does not
+  fit, as at 120 columns, it leaves out "Ctrl+J newline", which B's input
+  shows above it, so that "Ctrl+Q quit" stays visible (from 108 columns
+  here, from 173 in the wide layout) (plan 17).
 
 ### Wide, 200x60
 
 ```text
  >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session 
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                                                Mock data 2.1.300 
-╭──────────────────────────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                                     ││                                                                                                                                              │
-│ ✿ Claude Haiku 5.5                   ! AGENT WAITING ││ ▎ YOU  11:30                                                                                                                                 │
-│ ──────────────────────────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into  │
-│ STAGES · inferred from activity                      ││ ▎ a new file named found.txt with the Write tool, and report the names. Then tell me in one line what it found.                              │
-│ ✓ TURN 1                                          4s ││                                                                                                                                              │
-│   Use the Agent tool to launch one general-purpose … ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
-│   Agent · agent general-purpose                      ││                                                                                                                                              │
-│                                                      ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                                                                   │
-│                                                      ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                                                        11:30:06      mock   │
-│                                                      ││ ▎                                                                                                                                            │
-│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it finishes.         │
-│                                                      ││ ▎                                                                                                                                            │
-│                                                      ││ ▎  ✓ general-purpose · Bash  ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'                          allowed by you 11:30:08      mock   │
-│                                                      ││ ▎                                                                                                                                            │
-│                                                      ││ ▎ ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  │
-│                                                      ││ ▎ │ ! APPROVAL · general-purpose · Write                                                                                      11:30  mock │  │
-│                                                      ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                                                                                               │  │
-│                                                      ││ ▎ │ ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ │  │
-│                                                      ││ ▎ │ │ ▸ Preview of found.txt (2 lines)                                                                                                  │ │  │
-│                                                      ││ ▎ │ │  1 │ alpha.txt                                                                                                                    │ │  │
-│                                                      ││ ▎ │ │  2 │ beta.md                                                                                                                      │ │  │
-│                                                      ││ ▎ │ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │  │
-│                                                      ││ ▎ │ This will create or overwrite the file at `<probe-root>\probe-work\p3b\found.txt` with the above content.                             │  │
-│                                                      ││ ▎ │ ▐ F2 to answer ▌                                                                                                                      │  │
-│ ──────────────────────────────────────────────────── ││ ▎ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  │
-│ ✦ TELEMETRY                            Enter details ││                                                                                                                                              │
-│ ▾ SESSION USAGE                                      ││                                                                                                                                              │
-│   CONTEXT           │ TOKENS        │ EST. COST      ││                                                                                                                                              │
-│   3% of 1M          │ 61.9k         │ $0.00          ││                                                                                                                                              │
-│   █░░░░░░░░░░░░░░░░ │ session total │ API-equivalent ││                                                                                                                                              │
-│                                                      ││                                                                                                                                              │
-│ ▾ QUOTA WINDOWS                                      ││                                                                                                                                              │
-│   Session (5hr)                                 35%† ││                                                                                                                                              │
-│   ██████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                                                                              │
-│   Resets in 14h 39m                                  ││                                                                                                                                              │
-│                                                      ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
-│   Weekly (7 day)                                47%† ││ >  Ask Mock data anything…                                                                                                                   │
-│   ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 1d 20h                                   ││   +     Haiku 5.5 High · Ultracode                                                                                               ✋ Manual   │
-╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                                     ││                                                                                                                                      ││      │
+│ ✿ Claude Haiku 5.5                   ! AGENT WAITING ││ ▎ YOU  11:30                                                                                                                         ││  ≡   │
+│ ──────────────────────────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their     ││      │
+│ STAGES · inferred from activity                      ││ ▎ names into a new file named found.txt with the Write tool, and report the names. Then tell me in one line what it found.           ││      │
+│ ✓ TURN 1                                          4s ││                                                                                                                                      ││      │
+│   Use the Agent tool to launch one general-purpose … ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ││  ⑂   │
+│   Agent · agent general-purpose                      ││                                                                                                                                      ││      │
+│                                                      ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                                                           ││      │
+│                                                      ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                                                11:30:06      mock   ││      │
+│                                                      ││ ▎                                                                                                                                    ││      │
+│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it           ││      │
+│                                                      ││ ▎ finishes.                                                                                                                          ││      │
+│                                                      ││ ▎                                                                                                                                    ││      │
+│                                                      ││ ▎  ✓ general-purpose · Bash  ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'                  allowed by you 11:30:08      mock   ││      │
+│                                                      ││ ▎                                                                                                                                    ││      │
+│                                                      ││ ▎ ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  ││      │
+│                                                      ││ ▎ │ ! APPROVAL · general-purpose · Write                                                                              11:30  mock │  ││      │
+│                                                      ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                                                                                       │  ││      │
+│                                                      ││ ▎ │ ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ │  ││      │
+│                                                      ││ ▎ │ │ ▸ Preview of found.txt (2 lines)                                                                                          │ │  ││      │
+│                                                      ││ ▎ │ │  1 │ alpha.txt                                                                                                            │ │  ││      │
+│                                                      ││ ▎ │ │  2 │ beta.md                                                                                                              │ │  ││      │
+│                                                      ││ ▎ │ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │  ││      │
+│                                                      ││ ▎ │ This will create or overwrite the file at `<probe-root>\probe-work\p3b\found.txt` with the above content.                     │  ││      │
+│ ──────────────────────────────────────────────────── ││ ▎ │ ▐ F2 to answer ▌                                                                                                              │  ││      │
+│ ✦ TELEMETRY                            Enter details ││ ▎ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  ││      │
+│ ▾ SESSION USAGE                                      ││                                                                                                                                      ││      │
+│   CONTEXT           │ TOKENS        │ EST. COST      ││                                                                                                                                      ││      │
+│   3% of 1M          │ 61.9k         │ $0.00          ││                                                                                                                                      ││      │
+│   █░░░░░░░░░░░░░░░░ │ session total │ API-equivalent ││                                                                                                                                      ││      │
+│                                                      ││                                                                                                                                      ││      │
+│ ▾ QUOTA WINDOWS                                      ││                                                                                                                                      ││      │
+│   Session (5hr)                                 35%† ││                                                                                                                                      ││      │
+│   ██████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                                                                      ││      │
+│   Resets in 14h 39m                                  ││                                                                                                                                      ││      │
+│                                                      ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)                                47%† ││ >  Ask Mock data anything…                                                                                                           ││      │
+│   ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 1d 20h                                   ││   +     Haiku 5.5                                                                                                        ✋ Manual   ││      │
+╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯╰──────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                                                                                                    1 ACTIVE · 0 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
@@ -696,11 +714,13 @@ hold more states).
  Enter send · Ctrl+J newline · Ctrl+C copy or interrupt · Ctrl+G draft · F6 / Shift+F6 zone · F2 approvals · F3 Explorer · F4 modes · z zoom · F12 mouse capture · F1 keys · Ctrl+Q quit                
 ```
 
-- A grows to 56 columns (28% of 200), and with B to 49 rows (60 less the
-  two bars, C's 8 rows and the footer): the model row has room for the
-  whole title beside the status ("✿ Claude Haiku 5.5"), the usage section
-  draws its three columns (CONTEXT, TOKENS and EST. COST, "API-equivalent"
-  in full) and each quota window's bar runs across the pane.
+- A grows to 56 columns (28% of 200), B to 136 beside the sidebar's 8,
+  and the three to 41 rows (60 less the two bars, C's 16 rows and the
+  footer): the model row has room for the whole title beside the status
+  ("✿ Claude Haiku 5.5"), the usage section draws its three columns
+  (CONTEXT, TOKENS and EST. COST, "API-equivalent" in full) and each quota
+  window's bar runs across the pane. The Explorer shown docks between B
+  and the sidebar, 30 columns, B keeping 106.
 - C is 16 rows (plan 27): its header, a rule, "AGENTS" over the cards'
   panel (40 cells here too: the card, not the width, sizes it) and
   "EXECUTION TIMELINE" with "● WAITING" over the timeline, 153 cells, so
@@ -1626,9 +1646,9 @@ file"):
 | Codex's fileChange | the first change's first added line | the first hunk's first added lines |
 | any other with `file_path`, `notebook_path` or `path` | line 1 | nothing |
 
-Anywhere else, or on an entry naming no file, F3 opens the
-[Explorer](#explorer), and `/` there the quick open, a window of the same
-size (golden frame `file-finder`, 80x24, inside the window):
+Anywhere else, or on an entry naming no file, F3 shows or hides the
+[Explorer](#explorer)'s panel, and `/` there opens the quick open, a window
+of the viewer's size (golden frame `file-finder`, 80x24, inside the window):
 
 ```text
 ╭─ Quick open ─────────────────────────────────────────────────── 8 files ─╮
@@ -1643,7 +1663,8 @@ It lists every file under the project, relative paths sorted, without
 `.git` folders, credential files or anything behind a link; at most
 100,000, then "first 100,000 files". Typing filters, case ignored, the
 query's letters in order: a match in the name first, then in the path,
-then the shortest path. Esc goes back to the Explorer; F3 closes both.
+then the shortest path. Esc goes back to the Explorer's panel; F3 closes
+the quick open and shows or hides the panel (plan 43, design D5).
 
 | Key | Action |
 | - | - |
@@ -1653,9 +1674,9 @@ then the shortest path. Esc goes back to the Explorer; F3 closes both.
 | n / N | the next / previous match |
 | g | type a line number; Enter goes there |
 | f | full screen or the window |
-| F2 | close the window and go to the oldest pending approval |
-| Esc | cancel the field, else clear the selection, else back to the Explorer, its cursor on the file and the folders above it open, a file opened from an entry too |
-| F3 | close the viewer and the Explorer, back to the dashboard |
+| F2 | close the window and go to the oldest pending approval; the Explorer's panel stays (plan 43) |
+| Esc | cancel the field, else clear the selection, else back to the Explorer's panel with the focus, its cursor on the file and the folders above it open, a file opened from an entry too |
+| F3 | close the viewer and show or hide the Explorer's panel: hidden when the viewer was opened from it, shown otherwise (plan 43, design D5) |
 | F1, F4, F12, Ctrl+C, Ctrl+Q | as on the dashboard |
 
 Every other key is the window's: none reaches the draft. The mouse stays
@@ -1665,50 +1686,164 @@ scrolls it; the dashboard behind takes no click. Reading, listing,
 colouring and searching each run in a command with a generation number, so
 a result for an older open is dropped and keys stay handled.
 
+## Right sidebar
+
+From 100 columns a narrow activity sidebar ends the upper row, right of
+zone B, and of the Explorer's panel while it shows (plan 43, brief
+amendment 44;
+[reference-design.md, The right sidebar](reference-design.md#the-right-sidebar)):
+a box of its own, 8 columns wide, with the zones' thin grey border and no
+title, as high as zones A and B, zone C full width under it. Two tiles near
+its top, 6 cells by 3 rows, centred: the Explorer's on the box's rows 1 to
+3, Skills' on rows 5 to 7; no text label, no tooltip. Under 100 columns
+there is no sidebar; F3 still shows the Explorer, in zone B's place.
+
+Each tile takes one of four looks (design D3, the colours read from the
+references' pixels):
+
+| Look | When | Image (Sixel) | Text form |
+| - | - | - | - |
+| inactive | Skills, always; the Explorer while its panel is hidden | the icon in muted grey `#6F7C88`, no tile | the glyph in that grey |
+| hover | the pointer on the tile | a rounded tile of the selectors' hover ground `#342B47` (the model selector's band), the icon brighter `#B9C3D3` | the glyph lit `#A6B3C6` on the band |
+| selected | the Explorer while its panel shows | a rounded tile `#181C30` inside a thin `#7A4EBA` outline, the `#A272F1` accent bar along its left edge, the icon `#A6B3C6` | "▎" in the accent colour, the glyph lit on `#181C30` |
+| selected and hovered | both | the same a shade lighter: `#20253D`, outline `#8C5DD0`, icon `#BAC6D8` | the glyph lit on `#20253D` |
+
+The Explorer's icon is a tree, a trunk with a crossbar and a foot and two
+folders at its right; Skills' is three nodes, the left two linked by a line,
+the top right one by a branch; both on one 24-unit grid, the same stroke.
+With Sixel each tile is a 60x60 image over its 18 blank cells, which never
+change, drawn after the frame as the mode pill is (plan 39), then again
+after any frame that changes the rows it lies on and after every size
+report ([Rendering](#rendering)). Without Sixel the text form draws the
+Explorer as "≡" and Skills as "⑂", centred in the tile's middle row, as in
+the golden frames. Selected stays selected after the pointer leaves; hover
+and selected are separate, a hovered Skills leaving the Explorer selected.
+
+**Hover.** While the sidebar shows, the mouse reports every motion (mode
+1003; cell motion, 1002, otherwise). Only a change of the tile under the
+pointer changes the hover, plan 36's rule: a report wandering within one
+tile changes nothing. The program's filter (`tea.WithFilter`, `run.go`)
+drops, before `Update` and `View`, every motion report with no button that
+changes no hover while no popup follows the pointer and no drag runs, so
+idle motion costs no frame (`TestMotionToFrame` times the reports that do).
+A press on a tile starts no drag: the hover follows the pointer with the
+button held, and where the button comes up. A drag started elsewhere hovers
+nothing on its way.
+
+**Clicks.** A click on the Explorer's tile shows or hides the panel, as F3
+does: one state, the same focus either way. A click on Skills does nothing:
+no state, focus, selection or draft changes and no command, Skills being a
+placeholder for a later plan (brief amendment 44).
+
 ## Explorer
 
-F3 with no file in front shows the project as a tree, as VS Code's Explorer
-does, in a window of the viewer's size (plan 17, brief amendment 12;
-architecture.md, File viewer). Golden frame `explorer`, 80x24, the cursor
-on a modified file, a deleted file and a deleted folder listed below it:
+F3 with no file in front shows or hides the project as a tree, as VS Code's
+Explorer does (plan 17, brief amendment 12), since plan 43 a panel docked
+between zone B and the [right sidebar](#right-sidebar), no longer a window
+(brief amendment 44; architecture.md, File viewer); a click on its tile
+does the same. Golden frame `explorer`, 120x40, where the panel takes zone
+B's place, the cursor on a modified file, a deleted file and a deleted
+folder listed below it:
 
 ```text
- ▣╭─ Explorer ───────────────────────────────────────────── mock · 11 items ─╮l
- A│ sample/viewer.go                                                         │e
-╭─│ ▾ sample                                                              ●  │─╮
-│ │     viewer.go                                                         M  │ │
-│ │     viewer_test.go                                                    D  │ │
-│ │ ▸ tools                                                               D  │ │
-│ │   claude-api-key-context-refused.jsonl                                   │ │
-│ │   claude-subagent-approval.jsonl                                         │ │
-│ │   codex-api-key.jsonl                                                 U  │ │
-│ │   codex-no-5h-window.jsonl                                               │ │
-│ │   codex-plan6-limits.jsonl                                            !  │ │
-│ │   codex-spawn-request.jsonl                                           A  │ │
-│ │   codex-subagents.jsonl                                                  │ │
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
+╭──────────────────────────────────╮╭──────────────────────────────────────────────────────────────────────────╮╭──────╮
+│ A · ORCHESTRATOR                 ││ EXPLORER                                                               ⌄ ││▎     │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ──────────────────────────────────────────────────────────────────────── ││▎ ≡   │
+│ ──────────────────────────────── ││ ⌄ 🗀  mock                                                                ││▎     │
+│ STAGES · inferred from activity  ││   ⌄ 🗀  sample                                                         ●  ││      │
+│ ✓ TURN 1                      0s ││       🗎  viewer.go                                                    M  ││      │
+│   Use the Agent tool to launch … ││       🗎  viewer_test.go                                               D  ││  ⑂   │
+│   Agent · agent general-purpose  ││   › 🗀  tools                                                          D  ││      │
+│                                  ││     🗎  claude-api-key-context-refused.jsonl                              ││      │
+│ ✓ TURN 2                      0s ││     🗎  claude-models.jsonl                                               ││      │
+│   started by the CLI             ││     🗎  claude-quota-windows.jsonl                                        ││      │
+│ ──────────────────────────────── ││     🗎  claude-subagent-approval.jsonl                                    ││      │
+│ ✦ TELEMETRY        Enter details ││     🗎  claude-thinking-subagent.jsonl                                    ││      │
+│ ▾ SESSION USAGE                  ││     🗎  claude-thinking.jsonl                                             ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││     🗎  codex-api-key.jsonl                                            U  ││      │
+│   Tokens 159.4k session total    ││     🗎  codex-models-next-turn.jsonl                                      ││      │
+│   Est. cost $0.01 API-equiv.     ││     🗎  codex-models.jsonl                                                ││      │
+│ ▾ QUOTA WINDOWS                  ││     🗎  codex-no-5h-window.jsonl                                          ││      │
+│   Session (5hr)             35%† ││     🗎  codex-plan6-limits.jsonl                                       !  ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││     🗎  codex-spawn-request.jsonl                                      A  ││      │
+│   Resets in 14h 40m              ││     🗎  codex-subagents.jsonl                                             ││      │
+│   Weekly (7 day)            47%† ││                                                                          ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Resets in 1d 20h               ││                                                                          ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
 ⋮
-│ │ Enter view · / find · Esc back · F3 close                        2 of 11 │ │
-╰─╰──────────────────────────────────────────────────────────────────────────╯─╯
+ ↑↓ move · → open · ← close · Enter view · / quick open · Esc back to the input · F6 zone · F3 Explorer · F1 keys
 ```
 
-**The window.** The viewer's frame and size, never full screen. On its top
-edge "Explorer" on the left, the project's name and "<N> items" (the entry
-rows shown) on the right; the first row, the cursor's path in the project
-(a folder's ending in "/") and, on the right, git's note: "git status…"
-until it answers, "not a git repository", "git not found" in grey, git's
-own error in the attention colour. Each row: two cells of indent a level,
-"▾" before an open folder and "▸" before a closed one in grey, folders in
-the title colour and bold, files in the text colour, git's marker on the
-right; the cursor row on zone A's cursor row background. Under a folder
-being read, "reading…"; an empty one, "empty folder"; one that cannot be
-read, its reason in the attention colour; a listing cut at 10,000 entries,
-"first 10,000 entries". The footer: the keys, and "<i> of <N>".
+At 200x60 the panel docks, 30 columns, between zone B (106) and the
+sidebar, the Explorer's tile selected (golden frame `explorer`, the
+columns from 126):
+
+```text
+──────────────────────────── Idle ─╮╭────────────────────────────╮╭──────╮
+                                   ││ EXPLORER                 ⌄ ││▎     │
+                                   ││ ────────────────────────── ││▎ ≡   │
+s task: list the files in the      ││ ⌄ 🗀  mock                  ││▎     │
+xt with the Write tool, and        ││   ⌄ 🗀  sample           ●  ││      │
+                                   ││       🗎  viewer.go      M  ││      │
+                                   ││       🗎  viewer_test.go D  ││  ⑂   │
+────────────────────────────────── ││   › 🗀  tools            D  ││      │
+                                   ││     🗎  …ext-refused.jsonl  ││      │
+                                   ││     🗎  …aude-models.jsonl  ││      │
+              11:30:00      mock   ││     🗎  …ota-windows.jsonl  ││      │
+                                   ││     🗎  …nt-approval.jsonl  ││      │
+ and write `found.txt`. I'll       ││     🗎  …ng-subagent.jsonl  ││      │
+                                   ││     🗎  …de-thinking.jsonl  ││      │
+                                   ││     🗎  …x-api-key.jsonl U  ││      │
+llowed by you 11:30:00      mock   ││     🗎  …s-next-turn.jsonl  ││      │
+llowed by you 11:30:00      mock   ││     🗎  codex-models.jsonl  ││      │
+              11:30:00      mock   ││     🗎  …o-5h-window.jsonl  ││      │
+                                   ││     🗎  …n6-limits.jsonl !  ││      │
+─────────────────────────────────╮ ││     🗎  …n-request.jsonl A  ││      │
+                                 │ ││     🗎  …x-subagents.jsonl  ││      │
+ta.md`, and wrote them into      │ ││                            ││      │
+                                 │ ││                            ││      │
+⋮
+```
+
+**Where it shows.** The panel is `clamp(round(0.15 w), 26, 36)` columns. It
+docks between zone B and the sidebar where zone B keeps at least 64 columns
+beside it, from 136 columns (zone B 64 at 136, 78 at 156, 106 at 200, 111 at
+208); from 100 to 135 columns it takes zone B's place while it shows, the
+sidebar kept; under 100, with no sidebar, it takes zone B's place too. Zones
+A and C keep their widths and rows; zone B, narrower, keeps its draft, its
+images and its scroll, its content reflowed. Where the panel takes zone B's
+place, zone B taking the focus hides it (the compact rule): Esc at the top
+level, F6 or Tab onto B, F2 onto a card. The focus is never on a zone not
+drawn.
+
+**The panel.** A box in the title colour while it has the focus, grey
+otherwise. A header row, "EXPLORER" in the title colour and bold, "⌄" at its
+right end (a click there hides the panel); a rule; the root row, "⌄", an
+open folder's icon and the project folder's name; under it, one step
+deeper, the tree: two cells of indent a level, "›" before a closed folder
+and "⌄" before an open one in grey, a folder's icon 🗀 in blue (`#6CA1DB`)
+and its name (`#A0ABD8`), a file's icon 🗎 in grey (`#A3B1C9`) and its name
+(`#9EAAD5`), git's marker on the right; the cursor row on zone A's cursor
+row background. The header, the rule and the root row stay while the tree
+scrolls to keep the cursor in view. Under a folder being read, "reading…";
+an empty one, "empty folder"; one that cannot be read, its reason in the
+attention colour; a listing cut at 10,000 entries, "first 10,000 entries".
+With no markers to show, git's note on the panel's last row: "not a git
+repository" or "git not found" in grey, git's own error in the attention
+colour. The old window's path row, item count and footer are gone: the
+panel's keys show in the dashboard's footer while it has the focus. The
+icons, U+1F5C0 and U+1F5CE, are one cell by the width table; Cascadia Mono
+lacks them and Windows Terminal draws them from Segoe UI Symbol, wider than
+a cell, so two spaces follow each, as after the "+" menu's (plan 30).
 
 **Reading.** Each folder is read when it is opened, in a command, inside
 the project only: its folders, then its files, each sorted without case;
 no `.git`, no credential file (by name, as in the quick open), nothing
-behind a link. It opens as it was left in the session, its open folders
-and cursor kept, each open folder read again.
+behind a link. The panel shows as it was left in the session, hidden and
+shown again: its open folders and cursor kept, each open folder read again.
 
 **Deleted files.** A path git versions and the disk no longer has keeps a
 row, so that a deletion, by the owner or by an agent, shows where it
@@ -1719,11 +1854,10 @@ whole is rebuilt from the paths under it, a folder row with `D`, never read
 from the disk. A name the disk also has is listed once, from the disk; under
 a listing cut at 10,000 entries no deleted folder is added, since it may be
 past the cut. A folder empty on the disk but holding deleted paths lists
-them. On a deleted row the path row reads "<path> · deleted, not on disk";
-Enter or a click on a deleted file opens nothing.
+them. Enter or a click on a deleted file opens nothing.
 
 **Git's markers.** One `git --no-optional-locks status --porcelain=v1 -z
---untracked-files=normal --ignored -- .` each time it opens, in a command;
+--untracked-files=normal --ignored -- .` each time it shows, in a command;
 it writes nothing.
 
 | Marker | Meaning | Colour |
@@ -1741,17 +1875,36 @@ it writes nothing.
 | ↑ ↓ PgUp PgDn Home End | move the cursor over the entries, notes skipped |
 | → | open a folder; on an open one, its first entry |
 | ← | close an open folder; else the folder holding the entry |
-| Enter | open or close a folder; show a file in the [file viewer](#file-viewer); nothing on a deleted file |
+| Enter | open or close a folder; show a file in the [file viewer](#file-viewer), Esc there coming back to the panel; nothing on a deleted file |
 | / | the quick open; Esc there comes back |
-| Esc | close the folder the cursor is in, the cursor on it; at the top level, close |
-| F3 | close, back to the dashboard |
-| F2 | close and go to the oldest pending approval |
-| F1, ?, F4, F12, Ctrl+C, Ctrl+Q | as on the dashboard |
+| Esc | close the folder the cursor is in, the cursor on it; at the top level, back to zone B, the panel kept (hidden where it takes zone B's place) |
+| F3 | hide the panel, back to zone B |
+| F2 | the oldest pending approval's card, the panel kept, or "no approval waiting" |
+| F6, Tab, Shift+F6, Shift+Tab | the next zone or the one before: B, the panel, C, A |
+| F1, ?, F4, Alt+P, F12, Ctrl+C, Ctrl+O, Ctrl+R, Ctrl+Q, Shift+PgUp, Shift+PgDn | as on the dashboard |
 
-Every other key, and a paste, is the Explorer's: none reaches the draft.
-The mouse: the wheel moves the cursor by 3 entries; a click puts the cursor
-on a row, a click on the cursor's row is Enter. Nothing is selected in it,
-as in the quick open; F12 and the terminal's own selection copy from it.
+While the panel has the focus every other key is its own. Docked beside zone
+B, the draft keeps the clipboard: a paste (the terminal's, a raw Ctrl+V's,
+Alt+V's images) goes into the draft, and Ctrl+C copies the draft's selection
+rather than interrupting the turn, as when the old window left zone B the
+focus. In zone B's place the draft is not on screen: a paste goes nowhere and
+Ctrl+C interrupts, as from zones A and C. While the panel has the focus, or
+takes zone B's place, the footer shows a waiting approval first, "◆ approval
+waiting · F2 to answer" in the attention colour; in zone B's place a quit
+question shows there too, before it, its editor row being hidden.
+
+**From elsewhere.** F3 from the viewer or the quick open closes them and
+shows or hides the panel; from a full view naming no file, the inspection,
+the details view or a zoomed zone, which cover the panel as they cover the
+dashboard, it closes them, or ends the zoom, and shows the panel with the
+focus. F2 from the viewer or the quick open closes them and leaves the
+panel as it is.
+
+**The mouse.** The wheel over the panel moves its cursor by 3 entries; over
+zone B it scrolls zone B, never the panel. A click on a row gives the panel
+the focus and puts the cursor there; a click on the cursor's row is Enter; a
+click in zone B gives zone B the focus. Nothing is selected in the panel, as
+in the quick open; F12 and the terminal's own selection copy from it.
 
 ## Approvals
 
@@ -2037,6 +2190,18 @@ connectors").
   wrapped, and with no answer or another one no frame is.
 - Claude Code documents stale fragments on WT through ConPTY in its
   alternate screen (TI 6.2); if seen, an option forces full repaints.
+- A row holding a wide character (an emoji such as ✅, CJK), or one the
+  terminal may measure otherwise, is not diffed but rewritten from column
+  0 (ultraviolet's `paintLine`), and since Bubble Tea clears its buffer
+  before each frame every such row was rewritten on every frame, erasing
+  any image drawn over it. A patched copy leaves such a row alone when the
+  frame did not change it, else rewrites it only up to its last changed
+  cell (`third_party/ultraviolet/PATCHES.md`, patch 3; plan 43), so an
+  image right of the change, as the sidebar's tiles, stays on screen;
+  `TestWideRowsKept` runs the real program with a list of ✅ beside the
+  tiles. The images are drawn again after any frame that changes their
+  rows, and after every size report, the same size included: Bubble Tea
+  erases the screen for each.
 - What is cached across frames (`internal/render/content.go`): each source
   line's wrap, by the line and the widths (`WrapCache`), and a finished
   entry's row count, by the entry, the width and its shape (`rowCount`); a
@@ -2103,15 +2268,15 @@ The same file can name Codex's proxy (plan 22, amendment 19).
 | Shift+Enter | newline; in Windows Terminal through win32-input-mode (below) | TI 4.3 |
 | Alt+Enter | newline, except on WT (fullscreen) | TI 4.3, 9 |
 | `\` then Enter | newline (Claude Code's convention) | TI 4.2 |
-| Ctrl+C | copy the selection if there is one; else interrupt the running turn; else show "Ctrl+Q quits" | TI 6.3 item 4; ASM-9 |
+| Ctrl+C | copy the selection if there is one (the draft's while zone B, or the Explorer's panel docked beside it, has the focus: plan 43); else interrupt the running turn; else show "Ctrl+Q quits" | TI 6.3 item 4; ASM-9 |
 | Ctrl+Shift+C | copy the selection | TI 6.3 |
 | Ctrl+O | copy the orchestrator's last message (as Codex does) | TI 6.2; ASM-9 |
 | Ctrl+G | open the draft in the [draft window](#draft-window), in the terminal; in it Ctrl+F full screen, Esc back | TI 8 (both CLIs use Ctrl+G); brief amendment 13 |
-| F2 | go to the oldest pending approval | ASM-9 |
-| F3 | the file the entry, full view or request in front names, in the [file viewer](#file-viewer); else the [Explorer](#explorer); in either, close back to the dashboard | plan 17; brief amendments 11 and 12 |
+| F2 | go to the oldest pending approval; the Explorer's panel stays (plan 43) | ASM-9 |
+| F3 | the file the entry, full view or request in front names, in the [file viewer](#file-viewer); else the [Explorer](#explorer)'s panel shown or hidden, the focus with it, as a click on its tile in the [right sidebar](#right-sidebar); from the viewer or the quick open, close them and show or hide the panel; from a full view naming no file, the inspection, the details view or a zoomed zone, close them and show the panel | plan 17; plan 43; brief amendments 11, 12 and 44 |
 | F4 | open or close the [modes selector](#input-editor), from any focus; the mode pill's click does the same; Manual (Ask for approval) at every launch, never saved | plan 12; plan 39; brief amendments 8 and 40 |
 | Alt+P | open or close the [model selector](#input-editor), from any focus (Claude Code's own key for its model picker); the pill's click does the same | plan 34; brief amendment 34 |
-| F6 / Shift+F6 | next / previous zone (B, C, A) | ASM-9 |
+| F6 / Shift+F6 | next / previous zone (B, the Explorer's panel while shown, C, A) | ASM-9; plan 43 |
 | Tab / Shift+Tab | next / previous zone, outside the editor (in the editor Tab inserts a tab) | ASM-9 |
 | Esc | close the "+" menu (plan 30), the model selector (plan 34), the modes selector (plan 39; from its Full access confirmation, back to the modes), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
 | Shift+PgUp / Shift+PgDn | scroll the conversation from any focus | ASM-9 |
@@ -2167,19 +2332,19 @@ the console reads plain VT input after Ctrl+Q.
 | n N | next / previous match |
 | g | go to a line number |
 | f | full screen or the window |
-| Esc | clear the selection, else back to the Explorer, on the file |
-| F3 | close, back to the dashboard |
+| Esc | clear the selection, else back to the Explorer's panel, on the file |
+| F3 | close it, and show or hide the Explorer's panel |
 
-**The Explorer** (F3 with no file in front, [Explorer](#explorer))
+**The Explorer** (a panel F3 or its tile shows or hides, with the focus, [Explorer](#explorer))
 
 | Key | Action |
 | - | - |
-| ↑ ↓ PgUp PgDn Home End | move; the wheel too, a click on a row |
+| ↑ ↓ PgUp PgDn Home End | move; the wheel over it too, a click on a row |
 | → ← | open a folder, or its first entry; close it, or go to its folder |
 | Enter | open or close a folder; show a file in the file viewer |
 | / | the quick open: type to narrow, Enter opens, Esc back |
-| Esc | close the folder the cursor is in; at the top, close |
-| F3 | close, back to the dashboard |
+| Esc | close the folder the cursor is in; at the top, back to the input, the panel kept beside it (hidden where it takes zone B's place) |
+| F3 | hide the panel, back to the input |
 
 **The model selector** (Alt+P or a click on the pill, [Input editor](#input-editor))
 
@@ -2298,9 +2463,11 @@ provider: it has no provider code and sends a string to part 5's caller
   the text) in the thinking edge's lavender-white. While the menu is open
   the band lies on the active ground, `#272745`, the image's indigo (ANSI
   4 on 16 colours), its "+" in that lavender-white, and the dashboard
-  asks the terminal for every mouse motion (cell motion otherwise, as
-  before, so idle moves cost nothing): the item's inner row lies on the
-  active ground while the pointer is over it. A second click on the band,
+  asks the terminal for every mouse motion (cell motion otherwise; since
+  plan 43 every motion wherever the [right sidebar](#right-sidebar) shows,
+  the program's filter dropping the reports that change nothing, so idle
+  moves still cost nothing): the item's inner row lies on the active
+  ground while the pointer is over it. A second click on the band,
   a click on the item, a click anywhere else, Esc or any other key closes
   it; Esc does nothing more, the other click and the other keys act as
   usual. The band is panel '+', the menu panel 'U'. On 16 colours the
@@ -2754,7 +2921,10 @@ provider: it has no provider code and sends a string to part 5's caller
 
 - A paste arrives as one `PasteMsg` and is inserted as text at the cursor,
   replacing the selection; it is never replayed as keys and **never
-  submits**, whatever it contains (TI 3.2; AM3 M5).
+  submits**, whatever it contains (TI 3.2; AM3 M5). It goes to the draft
+  while zone B has the focus, or the [Explorer](#explorer)'s panel docked
+  beside zone B (plan 43); from zones A and C, or the panel in zone B's
+  place, it goes nowhere.
 - WT turns CRLF and LF into CR before the application sees them (TI 3.3):
   a pasted CR is stored as LF, one per line break. Tabs, trailing spaces
   and every other rune are kept. Bubble Tea v2 drops invalid UTF-8 and

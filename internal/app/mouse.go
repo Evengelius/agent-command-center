@@ -58,6 +58,18 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 		// A click on a chip's ✕ removes its image.
 		if mo.Button == tea.MouseLeft && !m.ui.DraftWin.Open {
 			switch p, item := m.screen.ItemAt(mo.X, mo.Y); {
+			case p == render.SidePanel:
+				// The sidebar (plan 43, design D5): the Explorer's tile shows or
+				// hides its panel as F3 does, closing a popup as a click outside
+				// it does; Skills' tile and the sidebar's frame change nothing at
+				// all, no state, focus or selection.
+				if item != render.SideExplorer {
+					return nil
+				}
+				m.ui.Plus, m.ui.PlusHover = false, false
+				m.closeModels()
+				m.closeModes()
+				return m.toggleExplorer()
 			case p == render.PillPanel:
 				// The model pill opens and closes the model selector (plan 34),
 				// which then knows the pointer lies outside it (plan 36).
@@ -108,9 +120,19 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 		}
 		// Over the draft window, only the window takes a click (amendment 13).
 		if mo.Button == tea.MouseLeft && (!m.ui.DraftWin.Open || m.screen.PanelAt(mo.X, mo.Y) == 'E') {
+			if p, item := m.screen.ItemAt(mo.X, mo.Y); p == render.ExplorerPanel {
+				return m.explorerClick(item) // the panel's own, no selection (plan 43, design D7)
+			}
 			m.press(mo)
 		}
 	case tea.MouseMotionMsg:
+		if !m.drag.on {
+			// The sidebar's hover (plan 43, design D4): the tile under the
+			// pointer, 0 off the tiles, a button held or not (a press on a
+			// tile starts no drag); a report wandering within a tile leaves
+			// it as it is, and it never changes what is selected.
+			m.ui.SideHover = m.sideTileAt(mo.X, mo.Y)
+		}
 		if m.ui.Plus && !m.drag.on {
 			m.ui.PlusHover = m.screen.PanelAt(mo.X, mo.Y) == 'U' // the hover (plan 30, design D3)
 		}
@@ -133,6 +155,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			m.extend(mo)
 		}
 	case tea.MouseReleaseMsg:
+		m.ui.SideHover = m.sideTileAt(mo.X, mo.Y) // where the button came up
 		if m.drag.on {
 			m.drag.moved = m.drag.moved || mo.X != m.drag.x || mo.Y != m.drag.y
 			m.extend(mo)
@@ -189,8 +212,50 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			case tea.MouseWheelDown:
 				m.paneScroll(p, wheelRows)
 			}
+		} else if p == render.ExplorerPanel {
+			m.explorerWheel(mo.Button) // over the panel only (plan 43, design D7)
 		}
 	}
+	return nil
+}
+
+// sideHoverable says the sidebar's tiles follow the pointer: the frame drew
+// the sidebar (the dashboard from 100 columns, no full view or zoom over
+// it), no floating window or draft window is open, the mouse is captured
+// (plan 43, design D4).
+func (m *Model) sideHoverable() bool {
+	return m.screen != nil && m.screen.Side.W > 0 && m.s.Screen == state.ScreenDashboard && m.wt == nil &&
+		!m.ui.MouseOff && !render.WindowOpen(m.ui) && !m.ui.DraftWin.Open
+}
+
+// sideTileAt is the sidebar's tile under the pointer at (x, y) on the frame
+// drawn last, 0 off the tiles or while the tiles follow no pointer.
+func (m *Model) sideTileAt(x, y int) int {
+	if !m.sideHoverable() {
+		return 0
+	}
+	return m.screen.SideTile(x, y)
+}
+
+// motionFilter is the program's filter (plan 43, design D4; tea.WithFilter,
+// run.go): it drops, before Update and View, a motion report with no button
+// that would change nothing: no popup is open, whose hover follows every
+// motion (the "+" menu, the model selector, the modes selector), no drag
+// runs, and the sidebar's tile under the pointer, 0 off the tiles, is the
+// one hovered already. The all-motion reporting the sidebar's hover needs
+// thus costs a frame only when the hover changes. It runs on the program's
+// event loop, as Update and View do, and reads the frame drawn last; the
+// model counts what it drops.
+func motionFilter(tm tea.Model, msg tea.Msg) tea.Msg {
+	mo, ok := msg.(tea.MouseMotionMsg)
+	if !ok || mo.Button != tea.MouseNone {
+		return msg
+	}
+	m, ok := tm.(*Model)
+	if !ok || m.ui.Plus || m.ui.Models.Open || m.ui.Modes.Open || m.drag.on || m.sideTileAt(mo.X, mo.Y) != m.ui.SideHover {
+		return msg
+	}
+	m.motionDropped++
 	return nil
 }
 
@@ -404,7 +469,9 @@ func (m *Model) copySelection() []tea.Cmd {
 // scroll moves the conversation d rows; scrolling up holds the view, and
 // reaching the bottom follows again (ui-design.md, Zone B, Follow mode).
 func (m *Model) scroll(d int) {
-	if m.screen == nil {
+	if m.screen == nil || m.screen.Conv.Room == 0 {
+		// No conversation drawn, the Explorer's panel in zone B's place (plan
+		// 43, design D1): its view stays as it was.
 		return
 	}
 	c := m.screen.Conv

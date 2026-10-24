@@ -14,8 +14,10 @@ import (
 // The Explorer (plan 17, amendment 12): the project as a tree, each folder
 // read in a command when it is opened and git's status asked once when the
 // Explorer opens, each result carrying the generation it was asked under, so
-// that one for an Explorer since closed is dropped. Esc goes back one level;
-// F3 closes every window.
+// that one for an Explorer since closed is dropped. Since plan 43
+// (amendment 44) it is a panel docked between zone B and the sidebar, with
+// its own focus: F3, its tile and its "⌄" show and hide it (design D5); Esc
+// goes back one level, then to zone B, the panel kept (design D7).
 
 // Messages.
 type (
@@ -47,7 +49,7 @@ func (m *Model) openExplorer() []tea.Cmd {
 		v.Opened = map[string]bool{}
 	}
 	if v.Git.Marks == nil && v.Git.Note == "" {
-		v.Git.Note = "git status…"
+		v.Git.Note = render.GitPending
 	}
 	m.dropFileSelection()
 	cmds := []tea.Cmd{m.readDir("")}
@@ -118,24 +120,59 @@ func (m *Model) gitRead(msg statusMsg) {
 	}
 }
 
-// closeExplorer closes the Explorer, keeping its folders and cursor for the
-// next F3; a read under way is dropped.
+// closeExplorer hides the Explorer's panel, keeping its folders and cursor
+// for the next F3; a read under way is dropped. Zone B takes the focus
+// back (plan 43, design D5).
 func (m *Model) closeExplorer() {
 	m.explorerGen++
-	m.ui.Explorer.Open = false
+	if m.ui.Explorer.Open {
+		m.ui.Explorer.Open = false
+		m.ui.Focus = "B"
+	}
 }
 
-// closeWindows closes the quick open, the viewer and the Explorer: F3 in
-// any of them (plan 17, amendment 12).
+// toggleExplorer shows the Explorer's panel, or hides it while shown: F3 on
+// the dashboard, a click on its tile or on its "⌄" (plan 43, design D5).
+func (m *Model) toggleExplorer() []tea.Cmd {
+	if m.ui.Explorer.Open {
+		m.closeExplorer()
+		return nil
+	}
+	return m.showExplorer()
+}
+
+// showExplorer shows the panel as it was left, its folders read again, and
+// gives it the keyboard focus (plan 43, design D5).
+func (m *Model) showExplorer() []tea.Cmd {
+	var cmds []tea.Cmd
+	if !m.ui.Explorer.Open {
+		cmds = m.openExplorer()
+	}
+	m.ui.Focus = "R"
+	return cmds
+}
+
+// closeWindows closes the floating windows, the quick open and the viewer:
+// F2 in either (plan 17, amendment 12). The Explorer's panel is no window
+// (plan 43, design D8): it stays, and the compact rule hides it when zone B
+// takes the focus in its place.
 func (m *Model) closeWindows() {
 	m.closeFinder()
 	m.closeFile()
-	m.closeExplorer()
 }
 
-// backToExplorer closes the viewer and shows the Explorer, its cursor on
-// the file, each folder above it open; a file outside the project leaves
-// the cursor where it was.
+// draftBeside says the draft takes the clipboard's keys and pastes: zone B
+// has the focus, or the Explorer's panel docked beside zone B has it, the
+// draft on screen (plan 43, design D8). The panel in zone B's place leaves
+// them to no one, as zones A and C do.
+func (m *Model) draftBeside() bool {
+	return m.ui.Focus == "B" || m.ui.Focus == "R" && m.ui.Explorer.Open && !render.ExplorerCompact(m.s, m.ui)
+}
+
+// backToExplorer closes the viewer and shows the Explorer with the focus,
+// its cursor on the file, each folder above it open; a file outside the
+// project leaves the cursor where it was (plan 43, design D7: Esc from the
+// viewer returns to the panel).
 func (m *Model) backToExplorer() []tea.Cmd {
 	rel := m.ui.File.Rel
 	if p := m.ui.File.Path; rel == "" && p != "" {
@@ -157,15 +194,19 @@ func (m *Model) backToExplorer() []tea.Cmd {
 		}
 		v.Cursor = rel
 	}
-	return m.openExplorer()
+	cmds := m.openExplorer()
+	m.ui.Focus = "R"
+	return cmds
 }
 
-// explorerKey handles a key while the Explorer is in front: all but the
-// global ones are its own.
+// explorerKey handles a key while the Explorer's panel has the focus: its
+// keys as in plan 17, the global ones passed on, F6 and Tab to the next
+// zone, Alt+P and F4 to the selectors (plan 43, designs D7 and D8).
 func (m *Model) explorerKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	s := k.String()
 	switch s {
-	case "f1", "f4", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+q":
+	case "f1", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
+		"shift+pgup", "shift+pgdown", "ctrl+q", "F":
 		return nil, false
 	}
 	if k.Text == "?" {
@@ -174,24 +215,29 @@ func (m *Model) explorerKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	v := &m.ui.Explorer
 	rows := render.ExplorerRows(*v)
 	cur := render.ExplorerCursor(rows, v.Cursor)
-	room := render.FileRows(m.ui)
+	room := m.explorerRoom()
 	switch s {
 	case "esc":
-		if cur < 0 {
-			m.closeExplorer()
-			return nil, true
+		// Out of the folder the cursor is in; at the top level, back to zone
+		// B, the panel kept (design D7).
+		if cur >= 0 {
+			if p := render.ParentPath(rows[cur].Path); p != "" {
+				v.Opened[p] = false
+				m.explorerTo(p)
+				return nil, true
+			}
 		}
-		if p := render.ParentPath(rows[cur].Path); p != "" {
-			v.Opened[p] = false
-			m.explorerTo(p)
-		} else {
-			m.closeExplorer()
-		}
+		m.ui.Focus = "B"
 	case "f3":
-		m.closeWindows()
+		m.closeExplorer()
 	case "f2":
-		m.closeWindows()
 		return m.focusCard("", true), true
+	case "alt+v", "ctrl+v":
+		// The images, or a raw Ctrl+V's clipboard, go to the draft beside
+		// the docked panel, as the terminal's paste does (design D8).
+		if m.draftBeside() {
+			return m.editorKey(k), true
+		}
 	case "/":
 		return m.openFinder(), true
 	case "up":
@@ -286,41 +332,51 @@ func (m *Model) explorerTo(path string) {
 	v := &m.ui.Explorer
 	v.Cursor = path
 	rows := render.ExplorerRows(*v)
-	v.Top = render.ListTop(v.Top, max(render.ExplorerCursor(rows, path), 0), render.FileRows(m.ui), len(rows))
+	v.Top = render.ListTop(v.Top, max(render.ExplorerCursor(rows, path), 0), m.explorerRoom(), len(rows))
 }
 
-// explorerMouse handles the mouse while the Explorer is in front: the wheel
-// moves the cursor, a click puts it on a row, a click on the cursor's row
-// is Enter. It selects nothing: the terminal's own selection, with F12,
-// copies from it.
-func (m *Model) explorerMouse(msg tea.MouseMsg) []tea.Cmd {
-	mo := msg.Mouse()
+// explorerRoom is the tree's rows in the panel on this screen, what PgUp
+// and PgDn move by (plan 43, design D6).
+func (m *Model) explorerRoom() int { return max(render.ExplorerRoom(m.s, m.ui), 1) }
+
+// explorerClick handles a left click on the panel, item the cell's (plan
+// 43, design D7): the panel takes the focus; on a row the cursor goes to
+// it, on the cursor's row it is Enter (plan 17); the header's "⌄" hides the
+// panel. It selects nothing: the terminal's own selection, with F12, copies
+// from it.
+func (m *Model) explorerClick(item int) []tea.Cmd {
+	m.ui.Sel = render.Selection{}
+	if item == render.ItemPanelHide {
+		m.closeExplorer()
+		return nil
+	}
+	m.ui.Focus = "R"
+	v := &m.ui.Explorer
+	rows := render.ExplorerRows(*v)
+	i := item - 1 // the row's index, by the cell's item
+	if i < 0 || i >= len(rows) || rows[i].Path == "" {
+		return nil
+	}
+	cur := render.ExplorerCursor(rows, v.Cursor)
+	if i == cur {
+		return m.explorerEnter(rows[i])
+	}
+	// The cursor on the row clicked, the rows where the frame drew them.
+	v.Top = render.ListTop(v.Top, max(cur, 0), m.explorerRoom(), len(rows))
+	v.Cursor = rows[i].Path
+	return nil
+}
+
+// explorerWheel moves the panel's cursor wheelRows entries, the pointer
+// over the panel (plan 43, design D7).
+func (m *Model) explorerWheel(b tea.MouseButton) {
 	v := &m.ui.Explorer
 	rows := render.ExplorerRows(*v)
 	cur := render.ExplorerCursor(rows, v.Cursor)
-	room := render.FileRows(m.ui)
-	switch msg.(type) {
-	case tea.MouseWheelMsg:
-		switch mo.Button {
-		case tea.MouseWheelUp:
-			m.explorerMove(rows, cur, -wheelRows, room)
-		case tea.MouseWheelDown:
-			m.explorerMove(rows, cur, wheelRows, room)
-		}
-	case tea.MouseClickMsg:
-		x, y, ww, _ := render.FileRect(m.ui.Width, m.ui.Height, false)
-		row := mo.Y - (y + 2) // under the top edge and the path row
-		if mo.Button != tea.MouseLeft || mo.X <= x || mo.X >= x+ww-1 || row < 0 || row >= room {
-			return nil
-		}
-		i := render.ListTop(v.Top, max(cur, 0), room, len(rows)) + row
-		if i >= len(rows) || rows[i].Path == "" {
-			return nil
-		}
-		if i == cur {
-			return m.explorerEnter(rows[i])
-		}
-		v.Cursor, v.Top = rows[i].Path, i-row
+	switch b {
+	case tea.MouseWheelUp:
+		m.explorerMove(rows, cur, -wheelRows, m.explorerRoom())
+	case tea.MouseWheelDown:
+		m.explorerMove(rows, cur, wheelRows, m.explorerRoom())
 	}
-	return nil
 }

@@ -254,11 +254,13 @@ func TestEditorDisplay(t *testing.T) {
 		// The 300-character line is drawn whole, over several rows.
 		var drawn strings.Builder
 		for _, l := range strings.Split(f, "\n") {
-			i := strings.LastIndex(l, "││")
-			if i < 0 {
+			// Zone A, zone B, then the sidebar since plan 43, their borders
+			// side by side.
+			parts := strings.Split(l, "││")
+			if len(parts) < 3 {
 				continue
 			}
-			row := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(l[i+len("││"):]), "│"))
+			row := strings.TrimSpace(parts[1])
 			if row != "" && strings.Trim(row, "0123456789") == "" {
 				drawn.WriteString(row)
 			}

@@ -30,9 +30,11 @@ var resetTerminal = consoleReset
 // in View or in a command, restores the terminal and returns
 // tea.ErrProgramPanic; the same steps follow, and the code is ExitPanic
 // (reliability.md, Separated parts, the dashboard's own crash). out is
-// what to print once the terminal is back.
+// what to print once the terminal is back. The program filters the motion
+// reports that change nothing before Update and View (motionFilter, plan
+// 43, design D4).
 func Run(m *Model, opts ...tea.ProgramOption) (code int, out []string) {
-	p := tea.NewProgram(m, opts...)
+	p := tea.NewProgram(m, append([]tea.ProgramOption{tea.WithFilter(motionFilter)}, opts...)...)
 	m.send = p.Send // the preview's timers post to the program (plan 32, design D5)
 	_, err := p.Run()
 	if win32Input {

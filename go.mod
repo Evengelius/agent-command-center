@@ -33,6 +33,6 @@ require (
 	golang.org/x/sync v0.22.0 // indirect
 )
 
-// Two decoder fixes for Windows Terminal's win32-input-mode
-// (third_party/ultraviolet/PATCHES.md).
+// Two decoder fixes for Windows Terminal's win32-input-mode and one renderer
+// fix for images beside wide characters (third_party/ultraviolet/PATCHES.md).
 replace github.com/charmbracelet/ultraviolet => ./third_party/ultraviolet

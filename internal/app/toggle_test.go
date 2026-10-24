@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"testing/synctest"
@@ -99,13 +100,13 @@ func TestToggleDraw(t *testing.T) {
 		}
 		n++
 		place := fmt.Sprintf("\x1b[%d;%dH", tg.Y+1, tg.X+1)
-		if raws := drawn(h, thumbDrawMsg{gen: h.m.kicks[n-1]}); len(raws) != 1 || !strings.Contains(raws[0], place) || strings.Contains(withoutPill(t, h, raws[0]), "\x1bP") {
+		if raws := drawn(h, thumbDrawMsg{gen: h.m.kicks[n-1]}); len(raws) != 1 || !strings.Contains(raws[0], place) || strings.Contains(withoutFixed(t, h, raws[0]), "\x1bP") {
 			t.Errorf("the vacated place: %q", trunc(raws))
 		}
 		h.send(typed('y'))
 		h.frame()
-		if len(h.m.kicks) != n || len(h.m.drawn) != 1 || h.m.drawn[0].Item != -5 {
-			t.Errorf("once the selector closed: %d drawings asked, images left %+v, want the mode pill's alone", len(h.m.kicks)-n, h.m.drawn)
+		if len(h.m.kicks) != n || !slices.Equal(drawnItems(h.m), fixedItems) {
+			t.Errorf("once the selector closed: %d drawings asked, images left %+v, want the mode pill's and the sidebar's tiles' alone", len(h.m.kicks)-n, h.m.drawn)
 		}
 
 		// Without Sixel: the text toggle, from one cell to the left, clicked;

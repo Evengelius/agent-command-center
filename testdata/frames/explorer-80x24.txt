@@ -1,24 +1,24 @@
  >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
- ▣╭─ Explorer ───────────────────────────────────────────── mock · 17 items ─╮0
- A│ sample/viewer.go                                                         │e
-╭─│ ▾ sample                                                              ●  │─╮
-│ │     viewer.go                                                         M  │ │
-│ │     viewer_test.go                                                    D  │ │
-│ │ ▸ tools                                                               D  │ │
-│ │   claude-api-key-context-refused.jsonl                                   │ │
-│ │   claude-models.jsonl                                                    │ │
-│ │   claude-quota-windows.jsonl                                             │ │
-│ │   claude-subagent-approval.jsonl                                         │ │
-│ │   claude-thinking-subagent.jsonl                                         │ │
-│ │   claude-thinking.jsonl                                                  │ │
-│ │   codex-api-key.jsonl                                                 U  │ │
-│ │   codex-models-next-turn.jsonl                                           │ │
-│ │   codex-models.jsonl                                                     │ │
-│ │   codex-no-5h-window.jsonl                                               │ │
-│ │   codex-plan6-limits.jsonl                                            !  │ │
-│ │   codex-spawn-request.jsonl                                           A  │ │
-╰─│   codex-subagents.jsonl                                                  │─╯
-╭─│                                                                          │─╮
-│ │ Enter view · / find · Esc back · F3 close                        2 of 17 │ │
-╰─╰──────────────────────────────────────────────────────────────────────────╯─╯
- Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys
+ ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
+ A ✓ Turn 2                                               (inferred)   F6: tree
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ EXPLORER                                                                   ⌄ │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ ⌄ 🗀  mock                                                                    │
+│   ⌄ 🗀  sample                                                             ●  │
+│       🗎  viewer.go                                                        M  │
+│       🗎  viewer_test.go                                                   D  │
+│   › 🗀  tools                                                              D  │
+│     🗎  claude-api-key-context-refused.jsonl                                  │
+│     🗎  claude-models.jsonl                                                   │
+│     🗎  claude-quota-windows.jsonl                                            │
+│     🗎  claude-subagent-approval.jsonl                                        │
+│     🗎  claude-thinking-subagent.jsonl                                        │
+│     🗎  claude-thinking.jsonl                                                 │
+│     🗎  codex-api-key.jsonl                                                U  │
+│     🗎  codex-models-next-turn.jsonl                                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑↓ · → open · ← close · Enter view · / find · Esc back · F3 Explorer

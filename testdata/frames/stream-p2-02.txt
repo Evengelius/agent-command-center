@@ -1,38 +1,38 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
-╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                 ││                                                                                  │
-│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎ YOU  02:00                                                                     │
-│ ──────────────────────────────── ││ ▎ Create a file named hello.txt in the current directory containing the single   │
-│ STAGES · inferred from activity  ││ ▎ word hello. Use the Write tool, then reply with the word done.                 │
-│ ✓ TURN 1                      4s ││                                                                                  │
-│   Create a file named hello.txt… ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Write                          ││                                                                                  │
-│                                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│                                  ││ ▎  ✓ Write  <probe-root>\probe-work\p2\hello.txt            02:00:09  observed   │
-│                                  ││ ▎  ✓ orchestrator · Write  …\p2\hello.txt    allowed by you 02:00:09  observed   │
-│                                  ││                                                                                  │
-│                                  ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
-│                                  ││ │ RESULT  02:00                                                                │ │
-│                                  ││ │ done                                                                         │ │
-│                                  ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
-│                                  ││                                                                                  │
-│ ──────────────────────────────── ││                                                                                  │
-│ ✦ TELEMETRY        Enter details ││                                                                                  │
-│ ▾ SESSION USAGE                  ││                                                                                  │
-│   Context 3% of 1M ░░░░░░░░░░░░░ ││                                                                                  │
-│   Tokens 61.1k session total     ││                                                                                  │
-│   Est. cost $0.00 API-equiv.     ││                                                                                  │
-│                                  ││                                                                                  │
-│ ▾ QUOTA WINDOWS                  ││                                                                                  │
-│   Session (5hr)             25%† ││                                                                                  │
-│   ████████░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
-│   Resets in 14h 40m              ││                                                                                  │
-│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Weekly (7 day)            46%† ││ >  Ask Claude Code anything…                                                     │
-│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 1d 20h               ││   +     Haiku 5.5                                                    ✋ Manual   │
-╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││                                                                          ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎ YOU  02:00                                                             ││  ≡   │
+│ ──────────────────────────────── ││ ▎ Create a file named hello.txt in the current directory containing the  ││      │
+│ STAGES · inferred from activity  ││ ▎ single word hello. Use the Write tool, then reply with the word done.  ││      │
+│ ✓ TURN 1                      4s ││                                                                          ││      │
+│   Create a file named hello.txt… ││ ──────────────────────────────────────────────────────────────────────── ││  ⑂   │
+│   Write                          ││                                                                          ││      │
+│                                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
+│                                  ││ ▎  ✓ Write  <probe-root>\probe-work\p2\hello.txt    02:00:09  observed   ││      │
+│                                  ││ ▎  ✓ orchestrator · Write  …llo.txt  allowed by you 02:00:09  observed   ││      │
+│                                  ││                                                                          ││      │
+│                                  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│                                  ││ │ RESULT  02:00                                                        │ ││      │
+│                                  ││ │ done                                                                 │ ││      │
+│                                  ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
+│                                  ││                                                                          ││      │
+│ ──────────────────────────────── ││                                                                          ││      │
+│ ✦ TELEMETRY        Enter details ││                                                                          ││      │
+│ ▾ SESSION USAGE                  ││                                                                          ││      │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Tokens 61.1k session total     ││                                                                          ││      │
+│   Est. cost $0.00 API-equiv.     ││                                                                          ││      │
+│                                  ││                                                                          ││      │
+│ ▾ QUOTA WINDOWS                  ││                                                                          ││      │
+│   Session (5hr)             25%† ││                                                                          ││      │
+│   ████████░░░░░░░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Resets in 14h 40m              ││                                                                          ││      │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)            46%† ││ >  Ask Claude Code anything…                                             ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 1d 20h               ││   +     Haiku 5.5                                            ✋ Manual   ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
 │ no agents yet: they appear as the CLI starts them                                                                    │

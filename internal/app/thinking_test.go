@@ -385,7 +385,9 @@ func TestThinkingReplayInOneBatch(t *testing.T) {
 func TestThinkingKeys(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		r := thinkStart(t, "p12c-block-claude-auto-boundary-edit.jsonl", claude.ProviderID)
-		r.h.draw(tea.WindowSizeMsg{Width: 160, Height: 50})
+		// Zone B 115 columns wide, as at 160 before the sidebar took 8 (plan
+		// 43): each detail on a row of its own.
+		r.h.draw(tea.WindowSizeMsg{Width: 171, Height: 50})
 		r.until(27000)
 		r.at(27000)
 		last := thought(t, r.h.m.State(), 4)
@@ -405,7 +407,8 @@ func TestThinkingKeys(t *testing.T) {
 		rows := r.h.m.screen.Conv.Rows
 		r.h.draw(key(tea.KeyRight, 0))
 		// Its four details: its times, its exact count, its last estimate, no
-		// thinking text (render's thoughtDetails), a row each at 160 columns.
+		// thinking text (render's thoughtDetails), a row each in zone B's 115
+		// columns.
 		const details = 4
 		if f := r.h.frame(); !r.h.m.ui.Unfolded[k] || !strings.Contains(f, "▾ ✓ Thought for 2.2s") || r.h.m.screen.Conv.Rows != rows+details {
 			t.Fatalf("→: open %v, rows %d then %d, %d details\n%s", r.h.m.ui.Unfolded[k], rows, r.h.m.screen.Conv.Rows, details, f)

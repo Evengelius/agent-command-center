@@ -14,6 +14,7 @@ point at it. Two references, with different roles:
 | `07-top-right.webp` (1685x504), from amendment 28 | **the top right**: "● LIVE" over the provider's name and version alone, over zone B's edge with the session's state | [The top right](#the-top-right) |
 | `08-input-editor.png` (1685x139), from amendment 29 | **the input editor's row**: a "+" box, the pill "Fable 5.1 High · Ultracode", "⚡ Auto" at the right end, design placeholders | [The input editor's row](#the-input-editors-row) |
 | `09-plus-menu.png` (492x196), from amendment 30 | **the "+" menu**: the "+" clicked, on an active background, a menu above it with a folder icon and "Upload from computer" highlighted under the mouse | [The "+" menu](#the-plus-menu) |
+| `12-sidebar-collapsed.png` (955x332), `13-sidebar-explorer.webp` (1393x479), from amendment 44 | **the right sidebar**: a narrow box right of zone B with two icons, the Explorer's and Skills'; the Explorer docked between zone B and the sidebar, its tree, the Explorer's icon selected | [The right sidebar](#the-right-sidebar) |
 
 **It is a visual reference, not a product.** The reference looks like a
 promotional mock-up ("CLAUDE CODE ULTRACODE TIP"). Its model names, flags
@@ -550,3 +551,57 @@ terminal's own ground (`#111518` against `#0C0C0C`); the images show no
 hover, no greyed option and no confirmation, which follow the same
 colours (the hovered option on the band without the check; the
 confirmation's heading and Turn on Full access in amber).
+
+## The right sidebar
+
+Brief amendment 44 (plan 43): two images, "the authoritative design
+references", `12-sidebar-collapsed.png` (955x332) and
+`13-sidebar-explorer.webp` (1393x479, lossy), the same screen with the
+Explorer's panel shown. Measured with `scratchpad/plan43/fg.ps1` (the
+brightest tenth of each element's pixels):
+
+- **The sidebar**, a box of its own right of zone B (and of the Explorer
+  panel when it shows), its border thin and dark, about 8 cells wide at
+  the references' scale; two tiles near its top, about 6 cells by 3 rows
+  each: the Explorer's and, one row below, Skills'.
+- **The selected tile** (the Explorer's, in both images): a rounded square
+  of `#181C30` with a thin `#7A4EBA` outline, an accent bar of `#A272F1`
+  along its left edge, the icon `#A6B3C6`: a tree, a trunk with a crossbar
+  and a foot, two folders at its right.
+- **The inactive tile** (Skills): no tile, the icon `#6F7C88`: three
+  nodes, the left two linked by a line, the top right one by a branch.
+- **The Explorer panel**, between zone B and the sidebar, about 30 cells
+  wide at 208 columns: a box whose border is lavender while it has the
+  focus; a header row "EXPLORER" in `#A785DD`, bold, with a chevron at its
+  right (`#9D98D6`); a rule; the root row, a chevron, an open-folder icon
+  `#9DAEC5` and the project's name `#A0ABD8`; under it, one step deeper,
+  each folder a chevron `#909DD3`, a folder icon `#6CA1DB` and its name
+  (`#97A3D3`), each file a document icon `#A3B1C9` and its name
+  (`#9EAAD5`).
+- Zone B keeps its look, narrower; zone C, not shown, stays full width
+  under all of it (the owner's diagrams).
+
+What plan 43 takes from them: the sidebar's box and width, the two tiles'
+places, the selected tile's fill, outline, accent bar and icon colour, the
+inactive icon's grey, both icons drawn as the dashboard's own on a 24-unit
+grid and sent as Sixel images over blank cells; the hover look the
+references do not show, from the selectors' hover ground (`#342B47`, the
+model selector's band) with the icon brighter; the panel's header, rule,
+root row and tree, its chevrons, icons and name colours. Read back from
+Windows Terminal's screenshots (plan 43's evaluation, 43.14), the tiles'
+fills, accent bar and icons are within 1 level of these values and the
+outline within 9 (Windows Terminal scales the images to its cells, which
+blends a line 1.4 pixels wide); the panel's names are exact.
+
+What differs:
+- The collapsed image shows the Explorer's tile selected; the brief's text
+  ties the selected look to the Explorer being active ("F3 when collapsed
+  … Mark Explorer as active"), so the collapsed sidebar shows it inactive
+  until F3 or its tile shows the panel.
+- The header "EXPLORER" is in the dashboard's title colour, `#C4B5FD`, as
+  zone B's title, where the images' titles are `#A785DD`.
+- The panel's chevrons are the dashboard's "›" and "⌄"; its icons are
+  Segoe UI Symbol's folder and page (U+1F5C0, U+1F5CE), thinner than the
+  images' at 9 points: their brightest pixels read `#50759E` and `#6E7786`
+  for the `#6CA1DB` and `#A3B1C9` set.
+- The cells: the tree's rows one cell apart, the tiles 6 cells by 3 rows.

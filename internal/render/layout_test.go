@@ -81,7 +81,9 @@ func zoneBoxes(rows []string) map[string]zoneBox {
 // TestDashboardGeometry is plan 20's item 1 (brief amendment 16) as plan 24
 // changed it (criteria 24.1 to 24.3): A and B share the upper row, their
 // bottom borders on one row, A 28% of the width and at least 36 columns; C
-// spans the whole width under both, to the footer; no fourth box.
+// spans the whole width under both, to the footer; no fourth zone. Since
+// plan 43 (criterion 43.1) the sidebar's box, 8 columns, ends the upper
+// row: zone B is the rest, w - A - 8.
 func TestDashboardGeometry(t *testing.T) {
 	quiet := probeState(t, "p2-claude-conversation.jsonl", claude.ProviderID, claude.NewMapper())
 	one := probeState(t, "p3b-claude-subagent-approval.jsonl", claude.ProviderID, claude.NewMapper())
@@ -91,9 +93,24 @@ func TestDashboardGeometry(t *testing.T) {
 			rows := strings.Split(strings.TrimSuffix(texts(Draw(s, UI{Width: c.w, Height: c.h, Focus: "B"}).lines), "\n"), "\n")
 			z := zoneBoxes(rows)
 			a, b, cz := z["A"], z["B"], z["C"]
-			// 24.1 A and B on row 3, A aw wide, B the rest, their bottoms on one row.
-			if a.top != 2 || b.top != 2 || a.left != 0 || a.right != c.aw-1 || b.left != c.aw || b.right != c.w-1 || a.bottom != b.bottom {
-				t.Errorf("%s: A %+v, B %+v; want both from row 2 to one row, A 0..%d, B %d..%d", name, a, b, c.aw-1, c.aw, c.w-1)
+			// 24.1 A and B on row 3, A aw wide, B the rest but the sidebar,
+			// their bottoms on one row.
+			if a.top != 2 || b.top != 2 || a.left != 0 || a.right != c.aw-1 || b.left != c.aw || b.right != c.w-9 || a.bottom != b.bottom {
+				t.Errorf("%s: A %+v, B %+v; want both from row 2 to one row, A 0..%d, B %d..%d", name, a, b, c.aw-1, c.aw, c.w-9)
+			}
+			// 43.1 The sidebar: the last 8 columns of the upper rows, A's and
+			// B's rows, never C's.
+			for y := a.top; y <= a.bottom; y++ {
+				want := "│      │"
+				switch y {
+				case a.top:
+					want = "╭──────╮"
+				case a.bottom:
+					want = "╰──────╯"
+				}
+				if got := cellSlice(rows[y], c.w-8, c.w); got != want && !(y > a.top && y < a.bottom && strings.HasPrefix(got, "│") && strings.HasSuffix(got, "│")) {
+					t.Errorf("%s: row %d's last 8 columns %q, want the sidebar's %q", name, y, got, want)
+				}
 			}
 			// 24.1 C full width under them to the footer; no fourth box.
 			if cz.top != a.bottom+1 || cz.left != 0 || cz.right != c.w-1 || cz.bottom != c.h-2 {

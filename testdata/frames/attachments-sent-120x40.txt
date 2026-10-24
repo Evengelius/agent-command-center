@@ -1,38 +1,38 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
-╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                 ││ ▎ CLAUDE  Haiku 5.5  11:30                                                       │
-│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎  ✓ Agent  general-purpose · List directory and write fo…  11:30:00      mock   │
-│ ──────────────────────────────── ││ ▎                                                                                │
-│ STAGES · inferred from activity  ││ ▎ I've launched the subagent in the background to list the directory and write   │
-│ ✓ TURN 1                      0s ││ ▎ `found.txt`. I'll report its result when it finishes.                          │
-│   Use the Agent tool to launch … ││ ▎                                                                                │
-│   Agent · agent general-purpose  ││ ▎  ✓ general-purpose · Bash   ls -p "<prob…  allowed by you 11:30:00      mock   │
-│                                  ││ ▎  ✓ general-purpose · Write  …\found.txt    allowed by you 11:30:00      mock   │
-│ ✓ TURN 2                      0s ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens               11:30:00      mock   │
-│   started by the CLI             ││                                                                                  │
-│                                  ││ ╭──────────────────────────────────────────────────────────────────────────────╮ │
-│ ✓ TURN 3                      0s ││ │ RESULT  11:30                                                                │ │
-│   What colours and what text ar… ││ │ The subagent found two files in the directory, `alpha.txt` and `beta.md`,    │ │
-│                                  ││ │ and wrote them into `<probe-root>\probe-work\p3b\found.txt`.                 │ │
-│                                  ││ │                                                                              │ │
-│                                  ││ │ Found 2 files: alpha.txt and beta.md.                                        │ │
-│ ──────────────────────────────── ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
-│ ✦ TELEMETRY        Enter details ││                                                                                  │
-│ ▾ SESSION USAGE                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Context 4% of 1M ░░░░░░░░░░░░░ ││                                                                                  │
-│   Tokens 159.4k session total    ││ ▎ YOU  11:30                                                                     │
-│   Est. cost $0.01 API-equiv.     ││ ▎ What colours and what text are in these images?                                │
-│                                  ││ ▎ 🗀  acc-image-upload-test.png · 1 KB                                            │
-│ ▾ QUOTA WINDOWS                  ││ ▎ 🗀  acc-image-upload-test.jpg · 6 KB                                            │
-│   Session (5hr)             35%† ││                                                                                  │
-│   ███████████░░░░░░░░░░░░░░░░░░░ ││   · mock session: the message was not sent to any CLI                            │
-│   Resets in 14h 40m              ││                                                                                  │
-│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Weekly (7 day)            47%† ││ >  Ask Mock data anything…                                                       │
-│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 1d 20h               ││   +     Haiku 5.5                                                    ✋ Manual   │
-╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ ▎  ✓ Agent  general-purpose · List directory and …  11:30:00      mock   ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎                                                                        ││  ≡   │
+│ ──────────────────────────────── ││ ▎ I've launched the subagent in the background to list the directory     ││      │
+│ STAGES · inferred from activity  ││ ▎ and write `found.txt`. I'll report its result when it finishes.        ││      │
+│ ✓ TURN 1                      0s ││ ▎                                                                        ││      │
+│   Use the Agent tool to launch … ││ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   ││  ⑂   │
+│   Agent · agent general-purpose  ││ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   ││      │
+│                                  ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   ││      │
+│ ✓ TURN 2                      0s ││                                                                          ││      │
+│   started by the CLI             ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│                                  ││ │ RESULT  11:30                                                        │ ││      │
+│ ✓ TURN 3                      0s ││ │ The subagent found two files in the directory, `alpha.txt` and       │ ││      │
+│   What colours and what text ar… ││ │ `beta.md`, and wrote them into                                       │ ││      │
+│                                  ││ │ `<probe-root>\probe-work\p3b\found.txt`.                             │ ││      │
+│                                  ││ │                                                                      │ ││      │
+│                                  ││ │ Found 2 files: alpha.txt and beta.md.                                │ ││      │
+│ ──────────────────────────────── ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
+│ ✦ TELEMETRY        Enter details ││                                                                          ││      │
+│ ▾ SESSION USAGE                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Tokens 159.4k session total    ││ ▎ YOU  11:30                                                             ││      │
+│   Est. cost $0.01 API-equiv.     ││ ▎ What colours and what text are in these images?                        ││      │
+│                                  ││ ▎ 🗀  acc-image-upload-test.png · 1 KB                                    ││      │
+│ ▾ QUOTA WINDOWS                  ││ ▎ 🗀  acc-image-upload-test.jpg · 6 KB                                    ││      │
+│   Session (5hr)             35%† ││                                                                          ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││   · mock session: the message was not sent to any CLI                    ││      │
+│   Resets in 14h 40m              ││                                                                          ││      │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)            47%† ││ >  Ask Mock data anything…                                               ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 1d 20h               ││   +     Haiku 5.5                                            ✋ Manual   ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
 │ no agents yet: they appear as the CLI starts them                                                                    │

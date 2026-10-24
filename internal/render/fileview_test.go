@@ -154,8 +154,10 @@ func TestToolFile(t *testing.T) {
 }
 
 // TestFileFooters is plan 17, criterion 3.9, for the windows: every footer
-// fits its window whole, its keys ending with "Esc back · F3 close" ("Esc cancel" in a field); the
-// Explorer's too (amendment 12).
+// fits its window whole, its keys ending with "Esc back · F3 close" ("Esc
+// cancel" in a field); the Explorer's keys, in the dashboard's footer while
+// its panel has the focus since plan 43 (design D6), whole at every width,
+// with "Esc back" and "F3 Explorer" (design D10).
 func TestFileFooters(t *testing.T) {
 	s := state.New()
 	for _, w := range []int{80, 99, 100, 120, 200} {
@@ -185,8 +187,9 @@ func TestFileFooters(t *testing.T) {
 		}
 		deep := strings.Repeat("folder/", 30) + "file.go"
 		ev := ExplorerView{Open: true, Name: "a-long-project-name", Dirs: map[string]*ExplorerDir{"": {Entries: []ExplorerEntry{{Name: deep}}}}, Cursor: deep}
-		ew := explorerWindow(s, UI{Width: w, Height: 24, Explorer: ev}, ww, 22)
-		if text := texts(ew[len(ew)-2 : len(ew)-1]); strings.Contains(text, "…") || !strings.Contains(text, "Esc back · F3 close") || !strings.Contains(text, "1 of 1") {
+		s.Screen = state.ScreenDashboard
+		ls := dashboard(s, UI{Width: w, Height: 24, Focus: "R", Explorer: ev}, new(Screen))
+		if text := texts(ls[len(ls)-1:]); strings.Contains(text, "…") || !strings.Contains(text, "Esc back") || !strings.Contains(text, "F3 Explorer") || textWidth(strings.TrimSuffix(text, "\n")) != w {
 			t.Errorf("Explorer footer at %d columns: %q", w, text)
 		}
 	}

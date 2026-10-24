@@ -19,8 +19,10 @@ from, and the licence is read from the copy's own licence file:
 
 - `github.com/charmbracelet/ultraviolet` is replaced by
   `./third_party/ultraviolet`: two decoder fixes for Windows Terminal's
-  win32-input-mode (letter case and emoji), described with their source,
-  licence and checks in `third_party/ultraviolet/PATCHES.md`.
+  win32-input-mode (letter case and emoji) and one renderer fix (a row
+  holding a wide character written only as far as it changed, plan 43),
+  described with their source, licence and checks in
+  `third_party/ultraviolet/PATCHES.md`.
 
 `internal/licenses` fails if a replaced module has no `PATCHES.md` or is not
 named here. No other third-party source code is copied into this repository.

@@ -67,8 +67,10 @@ func (m *Model) fileRoot() string {
 	return root
 }
 
-// f3 opens the file the entry or the request on screen names, else the
-// Explorer (plan 17, Opening; amendment 12).
+// f3 opens the file the entry or the request on screen names (plan 17,
+// Opening), else shows or hides the Explorer's panel (plan 43, design D5).
+// A full view naming no file, the inspection, the details view and a zoomed
+// zone cover the dashboard: F3 closes them and shows the panel.
 func (m *Model) f3() []tea.Cmd {
 	conv := m.s.Conversation
 	switch {
@@ -77,16 +79,30 @@ func (m *Model) f3() []tea.Cmd {
 		if t, ok := render.ToolFile(ap.Tool, ap.Input); ok {
 			return m.openFile(t)
 		}
+		m.closeView()
+		return m.showExplorer()
 	case m.ui.ViewEntry > 0 && m.ui.ViewEntry <= len(conv):
 		if t, ok := render.EntryFile(m.s, conv[m.ui.ViewEntry-1]); ok {
 			return m.openFile(t)
 		}
+		m.closeView()
+		return m.showExplorer()
 	case m.ui.Entry > 0 && m.ui.Entry <= len(conv) && m.ui.Focus == "B" && m.ui.Card == "":
 		if t, ok := render.EntryFile(m.s, conv[m.ui.Entry-1]); ok {
 			return m.openFile(t)
 		}
+	case m.ui.Inspect != "" && m.s.Agents[m.ui.Inspect] != nil:
+		m.ui.Inspect, m.ui.Sel = "", render.Selection{}
+		return m.showExplorer()
+	case m.ui.Details:
+		m.ui.Details, m.ui.Sel = false, render.Selection{}
+		m.ui.InspectHold, m.ui.InspectTop = false, 0
+		return m.showExplorer()
+	case m.ui.Zoom && (m.ui.Focus == "A" || m.ui.Focus == "C"):
+		m.ui.Zoom = false
+		return m.showExplorer()
 	}
-	return m.openExplorer()
+	return m.toggleExplorer()
 }
 
 // openFile shows the target's file: read in a command, the window saying
@@ -205,8 +221,11 @@ func (m *Model) fileKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		m.closeWindows()
 		return m.focusCard("", true), true
 	case "f3":
-		m.closeWindows()
-		return nil, true
+		// The viewer and the quick open closed, the Explorer's panel shown
+		// or hidden (plan 43, design D5).
+		m.closeFinder()
+		m.closeFile()
+		return m.toggleExplorer(), true
 	case "f":
 		f.Full = !f.Full
 	case "/":
@@ -471,7 +490,10 @@ func (m *Model) finderKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	case "esc":
 		m.closeFinder()
 	case "f3":
-		m.closeWindows()
+		// As the viewer's F3 (plan 43, design D5).
+		m.closeFinder()
+		m.closeFile()
+		return m.toggleExplorer(), true
 	case "f2":
 		m.closeWindows()
 		return m.focusCard("", true), true
@@ -506,7 +528,7 @@ func (m *Model) finderKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 }
 
 // filePaste puts a paste in the quick open's query or the viewer's field;
-// with neither, the window drops it, the Explorer too.
+// with neither, the window drops it.
 func (m *Model) filePaste(text string) {
 	switch {
 	case m.ui.Finder.Open:
@@ -518,12 +540,8 @@ func (m *Model) filePaste(text string) {
 }
 
 // fileMouse handles the mouse while a window is open: the wheel scrolls it,
-// a press in the file starts a selection, nothing outside it; the Explorer
-// in front has its own.
+// a press in the file starts a selection, nothing outside it.
 func (m *Model) fileMouse(msg tea.MouseMsg) []tea.Cmd {
-	if !m.ui.File.Open && !m.ui.Finder.Open {
-		return m.explorerMouse(msg)
-	}
 	mo := msg.Mouse()
 	switch msg.(type) {
 	case tea.MouseWheelMsg:

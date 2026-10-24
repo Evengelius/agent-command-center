@@ -218,6 +218,13 @@ func TestFailedRowNamesItsTarget(t *testing.T) {
 		return UI{Width: w, Height: h, Focus: "B", Unfolded: map[string]bool{"r00": true}} // the run expanded
 	}
 	for _, size := range [][2]int{{156, 44}, {120, 40}, {200, 60}, {80, 40}} {
+		// The error as the row shows it: whole, except at 120 columns, where
+		// zone B lost the sidebar's 8 columns (plan 43, design D1) and the
+		// row is cut at its edge, the error first, "failed" and its time kept.
+		shown := "· File does not exist."
+		if size[0] == 120 {
+			shown = "· File does not ex…"
+		}
 		// B's tail and, held, its top; 80 columns 40 rows tall, for the failed
 		// row to be in one of them under the messages' spacing (amendment 17).
 		sc := Draw(s, ui(size[0], size[1]))
@@ -243,13 +250,13 @@ func TestFailedRowNamesItsTarget(t *testing.T) {
 				break
 			}
 		}
-		for _, want := range []string{"f03.go", "· File does not exist.", "failed 12:15"} {
+		for _, want := range []string{"f03.go " + shown, "failed 12:15"} {
 			if !strings.Contains(row, want) {
 				t.Errorf("%v: the failed row %q lacks %q", size, row, want)
 			}
 		}
-		if styleOf(l, "File does not exist") != tint(stFailed) {
-			t.Errorf("%v: the error styled %p", size, styleOf(l, "File does not exist"))
+		if styleOf(l, "File does not ex") != tint(stFailed) {
+			t.Errorf("%v: the error styled %p", size, styleOf(l, "File does not ex"))
 		}
 		// No path is cut inside an element, nor shows the user folder.
 		for _, r := range strings.Split(frame, "\n") {

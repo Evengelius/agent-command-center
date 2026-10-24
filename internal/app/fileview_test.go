@@ -229,7 +229,9 @@ func TestFilterFiles(t *testing.T) {
 
 // TestFileKeys is plan 17, criterion 3.4: the viewer's keys move, search
 // and go to a line; Esc cancels a field, then goes back to the Explorer on
-// the file, then closes it (amendment 12); the draft is kept.
+// the file (amendment 12), then gives zone B the focus, which at 120x40
+// hides the Explorer's panel in zone B's place (plan 43, design D7 and the
+// compact rule); the draft is kept.
 func TestFileKeys(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		r, _, _ := fileRig(t)
@@ -322,12 +324,14 @@ func TestFileKeys(t *testing.T) {
 			t.Errorf("Esc on the overlay: overlay %v, viewer %v", h.m.ui.Keys, f.Open)
 		}
 		h.send(key(tea.KeyEscape, 0))
-		if v := h.m.ui.Explorer; f.Open || !v.Open || v.Cursor != "main.go" {
-			t.Errorf("Esc: viewer %v, Explorer %v on %q", f.Open, v.Open, v.Cursor)
+		if v := h.m.ui.Explorer; f.Open || !v.Open || v.Cursor != "main.go" || h.m.ui.Focus != "R" {
+			t.Errorf("Esc: viewer %v, Explorer %v on %q, focus %q", f.Open, v.Open, v.Cursor, h.m.ui.Focus)
 		}
+		// Esc at the top: zone B's focus, the Explorer's panel, in zone B's
+		// place at 120x40, hidden (plan 43's compact rule), no window.
 		h.send(key(tea.KeyEscape, 0))
-		if h.m.ui.Explorer.Open || render.WindowOpen(h.m.ui) {
-			t.Error("Esc at the top: the Explorer stays open")
+		if h.m.ui.Explorer.Open || h.m.ui.Focus != "B" || render.WindowOpen(h.m.ui) {
+			t.Errorf("Esc at the top: Explorer %v, focus %q, a window %v", h.m.ui.Explorer.Open, h.m.ui.Focus, render.WindowOpen(h.m.ui))
 		}
 		if got := h.m.edit.Text(); got != "draft" {
 			t.Errorf("the draft is %q", got)

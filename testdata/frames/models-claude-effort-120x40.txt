@@ -1,38 +1,38 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-models.jsonl   ..\..\testdata\mock\claude-models.jsonl                                              Mock data
-╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                 ││ Waiting for instructions                                                         │
-│ ✿ Claude Fable 5.1        ○ IDLE ││ Ready to work on this project.                                                   │
-│ ──────────────────────────────── ││                                                                                  │
-│ STAGES · inferred from activity  ││       ╭─────────────────────────────────────────────────────────────────╮        │
-│ ○ (stages appear as turns run)   ││       │ CLAUDE MODELS                                   Current session │        │
-│                                  ││       │                                                                 │        │
-│                                  ││       │    Default (recommended)                                        │        │
-│                                  ││       │    Opus 5.5 · Best for everyday, complex tasks                  │        │
-│                                  ││       │                                                                 │        │
-│                                  ││       │    Opus 5.5                                                     │        │
-│                                  ││       │    For complex work and everyday tasks                          │        │
-│                                  ││       │                                                                 │        │
-│                                  ││       │    Fable 5.1                                                ✓   │        │
-│                                  ││       │    For your toughest challenges                                 │        │
-│                                  ││       │                                                                 │        │
-│                                  ││       │    Sonnet 5.5                                                   │        │
-│                                  ││       │    Most efficient for simpler tasks                             │        │
-│                                  ││       │                                                                 │        │
-│ ──────────────────────────────── ││       │    Haiku 5.5                                                    │        │
-│ ✦ TELEMETRY        Enter details ││       │    Fastest for quick answers                                    │        │
-│ ▾ SESSION USAGE                  ││       │ ─────────────────────────────────────────────────────────────── │        │
-│   Context N/A no turn yet        ││       │  ▶ More models                                              ›   │        │
-│   Tokens N/A no result yet       ││       │ ─────────────────────────────────────────────────────────────── │        │
-│   Est. cost N/A no result yet    ││       │                                                                 │        │
-│                                  ││       │  Effort (XHigh)   Controls reasoning depth    ·  ·   ·   ·  │        │
-│ ▾ QUOTA WINDOWS                  ││       │                                                                 │        │
-│   Session (5hr)              N/A ││       │  Ultracode        Enables dynamic workflows                 │        │
-│   no report yet                  ││ ──────╰▾────────────────────────────────────────────────────────────────╯─────── │
-│                                  ││ >  Ask Mock data anything…                                                       │
-│   Weekly (7 day)             N/A ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   no report yet                  ││   +     Fable 5.1 XHigh · Ultracode                                  ✋ Manual   │
-╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ Waiting for instructions                                                 ││      │
+│ ✿ Claude Fable 5.1        ○ IDLE ││ Ready to work on this project.                                           ││  ≡   │
+│ ──────────────────────────────── ││                                                                          ││      │
+│ STAGES · inferred from activity  ││       ╭─────────────────────────────────────────────────────────────────╮││      │
+│ ○ (stages appear as turns run)   ││       │ CLAUDE MODELS                                   Current session │││      │
+│                                  ││       │                                                                 │││  ⑂   │
+│                                  ││       │    Default (recommended)                                        │││      │
+│                                  ││       │    Opus 5.5 · Best for everyday, complex tasks                  │││      │
+│                                  ││       │                                                                 │││      │
+│                                  ││       │    Opus 5.5                                                     │││      │
+│                                  ││       │    For complex work and everyday tasks                          │││      │
+│                                  ││       │                                                                 │││      │
+│                                  ││       │    Fable 5.1                                                ✓   │││      │
+│                                  ││       │    For your toughest challenges                                 │││      │
+│                                  ││       │                                                                 │││      │
+│                                  ││       │    Sonnet 5.5                                                   │││      │
+│                                  ││       │    Most efficient for simpler tasks                             │││      │
+│                                  ││       │                                                                 │││      │
+│ ──────────────────────────────── ││       │    Haiku 5.5                                                    │││      │
+│ ✦ TELEMETRY        Enter details ││       │    Fastest for quick answers                                    │││      │
+│ ▾ SESSION USAGE                  ││       │ ─────────────────────────────────────────────────────────────── │││      │
+│   Context N/A no turn yet        ││       │  ▶ More models                                              ›   │││      │
+│   Tokens N/A no result yet       ││       │ ─────────────────────────────────────────────────────────────── │││      │
+│   Est. cost N/A no result yet    ││       │                                                                 │││      │
+│                                  ││       │  Effort (XHigh)   Controls reasoning depth    ·  ·   ·   ·  │││      │
+│ ▾ QUOTA WINDOWS                  ││       │                                                                 │││      │
+│   Session (5hr)              N/A ││       │  Ultracode        Enables dynamic workflows                 │││      │
+│   no report yet                  ││ ──────╰▾────────────────────────────────────────────────────────────────╯││      │
+│                                  ││ >  Ask Mock data anything…                                               ││      │
+│   Weekly (7 day)             N/A ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   no report yet                  ││   +     Fable 5.1 XHigh · Ultracode                          ✋ Manual   ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
 │ no agents yet: they appear as the CLI starts them                                                                    │

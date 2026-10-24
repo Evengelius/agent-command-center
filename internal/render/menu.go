@@ -24,15 +24,16 @@ const menuPanel = 'U'
 
 // plusMenu draws the menu over the dashboard when it is open: its left edge
 // on the band's cell, its bottom edge on the editor's rule. It draws
-// nothing when the band or the rule is not on screen, or the rows above
-// the rule are too few.
+// nothing when the band or the rule is not on screen, the rows above the
+// rule are too few, or it would pass zone B's right edge, over the
+// Explorer's panel or the sidebar (plan 43, design D9).
 func plusMenu(sc *Screen, ui UI) {
 	px, py, ok := sc.find('+')
 	if !ok {
 		return
 	}
 	ry := sc.editorRule(py)
-	if ry < 2 || px+menuInner+2 > ui.Width {
+	if ry < 2 || px+menuInner+2 > sc.bRight(ui.Width) {
 		return
 	}
 	border := func(l, r string) line { return line{menuDeco(l+strings.Repeat("─", menuInner)+r, stFrame)} }

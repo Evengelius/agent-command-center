@@ -460,11 +460,11 @@ func TestModesDraw(t *testing.T) {
 		h.frame()
 		raws = drawn(h, thumbDrawMsg{gen: h.m.kicks[len(h.m.kicks)-1]})
 		left := fmt.Sprintf("\x1b[%d;%dH", md.Y+1, md.LeftX+1)
-		if len(raws) != 1 || !strings.Contains(raws[0], left) || strings.Contains(withoutPill(t, h, raws[0]), "\x1bP") || h.m.screen.Modes.Shown {
+		if len(raws) != 1 || !strings.Contains(raws[0], left) || strings.Contains(withoutFixed(t, h, raws[0]), "\x1bP") || h.m.screen.Modes.Shown {
 			t.Errorf("closed: %q", trunc(raws))
 		}
-		if len(h.m.drawn) != 1 || h.m.drawn[0].Item != -5 {
-			t.Errorf("images left %+v, want the pill's alone", h.m.drawn)
+		if !slices.Equal(drawnItems(h.m), fixedItems) {
+			t.Errorf("images left %+v, want the pill's and the sidebar's tiles' alone", h.m.drawn)
 		}
 	})
 }

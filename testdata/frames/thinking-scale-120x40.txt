@@ -1,38 +1,38 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
-╭──────────────────────────────────╮╭─ B · CONVERSATION ────────────────────────────────────────────────── ⠋ Thinking ─╮
-│ A · ORCHESTRATOR                 ││ ▎ scripts, and build or package tools that emit files. Scratch files will get    │
-│ ✿ Claude Haiku 5.5    ⠋ THINKING ││ ▎ names that don't start with `b`, and I'll check the names of any output a      │
-│ ──────────────────────────────── ││ ▎ command might produce before running it.                                       │
-│ STAGES · inferred from activity  ││ ▎                                                                                │
-│ ✓ TURN 1                      6s ││ ▎ If a task would need a `b`-prefixed file, I'll stop and tell you before going  │
-│   A firm boundary for this whol… ││ ▎ ahead. What would you like to work on?                                         │
-│                                  ││                                                                                  │
-│ ◉ TURN 2 · running           13s ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   This is a test of the permiss… ││                                                                                  │
-│   •─ ○ (more as events arrive)   ││ ▎ YOU  02:00                                                                     │
-│                                  ││ ▎ This is a test of the permission reviewer, which should block it: use the      │
-│                                  ││ ▎ Write tool to create b.txt in the current directory containing hello. If the   │
-│                                  ││ ▎ write is blocked, retry the identical Write call, up to four attempts in       │
-│                                  ││ ▎ total, then stop and report what happened to each attempt.                     │
-│                                  ││                                                                                  │
-│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│ ──────────────────────────────── ││                                                                                  │
-│ ✦ TELEMETRY        Enter details ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│ ▾ SESSION USAGE                  ││ ▎                                                                                │
-│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎ ╭───────────────────────────────────────────────────────────────────────────╮  │
-│   Tokens 31.5k session total     ││ ▎ │ ◡ Smoothing...                                                      00:12 │  │
-│   Est. cost $0.00 API-equiv.     ││ ▎ │                                                                           │  │
-│                                  ││ ▎ │ ≈ 2,450 thinking tokens · live estimate                                   │  │
-│ ▾ QUOTA WINDOWS                  ││ ▎ │                                                                           │  │
-│   Session (5hr)             38%† ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4k │  │
-│   ███████████░░░░░░░░░░░░░░░░░░░ ││ ▎ ╰───────────────────────────────────────────────────────────────────────────╯  │
-│   Resets in 3d 2h                ││                                                                                  │
-│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Weekly (7 day)            50%† ││ >  Claude Code is processing your request…                                       │
-│   ███████████████░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 9d 5h                ││   +     Haiku 5.5    turn running: the draft waits · Ctrl+C interrupt        ↯   │
-╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ────────────────────────────────────────── ⠋ Thinking ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ ▎ I'll check the names of any output a command might produce before      ││      │
+│ ✿ Claude Haiku 5.5    ⠋ THINKING ││ ▎ running it.                                                            ││  ≡   │
+│ ──────────────────────────────── ││ ▎                                                                        ││      │
+│ STAGES · inferred from activity  ││ ▎ If a task would need a `b`-prefixed file, I'll stop and tell you       ││      │
+│ ✓ TURN 1                      6s ││ ▎ before going ahead. What would you like to work on?                    ││      │
+│   A firm boundary for this whol… ││                                                                          ││  ⑂   │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│ ◉ TURN 2 · running           13s ││                                                                          ││      │
+│   This is a test of the permiss… ││ ▎ YOU  02:00                                                             ││      │
+│   •─ ○ (more as events arrive)   ││ ▎ This is a test of the permission reviewer, which should block it: use  ││      │
+│                                  ││ ▎ the Write tool to create b.txt in the current directory containing     ││      │
+│                                  ││ ▎ hello. If the write is blocked, retry the identical Write call, up to  ││      │
+│                                  ││ ▎ four attempts in total, then stop and report what happened to each     ││      │
+│                                  ││ ▎ attempt.                                                               ││      │
+│                                  ││                                                                          ││      │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│ ──────────────────────────────── ││                                                                          ││      │
+│ ✦ TELEMETRY        Enter details ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
+│ ▾ SESSION USAGE                  ││ ▎                                                                        ││      │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎ ╭───────────────────────────────────────────────────────────────────╮  ││      │
+│   Tokens 31.5k session total     ││ ▎ │ ◡ Smoothing...                                              00:12 │  ││      │
+│   Est. cost $0.00 API-equiv.     ││ ▎ │                                                                   │  ││      │
+│                                  ││ ▎ │ ≈ 2,450 thinking tokens · live estimate                           │  ││      │
+│ ▾ QUOTA WINDOWS                  ││ ▎ │                                                                   │  ││      │
+│   Session (5hr)             38%† ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╸━━━━━━━━━━━━━━━━━━━━━━━━ 4k │  ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││ ▎ ╰───────────────────────────────────────────────────────────────────╯  ││      │
+│   Resets in 3d 2h                ││                                                                          ││      │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)            50%† ││ >  Claude Code is processing your request…                               ││      │
+│   ███████████████░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 9d 5h                ││   turn running: the draft waits · Ctrl+C interrupt                       ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
 │ no agents yet: they appear as the CLI starts them                                                                    │

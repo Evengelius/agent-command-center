@@ -385,18 +385,27 @@ func blank(w, h int) []line {
 	return out
 }
 
-// beside joins columns of equal height side by side.
+// beside joins columns of equal height side by side, each row built once at
+// its final length (ui-design.md, Budget): the columns are only read.
 func beside(cols ...[]line) []line {
 	if len(cols) == 0 {
 		return nil
 	}
 	out := make([]line, len(cols[0]))
 	for i := range out {
+		n := 0
 		for _, c := range cols {
 			if i < len(c) {
-				out[i] = append(out[i], c[i]...)
+				n += len(c[i])
 			}
 		}
+		row := make(line, 0, n)
+		for _, c := range cols {
+			if i < len(c) {
+				row = append(row, c[i]...)
+			}
+		}
+		out[i] = row
 	}
 	return out
 }

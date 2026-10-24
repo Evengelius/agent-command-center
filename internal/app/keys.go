@@ -11,7 +11,18 @@ import (
 )
 
 // zones is the F6 order (ui-design.md, Keys); zone D is gone since plan 24.
+// The Explorer's panel, "R", comes after B while it is shown (plan 43,
+// design D7): zonesWith.
 var zones = []string{"B", "C", "A"}
+
+// zonesWith is the F6 order on this screen: B, the Explorer's panel when
+// shown, C, A.
+func (m *Model) zonesWith() []string {
+	if m.ui.Explorer.Open {
+		return []string{"B", "R", "C", "A"}
+	}
+	return zones
+}
 
 // key handles one key press (ui-design.md, Keys). Step 0 binds the
 // essentials; step 3 adds selection, undo, the external editor and the rest.
@@ -152,9 +163,10 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 			return cmds
 		}
 	}
-	// The window in front, the draft, the quick open, the file viewer or the
-	// Explorer, takes every key but the global ones (plan 17, Keys;
-	// amendments 12 and 13).
+	// The window in front, the draft, the quick open or the file viewer,
+	// takes every key but the global ones (plan 17, Keys; amendments 12 and
+	// 13); the Explorer's panel takes its own while it has the focus (plan
+	// 43, design D7).
 	switch {
 	case m.ui.DraftWin.Open:
 		if cmds, done := m.draftWinKey(k); done {
@@ -168,7 +180,7 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 		if cmds, done := m.fileKey(k); done {
 			return cmds
 		}
-	case m.ui.Explorer.Open:
+	case m.ui.Explorer.Open && m.ui.Focus == "R":
 		if cmds, done := m.explorerKey(k); done {
 			return cmds
 		}
@@ -190,7 +202,7 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 		return m.toggleModels()
 	}
 	// F3: the file the entry or request on screen names, else the Explorer
-	// (plan 17, Opening; amendment 12).
+	// shown or hidden (plan 17, Opening; plan 43, design D5).
 	if k.String() == "f3" {
 		return m.f3()
 	}
@@ -228,7 +240,7 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 			m.ui.Sel = render.Selection{} // as in WT: the next Ctrl+C interrupts
 			return m.copy(text)
 		}
-		if m.ui.Focus == "B" && m.edit.HasSelection() {
+		if m.draftBeside() && m.edit.HasSelection() {
 			return m.copy(m.edit.SelectedText())
 		}
 		if k.String() == "ctrl+c" {
@@ -272,11 +284,11 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 		m.ui.Focus = "B"
 		return nil
 	case "f6", "shift+f6":
-		m.ui.Focus = nextZone(m.ui.Focus, k.String() == "f6")
+		m.ui.Focus = step(m.zonesWith(), m.ui.Focus, k.String() == "f6")
 		return nil
 	case "tab", "shift+tab":
 		if m.ui.Focus != "B" { // in the editor Tab inserts a tab
-			m.ui.Focus = nextZone(m.ui.Focus, k.String() == "tab")
+			m.ui.Focus = step(m.zonesWith(), m.ui.Focus, k.String() == "tab")
 			return nil
 		}
 	case "z":
@@ -394,10 +406,6 @@ func (m *Model) editKey(e *input.Editor, k tea.KeyPressMsg, oneLine bool) []tea.
 		}
 	}
 	return nil
-}
-
-func nextZone(z string, forward bool) string {
-	return step(zones, z, forward)
 }
 
 // step moves to the next or previous item of list, wrapping; from an

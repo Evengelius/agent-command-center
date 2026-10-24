@@ -866,21 +866,78 @@ func lineHasDrift(m ansi.Method, line Line) bool {
 func (s *TerminalRenderer) paintLine(newbuf *RenderBuffer, y int, force bool) {
 	drift := lineHasDrift(s.method, s.curbuf.Line(y)) || lineHasDrift(s.method, newbuf.Line(y))
 	s.markDrift(y, newbuf.Height(), drift)
+	// PATCHED (agent-command-center, PATCHES.md, patch 3): a drift-prone row
+	// the model holds as it is, unforced and undisturbed, is repainted only up
+	// to its last changed cell, and not at all when no cell changed. The cells
+	// after it are on screen already, and erasing them would also erase what
+	// the application drew over them (an image).
+	end := -1
+	if drift && !force && y < len(s.damaged) && !s.damaged[y] {
+		if end = s.changedEnd(newbuf, y); end == 0 {
+			return
+		}
+	}
 	switch {
 	case drift && !s.flags.Contains(tGraphemeWidth):
 		// Clip a cluster the terminal measures wider than the model instead of
 		// letting it spill onto the next row, then put the cursor back.
 		s.noWrapLine = true
 		_, _ = s.buf.WriteString(ansi.ResetModeAutoWrap)
-		s.repaintLine(newbuf, y)
+		s.repaintTo(newbuf, y, end)
 		s.noWrapLine = false
 		_, _ = s.buf.WriteString(ansi.SetModeAutoWrap)
 		s.reanchorWideLine(newbuf)
 	case drift || force:
-		s.repaintLine(newbuf, y)
+		s.repaintTo(newbuf, y, end)
 	default:
 		s.transformLine(newbuf, y)
 	}
+}
+
+// changedEnd is one past the last cell of row y that differs between the
+// model and newbuf, a wide cell there counted whole; 0 when no cell differs;
+// -1 when the row must be repainted whole, because the model's row is not
+// newbuf's width or a cell before the end runs past the right margin
+// (PATCHED, patch 3).
+func (s *TerminalRenderer) changedEnd(newbuf *RenderBuffer, y int) int {
+	oldLine, newLine := s.curbuf.Line(y), newbuf.Line(y)
+	width := newbuf.Width()
+	if len(oldLine) != width || len(newLine) != width {
+		return -1
+	}
+	end := 0
+	for x := width - 1; x >= 0; x-- {
+		if !cellEqual(oldLine.At(x), newLine.At(x)) {
+			end = x + 1
+			break
+		}
+	}
+	for x := 0; x < end; x++ {
+		if c := newLine.At(x); c != nil && !c.isWidePlaceholder() {
+			if x+c.Width > width {
+				return -1 // repaintLine clips it
+			}
+			end = max(end, x+c.Width)
+		}
+	}
+	return end
+}
+
+// repaintTo repaints row y: whole when end is negative, as repaintLine does;
+// otherwise it writes newbuf's cells from column 0 up to end, over what the
+// screen shows, and leaves the cells from end on as they are, which differ
+// from newbuf's in none (PATCHED, patch 3).
+func (s *TerminalRenderer) repaintTo(newbuf *RenderBuffer, y, end int) {
+	if end < 0 {
+		s.repaintLine(newbuf, y)
+		return
+	}
+	oldLine, newLine := s.curbuf.Line(y), newbuf.Line(y)
+	s.move(newbuf, 0, y)
+	for x := 0; x < end; x++ {
+		s.putCell(newbuf, newLine.At(x))
+	}
+	copy(oldLine[:end], newLine[:end])
 }
 
 // repaintLine erases row y from column 0 and writes newbuf's cells, so the

@@ -50,24 +50,23 @@ func thinkBench(th state.Thought) *state.State {
 func phase(s *state.State) *state.Thought { return s.Conversation[1].Thought }
 
 // zoneBText is zone B's inner rows on a frame of ui's size, as text: the
-// conversation, then the input.
+// conversation, then the input. Zone B ends before the sidebar from 100
+// columns (plan 43, design D1).
 func zoneBText(s *state.State, ui UI) []string {
-	x0 := 0
-	if ui.Width >= standardWidth {
-		x0 = zoneAWidth(ui.Width)
+	g := layout(s, ui)
+	x0, x1 := g.aw, g.aw+g.bw // zone B's columns
+	if x1-x0 <= 4 {
+		return nil
 	}
 	var out []string
 	in := false
 	for _, l := range Draw(s, ui).lines {
-		rs := []rune(strings.TrimSuffix(texts([]line{l}), "\n"))
-		if len(rs) <= x0+4 {
-			continue
-		}
+		row := strings.TrimSuffix(texts([]line{l}), "\n")
 		switch {
-		case strings.HasPrefix(string(rs[x0:]), "╭─ B"):
+		case strings.HasPrefix(cellSlice(row, x0, x1), "╭─ B"):
 			in = true
-		case in && rs[x0] == '│':
-			out = append(out, string(rs[x0+2:len(rs)-2]))
+		case in && cellSlice(row, x0, x0+1) == "│":
+			out = append(out, cellSlice(row, x0+2, x1-2))
 		case in:
 			return out
 		}
@@ -99,12 +98,13 @@ func card(s *state.State, ui UI, w, size int) []line {
 	return newCard(s, ui, s.Conversation[1], cardContent(k.card, w), size).rows(s, ui, 1, k)
 }
 
-// bInner is zone B's inner width on a screen w columns wide.
+// bInner is zone B's inner width on a screen w columns wide, the sidebar
+// beside it from 100 columns (plan 43, design D1).
 func bInner(w int) int {
 	if w < standardWidth {
 		return w - 4
 	}
-	return w - zoneAWidth(w) - 4
+	return w - zoneAWidth(w) - sideWidth - 4
 }
 
 // barRead reads a bar's row: its half cells filled, each filled cell's
@@ -194,19 +194,20 @@ func TestThinkingCardModeB(t *testing.T) {
 			t.Errorf("row %d %q, want %q … %q", c.row, r, c.prefix, c.tail)
 		}
 	}
-	// The bar: 70 cells and " 2k" in the card's 73 (zone B is 84 columns at
-	// 120 since plan 24, A 36; it was 94, the bar 80 cells). At 10,700 ms
-	// the fill still grows from 350 (the design's 300 ms): 350 + 300 ×
-	// ease(0.3), 38 half cells; from 10,910 ms, 650/2,000 of 70 cells,
-	// 22.75 cells, 45 half cells.
+	// The bar: 62 cells and " 2k" in the card's 65 (zone B is 76 columns at
+	// 120 since plan 43, A 36 and the sidebar 8; it was 84, the bar 70
+	// cells, and 94 before plan 24, the bar 80). At 10,700 ms the fill still
+	// grows from 350 (the design's 300 ms): 350 + 300 × ease(0.3), 543
+	// tokens, 33 half cells; from 10,910 ms, 650/2,000 of 62 cells, 20.15
+	// cells, 40 half cells.
 	w := bInner(120)
 	for _, c := range []struct {
 		ms, halves int
-	}{{10700, 38}, {10910, 45}, {11500, 45}} {
+	}{{10700, 33}, {10910, 40}, {11500, 40}} {
 		ui.Now = thinkAt(c.ms)
 		halves, _, cells, label, _ := barRead(bar(card(s, ui, w, 7)))
-		if halves != c.halves || cells != 70 || label != " 2k" {
-			t.Errorf("%d ms: %d half cells of %d, label %q; want %d of 70, \" 2k\"", c.ms, halves, cells, label, c.halves)
+		if halves != c.halves || cells != 62 || label != " 2k" {
+			t.Errorf("%d ms: %d half cells of %d, label %q; want %d of 62, \" 2k\"", c.ms, halves, cells, label, c.halves)
 		}
 	}
 }

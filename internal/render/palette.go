@@ -98,6 +98,24 @@ var (
 	cModesOff      = colour{"#5A6170", "8"}
 	cModesWarn     = colour{"#F5C673", "11"}
 	cModesIcon     = colour{"#AEBCDC", "7"}
+
+	// The activity sidebar's tiles in text (plan 43, designs D2 and D3, read
+	// from the references' pixels): an icon inactive, an icon lit (selected
+	// or hovered), the selected tile's ground, a shade lighter while
+	// hovered, and its lavender accent bar; no ground on 16 colours.
+	cSideIcon     = colour{"#6F7C88", "8"}
+	cSideIconLit  = colour{"#A6B3C6", "7"}
+	cSideSel      = colour{"#181C30", ""}
+	cSideSelHover = colour{"#20253D", ""}
+	cSideAccent   = colour{"#A272F1", "13"}
+	// The Explorer panel's icons (plan 43, design D6): a folder's blue, a
+	// file's grey.
+	cExpFolder = colour{"#6CA1DB", "12"}
+	cExpFile   = colour{"#A3B1C9", "7"}
+	// Its names, after the reference (design D6): a folder's and the
+	// project root's, a file's, light lavender greys, not bold.
+	cExpDirName  = colour{"#A0ABD8", "7"}
+	cExpFileName = colour{"#9EAAD5", "7"}
 )
 
 // modelColours colours a model by its family; any other model is text.
@@ -154,10 +172,11 @@ var (
 	// matches on an amber background, the current one bold (plan 17, The
 	// window).
 	stFileFrame, stFileRowNum, stFileRowMark, stMatch, stMatchCur = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
-	// The Explorer's cursor row: a folder's name, a dimmed name and git's
-	// markers on zone A's cursor row background (plan 17, amendment 12).
-	stExpRowDir, stExpRowGrey, stExpRowProgress, stExpRowDone, stExpRowFailed = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
-	synRow                                                                    = func() (out []*lipgloss.Style) {
+	// The Explorer's cursor row: a dimmed name and git's markers on zone A's
+	// cursor row background (plan 17, amendment 12); its names' since plan
+	// 43 are stExpRowDirName and stExpRowFileName.
+	stExpRowGrey, stExpRowProgress, stExpRowDone, stExpRowFailed = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	synRow                                                       = func() (out []*lipgloss.Style) {
 		for range SynHeading + 1 {
 			out = append(out, new(lipgloss.Style))
 		}
@@ -181,6 +200,15 @@ var (
 	// option's title and description, an icon in text.
 	stModesFrame, stModesHead, stModesWarnHead, stModesAside, stModesHalf, stModesTitle = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 	stModesDesc, stModesOff, stModesWarn, stModesSelTitle, stModesSelDesc, stModesIcon  = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	// The activity sidebar's tiles in text (plan 43, design D3): an icon
+	// inactive and lit, the selected tile's accent bar.
+	stSideIcon, stSideIconLit, stSideAccent = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	// The Explorer panel's folder and file icons, and both on zone A's
+	// cursor row background (plan 43, design D6).
+	stExpFolder, stExpFile, stExpRowFolder, stExpRowFile = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	// Its folders' and files' names, and both on the cursor row's
+	// background (design D6).
+	stExpDirName, stExpFileName, stExpRowDirName, stExpRowFileName = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 
 	stMdHeading = stTitle
 	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
@@ -236,7 +264,6 @@ func paint() {
 	paintStyle(stFileRowMark, fg(cAttention).Background(cTreeRow.get()))
 	paintStyle(stMatch, fg(cInk).Background(cProgress.get()))
 	paintStyle(stMatchCur, stMatch.Bold(true).Underline(true))
-	paintStyle(stExpRowDir, stTitle.Background(cTreeRow.get()))
 	paintStyle(stExpRowGrey, stGrey.Background(cTreeRow.get()))
 	paintStyle(stExpRowProgress, stProgress.Background(cTreeRow.get()))
 	paintStyle(stExpRowDone, stDone.Background(cTreeRow.get()))
@@ -293,6 +320,17 @@ func paint() {
 	paintStyle(stModesSelTitle, fg(cModesSelTitle))
 	paintStyle(stModesSelDesc, fg(cModesSelDesc))
 	paintStyle(stModesIcon, fg(cModesIcon))
+	paintStyle(stSideIcon, fg(cSideIcon))
+	paintStyle(stSideIconLit, fg(cSideIconLit))
+	paintStyle(stSideAccent, fg(cSideAccent))
+	paintStyle(stExpFolder, fg(cExpFolder))
+	paintStyle(stExpFile, fg(cExpFile))
+	paintStyle(stExpRowFolder, stExpFolder.Background(cTreeRow.get()))
+	paintStyle(stExpRowFile, stExpFile.Background(cTreeRow.get()))
+	paintStyle(stExpDirName, fg(cExpDirName))
+	paintStyle(stExpFileName, fg(cExpFileName))
+	paintStyle(stExpRowDirName, stExpDirName.Background(cTreeRow.get()))
+	paintStyle(stExpRowFileName, stExpFileName.Background(cTreeRow.get()))
 	if sixteen { // no ground to spare: the pill is its bold pink text
 		paintStyle(stPill, stAttentionBold.Background(lipgloss.NoColor{}))
 		paintStyle(stPillEnd, lipgloss.NewStyle())
@@ -339,7 +377,12 @@ var (
 	// The modes selector's grounds (plan 39): the box's and the band's.
 	modesGround     = &ground{c: cModesGround, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	modesBandGround = &ground{c: cModesBand, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	grounds         = []*ground{toolGround, activeGround, bandGround, trackGround, offGround, dimGround, sliderTrackGround, sliderFillGround, sliderLockGround, modesGround, modesBandGround}
+	// The sidebar's selected tile's ground, and a shade lighter while
+	// hovered (plan 43, design D3); a hovered tile takes the model
+	// selector's band, bandGround.
+	sideSelGround      = &ground{c: cSideSel, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	sideSelHoverGround = &ground{c: cSideSelHover, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	grounds            = []*ground{toolGround, activeGround, bandGround, trackGround, offGround, dimGround, sliderTrackGround, sliderFillGround, sliderLockGround, modesGround, modesBandGround, sideSelGround, sideSelHoverGround}
 )
 
 // active is st on the active ground (plan 30).

@@ -1,46 +1,46 @@
  >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                                                Mock data 2.1.300
-╭──────────────────────────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                                     ││                                                                                                                                              │
-│ ✿ Claude Haiku 5.5                       ✓ COMPLETED ││ ▎ YOU  11:30                                                                                                                                 │
-│ ──────────────────────────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their names into  │
-│ STAGES · inferred ╭─ Draft ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 7 lines ─╮                   │
-│ ✓ TURN 1          │ > Review the colour palette in sample/viewer.go:                                                                                                             │                   │
-│   Use the Agent to│                                                                                                                                                              │────────────────── │
-│   Agent · agent ge│   1. keep the five accents of the reference screen;                                                                                                          │                   │
-│                   │   2. check each one against the dark background;                                                                                                             │                   │
-│ ✓ TURN 2          │   3. report any pair under 4.5:1, with its hex values.                                                                                                       │:30:00      mock   │
-│   started by the C│                                                                                                                                                              │                   │
-│                   │   Do not change the file yet.                                                                                                                                │ finishes.         │
-│                   │                                                                                                                                                              │                   │
-│                   │                                                                                                                                                              │:30:00      mock   │
-│                   │                                                                                                                                                              │:30:00      mock   │
-│                   │                                                                                                                                                              │:30:00      mock   │
-│                   │                                                                                                                                                              │                   │
-│                   │                                                                                                                                                              │─────────────────╮ │
-│                   │                                                                                                                                                              │                 │ │
-│                   │                                                                                                                                                              │3b\found.txt`.   │ │
-│                   │                                                                                                                                                              │                 │ │
-│                   │                                                                                                                                                              │                 │ │
-│                   │                                                                                                                                                              │─────────────────╯ │
-│                   │                                                                                                                                                              │                   │
-│                   │                                                                                                                                                              │                   │
-│ ──────────────────│                                                                                                                                                              │                   │
-│ ✦ TELEMETRY       │                                                                                                                                                              │                   │
-│ ▾ SESSION USAGE   │                                                                                                                                                              │                   │
-│   CONTEXT         │                                                                                                                                                              │                   │
-│   4% of 1M        │                                                                                                                                                              │                   │
-│   █░░░░░░░░░░░░░░░│                                                                                                                                                              │────────────────── │
-│                   │                                                                                                                                                              │                   │
-│ ▾ QUOTA WINDOWS   │                                                                                                                                                              │                   │
-│   Session (5hr)   │                                                                                                                                                              │                   │
-│   ████████████████│                                                                                                                                                              │                   │
-│   Resets in 14h 40│                                                                                                                                                              │                   │
-│                   │                                                                                                                                                              │                   │
-│   Weekly (7 day)  │                                                                                                                                                              │                   │
-│   ████████████████│                                                                                                                                                              │────────────────── │
-│   Resets in 1d 20h│                                                                                                                                                              │       ✋ Manual   │
-╰───────────────────│                                                                                                                                                              │───────────────────╯
+╭──────────────────────────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                                     ││                                                                                                                                      ││      │
+│ ✿ Claude Haiku 5.5                       ✓ COMPLETED ││ ▎ YOU  11:30                                                                                                                         ││  ≡   │
+│ ──────────────────────────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the current directory, write their     ││      │
+│ STAGES · inferred ╭─ Draft ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 7 lines ─╮           ││      │
+│ ✓ TURN 1          │ > Review the colour palette in sample/viewer.go:                                                                                                             │           ││      │
+│   Use the Agent to│                                                                                                                                                              │────────── ││  ⑂   │
+│   Agent · agent ge│   1. keep the five accents of the reference screen;                                                                                                          │           ││      │
+│                   │   2. check each one against the dark background;                                                                                                             │           ││      │
+│ ✓ TURN 2          │   3. report any pair under 4.5:1, with its hex values.                                                                                                       │    mock   ││      │
+│   started by the C│                                                                                                                                                              │           ││      │
+│                   │   Do not change the file yet.                                                                                                                                │           ││      │
+│                   │                                                                                                                                                              │           ││      │
+│                   │                                                                                                                                                              │           ││      │
+│                   │                                                                                                                                                              │    mock   ││      │
+│                   │                                                                                                                                                              │    mock   ││      │
+│                   │                                                                                                                                                              │    mock   ││      │
+│                   │                                                                                                                                                              │           ││      │
+│                   │                                                                                                                                                              │─────────╮ ││      │
+│                   │                                                                                                                                                              │         │ ││      │
+│                   │                                                                                                                                                              │         │ ││      │
+│                   │                                                                                                                                                              │         │ ││      │
+│                   │                                                                                                                                                              │         │ ││      │
+│                   │                                                                                                                                                              │         │ ││      │
+│                   │                                                                                                                                                              │─────────╯ ││      │
+│ ──────────────────│                                                                                                                                                              │           ││      │
+│ ✦ TELEMETRY       │                                                                                                                                                              │           ││      │
+│ ▾ SESSION USAGE   │                                                                                                                                                              │           ││      │
+│   CONTEXT         │                                                                                                                                                              │           ││      │
+│   4% of 1M        │                                                                                                                                                              │           ││      │
+│   █░░░░░░░░░░░░░░░│                                                                                                                                                              │────────── ││      │
+│                   │                                                                                                                                                              │           ││      │
+│ ▾ QUOTA WINDOWS   │                                                                                                                                                              │           ││      │
+│   Session (5hr)   │                                                                                                                                                              │           ││      │
+│   ████████████████│                                                                                                                                                              │           ││      │
+│   Resets in 14h 40│                                                                                                                                                              │           ││      │
+│                   │                                                                                                                                                              │           ││      │
+│   Weekly (7 day)  │                                                                                                                                                              │           ││      │
+│   ████████████████│                                                                                                                                                              │────────── ││      │
+│   Resets in 1d 20h│                                                                                                                                                              │  Manual   ││      │
+╰───────────────────│                                                                                                                                                              │───────────╯╰──────╯
 ╭───────────────────│                                                                                                                                                              │───────────────────╮
 │ C · LIVE AGENTS   │                                                                                                                                                              │ 0 ACTIVE · 1 DONE │
 │ ──────────────────│                                                                                                                                                              │────────────────── │

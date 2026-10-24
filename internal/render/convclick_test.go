@@ -26,9 +26,9 @@ func TestConvClickMarks(t *testing.T) {
 	rows := strings.Split(texts(sc.lines), "\n")
 	c := sc.Conv
 	targets := Targets(s, ui)
-	zoneB := func(r int) string {
-		_, b, _ := strings.Cut(rows[c.Y+r], "││")
-		return strings.TrimRight(b, " │")
+	g := layout(s, ui)
+	zoneB := func(r int) string { // inside B's frame, the sidebar right of it (plan 43)
+		return strings.TrimRight(cellSlice(rows[c.Y+r], g.aw+1, g.aw+g.bw-1), " │")
 	}
 	// inside says row r lies in entry n's own rows: the nearest row with
 	// text above it is n's, or, just under a label, the nearest below is. A

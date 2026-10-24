@@ -133,11 +133,12 @@ func (m *Model) previewFrame() {
 // items, places and images, the Ultracode toggle's place and state (plan
 // 35, design D2), the effort slider's place and look (plan 37, design D1),
 // the modes selector's strips and the mode pill (plan 39, designs D6 and
-// D7), and the rows they lie on as drawn.
+// D7), the sidebar's tiles' places and looks (plan 43, design D2), and the
+// rows they lie on as drawn.
 func (m *Model) previewSignature() string {
 	ts, tg, sl := m.screen.Thumbs(), m.screen.Toggle, m.screen.Slider
-	md, mp := m.screen.Modes, m.screen.ModePill
-	if len(ts) == 0 && !tg.Shown && !sl.Shown && !md.Strips && !mp.Shown {
+	md, mp, st := m.screen.Modes, m.screen.ModePill, m.screen.Tiles
+	if len(ts) == 0 && !tg.Shown && !sl.Shown && !md.Strips && !mp.Shown && !st[0].Shown && !st[1].Shown {
 		return ""
 	}
 	var b strings.Builder
@@ -164,6 +165,15 @@ func (m *Model) previewSignature() string {
 	if mp.Shown {
 		fmt.Fprintf(&b, "pill %d %d %+v\n", mp.X, mp.Y, mp.Look)
 		addRows(mp.Y, 1)
+	}
+	for _, t := range st {
+		// The screen's size too: the tiles hang from the upper row's top, so
+		// a resize of the height alone leaves their places, yet the renderer
+		// erases the screen for it.
+		if t.Shown {
+			fmt.Fprintf(&b, "tile %dx%d %d %d %+v\n", m.ui.Width, m.ui.Height, t.X, t.Y, t.Look)
+			addRows(t.Y, render.SideTileRows)
+		}
 	}
 	for _, t := range ts {
 		key, pixels, sum := "", false, [32]byte{}
@@ -302,8 +312,8 @@ func (m *Model) drawSlide(msg slideMsg) []tea.Cmd {
 // with what the frame holds there, which erases the image (a cell the
 // renderer leaves alone keeps it, probe P32b); then each thumbnail's image
 // at its first cell, the Ultracode toggle's (plan 35), the effort slider's
-// (plan 37), the modes selector's strips and the mode pill (plan 39). It
-// records where images now lie.
+// (plan 37), the modes selector's strips and the mode pill (plan 39), the
+// sidebar's tiles (plan 43). It records where images now lie.
 func (m *Model) thumbSequence() string {
 	var now []render.Thumb
 	var draw strings.Builder
@@ -358,6 +368,19 @@ func (m *Model) thumbSequence() string {
 					mp.Y+1, mp.X+1, render.PillSixel(mp.Look, label))
 				now = append(now, render.Thumb{Item: -5, X: mp.X, Y: mp.Y, W: w, H: 1})
 			}
+		}
+		for i, t := range m.screen.Tiles {
+			// The sidebar's tiles on their blank cells (plan 43, design D2),
+			// those written first, as the toggle's: the pixels around a tile
+			// are transparent, where the look before may have drawn.
+			if !t.Shown {
+				continue
+			}
+			for r := range render.SideTileRows {
+				fmt.Fprintf(&draw, "\x1b[%d;%dH%s", t.Y+1+r, t.X+1, m.screen.Region(t.X, t.Y+r, render.SideTileCells))
+			}
+			fmt.Fprintf(&draw, "\x1b[%d;%dH%s", t.Y+1, t.X+1, render.SideSixel(t.Look))
+			now = append(now, render.Thumb{Item: -6 - i, X: t.X, Y: t.Y, W: render.SideTileCells, H: render.SideTileRows})
 		}
 	}
 	var clear strings.Builder

@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -404,7 +405,7 @@ func TestPreviewDraw(t *testing.T) {
 		n := len(h.m.kicks)
 		raws = drawn(h, thumbDrawMsg{gen: h.m.kicks[n-1]})
 		place := fmt.Sprintf("\x1b[%d;%dH", th.Y+1, th.X+1)
-		if len(raws) != 1 || !strings.Contains(raws[0], place) || strings.Contains(withoutPill(t, h, raws[0]), "\x1bP") {
+		if len(raws) != 1 || !strings.Contains(raws[0], place) || strings.Contains(withoutFixed(t, h, raws[0]), "\x1bP") {
 			t.Errorf("the vacated place: %q", trunc(raws))
 		}
 		h.send(typed('y'))
@@ -452,18 +453,52 @@ func pillDrawing(h *harness) string {
 	return at + h.m.screen.Region(mp.X, mp.Y, w) + at + render.PillSixel(mp.Look, label)
 }
 
-// withoutPill is a drawing without the mode pill's part, which every
-// drawing on a dashboard with Sixel holds; the pill there once.
-func withoutPill(t *testing.T, h *harness, raw string) string {
+// tilesDrawing is the sidebar's tiles' part of a drawing on the current
+// frame, "" when the frame shows no tile's image (plan 43, design D2): each
+// tile's cells written, then its image.
+func tilesDrawing(h *harness) string {
+	var b strings.Builder
+	for _, t := range h.m.screen.Tiles {
+		if !t.Shown {
+			continue
+		}
+		for r := range render.SideTileRows {
+			fmt.Fprintf(&b, "%c[%d;%dH%s", 0x1b, t.Y+1+r, t.X+1, h.m.screen.Region(t.X, t.Y+r, render.SideTileCells))
+		}
+		fmt.Fprintf(&b, "%c[%d;%dH%s", 0x1b, t.Y+1, t.X+1, render.SideSixel(t.Look))
+	}
+	return b.String()
+}
+
+// withoutFixed is a drawing without the images every drawing on a
+// dashboard with Sixel holds: the mode pill's part (plan 39) and, from 100
+// columns, the sidebar's tiles' (plan 43); each there once.
+func withoutFixed(t *testing.T, h *harness, raw string) string {
 	t.Helper()
-	pill := pillDrawing(h)
-	if pill == "" {
-		return raw
+	for _, part := range []string{pillDrawing(h), tilesDrawing(h)} {
+		if part == "" {
+			continue
+		}
+		if n := strings.Count(raw, part); n != 1 {
+			t.Errorf("a fixed image drawn %d times in %q", n, trunc([]string{raw}))
+		}
+		raw = strings.Replace(raw, part, "", 1)
 	}
-	if n := strings.Count(raw, pill); n != 1 {
-		t.Errorf("the pill drawn %d times in %q", n, trunc([]string{raw}))
+	return raw
+}
+
+// fixedItems are the images left on a Sixel dashboard of 100 columns and
+// more once the others are gone: the mode pill's (plan 39) and the
+// sidebar's two tiles' (plan 43), in the drawing's order.
+var fixedItems = []int{-5, -6, -7}
+
+// drawnItems are the items of the images m drew last, in order.
+func drawnItems(m *Model) []int {
+	var out []int
+	for _, d := range m.drawn {
+		out = append(out, d.Item)
 	}
-	return strings.Replace(raw, pill, "", 1)
+	return out
 }
 
 // trunc shortens raw sequences for a failure's message.
@@ -532,8 +567,9 @@ func TestWin32PasteRelease(t *testing.T) {
 	if len(m.attach) != 1 || m.attach[0].Name != "pasted-image-1.png" {
 		t.Errorf("attached %+v", m.attach)
 	}
-	// The thumbnail, and the mode pill (plan 39), Item -5.
-	if len(m.drawn) != 2 || m.drawn[0].W != 10 || m.drawn[0].H != 5 || m.drawn[1].Item != -5 {
-		t.Errorf("drawn %+v, want one thumbnail of 10x5 cells and the mode pill", m.drawn)
+	// The thumbnail, the mode pill (plan 39) and the sidebar's tiles (plan
+	// 43).
+	if items := drawnItems(m); len(m.drawn) != 4 || m.drawn[0].W != 10 || m.drawn[0].H != 5 || !slices.Equal(items[1:], fixedItems) {
+		t.Errorf("drawn %+v, want one thumbnail of 10x5 cells, the mode pill and the sidebar's tiles", m.drawn)
 	}
 }

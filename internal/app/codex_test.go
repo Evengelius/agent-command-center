@@ -356,6 +356,9 @@ func TestCodexApprovalCards(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				w := &wireCodex{thread: p6bThread}
 				h := codexWire(t, w, Options{})
+				// Zone B 115 columns wide, as at 160 before the sidebar took 8
+				// (plan 43): the focused card's keys whole on their row.
+				h.send(tea.WindowSizeMsg{Width: 171, Height: 60})
 				h.check = func(f string) { noAmendment(t, f) }
 				h.send(tea.PasteMsg{Content: text})
 				h.send(key(tea.KeyEnter, 0))

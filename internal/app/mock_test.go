@@ -98,6 +98,9 @@ func (h *harness) deliver(msg tea.Msg) {
 		h.quit = true
 		return
 	}
+	if msg = motionFilter(h.m, msg); msg == nil {
+		return // the program's filter drops it before Update and View (plan 43, design D4)
+	}
 	_, cmd := h.m.Update(msg)
 	if h.check != nil {
 		h.check(h.m.View().Content)

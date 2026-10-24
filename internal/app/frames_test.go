@@ -34,11 +34,24 @@ func checkFrame(t *testing.T, frame string, w, h int) {
 	}
 }
 
+// exactWidth fails unless every row of the frame is exactly w columns wide
+// (plan 43, criterion 43.2).
+func exactWidth(t *testing.T, frame string, w int) {
+	t.Helper()
+	for i, l := range strings.Split(frame, "\n") {
+		if n := lipgloss.Width(l); n != w {
+			t.Fatalf("line %d is %d columns wide, terminal %d: %q", i+1, n, w, plainText(l))
+		}
+	}
+}
+
 // TestFrameInvariants replays every mock file at widths between and beyond
 // the golden frames' and checks every frame drawn on the way, then the last
-// state at three heights. Windows Terminal, maximised at 156 columns, showed
-// an agent's multi-line summary breaking zone C, a width no golden frame
-// used (plan 4, step 3, criterion 9).
+// state at three heights, the Explorer's panel hidden and shown (plan 43,
+// criterion 43.2: docked, in zone B's place, or under 100 columns), each
+// row exactly the screen's width. Windows Terminal, maximised at 156
+// columns, showed an agent's multi-line summary breaking zone C, a width no
+// golden frame used (plan 4, step 3, criterion 9).
 func TestFrameInvariants(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join("..", "..", "testdata", "mock", "*.jsonl"))
 	if err != nil || len(files) == 0 {
@@ -52,6 +65,7 @@ func TestFrameInvariants(t *testing.T) {
 						Config:    Config{Mock: file},
 						Providers: []provider.Provider{spawnTrap{t}},
 						Cwd:       t.TempDir(),
+						Git:       &fakeGit{},
 					})
 					hgt, frames := 40, 0
 					h.deliver(tea.WindowSizeMsg{Width: w, Height: hgt})
@@ -63,9 +77,17 @@ func TestFrameInvariants(t *testing.T) {
 					if frames == 0 {
 						t.Fatal("no frame drawn during the replay")
 					}
-					for _, hgt := range []int{24, 40, 60} {
-						h.check = func(frame string) { checkFrame(t, frame, w, hgt) }
-						h.send(tea.WindowSizeMsg{Width: w, Height: hgt})
+					for _, shown := range []bool{false, true} {
+						if shown {
+							h.send(key(tea.KeyF3, 0))
+							if !h.m.ui.Explorer.Open {
+								t.Fatal("F3 showed no Explorer")
+							}
+						}
+						for _, hgt := range []int{24, 40, 60} {
+							h.check = func(frame string) { checkFrame(t, frame, w, hgt); exactWidth(t, frame, w) }
+							h.send(tea.WindowSizeMsg{Width: w, Height: hgt})
+						}
 					}
 				})
 			})

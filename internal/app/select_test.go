@@ -54,9 +54,14 @@ func at(t *testing.T, h *harness, s string, nth int) (x, y int) {
 }
 
 // mouseAt sends one mouse message and returns the copy it started, if any.
+// The program's filter goes first: a motion that changes nothing reaches
+// neither Update nor View (plan 43, design D4).
 func mouseAt(t *testing.T, h *harness, msg tea.Msg) (copiedMsg, bool) {
 	t.Helper()
 	_ = h.m.View() // the frame the pointer is over
+	if msg = motionFilter(h.m, msg); msg == nil {
+		return copiedMsg{}, false
+	}
 	_, cmd := h.m.Update(msg)
 	var got copiedMsg
 	found := false
@@ -267,7 +272,8 @@ func TestEditorMouse(t *testing.T) {
 }
 
 // TestMouseFocusAndCapture: a click focuses the panel under it; F12 gives
-// the mouse back to the terminal and says so.
+// the mouse back to the terminal and says so. At 120x40 the sidebar shows:
+// the view asks for every motion (plan 43, design D4).
 func TestMouseFocusAndCapture(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		r, clip, _ := selectRig(t)
@@ -281,8 +287,8 @@ func TestMouseFocusAndCapture(t *testing.T) {
 		if h.m.ui.Focus != "C" {
 			t.Errorf("focus %q after a click in C", h.m.ui.Focus)
 		}
-		if v := h.m.View(); v.MouseMode != tea.MouseModeCellMotion {
-			t.Fatalf("mouse mode %v, want cell motion", v.MouseMode)
+		if v := h.m.View(); v.MouseMode != tea.MouseModeAllMotion {
+			t.Fatalf("mouse mode %v, want all motion", v.MouseMode)
 		}
 		h.send(key(tea.KeyF12, 0))
 		v := h.m.View()
@@ -293,7 +299,7 @@ func TestMouseFocusAndCapture(t *testing.T) {
 			t.Errorf("F12 not shown:\n%s", f)
 		}
 		h.send(key(tea.KeyF12, 0))
-		if v := h.m.View(); v.MouseMode != tea.MouseModeCellMotion {
+		if v := h.m.View(); v.MouseMode != tea.MouseModeAllMotion {
 			t.Errorf("mouse mode %v after F12 twice", v.MouseMode)
 		}
 	})

@@ -90,25 +90,24 @@ func ListTop(top, cur, room, n int) int {
 // FileTop is the first line the window shows.
 func FileTop(f FileView, rows int) int { return ListTop(f.Top, f.Cursor, rows, len(f.Lines)) }
 
-// WindowOpen is true while the file viewer, the quick open or the Explorer
-// is open.
-func WindowOpen(ui UI) bool { return ui.File.Open || ui.Finder.Open || ui.Explorer.Open }
+// WindowOpen is true while the file viewer or the quick open is open. The
+// Explorer's panel is docked, no window: F4, Alt+P, the "+" menu, the
+// selectors and a paste work while it is shown (plan 43, design D8).
+func WindowOpen(ui UI) bool { return ui.File.Open || ui.Finder.Open }
 
 // fileFull is true while the window fills the screen: the viewer in front,
 // full screen.
 func fileFull(ui UI) bool { return ui.File.Open && ui.File.Full && !ui.Finder.Open }
 
 // floatWindow draws the window in front over the frame drawn behind it: the
-// quick open, else the viewer, else the Explorer (plan 17, amendment 12).
+// quick open, else the viewer (plan 17; the Explorer docked since plan 43,
+// design D8).
 func floatWindow(s *state.State, ui UI, sc *Screen) {
 	x, y, ww, hh := FileRect(ui.Width, ui.Height, fileFull(ui))
 	var win []line
-	switch {
-	case ui.Finder.Open:
+	if ui.Finder.Open {
 		win = finderWindow(ui, ww, hh)
-	case !ui.File.Open:
-		win = explorerWindow(s, ui, ww, hh)
-	default:
+	} else {
 		win = fileWindow(s, ui, ww, hh)
 		sc.fileLines = ui.File.Lines
 	}

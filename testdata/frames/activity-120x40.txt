@@ -1,30 +1,30 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
-╭──────────────────────────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────────────── ⠋ Running ─╮
-│ A · ORCHESTRATOR                 ││                                                                                  │
-│ ✿ Claude Haiku 5.5     ⠋ RUNNING ││ ▎ YOU  02:00                                                                     │
-│ ──────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task:      │
-│ STAGES · inferred from activity  ││ ▎ list the files in the current directory, write their names into a new file     │
-│ ◉ TURN 1 · running           11s ││ ▎ named found.txt with the Write tool, and report the names. Then tell me in     │
-│   Use the Agent tool to launch … ││ ▎ one line what it found.                                                        │
-│   •─ ⠋ Agent  List dir… observed ││                                                                                  │
-│   ├─ ◉ agent  general-… observed ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   │  └─ ⠋ Bash                   ││                                                                                  │
-│   └─ ○ (more as events arrive)   ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for 2.8s · 719 thinking tokens               02:00:05  observed   │
-│ ✦ TELEMETRY        Enter details ││ ▎  ⠋ Agent  general-purpose · List directory files into…  running 5s  observed   │
-│ ▾ SESSION USAGE                  ││ ▎                                                                                │
-│   Context 3% of 1M† ░░░░░░░░░░░░ ││ ▎ ◠ Cooking...                                                            00:10  │
-│   Tokens N/A no result yet       ││ ▎ ◇ 1 subagent working                                                           │
-│   Est. cost N/A no result yet    ││                                                                                  │
-│ ▾ QUOTA WINDOWS                  ││                                                                                  │
-│   Session (5hr)              6%† ││                                                                                  │
-│   ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
-│   Resets in 4d 3h                ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Weekly (7 day)             4%† ││ >  Claude Code is processing your request…                                       │
-│   █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 5d 8h                ││   +     Haiku 5.5    turn running: the draft waits · Ctrl+C interrupt       ✋   │
-╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────── ⠋ Running ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││                                                                          ││      │
+│ ✿ Claude Haiku 5.5     ⠋ RUNNING ││ ▎ YOU  02:00                                                             ││  ≡   │
+│ ──────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this    ││      │
+│ STAGES · inferred from activity  ││ ▎ task: list the files in the current directory, write their names into  ││      │
+│ ◉ TURN 1 · running           11s ││ ▎ a new file named found.txt with the Write tool, and report the names.  ││      │
+│   Use the Agent tool to launch … ││ ▎ Then tell me in one line what it found.                                ││  ⑂   │
+│   •─ ⠋ Agent  List dir… observed ││                                                                          ││      │
+│   ├─ ◉ agent  general-… observed ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   │  └─ ⠋ Bash                   ││                                                                          ││      │
+│   └─ ○ (more as events arrive)   ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
+│ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for 2.8s · 719 thinking tokens       02:00:05  observed   ││      │
+│ ✦ TELEMETRY        Enter details ││ ▎  ⠋ Agent  general-purpose · List directory fi…  running 5s  observed   ││      │
+│ ▾ SESSION USAGE                  ││ ▎                                                                        ││      │
+│   Context 3% of 1M† ░░░░░░░░░░░░ ││ ▎ ◠ Cooking...                                                    00:10  ││      │
+│   Tokens N/A no result yet       ││ ▎ ◇ 1 subagent working                                                   ││      │
+│   Est. cost N/A no result yet    ││                                                                          ││      │
+│ ▾ QUOTA WINDOWS                  ││                                                                          ││      │
+│   Session (5hr)              6%† ││                                                                          ││      │
+│   ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Resets in 4d 3h                ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)             4%† ││ >  Claude Code is processing your request…                               ││      │
+│   █░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 5d 8h                ││   turn running: the draft waits · Ctrl+C interrupt                       ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    1 ACTIVE · 0 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │

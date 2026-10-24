@@ -237,10 +237,35 @@ func fillRounded(img *image.NRGBA, x0, y0, x1, y1, r float64, round [2]bool, c c
 				}
 			}
 			if n > 0 {
-				img.SetNRGBA(x, y, blend(img.NRGBAAt(x, y), c, float64(n)/16))
+				coverPixel(img, x, y, n, c)
 			}
 		}
 	}
+}
+
+// coverPixel puts c over img's pixel (x, y), n of its 16 samples covered:
+// blended into an opaque pixel; on a transparent one drawn whole where at
+// least half covered and left transparent under half, so the terminal's
+// ground shows around the shape, as at the mode pill's edge (plan 39,
+// design D7; plan 43, design D3: the sidebar's inactive icons lie on no
+// tile). Over an opaque image it is the blend alone.
+func coverPixel(img *image.NRGBA, x, y, n int, c color.NRGBA) {
+	switch d := img.NRGBAAt(x, y); {
+	case d.A >= 128:
+		img.SetNRGBA(x, y, blend(d, c, float64(n)/16))
+	case n >= 8:
+		img.SetNRGBA(x, y, c)
+	}
+}
+
+// inRounded says (px, py) lies in the rectangle from (x0, y0) to (x1, y1)
+// whose four corners are rounded with radius r, inset pixels in: the point
+// nearest it within the corners' centres lies within r-inset (the mode
+// pill's test, plan 39, design D7; the sidebar's tiles, plan 43).
+func inRounded(px, py, x0, y0, x1, y1, r, inset float64) bool {
+	cx := math.Max(x0+r, math.Min(x1-r, px))
+	cy := math.Max(y0+r, math.Min(y1-r, py))
+	return math.Hypot(px-cx, py-cy) <= r-inset
 }
 
 // strokePaths draws the paths w pixels wide, with round caps and joins,
@@ -286,7 +311,7 @@ func strokePaths(img *image.NRGBA, paths [][]pt, dots [][3]float64, w float64, c
 				}
 			}
 			if n > 0 {
-				img.SetNRGBA(x, y, blend(img.NRGBAAt(x, y), c, float64(n)/16))
+				coverPixel(img, x, y, n, c)
 			}
 		}
 	}
@@ -359,13 +384,7 @@ func PillImage(look ModePillLook, label *image.Alpha) *image.NRGBA {
 	w := ModePillCells(look) * SixelCellW
 	img := image.NewNRGBA(image.Rect(0, 0, w, SixelCellH))
 	x0, x1, r := 0.6, float64(w)-0.6, pillRadius
-	cover := func(px, py, inset float64) bool {
-		// The rounded rectangle inset pixels in: inside when the point
-		// nearest it within the corners' centres lies within r-inset.
-		cx := math.Max(x0+r, math.Min(x1-r, px))
-		cy := math.Max(pillTop+r, math.Min(pillBottom-r, py))
-		return math.Hypot(px-cx, py-cy) <= r-inset
-	}
+	cover := func(px, py, inset float64) bool { return inRounded(px, py, x0, pillTop, x1, pillBottom, r, inset) }
 	for y := range SixelCellH {
 		for x := range w {
 			outer, inner := 0, 0

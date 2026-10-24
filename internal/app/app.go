@@ -232,6 +232,9 @@ type Model struct {
 	repaint bool           // the palette changed: the next frame draws every row
 	drag    drag
 	click   clicks
+	// motionDropped counts the motion reports motionFilter dropped before
+	// Update and View (plan 43, design D4), for the tests.
+	motionDropped int
 	// clickFold is what the last click on a fold row of zone B changed, so a
 	// double click there undoes it before opening the entry (plan 42).
 	clickFold clickFold
@@ -355,8 +358,11 @@ func (m *Model) View() tea.View {
 	v.AltScreen = true
 	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
-		if m.ui.Plus || m.ui.Models.Open || m.ui.Modes.Open {
-			v.MouseMode = tea.MouseModeAllMotion // the menu's or a selector's hover follows the pointer (plans 30, 34, 39)
+		if m.ui.Plus || m.ui.Models.Open || m.ui.Modes.Open || m.sideHoverable() {
+			// The menu's or a selector's hover follows the pointer (plans 30, 34,
+			// 39), the sidebar's tiles' too while the frame shows them (plan
+			// 43, design D4); motionFilter drops the reports that change none.
+			v.MouseMode = tea.MouseModeAllMotion
 		}
 	}
 	v.WindowTitle = "Agent Command Center"
@@ -376,6 +382,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.ui.Width, m.ui.Height = msg.Width, msg.Height
+		// Bubble Tea's renderer erases the screen on every size report, the
+		// same size too: the images are drawn again after the next frame
+		// (plan 43's review; previewFrame).
+		m.thumbSig = ""
 	case tea.ColorProfileMsg:
 		// The terminal's colours, at startup and on an RGB capability report
 		// (plan 5, item 13).
@@ -515,6 +525,21 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // syncUI copies what the renderer needs from the editors.
 func (m *Model) syncUI() {
 	m.settleCard()
+	if m.ui.Focus == "R" && !m.ui.Explorer.Open {
+		m.ui.Focus = "B" // the Explorer's panel hidden: zone B has the focus back (plan 43, design D5)
+	}
+	if m.ui.Focus == "B" && m.ui.Explorer.Open && render.ExplorerCompact(m.s, m.ui) {
+		// Plan 43's compact rule: where the panel takes zone B's place, the
+		// compact layout from 100 columns and the narrow one under 100
+		// (design D1), zone B taking the focus hides the panel, whatever
+		// gave it the focus (Esc on a top-level row, F6 or Tab, F2, Esc from
+		// zone A or C, a click, a resize that leaves no room to dock it), so
+		// typed text never goes into a draft that is not drawn.
+		m.closeExplorer()
+	}
+	if m.ui.SideHover != 0 && !m.sideHoverable() {
+		m.ui.SideHover = 0 // no sidebar under the pointer, or a window over it (plan 43, design D4)
+	}
 	if m.ui.Focus != "A" && m.ui.Focus != "C" {
 		m.ui.Zoom = false // only a panel zooms; reaching B by F6, Tab or a click restores
 	}
@@ -913,7 +938,7 @@ func (m *Model) paste(text string) {
 		m.path.Insert(input.CleanPath(text))
 	case m.s.Screen == state.ScreenDashboard && render.WindowOpen(m.ui):
 		m.filePaste(text) // the window takes it, or drops it
-	case m.s.Screen == state.ScreenDashboard && m.ui.Focus == "B":
+	case m.s.Screen == state.ScreenDashboard && m.draftBeside():
 		m.edit.Paste(text) // line breaks as LF, nothing else changed; never submits
 	}
 }

@@ -44,7 +44,7 @@ type UI struct {
 	Worktrees       WorktreesView // the Worktrees view, over either screen while Open (plan 16)
 
 	// Dashboard.
-	Focus    string // "A", "B", "C" or "D"
+	Focus    string // "A", "B", "C", or "R" for the Explorer's panel (plan 43, design D7)
 	Draft    string // the editor's text
 	Editor   EditorView
 	Selected string // the agent selected in zone C
@@ -121,11 +121,17 @@ type UI struct {
 	ConvSeen int       // the entries there were when the view was held
 	MouseOff bool      // mouse capture off: the terminal selects
 
-	// File is the file viewer, Finder the quick open and Explorer the
-	// project's tree, floating over the dashboard (plan 17, amendment 12).
+	// File is the file viewer and Finder the quick open, floating over the
+	// dashboard (plan 17); Explorer the project's tree, docked as a panel
+	// between zone B and the sidebar while Explorer.Open (plan 43, designs
+	// D1 and D6; amendment 44).
 	File     FileView
 	Finder   FinderView
 	Explorer ExplorerView
+	// SideHover is the sidebar's tile under the pointer: 0 none,
+	// SideExplorer or SideSkills (plan 43, design D4); hover never changes
+	// what is selected.
+	SideHover int
 	// DraftWin is the draft in a window, Ctrl+G (amendment 13).
 	DraftWin DraftWindow
 

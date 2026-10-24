@@ -86,6 +86,27 @@ type Screen struct {
 	// where it left the mode pill's image (plan 39), zero when none.
 	Modes    ModesShown
 	ModePill ModePillShown
+	// B, Panel and Side are the columns the dashboard gave zone B, the
+	// Explorer's panel and the sidebar (plan 43, design D1), zero wide when
+	// not drawn: the popups over zone B end at its right edge (design D9).
+	B, Panel, Side Cols
+	// Tiles are where the frame left the sidebar's tiles' images to be
+	// drawn, the Explorer's then Skills', and their looks (plan 43, design
+	// D2), zero when none.
+	Tiles [2]SideTileShown
+}
+
+// Cols are a zone's columns on the screen: the first and how many.
+type Cols struct{ X, W int }
+
+// bRight is the column after zone B's right edge, where the popups over it
+// end at the latest (plan 43, design D9); the screen's width when the frame
+// drew no zone B beside others.
+func (sc *Screen) bRight(width int) int {
+	if sc.B.W > 0 {
+		return min(sc.B.X+sc.B.W, width)
+	}
+	return width
 }
 
 // PaneView is what a pane of zone A or C showed (plan 5, item 5).
@@ -167,6 +188,11 @@ func Draw(s *state.State, ui UI) *Screen {
 				sc.ModePill = ModePillShown{Shown: true, X: x, Y: y, Look: look}
 			}
 		}
+	}
+	if ui.Sixel && s.Screen == state.ScreenDashboard {
+		// The sidebar's tiles' images over their blank cells, where no
+		// window covers them (plan 43, design D2).
+		sc.sideTilesShown(ui)
 	}
 	if !ui.Sel.Empty() && ui.Sel.From.Panel != 'E' {
 		for i, l := range sc.lines {

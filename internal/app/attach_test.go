@@ -76,6 +76,9 @@ func TestAttachments(t *testing.T) {
 		}
 		r := scriptRig(t, "claude-code")
 		h := r.h
+		// Zone B 84 columns wide, as at 120 before the sidebar took 8 (plan
+		// 43): both chips on its row.
+		h.send(tea.WindowSizeMsg{Width: 128, Height: 40})
 		p := &picker{}
 		h.m.opt.PickImages = p.pick
 		h.send(tea.PasteMsg{Content: "What colours and what text are in these images?"})

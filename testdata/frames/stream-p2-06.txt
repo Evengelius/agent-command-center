@@ -1,38 +1,38 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
-╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                 ││ │ done                                                                         │ │
-│ ✿ Claude Haiku 5.5 ○ INTERRUPTED ││ ╰──────────────────────────────────────────────────────────────────────────────╯ │
-│ ──────────────────────────────── ││                                                                                  │
-│ STAGES · inferred from activity  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│ ✓ TURN 1                      4s ││                                                                                  │
-│   Create a file named hello.txt… ││ ▎ YOU  02:00                                                                     │
-│   Write                          ││ ▎ Reply with the single word: again                                              │
-│                                  ││                                                                                  │
-│ ✓ TURN 2                      1s ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Reply with the single word: a… ││                                                                                  │
-│                                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│ ○ TURN 3 · interrupted        1s ││ ▎ again                                                                          │
-│   Count from 1 to 300, one numb… ││                                                                                  │
-│                                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│                                  ││                                                                                  │
-│                                  ││ ▎ YOU  02:00                                                                     │
-│ ──────────────────────────────── ││ ▎ Count from 1 to 300, one number per line, nothing else.                        │
-│ ✦ TELEMETRY        Enter details ││                                                                                  │
-│ ▾ SESSION USAGE                  ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Context 3% of 1M ░░░░░░░░░░░░░ ││                                                                                  │
-│   Tokens 91.1k session total     ││ ▎ CLAUDE  Haiku 5.5  02:00                                                       │
-│   Est. cost $0.00 API-equiv.     ││ ▎  ▸ ✗ Thinking interrupted after 0.2s                      02:00:12  observed   │
-│                                  ││ ▎                                                                                │
-│ ▾ QUOTA WINDOWS                  ││ ▎ 1                                                                              │
-│   Session (5hr)             25%† ││ ▎ · [Request interrupted by user]                                                │
-│   ████████░░░░░░░░░░░░░░░░░░░░░░ ││                                                                                  │
-│   Resets in 14h 40m              ││ ──────────────────────────────────────────────────────────────────────────────── │
-│                                  ││ > a draft                                                                        │
-│   Weekly (7 day)            46%† ││       kept as typed                                                              │
-│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   Resets in 1d 20h               ││   +     Haiku 5.5    2 lines                                         ✋ Manual   │
-╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ │ done                                                                 │ ││      │
+│ ✿ Claude Haiku 5.5 ○ INTERRUPTED ││ ╰──────────────────────────────────────────────────────────────────────╯ ││  ≡   │
+│ ──────────────────────────────── ││                                                                          ││      │
+│ STAGES · inferred from activity  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│ ✓ TURN 1                      4s ││                                                                          ││      │
+│   Create a file named hello.txt… ││ ▎ YOU  02:00                                                             ││  ⑂   │
+│   Write                          ││ ▎ Reply with the single word: again                                      ││      │
+│                                  ││                                                                          ││      │
+│ ✓ TURN 2                      1s ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Reply with the single word: a… ││                                                                          ││      │
+│                                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
+│ ○ TURN 3 · interrupted        1s ││ ▎ again                                                                  ││      │
+│   Count from 1 to 300, one numb… ││                                                                          ││      │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│                                  ││                                                                          ││      │
+│                                  ││ ▎ YOU  02:00                                                             ││      │
+│ ──────────────────────────────── ││ ▎ Count from 1 to 300, one number per line, nothing else.                ││      │
+│ ✦ TELEMETRY        Enter details ││                                                                          ││      │
+│ ▾ SESSION USAGE                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Tokens 91.1k session total     ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
+│   Est. cost $0.00 API-equiv.     ││ ▎  ▸ ✗ Thinking interrupted after 0.2s              02:00:12  observed   ││      │
+│                                  ││ ▎                                                                        ││      │
+│ ▾ QUOTA WINDOWS                  ││ ▎ 1                                                                      ││      │
+│   Session (5hr)             25%† ││ ▎ · [Request interrupted by user]                                        ││      │
+│   ████████░░░░░░░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Resets in 14h 40m              ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│                                  ││ > a draft                                                                ││      │
+│   Weekly (7 day)            46%† ││       kept as typed                                                      ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 1d 20h               ││   +     Haiku 5.5    2 lines                                 ✋ Manual   ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
 │ no agents yet: they appear as the CLI starts them                                                                    │

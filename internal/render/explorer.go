@@ -1,7 +1,6 @@
 package render
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -10,15 +9,16 @@ import (
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
-// The Explorer (plan 17, amendment 12): the project as a tree in the
-// viewer's window, each folder read when it is opened, git's markers beside
-// the rows. The application reads the folders and git in commands; this
-// draws what it holds.
+// The Explorer (plan 17, amendment 12): the project as a tree, each folder
+// read when it is opened, git's markers beside the rows; since plan 43
+// (amendment 44) a panel docked between zone B and the sidebar, no longer a
+// window (designs D1 and D6). The application reads the folders and git in
+// commands; this draws what it holds.
 
 // ExplorerView is the Explorer as the application holds it.
 type ExplorerView struct {
-	Open   bool
-	Name   string                  // the project's name, on the top edge
+	Open   bool                    // the panel shown (plan 43, design D5)
+	Name   string                  // the project folder's name, on the root row
 	Dirs   map[string]*ExplorerDir // the folders read, by path in the project; "" the project
 	Opened map[string]bool         // the folders open
 	Cursor string                  // the path of the row under the cursor
@@ -46,9 +46,14 @@ type GitView struct {
 	Ignored map[string]bool            // the paths git ignores, a folder's ending in "/"
 	Dirty   map[string]bool            // the folders holding a change, without "/"
 	Deleted map[string][]ExplorerEntry // each folder's deleted entries, sorted; a deleted folder rebuilt from the paths under it
-	Note    string                     // "not a git repository", "git not found", git's error; "" none
+	Note    string                     // GitPending, "not a git repository", "git not found", git's error; "" none
 	Failed  bool                       // Note is an error
 }
+
+// GitPending is git's note while its status is asked for: the panel leaves
+// it out, its last row being for a note saying why there are no markers
+// (plan 43, design D6).
+const GitPending = "git status…"
 
 // NewGitView is the view of git's markers: each folder above a changed path
 // dirty; each deleted path, and each folder above it, an entry of its
@@ -261,111 +266,152 @@ func either(cond bool, a, b *lipgloss.Style) *lipgloss.Style {
 	return b
 }
 
-// explorerKeys are the Explorer's key hints, the longest first.
+// explorerKeys are the Explorer's key hints in the footer while its panel
+// has the focus, the longest first: the first that fits shows (plan 43,
+// design D6: the window's footer gone; design D10: "F3 Explorer").
 var explorerKeys = []string{
-	"↑↓ PgUp PgDn Home End move · → open · ← close · Enter view file · / quick open · F1 keys · Esc back · F3 close",
-	"↑↓ move · → open · ← close · Enter view · / quick open · Esc back · F3 close",
-	"↑↓ · → open · ← close · Enter view · / find · Esc back · F3 close",
-	"Enter view · / find · Esc back · F3 close",
+	"↑↓ PgUp PgDn Home End move · → open · ← close · Enter view file · / quick open · Esc back to the input · F6 zone · F3 Explorer · F1 keys",
+	"↑↓ move · → open · ← close · Enter view · / quick open · Esc back to the input · F6 zone · F3 Explorer · F1 keys",
+	"↑↓ move · → open · ← close · Enter view · / quick open · Esc back · F3 Explorer · F1 keys",
+	"↑↓ · → open · ← close · Enter view · / find · Esc back · F3 Explorer",
 }
 
-// explorerWindow is the Explorer's window, ww by hh: the cursor's path and
-// git's note, the tree, the footer.
-func explorerWindow(s *state.State, ui UI, ww, hh int) []line {
-	v := ui.Explorer
-	inner := ww - 4
-	rows := ExplorerRows(v)
-	n := 0
-	for _, r := range rows {
-		if r.Path != "" {
-			n++
+// explorerHints is the footer's text while the panel has the focus, on a
+// screen w columns wide.
+func explorerHints(w int) string {
+	for _, k := range explorerKeys {
+		if textWidth(k)+1 <= w {
+			return k
 		}
 	}
-	items := grouped(n) + " items"
-	if n == 1 {
-		items = "1 item"
-	}
-	right := decoLine(items, stGrey)
-	if v.Name != "" {
-		right = line{deco(v.Name, stText), deco(" · "+items, stGrey)}
-	}
-	cur := ExplorerCursor(rows, v.Cursor)
-	shown := ""
-	if cur >= 0 {
-		shown = rows[cur].Path
-		if rows[cur].Dir {
-			shown += "/"
-		}
-		if rows[cur].Deleted {
-			shown += " · deleted, not on disk"
-		}
-	}
-	note := decoLine(v.Git.Note, either(v.Git.Failed, stAttention, stGrey))
-	body := []line{spread(line{deco(elide(shown, max(inner-note.width()-1, 8)), stText)}, note, inner)}
+	return explorerKeys[len(explorerKeys)-1]
+}
 
-	room := hh - 4
+// ExplorerPanel is the panel's letter (plan 43, design D6). Each tree row's
+// cells carry the row's index in ExplorerRows plus one, the header's "⌄"
+// ItemPanelHide, the other cells 0: a click finds its row by ItemAt.
+const (
+	ExplorerPanel = 'R'
+	ItemPanelHide = -1
+)
+
+// The panel's glyphs (design D6): a folder closed, open, a folder's icon
+// and a file's. The icons, U+1F5C0 and U+1F5CE, are one cell by the width
+// table; Cascadia Mono lacks them and Windows Terminal draws them from
+// Segoe UI Symbol, wider than a cell: two spaces follow each, so one shows
+// either way, as after the "+" menu's (plan 30).
+const (
+	expClosed = "› "
+	expOpen   = "⌄ "
+	expFolder = "🗀"
+	expFile   = "🗎"
+	expGap    = "  "
+)
+
+// panelFixed are the panel's rows outside its tree: the frame's two edges,
+// the header, the rule and the root row.
+const panelFixed = 5
+
+// panelNote is git's note on the panel's last row, saying why there are no
+// markers; nil while git's status is asked for, or with markers.
+func panelNote(v ExplorerView) line {
+	if v.Git.Note == "" || v.Git.Note == GitPending {
+		return nil
+	}
+	return decoLine(v.Git.Note, either(v.Git.Failed, stAttention, stGrey))
+}
+
+// panelRoom is how many rows of the tree a panel h rows high shows.
+func panelRoom(h int, v ExplorerView) int {
+	return max(h-panelFixed-boolInt(panelNote(v) != nil), 0)
+}
+
+// ExplorerRoom is how many rows of the tree the panel shows on this screen,
+// what PgUp and PgDn move by (plan 43, design D6).
+func ExplorerRoom(s *state.State, ui UI) int { return panelRoom(layout(s, ui).upper, ui.Explorer) }
+
+// explorerPanel is the Explorer docked, w by h (plan 43, design D6): the
+// header "EXPLORER" with its "⌄", a rule, the root row with the project
+// folder's name, the tree one step under it, scrolling to keep its cursor
+// in view under them, and git's note on its last row. Its frame is in the
+// title colour while it has the focus.
+func explorerPanel(ui UI, w, h int) []line {
+	v := ui.Explorer
+	inner := w - 4
+	rows := ExplorerRows(v)
+	cur := ExplorerCursor(rows, v.Cursor)
+	room := panelRoom(h, v)
+	body := []line{
+		spread(decoLine("EXPLORER", stTitle), line{panelDeco("⌄", stTitle, ItemPanelHide)}, inner),
+		teleRule(inner),
+		rootRow(v.Name, inner),
+	}
 	top := ListTop(v.Top, max(cur, 0), room, len(rows))
 	for i := top; i < top+room && i < len(rows); i++ {
-		body = append(body, explorerRow(v.Git, rows[i], i == cur, inner))
-	}
-	for len(body) < room+1 {
-		body = append(body, nil)
-	}
-	var count line
-	if cur >= 0 {
-		count = decoLine(fmt.Sprintf("%s of %s", grouped(entryIndex(rows, cur)+1), grouped(n)), stGrey)
-	}
-	footer := spread(windowLeft(s, ui, explorerKeys, inner-count.width()-1), count, inner)
-	body = append(body[:room+1], footer)
-	return frameIn(frameBox(line{deco("Explorer", stTitle)}, right, body, ww, hh, stFileFrame))
-}
-
-// entryIndex is how many entry rows come before row i.
-func entryIndex(rows []ExplorerRow, i int) int {
-	k := 0
-	for _, r := range rows[:i] {
-		if r.Path != "" {
-			k++
+		r := explorerRow(v.Git, rows[i], i == cur, inner)
+		for j := range r {
+			r[j].ref = ref{panel: ExplorerPanel, kind: refDeco, item: i + 1}
 		}
+		body = append(body, r)
 	}
-	return k
+	if note := panelNote(v); note != nil {
+		for len(body) < 3+room {
+			body = append(body, nil)
+		}
+		body = append(body, note)
+	}
+	return box(ExplorerPanel, nil, nil, body, w, h, borderFor(ui.Focus == "R"))
 }
 
-// explorerRow is a row of the tree, w cells: its indent, "▸" or "▾" before
-// a folder, the name, git's marker on the right; dimmed when git ignores
-// it, red when deleted, on the cursor row's background when cur.
+// rootRow is the project's own row over the tree, w cells: "⌄", a folder's
+// icon and the project folder's name, as an open folder's, its name in a
+// folder's colour.
+func rootRow(name string, w int) line {
+	l := line{deco(expOpen, stGrey), deco(expFolder, stExpFolder), deco(expGap, stNone)}
+	return append(l, deco(elide(name, max(w-l.width(), 1)), stExpDirName))
+}
+
+// panelDeco is a span of the panel: decoration, panel R, its item.
+func panelDeco(text string, st *lipgloss.Style, item int) span {
+	return span{text: text, st: st, ref: ref{panel: ExplorerPanel, kind: refDeco, item: item}}
+}
+
+// explorerRow is a row of the tree, w cells, one step under the root row:
+// its indent, "›" or "⌄" before a folder and two spaces before a file, a
+// folder's icon in blue or a file's in grey, the name in a light lavender
+// grey, a folder's or a file's, git's marker on the right; the name dimmed
+// when git ignores it, red when deleted, on the cursor row's background
+// when cur (plan 17; plan 43, design D6).
 func explorerRow(g GitView, r ExplorerRow, cur bool, w int) line {
-	indent := strings.Repeat("  ", r.Depth)
+	indent := strings.Repeat("  ", r.Depth+1)
 	if r.Path == "" {
 		return line{deco(indent+"  ", stNone), deco(elide(r.Name, max(w-len(indent)-2, 1)), either(r.Failed, stAttention, stGrey))}
 	}
 	mark := rowMark(g, r)
 	ignored := !r.Deleted && explorerIgnored(g, r.Path)
-	nameSt := stText
+	nameSt := either(cur, stExpRowFileName, stExpFileName)
 	switch {
 	case r.Deleted:
 		nameSt = either(cur, stExpRowFailed, stFailed)
 	case ignored:
 		nameSt = either(cur, stExpRowGrey, stGrey)
 	case r.Dir:
-		nameSt = either(cur, stExpRowDir, stTitle)
-	case cur:
-		nameSt = stTreeCursor
+		nameSt = either(cur, stExpRowDirName, stExpDirName)
 	}
-	head := "  "
-	switch {
-	case r.Open:
-		head = "▾ "
-	case r.Dir:
-		head = "▸ "
+	head, icon, iconSt := "  ", expFile, either(cur, stExpRowFile, stExpFile)
+	if r.Dir {
+		head, icon, iconSt = expClosed, expFolder, either(cur, stExpRowFolder, stExpFolder)
+		if r.Open {
+			head = expOpen
+		}
 	}
 	var right line
 	if mark != "" && !ignored {
 		right = line{deco(mark, markStyle(mark, cur)), deco(" ", either(cur, stTreeCursor, stNone))}
 	}
 	pad := either(cur, stTreeCursor, stNone)
-	l := line{deco(indent, pad), deco(head, either(cur, stExpRowGrey, stGrey)),
-		deco(elide(r.Name, max(w-len(indent)-2-right.width()-1, 1)), nameSt)}
+	l := line{deco(indent, pad), deco(head, either(cur, stExpRowGrey, stGrey)), deco(icon, iconSt), deco(expGap, pad)}
+	l = append(l, deco(elide(r.Name, max(w-l.width()-right.width()-1, 1)), nameSt))
 	return spreadOn(l, right, w, pad)
 }
 

@@ -84,19 +84,19 @@ frame built from the one before it equals the frame drawn afresh, escape codes
 included.
 
 **The timing step, on its own.** A time is judged against its target only in
-the timing step, built with the `timing` tag. Six timed tests carry the tag,
+the timing step, built with the `timing` tag. Seven timed tests carry the tag,
 so `go test ./...` never runs them. Two more, `TestPasteToFrame` and
 `TestStreamToFrame` (`internal/app/perf_test.go`), run in `go test ./...` too,
 for their other checks: a 50,000-line paste kept byte for byte, and a
 2,000-line streamed answer kept as one entry and drawn to its end. There
 `overTarget` logs their time as "not judged outside the timing step", as it
 does under `-race` (`timingBuild`, `timing_on_test.go` and
-`timing_off_test.go`; plan 21, item 2). The step runs the eight, under the
+`timing_off_test.go`; plan 21, item 2). The step runs the nine, under the
 owner's normal working conditions (owner, 2026-10-16), since the target is
 about real use:
 
 ```text
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame)$' -count=1 -v
 ```
 
 - Allowed: the owner's usual applications open and idle (VS Code, browsers,
@@ -132,6 +132,13 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   P34c's mock opened and closed with Alt+P, then its cursor moved through the
   expanded list, each key timed to its frame at 120x40 and 208x59: p95
   within 16 ms (`keystrokeTarget`).
+- `TestMotionToFrame` (plan 43, criterion 43.5): with Sixel, at 120x40
+  and 208x59, the Explorer's panel hidden and shown, the pointer moving
+  from tile to tile over the sidebar, each report that changes the hover
+  timed from the program's filter through `Update` to its frame: p95
+  within 16 ms (`keystrokeTarget`); then idle motion, within a tile and
+  left of the sidebar, every report dropped by the filter before `Update`
+  and `View`, counted, or the test fails.
 - A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
   profile, the same test on the last commit) and report it as the loop above
   says.

@@ -218,9 +218,10 @@ func ModesHeight(s *state.State, v ModesView) int { return len(modesLayout(modes
 
 // modesPlace is the box's left edge and top row above the mode pill: its
 // right edge on the cell after the pill, zone B's margin left free, or on
-// the screen's last column; its bottom edge on the editor's rule (design
-// D5). ok is false when the pill or the rule is not on screen, or the box
-// does not fit between zone B's title and the rule (design D9).
+// zone B's right edge, never over the Explorer's panel or the sidebar (plan
+// 43, design D9); its bottom edge on the editor's rule (design D5). ok is
+// false when the pill or the rule is not on screen, or the box does not
+// fit between zone B's title and the rule (design D9).
 func (sc *Screen) modesPlace(s *state.State, v ModesView, width int) (x, y, tail int, ok bool) {
 	px, py, found := sc.find(ModePillPanel)
 	if !found {
@@ -232,7 +233,7 @@ func (sc *Screen) modesPlace(s *state.State, v ModesView, width int) (x, y, tail
 	}
 	w, h := modesWidth(s), ModesHeight(s, v)
 	pw := sc.spanWidth(ModePillPanel, py)
-	x = min(px+pw, width-1) - (w - 1)
+	x = min(px+pw, sc.bRight(width)-1) - (w - 1)
 	y = ry + 1 - h
 	if x < 0 || y < sc.selectorTop() {
 		return 0, 0, 0, false

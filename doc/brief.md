@@ -5454,3 +5454,504 @@ And since it is the mouse approach, there is no need to display waht is in red, 
 ````
 
 Taken as plan 42 (plan.md, Plan 42).
+
+## Amendment 44, 2026-10-24: a right activity sidebar with the Explorer docked, for plan 43
+
+After plan 42 was approved and pushed, the owner sent two images, copied
+as `references/12-sidebar-collapsed.png` (`44.png`, 955x332: zone B with,
+at its right, a narrow box of two icons, Explorer's selected, Skills'
+below it) and `references/13-sidebar-explorer.webp` (`45.webp`, 1393x479:
+zone B, then a panel "EXPLORER" with the project's tree, then the same
+narrow box), and wrote, word for word:
+
+````text
+Agent Command Center — Right Sidebar & Integrated Explorer
+Objective
+Implement a new right-hand activity sidebar in Agent Command Center, using the two attached screenshots as the authoritative visual specifications.
+This improvement must integrate the application's existing Explorer functionality into the dashboard, inspired by the general sidebar interaction model of Visual Studio Code.
+The work is strictly limited to:
+
+1. Creating the new right-hand sidebar.
+2. Adding two icons: Explorer and Skills.
+3. Integrating the existing Explorer (currently accessible through F3) into the sidebar.
+4. Implementing the approved icon hover, selected, and inactive states.
+5. Changing F3 to show or hide the integrated Explorer.
+
+The Skills icon is visual only for now. Do not implement Skills functionality.
+Reproduce the two references as faithfully as technically possible within Windows Terminal.
+1. Authoritative Design References
+I have attached two screenshots.
+Reference 1 — Collapsed Sidebar
+Shows:
+
+* Zone B occupying the available conversation area.
+* A narrow vertical sidebar immediately to its right.
+* Two vertically stacked icons.
+* Explorer selected/highlighted in the reference.
+* Skills below Explorer, unselected.
+* The existing conversation design preserved.
+
+This is the reference for the collapsed state, with no Explorer content panel visible.
+Reference 2 — Expanded Explorer
+Shows:
+
+* Zone B on the left.
+* An Explorer content panel immediately to the right of Zone B.
+* The narrow icon sidebar to the right of Explorer.
+* Explorer highlighted as the selected activity.
+* A file tree inside the Explorer panel.
+
+This is the reference for the expanded state.
+Visual authority
+These screenshots define the approved:
+
+* Panel positioning.
+* Relative widths.
+* Borders.
+* Colors.
+* Icon appearance.
+* Selected-state treatment.
+* Content hierarchy.
+* Spacing.
+* Explorer appearance.
+* Relationship between Zone B, Explorer, and the icon sidebar.
+
+Do not reinterpret these references as a reason to redesign the dashboard.
+2. Dashboard Layout — Critical Requirement
+The current dashboard architecture must remain intact.
+Collapsed state
+
+```
+┌────────────────┬──────────────────────────┬───┐
+│                │                          │ E │
+│ A              │ B · CONVERSATION         │   │
+│ ORCHESTRATOR   │                          │ S │
+│                │                          │   │
+│ + TELEMETRY    │                          │   │
+│                │                          │   │
+├────────────────┴──────────────────────────┴───┤
+│ C · LIVE AGENTS                               │
+│ Full-width monitoring                         │
+├───────────────────────────────────────────────┤
+│ GLOBAL FOOTER                                 │
+└───────────────────────────────────────────────┘
+```
+
+Expanded Explorer state
+
+```
+┌────────────────┬─────────────────┬─────────┬───┐
+│                │                 │EXPLORER │ E │
+│ A              │ B               │         │   │
+│ ORCHESTRATOR   │ CONVERSATION    │Project  │ S │
+│                │                 │ ├─ doc  │   │
+│ + TELEMETRY    │                 │ ├─ cmd  │   │
+│                │                 │ └─ ...  │   │
+├────────────────┴─────────────────┴─────────┴───┤
+│ C · LIVE AGENTS                                │
+│ Full-width monitoring                          │
+├────────────────────────────────────────────────┤
+│ GLOBAL FOOTER                                  │
+└────────────────────────────────────────────────┘
+```
+
+`E` = Explorer icon.
+`S` = Skills icon.
+These diagrams illustrate the structure. The attached screenshots determine the actual visual proportions.
+Non-negotiable layout rules
+
+* Zone A remains on the left.
+* Zone B remains beside Zone A.
+* The new sidebar is positioned immediately to the right of Zone B.
+* When expanded, the Explorer panel appears between Zone B and the icon sidebar.
+* The icon sidebar stays on the far right of the upper dashboard.
+* Zone C stays full width across the entire dashboard.
+* The global footer stays at the bottom.
+* Zone A and Zone B retain their existing vertical alignment.
+* The sidebar must not extend into Zone C.
+* No new Zone D.
+* No separate operating-system window for Explorer.
+
+This must be a docked dashboard sidebar, not a floating window or modal.
+3. Right Activity Sidebar — Visual Design
+Create a narrow vertical sidebar matching the attached references.
+Appearance
+
+* Same dark background family as the existing dashboard.
+* Thin, subtle borders.
+* Two vertically stacked icons near the top.
+* Centered icon alignment.
+* Consistent spacing.
+* No permanently visible text labels beside the icons.
+* Lavender/purple accent colors.
+* No unnecessary decoration.
+
+Icon 1 — Explorer
+Use a recognizable file-tree or Explorer icon inspired by the reference.
+Prefer an icon representing a hierarchical project explorer rather than a generic standalone folder.
+The icon should feel native to Agent Command Center.
+Icon 2 — Skills
+Use a meaningful icon representing modular capabilities or connected nodes, matching the second icon in the reference as closely as possible.
+The icons should have:
+
+* Consistent visual weight.
+* Similar dimensions.
+* Consistent alignment.
+* Matching inactive styling.
+
+Do not add any additional icons at this stage.
+4. Hover, Selected and Inactive States
+The sidebar must reproduce the visual states shown in the approved references.
+Inactive
+
+* Muted gray icon.
+* No bright background.
+* Subtle contrast against the sidebar.
+* No active-indicator border.
+
+Hover
+When the mouse moves over an icon:
+
+* Apply a purple/lavender tinted background.
+* Use the existing theme's hover color.
+* Give the icon a brighter accent.
+* Preserve the rounded highlight shape.
+* Do not shift the icon.
+* Do not resize the sidebar.
+* Do not affect the conversation area.
+
+The hover effect must be comparable to the already approved hover effects used in the model and permission-mode selectors.
+Active / selected
+When Explorer is active:
+
+* Display the approved purple highlighted background.
+* Use a brighter purple Explorer icon.
+* Show the selected-state accent along the left edge, as in the reference.
+* Keep the highlight visible after the mouse leaves.
+
+Hover and active are separate states.
+A hovered Skills icon must not replace Explorer's selected state.
+Tooltips
+If labels are needed on hover, use only:
+
+* `Explorer`
+* `Skills`
+
+Keep any tooltip small and consistent with the existing terminal theme.
+Do not introduce additional menu options.
+5. Explorer Integration — Reuse Existing F3 Functionality
+Agent Command Center already has an Explorer accessible through F3.
+I do not want a second independent Explorer implementation.
+Reuse and adapt the existing Explorer functionality.
+Current behavior
+F3 opens the existing Explorer interface separately from the dashboard.
+Required new behavior
+F3 must now toggle the integrated Explorer panel.
+F3 when collapsed:
+
+* Expand the Explorer panel to the left of the icon sidebar.
+* Show the actual current project's file tree.
+* Mark Explorer as active.
+* Preserve the existing conversation.
+
+F3 when expanded:
+
+* Collapse the Explorer panel.
+* Restore the available width to Zone B.
+* Preserve the Explorer's navigation state where practical.
+* Preserve the current conversation and input draft.
+
+Mouse behavior
+Clicking Explorer in the right sidebar must perform the same action as F3.
+Therefore:
+
+* Click Explorer while closed → open Explorer.
+* Click Explorer while open → close Explorer.
+* Press F3 while closed → open Explorer.
+* Press F3 while open → close Explorer.
+
+The icon and F3 must control the same state.
+Do not maintain two disconnected Explorer views.
+Existing functionality
+Preserve the existing Explorer capabilities, including those already implemented for:
+
+* Project-root discovery.
+* Directory listing.
+* File and folder hierarchy.
+* Expanding/collapsing directories.
+* Tree navigation.
+* Scrolling.
+* Selection.
+* Existing supported inspection actions.
+
+Do not invent a new editor or unrelated file-management functionality.
+If the existing Explorer has additional features, preserve them wherever compatible with the new docked presentation.
+6. Explorer Panel — Strict Visual Specification
+When expanded, the Explorer content panel must reproduce the second attached screenshot.
+Header
+Display:
+`EXPLORER`
+Use lavender/purple heading text.
+Right-align the small collapse/chevron control shown in the reference.
+Use the same header and border treatment as the screenshot.
+Project root
+Display the actual selected project root.
+Example from the reference:
+`agent-command-center`
+The project name must come from the active project path.
+Do not hardcode it.
+File tree
+Display the real project directory contents.
+Use:
+
+* Hierarchical indentation.
+* Folder icons.
+* File icons.
+* Expand/collapse chevrons.
+* Muted secondary elements.
+* Purple/blue accents consistent with the reference.
+
+Examples shown in the design include:
+
+* `.claude`
+* `cmd`
+* `confcheck`
+* `doc`
+* `internal`
+* `references`
+* `scripts`
+* `testdata`
+* `third_party`
+* `AGENTS.md`
+* `CLAUDE.md`
+* `plan.md`
+
+These are illustrative of the existing project structure.
+The implementation must display actual filesystem contents, not a hardcoded reproduction of these filenames.
+Scrolling
+If the tree exceeds the available height:
+
+* Scroll within Explorer.
+* Preserve the other panels' scroll positions.
+* Do not move the dashboard footer.
+* Do not resize Zone C.
+* Keep the Explorer header visible where practical.
+
+Width
+Match the second reference's relative Explorer width.
+The panel must be wide enough to navigate project folders and filenames, but must not unnecessarily consume conversation space.
+Use the application's existing responsive layout rules.
+Avoid hardcoded terminal dimensions that only work at one screenshot size.
+7. Skills Icon — Visual Placeholder Only
+The second icon is reserved for a future Skills integration.
+For this task:
+
+* Display the icon.
+* Support its hover appearance.
+* Keep its inactive visual state.
+* Do not open a Skills panel.
+* Do not call any Skills APIs.
+* Do not scan skills.
+* Do not implement skill management.
+* Do not introduce new keyboard shortcuts for Skills.
+
+Clicking Skills must not alter the active Explorer selection, modify provider state, or interfere with the conversation.
+Skills functionality is explicitly out of scope.
+Its future implementation will be handled separately.
+8. Focus, Keyboard and Mouse Behavior
+Preserve the application's existing input model.
+Focus
+When Explorer opens:
+
+* Do not clear the conversation.
+* Do not lose unsent text.
+* Do not lose image attachments.
+* Maintain predictable keyboard focus.
+* Allow users to navigate the Explorer with existing supported controls.
+
+When Explorer closes:
+
+* Restore appropriate focus.
+* Preserve the draft.
+* Keep the conversation scroll position.
+* Preserve Explorer tree state where appropriate.
+
+Mouse
+Verify:
+
+* Hovering Explorer.
+* Clicking Explorer.
+* Hovering Skills.
+* Clicking Skills without action.
+* Scrolling within Explorer.
+* Selecting files and directories.
+* Clicking back into Zone B.
+* Clicking the Explorer collapse control.
+
+Preserve existing mouse selection and terminal capture behavior.
+Keyboard shortcuts
+F3 now means:
+Toggle Explorer sidebar
+Update relevant shortcut hints or help text to reflect the new behavior.
+Do not remove other shortcuts or remap unrelated commands.
+9. Responsive Layout and Rendering
+The integration must work at different Windows Terminal sizes.
+Requirements
+
+* The collapsed sidebar uses minimal width.
+* The expanded Explorer gets a bounded width.
+* Zone B receives the remaining available width.
+* Zone A remains readable.
+* Zone C remains full width.
+* The footer remains visible.
+* No overlapping borders.
+* No clipped popup caused by incorrect layout calculations.
+* No negative or invalid viewport sizes.
+
+If the terminal becomes too narrow to display the expanded Explorer safely, implement a sensible compact behavior while preserving access to F3.
+Do not sacrifice conversation usability simply to keep Explorer open.
+Performance
+Explorer must not trigger unnecessary redraws of unrelated zones.
+In particular:
+
+* Mouse hover should update only the necessary visual state.
+* Folder expansion should not redraw the entire conversation unnecessarily.
+* Quota countdowns must continue functioning.
+* Thinking animations must continue functioning.
+* Typing performance must remain within the project's established acceptance limits.
+
+10. Strict Scope Isolation
+Do not redesign Zones A, B or C.
+Preserve:
+Zone A
+
+* Orchestrator.
+* Stages.
+* Session usage.
+* Quota windows.
+* Existing telemetry interactions.
+
+Zone B
+
+* Conversation rendering.
+* Message separators.
+* Thinking indicators.
+* Tool events.
+* Approvals.
+* Result cards.
+* Message composer.
+* Image attachments.
+* Model selection.
+* Effort slider.
+* Ultracode.
+* Permission-mode selector.
+
+Zone B may become narrower when Explorer expands, but its internal design must remain unchanged.
+Zone C
+
+* Full-width presentation.
+* Agent overview.
+* Execution Timeline.
+* Existing adaptive height.
+* Current and historical agent information.
+* Existing inspection behavior.
+
+Zone C must not be moved beside the new sidebar or otherwise redesigned.
+Application shell
+Preserve:
+
+* Session header.
+* Provider information.
+* Live/idle status.
+* Global footer.
+* Existing keyboard shortcuts, except the requested F3 behavior.
+
+11. Visual Verification
+Use the attached images as the final visual references.
+Capture actual Windows Terminal screenshots after implementation.
+Screenshot 1 — Collapsed
+Must demonstrate:
+
+* Zone B.
+* Narrow right sidebar.
+* Explorer icon.
+* Skills icon.
+* Approved purple styling.
+* No Explorer content panel.
+* Zone C still full width.
+
+Compare directly against Reference 1.
+Screenshot 2 — Explorer Expanded
+Must demonstrate:
+
+* Zone B.
+* Explorer panel.
+* Narrow icon sidebar.
+* Real project directory tree.
+* Active Explorer icon.
+* Approved borders and spacing.
+* Zone C still full width.
+
+Compare directly against Reference 2.
+Screenshot 3 — Hover States
+Show:
+
+* Explorer hovered.
+* Skills hovered.
+* Explorer selected.
+* Inactive appearance.
+
+Verify that the hover background matches the approved theme.
+Screenshot 4 — F3 Toggle
+Demonstrate that F3 opens and closes the same integrated Explorer controlled by the icon.
+12. Functional and Regression Acceptance
+Verify all of the following:
+
+1. Sidebar appears to the right of Zone B.
+2. Exactly two icons are displayed.
+3. Explorer icon matches the approved design.
+4. Skills icon matches the approved design.
+5. Both icons respond visually to hover.
+6. Explorer's active state is visually distinct.
+7. Clicking Explorer toggles the integrated panel.
+8. F3 toggles that same panel.
+9. The former separate Explorer window is no longer used by F3.
+10. Explorer displays the real current project.
+11. Folder expansion and file-tree navigation work.
+12. Explorer scrolling works.
+13. Sidebar collapse restores Zone B width.
+14. Clicking Skills performs no functional action.
+15. Zone C remains full width.
+16. Zones A and B retain their approved internal designs.
+17. Drafts and image attachments remain intact.
+18. Existing keyboard and mouse interactions continue working.
+19. Rendering and performance tests remain within accepted limits.
+20. No unrelated regressions are introduced.
+
+Use existing fixtures and deterministic tests wherever possible.
+Do not weaken tests to obtain PASS.
+13. Delivery Requirements
+Before considering the task complete:
+
+1. Summarize the implementation.
+2. Explain how the existing F3 Explorer was integrated into the new sidebar.
+3. Provide actual Windows Terminal screenshots for collapsed, expanded, and hover states.
+4. Compare the screenshots against the two supplied references.
+5. Report functional and regression-test results.
+6. Identify any genuine Windows Terminal limitations.
+7. Clearly identify any differences from the approved design.
+
+Do not commit until I have reviewed the screenshots and implementation results.
+Final Instruction
+The two screenshots are the authoritative design references.
+Implement a persistent, narrow right-hand activity sidebar containing only Explorer and Skills.
+Clicking Explorer or pressing F3 must toggle the application's existing Explorer as a docked panel between Zone B and the icon sidebar.
+The Explorer must no longer open as a separate window.
+Skills remains visual-only.
+Reproduce the approved purple hover and active-state styling.
+Keep Zones A, B and C exactly as already approved, with Zone C remaining full width.
+Do not broaden the task into Skills implementation, file-editor functionality, or unrelated dashboard changes.
+The final implementation must faithfully match both supplied screenshots within Windows Terminal's rendering constraints.
+````
+
+Taken as plan 43 (plan.md, Plan 43).

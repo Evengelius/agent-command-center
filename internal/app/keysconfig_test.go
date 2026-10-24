@@ -260,9 +260,10 @@ func TestKeysProblemInMockRun(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		opt := keysFrom(t, problemFiles["unknown key"])
 		r := mockRigWith(t, opt)
-		// B's status row is one row of B's width: at 120 columns the message is
-		// cut at its end; wide enough, it shows whole.
-		if f := plainText(r.h.m.View().Content); !strings.Contains(f, `config.json: "ctrl+s" is not a send or newline key (use Enter with Ctrl, `) {
+		// B's status row is one row of B's width: at 120 columns (zone B 76
+		// wide beside the sidebar since plan 43) the message is cut at its
+		// end; wide enough, it shows whole.
+		if f := plainText(r.h.m.View().Content); !strings.Contains(f, `config.json: "ctrl+s" is not a send or newline key (use Enter with Ct… `) {
 			t.Errorf("the status row lacks the problem's start:\n%s", f)
 		}
 		r.h.send(tea.WindowSizeMsg{Width: 200, Height: 60})

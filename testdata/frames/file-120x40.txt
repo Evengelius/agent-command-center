@@ -1,30 +1,30 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
-╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────── Idle ─╮
-│ A · ORCHESTRATOR                 ││ ▎  ✓ Agent  general-purpose · List directory and write fo…  11:30:00      mock   │
-│ ✿ Claude H╭─ viewer.go ────────────────────────────────────────────────────────────────── Go · 58 lines ─╮           │
-│ ──────────│ sample/viewer.go · edited by Edit                                                            │nd write   │
-│ STAGES · i│ 29          }                                                                                │           │
-│   Use the │ 30      }                                                                                    │           │
-│   Agent · │ 31      return Colour{}, false                                                               │    mock   │
-│           │ 32  }                                                                                        │    mock   │
-│ ✓ TURN 2  │ 33                                                                                           │    mock   │
-│   started │ 34  // Hex is the colour as "#rrggbb".                                                       │           │
-│   Edit    │ 35▌ func (c Colour) Hex() string {                                                           │─────────╮ │
-│ ──────────│ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                   │         │ │
-│ ✦ TELEMETR│ 37▌ }                                                                                        │.md`,    │ │
-│ ▾ SESSION │ 38                                                                                           │         │ │
-│   Context │ 39  // Names lists the palette's colour names, in order.                                     │         │ │
-│   Tokens 1│ 40  func Names() []string {                                                                  │         │ │
-│   Est. cos│ 41      out := make([]string, 0, len(palette))                                               │─────────╯ │
-│ ▾ QUOTA WI│ 42      for _, c := range palette {                                                          │           │
-│   Session │ 43          out = append(out, c.Name)                                                        │ Esc back  │
-│   ████████│ 44      }                                                                                    │           │
-│   Resets i│ 45      return out                                                                           │────────── │
-│   Weekly (│ 46  }                                                                                        │           │
-│   ████████│ 47                                                                                           │────────── │
-│   Resets i│ 48  // Brighter is the colour with each channel raised by step, at most 255.                 │  Manual   │
-╰───────────│ 49  func (c Colour) Brighter(step uint32) Colour {                                           │───────────╯
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ ▎                                                                        ││      │
+│ ✿ Claude H╭─ viewer.go ────────────────────────────────────────────────────────────────── Go · 58 lines ─╮   ││  ≡   │
+│ ──────────│ sample/viewer.go · edited by Edit                                                            │   ││      │
+│ STAGES · i│ 29          }                                                                                │   ││      │
+│   Use the │ 30      }                                                                                    │   ││      │
+│   Agent · │ 31      return Colour{}, false                                                               │   ││  ⑂   │
+│           │ 32  }                                                                                        │   ││      │
+│ ✓ TURN 2  │ 33                                                                                           │   ││      │
+│   started │ 34  // Hex is the colour as "#rrggbb".                                                       │─╮ ││      │
+│   Edit    │ 35▌ func (c Colour) Hex() string {                                                           │ │ ││      │
+│ ──────────│ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                   │ │ ││      │
+│ ✦ TELEMETR│ 37▌ }                                                                                        │ │ ││      │
+│ ▾ SESSION │ 38                                                                                           │ │ ││      │
+│   Context │ 39  // Names lists the palette's colour names, in order.                                     │ │ ││      │
+│   Tokens 1│ 40  func Names() []string {                                                                  │ │ ││      │
+│   Est. cos│ 41      out := make([]string, 0, len(palette))                                               │─╯ ││      │
+│ ▾ QUOTA WI│ 42      for _, c := range palette {                                                          │   ││      │
+│   Session │ 43          out = append(out, c.Name)                                                        │k  ││      │
+│   ████████│ 44      }                                                                                    │   ││      │
+│   Resets i│ 45      return out                                                                           │── ││      │
+│   Weekly (│ 46  }                                                                                        │   ││      │
+│   ████████│ 47                                                                                           │── ││      │
+│   Resets i│ 48  // Brighter is the colour with each channel raised by step, at most 255.                 │   ││      │
+╰───────────│ 49  func (c Colour) Brighter(step uint32) Colour {                                           │───╯╰──────╯
 ╭───────────│ 50      r, g, b := c.RGB>>16&0xff, c.RGB>>8&0xff, c.RGB&0xff                                 │───────────╮
 │ C · LIVE A│ 51      up := func(v uint32) uint32 { return min(v+step, 255) }                              │E · 1 DONE │
 │ ──────────│ 52      return Colour{c.Name, up(r)<<16 | up(g)<<8 | up(b)}                                  │────────── │

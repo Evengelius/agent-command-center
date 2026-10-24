@@ -590,7 +590,8 @@ func SelectorHeading(s *state.State) string {
 // modelSelector draws the selector over the dashboard when it is open: its
 // left edge one cell left of the pill, its bottom edge on the editor's rule
 // with "▾" above the pill's first cell, at column 1 (design D8), further
-// right when the screen's right edge pushes the box left. It draws nothing
+// right when zone B's right edge pushes the box left, never over the
+// Explorer's panel or the sidebar (plan 43, design D9). It draws nothing
 // when the pill or the rule is not on screen, or the rows above the rule
 // leave fewer than two for the list.
 func modelSelector(sc *Screen, s *state.State, ui UI) {
@@ -603,7 +604,7 @@ func modelSelector(sc *Screen, s *state.State, ui UI) {
 	ry := sc.editorRule(py)
 	w := selectorWidth(s, v, ui.Width)
 	inner := w - 2
-	x := max(min(px-1, ui.Width-w), 0)
+	x := max(min(px-1, sc.bRight(ui.Width)-w), 0)
 	y := ry + 1 - selectorFixed(v) - h
 	tail := max(1, min(px-x, inner)) // the "▾", above the pill's first cell
 

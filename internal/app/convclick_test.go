@@ -57,7 +57,9 @@ func TestThinkingClicks(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		r := thinkStart(t, "p12c-block-claude-auto-boundary-edit.jsonl", claude.ProviderID)
 		h := r.h
-		h.draw(tea.WindowSizeMsg{Width: 160, Height: 50})
+		// Zone B 115 columns wide, as at 160 before the sidebar took 8 (plan
+		// 43): each detail on a row of its own.
+		h.draw(tea.WindowSizeMsg{Width: 171, Height: 50})
 		r.until(27000)
 		r.at(27000)
 		last := thought(t, h.m.State(), 4)
@@ -75,7 +77,7 @@ func TestThinkingClicks(t *testing.T) {
 			f := h.frame()
 			mark, n := "▸ ✓ Thought for 2.2s", rows
 			if wantOpen {
-				mark, n = "▾ ✓ Thought for 2.2s", rows+4 // its four details, a row each at 160 columns
+				mark, n = "▾ ✓ Thought for 2.2s", rows+4 // its four details, a row each in zone B's 115 columns
 			}
 			if h.m.ui.Unfolded[k] != wantOpen || !strings.Contains(f, mark) || h.m.screen.Conv.Rows != n || h.m.ui.ViewEntry != 0 {
 				t.Fatalf("%s: open %v, want %v; rows %d, want %d; view %d\n%s", when, h.m.ui.Unfolded[k], wantOpen, h.m.screen.Conv.Rows, n, h.m.ui.ViewEntry, f)

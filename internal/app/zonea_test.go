@@ -66,7 +66,8 @@ func TestTelemetryMouse(t *testing.T) {
 }
 
 // TestZoneAKeyWords is criterion 24.24: the overlay's and the footer's
-// words name the three zones and the details.
+// words name the three zones and the details; since plan 43 (design D7) the
+// Explorer's panel among them while shown.
 func TestZoneAKeyWords(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h := mockDash(t, "claude-subagent-approval.jsonl")
@@ -77,7 +78,7 @@ func TestZoneAKeyWords(t *testing.T) {
 			h.draw(key(tea.KeyPgDown, 0))
 			seen += h.frame()
 		}
-		for _, want := range []string{"next / previous zone (B, C, A)", "in A on TELEMETRY, the errors and every value", "A FOCUSED PANEL (A, C, INSPECTION)"} {
+		for _, want := range []string{"next / previous zone (B, the Explorer while shown, C, A)", "in A on TELEMETRY, the errors and every value", "A FOCUSED PANEL (A, C, INSPECTION)"} {
 			if !strings.Contains(seen, want) {
 				t.Errorf("the overlay lacks %q", want)
 			}
