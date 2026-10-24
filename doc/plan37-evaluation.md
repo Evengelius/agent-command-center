@@ -77,3 +77,10 @@ colour, `#6784C1`, and grow its length, as their captions say
 ("Approximately half the track is filled", "Most of the track becomes
 filled"). The slider follows the images, the authoritative
 references, and keeps the distinctive gradient for the highest level.
+
+**The commit and the push (2026-10-24), after the owner's approval.** The
+owner approved plan 37 on 2026-10-24; commit 31c22ef (38 files: 34
+modified, 4 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+blocks above stay as they were reported.

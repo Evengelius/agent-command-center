@@ -17,8 +17,8 @@ for plan 27, `git show 8fe0077:plan.md` for plan 28, `git show d696f22:plan.md`
 for plan 29, `git show 6025513:plan.md` for plan 30, `git show
 8e2a721:plan.md` for plan 31, `git show b56d23e:plan.md` for plan 32, `git show
 bc5d92b:plan.md` for plan 33, `git show 47b50ce:plan.md` for plan 34, `git show
-b43cf46:plan.md` for plan 35, `git show c0cebc4:plan.md` for plan 36), and its
-results in its evaluation file.
+b43cf46:plan.md` for plan 35, `git show c0cebc4:plan.md` for plan 36, `git show
+31c22ef:plan.md` for plan 37), and its results in its evaluation file.
 
 ## The owner's standing decisions
 
@@ -94,147 +94,10 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 37 - The effort slider after the owner's images
+## No plan active
 
-Brief amendment 38 (2026-10-24): the selector's effort dropdown replaced
-by one pill-shaped slider of discrete levels after the owner's five
-images, and the Effort and Ultracode rows laid on shared columns: label,
-description, control. The criteria below were written before the code,
-the slider's image excepted, written for the probe; nothing is committed
-until the owner has reviewed the result.
-
-### What the probe found
-
-- The images, measured (brief amendment 38): an 8:1 pill, a white thumb
-  0.944 of its height, the levels evenly spaced from one end's centre to
-  the other's, 4x4 dots, a fill of `#6784C1` at each of the four lower
-  levels, and at the highest a gradient over the whole pill with specks.
-- `internal/render/slider.go` (`SliderImage`), drawn in Windows Terminal
-  1.23 at one row, 16 cells (160x20 pixels, the images' 8:1), beside each
-  image scaled to that row (`scratchpad\plan37\probe-wt.png`): geometry,
-  dots, fill and gradient match at the five levels; six and four levels,
-  a held effort, a ring round a level asked for, and none known drawn
-  too. The lowest level showed a sliver of fill at the thumb's left
-  edge, which the first image has not: removed.
-- The images keep one fill colour below the highest level; what grows is
-  the filled length, as the owner's own captions say ("approximately
-  half the track is filled", "most of the track becomes filled"). The
-  slider does the same, and lights the whole pill only at the highest.
-
-### Design
-
-- **D1. The image.** 17 cells, 170x20 pixels: the pill in the first 16,
-  the band's last cell after it (plan 35, design D2). Track `#272B2D`,
-  ends of radius 10; the model's levels evenly spaced from one end's
-  centre to the other's (x 10 to 150); a dot 2.3 pixels across at each,
-  `#697276` on the track, `#95A9D4` on the fill, pale lavender on the
-  gradient; the thumb a white disc 18.9 pixels across; below the
-  highest level a fill of `#6784C1` from the left end to the thumb's
-  centre, none at the lowest; at the highest level (the model's last
-  one: Max for Claude Code's, Ultra for a Codex model that lists it) the
-  whole pill lit by the gradient, with 11 specks; a white ring round a
-  level asked for and not yet in force; greyed while a variable holds
-  the effort; dots alone while no level is known. On the band, the
-  band's colour around the pill and in the last cell; elsewhere
-  transparent outside the pill. Drawn with Sixel as the toggle is: the
-  frame keeps the 17 cells blank on the ground in every state; the
-  application draws the image once the frame is out, the cells written
-  first, in one synchronized output.
-- **D2. Without Sixel**, 16 text cells: Powerline's half circles at the
-  ends, the cells between on the track's or the fill's ground (at the
-  highest level, the gradient's, cell by cell), a "·" at each level, the
-  thumb two white half circles, a level asked for "○"; greyed while
-  held.
-- **D3. The rows.** Effort and Ultracode on three shared columns: the
-  label at column 3, "Effort (<level>)" in the style of Ultracode's
-  label ("Effort (N/A)" when the model lists no level or none is
-  known); the description, muted, at column 3 plus the longest label of
-  the session's models' levels and "Ultracode" plus 2 (column 20 for
-  Claude Code's, "Effort (Medium)"): "Controls reasoning depth",
-  "Enables dynamic workflows"; the controls' right ends at column W-4,
-  the slider's pill in W-19 to W-4, the toggle's in W-7 to W-4. The box
-  widens to hold them: the description column, the longest description,
-  2, 16 and 3 (66 for Claude Code's, from 63); the model list and More
-  models unchanged. A model with no levels has no slider.
-- **D4. Choosing.** The slider's cells carry the nearest level: a click
-  there asks for it. With the cursor on Effort, ← and → ask for the
-  level before or after the one shown, a level asked for that waits
-  counting as shown; nothing past the ends; Enter and Space do nothing
-  there. A held effort says why in zone B and asks nothing (unchanged).
-  The cursor follows the pointer onto the slider as onto any row (plan
-  36). The dropdown, its list and their keys go.
-- **D5. What the thumb shows** is the level in force, as the CLI reports
-  it, never a choice not yet confirmed, which is ringed. When the level
-  in force changes while the slider shows, the thumb glides to it in
-  180 ms, eased, drawn every 30 ms, its fill and colour with it; the
-  label changes with the frame, the glide's clock running from that
-  frame, so that the image's first drawing, 50 ms later once the frame
-  is out, is already on its way. Amended after a burst in Windows
-  Terminal: with the clock from the first drawing, that drawing showed
-  the old level and the thumb began to move about 100 ms after the label.
-- **D6. Unchanged:** the model list, More models, the Ultracode toggle's
-  look and behaviour (its description moves to the shared column), the
-  model pill on the editor row.
-
-### Criteria
-
-Checked by tests unless marked WT (Windows Terminal).
-
-1. The image: 170x20 pixels; on the ground, transparent outside the
-   pill and opaque inside; with 5 levels, the thumb white at x 10, 45,
-   80, 115 and 150; the fill `#6784C1` from the left end to the thumb at
-   the second to fourth levels, none at the lowest; the other levels'
-   dots `#697276` on the track and `#95A9D4` on the fill; at the
-   highest, the gradient (`#4C3F99` at the left end, `#B2..` near 45%)
-   and specks; 6 levels: the sixth lit, the fifth blue; 4 levels: the
-   fourth lit; held: greyed; asked: a white ring; none known: no
-   thumb; on the band: the band's colour around the pill and in the
-   last 10 columns.
-2. With Sixel, the Effort row's columns W-19 to W-3 are blank cells on
-   the ground, the same with the cursor on the row or not from W-19 to
-   the box's edge; each pill cell carries its nearest level; the frame
-   reports the slider's place and look.
-3. Without Sixel, the 16 cells read as D2 at each level, a level asked
-   for and a held effort.
-4. The columns, Claude Code at 80x24, 120x40 and 200x60: "Effort (" and
-   "Ultracode" at column 3; "Controls reasoning depth" and "Enables
-   dynamic workflows" both at column 20 at every level shown; the
-   slider's pill and the toggle's ending at W-4; the box 66 wide, the
-   model rows' text where it was. Codex: the same columns, no Ultracode.
-5. Only the model's levels: Fable 5.1 five, Opus 4.6 four, Haiku 4.5
-   none (no slider, "Effort (N/A)"), GPT-6-Sol six with Ultra lit.
-6. ← and → on Effort ask for the adjacent level, from the one in force
-   or the one waiting; nothing past the ends; Enter and Space nothing; a
-   click on a pill cell asks for its level; a held effort asks nothing
-   and says why; on other rows ← and → close the selector and go on.
-7. The image drawn after the frame; a change of the level in force
-   draws it again gliding, the drawings between at positions between
-   the two levels, the last on the new; its place written over when the
-   selector closes.
-8. No regression: build, vet, gofmt clean; the suite; the race detector
-   on render and app; golden frames changed only in the selector's box
-   (its width and the two settings rows), each reviewed; the F1
-   overlay's keys as ui-design.md's; `TestSelectorToFrame` within target.
-9. WT, the Claude Code mock maximised and at 120x40: every level of Fable
-   5.1 (5) and Opus 4.6 (4), on and off the band, beside the owner's
-   images; the two rows' columns; the Codex mock: GPT-6-Sol's six; the
-   glide caught in a burst.
-
-### Steps
-
-1. Probe (done 2026-10-24): the findings above; brief amendment 38.
-2. The rows, the slider's cells and text, the input, the glide.
-3. Tests, golden frames, the checks; WT; the evaluation
-   (`doc/plan37-evaluation.md`); the docs; the report.
-
-### Progress
-
-- 2026-10-24: step 1 done; step 2 in progress.
-- 2026-10-24: steps 2 and 3 done: the shared columns, the slider's
-  cells, text and image, ← → and the clicks, the glide (D5 amended after
-  a burst), the tests, the golden frames, the checks, WT at every level;
-  the evaluation, `doc/plan37-evaluation.md`, 9 criteria: 9 PASS; the
-  docs. Nothing committed: waiting for the owner's review.
+Plan 37 was approved and closed on 2026-10-24 (Closed plans, below). The
+next plan starts when the owner asks for one.
 
 ## Closed plans
 
@@ -626,3 +489,18 @@ row than the last report's, the first report after Alt+P only recording
 where it rests. Approved on 2026-10-24: 7 of 7 PASS
 ([`doc/plan36-evaluation.md`](doc/plan36-evaluation.md)); commit
 c0cebc4, then the approval commit.
+
+## Plan 37 - The effort slider after the owner's images
+
+Brief amendment 38: the owner's five images of one pill-shaped effort
+slider at five levels replaced the selector's effort dropdown. Effort
+reads "Effort (<level>)", "Controls reasoning depth" and the slider: the
+model's own levels as dots, a fill of `#6784C1` growing to the thumb,
+the whole pill lit by a purple gradient with specks at the highest
+level, a level asked for ringed, a held effort greyed; with Sixel an
+image of 170x20 pixels over 17 blank cells, its thumb gliding in 180 ms;
+without, 16 text cells. Effort and Ultracode share label, description
+and control columns; ← → and a click on the slider ask for a level.
+Approved on 2026-10-24: 9 of 9 PASS
+([`doc/plan37-evaluation.md`](doc/plan37-evaluation.md)); commit
+31c22ef, then the approval commit.
