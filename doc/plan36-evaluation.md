@@ -70,3 +70,10 @@ one frame. The trace shows the Esc read and parsed at once ("processed 17
 bytes from buffer"), its key-down and key-up in two reads, then no frame
 until Alt+P. The cause was not found; plan 36 changes only the handling
 of mouse motion and clicks. Reported to the owner; nothing changed.
+
+**The commit and the push (2026-10-24), after the owner's approval.** The
+owner approved plan 36 on 2026-10-24; commit c0cebc4 (10 files: 8
+modified, 2 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+blocks above stay as they were reported.
