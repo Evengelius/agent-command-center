@@ -146,7 +146,8 @@ func TestProbeCodexReviews(t *testing.T) {
 			t.Errorf("%s: %d review entries for %d review ids", name, len(reviews), len(ids))
 		}
 		for _, r := range reviews {
-			if r.Status != "approved" || r.Origin != event.Observed || !strings.HasPrefix(r.Text, "auto-review approved · risk low · authorization high: ") {
+			// Low risk: no authorization (plan 41).
+			if r.Status != "approved" || r.Origin != event.Observed || !strings.HasPrefix(r.Text, "auto-review approved · risk low: ") || strings.Contains(r.Text, "authorization") {
 				t.Errorf("%s: review entry %+v", name, r)
 			}
 		}
@@ -286,10 +287,10 @@ func TestVerdicts(t *testing.T) {
 
 func TestReviewEntries(t *testing.T) {
 	for _, c := range []struct{ status, want string }{
-		{"approved", "auto-review approved · risk low · authorization high: fine"},
-		{"denied", "auto-review denied · risk low · authorization high: fine"},
-		{"timedOut", "auto-review timed out · risk low · authorization high: fine"},
-		{"aborted", "auto-review aborted · risk low · authorization high: fine"},
+		{"approved", "auto-review approved · risk low: fine"},
+		{"denied", "auto-review denied · risk low: fine"},
+		{"timedOut", "auto-review timed out · risk low: fine"},
+		{"aborted", "auto-review aborted · risk low: fine"},
 	} {
 		s := start(t, event.Started{SessionID: "s", ApprovalMode: event.ModeAuto})
 		apply(s, 10, event.ReviewUpdated, event.Review{ReviewID: "r1", Command: "ls", Status: "inProgress"})
@@ -304,6 +305,44 @@ func TestReviewEntries(t *testing.T) {
 		if e := s.Conversation[n-1]; e.Text != c.want || e.Status != c.status {
 			t.Errorf("%s: entry %+v", c.status, e)
 		}
+	}
+}
+
+// TestReviewAuthorization is plan 41's criterion 41.1 (brief amendment 42,
+// design D1): at low risk no authorization, whatever it is and whatever
+// the verdict; from medium up, with no risk reported, or with a risk word
+// outside the schema's, it stays; no rationale, no ": ".
+func TestReviewAuthorization(t *testing.T) {
+	const stock = "Auto-review returned a low-risk allow decision."
+	for _, c := range []struct{ status, risk, auth, rationale, want string }{
+		{"approved", "low", "unknown", stock, "auto-review approved · risk low: " + stock},
+		{"approved", "low", "low", "fine", "auto-review approved · risk low: fine"},
+		{"approved", "low", "medium", "fine", "auto-review approved · risk low: fine"},
+		{"approved", "low", "high", "fine", "auto-review approved · risk low: fine"},
+		{"denied", "low", "unknown", "fine", "auto-review denied · risk low: fine"},
+		{"timedOut", "low", "unknown", "fine", "auto-review timed out · risk low: fine"},
+		{"aborted", "low", "unknown", "fine", "auto-review aborted · risk low: fine"},
+		{"approved", "low", "unknown", "", "auto-review approved · risk low"},
+		{"", "low", "unknown", "", "auto-review reported · risk low"},
+		{"approved", "medium", "unknown", "fine", "auto-review approved · risk medium · authorization unknown: fine"},
+		{"approved", "medium", "high", "fine", "auto-review approved · risk medium · authorization high: fine"},
+		{"approved", "high", "medium", "fine", "auto-review approved · risk high · authorization medium: fine"},
+		{"denied", "high", "low", "fine", "auto-review denied · risk high · authorization low: fine"},
+		{"denied", "critical", "high", "fine", "auto-review denied · risk critical · authorization high: fine"},
+		{"approved", "medium", "high", "", "auto-review approved · risk medium · authorization high"},
+		{"approved", "", "high", "fine", "auto-review approved · authorization high: fine"},
+		{"approved", "elevated", "high", "fine", "auto-review approved · risk elevated · authorization high: fine"},
+	} {
+		s := start(t, event.Started{SessionID: "s", ApprovalMode: event.ModeAuto})
+		apply(s, 10, event.ReviewUpdated, event.Review{ReviewID: "r1", Command: "ls", Status: c.status, Risk: c.risk, Authorization: c.auth, Rationale: c.rationale})
+		if e := s.Conversation[len(s.Conversation)-1]; e.Role != "review" || e.Text != c.want {
+			t.Errorf("%s, risk %q, authorization %q: %q, want %q", c.status, c.risk, c.auth, e.Text, c.want)
+		}
+	}
+	s := start(t, event.Started{SessionID: "s", ApprovalMode: event.ModeAuto})
+	apply(s, 10, event.ReviewUpdated, event.Review{ReviewID: "r1", Command: "go vet ./...", Status: "inProgress", Risk: "low", Authorization: "unknown"})
+	if e := s.Conversation[len(s.Conversation)-1]; e.Text != "auto-review in progress: go vet ./..." {
+		t.Errorf("in progress: %q", e.Text)
 	}
 }
 

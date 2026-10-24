@@ -1810,7 +1810,10 @@ the agent that asked, and marks that agent "!" in A and a pink "●" in C.
   it escalates is a card, exactly as in Manual. A call Claude Code's
   classifier decided reads "✓ Write  <path> · approved by auto-review" in
   B, the verdict green, red when it denied (plan 19); a
-  Codex review is a "◈ auto-review approved · risk low · …" entry, its
+  Codex review is a "◈ auto-review approved · risk low: …" entry: the
+  verdict, the risk, the reviewer's authorization from medium risk up
+  (plan 41: at low risk Codex's reviewer answers with a bare allow, and
+  Codex reports the authorization as unknown) and its rationale, its
   inspector marked [UNSTABLE]. Codex's Auto is its "Approve for me", so
   the bar's "sandbox" reads workspaceWrite once an Auto turn is sent, and
   readOnly again after a Manual one.

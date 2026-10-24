@@ -1039,7 +1039,11 @@ func reviewText(p event.Review) string {
 	if p.Risk != "" {
 		t += " · risk " + p.Risk
 	}
-	if p.Authorization != "" {
+	// None at low risk (plan 41, design D1): Codex's reviewer answers a
+	// low-risk action with a bare allow, Codex then reports the
+	// authorization as unknown, and at low risk it never changes the
+	// outcome. From medium up the reviewer rates it itself; it stays.
+	if p.Authorization != "" && p.Risk != "low" {
 		t += " · authorization " + p.Authorization
 	}
 	if p.Rationale != "" {

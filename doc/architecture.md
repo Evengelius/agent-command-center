@@ -290,8 +290,9 @@ null`). Settings outside the three read as Custom; a `turn/start` naming no
 sandbox (P12x's) is read by its reviewer, as plan 12 read it. In Auto, the escalations Codex's reviewer handles never reach the
 dashboard; its `item/autoApprovalReview/started` and `.../completed`
 notifications ([UNSTABLE] in the schema) become one zone B entry per
-review, "auto-review approved · risk low · …"; `guardianWarning` repeats it
-and stays in the event log. A request that still reaches the dashboard is a
+review (a subagent's in zone C and its inspection), "auto-review approved ·
+risk low: …", the reviewer's authorization named from medium risk up (plan
+41); `guardianWarning` repeats it and stays in the event log. A request that still reaches the dashboard is a
 card as in Manual. Auto is Codex's own "Approve for me" (`codex
 --approve-for-me`: the `auto_review` reviewer, the `on-request` policy, the
 `workspace-write` sandbox), so each `turn/start` also carries

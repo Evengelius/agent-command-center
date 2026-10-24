@@ -5374,3 +5374,42 @@ If you see zone C - Execution Timeline, there are empty fields, it shouldn't be 
 ````
 
 Taken as plan 40 (plan.md, Plan 40).
+
+## Amendment 42, 2026-10-24: no authorization on low-risk review rows, for plan 41
+
+Before approving plan 40, the owner sent a screenshot of a live Codex run
+(`39.png`: zone C's execution timeline for a subagent, two rows "review │
+auto-review approved · risk low · authorization unknown: Auto-review
+returned a low-risk allow decision." between its two messages) and asked,
+word for word:
+
+````text
+Quick question before approving:
+
+Why "authorization unknown" in => authorization unknown: Auto-review returned a low-risk allow decision.
+````
+
+The answer (plan.md, Plan 41, What was found): the value is Codex's own
+`userAuthorization`, shown as received; Codex's reviewer answers a
+low-risk action with `{"outcome":"allow"}` alone, and Codex then reports
+the authorization as `unknown` with a stock rationale; the change, if
+wanted, would drop the authorization from review rows rated low risk.
+After plan 40 was approved and pushed, the owner quoted that last
+sentence and wrote, word for word:
+
+````text
+If you’d still rather not see it, the change would be to drop the authorization from review rows rated low risk. That would be a small plan of its own, separate from plan 40.
+
+Ok, what would it look like ? Show me first.
+````
+
+A preview followed, built from a scratch copy, nothing in the repository
+changed: zone C at the acc tab's size (208x59), before and after, on P7b
+with an auto-review after each subagent command carrying the owner's
+values. The owner then wrote, word for word:
+
+````text
+Yes: make it plan 41. Drop the authorization from review rows rated low risk, as in the preview; keep it at medium, high and critical.
+````
+
+Taken as plan 41 (plan.md, Plan 41).

@@ -95,10 +95,113 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 41 - No authorization on low-risk review rows
 
-Plan 40 was approved and closed on 2026-10-24 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 42 (2026-10-24): a Codex auto-review row rated low risk
+no longer shows the reviewer's authorization; at medium, high and
+critical it stays. The criteria below were written before the code;
+nothing is committed until the owner has reviewed the result.
+
+### What was found
+
+- A review row's text is built once, in the state (`reviewText`,
+  `internal/state/reduce.go`), from Codex's
+  `item/autoApprovalReview/completed` ([UNSTABLE] in the schema): its
+  `review.status`, `riskLevel`, `userAuthorization` and `rationale`,
+  as received (`internal/provider/codex/mapper.go`). Zone B draws it for
+  the orchestrator's commands ("◈ auto-review approved · …"), zone C's
+  execution timeline and the inspection's Messages tab for a subagent's.
+- Codex CLI 0.163.0's reviewer instructions, read from its binary
+  (`%LOCALAPPDATA%\Programs\OpenAI\Codex\bin\codex.exe`) on
+  2026-10-24: "For low-risk actions, give the final answer directly:
+  {"outcome":"allow"}"; only other actions get the full answer, with
+  `risk_level`, `user_authorization` (`unknown | low | medium | high`),
+  `outcome` and `rationale`. Beside the answer's structure, the stock
+  rationale "Auto-review returned a low-risk allow decision.": after the
+  short answer Codex reports the risk `low`, the authorization `unknown`
+  and that rationale, the owner's `39.png` word for word. The same
+  instructions allow `low` and `medium` risk "regardless of user
+  authorization", `high` only with an authorization of at least
+  `medium`, `critical` never.
+- P12x's two reviews (2026-10-18, Codex CLI 0.163.0) were full answers at
+  low risk: authorization `high`, the reviewer's own rationale.
+
+### Design
+
+- **D1.** `reviewText` leaves out " · authorization <value>" when the
+  risk is `low`; at `medium`, `high` and `critical`, with no risk
+  reported, or with any other risk word, it stays as before. The verdict,
+  the risk and the rationale are unchanged, word for word; the event log
+  keeps each review as received.
+- **D2.** Nothing else changes: the review entries' other text, their
+  colours and their places in zone B, zone C and the inspection.
+
+### Criteria
+
+1. **41.1 The text**: `reviewText` for risk `low` with each
+   authorization (`unknown`, `low`, `medium`, `high`) and each verdict
+   (approved, denied, timed out, aborted) reads "auto-review <verdict> ·
+   risk low: <rationale>", with no "authorization"; at `medium`, `high`
+   and `critical`, and with no risk reported, " · authorization <value>"
+   stays where it was; with no rationale, no ": "; in progress, "auto-review
+   in progress: <command>" as before.
+2. **41.2 The owner's case**: P7b replayed with P12x's two review
+   notifications moved onto each subagent command (its thread, turn and
+   item), the completion carrying the owner's `39.png` values (approved,
+   low, `unknown`, the stock rationale): each of the four subagent reviews
+   reads "auto-review approved · risk low: Auto-review returned a low-risk
+   allow decision." in zone C's timeline and in the inspection, with no
+   "authorization" anywhere in zone C or the inspection.
+3. **41.3 Zone B**: P12x replayed: its two reviews read "auto-review
+   approved · risk low: Creates the explicitly requested hello.txt …" and
+   "… risk low: Creates the specifically requested single local file …",
+   drawn in zone B as "◈ auto-review approved · risk low: …" with no
+   "authorization".
+4. **41.4 Medium and above**: a review at `medium`, `high` and
+   `critical` drawn in zone B and in zone C's timeline keeps "risk <level>
+   · authorization <value>".
+5. **41.5 The golden frames** (amended in step 3: the reflow was not
+   foreseen): only the three `approvals-review` frames change. The
+   review's row reads "risk low: a read-only check of the project" where
+   it read "risk low · authorization high: a read-only check of"; at
+   200x60 nothing else changes; at 120x40 and 80x24 the row now takes one
+   line instead of two, so zone B, drawn from its tail, shows one row more
+   above it and nothing else of the frame changes: at 80x24 a thinking
+   row; at 120x40 the end of the message before ("▎ word done."), with the
+   rule under it, which zone B leaves blank at the edge of its view
+   (amendment 17, 2.5).
+6. **41.6 The checks**: build, vet and gofmt clean; `go test ./...` ok;
+   `-race` on state, render and app ok; the timing step alone within its
+   targets; the new checks run against the change removed, widened to
+   `medium` and narrowed to `unknown` alone, each caught.
+7. **41.7 Windows Terminal**: the owner's case as a scratch mock (zone C)
+   and P12x as one (zone B), plan 40's build and the new one, maximised in
+   the acc tab's profile (208x59) and at 120x40.
+
+### Steps
+
+1. The finding, brief amendment 42, the criteria.
+2. The change and its tests.
+3. The golden frames and the documents.
+4. The checks.
+5. Windows Terminal; the evaluation (`doc/plan41-evaluation.md`); the
+   report.
+
+### Progress
+
+- 2026-10-24: step 1 done.
+- 2026-10-24: step 2 done: the rule in `reviewText`; TestReviewAuthorization
+  (state), TestReviewRowsOwnerCase, TestReviewRowsZoneB and
+  TestReviewRowsMediumAndUp (`internal/render/review_test.go`);
+  TestReviewEntries, TestProbeCodexReviews and TestReviewerInZoneB updated
+  to the new low-risk text.
+- 2026-10-24: step 3 done: the three `approvals-review` golden frames
+  rewritten (41.5 amended: at 120x40 and 80x24 the shorter row lets zone B
+  show one row more); `doc/ui-design.md` and `doc/architecture.md`.
+- 2026-10-24: steps 4 and 5 done: the checks pass, 5 breakages of the rule
+  caught; Windows Terminal before and after, in the acc tab's profile and
+  at 120x40; the evaluation, `doc/plan41-evaluation.md`: 7 criteria, 7
+  PASS. Waiting for the owner's review; nothing committed.
 
 ## Closed plans
 

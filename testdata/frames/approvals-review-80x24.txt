@@ -2,6 +2,7 @@
  ▣ codex-subagents.jsonl           Mock data 0.145.0 · approvals Approve for me
  A ✓ Turn 1 › ✓ /root/list_files › ✓ /root/create_found   (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
+│ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens      11:30:00      mock   │
 │ ▎  ✓ collabAgent:wait                                   11:30:00      mock   │
 │                                                                              │
 │ ╭──────────────────────────────────────────────────────────────────────────╮ │
@@ -9,8 +10,7 @@
 │ │ done                                                                     │ │
 │ ╰──────────────────────────────────────────────────────────────────────────╯ │
 │                                                                              │
-│   ◈ auto-review approved · risk low · authorization high: a read-only check  │
-│     of the project                                                           │
+│   ◈ auto-review approved · risk low: a read-only check of the project        │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │ >  Ask Mock data anything…                                                   │

@@ -265,7 +265,7 @@ func TestReviewerInZoneB(t *testing.T) {
 		}
 		pushEvents(h, "codex", evOf(event.ReviewUpdated, event.Review{ReviewID: "rv1", Command: "touch f.txt", Status: "approved", Risk: "low", Authorization: "high", Rationale: "a harmless write"}))
 		f := h.frame()
-		if strings.Contains(f, "in progress") || !strings.Contains(f, "auto-review approved · risk low · authorization high: a harmless write") {
+		if strings.Contains(f, "in progress") || !strings.Contains(f, "auto-review approved · risk low: a harmless write") {
 			t.Fatalf("entry not updated in place:\n%s", f)
 		}
 		if n := strings.Count(f, "auto-review"); n != 1 {

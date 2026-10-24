@@ -21,7 +21,7 @@
 │                                                      ││ │ done                                                                                                                                     │ │
 │                                                      ││ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │
 │                                                      ││                                                                                                                                              │
-│                                                      ││   ◈ auto-review approved · risk low · authorization high: a read-only check of the project                                                   │
+│                                                      ││   ◈ auto-review approved · risk low: a read-only check of the project                                                                        │
 │                                                      ││                                                                                                                                              │
 │                                                      ││                                                                                                                                              │
 │                                                      ││                                                                                                                                              │
