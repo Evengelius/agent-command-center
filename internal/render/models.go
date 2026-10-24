@@ -25,8 +25,6 @@ type ModelsView struct {
 	// stays at Top; otherwise each frame keeps the cursor's rows in view,
 	// whatever the screen's height.
 	Free      bool
-	Effort    bool // the effort list open over the box
-	Level     int  // the effort list's cursor, an index into the model's levels
 	Ultracode bool // the CLI has Ultracode (Capabilities.Ultracode): its row is drawn
 	// Pointer is the item under the mouse pointer as the last mouse report
 	// gave it (0 on the frame or a blank row, -1 outside the selector);
@@ -39,13 +37,11 @@ type ModelsView struct {
 
 // SelectorShown is what the last frame showed of the selector's list: its
 // first row and its height, for the next scroll (the frame may have moved
-// it to keep the cursor in view), and whether the effort list was drawn.
-// A selector open that the frame did not show is closed by the
-// application (design D9).
+// it to keep the cursor in view). A selector open that the frame did not
+// show is closed by the application (design D9).
 type SelectorShown struct {
 	Shown       bool
 	Top, Height int
-	Effort      bool
 }
 
 // The selector's panel, the pill's, and the items the selector's cells
@@ -58,7 +54,7 @@ const (
 	ItemEffort    = 2
 	ItemUltracode = 3
 	ItemModel     = 1000 // plus the model's index in the session's list
-	ItemLevel     = 2000 // plus the level's index in the model's levels
+	ItemLevel     = 2000 // plus the level's index in the model's levels: a slider's cell
 )
 
 // MainModels is how many models the list shows before More models: the
@@ -69,9 +65,11 @@ const MainModels = 5
 const (
 	selectorMinWidth = 63 // the image's width in cells
 	selectorSlack    = 12 // the cells a model's row takes beyond its text
-	boxCol           = 13 // the effort box and Ultracode's description
-	boxWidth         = 14
 )
+
+// EffortDescription is the Effort row's description, the owner's words
+// (amendment 38).
+const EffortDescription = "Controls reasoning depth"
 
 // SelectorItem is one row the cursor can be on.
 type SelectorItem struct {
@@ -259,7 +257,7 @@ func blankRow(w int) line { return line{deco(strings.Repeat(" ", max(w, 0)), stN
 // both on the band while the cursor is on it.
 func modelRows(s *state.State, v ModelsView, i, item, w int) (line, line) {
 	e := s.Models.Entries[i]
-	cursor := v.Cursor == item && !v.Effort
+	cursor := v.Cursor == item
 	text := max(w-9, 1) // columns 5 to W-7
 	mark, check, checkSt := " ", " ", stBright
 	if cursor {
@@ -295,7 +293,7 @@ func moreRow(v ModelsView, item, w int) line {
 	}
 	l := line{deco("  ", stNone), deco(tri, stBright), deco(" ", stNone), deco("More models", stBright)}
 	l = append(padRow(l, w-4), deco("›", stBright), deco("   ", stNone))
-	if v.Cursor == item && !v.Effort {
+	if v.Cursor == item {
 		l = banded(l, w)
 	}
 	return items(l, ItemMore)
@@ -404,9 +402,9 @@ func EffortModel(s *state.State) *event.ModelEntry {
 }
 
 // effortLevel is the level the effort row shows: the one in force, as the
-// pill shows it, a Codex level asked for being only marked in the list
-// and named on the editor row until the next turn takes it (design D4);
-// "" when none is known.
+// pill shows it, a level asked for being only ringed on the slider (plan
+// 37, design D5) and, Codex's, named on the editor row until the next
+// turn takes it (design D4); "" when none is known.
 func effortLevel(s *state.State) string {
 	if in := s.Models.InForce; in.EffortKnown {
 		return in.Effort
@@ -421,26 +419,106 @@ func EffortChangeable(s *state.State) bool {
 	return e != nil && len(e.Efforts) > 0 && s.Models.InForce.EffortLock == ""
 }
 
-// effortRow is "Effort:" at column 3 and its box, 14 cells from column 13:
-// the level from column 14, the chevron at column 25 while it can be
-// changed; "N/A" when the model takes no level or none is known (design D5).
-func effortRow(s *state.State, v ModelsView, item, w int) line {
-	text := state.EffortLabel(effortLevel(s))
-	if e := EffortModel(s); e == nil || len(e.Efforts) == 0 || text == "" {
-		text = "N/A"
+// settingsLabelWidth is the settings rows' label column (plan 37, design
+// D3): the longest label they can show, "Effort (<level>)" for any level of
+// the session's models, "Effort (N/A)", and "Ultracode" where it is drawn,
+// so that no level shown moves the descriptions.
+func settingsLabelWidth(s *state.State, ultracode bool) int {
+	w := textWidth("Effort (N/A)")
+	for _, e := range s.Models.Entries {
+		for _, l := range e.Efforts {
+			w = max(w, textWidth("Effort ("+state.EffortLabel(l)+")"))
+		}
 	}
-	chev := " "
-	if EffortChangeable(s) {
-		chev = "⌄"
+	if ultracode {
+		w = max(w, textWidth("Ultracode"))
 	}
-	in := boxGround.on(stBright)
-	l := padRow(line{deco("  ", stNone), deco("Effort:", stBright)}, boxCol-1)
-	l = append(l, deco(" "+padTo(text, boxWidth-4)+" ", in), deco(chev, in), deco(" ", in))
-	l = padRow(l, w)
-	if v.Cursor == item && !v.Effort {
+	return w
+}
+
+// settingsDescCol is where the settings rows' descriptions start inside the
+// frame: the label column from column 3, then two cells (design D3).
+func settingsDescCol(s *state.State, ultracode bool) int {
+	return 2 + settingsLabelWidth(s, ultracode) + 2
+}
+
+// settingsWidth is the box's width the settings rows take: their
+// descriptions, two cells, the slider's pill, which ends at column W-4,
+// and the three cells after it (design D3).
+func settingsWidth(s *state.State, ultracode bool) int {
+	desc := textWidth(EffortDescription)
+	if ultracode {
+		desc = max(desc, textWidth(UltracodeDescription))
+	}
+	return 1 + settingsDescCol(s, ultracode) + desc + 2 + SliderPillCells + 3
+}
+
+// sliderLook is what the Effort row's slider shows (design D1, D5): the
+// levels of EffortModel, the thumb on the level in force (none while it is
+// not known or not one of them), a ring on a level asked for and not in
+// force, greyed while a variable holds the effort; false for a model that
+// lists no level, which has no slider.
+func sliderLook(s *state.State, band bool) (SliderLook, bool) {
+	e := EffortModel(s)
+	if e == nil || len(e.Efforts) == 0 {
+		return SliderLook{}, false
+	}
+	look := SliderLook{Levels: len(e.Efforts), Pos: -1, Asked: -1, Locked: s.Models.InForce.EffortLock != "", Band: band}
+	cur, asked := effortLevel(s), ""
+	if a := s.Models.Asked; a != nil {
+		asked = a.Effort
+	}
+	for i, l := range e.Efforts {
+		if cur != "" && l == cur {
+			look.Pos = float64(i)
+		}
+		if asked != "" && asked != cur && l == asked {
+			look.Asked = i
+		}
+	}
+	return look, true
+}
+
+// effortRow is the Effort row on the settings columns (plan 37, design D3):
+// "Effort (<level in force>)" at column 3 ("Effort (N/A)" when the model
+// lists no level or none is known), its description at the description
+// column, its slider's pill ending at column W-4: with Sixel SliderCells
+// blank cells (W-19 to W-3) for its image, whose last is the band's last,
+// else the text slider (W-19 to W-4); each pill cell carries its nearest
+// level for a click. A model with no level has no slider. It gives the
+// slider's look, and whether there is one.
+func effortRow(s *state.State, v ModelsView, item, w, descCol int, sixel bool) (line, SliderLook, bool) {
+	cursor := v.Cursor == item
+	look, ok := sliderLook(s, cursor)
+	label := "Effort (N/A)"
+	if lv := effortLevel(s); ok && lv != "" {
+		label = "Effort (" + state.EffortLabel(lv) + ")"
+	}
+	l := padRow(line{deco("  ", stNone), deco(label, stBright)}, descCol)
+	l = append(l, deco(EffortDescription, stModelDesc))
+	if !ok {
+		l = padRow(l, w)
+		if cursor {
+			l = banded(l, w)
+		}
+		return items(l, ItemEffort), look, false
+	}
+	// After the text slider two cells, the band reaching the first; after
+	// the image one, the image painting the band's last cell.
+	cells, after := SliderPillCells, 2
+	if sixel {
+		cells, after = SliderCells, 1
+	}
+	l = padRow(l, w-cells-after)
+	tail := line{deco(strings.Repeat(" ", after), stNone)}
+	if cursor {
 		l = banded(l, w)
+		if !sixel {
+			tail = line{deco(" ", bandGround.on(stNone)), deco(" ", stNone)}
+		}
 	}
-	return items(l, ItemEffort)
+	l = append(items(l, ItemEffort), sliderCells(look, sixel)...)
+	return append(l, items(tail, ItemEffort)...), look, true
 }
 
 // UltracodeDescription is the Ultracode row's description, the owner's
@@ -453,26 +531,27 @@ func UltracodeUsable(s *state.State) bool {
 	return in.UltracodeKnown && in.UltracodeAvailable
 }
 
-// ultracodeRow is "Ultracode" at column 3, its description at column 13,
-// its toggle's pill ending at column W-4: with Sixel, 5 blank cells (W-7 to
-// W-3) for its image, whose last is the band's last (plan 35, design D2),
-// else the text toggle (W-8 to W-4, design D3); dimmed, the toggle off,
-// while the CLI does not report it available (plan 34, design D6). On the
-// band the toggle keeps its own colours, the band around it.
-func ultracodeRow(s *state.State, v ModelsView, item, w int, sixel bool) line {
+// ultracodeRow is "Ultracode" at column 3, its description at the settings
+// rows' description column (plan 37, design D3), its toggle's pill ending
+// at column W-4: with Sixel, 5 blank cells (W-7 to W-3) for its image,
+// whose last is the band's last (plan 35, design D2), else the text toggle
+// (W-8 to W-4, design D3); dimmed, the toggle off, while the CLI does not
+// report it available (plan 34, design D6). On the band the toggle keeps
+// its own colours, the band around it.
+func ultracodeRow(s *state.State, v ModelsView, item, w, descCol int, sixel bool) line {
 	on, usable := toggleState(s)
 	label, desc := stBright, stModelDesc
 	if !usable {
 		label, desc = stGrey, stGrey
 	}
-	cursor := v.Cursor == item && !v.Effort
+	cursor := v.Cursor == item
 	// After the text toggle two cells, the band reaching the first; after
 	// the image one, the image painting the band's last cell.
 	cells, after := toggleTextCells, 2
 	if sixel {
 		cells, after = ToggleCells, 1
 	}
-	l := padRow(line{deco("  ", stNone), deco("Ultracode", label)}, boxCol-1)
+	l := padRow(line{deco("  ", stNone), deco("Ultracode", label)}, descCol)
 	l = padRow(append(l, deco(UltracodeDescription, desc)), w-cells-after)
 	tail := line{deco(strings.Repeat(" ", after), stNone)}
 	if cursor {
@@ -486,9 +565,10 @@ func ultracodeRow(s *state.State, v ModelsView, item, w int, sixel bool) line {
 }
 
 // selectorWidth is the box's width: 63 cells, the image's, or the longest
-// name or description and the cells around it; never wider than the screen.
-func selectorWidth(s *state.State, width int) int {
-	w := selectorMinWidth
+// name or description and the cells around it, or what the settings rows
+// take (plan 37); never wider than the screen.
+func selectorWidth(s *state.State, v ModelsView, width int) int {
+	w := max(selectorMinWidth, settingsWidth(s, v.Ultracode))
 	for _, e := range s.Models.Entries {
 		name := textWidth(e.Name)
 		if e.Default {
@@ -521,7 +601,7 @@ func modelSelector(sc *Screen, s *state.State, ui UI) {
 		return
 	}
 	ry := sc.editorRule(py)
-	w := selectorWidth(s, ui.Width)
+	w := selectorWidth(s, v, ui.Width)
 	inner := w - 2
 	x := max(min(px-1, ui.Width-w), 0)
 	y := ry + 1 - selectorFixed(v) - h
@@ -560,8 +640,16 @@ func modelSelector(sc *Screen, s *state.State, ui UI) {
 		}
 		box = append(box, frame(rows[top+i].l, edge))
 	}
-	effortY := y + len(box) + 1
-	box = append(box, frame(blankRow(inner), "│"), frame(effortRow(s, v, at('e'), inner), "│"))
+	// The settings rows on their shared columns (plan 37, design D3).
+	desc := settingsDescCol(s, v.Ultracode)
+	box = append(box, frame(blankRow(inner), "│"))
+	erow, look, slider := effortRow(s, v, at('e'), inner, desc, ui.Sixel)
+	if slider && ui.Sixel {
+		// The slider's image lies on its row's blank cells, drawn by the
+		// application once the frame is out (plan 37, design D1).
+		sc.Slider = SliderShown{Shown: true, X: x + 1 + inner - SliderCells - 1, Y: y + len(box), Look: look}
+	}
+	box = append(box, frame(erow, "│"))
 	if v.Ultracode {
 		box = append(box, frame(blankRow(inner), "│"))
 		if ui.Sixel {
@@ -569,9 +657,9 @@ func modelSelector(sc *Screen, s *state.State, ui UI) {
 			// application once the frame is out (plan 35, design D2).
 			on, usable := toggleState(s)
 			sc.Toggle = ToggleShown{Shown: true, X: x + 1 + inner - ToggleCells - 1, Y: y + len(box), On: on, Usable: usable,
-				Band: v.Cursor == at('u') && !v.Effort}
+				Band: v.Cursor == at('u')}
 		}
-		box = append(box, frame(ultracodeRow(s, v, at('u'), inner, ui.Sixel), "│"))
+		box = append(box, frame(ultracodeRow(s, v, at('u'), inner, desc, ui.Sixel), "│"))
 	}
 	box = append(box, line{deco("╰"+strings.Repeat("─", tail-1)+"▾"+strings.Repeat("─", max(inner-tail, 0))+"╯", stModelFrame)})
 	for i := range box {
@@ -582,9 +670,6 @@ func modelSelector(sc *Screen, s *state.State, ui UI) {
 		}
 	}
 	sc.place(box, x, y, w)
-	if v.Effort {
-		sc.Selector.Effort = effortList(sc, s, v, x+boxCol, effortY, ui.Width)
-	}
 }
 
 // scrollThumb is the rows of the list's height h the scroll bar's thumb
@@ -599,63 +684,6 @@ func scrollThumb(n, h, top int) (int, int) {
 		from = h - size
 	}
 	return from, from + size
-}
-
-// effortList is the effort box's list, open over the rows above it, its
-// left edge on the box's: the model's levels in the CLI's order, Codex's
-// default one marked, the level in force with "✓" and Codex's level asked
-// for with a grey "…", the cursor's on the band (design D5). It says
-// whether it was drawn.
-func effortList(sc *Screen, s *state.State, v ModelsView, x, effortY, width int) bool {
-	e := EffortModel(s)
-	if e == nil || len(e.Efforts) == 0 {
-		return false
-	}
-	cur, asked := effortLevel(s), ""
-	if a := s.Models.Asked; a != nil && a.NextTurn {
-		asked = a.Effort
-	}
-	labels := make([]string, len(e.Efforts))
-	inner := boxWidth
-	for i, l := range e.Efforts {
-		labels[i] = state.EffortLabel(l)
-		if l == e.DefaultEffort {
-			labels[i] += " (default)"
-		}
-		inner = max(inner, textWidth(labels[i])+5)
-	}
-	box := []line{{deco("╭"+strings.Repeat("─", inner)+"╮", stModelFrame)}}
-	for i, l := range e.Efforts {
-		check, checkSt := " ", stBright
-		switch l {
-		case cur:
-			check = "✓"
-		case asked:
-			check, checkSt = "…", stModelAside // asked for, not yet in force (design D4)
-		}
-		row := append(padRow(line{deco(" ", stNone), deco(labels[i], stBright)}, inner-2), deco(check, checkSt), deco(" ", stNone))
-		if i == v.Level {
-			for j := range row {
-				row[j].st = bandGround.on(row[j].st)
-			}
-		}
-		row = append(append(line{deco("│", stModelFrame)}, row...), deco("│", stModelFrame))
-		box = append(box, items(row, ItemLevel+i))
-	}
-	box = append(box, line{deco("╰"+strings.Repeat("─", inner)+"╯", stModelFrame)})
-	y := effortY - len(box)
-	if y < 0 || x+inner+2 > width {
-		return false
-	}
-	for i := range box {
-		for j := range box[i] {
-			if box[i][j].ref.panel == 0 {
-				box[i][j].ref = ref{panel: SelectorPanel, kind: refDeco}
-			}
-		}
-	}
-	sc.place(box, x, y, inner+2)
-	return true
 }
 
 // modelPill is the editor row's model pill (plan 34, design D7): " <model>

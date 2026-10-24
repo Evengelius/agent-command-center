@@ -74,6 +74,9 @@ type Screen struct {
 	// Toggle is where the frame left the Ultracode toggle's image to be
 	// drawn (plan 35), zero when there is none.
 	Toggle ToggleShown
+	// Slider is where the frame left the effort slider's image to be drawn
+	// (plan 37), zero when there is none.
+	Slider SliderShown
 }
 
 // PaneView is what a pane of zone A or C showed (plan 5, item 5).

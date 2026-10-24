@@ -4639,3 +4639,265 @@ ok lets fix that
 
 Taken as plan 36 (plan.md, Plan 36): the probe first, to see what the
 terminal sends, then the fix.
+
+## Amendment 38, 2026-10-24: the effort slider after the owner's images, for plan 37
+
+After plan 36 was approved and pushed, the owner sent five images of one
+control, a pill-shaped effort slider at five levels from lowest to
+highest, and wrote, word for word:
+
+````text
+Agent Command Center — Effort Pill Selector Redesign
+I want to refine the Effort section of the approved model-selector popup.
+The five attached images show the exact visual direction I want for the effort control, including the progression across effort levels and especially its appearance at Max effort.
+Core Objective
+Replace the existing effort dropdown with an elegant, interactive, single pill-shaped multi-level effort selector, while maintaining the visual consistency of Agent Command Center.
+The attached images are the authoritative visual references for this enhancement.
+1. Replace the Effort Dropdown with a Multi-Level Pill Slider
+Replace the current:
+`Effort: [XHigh ▼]`
+with a single horizontal, pill-shaped slider matching the attached reference images.
+Visual characteristics
+
+* One continuous, fully rounded horizontal capsule.
+* Dark outer track matching the popup theme.
+* A filled region inside the pill that grows as effort increases.
+* Small, subtle dots representing the selectable effort levels.
+* One prominent circular thumb indicating the currently selected level.
+* The thumb must resemble the light-colored circular thumb shown in the references.
+* Compact dimensions consistent with the existing popup.
+* Smooth transitions when changing effort.
+
+Important: I do not want separate pill buttons for each effort level. I want one continuous pill-shaped control with multiple discrete selectable positions.
+2. Discrete Levels Must Match the Attached Visual Progression
+The five attached images demonstrate the intended progression of the same control across increasing effort levels.
+Expected progression
+Image 1 — Lowest effort
+
+* Thumb at the far left.
+* Almost no visible fill.
+* Dark, subdued track.
+
+Image 2 — Second level
+
+* Thumb moves to the second position.
+* First portion of the track becomes filled.
+* Soft blue/lavender accent.
+
+Image 3 — Middle level
+
+* Thumb moves to the center position.
+* Approximately half the track is filled.
+* More visible blue/lavender intensity.
+
+Image 4 — Higher effort
+
+* Thumb moves to the fourth position.
+* Most of the track becomes filled.
+* Stronger visual emphasis.
+
+Image 5 — Maximum effort
+
+* Thumb reaches the far-right position.
+* Track becomes fully illuminated.
+* Premium purple/lavender gradient.
+* Subtle luminous particles or highlights matching the reference.
+
+Discrete-position requirements
+The small dots inside the pill represent actual available effort levels.
+
+* Each dot corresponds to one selectable effort level.
+* The large circular thumb identifies the selected position.
+* The thumb must snap exactly to supported positions.
+* Intermediate positions must not be selectable unless they represent actual effort levels.
+* The control must not behave like a free continuous slider.
+
+The structure is:
+One pill track + discrete level markers + one active thumb.
+3. Supported Levels Must Be Real, Not Invented
+Each supported effort level corresponds to one selectable position.
+Only show levels actually supported by the active provider and selected model.
+Example — Claude Code
+Possible levels:
+`Low → Medium → High → XHigh → Max`
+When all five levels are supported, use the five-position progression shown in the reference images.
+Example — OpenAI Codex
+Use only the reasoning-effort levels actually supported by the selected Codex model.
+If a model supports fewer levels, reduce the number of dots accordingly while preserving the same visual logic.
+Do not invent unsupported effort levels or assume all models have five positions.
+For Codex, the highest effort level may be **Ultra** rather than Claude's **Max**. The slider must dynamically adapt its positions, labels, and maximum-intensity visual treatment to the actual `supportedReasoningEfforts` returned by the selected model through `model/list`. Never hardcode Max as the highest level.
+4. Progressive Color Intensity
+The pill must visually communicate reasoning intensity.
+Use progressive color intensity while respecting Agent Command Center's dark, purple/lavender visual identity.
+Intensity progression
+
+* Lowest effort: subdued dark track, minimal illumination.
+* Medium effort: soft blue/lavender fill.
+* High effort: stronger blue/lavender fill.
+* XHigh: increased illumination across most of the track.
+* Max: strongest purple/lavender gradient, matching the final reference image.
+
+Max-specific treatment
+At Max, the pill must feel visually distinctive:
+
+* Strongest fill intensity.
+* Fully illuminated purple/lavender gradient.
+* Bright circular thumb at the far right.
+* Subtle luminous particles or highlights matching the reference.
+* Refined, premium appearance.
+
+Styling requirements
+
+* Preserve the existing dark background.
+* Use only theme-consistent blue, purple, and lavender shades.
+* Avoid rainbow gradients or unrelated colors.
+* Keep the level dots subtle but visible.
+* Ensure the active position is immediately recognizable.
+* Use smooth thumb and fill transitions.
+* Avoid distracting animation or excessive visual effects.
+
+The effect should feel elegant, premium, restrained, and native to Agent Command Center.
+5. Effort and Ultracode Must Share the Same Layout
+Both settings must use an identical three-column layout:
+Label | Description | Control
+Required alignment
+
+```
+Effort (Max)  | Controls reasoning depth   | [Multi-level pill]
+Ultracode     | Enables dynamic workflows  | [Toggle]
+```
+
+This illustrates the layout structure, not the literal rendering.
+Column 1 — Label
+
+* `Effort (Max)`
+* `Ultracode`
+
+Column 2 — Description
+
+* `Controls reasoning depth`
+* `Enables dynamic workflows`
+
+Column 3 — Control
+
+* Effort: multi-level pill slider.
+* Ultracode: existing purple toggle.
+
+Critical alignment requirement
+Both rows must share the same column boundaries.
+
+* Labels must begin at the same horizontal position.
+* Descriptions must begin at exactly the same horizontal position.
+* Controls must be aligned in the same right-side control area.
+* Differences in label length must not shift the description or control.
+* Both rows must have consistent vertical alignment and spacing.
+
+The two rows must feel like one coherent settings component, not two independently positioned controls.
+6. Dynamic Effort Label
+The effort label must always display the currently selected level.
+Examples:
+
+* `Effort (Low)`
+* `Effort (Medium)`
+* `Effort (High)`
+* `Effort (XHigh)`
+* `Effort (Max)`
+
+When the thumb moves:
+
+1. The active position changes.
+2. The filled portion of the track updates.
+3. The color intensity updates.
+4. The effort label updates to the selected level.
+
+These visual elements must remain synchronized.
+The selected level must correspond to the effective provider configuration, not merely a cosmetic UI state.
+Use the same typography hierarchy as the existing Ultracode label.
+7. Effort Description
+Use this exact description:
+`Controls reasoning depth`
+The completed effort row must therefore follow:
+`Effort (Max) | Controls reasoning depth | [Multi-level pill slider]`
+Match the description's font size, color, and vertical alignment with:
+`Ultracode | Enables dynamic workflows | [Toggle]`
+Descriptions must remain muted and visually secondary to the labels.
+8. Ultracode Row
+Keep the existing Ultracode toggle and its functionality unchanged.
+The row must display:
+
+* Label: `Ultracode`
+* Description: `Enables dynamic workflows`
+* Control: Existing purple toggle.
+
+Only adjust its layout as necessary to align it perfectly with the Effort row.
+Do not modify Ultracode's existing behavior.
+Do not automatically couple Ultracode to a particular effort level.
+The Effort slider and Ultracode toggle must remain independently selectable wherever supported by the active provider.
+9. Scope and Constraints
+This is a targeted redesign of the Effort control and the alignment of the two settings rows.
+Do not:
+
+* Redesign the rest of the popup.
+* Change the model list.
+* Change the `More models` section.
+* Enlarge the popup unnecessarily.
+* Add unrelated settings.
+* Turn the slider into separate buttons.
+* Introduce colors outside the established theme.
+* Modify existing Ultracode behavior.
+* Redesign the conversation, composer, or other dashboard zones.
+
+Preserve all existing functionality outside the requested changes.
+10. Acceptance Criteria
+The implementation is correct only when all the following requirements are satisfied:
+
+1. The dropdown is replaced by one continuous pill-shaped multi-level slider.
+2. The slider uses discrete selectable positions.
+3. Each small dot represents a supported effort level.
+4. The circular thumb snaps accurately to the selected position.
+5. The filled track grows progressively with effort.
+6. The color intensity increases as effort increases.
+7. Max reproduces the distinctive purple/lavender appearance in the fifth reference image.
+8. The effort label updates dynamically.
+9. The label, filled track, and thumb remain synchronized.
+10. Effort and Ultracode share the same three-column alignment.
+11. Only supported provider/model effort levels are selectable.
+12. The existing Ultracode toggle and behavior remain unchanged.
+13. The model-selector popup remains compact.
+14. Existing functionality and regression tests remain intact.
+
+Reference Images
+The five attached images are the authoritative visual references, arranged from lowest to highest effort.
+Use them to reproduce:
+
+* Pill geometry.
+* Discrete position markers.
+* Circular thumb.
+* Fill progression.
+* Color transitions.
+* Maximum-effort gradient.
+* Relative proportions and spacing.
+
+Do not interpret the references as separate controls. They show five states of the same slider.
+Final Instruction
+Reproduce the five reference states faithfully within the rendering capabilities of Windows Terminal.
+The Effort slider must look and behave like the supplied multi-level pill, and its row must align perfectly with Ultracode using the approved three-column structure.
+Preserve everything else in Agent Command Center.
+Before finalizing, provide actual Windows Terminal screenshots demonstrating every supported effort position and the alignment of both settings rows.
+````
+
+The five images, measured (each about 300x50 pixels, on `#151719`): one
+pill 289x36 pixels with fully rounded ends, its track `#272B2D`; a white
+disc 34 pixels across as the thumb, its five centres evenly spaced from
+one end's centre to the other's, about 63.5 pixels apart; a 4x4-pixel
+dot at each level, `#697276` on the track and `#95A9D4` on the fill, the
+thumb's own hidden under it; at the four lower levels a fill of
+`#6784C1` from the left end to the thumb, the same colour at each, its
+length growing; at the highest, the whole pill lit by a gradient from
+`#4C3F99` at the left through `#B288DF` at about 45% to `#815AB3` near
+the thumb, with eleven specks of 2 to 4 pixels, pale lavender to
+`#E8DCF6`, mostly in its left three quarters.
+
+A probe drew the slider at those proportions in Windows Terminal 1.23,
+beside each image scaled to a terminal row (plan.md, Plan 37). Taken as
+plan 37 (plan.md, Plan 37).

@@ -58,6 +58,17 @@ func (s *scriptSession) modelChanges() []provider.ModelRequest {
 	return append([]provider.ModelRequest(nil), s.changes...)
 }
 
+// levelCell is the first cell of row y that carries the slider's level i
+// (plan 37), -1 when none does.
+func levelCell(h *harness, y, i int) int {
+	for x := 0; x < 300; x++ {
+		if p, it := h.m.screen.ItemAt(x, y); p == render.SelectorPanel && it == render.ItemLevel+i {
+			return x
+		}
+	}
+	return -1
+}
+
 // clickText clicks the first cell of the text's nth occurrence.
 func clickText(t *testing.T, h *harness, text string, nth int) {
 	t.Helper()
@@ -67,9 +78,9 @@ func clickText(t *testing.T, h *harness, text string, nth int) {
 }
 
 // TestSelectorKeys is criteria 14 and 16: Alt+P opens the selector on the
-// model in force; ↑↓ move the cursor; Enter acts on its row and never
-// sends the draft, which stays with its text; Esc closes the effort list,
-// then the selector; Alt+P closes it too.
+// model in force; ↑↓ move the cursor; Enter acts on its row, nothing on
+// Effort (plan 37, design D4), and never sends the draft, which stays with
+// its text; Esc closes the selector, and Alt+P.
 func TestSelectorKeys(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h, s := selectorRig(t)
@@ -97,12 +108,8 @@ func TestSelectorKeys(t *testing.T) {
 			h.send(key(tea.KeyDown, 0)) // Haiku 5.5, More models, Effort
 		}
 		h.send(key(tea.KeyEnter, 0))
-		if !h.m.ui.Models.Effort {
-			t.Fatalf("Enter on Effort: %+v", h.m.ui.Models)
-		}
-		h.send(key(tea.KeyEsc, 0))
-		if v := h.m.ui.Models; !v.Open || v.Effort {
-			t.Errorf("Esc in the effort list: %+v", v)
+		if v := h.m.ui.Models; !v.Open || v.Cursor != 6 || len(s.modelChanges()) != 1 {
+			t.Fatalf("Enter on Effort: %+v, changes %+v", v, s.modelChanges())
 		}
 		h.send(key(tea.KeyEsc, 0))
 		if h.m.ui.Models.Open {
@@ -122,7 +129,8 @@ func TestSelectorKeys(t *testing.T) {
 // TestSelectorMouse is criteria 13, 15 and 16: a click on the pill opens
 // the selector; the pointer moves the cursor; a click chooses a model, but
 // the pill keeps what is in force until the session answers; More models
-// expands; the effort box opens its list and a level is chosen; a click on
+// expands; a click on Effort's label moves the cursor there, one on a
+// slider's cell asks for its level (plan 37, design D4); a click on
 // Ultracode turns it off; a click outside closes the selector and goes on.
 func TestSelectorMouse(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
@@ -153,23 +161,14 @@ func TestSelectorMouse(t *testing.T) {
 		if v := h.m.ui.Models; !v.More || !strings.Contains(frameText(h), "Opus 4.6") {
 			t.Errorf("More models: %+v\n%s", v, frameText(h))
 		}
-		x, y = at(t, h, "Effort:", 0)
-		mouseAt(t, h, click(x+12, y)) // the box: a second click would close its list
-		mouseAt(t, h, tea.MouseReleaseMsg{X: x + 12, Y: y, Button: tea.MouseLeft})
-		if !h.m.ui.Models.Effort {
-			t.Fatalf("a click on the effort box did not open its list:\n%s", frameText(h))
+		clickText(t, h, "Effort (High)", 0)
+		if v := h.m.ui.Models; !v.Open || render.SelectorItems(h.m.s, v)[v.Cursor].Kind != 'e' || len(s.modelChanges()) != 1 {
+			t.Fatalf("a click on Effort's label: %+v, changes %+v", v, s.modelChanges())
 		}
-		mouseAt(t, h, click(x+12, y))
-		mouseAt(t, h, tea.MouseReleaseMsg{X: x + 12, Y: y, Button: tea.MouseLeft})
-		if h.m.ui.Models.Effort {
-			t.Fatal("a second click on the box left its list open")
-		}
-		mouseAt(t, h, click(x+12, y))
-		mouseAt(t, h, tea.MouseReleaseMsg{X: x + 12, Y: y, Button: tea.MouseLeft})
-		if !h.m.ui.Models.Effort {
-			t.Fatalf("a click on the effort box did not open its list:\n%s", frameText(h))
-		}
-		clickText(t, h, "XHigh", 0)
+		_, y = at(t, h, "Effort (High)", 0)
+		lx := levelCell(h, y, 3) // XHigh's
+		mouseAt(t, h, click(lx, y))
+		mouseAt(t, h, tea.MouseReleaseMsg{X: lx, Y: y, Button: tea.MouseLeft})
 		if got := s.modelChanges(); len(got) != 2 || got[1].Effort != "xhigh" || got[1].Model != "" {
 			t.Errorf("changes %+v", got)
 		}
@@ -382,7 +381,7 @@ func TestSelectorScroll(t *testing.T) {
 
 // TestSelectorKeepsDraft is criterion 16 with images: a draft of text and
 // two attached images, the cursor inside it; the selector opened by Alt+P
-// and by the pill, a model chosen, the effort list opened and closed, More
+// and by the pill, a model chosen, Enter on Effort (nothing, plan 37), More
 // models expanded, the selector closed by Esc and by a click outside: the
 // text, the cursor, the images and the focus as they were, nothing sent.
 func TestSelectorKeepsDraft(t *testing.T) {
@@ -419,8 +418,7 @@ func TestSelectorKeepsDraft(t *testing.T) {
 		for range 3 {
 			h.send(key(tea.KeyDown, 0)) // Haiku 5.5, More models, Effort
 		}
-		h.send(key(tea.KeyEnter, 0))
-		h.send(key(tea.KeyEsc, 0)) // the effort list
+		h.send(key(tea.KeyEnter, 0)) // nothing on Effort
 		h.send(key(tea.KeyUp, 0))
 		h.send(key(tea.KeySpace, 0)) // More models expanded
 		h.send(key(tea.KeyEsc, 0))

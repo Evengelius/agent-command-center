@@ -2095,7 +2095,7 @@ The same file can name Codex's proxy (plan 22, amendment 19).
 | Alt+P | open or close the [model selector](#input-editor), from any focus (Claude Code's own key for its model picker); the pill's click does the same | plan 34; brief amendment 34 |
 | F6 / Shift+F6 | next / previous zone (B, C, A) | ASM-9 |
 | Tab / Shift+Tab | next / previous zone, outside the editor (in the editor Tab inserts a tab) | ASM-9 |
-| Esc | close the "+" menu (plan 30), the model selector's effort list, then the selector (plan 34), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
+| Esc | close the "+" menu (plan 30), the model selector (plan 34), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
 | Shift+PgUp / Shift+PgDn | scroll the conversation from any focus | ASM-9 |
 | F12 | toggle mouse capture (native terminal selection when off) | TI 6.3 item 6 |
 | Ctrl+W | the [Worktrees](#worktrees) view of the session's repository: list, diff, merge, remove | plan 16; brief amendment 10 |
@@ -2167,10 +2167,11 @@ the console reads plain VT input after Ctrl+Q.
 
 | Key | Action |
 | - | - |
-| ↑ ↓ Home End | move the cursor over the models, More models, Effort and Ultracode; over the levels while the effort list is open |
-| Enter, Space | act on the cursor's row: choose the model, expand or collapse More models, open the effort list, turn Ultracode on or off, pick the level |
+| ↑ ↓ Home End | move the cursor over the models, More models, Effort and Ultracode |
+| Enter, Space | act on the cursor's row: choose the model, expand or collapse More models, turn Ultracode on or off; nothing on Effort |
+| ← → | on Effort, ask for the level before or after the one the slider shows (plan 37); a click on the slider asks for the level under it |
 | PgUp PgDn | scroll the list a page; the wheel scrolls too |
-| Esc | close the effort list, then the selector |
+| Esc | close the selector |
 | Alt+P | close the selector |
 | any other key | close the selector, then act as usual (Ctrl+Q quits) |
 
@@ -2324,9 +2325,9 @@ provider: it has no provider code and sends a string to part 5's caller
   │  ▶ More models                                              ›   │
   │ ─────────────────────────────────────────────────────────────── │
   │                                                                 │
-  │  Effort:    Max        ⌄                                        │
+  │  Effort (Max)     Controls reasoning depth    ◖·  ·   ·  ·  ◖◗  │
   │                                                                 │
-  │  Ultracode Enables dynamic workflows                      ◖ ●◗  │
+  │  Ultracode        Enables dynamic workflows               ◖ ●◗  │
   ╰▾────────────────────────────────────────────────────────────────╯
   ```
 
@@ -2341,15 +2342,42 @@ provider: it has no provider code and sends a string to part 5's caller
     scrolls inside, its scroll bar ("┃") on the right edge. The popup is
     never taller than the rows above the editor's rule, zone B's title
     left visible, nor wider than the screen.
-  - **Effort**: the box shows the level in force, as the pill does, and
-    "⌄"; Enter, Space or a click opens the list of the model's own levels
-    above it (for Codex, of the model waiting for the next message, if
-    one waits), the level in force with "✓", a Codex level waiting for
-    the next message with a grey "…". A model with no levels shows "N/A"
-    with no chevron and opens nothing. An effort `CLAUDE_CODE_EFFORT_LEVEL` holds shows its level
-    with no chevron, and a click puts "the effort is set by
+  - **The settings rows** (plan 37, brief amendment 38): Effort and
+    Ultracode share three columns, the labels at column 3, the
+    descriptions, muted, at column 3 plus the longest label the session's
+    models' levels give and "Ultracode", plus 2 (20 for Claude Code's,
+    "Effort (Medium)"), the controls' right ends at column W-4; the box
+    is at least as wide as they need (66 for Claude Code's), so no level
+    shown moves a description.
+  - **Effort** (plan 37, after the owner's five images): "Effort (<level
+    in force>)", "Controls reasoning depth", and a slider: one pill with a
+    dot at each of the model's own levels (for Codex, of the model
+    waiting for the next message, if one waits), the lowest at its left
+    end and the highest at its right, a fill from its left end to the
+    thumb, and a white thumb on the level in force, as the pill shows it.
+    Below the highest level the fill is the owner's `#6784C1`, its length
+    giving the progression; at the highest (Max for Claude Code's models,
+    Ultra for a Codex model that lists it) a purple gradient with specks
+    lights the whole pill. A level asked for and not yet in force is
+    ringed: a Codex level waiting for the next message, a Claude Code
+    change waiting for its answer. The thumb moves only when the CLI
+    reports the level in force, and glides there in 180 ms, drawn every
+    30 ms, its clock from the frame that changes the label, so that its
+    first drawing, once that frame is out, is already on its way. A model
+    with no levels reads "Effort (N/A)" and has no slider; while no level
+    is known, the slider shows its dots alone. An effort
+    `CLAUDE_CODE_EFFORT_LEVEL` holds shows its level on a greyed slider,
+    and ← → or a click puts "the effort is set by
     CLAUDE_CODE_EFFORT_LEVEL (Max): the dashboard does not change it" in
-    zone B and sends nothing.
+    zone B and sends nothing. With Sixel the slider is an image of
+    170x20 pixels over 17 blank cells, columns W-19 to W-3, drawn as the
+    toggle's is (below): the pill in the first 16 (160x20, the owner's
+    8:1), the band's last cell after it, its cells on the ground whatever
+    the band. Without Sixel it is 16 cells, W-19 to W-4 (drawn above as
+    `◖·  ·   ·  ·  ◖◗`, at Max): Powerline's half circles at the ends,
+    the cells between on the track's, the fill's or, at the highest
+    level, the gradient's ground, a "·" at each level, a "○" at a level
+    asked for, the thumb two white half circles.
   - **Ultracode**, Claude Code's only: "Ultracode", "Enables dynamic
     workflows" and the toggle, on (the knob at the right of the violet
     track) while Claude Code reports it on. While it reports it
@@ -2374,18 +2402,21 @@ provider: it has no provider code and sends a string to part 5's caller
     half circles (U+E0B6, U+E0B4) at the ends in the track's colour, and
     a knob of two half circles on the track.
   - **Keys** while it is open: ↑↓ move the cursor over the models, More
-    models, Effort and Ultracode (over the levels while the effort list
-    is open), Home and End to the first and the last; Enter or Space acts
-    on the cursor's row (chooses a model, expands or collapses More
-    models, opens the effort list, turns Ultracode on or off, picks a
-    level); PgUp and PgDn scroll a page; Esc closes the effort list, then
-    the popup; Alt+P closes it; a send key the configuration names acts as
-    Enter does. Any other key, and a paste, closes it and goes on, as the
-    "+" menu's. No key it takes reaches the editor, so the popup never
+    models, Effort and Ultracode, Home and End to the first and the last;
+    Enter or Space acts on the cursor's row (chooses a model, expands or
+    collapses More models, turns Ultracode on or off; nothing on Effort);
+    on Effort, ← and → ask for the level before or after the one the
+    slider shows, a level asked for that waits counting as shown, nothing
+    past the ends (plan 37); PgUp and PgDn scroll a page; Esc and Alt+P
+    close it; a send key the configuration names acts as Enter does. Any
+    other key, ← and → on another row included, and a paste, closes it
+    and goes on, as the "+" menu's. No key it takes reaches the editor, so the popup never
     sends; Ctrl+Q still quits. The focus stays where it was.
   - **Mouse**: the hover moves the cursor (every mouse motion asked for
     while it is open, as the "+" menu's); a click on a row acts on it, on
-    the frame or a blank row does nothing; the wheel scrolls the list; a
+    the frame or a blank row does nothing: on the slider it asks for the
+    level nearest it, on Effort's label or description it moves the
+    cursor there (plan 37); the wheel scrolls the list; a
     click outside closes it and goes on. The pill is panel 'M', the popup
     panel 'S'. The hover moves the cursor only when the pointer comes
     onto another row than the last report's (plan 36, brief amendment

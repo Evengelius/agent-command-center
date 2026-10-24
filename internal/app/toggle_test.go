@@ -8,6 +8,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/render"
@@ -19,6 +20,19 @@ import (
 // halfLeft is the text toggle's left end, Powerline's left half circle
 // (render's toggleText).
 const halfLeft = "\ue0b6"
+
+// toggleAt is the text toggle's left end: the first half circle on the
+// Ultracode row, the slider above it having its own (plan 37).
+func toggleAt(t *testing.T, h *harness) (x, y int) {
+	t.Helper()
+	_, y = at(t, h, render.UltracodeDescription, 0)
+	row := strings.Split(frameText(h), "\n")[y]
+	i := strings.Index(row, halfLeft)
+	if i < 0 {
+		t.Fatalf("no text toggle on the Ultracode row %q", row)
+	}
+	return lipgloss.Width(row[:i]), y
+}
 
 // TestToggleDraw is criteria 3 and 5 (design D2): with Sixel, the toggle's
 // image drawn on its cells after the frame that opens the selector, not
@@ -101,7 +115,7 @@ func TestToggleDraw(t *testing.T) {
 		if h.m.screen.Toggle.Shown || len(h.m.kicks) != n {
 			t.Errorf("without Sixel: the toggle %+v, %d drawings asked", h.m.screen.Toggle, len(h.m.kicks)-n)
 		}
-		if x, y := at(t, h, halfLeft, 0); x != tg.X-1 || y != tg.Y {
+		if x, y := toggleAt(t, h); x != tg.X-1 || y != tg.Y {
 			t.Errorf("the text toggle at %d,%d, want %d,%d", x, y, tg.X-1, tg.Y)
 		}
 		mouseAt(t, h, click(tg.X, tg.Y)) // its knob, off

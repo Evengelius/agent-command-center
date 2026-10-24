@@ -20,7 +20,7 @@ func TestSelectorPointerAtRest(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h, s := selectorRig(t)
 		h.send(key('p', tea.ModAlt))
-		tx, ty := at(t, h, halfLeft, 0) // the text toggle's left end
+		tx, ty := toggleAt(t, h) // the text toggle's left end
 		for _, dx := range []int{1, 2, 1} {
 			mouseAt(t, h, tea.MouseMotionMsg{X: tx + dx, Y: ty})
 		}
@@ -49,31 +49,31 @@ func TestSelectorPointerAtRest(t *testing.T) {
 	})
 }
 
-// TestSelectorPointerLevels is criterion 5: with the effort list open, a
-// report over another level moves the list's cursor there; after ↓, a
-// report again over the same level leaves it.
+// TestSelectorPointerLevels is criterion 5, on the slider since plan 37
+// took the effort list away: after a report outside the selector, one over
+// a slider's cell moves the cursor to Effort and asks for nothing; after ↑,
+// a report again on that cell leaves it, and one on another level's cell
+// takes it back to Effort.
 func TestSelectorPointerLevels(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		h, _ := selectorRig(t)
+		h, s := selectorRig(t)
 		h.send(key('p', tea.ModAlt))
-		for range 4 {
-			h.send(key(tea.KeyDown, 0)) // Sonnet 5.5, Haiku 5.5, More models, Effort
-		}
-		h.send(key(tea.KeyEnter, 0))
-		if !h.m.ui.Models.Effort {
-			t.Fatalf("Enter on Effort: %+v", h.m.ui.Models)
-		}
 		ax, ay := at(t, h, "ORCHESTRATOR", 0)
 		mouseAt(t, h, tea.MouseMotionMsg{X: ax, Y: ay}) // zone A: the pointer outside the selector
-		lx, ly := at(t, h, "Low", 0)
-		mouseAt(t, h, tea.MouseMotionMsg{X: lx + 1, Y: ly})
-		if l := h.m.ui.Models.Level; l != 0 {
-			t.Fatalf("a report over Low: level %d, want 0", l)
+		_, ey := at(t, h, "Effort (High)", 0)
+		lx := levelCell(h, ey, 0)
+		mouseAt(t, h, tea.MouseMotionMsg{X: lx, Y: ey})
+		if c := h.m.ui.Models.Cursor; c != 6 || len(s.modelChanges()) != 0 {
+			t.Fatalf("a report over the slider: cursor on row %d, want 6 (Effort); changes %+v", c, s.modelChanges())
 		}
-		h.send(key(tea.KeyDown, 0))
-		mouseAt(t, h, tea.MouseMotionMsg{X: lx + 2, Y: ly})
-		if l := h.m.ui.Models.Level; l != 1 {
-			t.Errorf("↓, then a report on Low again: level %d, want 1 (Medium)", l)
+		h.send(key(tea.KeyUp, 0))
+		mouseAt(t, h, tea.MouseMotionMsg{X: lx + 1, Y: ey})
+		if c := h.m.ui.Models.Cursor; c != 5 {
+			t.Errorf("↑, then a report on the same level's cell: cursor on row %d, want 5 (More models)", c)
+		}
+		mouseAt(t, h, tea.MouseMotionMsg{X: levelCell(h, ey, 4), Y: ey})
+		if c := h.m.ui.Models.Cursor; c != 6 || len(s.modelChanges()) != 0 {
+			t.Errorf("a report on another level's cell: cursor on row %d, want 6; changes %+v", c, s.modelChanges())
 		}
 	})
 }

@@ -223,6 +223,7 @@ type Model struct {
 	drawn    []render.Thumb // where images were drawn last, to repaint once vacated
 	send     func(tea.Msg)
 	kicks    []int
+	slide    slide // the effort slider's glide (plan 37)
 
 	screen  *render.Screen // the last frame drawn: what the mouse points at
 	repaint bool           // the palette changed: the next frame draws every row
@@ -331,16 +332,12 @@ func (m *Model) View() tea.View {
 		prev, m.repaint = nil, false // its rows hold the old palette's colours
 	}
 	m.screen = render.Draw(m.s, m.ui)
-	if m.ui.Models.Open && (!m.screen.Selector.Shown || m.ui.Models.Effort && !m.screen.Selector.Effort) {
-		// The frame had no room for the selector or its effort list (a draft
-		// grown under it, a turn's status in the pill's place, a full view):
-		// it closes, so no key acts on what is not on screen (plan 34,
-		// design D9). Nothing of it was drawn, so the frame stands.
-		if m.screen.Selector.Shown {
-			m.ui.Models.Effort = false
-		} else {
-			m.closeModels()
-		}
+	if m.ui.Models.Open && !m.screen.Selector.Shown {
+		// The frame had no room for the selector (a draft grown under it, a
+		// turn's status in the pill's place, a full view): it closes, so no
+		// key acts on what is not on screen (plan 34, design D9). Nothing of
+		// it was drawn, so the frame stands.
+		m.closeModels()
 	}
 	v := tea.NewView(m.screen.StringAfter(prev))
 	m.previewFrame() // the thumbnails drawn again after a frame that changed their rows (plan 32)
@@ -450,6 +447,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.pastedPaths(msg)...)
 	case thumbDrawMsg:
 		cmds = append(cmds, m.drawThumbs(msg)...)
+	case slideMsg:
+		cmds = append(cmds, m.drawSlide(msg)...)
 	case tea.MouseMsg:
 		cmds = append(cmds, m.mouse(msg)...)
 	case copiedMsg:

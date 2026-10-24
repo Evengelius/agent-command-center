@@ -10,9 +10,9 @@
 │       │    Haiku 4.5                                                    │    │
 │       │    Fastest for quick answers                                    │    │
 │       │                                                                 │    │
-│       │  Effort:    Max        ⌄                                        │    │
+│       │  Effort (Max)     Controls reasoning depth    ·  ·   ·  ·    │    │
 │       │                                                                 │    │
-│       │  Ultracode Enables dynamic workflows                        │    │
+│       │  Ultracode        Enables dynamic workflows                 │    │
 │ ──────╰▾────────────────────────────────────────────────────────────────╯─── │
 │ >  Ask Mock data anything…                                                   │
 │ ──────────────────────────────────────────────────────────────────────────── │

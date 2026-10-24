@@ -26,29 +26,29 @@
 │                                                      ││                                                                                                                                              │
 │                                                      ││                                                                                                                                              │
 │                                                      ││                                                                                                                                              │
-│                                                      ││       ╭──────────────────────────────────────────────────────────────╮                                                                       │
-│                                                      ││       │ CODEX MODELS                                 Current session │                                                                       │
-│                                                      ││       │                                                              │                                                                       │
-│                                                      ││       │    GPT-6-Sol                                             ✓   │                                                                       │
-│                                                      ││       │    Previous generation workhorse model.                      │                                                                       │
-│                                                      ││       │                                                              │                                                                       │
-│                                                      ││       │    GPT-6-Luna                                                │                                                                       │
-│                                                      ││       │    Fast and affordable model for easier tasks.               │                                                                       │
-│                                                      ││       │                                                              ┃                                                                       │
-│                                                      ││       │    GPT-5.6-Sol                                               ┃                                                                       │
-│                                                      ││       │    Older generation workhorse model.                         ┃                                                                       │
-│                                                      ││       │ ──────────────────────────────────────────────────────────── ┃                                                                       │
-│                                                      ││       │  ▼ More models                                           ›   ┃                                                                       │
-│ ──────────────────────────────────────────────────── ││       │                                                              ┃                                                                       │
-│ ✦ TELEMETRY                            Enter details ││       │    GPT-5.6-Terra                                             ┃                                                                       │
-│ ▾ SESSION USAGE                                      ││       │    Older balanced model for straightforward work.            ┃                                                                       │
-│   CONTEXT           │ TOKENS        │ EST. COST    … ││       │                                                              ┃                                                                       │
-│   N/A               │ N/A           │ N/A          … ││       │    GPT-5.6-Luna                                              ┃                                                                       │
-│   no model call yet │ no update yet │ Codex reports… ││       │    Older fast and efficient model.                           ┃                                                                       │
-│                                                      ││       │ ──────────────────────────────────────────────────────────── ┃                                                                       │
-│ ▾ QUOTA WINDOWS                                      ││       │                                                              │                                                                       │
-│   Session (5hr)                                  N/A ││       │  Effort:    High       ⌄                                     │                                                                       │
-│   no report yet                                      ││ ──────╰▾─────────────────────────────────────────────────────────────╯────────────────────────────────────────────────────────────────────── │
+│                                                      ││       ╭───────────────────────────────────────────────────────────────╮                                                                      │
+│                                                      ││       │ CODEX MODELS                                  Current session │                                                                      │
+│                                                      ││       │                                                               │                                                                      │
+│                                                      ││       │    GPT-6-Sol                                              ✓   │                                                                      │
+│                                                      ││       │    Previous generation workhorse model.                       │                                                                      │
+│                                                      ││       │                                                               │                                                                      │
+│                                                      ││       │    GPT-6-Luna                                                 │                                                                      │
+│                                                      ││       │    Fast and affordable model for easier tasks.                │                                                                      │
+│                                                      ││       │                                                               ┃                                                                      │
+│                                                      ││       │    GPT-5.6-Sol                                                ┃                                                                      │
+│                                                      ││       │    Older generation workhorse model.                          ┃                                                                      │
+│                                                      ││       │ ───────────────────────────────────────────────────────────── ┃                                                                      │
+│                                                      ││       │  ▼ More models                                            ›   ┃                                                                      │
+│ ──────────────────────────────────────────────────── ││       │                                                               ┃                                                                      │
+│ ✦ TELEMETRY                            Enter details ││       │    GPT-5.6-Terra                                              ┃                                                                      │
+│ ▾ SESSION USAGE                                      ││       │    Older balanced model for straightforward work.             ┃                                                                      │
+│   CONTEXT           │ TOKENS        │ EST. COST    … ││       │                                                               ┃                                                                      │
+│   N/A               │ N/A           │ N/A          … ││       │    GPT-5.6-Luna                                               ┃                                                                      │
+│   no model call yet │ no update yet │ Codex reports… ││       │    Older fast and efficient model.                            ┃                                                                      │
+│                                                      ││       │ ───────────────────────────────────────────────────────────── ┃                                                                      │
+│ ▾ QUOTA WINDOWS                                      ││       │                                                               │                                                                      │
+│   Session (5hr)                                  N/A ││       │  Effort (High)    Controls reasoning depth  ·  ·  · ·  ·  │                                                                      │
+│   no report yet                                      ││ ──────╰▾──────────────────────────────────────────────────────────────╯───────────────────────────────────────────────────────────────────── │
 │                                                      ││ >  Ask Mock data anything…                                                                                                                   │
 │   Weekly (7 day)                                 N/A ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │   no report yet                                      ││   +     GPT-6-Sol High                                                                                                               ↯ Auto  │

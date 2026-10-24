@@ -84,11 +84,11 @@ func (m *Model) scrollSelector(n int) {
 }
 
 // modelsKey works the open selector (plan 34, design D9): ↑↓ move the
-// cursor, Enter and Space act on its row, PgUp and PgDn scroll, Esc closes
-// the effort list, then the selector, Alt+P closes it. A send key the
-// configuration names acts as Enter does. Any other key closes it and
-// goes on, as plan 30's menu; no send key reaches the editor, so the
-// popup never sends.
+// cursor, Enter and Space act on its row, ← and → move the effort slider
+// while the cursor is on Effort (plan 37, design D4), PgUp and PgDn
+// scroll, Esc and Alt+P close it. A send key the configuration names acts
+// as Enter does. Any other key closes it and goes on, as plan 30's menu;
+// no send key reaches the editor, so the popup never sends.
 func (m *Model) modelsKey(k tea.KeyPressMsg) ([]tea.Cmd, bool) {
 	if m.opt.Keys.IsSend(k.String()) {
 		return m.modelsAct(), true
@@ -97,32 +97,27 @@ func (m *Model) modelsKey(k tea.KeyPressMsg) ([]tea.Cmd, bool) {
 	items := render.SelectorItems(m.s, *v)
 	h := m.selectorHeight()
 	switch k.String() {
-	case "esc":
-		if v.Effort {
-			v.Effort = false
-		} else {
-			m.closeModels()
-		}
-	case "alt+p":
+	case "esc", "alt+p":
 		m.closeModels()
 	case "up", "down":
 		step := 1
 		if k.String() == "up" {
 			step = -1
 		}
-		if v.Effort {
-			if e := render.EffortModel(m.s); e != nil {
-				v.Level = max(0, min(v.Level+step, len(e.Efforts)-1))
-			}
-			break
-		}
 		v.Cursor = max(0, min(v.Cursor+step, len(items)-1))
 		v.Free = false
 		*v = render.CursorInView(m.s, *v, h)
-	case "home", "end":
-		if v.Effort {
-			break
+	case "left", "right":
+		if v.Cursor >= 0 && v.Cursor < len(items) && items[v.Cursor].Kind == 'e' {
+			step := 1
+			if k.String() == "left" {
+				step = -1
+			}
+			return m.stepEffort(step), true
 		}
+		m.closeModels()
+		return nil, false
+	case "home", "end":
 		v.Cursor = 0
 		if k.String() == "end" {
 			v.Cursor = len(items) - 1
@@ -144,12 +139,10 @@ func (m *Model) modelsKey(k tea.KeyPressMsg) ([]tea.Cmd, bool) {
 	return nil, true
 }
 
-// modelsAct acts on the row under the cursor, or the effort list's level.
+// modelsAct acts on the row under the cursor; on Effort nothing, the
+// slider moving with ← and → (plan 37, design D4).
 func (m *Model) modelsAct() []tea.Cmd {
 	v := &m.ui.Models
-	if v.Effort {
-		return m.chooseLevel(v.Level)
-	}
 	items := render.SelectorItems(m.s, *v)
 	if v.Cursor < 0 || v.Cursor >= len(items) {
 		return nil
@@ -159,8 +152,6 @@ func (m *Model) modelsAct() []tea.Cmd {
 		return m.do(state.ChooseModel{ID: m.s.Models.Entries[it.Model].ID, NextTurn: m.caps().ModelsNextTurn})
 	case 'o':
 		m.toggleMore()
-	case 'e':
-		return m.openEffort()
 	case 'u':
 		return m.do(state.ChooseUltracode{On: !m.s.Models.InForce.Ultracode})
 	}
@@ -179,11 +170,11 @@ func (m *Model) toggleMore() {
 	*v = render.CursorInView(m.s, *v, m.selectorHeight())
 }
 
-// openEffort opens the effort list on the level shown; a model without
-// levels, or an effort a variable holds, opens nothing: the state says
-// why for the variable (design D5).
-func (m *Model) openEffort() []tea.Cmd {
-	v := &m.ui.Models
+// stepEffort asks for the level before (step -1) or after (+1) the one the
+// slider shows, a level asked for and waiting counting as shown; nothing
+// past the ends, nor going down from none known. A held effort asks for
+// nothing: the state says why (plan 37, design D4).
+func (m *Model) stepEffort(step int) []tea.Cmd {
 	e := render.EffortModel(m.s)
 	if e == nil || len(e.Efforts) == 0 {
 		return nil
@@ -191,22 +182,22 @@ func (m *Model) openEffort() []tea.Cmd {
 	if !render.EffortChangeable(m.s) {
 		return m.do(state.ChooseEffort{Level: m.s.Models.InForce.Effort, NextTurn: m.caps().ModelsNextTurn})
 	}
-	v.Effort, v.Level = true, 0
 	cur := m.s.Models.InForce.Effort
-	if a := m.s.Models.Asked; a != nil && a.NextTurn && a.Effort != "" {
+	if a := m.s.Models.Asked; a != nil && a.Effort != "" {
 		cur = a.Effort
 	}
+	at := -1
 	for i, l := range e.Efforts {
 		if l == cur {
-			v.Level = i
+			at = i
 		}
 	}
-	return nil
+	return m.chooseLevel(at + step)
 }
 
-// chooseLevel asks for the effort list's level i and closes the list.
+// chooseLevel asks for the slider's level i of the model's levels; none
+// outside them.
 func (m *Model) chooseLevel(i int) []tea.Cmd {
-	m.ui.Models.Effort = false
 	e := render.EffortModel(m.s)
 	if e == nil || i < 0 || i >= len(e.Efforts) {
 		return nil
@@ -214,31 +205,24 @@ func (m *Model) chooseLevel(i int) []tea.Cmd {
 	return m.do(state.ChooseEffort{Level: e.Efforts[i], NextTurn: m.caps().ModelsNextTurn})
 }
 
-// modelsClick acts on the selector's item a click landed on: a model,
-// More models, the effort box, a level of its list, Ultracode; a click on
-// the frame or a blank row does nothing.
+// modelsClick acts on the selector's item a click landed on: a model, More
+// models, a slider's cell (its level), Ultracode; on the Effort row's label
+// or description it moves the cursor there; on the frame or a blank row it
+// does nothing.
 func (m *Model) modelsClick(item int) []tea.Cmd {
-	v := &m.ui.Models
 	switch {
 	case item >= render.ItemLevel:
+		m.cursorTo('e', 0)
 		return m.chooseLevel(item - render.ItemLevel)
 	case item >= render.ItemModel:
-		v.Effort = false
 		if m.cursorTo('m', item-render.ItemModel) {
 			return m.modelsAct()
 		}
 	case item == render.ItemMore:
-		v.Effort = false
 		m.toggleMore()
 	case item == render.ItemEffort:
-		if v.Effort {
-			v.Effort = false
-			return nil
-		}
 		m.cursorTo('e', 0)
-		return m.openEffort()
 	case item == render.ItemUltracode:
-		v.Effort = false
 		if m.cursorTo('u', 0) {
 			return m.modelsAct()
 		}
@@ -264,16 +248,12 @@ func (m *Model) modelsPointer(x, y int) (item int, moved bool) {
 	return item, moved
 }
 
-// modelsHover moves the cursor, or the effort list's, to the item under
-// the pointer (design D9).
+// modelsHover moves the cursor to the row of the item under the pointer
+// (design D9), a slider's cell being Effort's.
 func (m *Model) modelsHover(item int) {
-	v := &m.ui.Models
 	switch {
 	case item >= render.ItemLevel:
-		if v.Effort {
-			v.Level = item - render.ItemLevel
-		}
-	case v.Effort:
+		m.cursorTo('e', 0)
 	case item >= render.ItemModel:
 		m.cursorTo('m', item-render.ItemModel)
 	case item == render.ItemMore:

@@ -18,20 +18,20 @@
 │                                  ││       │                                                                 │        │
 │                                  ││       │    Sonnet 5.5                                                   │        │
 │                                  ││       │    Most efficient for simpler tasks                             │        │
-│                                  ││       │            ╭──────────────╮                                     │        │
-│ ──────────────────────────────── ││       │    Haiku 5.│ Low          │                                     │        │
-│ ✦ TELEMETRY        Enter details ││       │    Fastest │ Medium       │s                                    │        │
-│ ▾ SESSION USAGE                  ││       │ ───────────│ High         │──────────────────────────────────── │        │
-│   Context N/A no turn yet        ││       │  ▶ More mod│ XHigh        │                                 ›   │        │
-│   Tokens N/A no result yet       ││       │ ───────────│ Max        ✓ │──────────────────────────────────── │        │
-│   Est. cost N/A no result yet    ││       │            ╰──────────────╯                                     │        │
-│                                  ││       │  Effort:    Max        ⌄                                        │        │
+│                                  ││       │                                                                 │        │
+│ ──────────────────────────────── ││       │    Haiku 5.5                                                    │        │
+│ ✦ TELEMETRY        Enter details ││       │    Fastest for quick answers                                    │        │
+│ ▾ SESSION USAGE                  ││       │ ─────────────────────────────────────────────────────────────── │        │
+│   Context N/A no turn yet        ││       │  ▶ More models                                              ›   │        │
+│   Tokens N/A no result yet       ││       │ ─────────────────────────────────────────────────────────────── │        │
+│   Est. cost N/A no result yet    ││       │                                                                 │        │
+│                                  ││       │  Effort (XHigh)   Controls reasoning depth    ·  ·   ·   ·  │        │
 │ ▾ QUOTA WINDOWS                  ││       │                                                                 │        │
-│   Session (5hr)              N/A ││       │  Ultracode Enables dynamic workflows                        │        │
+│   Session (5hr)              N/A ││       │  Ultracode        Enables dynamic workflows                 │        │
 │   no report yet                  ││ ──────╰▾────────────────────────────────────────────────────────────────╯─────── │
 │                                  ││ >  Ask Mock data anything…                                                       │
 │   Weekly (7 day)             N/A ││ ──────────────────────────────────────────────────────────────────────────────── │
-│   no report yet                  ││   +     Fable 5.1 Max · Ultracode                                        ↯ Auto  │
+│   no report yet                  ││   +     Fable 5.1 XHigh · Ultracode                                      ↯ Auto  │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │

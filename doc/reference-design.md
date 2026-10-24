@@ -441,12 +441,13 @@ What plan 34 takes from it, in cells, the box's top-left corner at column
 | Model in force | "✓" at column W-5 of its name row | the bright white |
 | Separators | a line from column 2 to column W-3, right under the last model, and right under "More models" | `#5E616D` |
 | More models | "▶" (collapsed) or "▼" (expanded) at column 3, "More models" at column 5, "›" at column W-5 | the bright white |
-| Effort, two rows under the second line | "Effort:" at column 3; the box from column 13, 14 cells, its level at column 14 and "⌄" at column 25 | white; box `#232631` |
-| Ultracode, two rows under the effort | "Ultracode" at column 3, "Enables dynamic workflows" at column 13, the toggle in columns W-7 to W-4, with Sixel an image over W-7 to W-3 whose last cell carries the band (plan 35), or W-8 to W-4 in text | white; `#878D9F`; track `#CA84FB`, knob white |
+| Effort, two rows under the second line | since plan 37 (The effort slider, below): "Effort (<level>)" at column 3, "Controls reasoning depth" at the settings rows' description column (20 for Claude Code's), the slider's pill in columns W-19 to W-4, with Sixel an image over W-19 to W-3 whose last cell carries the band, or W-19 to W-4 in text | white; `#848FA2`; the slider's own |
+| Ultracode, two rows under the effort | "Ultracode" at column 3, "Enables dynamic workflows" at the settings rows' description column (plan 37), the toggle in columns W-7 to W-4, with Sixel an image over W-7 to W-3 whose last cell carries the band (plan 35), or W-8 to W-4 in text | white; `#878D9F`; track `#CA84FB`, knob white |
 | Bottom edge | the row right under the Ultracode row | `#CA92F2` |
 
-W is 63 (the image's width over its cells) or the longest name or
-description plus 12, whichever is larger; 25 rows in all for Claude Code's
+W is 63 (the image's width over its cells), the longest name or
+description plus 12, or what the settings rows take (66 for Claude Code's
+levels, plan 37), whichever is largest; 25 rows in all for Claude Code's
 five models with More models, 23 for Codex's, which has no Ultracode row.
 
 What differs: one size of type, the terminal's, where the image's names
@@ -463,3 +464,38 @@ the owner's track is 1.9:1, and a little wider on screen
 where the font's cells are wider than 1:2, Windows Terminal drawing 10x20
 pixels in a cell (2.1:1 at 120x40, 48x23 pixels). Without Sixel it is five cells of
 Powerline's half circles, its knob as tall as the track, with no margin.
+The effort control is plan 37's slider, not the image's box (The effort
+slider, below).
+
+### The effort slider
+
+Brief amendment 38: the owner's five images of one slider at five levels,
+lowest to highest, each about 300x50 pixels on `#151719`, "the
+authoritative visual references" for the selector's effort control:
+
+- One pill, 289x36 pixels, its ends fully rounded, its track `#272B2D`.
+- A white disc 34 pixels across as the thumb, its centres at the five
+  levels evenly spaced from one end's centre to the other's.
+- A 4x4-pixel dot at each level, `#697276` on the track and `#95A9D4` on
+  the fill, the thumb's own hidden under it.
+- At the four lower levels, a fill of `#6784C1` from the left end to the
+  thumb: the same colour at each, its length growing.
+- At the highest, the whole pill lit by a gradient from `#4C3F99` at the
+  left through `#B288DF` at about 45% to `#815AB3` near the thumb, with
+  eleven pale lavender specks of 2 to 4 pixels.
+
+What plan 37 takes from them: the pill drawn at one terminal row, 160x20
+pixels over 16 cells (the images' 8:1), as a Sixel image of 17 cells
+with the band's last cell; the thumb 18.9 pixels across, the dots 2.3,
+the levels from x 10 to x 150; the colours above, the gradient sampled
+along the fifth image's middle row; the specks where that image has
+them; the highest level the model's last, Ultra for a Codex model that
+lists it. Beside each image scaled to one row in Windows Terminal 1.23,
+the slider matches at each level (`scratchpad\plan37\probe-wt.png`).
+
+What differs: the images show one slider; the dashboard has no level
+names on it, the label "Effort (<level>)" naming the level in force; a
+level asked for and not yet in force is ringed, a held effort greyed,
+which the images do not show; the thumb glides between levels (180 ms);
+without Sixel the slider is text, its gradient a ground a cell, its thumb
+two half circles as tall as the pill.

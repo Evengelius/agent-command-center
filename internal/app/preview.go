@@ -107,6 +107,9 @@ func (m *Model) setThumbs(thumbs map[string]thumbSixel) {
 func (m *Model) previewFrame() {
 	sig := ""
 	if m.ui.Sixel && m.screen != nil {
+		if sl := m.screen.Slider; sl.Shown {
+			m.slideStart(sl)
+		}
 		sig = m.previewSignature()
 	}
 	if sig == m.thumbSig {
@@ -128,10 +131,11 @@ func (m *Model) previewFrame() {
 
 // previewSignature is what the frame's images depend on: the thumbnails'
 // items, places and images, the Ultracode toggle's place and state (plan
-// 35, design D2), and the rows they lie on as drawn.
+// 35, design D2), the effort slider's place and look (plan 37, design D1),
+// and the rows they lie on as drawn.
 func (m *Model) previewSignature() string {
-	ts, tg := m.screen.Thumbs(), m.screen.Toggle
-	if len(ts) == 0 && !tg.Shown {
+	ts, tg, sl := m.screen.Thumbs(), m.screen.Toggle, m.screen.Slider
+	if len(ts) == 0 && !tg.Shown && !sl.Shown {
 		return ""
 	}
 	var b strings.Builder
@@ -139,6 +143,10 @@ func (m *Model) previewSignature() string {
 	if tg.Shown {
 		fmt.Fprintf(&b, "toggle %d %d %t %t %t\n", tg.X, tg.Y, tg.On, tg.Usable, tg.Band)
 		rows = append(rows, tg.Y)
+	}
+	if sl.Shown {
+		fmt.Fprintf(&b, "slider %d %d %+v\n", sl.X, sl.Y, sl.Look)
+		rows = append(rows, sl.Y)
 	}
 	for _, t := range ts {
 		key, pixels, sum := "", false, [32]byte{}
@@ -174,6 +182,103 @@ func (m *Model) drawThumbs(msg thumbDrawMsg) []tea.Cmd {
 	cmds := []tea.Cmd{tea.Raw(seq)}
 	if !msg.second {
 		cmds = append(cmds, m.opt.After(thumbSecond, thumbDrawMsg{gen: msg.gen, second: true}))
+	}
+	if m.slide.moving {
+		cmds = append(cmds, m.opt.After(slideStep, slideMsg{gen: msg.gen}))
+	}
+	return cmds
+}
+
+// The effort slider's glide (plan 37, design D5): when the level it shows
+// changes while it stays at its place with the same levels, its thumb
+// moves there in slideTime, eased, drawn every slideStep, its fill and
+// colour with it.
+const (
+	slideTime = 180 * time.Millisecond
+	slideStep = 30 * time.Millisecond
+)
+
+// slide is the glide: the slider as last drawn, its look's Pos the
+// position drawn, and while the thumb moves, where from, where to, since
+// when.
+type slide struct {
+	drawn    render.SliderShown
+	from, to float64
+	start    time.Time
+	moving   bool
+}
+
+// slideMsg asks for the glide's next drawing; gen is the frame's.
+type slideMsg struct{ gen int }
+
+// sameSlide says the slider sl lies where the last drawing put it, with
+// the same levels, a level shown then and now: a change of level glides.
+func (d *slide) sameSlide(sl render.SliderShown) bool {
+	return d.drawn.Shown && d.drawn.X == sl.X && d.drawn.Y == sl.Y && d.drawn.Look.Levels == sl.Look.Levels &&
+		sl.Look.Pos >= 0 && d.drawn.Look.Pos >= 0
+}
+
+// slideStart starts the glide when a frame shows a new level at the
+// slider's place: its clock runs from that frame, the one that changes the
+// label, so that the thumb's first drawing, once the frame is out, is
+// already on its way (design D5).
+func (m *Model) slideStart(sl render.SliderShown) {
+	d := &m.slide
+	if target := sl.Look.Pos; d.sameSlide(sl) && d.drawn.Look.Pos != target && (!d.moving || d.to != target) {
+		d.from, d.to, d.start, d.moving = d.drawn.Look.Pos, target, m.opt.Now(), true
+	}
+}
+
+// slidePos is where the slider's thumb is drawn now: on the level shown,
+// or on its way there when that level changed since the last drawing at
+// the same place with the same levels, a new destination taking over from
+// where the thumb is.
+func (m *Model) slidePos(sl render.SliderShown) float64 {
+	d := &m.slide
+	target := sl.Look.Pos
+	if !d.sameSlide(sl) {
+		d.moving = false
+		d.drawn = sl
+		return target
+	}
+	m.slideStart(sl)
+	now := m.opt.Now()
+	pos := target
+	if d.moving {
+		if t := float64(now.Sub(d.start)) / float64(slideTime); t < 1 {
+			e := 1 - (1-t)*(1-t)*(1-t) // ease out
+			pos = d.from + (d.to-d.from)*e
+		} else {
+			d.moving = false
+		}
+	}
+	d.drawn = sl
+	d.drawn.Look.Pos = pos
+	return pos
+}
+
+// sliderSequence draws the slider at pos over its cells, those written
+// first: an image drawn before may lie there, whose pixels an image's
+// transparent ones would keep (plan 35, design D2).
+func (m *Model) sliderSequence(sl render.SliderShown, pos float64) string {
+	look := sl.Look
+	look.Pos = pos
+	return fmt.Sprintf("\x1b[%d;%dH%s\x1b[%d;%dH%s", sl.Y+1, sl.X+1, m.screen.Region(sl.X, sl.Y, render.SliderCells),
+		sl.Y+1, sl.X+1, render.SliderSixel(look))
+}
+
+// drawSlide draws the glide's next position when the frame is still the
+// one it began on and the thumb still moves; the next is asked for until
+// it arrives.
+func (m *Model) drawSlide(msg slideMsg) []tea.Cmd {
+	if msg.gen != m.thumbGen || m.screen == nil || !m.screen.Slider.Shown || !m.slide.moving || !m.ui.Sixel {
+		return nil
+	}
+	sl := m.screen.Slider
+	pos := m.slidePos(sl)
+	cmds := []tea.Cmd{tea.Raw("\x1b[?2026h\x1b7" + m.sliderSequence(sl, pos) + "\x1b8\x1b[?2026l")}
+	if m.slide.moving {
+		cmds = append(cmds, m.opt.After(slideStep, slideMsg{gen: msg.gen}))
 	}
 	return cmds
 }
@@ -211,6 +316,14 @@ func (m *Model) thumbSequence() string {
 			fmt.Fprintf(&draw, "\x1b[%d;%dH%s\x1b[%d;%dH%s", tg.Y+1, tg.X+1, m.screen.Region(tg.X, tg.Y, render.ToggleCells),
 				tg.Y+1, tg.X+1, render.ToggleSixel(tg.On, tg.Usable, tg.Band))
 			now = append(now, render.Thumb{Item: -1, X: tg.X, Y: tg.Y, W: render.ToggleCells, H: 1})
+		}
+		if sl := m.screen.Slider; sl.Shown {
+			// The effort slider on its blank cells (plan 37, design D1), its
+			// thumb where its glide has it.
+			draw.WriteString(m.sliderSequence(sl, m.slidePos(sl)))
+			now = append(now, render.Thumb{Item: -2, X: sl.X, Y: sl.Y, W: render.SliderCells, H: 1})
+		} else {
+			m.slide = slide{}
 		}
 	}
 	var clear strings.Builder

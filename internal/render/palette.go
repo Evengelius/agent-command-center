@@ -44,21 +44,32 @@ var (
 	// The model selector (plan 34, the owner's image; reference-design.md,
 	// The model selector), each read from the image's pixels: the frame,
 	// the header and the tail; "Current session"; the descriptions; the
-	// cursor's band; its pink "▶"; the separators; the effort box; the
-	// toggle's track on, and off.
+	// cursor's band; its pink "▶"; the separators; the toggle's track on,
+	// and off.
 	cModelFrame  = colour{"#CA92F2", "13"}
 	cModelAside  = colour{"#9299A9", "8"}
 	cModelDesc   = colour{"#848FA2", "8"}
 	cModelBand   = colour{"#342B47", "5"}
 	cModelMark   = colour{"#E286D0", "13"}
 	cModelRule   = colour{"#5E616D", "8"}
-	cModelBox    = colour{"#232631", ""}
 	cModelToggle = colour{"#CA84FB", "13"}
 	cModelOff    = colour{"#3B3F51", "8"}
 	// The toggle's knob, and its track while Ultracode is unavailable (plan
 	// 35, design D1; the knob then cModelRule).
 	cModelKnob = colour{"#FFFFFF", "15"}
 	cModelDim  = colour{"#2A2D38", "8"}
+	// The effort slider in text (plan 37, design D2; the image's colours in
+	// slider.go): its track, its fill, its dots on each, a held effort's
+	// fill and thumb, and the highest level's ends.
+	cSliderTrack    = colour{"#272B2D", "8"}
+	cSliderFill     = colour{"#6784C1", "4"}
+	cSliderDot      = colour{"#697276", "8"}
+	cSliderDotFill  = colour{"#95A9D4", "12"}
+	cSliderDotTop   = colour{"#C9B8EC", "13"}
+	cSliderLockFill = colour{"#4B505A", "8"}
+	cSliderLockKnob = colour{"#9AA0AA", "7"}
+	cSliderTopLeft  = colour{"#4C3F99", "5"}
+	cSliderTopRight = colour{"#805CB4", "5"}
 
 	// The violet of thinking (plan 22, design 2): the live card's border, its
 	// bar's fill, the fill's lit leading edge, the mid shade (and the
@@ -142,6 +153,11 @@ var (
 	// 35).
 	stModelFrame, stModelHead, stModelAside, stModelDesc, stModelMark, stModelRule = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 	stModelTrackEnd, stModelOffEnd, stModelDimEnd, stModelKnob                     = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	// The effort slider in text (plan 37, design D2): its ends on the track,
+	// the fill, a held fill and the highest level's left and right; its
+	// dots on the track, the fill and the gradient; a held thumb.
+	stSliderTrackEnd, stSliderFillEnd, stSliderLockEnd, stSliderTopLeft, stSliderTopRight = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	stSliderDot, stSliderDotFill, stSliderDotTop, stSliderLockKnob                        = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 
 	stMdHeading = stTitle
 	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
@@ -233,6 +249,15 @@ func paint() {
 	paintStyle(stModelOffEnd, fg(cModelOff))
 	paintStyle(stModelDimEnd, fg(cModelDim))
 	paintStyle(stModelKnob, fg(cModelKnob))
+	paintStyle(stSliderTrackEnd, fg(cSliderTrack))
+	paintStyle(stSliderFillEnd, fg(cSliderFill))
+	paintStyle(stSliderLockEnd, fg(cSliderLockFill))
+	paintStyle(stSliderTopLeft, fg(cSliderTopLeft))
+	paintStyle(stSliderTopRight, fg(cSliderTopRight))
+	paintStyle(stSliderDot, fg(cSliderDot))
+	paintStyle(stSliderDotFill, fg(cSliderDotFill))
+	paintStyle(stSliderDotTop, fg(cSliderDotTop))
+	paintStyle(stSliderLockKnob, fg(cSliderLockKnob))
 	if sixteen { // no ground to spare: the pill is its bold pink text
 		paintStyle(stPill, stAttentionBold.Background(lipgloss.NoColor{}))
 		paintStyle(stPillEnd, lipgloss.NewStyle())
@@ -266,14 +291,17 @@ var (
 	// activeGround is the "+" menu's: the band while the menu is open and
 	// the item under the mouse (plan 30, design D2 and D3).
 	activeGround = &ground{c: cActive, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	// The model selector's grounds (plan 34): the cursor's band, the effort
-	// box, the text toggle's track on, off and unavailable (plan 35).
-	bandGround  = &ground{c: cModelBand, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	boxGround   = &ground{c: cModelBox, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	trackGround = &ground{c: cModelToggle, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	offGround   = &ground{c: cModelOff, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	dimGround   = &ground{c: cModelDim, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	grounds     = []*ground{toolGround, activeGround, bandGround, boxGround, trackGround, offGround, dimGround}
+	// The model selector's grounds (plan 34): the cursor's band, the text
+	// toggle's track on, off and unavailable (plan 35), the text slider's
+	// track, fill and held fill (plan 37; its gradient's in slider.go).
+	bandGround        = &ground{c: cModelBand, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	trackGround       = &ground{c: cModelToggle, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	offGround         = &ground{c: cModelOff, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	dimGround         = &ground{c: cModelDim, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	sliderTrackGround = &ground{c: cSliderTrack, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	sliderFillGround  = &ground{c: cSliderFill, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	sliderLockGround  = &ground{c: cSliderLockFill, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	grounds           = []*ground{toolGround, activeGround, bandGround, trackGround, offGround, dimGround, sliderTrackGround, sliderFillGround, sliderLockGround}
 )
 
 // active is st on the active ground (plan 30).

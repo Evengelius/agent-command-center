@@ -2,18 +2,18 @@
  ▣ codex-models.jsonl                                         Mock data 0.163.0
  A no turn yet                                            (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
-│ Waitin╭──────────────────────────────────────────────────────────────╮       │
-│ Ready │ CODEX MODELS                                 Current session │       │
-│       │                                                              │       │
-│       │                                                              ┃       │
-│       │    GPT-6-Astra                                               ┃       │
-│       │    Frontier intelligence for the most demanding work.        │       │
-│       │                                                              │       │
-│       │  ▶ GPT-6-Sol                                             ✓   │       │
-│       │    Previous generation workhorse model.                      │       │
-│       │                                                              │       │
-│       │  Effort:    High       ⌄                                     │       │
-│ ──────╰▾─────────────────────────────────────────────────────────────╯────── │
+│ Waitin╭───────────────────────────────────────────────────────────────╮      │
+│ Ready │ CODEX MODELS                                  Current session │      │
+│       │                                                               │      │
+│       │                                                               ┃      │
+│       │    GPT-6-Astra                                                ┃      │
+│       │    Frontier intelligence for the most demanding work.         │      │
+│       │                                                               │      │
+│       │  ▶ GPT-6-Sol                                              ✓   │      │
+│       │    Previous generation workhorse model.                       │      │
+│       │                                                               │      │
+│       │  Effort (High)    Controls reasoning depth  ·  ·  · ·  ·  │      │
+│ ──────╰▾──────────────────────────────────────────────────────────────╯───── │
 │ >  Ask Mock data anything…                                                   │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │   +     GPT-6-Sol High                                               ↯ Auto  │

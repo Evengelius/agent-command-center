@@ -2,18 +2,18 @@
  ▣ codex-models.jsonl                                         Mock data 0.163.0
  A no turn yet                                            (inferred)   F6: tree
 ╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
-│ Waitin╭──────────────────────────────────────────────────────────────╮       │
-│ Ready │ CODEX MODELS                                 Current session │       │
-│       │                                                              │       │
-│       │    Fast and affordable model for easier tasks.               │       │
-│       │                                                              │       │
-│       │    GPT-5.6-Sol                                               ┃       │
-│       │    Older generation workhorse model.                         │       │
-│       │ ──────────────────────────────────────────────────────────── │       │
-│       │  ▼ More models                                           ›   │       │
-│       │                                                              │       │
-│       │  Effort:    High       ⌄                                     │       │
-│ ──────╰▾─────────────────────────────────────────────────────────────╯────── │
+│ Waitin╭───────────────────────────────────────────────────────────────╮      │
+│ Ready │ CODEX MODELS                                  Current session │      │
+│       │                                                               │      │
+│       │    Fast and affordable model for easier tasks.                │      │
+│       │                                                               │      │
+│       │    GPT-5.6-Sol                                                ┃      │
+│       │    Older generation workhorse model.                          │      │
+│       │ ───────────────────────────────────────────────────────────── │      │
+│       │  ▼ More models                                            ›   │      │
+│       │                                                               │      │
+│       │  Effort (High)    Controls reasoning depth  ·  ·  · ·  ·  │      │
+│ ──────╰▾──────────────────────────────────────────────────────────────╯───── │
 │ >  Ask Mock data anything…                                                   │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │   +     GPT-6-Sol High                                               ↯ Auto  │

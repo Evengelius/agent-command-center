@@ -1,8 +1,6 @@
 package render
 
 import (
-	"reflect"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -90,11 +88,12 @@ func col(r, s string) int {
 }
 
 // TestSelectorGeometry is criterion 20's cell part: at 120x40, Claude Code's
-// selector is the reference's: 63 cells wide (the longest description
-// needs less), 25 rows, the header, the names, "▶", "✓", the separators,
-// More models, the effort box and Ultracode at their columns, the bottom
-// edge right under Ultracode with "▾" above the pill's first cell, no
-// footer; the band from column 2 to W-3 on the cursor's two rows.
+// selector is the reference's, 66 cells wide since plan 37 (its settings
+// rows' width: the longest description needs less), 25 rows, the header,
+// the names, "▶", "✓", the separators, More models, Effort and Ultracode
+// on their shared columns (plan 37, design D3), the bottom edge right
+// under Ultracode with "▾" above the pill's first cell, no footer; the band
+// from column 2 to W-3 on the cursor's two rows.
 func TestSelectorGeometry(t *testing.T) {
 	defer UsePalette(pickTrue)
 	in := event.Settings{Model: "claude-fable-5-1", Choice: "fable", Effort: "xhigh", EffortKnown: true, Ultracode: true, UltracodeAvailable: true, UltracodeKnown: true}
@@ -103,7 +102,7 @@ func TestSelectorGeometry(t *testing.T) {
 	ui.Models = OpenSelector(s, true, 17)
 	sc := Draw(s, ui)
 	rows, bx, by := boxOf(t, sc)
-	const w = 63
+	const w = 66
 	if len(rows) != 25 {
 		t.Fatalf("%d rows, want 25:\n%s", len(rows), strings.Join(rows, "\n"))
 	}
@@ -130,11 +129,11 @@ func TestSelectorGeometry(t *testing.T) {
 	at(18, "▶ More models", 3)
 	at(18, "›", w-5)
 	at(19, "───", 2)
-	at(21, "Effort:", 3)
-	at(21, "XHigh", 14)
-	at(21, "⌄", 25)
+	at(21, "Effort (XHigh)", 3)
+	at(21, EffortDescription, 20)
+	at(21, strings.TrimSuffix(texts([]line{sliderText(SliderLook{Levels: 5, Pos: 3, Asked: -1})}), "\n"), w-19) // the text slider, without Sixel (plan 37, design D2)
 	at(23, "Ultracode", 3)
-	at(23, "Enables dynamic workflows", 13)
+	at(23, "Enables dynamic workflows", 20)
 	at(23, toggleOnText, w-8) // the text toggle, on, without Sixel (plan 35, design D3)
 	if !strings.HasPrefix(rows[24], "╰▾─") || !strings.HasSuffix(rows[24], "╯") || strings.TrimSpace(strings.Trim(rows[22], "│")) != "" {
 		t.Errorf("the rows under Effort: %q, %q, %q", rows[22], rows[23], rows[24])
@@ -168,21 +167,26 @@ func TestSelectorGeometry(t *testing.T) {
 			}
 		}
 	}
-	if box, _ := spanAt(sc.lines[by+21], bx+13); box.st != boxGround.on(stBright) {
-		t.Errorf("the effort box styled %v", box.st)
+	// The labels as Ultracode's, the descriptions muted (plan 37, design D3).
+	el, _ := spanAt(sc.lines[by+21], bx+3)
+	ed, _ := spanAt(sc.lines[by+21], bx+20)
+	if el.st != stBright || ed.st != stModelDesc {
+		t.Errorf("the Effort row's label styled %v, its description %v", el.st, ed.st)
 	}
-	// The description, word for word (amendment 34).
-	if !strings.Contains(rows[23], " Ultracode Enables dynamic workflows ") || strings.Contains(texts(sc.lines), "XHigh effort") {
-		t.Errorf("the Ultracode row %q", rows[23])
+	// The descriptions, word for word (amendments 34 and 38).
+	if !strings.Contains(rows[23], " Ultracode        Enables dynamic workflows ") || !strings.Contains(rows[21], " Controls reasoning depth ") ||
+		strings.Contains(texts(sc.lines), "XHigh effort") {
+		t.Errorf("the settings rows %q, %q", rows[21], rows[23])
 	}
 }
 
 func styleBand(st *lipgloss.Style) *lipgloss.Style { return bandGround.on(st) }
 
 // TestSelectorStates is criteria 6, 8, 11 and the Codex form: a model
-// without levels and an effort a variable holds show their box without a
-// chevron; an unavailable Ultracode is dimmed and off; Codex's selector has
-// no Ultracode row, its bottom edge under Effort, and marks its default
+// without levels reads "Effort (N/A)" with no slider (plan 37); an effort
+// a variable holds shows its level on a greyed slider; an unavailable
+// Ultracode is dimmed and off; Codex's selector has no Ultracode row, its
+// bottom edge under Effort on the same columns, and marks its default
 // model and a change waiting for the next message.
 func TestSelectorStates(t *testing.T) {
 	defer UsePalette(pickTrue)
@@ -196,7 +200,7 @@ func TestSelectorStates(t *testing.T) {
 		EffortKnown: true, UltracodeKnown: true})
 	rows := draw(haiku, true)
 	effort := rows[len(rows)-4]
-	if col(effort, "N/A") != 14 || strings.Contains(effort, "⌄") {
+	if col(effort, "Effort (N/A)") != 3 || col(effort, EffortDescription) != 20 || strings.ContainsAny(effort, "·"+halfLeft+halfRight) {
 		t.Errorf("Haiku 4.5's effort row %q", effort)
 	}
 	ult := rows[len(rows)-2]
@@ -209,8 +213,12 @@ func TestSelectorStates(t *testing.T) {
 	locked := selectorState(t, "claude-code", testModels, event.Settings{Model: "claude-fable-5-1", Choice: "fable", Effort: "max", EffortKnown: true,
 		EffortLock: "CLAUDE_CODE_EFFORT_LEVEL", UltracodeKnown: true, UltracodeAvailable: true})
 	rows = draw(locked, true)
-	if e := rows[len(rows)-4]; col(e, "Max") != 14 || strings.Contains(e, "⌄") {
-		t.Errorf("the held effort's row %q", e)
+	sc = Draw(locked, ui)
+	_, bx, by = boxOf(t, sc)
+	w := textWidth(rows[0])
+	knob, _ := spanAt(sc.lines[by+len(rows)-4], bx+w-19+14)
+	if e := rows[len(rows)-4]; col(e, "Effort (Max)") != 3 || knob.st != sliderLockGround.on(stSliderLockKnob) {
+		t.Errorf("the held effort's row %q, its thumb styled %v", e, knob.st)
 	}
 	codex := []event.ModelEntry{
 		{ID: "gpt-6.1-sol", Model: "gpt-6.1-sol", Name: "GPT-6.1-Sol", Description: "Latest workhorse model for coding and everyday work.", Efforts: []string{"low", "medium", "high"}, DefaultEffort: "low", Default: true},
@@ -223,7 +231,7 @@ func TestSelectorStates(t *testing.T) {
 	if !strings.Contains(rows[1], "CODEX MODELS") || strings.Contains(all, "Ultracode") || strings.Contains(all, "CLAUDE") {
 		t.Errorf("Codex's selector:\n%s", all)
 	}
-	if !strings.Contains(rows[len(rows)-2], "Effort:") || !strings.HasPrefix(rows[len(rows)-1], "╰▾") {
+	if e := rows[len(rows)-2]; col(e, "Effort (High)") != 3 || col(e, EffortDescription) != 20 || !strings.HasPrefix(rows[len(rows)-1], "╰▾") {
 		t.Errorf("Codex's last rows %q, %q", rows[len(rows)-2], rows[len(rows)-1])
 	}
 	if !strings.Contains(all, "GPT-6.1-Sol (default)") || col(rows[3], "…") != textWidth(rows[3])-5 || col(rows[6], "✓") != textWidth(rows[6])-5 {
@@ -260,75 +268,6 @@ func TestModelPill(t *testing.T) {
 		}
 		if b.String() != c.want {
 			t.Errorf("pill %q, want %q", b.String(), c.want)
-		}
-	}
-}
-
-// levelRow is a row of the effort list: its box's edge, a level and
-// Codex's "(default)", then "✓" on the level in force or "…" on Codex's
-// level asked for.
-var levelRow = regexp.MustCompile(`│ ((?:Low|Medium|High|XHigh|Max|Ultra)(?: \(default\))?) +([✓… ]) │`)
-
-// TestEffortList is criterion 6 on the screen: the effort list holds the
-// model's own levels in the CLI's order, the level in force checked;
-// Codex's default level reads "(default)", Claude Code names none. A Codex
-// level waiting for the next message has a "…" and the box keeps the level
-// in force, as the pill does (plan 34's review).
-func TestEffortList(t *testing.T) {
-	defer UsePalette(pickTrue)
-	list := func(s *state.State, ultracode bool) (labels []string, checked, asked, box string) {
-		t.Helper()
-		ui := UI{Width: 120, Height: 40, Now: appClock, Focus: "B"}
-		ui.Models = OpenSelector(s, ultracode, 17)
-		ui.Models.Effort = true
-		for _, l := range strings.Split(texts(Draw(s, ui).lines), "\n") {
-			if m := levelRow.FindStringSubmatch(l); m != nil {
-				labels = append(labels, m[1])
-				switch m[2] {
-				case "✓":
-					checked = m[1]
-				case "…":
-					asked = m[1]
-				}
-			}
-			if i := strings.Index(l, "Effort:"); i >= 0 {
-				box = strings.Fields(l[i+len("Effort:"):])[0]
-			}
-		}
-		return labels, checked, asked, box
-	}
-	five := []string{"low", "medium", "high", "xhigh", "max"}
-	codex := []event.ModelEntry{ // P34x's
-		{ID: "gpt-6-sol", Model: "gpt-6-sol", Name: "GPT-6-Sol", Description: "Previous generation workhorse model.", Efforts: append(five, "ultra"), DefaultEffort: "medium"},
-		{ID: "gpt-6-luna", Model: "gpt-6-luna", Name: "GPT-6-Luna", Description: "Fast and affordable model for easier tasks.", Efforts: five, DefaultEffort: "medium"},
-	}
-	opus46 := append(testModels, event.ModelEntry{ID: "claude-opus-4-6", Model: "claude-opus-4-6", Name: "Opus 4.6",
-		Description: "Best for everyday, complex tasks", Efforts: []string{"low", "medium", "high", "max"}})
-	solHigh := event.Settings{Model: "gpt-6-sol", Choice: "gpt-6-sol", Effort: "high", EffortKnown: true}
-	waiting := selectorState(t, "codex", codex, solHigh)
-	waiting.Models.Asked = &state.ModelChange{Effort: "low", NextTurn: true}
-	for _, c := range []struct {
-		what                      string
-		s                         *state.State
-		claude                    bool
-		want                      []string
-		checked, asked, boxShowed string
-	}{
-		{"GPT-6-Sol", selectorState(t, "codex", codex, solHigh), false,
-			[]string{"Low", "Medium (default)", "High", "XHigh", "Max", "Ultra"}, "High", "", "High"},
-		{"GPT-6-Luna", selectorState(t, "codex", codex, event.Settings{Model: "gpt-6-luna", Choice: "gpt-6-luna", Effort: "medium", EffortKnown: true}), false,
-			[]string{"Low", "Medium (default)", "High", "XHigh", "Max"}, "Medium (default)", "", "Medium"},
-		{"GPT-6-Sol, Low for the next turn", waiting, false,
-			[]string{"Low", "Medium (default)", "High", "XHigh", "Max", "Ultra"}, "High", "Low", "High"},
-		{"Fable 5.1", selectorState(t, "claude-code", testModels, event.Settings{Model: "claude-fable-5-1", Choice: "fable", Effort: "max", EffortKnown: true,
-			UltracodeKnown: true, UltracodeAvailable: true}), true, []string{"Low", "Medium", "High", "XHigh", "Max"}, "Max", "", "Max"},
-		{"Opus 4.6", selectorState(t, "claude-code", opus46, event.Settings{Model: "claude-opus-4-6", Choice: "claude-opus-4-6", Effort: "high", EffortKnown: true,
-			UltracodeKnown: true}), true, []string{"Low", "Medium", "High", "Max"}, "High", "", "High"},
-	} {
-		labels, checked, asked, box := list(c.s, c.claude)
-		if !reflect.DeepEqual(labels, c.want) || checked != c.checked || asked != c.asked || box != c.boxShowed {
-			t.Errorf("%s: levels %q, %q checked, %q asked, the box %q; want %q, %q, %q, %q", c.what, labels, checked, asked, box,
-				c.want, c.checked, c.asked, c.boxShowed)
 		}
 	}
 }

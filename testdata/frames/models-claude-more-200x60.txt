@@ -45,9 +45,9 @@
 │   CONTEXT            │ TOKENS        │ EST. COST     ││       │    Best for everyday, complex tasks                             │                                                                    │
 │   N/A                │ N/A           │ N/A           ││       │                                                                 │                                                                    │
 │   no turn yet        │ no result yet │ no result yet ││       │                                                                 │                                                                    │
-│                                                      ││       │  Effort:    Max        ⌄                                        │                                                                    │
+│                                                      ││       │  Effort (Max)     Controls reasoning depth    ·  ·   ·  ·    │                                                                    │
 │ ▾ QUOTA WINDOWS                                      ││       │                                                                 │                                                                    │
-│   Session (5hr)                                  N/A ││       │  Ultracode Enables dynamic workflows                        │                                                                    │
+│   Session (5hr)                                  N/A ││       │  Ultracode        Enables dynamic workflows                 │                                                                    │
 │   no report yet                                      ││ ──────╰▾────────────────────────────────────────────────────────────────╯─────────────────────────────────────────────────────────────────── │
 │                                                      ││ >  Ask Mock data anything…                                                                                                                   │
 │   Weekly (7 day)                                 N/A ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
