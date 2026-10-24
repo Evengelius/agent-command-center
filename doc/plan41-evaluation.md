@@ -68,3 +68,15 @@ Not verified:
   carrying the values of the owner's screenshot.
 - A review at medium, high or critical risk from Codex itself: none was
   ever recorded; the rows are checked with hand-made events (41.4).
+
+**The commit and the push (2026-10-24), after the owner's approval.** The
+owner approved plan 41 on 2026-10-24; commit 3904f13 (13 files: 11
+modified, 2 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. One
+change came after the checks and before the commit: `reviewText`'s
+comment said the authorization changes the outcome from medium up, where
+Codex's instructions allow medium regardless of it; it now says the
+reviewer rates it itself from medium up (no code changed; gofmt, the
+build, vet, state's tests and the review and golden tests re-run, ok).
+The blocks above stay as they were reported.
