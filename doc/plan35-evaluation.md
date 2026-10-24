@@ -77,3 +77,10 @@ likely here on a motion report Windows Terminal sent for the resting
 pointer once the selector turned motion tracking on (not verified).
 Enter would then turn Ultracode off rather than act on the model.
 Reported to the owner; nothing changed.
+
+**The commit and the push (2026-10-24), after the owner's approval.** The
+owner approved plan 35 on 2026-10-24; commit b43cf46 (24 files: 20
+modified, 4 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+blocks above stay as they were reported.
