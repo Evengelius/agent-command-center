@@ -93,10 +93,132 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 35 - The Ultracode toggle after the owner's image
 
-Plan 34 was approved and closed on 2026-10-24 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 36 (2026-10-24): the owner's image of the toggle, a
+lavender pill with fully rounded ends and a round white knob, against the
+dashboard's `▐   ●▌`. The criteria below were written before the code;
+nothing is committed until the owner has reviewed the result.
+
+### What the probe found
+
+`scratchpad\plan35\p35toggle.exe`, candidates drawn in Windows Terminal
+1.23 on the selector's ground (the terminal's own background) and on the
+band (`scratchpad\plan35\probe-default.png`, `probe-edges.png`):
+
+- Text with Powerline's rounded ends (U+E0B6, U+E0B4), which the terminal
+  draws at the cell's full height: a rounded track, but "●" and "⬤" stay
+  small dots; a knob of two white half circles fills the track's height,
+  with no margin around it.
+- A Sixel image of 40x20 pixels (4 cells, 10x20 pixels each): the track
+  with ends of radius 10, a white knob 16 pixels across: the image's
+  proportions (its knob 0.8 of the track's height, the track about 2:1).
+- Its corners: on the ground, a colour blended in drew a box where the
+  terminal's background differs; transparent pixels outside the track
+  (its edge drawn where half covered) show any background. On the band,
+  the dashboard's own colour, the edge blends into it.
+
+### Design
+
+- **D1. The pill.** 4 cells, its last at column W-4 (the toggle's right
+  end as before): an image of 40x20 pixels, a track of radius 10, a knob
+  of diameter 16 centred on the track's right end's centre (on) or its
+  left's (off); the knob's edge blended into the track, the track's into
+  the band on the band, and transparent outside the track on the ground.
+  On: track `#CA84FB` (the reference's, the owner's image measuring
+  `#C983FB`), knob white. Off: track `#3B3F51`, knob white. Unavailable
+  (dimmed row): track `#2A2D38`, knob `#5E616D`.
+- **D2. Drawn with Sixel** when the terminal draws it, as the thumbnails
+  are (plan 32), in an image of 5 cells (50x20 pixels), W-7 to W-3: the
+  pill in the first 4, the fifth the band's last cell while the cursor is
+  on the row (the band's colour; transparent off it). The frame keeps the
+  5 cells blank on the ground in every state, carrying the row's item, so
+  a click on them works as before; the application draws the image at
+  their first cell once the frame is out, again after any frame that
+  changes the row or the toggle's state, each time writing the cells
+  first in the same synchronized output, and writes the frame's own cells
+  over its place when it goes. Amended after the burst (below): the image
+  was the pill's 4 cells, on the band's ground under the band, the band's
+  last cell in the frame.
+- **D3. Without Sixel** (before the terminal's answer, or a terminal that
+  does not draw it): 5 cells, columns W-8 to W-4, Powerline's rounded
+  ends in the track's colour and a knob of two white half circles on the
+  track: on, the knob at the right; off and unavailable, at the left, in
+  their colours.
+
+### What the burst found
+
+Captures of the toggle's cells every 16 ms in Windows Terminal
+(`scratchpad\term\p35demo.ps1`, its `burst` steps), from 60 ms before a
+key to 600 ms after. With D2 as first written, the pill vanished for two
+or three captures (about 35 to 50 ms) when the cursor came onto its row
+or left it, not when Ultracode went off: the renderer writes every cell
+between a row's first and last changed cells (`putRange`,
+`third_party/ultraviolet/terminal_renderer.go`), so the band changing on
+both sides of the toggle wrote its cells again, which erases the image
+until the next drawing, 50 ms after the frame. With the band's last cell
+in the image and the cells kept on the ground (D2 amended), the frame
+never writes them: none of 120 captures lacks the pill, and the band's
+colour around it follows the rest of the row by one drawing (3 captures).
+
+### Criteria
+
+Checked by tests unless marked WT (Windows Terminal screenshots).
+Criteria 1 to 3 were amended and 8 added on 2026-10-24, after the burst
+(above), for D2 as amended.
+
+1. The image: 50x20 pixels, the pill in the first 40 columns; on the
+   ground, every pixel outside the track transparent and every pixel
+   inside it opaque; on the band, none transparent, the pill's corners
+   and the last 10 columns the band's colour; the track's middle
+   pixel `#CA84FB` (on), `#3B3F51` (off), `#2A2D38` (unavailable); the
+   knob's centre white (on and off) or `#5E616D` (unavailable), at x 30
+   (on) or 10 (off), y 10; 16 pixels across along its middle row.
+2. With Sixel: the Ultracode row's columns W-7 to W-3 are blank cells of
+   the row's item on the ground, and from W-7 to the box's edge the
+   cells are the same with the cursor on the row or not; the frame
+   reports the toggle's first cell, its state and whether it lies on the
+   band; no "●", "▐" or "▌" on the row.
+3. The application draws the toggle's image at that cell after the
+   frame, the cells written first in the same sequence, again after a
+   frame that changes its row or its state (the cursor onto the row,
+   Ultracode on to off), and writes the frame's cells over its place
+   once the selector closes.
+4. Without Sixel: columns W-8 to W-4 read U+E0B6, a space, U+E0B6,
+   U+E0B4, U+E0B4 (on) or U+E0B6, U+E0B6, U+E0B4, a space, U+E0B4 (off
+   and unavailable), the ends in the track's colour on the ground, the
+   knob white (or `#5E616D`) on the track.
+5. A click on any of the toggle's cells turns Ultracode on or off, with
+   and without Sixel.
+6. No regression: build, vet, gofmt clean; the suite; the race detector
+   on render and app; the golden frames changed only on the Ultracode row
+   (the text toggle), each reviewed; the timing step's
+   `TestSelectorToFrame` within target.
+7. WT, the mock, maximised and at 120x40: the toggle on, off, and on the
+   band, compared with the owner's image: rounded ends, a round white
+   knob with a margin, about 2:1, the right end at the selector's
+   toggle column.
+8. WT, the burst at 120x40: captures of the toggle's cells every 16 ms
+   from before a key to 600 ms after, for the cursor onto the row,
+   Ultracode on to off, and the cursor off the row: none without the
+   pill.
+
+### Steps
+
+1. Probe (done 2026-10-24): the findings above; brief amendment 36.
+2. The image and the frame (render); the drawing (app); the fallback.
+3. Tests, golden frames, the checks; WT screenshots; the evaluation
+   (`doc/plan35-evaluation.md`); the docs (reference-design.md's
+   differences, ui-design.md); the report.
+
+### Progress
+
+- 2026-10-24: step 1 done; step 2 in progress.
+- 2026-10-24: steps 2 and 3 done: the toggle as an image and as text,
+  the tests, the golden frames, the checks, the WT screenshots and the
+  burst, which changed D2 (What the burst found); the evaluation,
+  `doc/plan35-evaluation.md`, 8 criteria: 8 PASS; the docs. Nothing
+  committed: waiting for the owner's review.
 
 ## Closed plans
 

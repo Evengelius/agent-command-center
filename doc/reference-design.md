@@ -442,7 +442,7 @@ What plan 34 takes from it, in cells, the box's top-left corner at column
 | Separators | a line from column 2 to column W-3, right under the last model, and right under "More models" | `#5E616D` |
 | More models | "▶" (collapsed) or "▼" (expanded) at column 3, "More models" at column 5, "›" at column W-5 | the bright white |
 | Effort, two rows under the second line | "Effort:" at column 3; the box from column 13, 14 cells, its level at column 14 and "⌄" at column 25 | white; box `#232631` |
-| Ultracode, two rows under the effort | "Ultracode" at column 3, "Enables dynamic workflows" at column 13, the toggle in columns W-9 to W-4 | white; `#878D9F`; track `#CA84FB`, knob white |
+| Ultracode, two rows under the effort | "Ultracode" at column 3, "Enables dynamic workflows" at column 13, the toggle in columns W-7 to W-4, with Sixel an image over W-7 to W-3 whose last cell carries the band (plan 35), or W-8 to W-4 in text | white; `#878D9F`; track `#CA84FB`, knob white |
 | Bottom edge | the row right under the Ultracode row | `#CA92F2` |
 
 W is 63 (the image's width over its cells) or the longest name or
@@ -454,5 +454,12 @@ and header are larger than its descriptions; the 2.75 lines between
 models rounded to three rows; the tail drawn as "▾" in the bottom edge,
 where plan 30's menu, the same one-cell grid, left its tail out; the
 box's ground the dashboard's own background, as plan 30's; the band's
-and the box's corners square, a cell being the smallest unit; the toggle
-a run of half blocks around the knob "●".
+and the box's corners square, a cell being the smallest unit. The toggle,
+since plan 35 (brief amendment 36, the owner's image of it, a track of
+76x40 pixels and a knob of 32), is a pill of 40x20 pixels over four
+cells, in an image of five whose last cell carries the band: its ends
+half circles, its knob 16 pixels across with a margin of 2, 2:1 where
+the owner's track is 1.9:1, and a little wider on screen
+where the font's cells are wider than 1:2, Windows Terminal drawing 10x20
+pixels in a cell (2.1:1 at 120x40, 48x23 pixels). Without Sixel it is five cells of
+Powerline's half circles, its knob as tall as the track, with no margin.

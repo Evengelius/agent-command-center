@@ -71,6 +71,9 @@ type Screen struct {
 	// Selector is what the frame showed of the model selector's list (plan
 	// 34), zero when it is closed.
 	Selector SelectorShown
+	// Toggle is where the frame left the Ultracode toggle's image to be
+	// drawn (plan 35), zero when there is none.
+	Toggle ToggleShown
 }
 
 // PaneView is what a pane of zone A or C showed (plan 5, item 5).

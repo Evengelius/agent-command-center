@@ -27,7 +27,7 @@
 │   Est. cost N/A no result yet    ││       │            ╰──────────────╯                                     │        │
 │                                  ││       │  Effort:    Max        ⌄                                        │        │
 │ ▾ QUOTA WINDOWS                  ││       │                                                                 │        │
-│   Session (5hr)              N/A ││       │  Ultracode Enables dynamic workflows                    ▐   ●▌  │        │
+│   Session (5hr)              N/A ││       │  Ultracode Enables dynamic workflows                        │        │
 │   no report yet                  ││ ──────╰▾────────────────────────────────────────────────────────────────╯─────── │
 │                                  ││ >  Ask Mock data anything…                                                       │
 │   Weekly (7 day)             N/A ││ ──────────────────────────────────────────────────────────────────────────────── │

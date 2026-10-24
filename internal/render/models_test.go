@@ -135,8 +135,7 @@ func TestSelectorGeometry(t *testing.T) {
 	at(21, "⌄", 25)
 	at(23, "Ultracode", 3)
 	at(23, "Enables dynamic workflows", 13)
-	at(23, "▐", w-9)
-	at(23, "▌", w-4)
+	at(23, toggleOnText, w-8) // the text toggle, on, without Sixel (plan 35, design D3)
 	if !strings.HasPrefix(rows[24], "╰▾─") || !strings.HasSuffix(rows[24], "╯") || strings.TrimSpace(strings.Trim(rows[22], "│")) != "" {
 		t.Errorf("the rows under Effort: %q, %q, %q", rows[22], rows[23], rows[24])
 	}
@@ -204,7 +203,7 @@ func TestSelectorStates(t *testing.T) {
 	sc := Draw(haiku, ui)
 	_, bx, by := boxOf(t, sc)
 	label, _ := spanAt(sc.lines[by+len(rows)-2], bx+3)
-	if label.st != stGrey || !strings.Contains(ult, "▐●   ▌") {
+	if label.st != stGrey || col(ult, toggleOffText) != textWidth(ult)-8 {
 		t.Errorf("the unavailable Ultracode row %q styled %v", ult, label.st)
 	}
 	locked := selectorState(t, "claude-code", testModels, event.Settings{Model: "claude-fable-5-1", Choice: "fable", Effort: "max", EffortKnown: true,

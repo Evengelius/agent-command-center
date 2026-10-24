@@ -55,6 +55,10 @@ var (
 	cModelBox    = colour{"#232631", ""}
 	cModelToggle = colour{"#CA84FB", "13"}
 	cModelOff    = colour{"#3B3F51", "8"}
+	// The toggle's knob, and its track while Ultracode is unavailable (plan
+	// 35, design D1; the knob then cModelRule).
+	cModelKnob = colour{"#FFFFFF", "15"}
+	cModelDim  = colour{"#2A2D38", "8"}
 
 	// The violet of thinking (plan 22, design 2): the live card's border, its
 	// bar's fill, the fill's lit leading edge, the mid shade (and the
@@ -134,9 +138,10 @@ var (
 
 	// The model selector (plan 34): its frame, its bold header, "Current
 	// session", the descriptions, the cursor's "▶", the separators, and the
-	// toggle's half-block ends on and off.
+	// text toggle's rounded ends on, off and unavailable and its knob (plan
+	// 35).
 	stModelFrame, stModelHead, stModelAside, stModelDesc, stModelMark, stModelRule = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
-	stModelTrackEnd, stModelOffEnd                                                 = new(lipgloss.Style), new(lipgloss.Style)
+	stModelTrackEnd, stModelOffEnd, stModelDimEnd, stModelKnob                     = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 
 	stMdHeading = stTitle
 	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
@@ -226,6 +231,8 @@ func paint() {
 	paintStyle(stModelRule, fg(cModelRule))
 	paintStyle(stModelTrackEnd, fg(cModelToggle))
 	paintStyle(stModelOffEnd, fg(cModelOff))
+	paintStyle(stModelDimEnd, fg(cModelDim))
+	paintStyle(stModelKnob, fg(cModelKnob))
 	if sixteen { // no ground to spare: the pill is its bold pink text
 		paintStyle(stPill, stAttentionBold.Background(lipgloss.NoColor{}))
 		paintStyle(stPillEnd, lipgloss.NewStyle())
@@ -260,12 +267,13 @@ var (
 	// the item under the mouse (plan 30, design D2 and D3).
 	activeGround = &ground{c: cActive, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	// The model selector's grounds (plan 34): the cursor's band, the effort
-	// box, the toggle's track on and off.
+	// box, the text toggle's track on, off and unavailable (plan 35).
 	bandGround  = &ground{c: cModelBand, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	boxGround   = &ground{c: cModelBox, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	trackGround = &ground{c: cModelToggle, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	offGround   = &ground{c: cModelOff, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	grounds     = []*ground{toolGround, activeGround, bandGround, boxGround, trackGround, offGround}
+	dimGround   = &ground{c: cModelDim, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	grounds     = []*ground{toolGround, activeGround, bandGround, boxGround, trackGround, offGround, dimGround}
 )
 
 // active is st on the active ground (plan 30).

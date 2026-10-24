@@ -4602,3 +4602,23 @@ I don't like it actually, remove this last implementation
 The implementation was removed the same day: the setting, the line, its
 tests and its design text; nothing of it remains in the code
 (plan.md, Plan 34, design D11).
+
+## Amendment 36, 2026-10-24: the Ultracode toggle after the owner's image, for plan 35
+
+After plan 34 was approved and pushed, the owner sent an image of the
+toggle (a lavender pill with a round white knob at its right, as in
+`references/11-model-selector.webp`) and wrote, word for word:
+
+````text
+The pill design for ultracode is not respected
+````
+
+The image, 99x62 pixels, measured: a track 76x40 pixels, its ends fully
+rounded, in `#C983FB`, on `#131518`; a white knob 32 pixels across, 4 to
+5 pixels inside the track's edges, at its right end. The dashboard drew
+`▐   ●▌`: six cells, square half-block ends and a small dot.
+
+A probe in Windows Terminal 1.23 compared drawings (plan.md, Plan 35):
+text with Powerline's rounded ends keeps a small knob, or one as tall as
+the track; a 40x20-pixel Sixel image, 4 cells, with a 16-pixel knob,
+matches the image's proportions. Taken as plan 35 (plan.md, Plan 35).

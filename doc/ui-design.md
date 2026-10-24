@@ -2326,7 +2326,7 @@ provider: it has no provider code and sends a string to part 5's caller
   │                                                                 │
   │  Effort:    Max        ⌄                                        │
   │                                                                 │
-  │  Ultracode Enables dynamic workflows                    ▐   ●▌  │
+  │  Ultracode Enables dynamic workflows                      ◖ ●◗  │
   ╰▾────────────────────────────────────────────────────────────────╯
   ```
 
@@ -2355,6 +2355,24 @@ provider: it has no provider code and sends a string to part 5's caller
     track) while Claude Code reports it on. While it reports it
     unavailable, or its state is not known, the row is dimmed and its
     toggle off, and a click puts the reason in zone B and sends nothing.
+    The toggle (plan 35, brief amendment 36; drawn above as `◖ ●◗`) is a
+    pill. With Sixel it is an image of 50x20 pixels over five blank
+    cells, columns W-7 to W-3, drawn as the preview's thumbnails are
+    (below): the pill in the first four, its ends half circles, its knob
+    16 pixels across, at the right on and at the left off; the track
+    `#CA84FB` on, `#3B3F51` off, `#2A2D38` dimmed, the knob white,
+    `#5E616D` dimmed; transparent around the track on the ground, its
+    edge blended into the band on the band, the fifth cell then the
+    band's last. Its cells stay on the ground whatever the band, so the
+    band's coming and going never writes them again, which would erase
+    the image (the renderer writes every cell between a row's first and
+    last changed ones): the band's colour around the pill follows the
+    rest of the row by one drawing, about 50 ms. It is drawn again after
+    a frame that changes its row or its state, its cells written first in
+    the same synchronized output, and its place written over once the
+    popup closes. Without Sixel it is five cells, W-8 to W-4: Powerline's
+    half circles (U+E0B6, U+E0B4) at the ends in the track's colour, and
+    a knob of two half circles on the track.
   - **Keys** while it is open: ↑↓ move the cursor over the models, More
     models, Effort and Ultracode (over the levels while the effort list
     is open), Home and End to the first and the last; Enter or Space acts

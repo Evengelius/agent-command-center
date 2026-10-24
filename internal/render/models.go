@@ -64,7 +64,6 @@ const (
 	selectorSlack    = 12 // the cells a model's row takes beyond its text
 	boxCol           = 13 // the effort box and Ultracode's description
 	boxWidth         = 14
-	toggleWidth      = 6
 )
 
 // SelectorItem is one row the cursor can be on.
@@ -448,37 +447,35 @@ func UltracodeUsable(s *state.State) bool {
 }
 
 // ultracodeRow is "Ultracode" at column 3, its description at column 13,
-// its toggle in columns W-9 to W-4; dimmed, the toggle off, while the CLI
-// does not report it available (design D6).
-func ultracodeRow(s *state.State, v ModelsView, item, w int) line {
-	usable := UltracodeUsable(s)
+// its toggle's pill ending at column W-4: with Sixel, 5 blank cells (W-7 to
+// W-3) for its image, whose last is the band's last (plan 35, design D2),
+// else the text toggle (W-8 to W-4, design D3); dimmed, the toggle off,
+// while the CLI does not report it available (plan 34, design D6). On the
+// band the toggle keeps its own colours, the band around it.
+func ultracodeRow(s *state.State, v ModelsView, item, w int, sixel bool) line {
+	on, usable := toggleState(s)
 	label, desc := stBright, stModelDesc
 	if !usable {
 		label, desc = stGrey, stGrey
 	}
+	cursor := v.Cursor == item && !v.Effort
+	// After the text toggle two cells, the band reaching the first; after
+	// the image one, the image painting the band's last cell.
+	cells, after := toggleTextCells, 2
+	if sixel {
+		cells, after = ToggleCells, 1
+	}
 	l := padRow(line{deco("  ", stNone), deco("Ultracode", label)}, boxCol-1)
-	l = append(l, deco(UltracodeDescription, desc))
-	l = append(padRow(l, w-toggleWidth-2), toggle(usable && s.Models.InForce.Ultracode, usable)...)
-	l = padRow(l, w)
-	if v.Cursor == item && !v.Effort {
+	l = padRow(append(l, deco(UltracodeDescription, desc)), w-cells-after)
+	tail := line{deco(strings.Repeat(" ", after), stNone)}
+	if cursor {
 		l = banded(l, w)
+		if !sixel {
+			tail = line{deco(" ", bandGround.on(stNone)), deco(" ", stNone)}
+		}
 	}
+	l = append(append(l, toggleCells(on, usable, cursor, sixel)...), tail...)
 	return items(l, ItemUltracode)
-}
-
-// toggle is a pill six cells wide, its ends half blocks: on, the knob "●"
-// at the right on the lavender track; off, at the left on a grey one.
-func toggle(on, usable bool) line {
-	if on {
-		t := trackGround.on(stBright)
-		return line{deco("▐", stModelTrackEnd), deco("   ", t), deco("●", t), deco("▌", stModelTrackEnd)}
-	}
-	knob := stMuted
-	if !usable {
-		knob = stGrey
-	}
-	t := offGround.on(knob)
-	return line{deco("▐", stModelOffEnd), deco("●", t), deco("   ", t), deco("▌", stModelOffEnd)}
 }
 
 // selectorWidth is the box's width: 63 cells, the image's, or the longest
@@ -559,7 +556,15 @@ func modelSelector(sc *Screen, s *state.State, ui UI) {
 	effortY := y + len(box) + 1
 	box = append(box, frame(blankRow(inner), "│"), frame(effortRow(s, v, at('e'), inner), "│"))
 	if v.Ultracode {
-		box = append(box, frame(blankRow(inner), "│"), frame(ultracodeRow(s, v, at('u'), inner), "│"))
+		box = append(box, frame(blankRow(inner), "│"))
+		if ui.Sixel {
+			// The toggle's image lies on its row's blank cells, drawn by the
+			// application once the frame is out (plan 35, design D2).
+			on, usable := toggleState(s)
+			sc.Toggle = ToggleShown{Shown: true, X: x + 1 + inner - ToggleCells - 1, Y: y + len(box), On: on, Usable: usable,
+				Band: v.Cursor == at('u') && !v.Effort}
+		}
+		box = append(box, frame(ultracodeRow(s, v, at('u'), inner, ui.Sixel), "│"))
 	}
 	box = append(box, line{deco("╰"+strings.Repeat("─", tail-1)+"▾"+strings.Repeat("─", max(inner-tail, 0))+"╯", stModelFrame)})
 	for i := range box {

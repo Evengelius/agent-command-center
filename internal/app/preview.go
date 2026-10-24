@@ -126,15 +126,20 @@ func (m *Model) previewFrame() {
 	time.AfterFunc(thumbFirst, func() { send(thumbDrawMsg{gen: gen}) })
 }
 
-// previewSignature is what the frame's thumbnails depend on: their items,
-// places and images, and the rows they lie on as drawn.
+// previewSignature is what the frame's images depend on: the thumbnails'
+// items, places and images, the Ultracode toggle's place and state (plan
+// 35, design D2), and the rows they lie on as drawn.
 func (m *Model) previewSignature() string {
-	ts := m.screen.Thumbs()
-	if len(ts) == 0 {
+	ts, tg := m.screen.Thumbs(), m.screen.Toggle
+	if len(ts) == 0 && !tg.Shown {
 		return ""
 	}
 	var b strings.Builder
 	var rows []int
+	if tg.Shown {
+		fmt.Fprintf(&b, "toggle %d %d %t %t %t\n", tg.X, tg.Y, tg.On, tg.Usable, tg.Band)
+		rows = append(rows, tg.Y)
+	}
 	for _, t := range ts {
 		key, pixels, sum := "", false, [32]byte{}
 		if t.Item < len(m.attach) {
@@ -178,7 +183,8 @@ func (m *Model) drawThumbs(msg thumbDrawMsg) []tea.Cmd {
 // an image was drawn and no thumbnail of this frame takes, written over
 // with what the frame holds there, which erases the image (a cell the
 // renderer leaves alone keeps it, probe P32b); then each thumbnail's image
-// at its first cell. It records where images now lie.
+// at its first cell, and the Ultracode toggle's (plan 35). It records where
+// images now lie.
 func (m *Model) thumbSequence() string {
 	var now []render.Thumb
 	var draw strings.Builder
@@ -197,6 +203,14 @@ func (m *Model) thumbSequence() string {
 			}
 			fmt.Fprintf(&draw, "\x1b[%d;%dH%s", t.Y+1, t.X+1, six)
 			now = append(now, t)
+		}
+		if tg := m.screen.Toggle; tg.Shown {
+			// The Ultracode toggle's pill on its blank cells (plan 35, design
+			// D2), those written first: the image before it may be the other
+			// ground's, whose pixels an image's transparent ones would keep.
+			fmt.Fprintf(&draw, "\x1b[%d;%dH%s\x1b[%d;%dH%s", tg.Y+1, tg.X+1, m.screen.Region(tg.X, tg.Y, render.ToggleCells),
+				tg.Y+1, tg.X+1, render.ToggleSixel(tg.On, tg.Usable, tg.Band))
+			now = append(now, render.Thumb{Item: -1, X: tg.X, Y: tg.Y, W: render.ToggleCells, H: 1})
 		}
 	}
 	var clear strings.Builder
