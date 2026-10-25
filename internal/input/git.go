@@ -350,18 +350,52 @@ func (g GitCLI) Diff(dir, base string) ([]string, error) {
 	return out, nil
 }
 
+// Merge merges branch into the main worktree at main. It first reads main
+// (plan 46, design D1): a merge in progress or uncommitted changes refuse it
+// before any git merge runs, the Worktrees view's check made again at the
+// moment of merging, since the view's list may predate a merge the owner
+// started in a terminal. A conflict of its own merge, its MERGE_HEAD the
+// branch's tip, is aborted, main left as it was; any other is git's.
 func (g GitCLI) Merge(main, branch string) error {
-	_, err := g.run(opLimit, main, "merge", "--no-edit", branch)
+	if err := g.mergeable(main); err != nil {
+		return err
+	}
+	tip, err := g.run(readLimit, main, "rev-parse", "-q", "--verify", "refs/heads/"+branch)
+	if err != nil {
+		return err
+	}
+	_, err = g.run(opLimit, main, "merge", "--no-edit", branch)
 	if err == nil || errors.Is(err, ErrNoGit) {
 		return err
 	}
-	if _, merging := g.run(readLimit, main, "rev-parse", "-q", "--verify", "MERGE_HEAD"); merging != nil {
-		return err // git refused before merging anything
+	if head, merging := g.run(readLimit, main, "rev-parse", "-q", "--verify", "MERGE_HEAD"); merging != nil || strings.TrimSpace(head) != strings.TrimSpace(tip) {
+		return err // git refused before merging anything, or the merge is not this call's
 	}
 	if _, aerr := g.run(opLimit, main, "merge", "--abort"); aerr != nil {
 		return fmt.Errorf("conflict, and git merge --abort failed: %v; the main worktree needs attention", aerr)
 	}
 	return errors.New("conflict: merge aborted, main unchanged")
+}
+
+// mergeable refuses a merge into the main worktree at main while it has a
+// merge in progress or uncommitted changes (plan 46, design D1).
+func (g GitCLI) mergeable(main string) error {
+	if _, err := g.run(readLimit, main, "rev-parse", "-q", "--verify", "MERGE_HEAD"); err == nil {
+		return errors.New("the main worktree has a merge in progress: finish or abort it first")
+	} else if errors.Is(err, ErrNoGit) {
+		return err
+	}
+	st, err := g.run(readLimit, main, "status", "--porcelain")
+	if err != nil {
+		return err
+	}
+	switch n := len(lines(st)); {
+	case n == 1:
+		return errors.New("the main worktree has 1 uncommitted change: commit them first")
+	case n > 1:
+		return fmt.Errorf("the main worktree has %d uncommitted changes: commit them first", n)
+	}
+	return nil
 }
 
 func (g GitCLI) Remove(main, path, branch string) (string, error) {

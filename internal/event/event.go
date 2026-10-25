@@ -311,6 +311,9 @@ type Problem struct {
 	Message     string
 	WillRetry   bool
 	TurnRefused bool `json:",omitempty"`
+	// Optional says the refused request is one the session works without
+	// (plan 46, design D2): its Error never ends the handshake.
+	Optional bool `json:",omitempty"`
 }
 
 // The approval modes the adapters name (plan 12, item 2; plan 39): Manual

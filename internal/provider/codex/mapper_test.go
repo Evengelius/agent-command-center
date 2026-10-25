@@ -843,3 +843,65 @@ func TestTurnSandbox(t *testing.T) {
 		t.Errorf("at the end: sandbox %q, mode %q", st.Session.Sandbox, st.Mode())
 	}
 }
+
+// TestOptionalReadsKeepHandshake is plan 46's criteria 46.4 and 46.5 (design
+// D2), through the real mapper and the reducer: a refused model/list or
+// config/read, answered before thread/start's answer as Codex answers them,
+// leaves the session handshaking, the refusal kept as an error, and
+// thread/start's answer makes it ready; a refused initialize, thread/start
+// or thread/resume still ends the handshake and closes the CLI; once ready,
+// the optional refusals are errors as before.
+func TestOptionalReadsKeepHandshake(t *testing.T) {
+	refuse := func(m *Mapper, s *state.State, id int, method string) []state.Command {
+		m.In([]byte(fmt.Sprintf(`{"id":%d,"method":%q,"params":{}}`, id, method)))
+		var cmds []state.Command
+		for _, ev := range m.Out([]byte(fmt.Sprintf(`{"id":%d,"error":{"code":-32603,"message":"unavailable"}}`, id))) {
+			cmds = append(cmds, s.Apply(ev)...)
+		}
+		return cmds
+	}
+	closes := func(cmds []state.Command) bool {
+		return slices.ContainsFunc(cmds, func(c state.Command) bool { return c.Kind == state.CmdClose })
+	}
+	spawned := func() (*Mapper, *state.State) {
+		s := state.New()
+		s.Apply(event.Event{Kind: event.SessionSpawned, Payload: event.Spawned{Dir: `C:\work\demo`}})
+		return NewMapper(), s
+	}
+	errorsWith := func(s *state.State, text string) bool {
+		return slices.ContainsFunc(s.Errors, func(e state.ErrorEntry) bool { return strings.Contains(e.Message, text) })
+	}
+
+	m, s := spawned()
+	for i, method := range []string{"config/read", "model/list"} {
+		if cmds := refuse(m, s, 2+i, method); closes(cmds) || s.Session.Phase != state.Handshaking {
+			t.Errorf("a refused %s during the handshake: phase %q, closes %v, reason %q", method, s.Session.Phase, closes(cmds), s.Session.Reason)
+		}
+		if !errorsWith(s, method+" refused by Codex: unavailable") {
+			t.Errorf("the refused %s not kept as an error: %+v", method, s.Errors)
+		}
+	}
+	if s.Models.ListProblem == "" {
+		t.Error("the selector's reason for the refused list not set")
+	}
+	m.In([]byte(`{"id":9,"method":"thread/start","params":{}}`))
+	for _, ev := range m.Out([]byte(`{"id":9,"result":{"thread":{"id":"t1"}}}`)) {
+		s.Apply(ev)
+	}
+	if s.Session.Phase != state.Ready {
+		t.Errorf("after thread/start's answer: phase %q, reason %q", s.Session.Phase, s.Session.Reason)
+	}
+	for i, method := range []string{"config/read", "model/list"} {
+		if cmds := refuse(m, s, 20+i, method); closes(cmds) || s.Session.Phase != state.Ready {
+			t.Errorf("a refused %s once ready: phase %q, closes %v", method, s.Session.Phase, closes(cmds))
+		}
+	}
+
+	for _, method := range []string{"initialize", "thread/start", "thread/resume"} {
+		m, s := spawned()
+		cmds := refuse(m, s, 1, method)
+		if !closes(cmds) || s.Session.Phase != state.Crashed || !strings.HasPrefix(s.Session.Reason, "handshake failed: "+method+" refused by Codex") {
+			t.Errorf("a refused %s: phase %q, closes %v, reason %q", method, s.Session.Phase, closes(cmds), s.Session.Reason)
+		}
+	}
+}

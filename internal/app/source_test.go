@@ -290,6 +290,74 @@ func TestSourceList(t *testing.T) {
 	}
 }
 
+// TestSourceFoldersFollow is plan 46's criterion 46.6 (design D3): an opened
+// untracked folder is read again after each status read and each time it is
+// opened, so a file written in it appears; the listing never shows less than
+// what "Stage and commit" would stage.
+func TestSourceFoldersFollow(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		r, _, root := sourceRig(t)
+		h := r.h
+		showSource(t, h)
+		sourceTo(t, h, "f:changes:web/")
+		h.send(keyOf(tea.KeyRight))
+		if f := h.frame(); !strings.Contains(f, "U  web/app.ts") || strings.Contains(f, "secret.env") {
+			t.Fatalf("web/ opened:\n%s", f)
+		}
+		if err := os.WriteFile(filepath.Join(root, "web", "secret.env"), []byte("KEY=1\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		h.send(typed('r')) // the next status read, as the poll's
+		if f := h.frame(); !strings.Contains(f, "U  web/secret.env") || !strings.Contains(f, "U  web/app.ts") {
+			t.Errorf("after the next status read, the new file not listed:\n%s", f)
+		}
+		h.send(keyOf(tea.KeyLeft))
+		if err := os.WriteFile(filepath.Join(root, "web", "two.txt"), []byte("2\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		h.send(keyOf(tea.KeyRight)) // opened again: read again
+		if f := h.frame(); !strings.Contains(f, "U  web/two.txt") {
+			t.Errorf("opened again, the folder not read again:\n%s", f)
+		}
+	})
+}
+
+// TestSourceFolderReadsOrdered is plan 46's criterion 46.7 (design D3): of
+// two reads of one folder answered in reverse order, the newer listing is
+// kept; a read for a folder folded, or no longer untracked, is dropped.
+func TestSourceFolderReadsOrdered(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		r, g, _ := sourceRig(t)
+		h := r.h
+		showSource(t, h)
+		sourceTo(t, h, "f:changes:web/")
+		h.send(keyOf(tea.KeyRight))
+		files := func() []string {
+			if d := h.m.ui.Source.Folders["web/"]; d != nil {
+				return d.Files
+			}
+			return nil
+		}
+		seq := h.m.folderSeq
+		h.send(folderMsg{seq: seq + 2, rel: "web/", files: []string{"web/new.ts"}})
+		h.send(folderMsg{seq: seq + 1, rel: "web/", files: []string{"web/old.ts"}})
+		if got := files(); !slices.Equal(got, []string{"web/new.ts"}) {
+			t.Errorf("after the newer then the older read: %q", got)
+		}
+		h.send(keyOf(tea.KeyLeft)) // folded
+		h.send(folderMsg{seq: seq + 3, rel: "web/", files: []string{"web/late.ts"}})
+		if got := files(); !slices.Equal(got, []string{"web/new.ts"}) {
+			t.Errorf("a read for the folded folder applied: %q", got)
+		}
+		g.set(func(f *fakeGit) { f.snap.Entries = f.snap.Entries[:4] }) // web/ no longer untracked
+		h.send(typed('r'))
+		h.send(folderMsg{seq: seq + 4, rel: "web/", files: []string{"web/gone.ts"}})
+		if got := files(); got != nil {
+			t.Errorf("a read for a folder no longer untracked applied: %q", got)
+		}
+	})
+}
+
 // TestSourceRefresh is criterion 44.5 (design D3): git's status is read
 // when the panel shows, on "r", after a tool call and a turn end; a change
 // appears, a revert removes it, the cursor kept on its file; a read equal

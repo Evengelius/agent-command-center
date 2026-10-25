@@ -197,6 +197,10 @@ type Model struct {
 	diffEntryOpen           input.GitEntry
 	diffStamp               string
 	diffGen                 int
+	// The untracked folders' reads, numbered as issued, and each folder's
+	// last applied: an older read never replaces a newer (plan 46, D3).
+	folderSeq  int
+	folderSeen map[string]int
 	// The commit controls (commit.go, plan 45): the message field, the
 	// operation running and its steps' generation, the question's offer.
 	msg   input.Editor

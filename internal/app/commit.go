@@ -387,6 +387,7 @@ func (m *Model) stepDone(msg opMsg) []tea.Cmd {
 		m.statusGen++
 		m.statusBusy, m.statusAgain = false, false
 		m.applySnapshot(msg.snap, msg.snapE)
+		cmds = append(cmds, m.readFolders()...) // the opened folders too (plan 46, design D3)
 		cmds = append(cmds, m.armPoll())
 		if m.ui.Diff.Open && msg.snapE == nil {
 			cmds = append(cmds, m.compareOpen(true))

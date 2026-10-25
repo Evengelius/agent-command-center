@@ -7141,3 +7141,18 @@ Respect Git staging semantics, preserve existing changes, and never silently per
 ````
 
 Taken as plan 45 (plan.md, Plan 45).
+
+## Amendment 47, 2026-10-25: three fixes from the audit, for plan 46
+
+After plan 45 was approved and pushed, the owner asked for an independent,
+read-only Staff-engineer audit of the whole codebase ("Agent Command Center
+— Independent Staff Engineer Architecture & Code Quality Audit"), then for a
+final review of its severities and roadmap ("Agent Command Center — Final
+Risk Assessment & Refactoring Roadmap Validation"). Both results are
+`doc/audit.md`. The owner then wrote, word for word:
+
+````text
+Approved: write plan 46 for the first three fixes (3a merge pre-check, 1a non-fatal optional Codex reads, 10 untracked-folder refresh), each test-first. Plan first, criteria before code, nothing committed until I review.
+````
+
+Taken as plan 46 (plan.md, Plan 46).

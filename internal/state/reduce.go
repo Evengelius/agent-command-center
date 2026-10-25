@@ -185,7 +185,9 @@ func (s *State) apply(ev event.Event) []Command {
 		}
 		return nil
 	case event.Problem:
-		if ev.Kind == event.Error && s.Session.Phase == Handshaking {
+		// A refused request the session works without never ends the
+		// handshake (plan 46, design D2); any other error does.
+		if ev.Kind == event.Error && s.Session.Phase == Handshaking && !p.Optional {
 			return s.crash(ev, "handshake failed: "+p.Message, true)
 		}
 		s.Errors = appendBounded(s.Errors, ErrorEntry{Seq: ev.Seq, At: ev.At, Agent: ev.Agent, Message: p.Message, Retry: ev.Kind == event.Retry}, MaxErrors)

@@ -350,6 +350,18 @@ green with ✓, or in red with ✗ and git's reason. A conflict is aborted
 git will not delete because it is not merged stays: "branch kept:" and
 git's reason. No call passes `--force`, `-f` or `-D`.
 
+The merge reads the main worktree again at the moment it runs, since the
+view's list may be older than a merge started in a terminal (plan 46,
+design D1). Either refusal runs no `git merge` and changes nothing:
+- a merge in progress: "the main worktree has a merge in progress: finish
+  or abort it first";
+- uncommitted changes: "the main worktree has 2 uncommitted changes: commit
+  them first".
+
+A conflict is aborted only when it is the dashboard's own merge, that is
+when MERGE_HEAD is the merged branch's tip. A merge someone else started is
+never aborted.
+
 Refused before git runs, with the reason in red:
 
 | Key | Refused when |
@@ -2010,7 +2022,11 @@ rule, the repository's row and the commit controls stay.
 (its files, sorted, two cells deeper, at most 1,000, "first 1,000 files"
 after a cut list; no `.git`, no link, no credential file), "reading…"
 meanwhile, its reason in the attention colour when it cannot be read; ← or
-Enter folds it.
+Enter folds it. An open folder is read again after each status read and
+each time it opens, so a file an agent adds shows within one poll (plan
+46, design D3). Its last listing stays on screen until the new one
+arrives, and an older read never replaces a newer one. "Stage and commit"
+stages the folder whole, so the listing must show what it holds.
 
 **Empty states.** "No changes" in grey; "No Git repository found for this
 project." where the project is in no repository, and nothing else is run;

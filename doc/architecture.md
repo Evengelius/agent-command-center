@@ -567,6 +567,15 @@ change.
 | 4. Rendering | the message box, the button and the note or question under the repository row (`commitControls`, items `ItemMsg` to `ItemNotice` of panel 'G'), the dropdown over the panel's rows under the button (`commitMenu`), in text or as blank cells whose images the frame records (`commitShown`: `Screen.Commit`, `Menu`, `MsgBox`); the images (`CommitImage`, `MenuImage`, `MsgBoxImage` and `MsgStrips`, encoded once a look; a running operation's button, `CommitLook.Live`, encoded each time and not kept); the note while an operation runs (`BusyHint`, in the attention colour with `BusyWarn`); the footer's keys for each place, "Esc cancel the push" while one runs; the list's room less the controls' rows (`SourceRoom`) | `internal/render/commit.go`, `commitimage.go`, `source.go`, `select.go`, `palette.go` |
 | The application | the message field, a second `input.Editor` kept as the focus and the panels change; the panel's keys, clicks and the dropdown's hover by place (`commitKey`, `commitClick`, `menuHotAt`); the main action from the snapshot (`commitState`); an operation's steps (the destination, the staging, the commit, the push) run one command at a time, one operation at a time, the last or failing step reading git's status in the same command (`startOp`, `runStep`, `stepDone`); the elapsed time, a tick a second while an operation runs, a tick of an ended or earlier one dropped (`opTickMsg`, `opTicked`, `elapsed`); Esc cancelling a running push through its `GitStop` (`cancelPush`, `pushing`); the notes; the images drawn after the frame with GDI's labels, a running operation's kept only while it shows (`commitSequence`, `textLabel`, `liveLabel`) | `internal/app/commit.go`, `source.go`, `mouse.go`, `paste.go`, `preview.go`, `app.go` |
 
+Plan 46 (brief amendment 47; the first three fixes of
+[audit.md](audit.md), Part 2) changes no part's role.
+
+| Part | What changes | Where |
+| - | - | - |
+| 5. Input | `GitCLI.Merge` reads the main worktree first (`mergeable`): a merge in progress or uncommitted changes refuse it before any `git merge`; a conflict is aborted only when MERGE_HEAD is the merged branch's tip, so a merge someone else started is never aborted | `internal/input/git.go` |
+| 2. Collection, 3. State | `event.Problem.Optional`: the Codex mapper marks a refused `config/read` or `model/list` page; the reducer's handshake rule ends the session only on an Error that is not Optional | `internal/event/event.go`, `internal/provider/codex/mapper.go`, `internal/state/reduce.go` |
+| The application | opened untracked folders read again after each status read and each opening, the reads numbered per folder so that an older one never replaces a newer one (`readFolders`, `folderSeq`, `folderSeen`) | `internal/app/source.go`, `commit.go`, `app.go` |
+
 ## Build order
 
 Input to plan 3's roadmap, from AM4's priorities (P1 to P6) and AGENTS.md

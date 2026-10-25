@@ -320,6 +320,9 @@ func (m *Mapper) response(r rpc, raw []byte) []event.Event {
 		// A refused turn/start started no turn: the message goes back to the
 		// editor (plan 34).
 		p.TurnRefused = method == "turn/start"
+		// The session works without its model list: a refused page never
+		// ends the handshake (plan 46, design D2).
+		p.Optional = method == "model/list"
 		refused := m.ev(event.Error, event.Observed, "", "", "", raw, p)
 		switch method {
 		case "account/rateLimits/read":
@@ -1315,9 +1318,10 @@ func (m *Mapper) configRead(raw []byte) ([]event.Event, bool) {
 	}
 	_ = json.Unmarshal(raw, &r)
 	if len(r.Error) > 0 && string(r.Error) != "null" {
-		// The error's message carries no configuration; it is shown as any refusal.
+		// The error's message carries no configuration; it is shown as any
+		// refusal, one the session works without (plan 46, design D2).
 		msg := problemMessage(r.Error)
-		return []event.Event{m.ev(event.Error, event.Observed, "", "", "", kept, event.Problem{Message: "config/read refused by Codex: " + msg})}, true
+		return []event.Event{m.ev(event.Error, event.Observed, "", "", "", kept, event.Problem{Message: "config/read refused by Codex: " + msg, Optional: true})}, true
 	}
 	var c struct {
 		Config struct {

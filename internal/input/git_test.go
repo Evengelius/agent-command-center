@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -220,6 +221,114 @@ func TestGitMerge(t *testing.T) {
 	}
 	if st := gitT(t, main, "status", "--porcelain"); st != "" {
 		t.Errorf("main not clean: %q", st)
+	}
+}
+
+// TestGitMergeRefusals is plan 46's criteria 46.1 and 46.2 (design D1): a
+// merge into a main worktree with a merge in progress, or with uncommitted
+// changes, is refused before any git merge runs, and nothing in it changes:
+// not the owner's merge, not their edited conflict file, not their changes.
+func TestGitMergeRefusals(t *testing.T) {
+	merged := func(calls [][]string) bool {
+		for _, a := range calls {
+			if slices.Contains(a, "merge") {
+				return true
+			}
+		}
+		return false
+	}
+
+	// A merge in progress, started by the owner in a terminal, its conflict
+	// file being resolved.
+	main := testRepo(t)
+	gitT(t, main, "branch", "topic")
+	p := WorktreePath(main, "feature")
+	gitT(t, main, "worktree", "add", "-q", "-b", "feature", p)
+	commit(t, p, "f.txt", "feature\n")
+	commit(t, main, "a.txt", "ours\n")
+	gitT(t, main, "checkout", "-q", "topic")
+	commit(t, main, "a.txt", "theirs\n")
+	gitT(t, main, "checkout", "-q", "main")
+	if out, err := exec.Command("git", "-C", main, "merge", "-q", "topic").CombinedOutput(); err == nil {
+		t.Fatalf("the owner's merge did not conflict: %s", out)
+	}
+	write(t, filepath.Join(main, "a.txt"), "resolving\n")
+	mergeHead := gitT(t, main, "rev-parse", "MERGE_HEAD")
+	var calls [][]string
+	g := GitCLI{Trace: func(a []string) { calls = append(calls, a) }}
+	err := g.Merge(main, "feature")
+	if want := "the main worktree has a merge in progress: finish or abort it first"; err == nil || err.Error() != want {
+		t.Errorf("Merge = %v, want %q", err, want)
+	}
+	if merged(calls) {
+		t.Errorf("git merge ran: %q", calls)
+	}
+	if got, err := exec.Command("git", "-C", main, "rev-parse", "MERGE_HEAD").Output(); err != nil || strings.TrimSpace(string(got)) != mergeHead {
+		t.Errorf("the owner's merge: MERGE_HEAD %q (%v), want %s", got, err, mergeHead)
+	}
+	if b, _ := os.ReadFile(filepath.Join(main, "a.txt")); string(b) != "resolving\n" {
+		t.Errorf("the owner's conflict file: %q", b)
+	}
+
+	// Uncommitted changes, made after the view read the worktrees.
+	main = testRepo(t)
+	q := WorktreePath(main, "login")
+	gitT(t, main, "worktree", "add", "-q", "-b", "login", q)
+	commit(t, q, "login.txt", "login\n")
+	head := gitT(t, main, "rev-parse", "HEAD")
+	for _, c := range []struct {
+		files map[string]string
+		want  string
+	}{
+		{map[string]string{"a.txt": "edited\n"}, "the main worktree has 1 uncommitted change: commit them first"},
+		{map[string]string{"a.txt": "edited\n", "new.txt": "new\n"}, "the main worktree has 2 uncommitted changes: commit them first"},
+	} {
+		for name, text := range c.files {
+			write(t, filepath.Join(main, name), text)
+		}
+		calls = nil
+		if err := g.Merge(main, "login"); err == nil || err.Error() != c.want {
+			t.Errorf("Merge = %v, want %q", err, c.want)
+		}
+		if merged(calls) {
+			t.Errorf("git merge ran: %q", calls)
+		}
+		for name, text := range c.files {
+			if b, _ := os.ReadFile(filepath.Join(main, name)); string(b) != text {
+				t.Errorf("%s: %q", name, b)
+			}
+		}
+		if got := gitT(t, main, "rev-parse", "HEAD"); got != head {
+			t.Errorf("main moved to %s", got)
+		}
+	}
+
+	// A merge started between the check and the call: the trace starts it
+	// just before git merge runs. Git refuses, and that merge is not
+	// aborted, its MERGE_HEAD not the branch's tip (criterion 46.3).
+	main = testRepo(t)
+	gitT(t, main, "branch", "topic")
+	late := WorktreePath(main, "late")
+	gitT(t, main, "worktree", "add", "-q", "-b", "late", late)
+	commit(t, late, "l.txt", "late\n")
+	commit(t, main, "a.txt", "ours\n")
+	gitT(t, main, "checkout", "-q", "topic")
+	commit(t, main, "a.txt", "theirs\n")
+	gitT(t, main, "checkout", "-q", "main")
+	topic := gitT(t, main, "rev-parse", "topic")
+	started := false
+	g = GitCLI{Trace: func(a []string) {
+		if !started && slices.Contains(a, "merge") && slices.Contains(a, "--no-edit") {
+			started = true
+			_ = exec.Command("git", "-C", main, "merge", "-q", "topic").Run() // conflicts: MERGE_HEAD is topic's
+		}
+	}}
+	err = g.Merge(main, "late")
+	if err == nil || strings.Contains(err.Error(), "merge aborted") {
+		t.Errorf("Merge = %v, want git's refusal", err)
+	}
+	if got, err := exec.Command("git", "-C", main, "rev-parse", "MERGE_HEAD").Output(); err != nil || strings.TrimSpace(string(got)) != topic {
+		t.Errorf("the merge started meanwhile: MERGE_HEAD %q (%v), want topic's %s", got, err, topic)
 	}
 }
 

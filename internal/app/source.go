@@ -31,7 +31,7 @@ type (
 	}
 	pollMsg   struct{ gen int }
 	folderMsg struct {
-		gen       int
+		seq       int
 		rel       string
 		files     []string
 		truncated bool
@@ -110,13 +110,30 @@ func (m *Model) snapshotRead(msg snapshotMsg) []tea.Cmd {
 	}
 	m.statusBusy, m.statusTook = false, msg.took
 	m.applySnapshot(msg.snap, msg.err)
-	var cmds []tea.Cmd
+	cmds := m.readFolders()
 	if m.statusAgain {
 		return append(cmds, m.readSnapshot())
 	}
 	cmds = append(cmds, m.armPoll())
 	if m.ui.Diff.Open && msg.err == nil {
 		cmds = append(cmds, m.compareOpen(true))
+	}
+	return cmds
+}
+
+// readFolders reads again every opened untracked folder while Source Control
+// shows (plan 46, design D3): its files change between status reads, git's
+// status listing the folder alone, and "Stage and commit" stages them all.
+func (m *Model) readFolders() []tea.Cmd {
+	v := &m.ui.Source
+	if !v.Open || v.Folders == nil {
+		return nil
+	}
+	var cmds []tea.Cmd
+	for p, open := range v.Opened {
+		if open {
+			cmds = append(cmds, m.readFolder(p))
+		}
 	}
 	return cmds
 }
@@ -393,11 +410,10 @@ func (m *Model) sourceOpenRow(r render.SourceRow, onlyOpen, open bool) []tea.Cmd
 			v.Opened[r.Path] = false
 			return nil
 		}
+		// Read each time it opens, its last listing shown until the new one
+		// arrives (plan 46, design D3).
 		v.Opened[r.Path] = true
-		if v.Folders[r.Path] == nil {
-			return []tea.Cmd{m.readFolder(r.Path)}
-		}
-		return nil
+		return []tea.Cmd{m.readFolder(r.Path)}
 	case 'f', 'u':
 		if !open {
 			return nil
@@ -408,9 +424,11 @@ func (m *Model) sourceOpenRow(r render.SourceRow, onlyOpen, open bool) []tea.Cmd
 }
 
 // readFolder lists an untracked folder's files in a command (design D4),
-// those git ignores left out, as its status lists them apart.
+// those git ignores left out, as its status lists them apart; numbered, so
+// that an older read never replaces a newer (plan 46, design D3).
 func (m *Model) readFolder(rel string) tea.Cmd {
-	gen, root := m.statusGen, m.fileRoot()
+	m.folderSeq++
+	seq, root := m.folderSeq, m.fileRoot()
 	var marks input.GitMarks
 	if m.snap != nil {
 		marks = m.snap.Marks
@@ -423,16 +441,20 @@ func (m *Model) readFolder(rel string) tea.Cmd {
 				kept = append(kept, f)
 			}
 		}
-		return folderMsg{gen: gen, rel: rel, files: kept, truncated: truncated, err: err}
+		return folderMsg{seq: seq, rel: rel, files: kept, truncated: truncated, err: err}
 	}
 }
 
 // folderRead keeps an untracked folder's files, or why there are none.
 func (m *Model) folderRead(msg folderMsg) {
 	v := &m.ui.Source
-	if v.Folders == nil || !v.Opened[msg.rel] {
-		return
+	if v.Folders == nil || !v.Opened[msg.rel] || msg.seq <= m.folderSeen[msg.rel] {
+		return // closed, no longer untracked, or older than the listing shown
 	}
+	if m.folderSeen == nil {
+		m.folderSeen = map[string]int{}
+	}
+	m.folderSeen[msg.rel] = msg.seq
 	d := &render.SourceFolder{Files: msg.files, Truncated: msg.truncated}
 	if msg.err != nil {
 		d.Note, d.Failed = msg.err.Error(), true

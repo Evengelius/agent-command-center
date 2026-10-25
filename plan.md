@@ -95,10 +95,226 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 46 - Three fixes from the audit
 
-Plan 45 was approved and closed on 2026-10-25 (Closed plans, below). The
-next plan starts when the owner asks for one.
+Brief amendment 47 (2026-10-25): the first three fixes of the audit's
+roadmap ([`doc/audit.md`](doc/audit.md), Part 2, E):
+- finding 3a: the worktree merge that can abort a merge it did not start;
+- finding 1a: Codex's handshake ended by a refused optional read;
+- finding 10: an opened untracked folder in Source Control that is listed
+  once and never again.
+
+Each fix is test-first: its test is written and seen failing on today's
+code, then the change follows. The criteria below were written before the
+code. Nothing is committed until the owner has reviewed the result.
+
+### What was found
+
+- **Finding 3a, the merge** (`internal/input/git.go:353-364`,
+  `GitCLI.Merge`). The code runs `git merge --no-edit <branch>`. When that
+  fails and MERGE_HEAD exists afterwards, it runs `git merge --abort`,
+  whether or not the merge was this call's.
+  - The Worktrees view refuses a merge into a main worktree with changes
+    (`internal/app/worktrees.go:236-237`, `mergeRefusal`). It decides from
+    the rows read when the view opened or after its last operation
+    (`worktrees.go:83`, `:167`). Confirming checks those rows again, not
+    git.
+  - Reproduced on temporary repositories (audit, Part 2, A). The owner's
+    terminal merge was in progress, with a conflict file edited. The call's
+    own sequence ran: the merge was refused (exit 128, "Merging is not
+    possible because you have unmerged files"), the abort ran, MERGE_HEAD
+    was gone, and the file was back to main's side. The owner's resolution
+    was lost.
+- **Finding 1a, Codex's optional reads**
+  (`internal/provider/codex/session.go:392-410`).
+  - After `initialize`, the session sends `config/read`,
+    `configRequirements/read` and `model/list`, whose next pages follow
+    each answer, then `thread/start`. Only `thread/start`'s answer makes the
+    session ready (`codex/mapper.go:468`).
+  - The mapper makes a refused `model/list` (`codex/mapper.go:308-323`,
+    `:377-384`) or `config/read` (`codex/mapper.go:1306-1320`) an Error.
+    The reducer ends the session on any Error while handshaking
+    (`internal/state/reduce.go:188-190`) and closes the CLI. A refused
+    `configRequirements/read` is already a status line.
+  - Reproduced through the real mapper and reducer (audit, Part 2, A). A
+    refused `model/list` or `config/read` before ready gives Crashed and a
+    closed CLI. After ready, the Error is kept and nothing crashes.
+  - A handshake that never completes is ended by `HandshakeTimeout`
+    (60 s).
+- **Finding 10, untracked folders** (`internal/app/source.go:396-399`,
+  `:431-443`).
+  - An opened untracked folder is read once, when first opened, and again
+    only after it stops being untracked (`source.go:207-212`). `folderMsg`
+    carries a generation that `folderRead` never compares.
+  - "Stage and commit" stages the folder's entry: `git add -A -- web/`
+    takes every file the folder holds at that moment (plan 45,
+    `TestCommitStaging`). The commit's staged-set check takes the files
+    under a folder entry as that entry's (`TestSourceCommit`, "an untracked
+    folder matching its folder"). So files the panel never listed can be
+    committed.
+  - The Explorer reads its open folders again on each status read
+    (plan 43).
+
+### Design
+
+- **D1. The merge's pre-check** (finding 3a). `GitCLI.Merge` first reads
+  the main worktree:
+  - a merge in progress (MERGE_HEAD): refused with "the main worktree has
+    a merge in progress: finish or abort it first";
+  - uncommitted changes (`git status --porcelain`): refused with "the main
+    worktree has N uncommitted changes: commit them first". This is the
+    view's check made again at the moment of merging, in the view's words.
+
+  Either refusal runs no `git merge` and no abort. Then comes the merge.
+  On failure, `merge --abort` runs only when MERGE_HEAD exists now and did
+  not before, that is when the merge was this call's; otherwise the
+  result is git's words. The view shows a refusal as it shows any merge
+  error.
+- **D2. Optional reads** (finding 1a). `event.Problem` gains `Optional`:
+  the refused request is one the session works without.
+  - The Codex mapper sets it on a refused `model/list`, any page, and on a
+    refused `config/read`.
+  - The reducer's handshake rule ends the session on an Error only when
+    the Error is not Optional.
+  - Everything else is unchanged: the Error is kept in the errors list,
+    the selector still gives the reason for a refused model list (plan
+    34), a refused `initialize`, `thread/start` or `thread/resume` still
+    ends the handshake, and the 60 s timeout still applies.
+- **D3. Folders read again** (finding 10). While Source Control shows,
+  every opened untracked folder is read again after each status read (the
+  poll, "r", an operation's last step) and each time it is opened.
+  - Its listing stays on screen until the new one arrives.
+  - Each read is numbered when issued, folder by folder, so a slower,
+    older read cannot replace a newer one. The unused generation goes.
+
+### Criteria
+
+1. **46.1 A merge in progress is refused.** On a temporary repository, the
+   main worktree has a merge in progress and its conflict file is edited.
+   - `Merge` returns "the main worktree has a merge in progress: finish or
+     abort it first".
+   - The trace shows no `merge` and no `merge --abort`.
+   - MERGE_HEAD and the edited file are as they were.
+   - The test fails on today's code, where the abort runs.
+2. **46.2 Uncommitted changes are refused at merge time.** Main has one
+   modified file and one untracked file.
+   - `Merge` returns "the main worktree has 2 uncommitted changes: commit
+     them first".
+   - There is no `merge` in the trace, and the files are as they were.
+3. **46.3 This call's conflict is still aborted.** Main is clean and a
+   branch conflicts.
+   - The result is "conflict: merge aborted, main unchanged", MERGE_HEAD
+     is gone, and HEAD and the status are as before (`TestGitMerge`).
+   - A merge started between the check and the call, simulated through the
+     trace, is not aborted: git's words are returned, and its MERGE_HEAD
+     stays.
+   - A clean merge still merges, and a missing git is still `ErrNoGit`
+     (`TestGitMissing`).
+4. **46.4 A refused optional read keeps the handshake.** Through the real
+   Codex mapper and the reducer, a refused `model/list` and a refused
+   `config/read` arrive before `thread/start`'s answer.
+   - The phase stays Handshaking, no close command is issued, and the
+     Error is in the errors list.
+   - `thread/start`'s answer then makes the session Ready.
+   - The test fails on today's code: Crashed, CLI closed.
+5. **46.5 The fatal refusals stay fatal.** A refused `initialize`,
+   `thread/start` or `thread/resume` during the handshake gives Crashed,
+   "handshake failed: …" and a closed CLI.
+   - After ready, a refused `model/list` or `config/read` behaves as
+     before: an Error, no crash.
+   - The selector's reason for a refused list is still set.
+6. **46.6 An opened folder follows the disk.** Source Control is shown and
+   `web/` is opened, with `web/app.ts` listed; then a file is written in
+   it.
+   - After the next status read, the panel lists the new file.
+   - Reopening the folder reads it again.
+   - The test fails on today's code, where the first listing is kept.
+7. **46.7 An older read never replaces a newer one.**
+   - When two reads of one folder are answered in reverse order, the newer
+     listing is kept.
+   - A read for a folder no longer opened, or no longer untracked, is
+     dropped.
+8. **46.8 No regression.**
+   - Build, vet and gofmt are clean, and `go test ./...` passes.
+   - No golden frame changes.
+   - `-race` passes on input, app, state and the providers.
+   - The timing step's tests are within their targets.
+   - The probe replays and mock files are unchanged.
+9. **46.9 Mutations.** Each fix is broken on purpose through
+   `go test -overlay`, nothing written in the repository:
+   - the merge's pre-checks removed;
+   - the abort's "not before" check removed;
+   - `Optional` not set;
+   - `Optional` ignored by the reducer;
+   - the folder reads removed;
+   - the sequence check removed.
+
+   Each mutant is caught by its test.
+10. **46.10 Windows Terminal.** On a temporary repository, maximised in
+    the acc tab's profile (208x59), then at 120x40, in mock mode:
+    - an opened untracked folder lists a file created outside, after the
+      next poll;
+    - the Worktrees view refuses a merge into a main worktree whose merge
+      is in progress, with the refusal in its note, and the in-progress
+      merge and its edited file are untouched.
+
+### Steps
+
+1. The plan, brief amendment 47, `doc/audit.md`.
+2. Finding 3a: the engine's failing tests (46.1, 46.2), then the
+   pre-check in `GitCLI.Merge`; 46.3.
+3. Finding 1a: the failing test through the mapper and the reducer
+   (46.4), then `event.Problem.Optional`, the mapper's marks and the
+   reducer's rule; 46.5.
+4. Finding 10: the failing application test (46.6), then the folders read
+   again with their sequence; 46.7.
+5. The checks (46.8, 46.9), Windows Terminal (46.10), the documents, the
+   evaluation (`doc/plan46-evaluation.md`), the report.
+
+### Progress
+
+- 2026-10-25: step 1 done (this plan, brief amendment 47, `doc/audit.md`).
+- 2026-10-25: step 2 done.
+  - `TestGitMergeRefusals` was written first and failed on the old code:
+    the owner's merge was aborted and the conflict file went back to
+    "ours"; with uncommitted changes the merge ran and main moved.
+  - Then `GitCLI.Merge` got the pre-check (`mergeable`). An abort now also
+    requires MERGE_HEAD to be the branch's tip, so a merge started between
+    the check and the call is never aborted either.
+  - `TestGitMergeRefusals`, `TestGitMerge` and `TestGitMissing` pass.
+- 2026-10-25: step 3 done.
+  - `TestOptionalReadsKeepHandshake` was written first and failed on the
+    old code: a refused `config/read` crashed the handshake and closed the
+    CLI, and the session never became ready.
+  - Then `event.Problem.Optional` was added, set by the Codex mapper on a
+    refused `model/list` and `config/read`, and read by the reducer's
+    handshake rule.
+  - The test passes. The state and provider suites pass, with the probe
+    replays and mock files unchanged.
+- 2026-10-25: step 4 done.
+  - `TestSourceFoldersFollow` was written first and failed on the old code:
+    no new file after the next status read, and no read when the folder
+    was opened again.
+  - Then opened folders are read again after each status read and each
+    time they open, the reads numbered (`folderSeq`, `folderSeen`).
+  - `TestSourceFolderReadsOrdered` was written with the fix, since it needs
+    the numbered reads; its mutant is in step 5.
+  - Both pass, as do the Source Control and commit tests.
+- 2026-10-25: step 5 done.
+  - A third case joined `TestGitMergeRefusals`: a merge started between
+    the check and the call, through the trace hook, is not aborted
+    (criterion 46.3 extended).
+  - `go test ./...` passes (792 tests), and no golden frame changed.
+  - `-race` passes on input, app, state and the providers.
+  - The timing step is within its targets; the committed tree, timed in
+    turn, gave the same range.
+  - 12 of 12 mutants were caught, the diff hash unchanged.
+  - Windows Terminal at 208x59 and 120x40: the folder listed a file made
+    outside within one poll, and the merge was refused with the outside
+    merge and its file untouched.
+  - `doc/ui-design.md`, `doc/events-and-state.md`, `doc/architecture.md`
+    and `doc/plan46-evaluation.md` are updated: 10 of 10 PASS.
+  - Waiting for the owner's review; nothing committed.
 
 ## Closed plans
 
