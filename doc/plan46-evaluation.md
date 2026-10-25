@@ -87,3 +87,10 @@ Limitations:
 - A merge that git refuses for a reason the pre-check does not cover (for
   example local changes the merge would overwrite, appearing after the
   check) is reported in git's words, not the dashboard's.
+
+**The commit and the push (2026-10-25), after the owner's approval.** The
+owner approved plan 46 on 2026-10-25; commit 9375233 (18 files: 16
+modified, 2 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+block above stays as it was reported.
