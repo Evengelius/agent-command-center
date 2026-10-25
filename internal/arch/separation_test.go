@@ -1,5 +1,6 @@
 // Package arch checks the separation of the five parts (proposal step 0,
-// item 4; test 7). It has no code of its own.
+// item 4; test 7) and that Codex reads AGENTS.md whole. It has no code of
+// its own.
 package arch
 
 import (
