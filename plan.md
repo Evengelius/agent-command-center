@@ -95,246 +95,11 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 47 - The rest of the audit's phase 1
+## No plan active
 
-Brief amendment 48 (2026-10-25): the next step of the audit's roadmap
-([`doc/audit.md`](doc/audit.md), Part 2, C, phase 1), its remaining
-confirmed defects:
-- 3b: quitting during a commit or push;
-- 1b: an approval answered as the CLI withdraws it;
-- 11: the reducer's Mode fall-through and its provider word;
-- from 4: the Explorer leaving Source Control's question armed;
-- from 13: the path literal and the stale comments.
-
-Each fix is test-first: its test is written and seen failing on today's
-code, then the change follows. The criteria below were written before the
-code. Nothing is committed until the owner has reviewed the result. Phase
-0's safeguards and phase 2's hardening follow in later plans.
-
-### What was found
-
-- **3b, quit** (`internal/state/actions.go:226-238`, `:255-258`).
-  - Ctrl+Q asks to confirm only while `Running()` names a turn or agents,
-    and `Running()` is empty unless the session is ready.
-  - A git operation is the application's (`m.op`, `internal/app/commit.go`),
-    and neither the quit key (`internal/app/keys.go:38-40`) nor the reducer
-    sees it.
-  - So Ctrl+Q during a commit or push quits at once. Git keeps running
-    orphaned, or dies with the console, which can leave `index.lock`
-    behind (probe P45a).
-- **1b, a withdrawn approval.**
-  - Both adapters return "no pending request" once the CLI has withdrawn
-    the request (`internal/provider/claude/session.go:420`, `:575`;
-    `internal/provider/codex/session.go:798`).
-  - The application turns any answer error into `AnswerFailed`
-    (`internal/app/app.go:758-766`). The reducer turns that into a crash
-    and closes the CLI (`internal/state/actions.go:201-205`).
-  - The withdrawal itself expires the approval
-    (`internal/state/reduce.go:729-748`), and one arriving for a final
-    approval is ignored.
-- **11, the reducer.**
-  - `case event.Mode:` (`internal/state/reduce.go:215-216`) has no
-    `return`. Every Mode event therefore also notes "event without a known
-    payload" (`reduce.go:240`). The replays of p12c, p12x, p13c and p303c
-    show these notes, and no test asserts on the notes.
-  - `reduce.go:706` picks Codex's "decline" from `s.Context.Provider`,
-    while `actions.go:329` uses `s.CLI()`. In a mock replay of Codex the
-    two disagree.
-- **4's path, the Explorer.**
-  - `openExplorer` hides Source Control directly
-    (`internal/app/explorer.go:44`), without the reset `closeSource` makes
-    of the dropdown and the staging question (`internal/app/source.go:
-    271-279`).
-  - F3 passes through while the question is open
-    (`internal/app/commit.go:499`). So the question stays armed out of
-    sight, and the next click anywhere is swallowed by
-    `internal/app/mouse.go:59-69`, which cancels it.
-  - The question can never be confirmed out of sight (audit, Part 2, A).
-- **13, the path literal and the comments.**
-  - `realPath` (`internal/input/browse_windows.go:62-65`) holds
-    `` `\?\UNC\` `` and `` `\?\` `` with one backslash each. The `\\?\`
-    prefix of `GetFinalPathNameByHandle` is therefore never stripped: a
-    drive path comes back as `\\?\C:\…`, a share's as `\\?\UNC\…`. The UNC
-    branch's replacement, `` `\` ``, would also leave a single leading
-    backslash once its prefix matched. The callers compare real paths with
-    real paths, so behaviour is right today.
-  - Two comments are stale. `cmd/agent-command-center/main.go:22-23` says
-    the adapters' sessions "arrive in steps 2 (Claude Code) and 5 (Codex)".
-    Input's package comment (`internal/input/editor.go:1-3`) still says
-    "the input editor and the clipboard".
-
-- **Found while writing 47.2: plan 46 left `TestStateMachines` failing.**
-  - Plan 46 reworded the Handshaking row of `doc/events-and-state.md`, to
-    name the optional reads, after its full test run.
-  - `TestStateMachines` parses that table, and its entry kept the old
-    wording ("matches 0 doc items"). So commits 9375233 and a0f45f3 carry
-    the failure. The application's behaviour is unaffected.
-  - The entry now takes the new wording and checks the optional refusal.
-
-### Design
-
-- **D1. Quit with a git operation running** (3b).
-  - The quit key passes whether a git operation runs
-    (`state.Quit{GitRunning}`). The reducer asks while a turn, agents or a
-    git operation run, whatever the session's phase.
-  - The question names the git operation live, from the application:
-    "quit? the commit is still running · Ctrl+Q again to quit · Esc to
-    stay". With a turn running too: "quit? the running turn will be
-    stopped and the commit is still running · …".
-  - A second Ctrl+Q quits as before. The git operation is not stopped:
-    the owner has been told.
-- **D2. A withdrawn approval expires** (1b).
-  - `provider.ErrNoPending` is wrapped by both adapters' "no pending
-    request" errors, their message unchanged.
-  - The application marks such an answer failure (`AnswerFailed.Gone`).
-    The reducer then expires the approval and says so in the editor's
-    status line ("the request was withdrawn before the answer reached
-    it"). There is no crash.
-  - Any other answer failure crashes and closes as before.
-  - Found while writing 47.3: Claude Code's withdrawal arriving after the
-    approval has ended (`"expired"`) was noted "second answer ignored", so
-    the fixed race would leave a false note. Like Codex's `"resolved"`, it
-    is now ignored without a note.
-- **D3. The reducer** (11).
-  - The Mode case returns.
-  - A replay test asserts that no recording leaves the note "event
-    without a known payload".
-  - `reduce.go:706` uses `s.CLI()`, as `actions.go:329` does.
-- **D4. The Explorer over the question** (4's path). One helper drops
-  Source Control's dropdown and staging question, and both `closeSource`
-  and `openExplorer` call it. Focus handling is unchanged.
-- **D5. The path literal and the comments** (13).
-  - `realPath` strips `\\?\` and turns `\\?\UNC\` into `\\`.
-  - Both comments say what the code does.
-
-### Criteria
-
-1. **47.1 Quit during a git operation asks.** Through the application,
-   with a commit held:
-   - Ctrl+Q leaves the program running, `QuitAsked` set, and the editor
-     status "quit? the commit is still running · Ctrl+Q again to quit · Esc
-     to stay".
-   - Esc stays, and the commit goes on.
-   - Ctrl+Q twice quits.
-   - During a push, the status says "the push is still running".
-   - The test fails on today's code, which quits at once.
-2. **47.2 The reducer asks whatever the session's phase.**
-   - With the session crashed, `Quit{GitRunning: true}` sets `QuitAsked`,
-     and a second `Quit` exits.
-   - With nothing running, `Quit{}` exits at once. The existing quit tests
-     pass unchanged.
-3. **47.3 An answer to a withdrawn request expires it.**
-   - A session whose `Answer` returns an error wrapping
-     `provider.ErrNoPending` leaves the approval Expired, the session
-     Ready, no close command, and the status line's notice.
-   - The same with the withdrawal applied first, and the withdrawal arriving
-     after the failure leaves no "second answer" note (amended while
-     writing the test, What was found).
-   - Any other answer error still crashes and closes.
-   - Both adapters' `Answer` for an unknown id returns an error that
-     `errors.Is` matches to `ErrNoPending`, its text as before.
-4. **47.4 Mode events leave no false note.**
-   - Every probe recording replayed leaves no note "event without a known
-     payload".
-   - The test fails on today's code (p12c, p12x, p13c and p303c).
-5. **47.5 Codex's word in a mock replay.**
-   - An unreadable approval in a mock state whose recording is Codex's is
-     declined with "decline".
-   - The test fails on today's code ("deny").
-6. **47.6 The Explorer over the staging question.**
-   - With Source Control's staging question open, F3 shows the Explorer.
-   - The next click acts: Source Control's tile shows the panel, with no
-     question.
-   - The test fails on today's code, where the click is swallowed.
-7. **47.7 `realPath` gives a drive-letter path.**
-   - On Windows, `realPath` of a temporary folder has no `\\?\` prefix, is
-     absolute, and is the same when resolved again.
-   - The test fails on today's code (the prefix stays).
-8. **47.8 No regression.**
-   - Build, vet and gofmt are clean, and `go test ./...` passes after
-     the last document edit, including `TestStateMachines`, which had
-     failed since plan 46's commit.
-   - No golden frame changes.
-   - `-race` passes on input, app, state and the providers.
-   - The timing step is within its targets.
-   - The probe replays and mock files are unchanged.
-9. **47.9 Mutations.** Each fix is broken on purpose through
-   `go test -overlay`, and each mutant is caught by its test.
-10. **47.10 Windows Terminal.** At 208x59 and 120x40, on a temporary
-    repository whose pre-commit hook sleeps 8 s:
-    - during the commit, Ctrl+Q shows the question naming the commit, Esc
-      stays, and the commit completes;
-    - then the staging question, F3, and one click on Source Control's
-      tile show the panel with no question.
-
-### Steps
-
-1. The plan and brief amendment 48.
-2. Each fix test-first: D1 (47.1, 47.2), D2 (47.3), D3 (47.4, 47.5),
-   D4 (47.6), D5 (47.7).
-3. The checks (47.8, 47.9), Windows Terminal (47.10), the documents, the
-   evaluation (`doc/plan47-evaluation.md`), the report.
-
-### Progress
-
-- 2026-10-25: step 1 done; step 2 in progress.
-- 2026-10-25: D1 done.
-  - `TestCommitQuitAsks` was written first and failed on the old code:
-    Ctrl+Q during a held commit asked nothing.
-  - Then `Quit{GitRunning}`, the reducer's rule, `UI.GitRunning` and the
-    question naming the operation.
-  - The new transition is documented with its case (47.2).
-  - `TestStateMachines`, which had failed since plan 46 (What was found),
-    is repaired. On the pushed tree a0f45f3, every package passes except
-    `internal/state`, where only `TestStateMachines` fails.
-- 2026-10-25: D2 done.
-  - `TestAnswerWithdrawn` was written first and failed on the old code:
-    the withdrawn answer crashed the session and closed the CLI.
-  - Then `provider.ErrNoPending` in both adapters, `AnswerFailed.Gone`,
-    and the reducer's rule, in both orders.
-  - The two new documented rules have their cases (`TestStateMachines`).
-  - The adapters' tests check `errors.Is` and the unchanged text.
-- 2026-10-25: D3 done.
-  - `TestReplayNotes`, one in each adapter's package, was written first and
-    failed on the old code. It found more than the audit listed: 38 false
-    notes in 11 recordings, Claude Code's p12c switch, p13c, p303c and p39c,
-    Codex's three p12x, p34x, p38t, p38x and p39x.
-  - `TestUnreadableWordInMock` failed on the old code ("deny" in a mock
-    replay of Codex).
-  - Then the Mode case's `return` and `s.CLI()`.
-- 2026-10-25: D4 done.
-  - `TestCommitExplorerOverAsk` was written first and failed on the old
-    code: the click on Source Control's tile only cancelled the hidden
-    question, and the panel stayed closed.
-  - Then `dropSourcePopups`, called by `closeSource` and `openExplorer`.
-- 2026-10-25: D5 done.
-  - `TestRealPathDOS` was written first and failed on the old code
-    (`\\?\C:\…`).
-  - Then the literals, in `dosPath` so the UNC case is tested without a
-    share, and both comments.
-  - Written with the Edit tool: the Bash tool turns a doubled backslash into
-    one, which may be how the literals lost theirs.
-- Step 2 done; step 3 in progress.
-- 2026-10-25: the mutations, 25 of 25 caught
-  (`scratchpad\plan47\mutate47.mjs`). The "closeSource keeps the question"
-  mutant first had no test that could catch it: no test hid the panel
-  with the question open. `TestCommitExplorerOverAsk` now also checks the
-  compact rule's hiding (Shift+F6 at 90x40).
-- 2026-10-25: build, vet, gofmt clean; `go test ./...` ok, 16 packages.
-  The documents are updated: ui-design.md (Keys, the turn diagram, the
-  commit controls' mouse), events-and-state.md (the two Approval rules),
-  reliability.md (Approvals), architecture.md (plan 47's table).
-- 2026-10-25: `-race` ok on input, app, state and the five provider
-  packages (the portable compiler of doc/evaluation.md on the run's PATH,
-  `CGO_ENABLED=1`); the timing step alone within its targets (highest p95
-  5.05 ms).
-- 2026-10-25: Windows Terminal at 208x59 and 120x40
-  (`scratchpad\term\p47call.ps1`, `scratchpad\plan47\mkrepo47.mjs`): the
-  quit question named the commit, Esc stayed, the commit completed; the
-  staging question, F3 and one click on Source Control's tile showed the
-  panel with no question. The clipboard and this repository unchanged.
-- 2026-10-25: `doc/plan47-evaluation.md` written, 10 PASS. Step 3 done;
-  the plan waits for the owner's review. Nothing is committed.
+Plan 47 was approved and closed on 2026-10-25 (Closed plans, below). The
+next plan starts when the owner asks for one; the audit's roadmap
+([`doc/audit.md`](doc/audit.md), Part 2) lists what remains.
 
 ## Closed plans
 
@@ -869,4 +634,22 @@ Brief amendment 47: the first three fixes of the read-only audit of
 
 Approved on 2026-10-25: 10 of 10 PASS
 ([`doc/plan46-evaluation.md`](doc/plan46-evaluation.md)); commit 9375233,
+then the approval commit.
+
+## Plan 47 - The rest of the audit's phase 1
+
+Brief amendment 48: the rest of phase 1 of the audit's roadmap
+([`doc/audit.md`](doc/audit.md), Part 2, C), each fix test-first.
+- Ctrl+Q while a commit, push or staging runs asks to confirm, naming
+  it.
+- An answer to a request the CLI withdrew first expires the approval and
+  the session goes on (`provider.ErrNoPending`).
+- The reducer's Mode case returns, so mode events leave no false note,
+  and a mock replay of Codex declines in Codex's word.
+- The Explorer opened over the staging question drops it.
+- `realPath` strips the `\\?\` prefix; two stale comments are corrected.
+- `TestStateMachines`, failing since plan 46's commit, is repaired.
+
+Approved on 2026-10-25: 10 of 10 PASS
+([`doc/plan47-evaluation.md`](doc/plan47-evaluation.md)); commit d44bc0f,
 then the approval commit.

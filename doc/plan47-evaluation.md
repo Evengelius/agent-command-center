@@ -99,3 +99,10 @@ Limitations:
 - `ErrNoPending` is the adapters' own check. An answer written before the
   adapter reads the withdrawal reaches the CLI, which handles a stale
   answer in its own way (not probed).
+
+**The commit and the push (2026-10-25), after the owner's approval.** The
+owner approved plan 47 on 2026-10-25; commit d44bc0f (34 files: 33
+modified, 1 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+block above stays as it was reported.
