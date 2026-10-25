@@ -95,250 +95,10 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 44 - Source Control and a Git diff viewer
+## No plan active
 
-Brief amendment 45 (2026-10-25): the sidebar's second icon is Source
-Control, not Skills; its panel, in the Explorer's docked place, lists the
-project's Git changes, staged and unstaged apart, each with its real
-status; a file opened shows its diff (the working tree against the index,
-or the index against HEAD), green and red, in the conversation's place;
-read-only, after the owner's image `references/14-source-control.png`. The
-criteria below were written before the code; nothing is committed until
-the owner has reviewed the result.
-
-### What was found
-
-- **Git status** (plan 17; `internal/input/explorer.go`): `GitCLI.Status`
-  runs `git rev-parse --show-prefix` and `git status --porcelain=v1 -z
-  --untracked-files=normal --ignored -- .` through `GitCLI.run` (no prompt,
-  no optional lock, English); `ParseStatus` keeps one marker a path for the
-  Explorer, X and Y merged, a rename's source skipped, ignored paths apart.
-  The Explorer asks once each time it shows (`openExplorer`); nothing else
-  reads it. The Worktrees view's `Diff` runs `git diff --no-ext-diff
-  --no-textconv` (plan 16).
-- **Probe P44a** (a temporary repository, `scratchpad\plan44\lfsprobe`, git
-  2.56.0.windows.2, the owner's global `filter.lfs.*`): a traced `git
-  status` on an LFS-tracked file whose stat alone changed ran `git-lfs
-  filter-process` through `sh.exe`; with empty `filter.lfs.*` overrides it
-  ran nothing but called the unchanged file modified. `git cat-file
-  --batch` gave the index's blob raw (the LFS pointer), no filter run.
-- **The docked area** (plan 43): `ui.Explorer.Open` decides the panel's
-  place (`layout`), the focus "R", its keys and mouse, the motion filter
-  and the Explorer's tile selected; the second tile is `SideSkills`, a
-  placeholder; no tooltip (plan 43, design D2).
-- **Drawing**: zone B is `zoneB` inside `dashboard`; the full views
-  (approval, entry, inspection, details) replace the whole screen in
-  `Draw`; the file viewer (plan 17) draws numbered code lines, ←→ shifting
-  them 8 columns.
-- **Architecture**: render imports neither input nor the application;
-  the application turns input's results into render's types; a pure
-  package is allowed beside the five parts (`internal/arch`).
-
-### Design
-
-- **D1. The sidebar.** The second tile is Source Control (`SideSource`),
-  its icon and looks unchanged. A click on it shows the Source Control
-  panel in the docked place, a second click hides it; a click on the
-  Explorer's tile shows the Explorer in its place. One panel at a time,
-  each keeping its own state (folders and cursor; sections and cursor)
-  while the other shows. F3 is the Explorer's, exactly as in plan 43: with
-  Source Control shown, F3 shows the Explorer. While a tile is hovered, a
-  label left of the sidebar beside it names it, "Explorer" or "Source
-  Control", on the selectors' hover ground.
-- **D2. One status.** `GitCLI.Status` keeps its two calls, `rev-parse`
-  (now `--show-prefix --show-toplevel`) and the same `status`, with
-  `--branch` and `-c core.fsmonitor=false`. `ParseStatus` gives, besides
-  the Explorer's markers derived as before, each entry's X and Y, its path
-  and a rename's or copy's original path, and the branch line (a branch, a
-  detached HEAD, no commits yet). Ignored entries are never changes. Each
-  status read updates both views from the same snapshot.
-- **D3. Refresh.** A status is read when a panel shows, on "r" in the
-  Source Control panel or the diff, after a tool call or a turn ends, and
-  while a panel or a diff shows every 3 s; never two at once, the interval
-  10 times a slow read's duration (at most 30 s); none while neither shows.
-  A read equal to the last changes nothing; a new one updates the lists,
-  each cursor kept on its path. The open diff is compared again when its
-  file's status, its blobs' ids or the working file's size and time
-  change.
-- **D4. The Source Control panel**, docked as the Explorer (same width,
-  compact rule, focus "R", border, header "⌄"): "SOURCE CONTROL" in the
-  title colour, bold, a rule, the repository row "<repository> · <branch>"
-  (or "detached at <id>", "no commits yet on <branch>"), then the sections,
-  each "▾"/"▸", its name in the title colour and its count at the right:
-  MERGE CHANGES (conflicts, when any), CHANGES (the working tree: Y, and
-  untracked), STAGED CHANGES (the index: X). A file's row: its status
-  letter in its colour (M amber; A, U, R, C green; D red; T blue; "!" red
-  for a conflict), its directory muted, its name, a rename's or copy's
-  original muted after "←". An untracked folder is a row "U dir/" that
-  opens (→, Enter, a click) on its files, read in a command, at most 1,000.
-  The cursor row on the purple band, the hovered row on a subtler ground.
-  Empty states: "No changes", "No Git repository found for this project.",
-  "git not found", git's own error in the attention colour.
-- **D5. Keys and mouse of the panel**: ↑↓ PgUp PgDn Home End over the
-  rows; → and ← open and fold a section or an untracked folder, ← on a
-  file to its section; Enter on a file its diff (the comparison of its
-  section), on a header folds it; "r" refreshes; Esc back to zone B, the
-  panel kept; the global keys as beside the Explorer's panel, the draft's
-  clipboard keys included (plan 43). A click on a file opens its diff, on
-  a header folds it; the wheel scrolls the list; the hover follows the
-  pointer (plan 36's rule), the motion filter passing a report that
-  changes the hovered row.
-- **D6. The diff's two sides, read raw.** HEAD's and the index's blobs by
-  one `git cat-file --batch` (no filter, no textconv, no pager, no external
-  diff), the working file from the disk with the viewer's refusals (inside
-  the project, no credential file, 32 MiB). Unstaged: the index (stage 0)
-  against the working file; staged: HEAD at the original path against the
-  index; untracked: nothing against the working file; deleted: the old side
-  against nothing; a conflict: "ours" (stage 2, else HEAD) against the
-  working file, the conflict named ("both modified", "added by us", …),
-  never called resolved. A CR before LF is dropped on both sides, a
-  difference of line endings alone said so; a NUL in a side's first 8,000
-  bytes: binary, both sizes said, no lines; a Git LFS pointer against
-  content: said, no lines.
-- **D7. The lines compared** by a Myers diff, own code in a pure package
-  `internal/diff`, 3 lines of context, hunks; bounded: over 20,000 edits
-  or 100,000 lines a side, the middle between the common head and tail
-  shown removed then added, said so; computed in a command with a
-  generation, "comparing…" meanwhile.
-- **D8. The diff view** in zone B's place, zone A, the panel, the sidebar
-  and zone C as they were; zone B's conversation, draft and scroll kept,
-  drawn again as they were when it closes. Its box: the file's name; the
-  path ("old → new" for a rename) and the comparison ("Working tree:
-  index → working tree" or "Staged: HEAD → index") with "+N −M"; then the
-  lines. Unified under 150 columns: the old and new line numbers in grey,
-  "−"/"+", the text; removed lines on a dark red ground, added on a dark
-  green one, context in the muted text colour, "@@ -a,b +c,d @@" in
-  lavender. Side by side from 150 columns: ORIGINAL and MODIFIED columns,
-  each numbered, a removed line facing its replacement, blank where a side
-  has none. Long lines cut with "…", ←→ shifting 8 columns. "f" widens the
-  view over zone A, and back. Messages in the lines' place: no textual
-  change, line endings only, binary, LFS, too large.
-- **D9. The diff's keys**: ↑↓ PgUp PgDn Home End scroll, the wheel too; n
-  and N the next and previous change; Tab the file's other comparison when
-  it has both; "r" compares again; "f" wide; Esc back to the panel, its
-  cursor on the file, zone B as it was. F3, F2 and the global keys as
-  usual.
-- **D10. Read only.** Every git call is `rev-parse`, `status` or
-  `cat-file`, never one that writes, each with no optional lock and
-  `core.fsmonitor=false`; the index and the working tree are never
-  touched. Git's own clean filters still run during `status`, as in any
-  `git status` (P44a); a diff never runs one.
-- **D11. Not a repository**: the panel shows "No Git repository found for
-  this project."; nothing else is run or invented.
-- **D12. Unchanged**: zone A, zone C, zone B's design, the Explorer and
-  its keys, F3, the sidebar's geometry and looks; the footer shows the
-  Source Control panel's or the diff's keys while they have the focus, a
-  waiting approval first (plan 43).
-
-### Criteria
-
-1. **44.1 The sidebar**: the second tile named Source Control everywhere
-   (code, F1, documents), its four looks unchanged; a click shows its
-   panel (the tile selected) and a second hides it; Explorer ↔ Source
-   Control switch by their tiles, each state kept (the Explorer's folders
-   and cursor, the sections and cursor); F3's tests of plan 43 unchanged,
-   and with Source Control shown F3 shows the Explorer; the label
-   "Source Control" or "Explorer" beside a hovered tile, gone off it.
-2. **44.2 Status parsing** over recorded porcelain records: M, A, D, R
-   (with its original path), C, T, untracked file and folder, staged,
-   unstaged, both, the seven conflicts (UU AA DD AU UA DU UD), spaces,
-   Unicode, nested paths, the branch line (a branch, detached, no commits),
-   ignored never a change; the Explorer's markers from the same parse as
-   before (TestParseStatus's cases unchanged).
-3. **44.3 Status from git** on temporary repositories (git on the PATH,
-   outside the project): each case of 44.2 made with real git commands,
-   a merge conflict included, read by `GitCLI.Status`.
-4. **44.4 The panel**: header, rule, repository row, the sections in
-   order with their counts, rows with their letters' colours, muted
-   directories, renames, an untracked folder opened on its files; the
-   cursor's band and the hover's ground; the empty states; golden frames
-   at 120x40 (compact) and 200x60 (docked).
-5. **44.5 Refresh**: a file changed between reads appears with its
-   status at the next read, a revert or an external commit removes it; a
-   tool call's end and a turn's end ask a read; "r" asks one; never two
-   at once; none while no panel or diff shows; an equal read leaves the
-   view as it was; the open diff compared again when its file changes.
-6. **44.6 The two sides**, on temporary repositories: unstaged (index →
-   working file), staged (HEAD → index), both on one file (two different
-   diffs), staged add, untracked, deleted unstaged and staged, renamed
-   with changes (HEAD:old → index:new), a conflict (ours → working file,
-   named, not resolved), binary, line endings only, no newline at the
-   end, an LFS pointer; each with its exact expected lines.
-7. **44.7 The diff algorithm**: random edits, the script applied gives
-   the new side; minimal on small cases against a brute force; hunks with
-   3 lines of context; the bound applied and said, within time.
-8. **44.8 The diff view drawn**: unified and side by side at their
-   widths, the line numbers, the red and green grounds, the hunk headers,
-   cut lines and the shift, each message; golden frames.
-9. **44.9 The diff's navigation**: scrolling by key and wheel, n and N,
-   Tab between the comparisons, f wide and back, Esc back: zone B's frame,
-   draft and scroll identical to before opening, the focus on the panel's
-   file.
-10. **44.10 Read only**: every git call's arguments (traced) are
-    `rev-parse`, `status` or `cat-file` with the safety settings; a full
-    run on a temporary repository leaves `.git/index` and the working tree
-    byte for byte as they were.
-11. **44.11 Not a repository**: the empty state, no other git call.
-12. **44.12 Unchanged elsewhere**: every golden frame change explained
-    by a script (the tile's name and the new panel only); the Explorer's
-    tests, F3's, the draft's and the mouse's pass.
-13. **44.13 The checks**: build, vet, gofmt; `go test ./...`; `-race` on
-    render, app, input and diff; the timing step alone, with a test of a
-    large diff's scrolling (p95 within 16 ms); breakages of the new code
-    caught by tests (`go test -overlay`).
-14. **44.14 Windows Terminal**, the acc tab's profile (208x59) and 120x40,
-    a temporary repository: A, the panel listing modified, deleted and
-    untracked files; B, a diff with added and removed lines and their
-    numbers; C, one file's staged and unstaged diffs apart; D, the Explorer
-    and Source Control from their tiles, zone C full width; the colours
-    read back.
-
-### Steps
-
-1. The finding, brief amendment 45, the criteria.
-2. The status (input) and the diff engine (input, internal/diff).
-3. The sidebar's second tile, the panel, its keys, mouse and refresh.
-4. The diff view.
-5. The checks; Windows Terminal; the documents; the evaluation
-   (`doc/plan44-evaluation.md`); the report.
-
-### Progress
-
-- 2026-10-25: step 1 done; steps 2 and 3 in progress.
-- 2026-10-25: steps 3 and 4 done in code and tests (the panel, the
-  tooltip, the refresh, the diff view, its keys; `TestDiffToFrame` added to
-  the timing step); the owner's example layout followed (blank rows around
-  the headers, files three cells in); where the panel takes zone B's place
-  the diff docks it beside itself from 118 columns ("The Source Control
-  sidebar stays visible"); 16 golden frames added, none changed. Step 2's
-  engine (`internal/input/source.go`, `internal/diff`) built by an
-  implementer subagent; step 5 next.
-- 2026-10-25: step 2 done and checked against its report: the bound applied
-  to the changed middle, not the whole file (a 100,001-line file with one
-  changed line was flagged "too large to align"); a project folder
-  untracked in a larger repository said so (`GitSnapshot.Untracked`), not
-  "No changes"; an untracked folder's ignored files left out
-  (`GitMarks.IsIgnored`); the viewer's refusals said as the viewer says
-  them, not "git: …"; "no newline at the end" said in the unified view when
-  that line is shown; F2 from the diff, or the panel beside it, closes the
-  diff and focuses the approval's card; "f wide" left out of the footer
-  under 100 columns. Step 5 in progress: build, vet, gofmt and `go test
-  ./...` pass; the race detector, the mutations, the timing step and
-  Windows Terminal running.
-- 2026-10-25: step 5: mutations 58 of 58 caught; Windows Terminal at
-  208x59 and 120x40 on a temporary repository, the colours read back; the
-  first runs showed a path cut before its name in the 31-column panel, a
-  rename cutting its name, a stray "…" in the side by side heads: fixed
-  (the directory gives way as "…/"), Tab moving the panel's cursor, the
-  footer without Tab for one comparison, and the runs made again; the
-  repository and the clipboard unchanged. The final suite, race detector
-  and timing step on the final tree, then `doc/plan44-evaluation.md`.
-- 2026-10-25: step 5 done: 14 of 14 PASS
-  ([`doc/plan44-evaluation.md`](doc/plan44-evaluation.md)); on the final
-  tree build, vet, gofmt clean, `go test ./...` ok (762 tests), `-race` on
-  render, app, input and diff ok, the timing step's ten tests within their
-  targets (TestDiffToFrame p95 1.0 to 1.8 ms). Waiting for the owner's
-  review; nothing committed.
+Plan 44 was approved and closed on 2026-10-25 (Closed plans, below). The
+next plan starts when the owner asks for one.
 
 ## Closed plans
 
@@ -826,3 +586,18 @@ holding a wide character is written only as far as it changed, so the
 icons beside it stay. Approved on 2026-10-25: 15 of 15 PASS
 ([`doc/plan43-evaluation.md`](doc/plan43-evaluation.md)); commit
 48bde52, then the approval commit.
+
+## Plan 44 - Source Control and a Git diff viewer
+
+Brief amendment 45: the sidebar's second icon, Skills' placeholder until
+then, is Source Control. Its panel shares the Explorer's docked place and
+lists the project's Git changes from one git status read, the Explorer's
+too: MERGE CHANGES, CHANGES and STAGED CHANGES, each file with its real
+status, a file staged and changed again in both. A file opens its diff in
+zone B's place, the panel beside it from 118 columns: git's blobs read raw
+by cat-file and the working file, compared by a Myers diff of our own,
+unified or side by side, with line numbers, green and red rows and
+navigation between changes; read only. The engine was built by an
+implementer subagent. Approved on 2026-10-25: 14 of 14 PASS
+([`doc/plan44-evaluation.md`](doc/plan44-evaluation.md)); commit
+d9d7d83, then the approval commit.

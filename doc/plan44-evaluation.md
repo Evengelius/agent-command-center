@@ -133,3 +133,10 @@ Not verified:
 - Git LFS with its filter installed, on screen: the pointer case is checked
   by the engine's tests; P44a showed `git status` running the filter.
 - A terminal without Sixel, on screen: the text form is the golden frames'.
+
+**The commit and the push (2026-10-25), after the owner's approval.** The
+owner approved plan 44 on 2026-10-25; commit d9d7d83 (61 files: 29
+modified, 32 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+blocks above stay as they were reported.
