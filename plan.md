@@ -95,343 +95,12 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 48 - The audit's phase 2: robustness at the boundaries
+## No plan active
 
-Brief amendment 49 (2026-10-25): phase 2 of the audit's roadmap
-([`doc/audit.md`](doc/audit.md), Part 2, C), its six findings:
-- 2: the TIFF and ICO decoders' unbounded allocations;
-- 7a: a running command's streamed output, kept whole;
-- 9: the Claude Code reader writing to stdin itself;
-- 3c: git calls with no bound on a child that keeps their pipes;
-- 6: panics outside Bubble Tea's goroutines, and no fuzzing;
-- 8: format characters on the approval card.
-
-Each fix is test-first: its test is written and seen failing on today's
-code, then the change follows. The criteria below were written before the
-code. Nothing is committed until the owner has reviewed the result. The
-phase 0 safeguards that phase 2 relies on come with their fix: the fuzz
-targets (findings 2 and 6) and the large-output timing test (7a).
-First-frame GIF decoding stays optional (phase 4).
-
-### What was found
-
-- **2, images** (`internal/input/imagetiff.go:46-65`, `imageico.go:47`).
-  - The TIFF reader copies every directory entry's values into a new
-    slice, up to 1,048,576 values each, for up to 65,535 entries whose
-    values may overlap, though it uses ten tags. The audit measured 64 MiB
-    allocated for 16 entries of a 1 MiB file.
-  - The ICO reader decodes an embedded PNG without reading its size
-    first: a PNG that declares 9000x9000 px makes `png.Decode` allocate
-    its 81 MB image before it fails.
-- **7a, streamed output** (`internal/state/reduce.go:499`).
-  - Each Codex `outputDelta` is appended to the tool's output
-    (`t.Output += p.Output`), which copies the whole output each time, with
-    no bound. The audit measured 18.3 s for 32 MiB in 4 KiB deltas, late
-    deltas about 17 ms each, on the event loop that draws the screen.
-  - The inspection and the full view draw the whole output on each frame.
-  - The completed item replaces it (`t.Output = p.Output`).
-- **9, the Claude Code reader** (`internal/provider/claude/session.go:183-205`).
-  - On the handshake's answer it writes `get_settings` and "/usage"
-    itself, and after a settings change the read that follows. Codex's
-    reader never writes (`codex/session.go:211`).
-  - If Claude Code stops reading stdin while its stdout fills, the reader
-    blocks on the write and the pipes deadlock.
-- **3c, git** (`internal/input/git.go:116`).
-  - Every git call starts through `command`, with no `WaitDelay`: a hook
-    or helper that keeps git's output open after git ends keeps `Wait`
-    waiting. The writes (stage, commit, push) have no time limit, so a
-    commit would show "Committing…" for as long as that child lives.
-  - `stream` drains its `StdoutPipe` before `Wait`, which no `WaitDelay`
-    can bound.
-  - Probe of 2026-10-25 (`scratchpad\plan48\probe\waitdelay`, Go 1.27.2
-    on this machine), a grandchild holding stdout 12 s after its parent
-    exits 0, with a `WaitDelay` of 1 s:
-    - with output buffers, and with an `io.Pipe` read beside `Wait`, `Wait`
-      ended after 1.06 s, returning `exec.ErrWaitDelay`, the output intact;
-    - the `StdoutPipe` drained before `Wait` was still draining after 6 s.
-- **6, panics and fuzzing.**
-  - No `recover` in the adapters or in the application's own goroutines
-    (`internal/app/writer.go:26`, the detection at `app.go:835`). A panic
-    there ends the program with the terminal still in alternate screen,
-    mouse and win32-input modes.
-  - The adapters hold their mutex while their mapper maps a line
-    (`claude/session.go:176` and `:320`, `codex/session.go:222` and
-    `:598`): a recovered panic there would leave it locked.
-  - No fuzz target exists.
-- **8, the approval card** (`internal/render/text.go:59-87`, `approval.go`).
-  - `visible` neutralises C0, DEL and C1 only. Bidi controls and
-    zero-width spaces reach the card and its full view unchanged.
-  - Windows Terminal reorders nothing but draws them as nothing (audit,
-    Part 2, A).
-
-### Design
-
-- **D1. Bounded image decoders** (2).
-  - TIFF: only the tags the reader uses are kept, the first of each, and
-    their values are read from the file when used, never copied. Other
-    tags are skipped.
-  - ICO: the embedded PNG's size is read (`png.DecodeConfig`) and checked
-    (`tooBig`) before it is decoded.
-  - `FuzzInspectData`, seeded with every format `imagetest` writes and the
-    checked-in WebP.
-- **D2. A running command's output keeps its tail** (7a).
-  - `state.MaxLiveOutput` (64 KiB): a streamed output over it keeps its
-    last bytes, from a line's start when one begins in them, else from a
-    character's. The bytes dropped are counted (`ToolCall.OutputCut`).
-  - The completed item's output replaces it whole, the count cleared.
-  - While the count is not zero, the inspection and the full view open the
-    output with how much earlier output is not kept.
-  - `TestOutputToFrame`, a timing test: 8,192 deltas of 8 KiB.
-- **D3. The Claude Code reader never writes** (9).
-  - The handshake's two reads and the read after a change run in a
-    goroutine of their own, as Codex's replies do.
-  - The handshake's events stay held until both reads are written, so
-    what the dashboard sees is in the same order.
-- **D4. Git's pipes bounded** (3c).
-  - `command` sets `WaitDelay` (2 s): once git has ended, its pipes are
-    closed 2 s later at the latest.
-  - `call` and `exec` take `exec.ErrWaitDelay` as git's success, which it
-    is: git exited 0 and its output was read.
-  - `stream` reads git's stdout through an `io.Pipe` while `Wait` runs
-    beside it, which `WaitDelay` bounds.
-- **D5. Panics contained** (6).
-  - `provider.Recovered`: a panic's value and the frame it came from, as
-    text.
-  - Each adapter's stdout reader and the goroutines it starts for writes
-    recover. The panic becomes an Error marked `Fatal`, and the reader
-    reads its input to the end, so the CLI never blocks. The mapping runs
-    in functions that release the mutex by `defer`.
-  - The reducer turns a fatal error into `Crashed`, its message the
-    reason, and closes the CLI. While `Closing`, it is only kept as an
-    error, so the quit still ends.
-  - The application's write worker recovers into `state.Panicked`, which
-    crashes and closes the same way. The detection recovers into the CLI's
-    problem ("detection failed: …").
-  - The stderr readers, the queue's forwarder, the waits and the mock
-    replay parse nothing from outside, and stay as they are.
-  - `FuzzMapperOut` in both adapters, seeded with every line the CLI wrote
-    in the recordings.
-- **D6. Format characters revealed on the approval card** (8).
-  - On the approval card, its answered row and its full view, the bidi
-    controls (U+061C, U+200E, U+200F, U+202A to U+202E, U+2066 to U+2069)
-    and the zero-width spaces (U+200B, U+2060, U+FEFF) are drawn as
-    `<U+XXXX>`.
-  - The zero-width joiner stays, for emoji sequences and the scripts that
-    need it.
-  - Elsewhere nothing changes. The questions' texts, which key the
-    answers, are revealed only when drawn.
-
-### Criteria
-
-1. **48.1 A crafted TIFF stays bounded.**
-   - A 1 MiB TIFF with 16 entries of an unused tag, 1,048,576 values each
-     over the same bytes, is refused with under 8 MiB allocated; so is one
-     whose 16 entries are strip offsets. (Its refusal is "photometric 2
-     with 1 samples: not read", the reader's first check that fails; the
-     plan first said "no strips".)
-   - The test TIFF still decodes (`TestImageInspect`).
-   - On today's code: 64 MiB or more allocated.
-2. **48.2 A crafted ICO stays bounded.**
-   - An ICO whose PNG declares 9000x9000 px is refused ("ICO: 9000x9000
-     px: over 60 megapixels") with under 8 MiB allocated.
-   - The test ICO still decodes.
-   - On today's code: about 81 MB allocated, and an error from the PNG's
-     data.
-3. **48.3 The image fuzzer.** `FuzzInspectData` runs 60 s without a
-   crash. A crash it finds is fixed in this plan, its input kept as a
-   seed.
-4. **48.4 A running command's output keeps its tail.**
-   - After 200 deltas of 1 KiB, the output is at most 64 KiB, ends with
-     the last delta, begins at a line's start, and `OutputCut` plus its
-     length is 200 KiB.
-   - The completion's output replaces it, and `OutputCut` is 0.
-   - The inspection and the full view say how much earlier output is not
-     kept.
-   - On today's code all 200 KiB are kept.
-5. **48.5 Large output stays fluid** (the timing step).
-   - 8,192 deltas of 8 KiB (64 MiB), each timed from Update to its frame:
-     p95 at most 16 ms.
-   - After the completion, the output is the completion's.
-   - On today's code the p95 is over 16 ms.
-6. **48.6 The Claude Code reader never waits on stdin.**
-   - A fake Claude Code on in-memory pipes stops reading stdin after
-     `initialize`: three more stdout lines are each read within 2 s.
-   - Once it reads stdin again, `get_settings` then "/usage" arrive, and
-     `session.ready` comes before both writes' events.
-   - The existing handshake, usage and settings tests pass unchanged.
-   - On today's code the next stdout line is never read.
-7. **48.7 Git's pipes are bounded.**
-   - A fake git (this test binary) exits 0 while a child it started keeps
-     its stdout and stderr 15 s. A read (`run`), a write (`Stage`,
-     through `exec`) and a stream each return within 8 s, with git's
-     output and no error.
-   - On today's code each takes about 15 s.
-8. **48.8 A panic in the application's goroutines is contained.**
-   - A scripted session whose `Send` panics: the session is `Crashed`,
-     its card says "The session ended unexpectedly" and "writing to the
-     CLI failed: panic: …"; the CLI is closed (one `Close`); the message
-     is back in the editor; the program runs on.
-   - A provider whose `Detect` panics is listed with "detection failed:
-     panic: …", and the startup screen goes on.
-   - On today's code the test binary dies.
-9. **48.9 A panic in an adapter is contained.**
-   - Each adapter's reader, its mapping panicking (a nil mapper), returns.
-     It has pushed a fatal Error naming the panic, read its input to the
-     end, and left both mutexes free.
-   - A function each adapter runs apart that panics gives the same fatal
-     Error.
-   - `TestStateMachines`: a fatal error crashes the session with its
-     message and closes the CLI; while `Closing`, it is only kept;
-     `Panicked` likewise.
-   - On today's code the panic escapes.
-10. **48.10 The mapper fuzzers.** `FuzzMapperOut` runs 60 s in each
-    adapter without a crash. A crash found is fixed here.
-11. **48.11 Format characters on the approval card.**
-    - An approval whose command holds U+202E and U+200B shows `<U+202E>`
-      and `<U+200B>` on its card and in its full view, and neither raw
-      character.
-    - An emoji sequence joined by U+200D in its summary is drawn whole.
-    - The same characters in an assistant message are drawn as before.
-    - On today's code the raw characters are drawn.
-12. **48.12 No regression.**
-    - Build, vet and gofmt clean; `go test ./...` passes after the last
-      document edit.
-    - No golden frame changes; the probe replays and mock files
-      unchanged.
-    - `-race` passes on input, app, state, render and the providers.
-    - The timing step, with `TestOutputToFrame`, within its targets.
-13. **48.13 Mutations.** Each fix is broken on purpose through
-    `go test -overlay`, and each mutant is caught by its test.
-14. **48.14 Windows Terminal.** At 208x59 and 120x40:
-    - on a temporary repository whose pre-commit hook leaves a background
-      process holding git's output for 30 s, Commit shows "Committed …"
-      within 5 s of Ctrl+Enter;
-    - in a mock replay whose approval holds U+202E and U+200B, the card
-      shows `<U+202E>` and `<U+200B>`.
-
-### Steps
-
-1. The plan and brief amendment 49.
-2. Each fix test-first: D1 (48.1 to 48.3), D2 (48.4, 48.5), D3 (48.6),
-   D4 (48.7), D5 (48.8 to 48.10), D6 (48.11).
-3. The checks (48.12, 48.13), Windows Terminal (48.14), the documents, the
-   evaluation (`doc/plan48-evaluation.md`), the report.
-
-### Progress
-
-- 2026-10-25: step 1 done; step 2 in progress.
-- 2026-10-25: D1 done.
-  - `TestCraftedImagesBounded` was written first and failed on the old
-    code: 64.0 MiB allocated for each crafted TIFF, 77.3 MiB for the ICO.
-  - Then the TIFF reader's entries left in the file (`tiffEntry`) and the
-    ICO's PNG size read first: 0.00 MiB for all three.
-  - `FuzzInspectData`: a first 60 s run stopped at 0 executions a second,
-    because Go minimises each new interesting input for up to 60 s by
-    default. No input took over a second (a scratch copy of the target,
-    added by overlay, wrote out any that did: none). With
-    `-fuzzminimizetime 2s` it ran 102,832 inputs in 21 s, no crash.
-  - Once, the fuzz build itself failed in Go's linker (a panic in
-    `cmd/link`, while other builds ran); the same command built and ran
-    at once after.
-- 2026-10-25: D2 done.
-  - `TestLiveOutputTail` was written first and failed on the old code:
-    all 204,800 bytes kept. Then `liveTail` and `OutputCut`: 65,536 kept,
-    139,264 counted as dropped; the cut's edge cases pass.
-  - The inspection and the full view say "… 139 KB of earlier output not
-    kept" (`TestOutputCutNote`).
-  - `TestOutputToFrame` passes in the ordinary suite (512 deltas, p95
-    1.0 ms); its timing-step run and its run on the old reducer come with
-    the checks.
-- 2026-10-25: D3 done.
-  - `TestReaderNeverWaitsOnStdin` was written first and failed on the old
-    code: "stdout line 2 not read within 2 s".
-  - Then the handshake's reads and the read after a change in goroutines
-    of their own. The events seen are in the same order: initialize,
-    session.ready, get_settings, usage. The Claude suite passes unchanged;
-    the new test passed 20 runs in a row.
-- 2026-10-25: D4 done.
-  - `TestGitPipesBounded` was written first and failed on the old code:
-    each case took 15.1 s; the read ended in "git status took more than
-    15s" with its output lost, the stream likewise.
-  - Then `WaitDelay`, `exec.ErrWaitDelay` taken as success, and `stream`
-    through an `io.Pipe`: each case ends after about 2.1 s, with git's
-    output. The input package passes whole.
-- 2026-10-25: D5 done.
-  - `TestWritePanic` and `TestDetectPanic` were written first; on the old
-    code each killed the test binary ("panic: the adapter broke",
-    "panic: detection broke").
-  - Then `provider.Recovered`, `event.Problem.Fatal`, `state.Panicked`,
-    the reducer's `fatal`, the app's `runWrite` and detection recover, and
-    in both adapters the reader's recover and drain, `mapOut` and `holdIn`
-    (the mutex released by `defer`), `apart` and `fatal`.
-  - The adapters' `TestReaderPanic` and `TestRecovered` were written with
-    the code; their mutants must show that they fail without it. The two
-    documented rules have their cases (`TestStateMachines`).
-  - `FuzzMapperOut` in both adapters: 30 s runs, 298,799 inputs (Claude
-    Code) and 196,662 (Codex), no crash.
-  - A slip, caught at once and undone: writing the app's test, the Write
-    tool overwrote the existing `internal/app/panic_test.go` (plan 33's
-    `TestPanic`). It was restored from git (`git checkout`, the diff
-    empty) and the new tests went into `recover_test.go`.
-- 2026-10-25: D6 done.
-  - `TestApprovalRevealsFormat` was written first and failed on the old
-    code: the raw characters drawn on the card and in the full view.
-  - Then `revealed` on the card, its answered row, the questions and the
-    full view. `viewerBodyFor` also draws a tool call's full view, which
-    therefore reveals them too: the same input, the same safety reading.
-    The render suite and the golden frames pass unchanged.
-- Step 2 done; step 3 in progress.
-- 2026-10-25: before the mutations, two cases were added so that a mutant
-  could be caught at all: the read after a settings change in
-  `TestReaderNeverWaitsOnStdin`, and a TIFF whose later widths must not
-  replace the first in `TestCraftedImagesBounded`. `TestApprovalRevealsFormat`
-  gained a question and a summary with a zero-width space.
-- 2026-10-25: the mutations, 44 of 44 caught
-  (`scratchpad\plan48\mutate48.mjs`; Go files unchanged by the run).
-  - The first run caught 41. "A line's start not seen" and "a cut inside
-    a character" were not caught: `liveTail`'s edge cases had no later
-    line after a cut on a line's start, and their two-byte characters made
-    every cut fall on a character's start. The cases now have a second
-    line and three-byte characters. The first of the two mutants had also
-    left `utf8` unused, a build failure, and was rewritten.
-  - "Revealed everywhere" changed `visible`, which an assistant message
-    never goes through; it now changes `entryLines`, and the message's
-    check catches it.
-  - The six mutants of that test were run again: all caught.
-  - Two mutants deadlock, the adapters' mapping lock not released by
-    `defer`: each run ends by its 120 s timeout, a failure.
-- 2026-10-25: the fuzzers, 60 s each with `-fuzzminimizetime 2s`, no
-  crash: 243,348 image inputs, 762,522 Claude Code scripts, 733,327 Codex
-  scripts.
-- 2026-10-25: the timing step alone, twelve tests within their targets
-  (on mains power, the CPU 24% busy just before); `TestOutputToFrame`,
-  64 MiB in 8,192 deltas: p95 1.04 ms, max 11.8 ms.
-  - On the old append (an overlay of `reduce.go`), the same test: p50
-    4.0 ms, p95 7.42 ms, max 16.3 ms, then its output check fails (all
-    64 MiB kept). Criterion 48.5 predicted a p95 over 16 ms on today's
-    code, from the audit's 17 ms late deltas at 32 MiB: on this machine
-    that does not hold, and the criterion is reported as such.
-- 2026-10-25: `-race` ok on input, app, state, render and the five provider
-  packages.
-- 2026-10-25: Windows Terminal at 208x59 and 120x40
-  (`scratchpad\term\p48call.ps1`): the pending card read
-  "echo safe<U+202E>txt.exe<U+200B> && …", no raw U+202E on the screen;
-  Commit, its hook leaving `sleep 30 &` on git's output, showed
-  "Committed …" about 3 s after Ctrl+Enter. A probe of the same hook with
-  real git: the old Wait took 30.4 s, the new one 2.33 s.
-  - Both runs ended with the harness closing the window: the hook's
-    `sleep` holds the tab's console. Sampled at 120x40, the dashboard left
-    1 s after the last Ctrl+Q (30.0 s), the `sleep` lived on until the
-    window was closed (39.9 s). With the same mock and no commit, plan 47's
-    build and this one each quit and closed their tab at once.
-  - The clipboard and this repository unchanged.
-- 2026-10-25: the documents updated (ui-design.md: the card's format
-  characters and the output not kept; events-and-state.md: the Session
-  rules and the Tool call row; reliability.md: panics and bounds;
-  architecture.md: plan 48's table; evaluation.md: `TestOutputToFrame` and
-  Fuzzing; AGENTS.md: the timing command). `doc/plan48-evaluation.md`
-  written: 13 PASS, 1 FAIL (48.5's prediction about today's code). Step 3
-  done; the plan waits for the owner's review. Nothing is committed.
+Plan 48 was approved and closed on 2026-10-25 (Closed plans, below). The
+next plan starts when the owner asks for one; the audit's roadmap
+([`doc/audit.md`](doc/audit.md), Part 2) lists what remains, phases 3
+and 4 being conditional or optional.
 
 ## Closed plans
 
@@ -984,4 +653,25 @@ Brief amendment 48: the rest of phase 1 of the audit's roadmap
 
 Approved on 2026-10-25: 10 of 10 PASS
 ([`doc/plan47-evaluation.md`](doc/plan47-evaluation.md)); commit d44bc0f,
+then the approval commit.
+
+## Plan 48 - The audit's phase 2: robustness at the boundaries
+
+Brief amendment 49: phase 2 of the audit's roadmap
+([`doc/audit.md`](doc/audit.md), Part 2, C), each fix test-first.
+- The TIFF and ICO readers are bounded: the tags read from the file when
+  used, an icon's PNG size checked before decoding.
+- A running command's streamed output keeps its last 64 KiB, the rest
+  counted and said.
+- The Claude Code reader never writes to stdin.
+- Git calls are bounded by `WaitDelay` once git has ended.
+- A panic in the dashboard's own goroutines ends its session in order
+  (`Fatal`, `Panicked`); fuzz targets for the image readers and both
+  mappers.
+- Bidi controls and zero-width spaces are drawn as `<U+XXXX>` on the
+  approval card.
+
+Approved on 2026-10-25: 13 of 14 PASS; 48.5 FAIL, its prediction about
+the old code, accepted as a documented exception
+([`doc/plan48-evaluation.md`](doc/plan48-evaluation.md)); commit 067aeb4,
 then the approval commit.

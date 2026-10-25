@@ -123,3 +123,11 @@ Limitations:
   writes after that is not read.
 - While a command runs, only the last 64 KiB of its output can be seen;
   the whole output comes with its completion.
+
+**The commit and the push (2026-10-25), after the owner's approval.** The
+owner approved plan 48 on 2026-10-25 and accepted 48.5 as a documented
+exception: it stays FAIL above, as reported. Commit 067aeb4 (43 files: 27
+modified, 16 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+block above stays as it was reported.
