@@ -40,10 +40,10 @@ documents:
 | Claude Code protocol | written from the documented messages, with the Python Agent SDK (MIT) as the reference for the control-request wire form | Claude Code 2.1.300 | INT 1; CC-4 way A |
 | tmux | **not used and not a dependency** | n/a | SUM: both CLIs run over pipes on native Windows (P1 to P4, P6b, P7); INT 6: a PTY or tmux yields a screen, not events. The application runs inside tmux like any terminal program (clipboard passthrough, TI 7) |
 
-Every dependency above needs the owner's approval in plan 3 (AGENTS.md, "Add
-nothing casually"). No dependency is copied as source; any idea taken from the
-Bubbles textarea or tview (MIT) is recorded with its source, commit and
-license where it is used (AGENTS.md; TI 11 item 2).
+Every dependency above needs the owner's approval in plan 3 (AGENTS.md, Hard
+constraints, "Dependencies are fixed"). No dependency is copied as source; any
+idea taken from the Bubbles textarea or tview (MIT) is recorded with its
+source, commit and license where it is used (AGENTS.md; TI 11 item 2).
 
 ## Where it runs
 
