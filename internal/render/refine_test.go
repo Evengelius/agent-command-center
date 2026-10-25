@@ -187,7 +187,7 @@ func TestTreeAnimation(t *testing.T) {
 				ui := UI{Width: 120, Height: 40, Now: now, Spinner: f}
 				var out []string
 				for _, r := range treeRows(s, ui, 44) { // wide enough for the names (A is 26 at 120 since plan 20)
-					out = append(out, strings.TrimSuffix(texts([]line{r.l}), "\n"))
+					out = append(out, strings.TrimSuffix(texts([]line{r.line(s, ui, 44)}), "\n"))
 				}
 				return out
 			}

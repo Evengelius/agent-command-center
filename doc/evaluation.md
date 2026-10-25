@@ -84,19 +84,20 @@ frame built from the one before it equals the frame drawn afresh, escape codes
 included.
 
 **The timing step, on its own.** A time is judged against its target only in
-the timing step, built with the `timing` tag. Eight timed tests carry the tag,
-so `go test ./...` never runs them. Two more, `TestPasteToFrame` and
-`TestStreamToFrame` (`internal/app/perf_test.go`), run in `go test ./...` too,
-for their other checks: a 50,000-line paste kept byte for byte, and a
-2,000-line streamed answer kept as one entry and drawn to its end. There
-`overTarget` logs their time as "not judged outside the timing step", as it
-does under `-race` (`timingBuild`, `timing_on_test.go` and
-`timing_off_test.go`; plan 21, item 2). The step runs the ten, under the
-owner's normal working conditions (owner, 2026-10-16), since the target is
-about real use:
+the timing step, built with the `timing` tag. Ten timed tests carry the tag,
+so `go test ./...` never runs them. Three more, `TestPasteToFrame`,
+`TestStreamToFrame` (`internal/app/perf_test.go`) and `TestOutputToFrame`
+(`outputtiming_test.go`), run in `go test ./...` too, for their other
+checks: a 50,000-line paste kept byte for byte, a 2,000-line streamed answer
+kept as one entry and drawn to its end, a command's streamed output kept as
+the call's. There `overTarget` logs their time as "not judged outside the
+timing step", as it does under `-race` (`timingBuild`, `timing_on_test.go`
+and `timing_off_test.go`; plan 21, item 2). The step runs the thirteen,
+under the owner's normal working conditions (owner, 2026-10-16), since the
+target is about real use:
 
 ```text
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame|TestOutputToFrame)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame|TestOutputToFrame|TestToolsToFrame)$' -count=1 -v
 ```
 
 - Allowed: the owner's usual applications open and idle (VS Code, browsers,
@@ -153,6 +154,10 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   Update to its frame: p95 within 16 ms (`streamTarget`); then the
   completion's output is the call's. Outside the timing step it streams 512
   deltas and only logs the time.
+- `TestToolsToFrame` (plan 49, criterion 49.7): one open turn of 2,000 tool
+  calls, 30 of them `Write` calls of 100 KB, while 8 agents run 50 calls
+  each; the last tenth of the events each timed from Update to its frame at
+  200x60: p95 within 16 ms (`streamTarget`).
 - A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
   profile, the same test on the last commit) and report it as the loop above
   says.
@@ -163,14 +168,21 @@ Plan 48 (audit finding 6) added three fuzz targets for what comes from
 outside: `FuzzInspectData` (`internal/input`: every image reader, seeded
 with every file `imagetest` writes and the checked-in WebP) and
 `FuzzMapperOut` (in each adapter: scripts of recorded lines, the CLI's to
-`Out` and the dashboard's to `In`). `go test ./...` runs their seeds as
-ordinary tests. A plan that changes a reader or a mapper fuzzes it for a
-bounded time, each target alone:
+`Out` and the dashboard's to `In`). Plan 49 added two: `FuzzGIFFrames`
+(`internal/input`: the GIF block walk takes every GIF `image/gif`'s
+`DecodeAll` reads, with as many frames) and `FuzzTextWidth`
+(`internal/render`: on text without controls, `textWidth` is
+`lipgloss.Width`, and `cut` and `tailCut` keep the most that fits without
+splitting a cluster). `go test ./...` runs their seeds as ordinary tests. A
+plan that changes a reader, a mapper or the widths fuzzes it for a bounded
+time, each target alone:
 
 ```text
 go test ./internal/input -run '^$' -fuzz '^FuzzInspectData$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
+go test ./internal/input -run '^$' -fuzz '^FuzzGIFFrames$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
 go test ./internal/provider/claude -run '^$' -fuzz '^FuzzMapperOut$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
 go test ./internal/provider/codex -run '^$' -fuzz '^FuzzMapperOut$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
+go test ./internal/render -run '^$' -fuzz '^FuzzTextWidth$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
 ```
 
 - `-fuzzminimizetime 2s`: by default Go minimises each new interesting input

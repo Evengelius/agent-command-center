@@ -1,19 +1,15 @@
 package codex
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
@@ -22,20 +18,9 @@ import (
 	"github.com/Evengelius/agent-command-center/internal/provider/pipe"
 )
 
-// MaxLine bounds one stdout line; a longer one is skipped with an error event
-// and reading continues (ASM-20).
-const MaxLine = 64 << 20
-
-// maxStderrLine bounds one stderr line kept for the error tail.
-const maxStderrLine = 4 << 10
-
-// CloseStep is each wait of the close escalation: stdin closed, then the CLI
-// terminated, then its whole tree killed (reliability.md, Close).
-const CloseStep = 5 * time.Second
-
-// drainWait bounds the wait for the readers after the exit, when something
-// the CLI started still holds its pipes open.
-const drainWait = 2 * time.Second
+// CloseStep is each wait of the close escalation (pipe.CloseStep;
+// reliability.md, Close).
+const CloseStep = pipe.CloseStep
 
 // Sandbox and ApprovalPolicy are the only ones the MVP sends: P6b and P7 ran
 // with them and the configuration unchanged, and every write then asks
@@ -52,7 +37,7 @@ var clientInfo = map[string]string{"name": "agent_command_center", "title": "Age
 
 // answers are the decisions an approval request takes (v2 schema; INT 4).
 // No answer that persists a rule is ever sent (reliability.md, Approvals).
-var answers = map[string]bool{"accept": true, "acceptForSession": true, "decline": true, "cancel": true}
+var answers = map[event.Decision]string{event.Allow: "accept", event.AllowSession: "acceptForSession", event.Deny: "decline", event.Cancel: "cancel"}
 
 // threadParams are thread/start's and thread/resume's parameters. There is
 // no cwd field: the process runs in the project, and sending cwd is what
@@ -69,10 +54,8 @@ type threadParams struct {
 
 // Session is one running `codex app-server` process.
 type Session struct {
-	prov  *Provider
-	p     proc.Process
-	stdin io.WriteCloser
-	step  time.Duration
+	prov *Provider
+	cli  *pipe.Proc // the process: its events, readers, writes and close (plan 49, design D8)
 
 	mu        sync.Mutex            // the mapper, the order of events and what follows
 	m         *Mapper               //
@@ -107,14 +90,6 @@ type Session struct {
 	// the main turn's end as the model change is (modeSent once written).
 	modeAsk  string
 	modeSent bool
-
-	wmu      sync.Mutex // one write at a time
-	inClosed atomic.Bool
-
-	q       *pipe.Queue
-	exited  chan struct{}
-	closing atomic.Bool
-	once    sync.Once
 }
 
 // pendingReq is a pending approval: its id exactly as received, which the
@@ -158,32 +133,14 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext) (*Sess
 	if err != nil {
 		return nil, fmt.Errorf("Codex did not start: %w", err)
 	}
-	step := p.CloseStep
-	if step == 0 {
-		step = CloseStep
-	}
 	now := p.Now
 	if now == nil {
 		now = time.Now
 	}
-	s := &Session{prov: p, p: pr, stdin: pr.Stdin(), step: step, m: NewMapper(), calls: map[string]string{}, dir: sc.ProjectPath,
-		approvals: map[string]pendingReq{}, resume: sc.ResumeID, pin: p.fallbackModel(), instant: true, now: now,
-		q: pipe.NewQueue(now), exited: make(chan struct{})}
-	s.q.Push(event.Event{Provider: ProviderID, Kind: event.SessionSpawned, Origin: event.Observed,
-		Payload: event.Spawned{Argv: append([]string{sc.Executable}, argv...), Dir: sc.ProjectPath}})
-	go s.q.Forward()
-
-	out, errs := make(chan struct{}), make(chan struct{})
-	go func() { defer close(out); s.read(pr.Stdout()) }()
-	go func() { defer close(errs); s.readStderr(pr.Stderr()) }()
-	go s.wait(out, errs)
-	go func() {
-		select {
-		case <-ctx.Done(): // the application's forced kill
-			_ = pr.Kill()
-		case <-s.exited:
-		}
-	}()
+	s := &Session{prov: p, m: NewMapper(), calls: map[string]string{}, dir: sc.ProjectPath,
+		approvals: map[string]pendingReq{}, resume: sc.ResumeID, pin: p.fallbackModel(), instant: true, now: now}
+	s.cli = pipe.New(pipe.Config{Name: "Codex", Provider: ProviderID, Step: p.CloseStep, Now: now, Mu: &s.mu, Line: s.line}, pr)
+	s.cli.Run(ctx, append([]string{sc.Executable}, argv...), sc.ProjectPath)
 	// Codex's experimental API, for thread/settings/update (plan 38, design
 	// D1), asked for as OpenAI's Codex extension for VS Code asks for it.
 	if err := s.request("initialize", map[string]any{"clientInfo": clientInfo, "capabilities": initCapabilities}); err != nil {
@@ -196,48 +153,18 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext) (*Sess
 // experimental API, which marks itself experimental (plan 38).
 var initCapabilities = map[string]bool{"experimentalApi": true}
 
-// push queues one event of the adapter's own.
-func (s *Session) push(ev event.Event) {
-	ev.Provider = ProviderID
-	s.mu.Lock()
-	s.q.Push(ev)
-	s.mu.Unlock()
-}
+// push queues one event of the adapter's own (pipe.Proc).
+func (s *Session) push(ev event.Event) { s.cli.Push(ev) }
 
-func (s *Session) problem(msg string) {
-	s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: msg}})
-}
+func (s *Session) problem(msg string) { s.cli.Problem(msg) }
 
-// read maps stdout line by line until end of file. What a line calls for
-// (the next handshake step, a reply) is written apart: the reader never
-// waits on stdin, which the CLI may not be reading while its stdout is full.
-// A panic in the mapping is the session's fatal error, and the rest of stdout
-// is read and dropped, so Codex never blocks on it before the dashboard
-// closes it (plan 48, design D5; audit finding 6).
-func (s *Session) read(r io.Reader) {
-	br := bufio.NewReaderSize(r, 64<<10)
-	defer func() {
-		if v := recover(); v != nil {
-			s.fatal("reading Codex's output failed", v)
-			_, _ = io.Copy(io.Discard, br)
-		}
-	}()
-	for {
-		l, size, over, err := pipe.ReadLine(br, MaxLine)
-		switch {
-		case over:
-			s.problem(fmt.Sprintf("a line of %d bytes from Codex was skipped (limit %d MiB)", size, MaxLine>>20))
-		case len(bytes.TrimSpace(l)) > 0:
-			if next := s.mapOut(l); next != nil {
-				s.apart("replying to Codex", next)
-			}
-		}
-		if err != nil {
-			if !errors.Is(err, io.EOF) && !s.closing.Load() {
-				s.problem("reading Codex's output: " + err.Error())
-			}
-			return
-		}
+// line maps one line of stdout, for the shared reader (plan 49, design D8),
+// and has what it calls for (the next handshake step, a reply) written apart:
+// the reader never waits on stdin, which the CLI may not be reading while its
+// stdout is full.
+func (s *Session) line(l []byte) {
+	if next := s.mapOut(l); next != nil {
+		s.cli.Apart("replying to Codex", next)
 	}
 }
 
@@ -531,79 +458,12 @@ func (s *Session) startThread() {
 	}
 }
 
-func (s *Session) readStderr(r io.Reader) {
-	br := bufio.NewReaderSize(r, 4<<10)
-	for {
-		l, size, over, err := pipe.ReadLine(br, maxStderrLine)
-		if over {
-			l = []byte(fmt.Sprintf("(a stderr line of %d bytes, not kept)", size))
-		}
-		if len(bytes.TrimSpace(l)) > 0 {
-			s.push(event.Event{Kind: event.Stderr, Origin: event.Observed, Payload: event.Line{Text: string(l)}, Raw: string(l)})
-		}
-		if err != nil {
-			return
-		}
-	}
-}
-
-// wait reports the exit as session.ended, the last event, once the readers
-// are done or drainWait has passed (as for Claude Code).
-func (s *Session) wait(out, errs <-chan struct{}) {
-	code, err := s.p.Wait()
-	close(s.exited)
-	timer := time.NewTimer(drainWait)
-	for out != nil || errs != nil {
-		select {
-		case <-out:
-			out = nil
-		case <-errs:
-			errs = nil
-		case <-timer.C:
-			s.problem("Codex's output stayed open after its exit: a process it started still holds it")
-			out, errs = nil, nil
-		}
-	}
-	timer.Stop()
-	s.p.Release()
-	end := event.Ended{Code: code, HasCode: code >= 0}
-	switch {
-	case err != nil:
-		end.Reason = "Codex ended: " + err.Error()
-	case s.closing.Load():
-		end.Reason = "Codex closed (exit code " + strconv.Itoa(code) + ")"
-	default:
-		end.Reason = "Codex exited with code " + strconv.Itoa(code)
-	}
-	s.push(event.Event{Kind: event.SessionEnded, Origin: event.Observed, Payload: end})
-	s.q.Close()
-}
-
 // Events are the session's events; the channel closes after session.ended.
-func (s *Session) Events() <-chan event.Event { return s.q.Out() }
+func (s *Session) Events() <-chan event.Event { return s.cli.Events() }
 
 // write sends one line. Its events are mapped before the write, so a reply
 // can never be mapped first, and released only once the line is written.
-func (s *Session) write(msg any) error {
-	var b bytes.Buffer
-	enc := json.NewEncoder(&b)
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(msg); err != nil {
-		return err
-	}
-	s.wmu.Lock()
-	defer s.wmu.Unlock()
-	if s.inClosed.Load() {
-		return errors.New("Codex's input is closed")
-	}
-	held := s.holdIn(bytes.TrimRight(b.Bytes(), "\n"))
-	_, err := s.stdin.Write(b.Bytes())
-	s.q.Release(held, err == nil)
-	if err != nil {
-		return fmt.Errorf("not delivered to Codex: %w", err)
-	}
-	return nil
-}
+func (s *Session) write(msg any) error { return s.cli.Write(msg, s.holdIn) }
 
 // holdIn maps a line the dashboard writes under the lock, released however
 // the mapping ends (plan 48, design D5); its events are held until the line
@@ -615,7 +475,7 @@ func (s *Session) holdIn(l []byte) []*pipe.Item {
 	for _, ev := range evs {
 		s.track(ev)
 	}
-	return s.q.Hold(evs)
+	return s.cli.Queue().Hold(evs)
 }
 
 // mapOut maps one line of stdout under the lock, released however the
@@ -627,29 +487,9 @@ func (s *Session) mapOut(l []byte) func() {
 	evs := s.m.Out(l)
 	for _, ev := range evs {
 		s.track(ev)
-		s.q.Push(ev)
+		s.cli.Queue().Push(ev)
 	}
 	return s.react(l, evs)
-}
-
-// apart runs f in a goroutine of its own: the reader never waits on stdin. A
-// panic in f is the session's fatal error, never the end of the program
-// (plan 48, design D5).
-func (s *Session) apart(what string, f func()) {
-	go func() {
-		defer func() {
-			if v := recover(); v != nil {
-				s.fatal(what+" failed", v)
-			}
-		}()
-		f()
-	}()
-}
-
-// fatal queues a recovered panic as the session's fatal error: the dashboard
-// shows it as it ends the session and closes Codex (plan 48, design D5).
-func (s *Session) fatal(what string, v any) {
-	s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: what + ": " + provider.Recovered(v), Fatal: true}})
 }
 
 // request sends one request; params nil sends none.
@@ -827,11 +667,12 @@ func (s *Session) writeUpdate(thread string, c provider.ModelRequest, mode strin
 	return err
 }
 
-// Answer answers a pending approval with one of Codex's decisions, echoing
-// the request's id as received; Claude Code's allow and deny are refused.
-func (s *Session) Answer(id, decision string) error {
-	if !answers[decision] {
-		return fmt.Errorf("Codex takes no answer %q", decision)
+// Answer answers a pending approval in Codex's words (plan 49, design D10),
+// echoing the request's id as received.
+func (s *Session) Answer(id string, d event.Decision) error {
+	word, ok := answers[d]
+	if !ok {
+		return fmt.Errorf("Codex takes no answer %q", d)
 	}
 	s.mu.Lock()
 	req, ok := s.approvals[id]
@@ -839,10 +680,10 @@ func (s *Session) Answer(id, decision string) error {
 	if !ok {
 		return fmt.Errorf("%w %q", provider.ErrNoPending, id)
 	}
-	if req.unreadable && (decision == "accept" || decision == "acceptForSession") {
+	if req.unreadable && (d == event.Allow || d == event.AllowSession) {
 		return fmt.Errorf("request %q was not readable: only a decline answers it", id)
 	}
-	return s.write(map[string]any{"id": req.id, "result": map[string]string{"decision": decision}})
+	return s.write(map[string]any{"id": req.id, "result": map[string]string{"decision": word}})
 }
 
 // Interrupt asks Codex to end the running turn.
@@ -875,44 +716,8 @@ func (s *Session) Capabilities() provider.Capabilities {
 
 // Close closes stdin, then terminates the CLI, then kills its tree, each
 // after CloseStep; it returns when the process has exited or ctx ends, and
-// the escalation goes on in the background.
-func (s *Session) Close(ctx context.Context) error {
-	s.once.Do(func() {
-		s.closing.Store(true)
-		go s.escalate()
-	})
-	select {
-	case <-s.exited:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-}
-
-func (s *Session) escalate() {
-	// A write blocked on a full pipe holds the file: closing it waits for the
-	// write, so it runs apart from the escalation.
-	go func() { s.inClosed.Store(true); _ = s.stdin.Close() }()
-	if s.waitExit() {
-		return
-	}
-	_ = s.p.Terminate()
-	if s.waitExit() {
-		return
-	}
-	_ = s.p.Kill()
-}
-
-func (s *Session) waitExit() bool {
-	t := time.NewTimer(s.step)
-	defer t.Stop()
-	select {
-	case <-s.exited:
-		return true
-	case <-t.C:
-		return false
-	}
-}
+// the escalation goes on in the background (pipe.Proc).
+func (s *Session) Close(ctx context.Context) error { return s.cli.Close(ctx) }
 
 // The approvals reviewers Codex takes: the owner, or Codex's auto-review
 // (plan 12, item 2; P12x).

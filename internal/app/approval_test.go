@@ -563,7 +563,7 @@ func TestAnswerWithdrawn(t *testing.T) {
 			if f := h.frame(); !strings.Contains(f, "the request was withdrawn before the answer reached it") {
 				t.Errorf("no notice in the status line:\n%s", f)
 			}
-			pushEvents(h, "claude-code", evOf(event.ApprovalResolved, event.Approval{ID: "r1", Decision: "expired"}))
+			pushEvents(h, "claude-code", evOf(event.ApprovalResolved, event.Approval{ID: "r1", Decision: event.Withdrawn}))
 			s = h.m.State()
 			if ap := s.Approvals["r1"]; ap.Status != state.Expired || s.Session.Phase != state.Ready {
 				t.Errorf("after the withdrawal: approval %q, session %q", ap.Status, s.Session.Phase)

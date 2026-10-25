@@ -44,6 +44,7 @@ func plusMenu(sc *Screen, ui UI) {
 	inner := padCell("  "+menuItem, menuInner) // two cells before, one after
 	item := line{menuDeco("│", stFrame), menuDeco(inner, st), menuDeco("│", stFrame)}
 	sc.place([]line{border("╭", "╮"), item, border("╰", "╯")}, px, ry-2, menuInner+2)
+	sc.Plus = true
 }
 
 // menuDeco is a span of the menu: decoration, panel U.
@@ -66,27 +67,12 @@ func (sc *Screen) find(p byte) (x, y int, ok bool) {
 	return 0, 0, false
 }
 
-// editorRule is the row of the editor's rule above the band's row: the
-// first row above the separator whose editor spans are a rule in the
-// frame's colour (a draft's own dashes are text); -1 when none.
+// editorRule is the row of the editor's rule above the band's row, as zone
+// B recorded it when it drew the editor (plan 49, design D7); -1 when it
+// drew none above that row.
 func (sc *Screen) editorRule(bandY int) int {
-	for y := bandY - 2; y >= 0; y-- {
-		// The rule's own dashes, not a blank row: the preview's strip and an
-		// empty line of the draft are blank (plan 32).
-		rule, any, dash := true, false, false
-		for _, s := range sc.lines[y] {
-			if s.ref.panel != 'E' {
-				continue
-			}
-			any = true
-			dash = dash || strings.Contains(s.text, "─")
-			if strings.TrimSpace(s.text) != "" && (s.st != stFrame || strings.Trim(s.text, "─ ") != "") {
-				rule = false
-			}
-		}
-		if any && rule && dash {
-			return y
-		}
+	if sc.rule > 0 && sc.rule < bandY-1 {
+		return sc.rule
 	}
 	return -1
 }

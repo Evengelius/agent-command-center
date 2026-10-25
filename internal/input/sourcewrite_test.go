@@ -177,11 +177,13 @@ func TestScrubURLs(t *testing.T) {
 }
 
 func TestSourceStage(t *testing.T) {
+	t.Parallel()
 	cached := func(t *testing.T, repo string) string {
 		return gitT(t, repo, "diff", "--cached", "--name-status")
 	}
 
 	t.Run("a modified, a deleted and an untracked file", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		commit(t, repo, "b.txt", "b\n")
 		g, _ := tracedGit(t)
@@ -199,6 +201,7 @@ func TestSourceStage(t *testing.T) {
 	})
 
 	t.Run("an untracked folder adds its files, never an ignored one", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		write(t, filepath.Join(repo, ".gitignore"), "*.log\n")
@@ -219,6 +222,7 @@ func TestSourceStage(t *testing.T) {
 	})
 
 	t.Run("a space and a bracket are taken literally", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		for _, n := range []string{"a b.txt", "f[1].txt", "f1.txt", "-dash.txt"} {
@@ -233,6 +237,7 @@ func TestSourceStage(t *testing.T) {
 	})
 
 	t.Run("exactly the listed paths", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		commit(t, repo, "b.txt", "b\n")
 		g, _ := tracedGit(t)
@@ -247,6 +252,7 @@ func TestSourceStage(t *testing.T) {
 	})
 
 	t.Run("a project folder, paths relative to it", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		if err := os.Mkdir(filepath.Join(repo, "sub"), 0o700); err != nil {
@@ -263,6 +269,7 @@ func TestSourceStage(t *testing.T) {
 	})
 
 	t.Run("no path runs no git", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, log := tracedGit(t)
 		if err := g.Stage(repo, nil); err != nil {
@@ -274,6 +281,7 @@ func TestSourceStage(t *testing.T) {
 	})
 
 	t.Run("git's refusal is the error", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		if err := g.Stage(repo, []string{"missing.txt"}); err == nil {
@@ -283,7 +291,9 @@ func TestSourceStage(t *testing.T) {
 }
 
 func TestSourceCommit(t *testing.T) {
+	t.Parallel()
 	t.Run("the index alone: the unstaged part of a file stays", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		old := gitT(t, repo, "rev-parse", "HEAD")
@@ -313,6 +323,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("the message as git cleans it", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		write(t, filepath.Join(repo, "a.txt"), "new\n")
@@ -328,6 +339,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("a multibyte message is kept byte for byte", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		write(t, filepath.Join(repo, "a.txt"), "new\n")
@@ -342,6 +354,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("a root commit in an empty repository", func(t *testing.T) {
+		t.Parallel()
 		gitEnv(t)
 		repo := t.TempDir()
 		gitT(t, repo, "init", "-q", "-b", "main")
@@ -361,6 +374,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("a rename found once both sides are staged", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		body := strings.Repeat("a line of the file\n", 20)
@@ -385,6 +399,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("an untracked folder staged matches its folder", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		if err := os.Mkdir(filepath.Join(repo, "dir"), 0o700); err != nil {
@@ -405,6 +420,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("a merge with its conflicts resolved has two parents", func(t *testing.T) {
+		t.Parallel()
 		repo := divergent(t)
 		g, _ := tracedGit(t)
 		if _, err := gitTry(repo, "merge", "feature"); err == nil {
@@ -424,6 +440,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("nothing staged", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, log := tracedGit(t)
 		old := gitT(t, repo, "rev-parse", "HEAD")
@@ -439,6 +456,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("a pre-commit hook that fails", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		write(t, filepath.Join(repo, "a.txt"), "staged\n")
@@ -459,6 +477,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("a commit-msg hook that rejects", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		write(t, filepath.Join(repo, "a.txt"), "staged\n")
@@ -474,23 +493,8 @@ func TestSourceCommit(t *testing.T) {
 		}
 	})
 
-	t.Run("no identity", func(t *testing.T) {
-		repo := testRepo(t)
-		g, _ := tracedGit(t)
-		write(t, filepath.Join(repo, "a.txt"), "staged\n")
-		gitT(t, repo, "add", "a.txt")
-		for _, v := range []string{"GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL", "EMAIL"} {
-			os.Unsetenv(v)
-		}
-		old := gitT(t, repo, "rev-parse", "HEAD")
-		_, err := g.Commit(repo, "msg", stagedOf(t, g, repo))
-		wantRefusal(t, err, "identity", "Git has no user name and email for this repository: set user.name and user.email in a terminal, then commit.")
-		if gitT(t, repo, "rev-parse", "HEAD") != old {
-			t.Error("a commit was made")
-		}
-	})
-
 	t.Run("a merge conflict", func(t *testing.T) {
+		t.Parallel()
 		repo := divergent(t)
 		g, _ := tracedGit(t)
 		if _, err := gitTry(repo, "merge", "feature"); err == nil {
@@ -501,6 +505,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("staged changes outside the project folder", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		sub := filepath.Join(repo, "sub")
@@ -524,6 +529,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("a project folder commits its own changes", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		sub := filepath.Join(repo, "sub")
@@ -538,6 +544,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("the staged set is not the expected one", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		commit(t, repo, "b.txt", "b\n")
 		g, _ := tracedGit(t)
@@ -562,6 +569,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("a rebase in progress", func(t *testing.T) {
+		t.Parallel()
 		repo := divergent(t)
 		g, _ := tracedGit(t)
 		gitT(t, repo, "checkout", "-q", "feature")
@@ -573,6 +581,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("a cherry-pick in progress", func(t *testing.T) {
+		t.Parallel()
 		repo := divergent(t)
 		g, _ := tracedGit(t)
 		if _, err := gitTry(repo, "cherry-pick", "feature"); err == nil {
@@ -583,6 +592,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("a revert in progress", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		g, _ := tracedGit(t)
 		commit(t, repo, "a.txt", "x\ntwo\n")
@@ -596,6 +606,7 @@ func TestSourceCommit(t *testing.T) {
 	})
 
 	t.Run("an am session in progress", func(t *testing.T) {
+		t.Parallel()
 		repo := divergent(t)
 		g, _ := tracedGit(t)
 		patch := filepath.Join(t.TempDir(), "p.patch")
@@ -609,7 +620,9 @@ func TestSourceCommit(t *testing.T) {
 }
 
 func TestSourcePushSucceeds(t *testing.T) {
+	t.Parallel()
 	t.Run("the remote's branch is the local HEAD", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		bare := bareRemote(t, repo, "origin")
 		g, _ := tracedGit(t)
@@ -634,6 +647,7 @@ func TestSourcePushSucceeds(t *testing.T) {
 	})
 
 	t.Run("two commits ahead, pushed at once", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		bare := bareRemote(t, repo, "origin")
 		g, _ := tracedGit(t)
@@ -656,6 +670,7 @@ func TestSourcePushSucceeds(t *testing.T) {
 	})
 
 	t.Run("a branch with another name on the remote", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		bare := bareRemote(t, repo, "origin")
 		g, _ := tracedGit(t)
@@ -679,6 +694,7 @@ func TestSourcePushSucceeds(t *testing.T) {
 	})
 
 	t.Run("push.followTags does not send tags", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		bare := bareRemote(t, repo, "origin")
 		g, _ := tracedGit(t)
@@ -695,6 +711,7 @@ func TestSourcePushSucceeds(t *testing.T) {
 }
 
 func TestSourcePushRefused(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name  string
 		setup func(t *testing.T) string
@@ -799,6 +816,7 @@ func TestSourcePushRefused(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
 			repo := c.setup(t)
 			g, log := tracedGit(t)
 			_, err := g.Push(repo, nil)
@@ -816,7 +834,9 @@ func TestSourcePushRefused(t *testing.T) {
 }
 
 func TestSourcePushFails(t *testing.T) {
+	t.Parallel()
 	t.Run("another clone pushed first: fetch first, then non-fast-forward", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		bare := bareRemote(t, repo, "origin")
 		other := filepath.Join(t.TempDir(), "other")
@@ -846,6 +866,7 @@ func TestSourcePushFails(t *testing.T) {
 	})
 
 	t.Run("the remote's pre-receive hook rejects", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		bare := bareRemote(t, repo, "origin")
 		hook(t, filepath.Join(bare, "hooks"), "pre-receive", "echo 'no pushes today' >&2\nexit 1")
@@ -869,6 +890,7 @@ func TestSourcePushFails(t *testing.T) {
 	})
 
 	t.Run("an unreachable remote is git's error", func(t *testing.T) {
+		t.Parallel()
 		repo := testRepo(t)
 		bareRemote(t, repo, "origin")
 		commit(t, repo, "b.txt", "b\n")
@@ -885,28 +907,6 @@ func TestSourcePushFails(t *testing.T) {
 		}
 	})
 
-	t.Run("a password in the URL is never shown", func(t *testing.T) {
-		for _, k := range []string{"HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy"} {
-			t.Setenv(k, "")
-		}
-		t.Setenv("NO_PROXY", "*")
-		t.Setenv("no_proxy", "*")
-		repo := testRepo(t)
-		bareRemote(t, repo, "origin")
-		commit(t, repo, "b.txt", "b\n")
-		gitT(t, repo, "remote", "set-url", "origin", "https://user:secret@127.0.0.1:1/x.git")
-		g, _ := tracedGit(t)
-		_, err := g.Push(repo, nil)
-		if err == nil {
-			t.Fatal("the push succeeded")
-		}
-		if strings.Contains(err.Error(), "secret") || strings.Contains(err.Error(), "user:") {
-			t.Errorf("the message shows the credentials: %q", err.Error())
-		}
-		if !strings.Contains(err.Error(), "127.0.0.1") {
-			t.Errorf("message %q does not name the host", err.Error())
-		}
-	})
 }
 
 func TestSourceTraceForbidsForce(t *testing.T) {
@@ -928,6 +928,7 @@ func TestSourceTraceForbidsForce(t *testing.T) {
 // content after the snapshot refuses the commit, HEAD and the index as they
 // were; staged again with the content shown, it commits.
 func TestSourceStagedContents(t *testing.T) {
+	t.Parallel()
 	repo := testRepo(t)
 	commit(t, repo, "b.txt", "bee\n")
 	write(t, filepath.Join(repo, "a.txt"), "one\ntwo\nthree\n")
@@ -964,6 +965,52 @@ func TestSourceStagedContents(t *testing.T) {
 	}
 	if got := gitT(t, repo, "show", "HEAD:a.txt"); got != "one\ntwo\nthree" {
 		t.Errorf("committed a.txt %q", got)
+	}
+}
+
+// TestSourcePushHidesPassword is TestSourcePushFails' case of a password in
+// the remote's URL, which is never shown: a test of its own, run alone, as
+// it clears the proxy variables (plan 49, design D9).
+func TestSourcePushHidesPassword(t *testing.T) {
+	for _, k := range []string{"HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy"} {
+		t.Setenv(k, "")
+	}
+	t.Setenv("NO_PROXY", "*")
+	t.Setenv("no_proxy", "*")
+	repo := testRepo(t)
+	bareRemote(t, repo, "origin")
+	commit(t, repo, "b.txt", "b\n")
+	gitT(t, repo, "remote", "set-url", "origin", "https://user:secret@127.0.0.1:1/x.git")
+	g, _ := tracedGit(t)
+	_, err := g.Push(repo, nil)
+	if err == nil {
+		t.Fatal("the push succeeded")
+	}
+	if strings.Contains(err.Error(), "secret") || strings.Contains(err.Error(), "user:") {
+		t.Errorf("the message shows the credentials: %q", err.Error())
+	}
+	if !strings.Contains(err.Error(), "127.0.0.1") {
+		t.Errorf("message %q does not name the host", err.Error())
+	}
+}
+
+// TestSourceCommitNoIdentity is TestSourceCommit's case of no identity: a
+// test of its own, run alone, as it unsets git's identity for its run (plan
+// 49, design D9).
+func TestSourceCommitNoIdentity(t *testing.T) {
+	repo := testRepo(t)
+	g, _ := tracedGit(t)
+	write(t, filepath.Join(repo, "a.txt"), "staged\n")
+	gitT(t, repo, "add", "a.txt")
+	for _, v := range []string{"GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL", "EMAIL"} {
+		t.Setenv(v, os.Getenv(v)) // given back after the test
+		os.Unsetenv(v)
+	}
+	old := gitT(t, repo, "rev-parse", "HEAD")
+	_, err := g.Commit(repo, "msg", stagedOf(t, g, repo))
+	wantRefusal(t, err, "identity", "Git has no user name and email for this repository: set user.name and user.email in a terminal, then commit.")
+	if gitT(t, repo, "rev-parse", "HEAD") != old {
+		t.Error("a commit was made")
 	}
 }
 

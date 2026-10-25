@@ -364,14 +364,16 @@ func (sc *Screen) cellText(x, y int) string {
 	}
 	cx := 0
 	for _, s := range sc.lines[y] {
-		for _, r := range s.text {
+		for i := 0; i < len(s.text); {
+			j, w := next(s.text, i)
 			if cx == x {
-				return string(r)
+				return s.text[i:j]
 			}
-			cx += runeWidth(r)
+			cx += w
 			if cx > x {
 				return ""
 			}
+			i = j
 		}
 	}
 	return ""
@@ -394,6 +396,7 @@ func commitMenu(sc *Screen, ui UI) {
 	}
 	image := ui.Sixel && !ui.PillNoFont
 	sc.place(menuLines(ui.Source, w, image), x, top, w)
+	sc.Dropdown = true
 }
 
 // menuLines are the dropdown's rows, w cells wide: its outline, its item
@@ -521,11 +524,12 @@ func (sc *Screen) MsgAt(x, y int) (ln, off int, ok bool) {
 				return ln, s.ref.off, true
 			}
 			at := cx
-			for i, r := range s.text {
-				if at+runeWidth(r) > x {
+			for i := 0; i < len(s.text); {
+				j, w := next(s.text, i)
+				if at+w > x {
 					return ln, s.ref.off + i, true
 				}
-				at += runeWidth(r)
+				at, i = at+w, j
 			}
 		}
 		off = end

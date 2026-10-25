@@ -494,6 +494,7 @@ func (s *State) tool(ev event.Event, p event.Tool) []Command {
 			return nil
 		}
 		s.Tools[id] = &ToolCall{ID: id, Agent: ev.Agent, Name: p.Name, Input: p.Input, Status: ToolStarted, Origin: ev.Origin, StartedAt: ev.At, Stage: s.stage(), Seq: ev.Seq}
+		s.ToolOrder = append(s.ToolOrder, id)
 		if ev.Agent == "" {
 			s.dropStep(ev.At) // a call is a step's first output (plan 22, criterion 1.5)
 			s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "tool", MessageID: id, Text: p.Name, Origin: ev.Origin, At: ev.At})
@@ -527,6 +528,7 @@ func (s *State) tool(ev event.Event, p event.Tool) []Command {
 		}
 		if t == nil {
 			s.Tools[id] = &ToolCall{ID: id, Agent: ev.Agent, Name: p.Name, Status: final, Origin: event.Inferred, Output: p.Output, ExitCode: p.ExitCode, HasExitCode: p.HasExitCode, EndedAt: ev.At, Stage: s.stage(), Seq: ev.Seq}
+			s.ToolOrder = append(s.ToolOrder, id)
 			return nil
 		}
 		if t.Status.Final() {
@@ -595,6 +597,16 @@ func (s *State) agent(ev event.Event, p event.Agent) []Command {
 		return nil
 	}
 	a, known := s.Agents[key]
+	if known {
+		// An agent known before this event given another parent: render's
+		// index of the turns' items is built again (plan 49, design D5). One
+		// added now is taken in with its parent.
+		defer func(parent string) {
+			if a.Parent != parent {
+				s.ParentRev++
+			}
+		}(a.Parent)
+	}
 	switch ev.Kind {
 	case event.AgentStarted:
 		if !known {
@@ -749,18 +761,14 @@ func (s *State) requested(ev event.Event, p event.Approval) []Command {
 	}
 	s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "approval", Agent: ev.Agent, MessageID: id, Text: p.Tool, Origin: ev.Origin, At: ev.At})
 	if p.Problem != "" {
-		// An unreadable request is denied, never allowed (INT 4 fallback),
-		// in the CLI's word: Codex declines (reliability.md, Approvals), in a
-		// mock replay of Codex's too (plan 47, design D3).
-		deny := "deny"
-		if s.CLI() == "codex" {
-			deny = "decline"
-		}
-		a.Status, a.Answer, a.AnsweredAt = Denied, deny, ev.At
+		// An unreadable request is denied, never allowed (INT 4 fallback):
+		// the adapter writes the deny in its CLI's word, Codex's decline
+		// (reliability.md, Approvals; plan 49, design D10).
+		a.Status, a.Answer, a.AnsweredAt = Denied, event.Deny, ev.At
 		if p.ID == "" {
 			return nil
 		}
-		return []Command{{Kind: CmdAnswer, ID: p.ID, Decision: deny}}
+		return []Command{{Kind: CmdAnswer, ID: p.ID, Decision: event.Deny}}
 	}
 	if ev.Agent != "" {
 		ag := s.ensureAgent(ev.Agent, ev)
@@ -781,19 +789,20 @@ func (s *State) resolved(ev event.Event, p event.Approval) []Command {
 		return nil
 	}
 	if a.Status.Final() {
-		// The CLI resolving or withdrawing it ("expired", Claude Code's
-		// control_cancel_request) is no second answer (plan 47, design D2).
-		if p.Decision != "" && p.Decision != "resolved" && p.Decision != "expired" {
+		// The CLI resolving or withdrawing it (Claude Code's
+		// control_cancel_request, Codex's serverRequest/resolved) is no
+		// second answer (plan 47, design D2).
+		if p.Decision != "" && p.Decision != event.Withdrawn {
 			s.note(ev, "second answer ignored: "+p.ID)
 		}
 		return nil
 	}
 	switch p.Decision {
-	case "allow", "accept", "acceptForSession", "approved":
+	case event.Allow, event.AllowSession:
 		a.Status = Allowed
-	case "deny", "decline", "cancel", "denied", "abort":
+	case event.Deny, event.Cancel:
 		a.Status = Denied
-	default: // expired, or resolved by the CLI without the owner's answer
+	default: // withdrawn, or a word the adapter did not know
 		a.Status = Expired
 	}
 	a.Answer, a.AnsweredAt = p.Decision, ev.At
@@ -1055,9 +1064,9 @@ func (s *State) verdict(ev event.Event, p event.Verdict) {
 		return
 	}
 	switch p.Decision {
-	case "accept":
+	case event.Allow:
 		t.Reviewed = "approved by auto-review"
-	case "reject":
+	case event.Deny:
 		t.Reviewed = "denied by auto-review"
 	}
 }

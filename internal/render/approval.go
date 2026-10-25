@@ -7,6 +7,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
+	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -29,7 +30,7 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int, k look) []
 		return []line{append(line{deco("! APPROVAL ", stAttention)}, oneRow(i, e, stAttention)...)}
 	}
 	if ap.Status.Final() {
-		return answeredRows(s, i, e, ap, w, k)
+		return answeredRows(s, ui.Memo, i, e, ap, w, k)
 	}
 	return pendingBox(s, ui, i, e, ap, w)
 }
@@ -37,8 +38,9 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int, k look) []
 // answeredRows are an answered request's rows on the tool rows' ground: who
 // asked and the tool, its target, how it was answered and when; a
 // question's answers, or why it was refused, under it.
-func answeredRows(s *state.State, i int, e state.Entry, ap *state.Approval, w int, k look) []line {
-	target, path, _ := approvalDetail(ap)
+func answeredRows(s *state.State, m *Memo, i int, e state.Entry, ap *state.Approval, w int, k look) []line {
+	f := m.input(ap.Input, ap.Question)
+	target, path := f.target, f.path
 	target = revealed(target) // plan 48, design D6
 	var detail line
 	if target != "" {
@@ -53,7 +55,7 @@ func answeredRows(s *state.State, i int, e state.Entry, ap *state.Approval, w in
 	case ap.Status == state.Allowed && ap.Question:
 		outcome = "answered by you " + at
 		more = answeredLines(QuestionsOf(ap), ap.Answers, w-4)
-	case ap.Status == state.Allowed && ap.Answer == "acceptForSession":
+	case ap.Status == state.Allowed && ap.Answer == event.AllowSession:
 		outcome = "allowed for the session by you " + at
 	case ap.Status == state.Denied && ap.Problem != "":
 		sym, outcome, st = deco("✗", stFailed), "denied automatically: request not readable", stFailed

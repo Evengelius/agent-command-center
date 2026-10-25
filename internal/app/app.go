@@ -326,7 +326,7 @@ func New(opt Options) *Model {
 	opt.Keys = opt.Keys.WithDefaults()
 	m := &Model{opt: opt, s: state.New(), detected: map[string]provider.Detection{}}
 	m.env = input.PathEnv{Windows: filepath.Separator == '\\', Home: opt.Home, Cwd: opt.Cwd}
-	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache(),
+	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache(), Memo: render.NewMemo(),
 		KeysProblem: opt.KeysProblem, CodexProxy: opt.CodexProxy, CodexProxyProblem: opt.CodexProxyProblem}
 	m.ui.SendKeys, m.ui.NewlineKeys = opt.Keys.Display()
 	project := opt.Project
@@ -370,24 +370,16 @@ func (m *Model) View() tea.View {
 		prev, m.repaint = nil, false // its rows hold the old palette's colours
 	}
 	m.screen = render.Draw(m.s, m.ui)
-	if m.ui.Models.Open && !m.screen.Selector.Shown {
-		// The frame had no room for the selector (a draft grown under it, a
-		// turn's status in the pill's place, a full view): it closes, so no
-		// key acts on what is not on screen (plan 34, design D9). Nothing of
-		// it was drawn, so the frame stands.
-		m.closeModels()
-	}
-	if m.ui.Modes.Open && !m.screen.Modes.Shown {
-		// The same for the modes selector (plan 39, design D9), and when
-		// another popup or a window took its place.
-		m.closeModes()
-	}
+	// A popup the frame did not show closes: the selectors when it had no
+	// room for them (a draft grown under the model selector, a turn's status
+	// in the pill's place), any under a view (plan 49, design D7).
+	m.closeUnshown(m.screen)
 	v := tea.NewView(m.screen.StringAfter(prev))
 	m.previewFrame() // the thumbnails drawn again after a frame that changed their rows (plan 32)
 	v.AltScreen = true
 	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
-		if m.ui.Plus || m.ui.Models.Open || m.ui.Modes.Open || m.sideHoverable() || m.ui.Source.Open && m.screen.Panel.W > 0 {
+		if m.screen.Layers.Top.Hover() || m.sideHoverable() || m.ui.Source.Open && m.screen.Panel.W > 0 {
 			// The menu's or a selector's hover follows the pointer (plans 30, 34,
 			// 39), the sidebar's tiles' too while the frame shows them (plan
 			// 43, design D4), and Source Control's rows (plan 44, design D5);
@@ -768,7 +760,7 @@ func (m *Model) command(c state.Command) tea.Cmd {
 			return nil
 		}, actionMsg{state.AnswerFailed{ID: id, Message: "too many writes waiting"}})
 	case state.CmdSetApprovals:
-		sess, mode := m.sess, c.Decision
+		sess, mode := m.sess, c.Mode
 		return m.write(func() tea.Msg {
 			if sess == nil {
 				return actionMsg{state.ApprovalFailed{Message: "no session"}}
@@ -1001,6 +993,10 @@ func (m *Model) Shutdown() {
 }
 
 func (m *Model) paste(text string) {
+	// The layer on top takes the paste, as it takes the keys (plan 49,
+	// design D7); the key overlay has no field, and what it hides takes
+	// none.
+	top := render.Layers(m.s, m.ui).Top
 	switch {
 	case m.wt != nil:
 		if m.wt.mode == 'n' && m.wt.busy == "" {
@@ -1010,7 +1006,8 @@ func (m *Model) paste(text string) {
 		m.browse.paste(text)
 	case m.s.Screen == state.ScreenStartup && m.ui.Field == 1:
 		m.path.Insert(input.CleanPath(text))
-	case m.s.Screen == state.ScreenDashboard && render.WindowOpen(m.ui):
+	case top == render.LayerKeys:
+	case top == render.LayerWindow:
 		m.filePaste(text) // the window takes it, or drops it
 	case m.s.Screen == state.ScreenDashboard && m.msgFocused():
 		m.msg.Paste(text) // the commit message (plan 45, design D2): never commits
@@ -1030,7 +1027,7 @@ func contains(list []string, v string) bool {
 
 // sendAnswer sends an approval's answer: a question's answers when it has some,
 // else the decision (plan 14, item 1).
-func sendAnswer(sess provider.Session, id, decision string, answers map[string]string) error {
+func sendAnswer(sess provider.Session, id string, decision event.Decision, answers map[string]string) error {
 	if answers != nil {
 		return sess.AnswerQuestion(id, answers)
 	}

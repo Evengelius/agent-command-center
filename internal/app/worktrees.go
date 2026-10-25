@@ -79,6 +79,7 @@ func (m *Model) openWorktrees() []tea.Cmd {
 			dir = filepath.Dir(input.ResolvePath(m.opt.Mock, m.env).Path)
 		}
 	}
+	m.closePopups() // nothing stays open under the view (plan 49, design D7)
 	m.wt = &worktrees{dir: dir}
 	return []tea.Cmd{m.listWorktrees()}
 }

@@ -70,7 +70,7 @@ func startup(s *state.State, ui UI) []line {
 		cursor = "█"
 	}
 	if textWidth(text)+1 > fw-4 {
-		text = "…" + string(tailRunes([]rune(text), fw-6))
+		text = "…" + tailCut(text, fw-6)
 	}
 	ls = append(ls,
 		sub(plain("╭"+strings.Repeat("─", fw-2)+"╮", border)),
@@ -273,11 +273,4 @@ func padTo(s string, w int) string {
 		return s + strings.Repeat(" ", n)
 	}
 	return s + " "
-}
-
-func tailRunes(rs []rune, w int) []rune {
-	for len(rs) > 0 && textWidth(string(rs)) > w {
-		rs = rs[1:]
-	}
-	return rs
 }

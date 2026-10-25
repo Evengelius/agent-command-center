@@ -233,7 +233,7 @@ func (m *Model) commitAction(push bool) []tea.Cmd {
 	if m.op != nil {
 		return nil // one operation at a time (design D11)
 	}
-	v.Menu, v.MenuHot, v.Ask, m.ask = false, false, 0, nil
+	m.closePopups() // the question, when it comes, the one popup open (plan 49, design D7)
 	if strings.TrimSpace(m.msg.Text()) == "" {
 		m.notice("Enter a commit message.", render.NoticeCheck)
 		return nil
@@ -578,6 +578,7 @@ func (m *Model) btnKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		return m.mainAction(), true
 	case "right", "alt+down":
 		if m.op == nil {
+			m.closePopups() // the one popup open (plan 49, design D7)
 			v.Menu, v.MenuHot = true, true
 		}
 	case "up":
@@ -615,7 +616,9 @@ func (m *Model) commitClick(item, x, y int) (cmds []tea.Cmd, done bool) {
 		return m.mainAction(), true
 	case render.ItemCommitMore:
 		if m.click.n <= 1 && m.op == nil {
-			v.Menu, v.MenuHot = !v.Menu, false
+			open := !v.Menu
+			m.closePopups() // the one popup open (plan 49, design D7)
+			v.Menu = open
 		}
 		return nil, true
 	case render.ItemCommitMenu:

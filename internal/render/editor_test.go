@@ -59,7 +59,8 @@ func refDrawRow(v EditorView, r editorRow, focused bool) line {
 	for _, c := range r.cells {
 		st := stText
 		switch {
-		case focused && r.line == v.Line && c.off == v.Col:
+		case focused && r.line == v.Line && c.off <= v.Col && v.Col < c.off+c.n:
+			// The cursor inside a cluster is on the cluster (plan 49, design D11).
 			st, cursorShown = stCursor, true
 		case v.selected(r.line, c.off):
 			st = stSelected
@@ -104,10 +105,12 @@ func perCell(l line) []cellOut {
 }
 
 // randomLine mixes what a draft holds: ASCII, spaces, tabs, C0 and C1
-// controls, DEL, wide characters, an emoji, a combining mark, invalid UTF-8
-// and the replacement character itself.
+// controls, DEL, wide characters, an emoji, a combining mark, invalid UTF-8,
+// the replacement character itself, and clusters of several code points
+// (plan 49): VS16, a skin tone, a flag, a family, a lone mark.
 func randomLine(r *rand.Rand) string {
-	pieces := []string{"a", "b", "z", " ", "\t", "\x01", "\x1b", "\x7f", "\u0085", "日", "本", "👍", "é", "\xff", "�", "·", "word "}
+	pieces := []string{"a", "b", "z", " ", "\t", "\x01", "\x1b", "\x7f", "\u0085", "日", "本", "👍", "é", "\xff", "�", "·", "word ",
+		"\u2764\uFE0F", "\U0001F44D\U0001F3FD", "\U0001F1EB\U0001F1F7", "\U0001F468\u200D\U0001F469\u200D\U0001F466", "\u0301"}
 	var b strings.Builder
 	for n := r.IntN(60); n > 0; n-- {
 		b.WriteString(pieces[r.IntN(len(pieces))])

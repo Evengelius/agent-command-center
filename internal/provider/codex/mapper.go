@@ -235,7 +235,7 @@ func (m *Mapper) In(raw []byte) []event.Event {
 		if len(r.Error) > 0 && string(r.Error) != "null" {
 			a.Decision = "error"
 		} else {
-			a.Decision = decision(r.Result)
+			a.Decision = decisionOf(decision(r.Result))
 		}
 		return []event.Event{m.ev(event.ApprovalResolved, event.Observed, req.agent, req.turn, req.item, raw, a)}
 	}
@@ -668,7 +668,7 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 		if !ok {
 			req = serverReq{agent: agent, turn: p.TurnID}
 		}
-		return []event.Event{m.ev(event.ApprovalResolved, event.Observed, req.agent, req.turn, req.item, raw, event.Approval{ID: id, Tool: req.tool, ToolID: req.item, Decision: "resolved"})}
+		return []event.Event{m.ev(event.ApprovalResolved, event.Observed, req.agent, req.turn, req.item, raw, event.Approval{ID: id, Tool: req.tool, ToolID: req.item, Decision: event.Withdrawn})}
 	case "error":
 		msg := problemMessage(p.Error)
 		k := event.Error
@@ -1361,4 +1361,22 @@ func (m *Mapper) configRead(raw []byte) ([]event.Event, bool) {
 		item.Text, item.Value, item.Unit = event.LimitPerBackend, 0, ""
 	}
 	return []event.Event{m.ev(event.Telemetry, event.Observed, "", "", "", kept, event.Metrics{Items: []event.Metric{item}})}, true
+}
+
+// decisionOf is a decision in the dashboard's words (plan 49, design D10),
+// app-server's and the older words the reducer took with them; a word it
+// does not know, an amendment's or one to come, stays as it is, which the
+// reducer keeps as an expiry.
+func decisionOf(word string) event.Decision {
+	switch word {
+	case "accept", "approved":
+		return event.Allow
+	case "acceptForSession":
+		return event.AllowSession
+	case "decline", "denied":
+		return event.Deny
+	case "cancel", "abort":
+		return event.Cancel
+	}
+	return event.Decision(word)
 }

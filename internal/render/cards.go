@@ -403,15 +403,19 @@ func callRow(s *state.State, ui UI, i int, e state.Entry, w int, k look, focused
 	if f := toolFailure(s, i, e); tc != nil && tc.Status == state.ToolFailed && len(f) > 1 {
 		fail = f
 	}
-	detail, path := callDetail(tc)
+	detail, path := callDetail(ui.Memo, tc)
 	return toolLine(sym, oneRow(i, e, stToolName), fail, k.nameW, detail, path, outcome, origin, w)
 }
 
 // callDetail is a call's target in a readable muted text (plan 20, the
 // owner's section 7.2), path saying it is a file path; for an agent, its
 // type in blue and its description.
-func callDetail(tc *state.ToolCall) (d line, path bool) {
-	t, path := toolDetail(tc)
+func callDetail(m *Memo, tc *state.ToolCall) (d line, path bool) {
+	var t string
+	if tc != nil {
+		f := m.input(tc.Input, false)
+		t, path = f.detail, f.detailPath
+	}
 	if t == "" {
 		return nil, false
 	}

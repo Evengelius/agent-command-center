@@ -249,7 +249,7 @@ func TestP6bApproval(t *testing.T) {
 			}
 		case event.ApprovalResolved:
 			resolved++
-			if e.Payload.(event.Approval).Decision == "accept" {
+			if e.Payload.(event.Approval).Decision == event.Allow { // Codex's accept, in the dashboard's word (plan 49, design D10)
 				accepted++
 			}
 		}

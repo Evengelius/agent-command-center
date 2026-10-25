@@ -2638,6 +2638,31 @@ connectors").
   tiles. The images are drawn again after any frame that changes their
   rows, and after every size report, the same size included: Bubble Tea
   erases the screen for each.
+- Widths are a grapheme cluster's (plan 49, design D11; audit finding 5):
+  Bubble Tea measures by grapheme once 2027 is set, so the frame does too.
+  `textWidth`, `cut`, the wrap, the cells of the editor, the conversation,
+  the file viewer and the diff, and the hit-testing's units take clusters:
+  a mark, a variation selector, a joiner and what it joins, a skin tone, a
+  flag's two halves, a tag sequence, a keycap, Hangul jamo and an Indic
+  conjunct stay with their base, each cluster as wide as lipgloss measures
+  it (`internal/render/cluster.go`, from Go's Unicode tables). Before, a
+  ❤️, a 👍🏽, a 👨‍👩‍👦 or a 🇫🇷 made its row one to four cells off and its
+  border shifted (`TestClusterFrames`). The editor's cursor still moves by
+  code point; inside a cluster it is drawn on the cluster. The soft hyphen
+  and the C1 controls take no cell, as lipgloss measures them. Windows
+  Terminal 1.23 draws a Devanagari conjunct (क्ष) two cells wide where
+  lipgloss, and with it Bubble Tea's renderer, counts one: such a row still
+  shifts by a cell (plan 49's evaluation); the dashboard follows its
+  renderer.
+- The layers on screen come from one ordered list (`render.Layers`, plan
+  49, design D7): from the top, the Worktrees view, the key overlay, the
+  draft window, the file window, then at most one popup (the "+" menu, the
+  model selector, the modes selector, the staging question or the commit
+  dropdown), shown only over the dashboard and under no window. The frame,
+  the keys, the clicks, the paste, the pointer's filter and the mouse mode
+  all take the top layer from it; a key the top layer passes on goes to the
+  dashboard, never to a window under it. Opening any layer closes the
+  popups, and a popup the frame did not show closes, so nothing acts unseen.
 - What is cached across frames (`internal/render/content.go`): each source
   line's wrap, by the line and the widths (`WrapCache`), and a finished
   entry's row count, by the entry, the width and its shape (`rowCount`); a
@@ -2648,6 +2673,18 @@ connectors").
   view are built, and the stream's frame time is within its target without
   one (`TestStreamToFrame`; plan 21, item 5.6d). The file viewer's
   colouring runs in a command, never while drawing (File viewer).
+- What the tool history costs is bounded (plan 49, designs D4 and D5;
+  audit finding 7): `render.Memo` (`memo.go`) reads each tool call's input
+  once, by the input's identity, for the tree's rows, zone B's call rows,
+  the answered approvals and the inspection, and drops what a frame did
+  not use after the next one; it keeps the turns' items, each agent's
+  calls and children, and the thinking entries, each taken in as it comes
+  (`State.ToolOrder`; `State.ParentRev` rebuilds them when an agent
+  changes its parent). Like `WrapCache` it is a memo, never a source of
+  what is drawn: without one the frame is the same (`TestMemoChangesNoFrame`).
+  Zone A builds the lines of the rows it shows only (`treeRow.line`).
+  Each code point's width and properties are read once, from a table read
+  without a lock (`cluster.go`).
 
 ## Focus and keys
 

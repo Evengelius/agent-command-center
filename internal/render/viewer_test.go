@@ -9,6 +9,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
+	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -186,7 +187,7 @@ func TestViewerHead(t *testing.T) {
 	if got := texts(viewer(s, UI{Width: 120, Height: 30, View: "r1"}, ap, &Screen{})); !strings.Contains(got, "a allow once · s allow for the session · d deny") {
 		t.Errorf("offered, pending: hints lack s:\n%s", got)
 	}
-	ap.Status, ap.Answer, ap.AnsweredAt = state.Allowed, "acceptForSession", at
+	ap.Status, ap.Answer, ap.AnsweredAt = state.Allowed, event.AllowSession, at
 	if got := texts(viewer(s, UI{Width: 120, Height: 30, View: "r1"}, ap, &Screen{})); !strings.Contains(got, "allowed for the session by you "+clockSec(at)) {
 		t.Errorf("allowed for the session: head:\n%s", got)
 	}

@@ -46,7 +46,10 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 	if m.s.Screen != state.ScreenDashboard || m.screen == nil || m.wt != nil {
 		return nil // the Worktrees view takes no mouse: the terminal selects
 	}
-	if render.WindowOpen(m.ui) && !m.ui.Keys {
+	// The layer on top takes the mouse, as the frame drawn last showed it
+	// (plan 49, design D7).
+	top := m.screen.Layers.Top
+	if top == render.LayerWindow {
 		return m.fileMouse(msg) // the window floats over the dashboard (plan 17)
 	}
 	mo := msg.Mouse()
@@ -56,7 +59,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 		// it; while it is open, a click on its item closes it and opens the
 		// Open dialog (plan 31), a click anywhere else closes it and goes on.
 		// A click on a chip's ✕ removes its image.
-		if mo.Button == tea.MouseLeft && !m.ui.DraftWin.Open && (m.ui.Source.Menu || m.ui.Source.Ask > 0) {
+		if mo.Button == tea.MouseLeft && (top == render.LayerCommit || top == render.LayerAsk) {
 			// The commit button's dropdown and the staging question (plan 45,
 			// designs D4 and D6): a click outside either closes it and does
 			// nothing else.
@@ -68,7 +71,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 				return m.answer(false)
 			}
 		}
-		if mo.Button == tea.MouseLeft && !m.ui.DraftWin.Open {
+		if mo.Button == tea.MouseLeft && top != render.LayerDraft {
 			switch p, item := m.screen.ItemAt(mo.X, mo.Y); {
 			case p == render.SidePanel:
 				// The sidebar (plan 43, design D5): the Explorer's tile shows or
@@ -79,10 +82,8 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 				if item != render.SideExplorer && item != render.SideSource {
 					return nil
 				}
-				m.ui.Plus, m.ui.PlusHover = false, false
+				m.closePopups()
 				m.ui.SideHover, m.ui.SideTipOff = item, true // the click answers the tooltip, until the pointer leaves the tile
-				m.closeModels()
-				m.closeModes()
 				if item == render.SideSource {
 					return m.toggleSource()
 				}
@@ -95,7 +96,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 					m.modelsPointer(mo.X, mo.Y)
 				}
 				return cmds
-			case m.ui.Models.Open && p == render.SelectorPanel:
+			case top == render.LayerModels && p == render.SelectorPanel:
 				m.modelsPointer(mo.X, mo.Y)
 				return m.modelsClick(item)
 			case p == render.ModePillPanel:
@@ -106,16 +107,16 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 					m.modesPointer(mo.X, mo.Y)
 				}
 				return cmds
-			case m.ui.Modes.Open && p == render.ModesPanel:
+			case top == render.LayerModes && p == render.ModesPanel:
 				m.modesPointer(mo.X, mo.Y)
 				return m.modesClick(item)
 			case p == '+':
-				m.closeModels()
-				m.closeModes()
-				m.ui.Plus, m.ui.PlusHover = !m.ui.Plus, false
+				open := !m.ui.Plus
+				m.closePopups() // the one popup open (plan 49, design D7)
+				m.ui.Plus = open
 				m.ui.Focus = "B"
 				return nil
-			case m.ui.Models.Open || m.ui.Modes.Open:
+			case top == render.LayerModels || top == render.LayerModes:
 				// A click outside closes the selector and goes on, as one
 				// outside the "+" menu does (plan 34, design D9; plan 39,
 				// design D8).
@@ -125,7 +126,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 					m.ui.Focus = "B"
 					return m.removeAttachment(item)
 				}
-			case m.ui.Plus:
+			case top == render.LayerPlus:
 				m.ui.Plus, m.ui.PlusHover = false, false
 				if p == 'U' {
 					return m.pickImages()
@@ -136,7 +137,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			}
 		}
 		// Over the draft window, only the window takes a click (amendment 13).
-		if mo.Button == tea.MouseLeft && (!m.ui.DraftWin.Open || m.screen.PanelAt(mo.X, mo.Y) == 'E') {
+		if mo.Button == tea.MouseLeft && (top != render.LayerDraft || m.screen.PanelAt(mo.X, mo.Y) == 'E') {
 			switch p, item := m.screen.ItemAt(mo.X, mo.Y); p {
 			case render.ExplorerPanel:
 				return m.explorerClick(item) // the panel's own, no selection (plan 43, design D7)
@@ -155,17 +156,17 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			m.ui.Source.Hover = m.sourceHoverAt(mo.X, mo.Y) // Source Control's row (plan 44, design D5)
 			m.ui.Source.MenuHot = m.menuHotAt(mo.X, mo.Y)   // the dropdown's item (plan 45, design D4)
 		}
-		if m.ui.Plus && !m.drag.on {
+		if top == render.LayerPlus && !m.drag.on {
 			m.ui.PlusHover = m.screen.PanelAt(mo.X, mo.Y) == 'U' // the hover (plan 30, design D3)
 		}
-		if m.ui.Models.Open && !m.drag.on {
+		if top == render.LayerModels && !m.drag.on {
 			// The cursor follows the pointer onto another row (plan 34, design
 			// D9), not a report of where it rests (plan 36, design D1).
 			if item, moved := m.modelsPointer(mo.X, mo.Y); moved && item > 0 {
 				m.modelsHover(item)
 			}
 		}
-		if m.ui.Modes.Open && !m.drag.on {
+		if top == render.LayerModes && !m.drag.on {
 			// The modes selector's the same way, its highlight leaving with
 			// the pointer (plan 39, design D8).
 			if item, moved := m.modesPointer(mo.X, mo.Y); moved {
@@ -186,7 +187,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			return m.copySelection()
 		}
 	case tea.MouseWheelMsg:
-		if m.ui.Models.Open && m.screen.PanelAt(mo.X, mo.Y) == render.SelectorPanel {
+		if top == render.LayerModels && m.screen.PanelAt(mo.X, mo.Y) == render.SelectorPanel {
 			// The wheel scrolls the selector's list (plan 34, design D8).
 			n := wheelRows
 			if mo.Button == tea.MouseWheelUp {
@@ -197,10 +198,10 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			}
 			return nil
 		}
-		if m.ui.Modes.Open && m.screen.PanelAt(mo.X, mo.Y) == render.ModesPanel {
+		if top == render.LayerModes && m.screen.PanelAt(mo.X, mo.Y) == render.ModesPanel {
 			return nil // the modes box has nothing to scroll, and zone B under it stays (plan 39)
 		}
-		if m.ui.DraftWin.Open {
+		if top == render.LayerDraft {
 			if m.screen.PanelAt(mo.X, mo.Y) == 'E' && (mo.Button == tea.MouseWheelUp || mo.Button == tea.MouseWheelDown) {
 				mv := input.Down
 				if mo.Button == tea.MouseWheelUp {
@@ -252,7 +253,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 // (plan 43, design D4).
 func (m *Model) sideHoverable() bool {
 	return m.screen != nil && m.screen.Side.W > 0 && m.s.Screen == state.ScreenDashboard && m.wt == nil &&
-		!m.ui.MouseOff && !render.WindowOpen(m.ui) && !m.ui.DraftWin.Open
+		!m.ui.MouseOff && !windowed(m.screen.Layers.Top)
 }
 
 // sideHover sets the sidebar's hovered tile, its tooltip back once the
@@ -287,7 +288,7 @@ func motionFilter(tm tea.Model, msg tea.Msg) tea.Msg {
 		return msg
 	}
 	m, ok := tm.(*Model)
-	if !ok || m.ui.Plus || m.ui.Models.Open || m.ui.Modes.Open || m.drag.on || m.sideTileAt(mo.X, mo.Y) != m.ui.SideHover ||
+	if !ok || render.Layers(m.s, m.ui).Top.Hover() || m.drag.on || m.sideTileAt(mo.X, mo.Y) != m.ui.SideHover ||
 		m.sourceHoverAt(mo.X, mo.Y) != m.ui.Source.Hover || m.ui.Source.Menu && m.menuHotAt(mo.X, mo.Y) != m.ui.Source.MenuHot {
 		return msg
 	}

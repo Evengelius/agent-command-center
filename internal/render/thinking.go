@@ -938,12 +938,12 @@ func ActivityOn(s *state.State, ui UI) bool {
 	if !activityOn(s) {
 		return false
 	}
-	// From the end: a card live or in its exit is most often the last entry.
-	for i := len(s.Conversation) - 1; i >= 0; i-- {
-		e := &s.Conversation[i]
-		if e.Role != "thinking" {
-			continue
-		}
+	// The thinking entries from the end, those only (plan 49, design D5): a
+	// card live or in its exit is most often the last entry.
+	at := thoughts(s, ui.Memo)
+	for j := len(at) - 1; j >= 0; j-- {
+		e := &s.Conversation[at[j]]
+		ui.Memo.visited()
 		if k := thoughtStage(ui, *e); k == thinkLive || k == thinkExit {
 			return false
 		}
@@ -968,7 +968,7 @@ func activityOn(s *state.State) bool {
 	if n == 0 || s.Session.Phase != state.Ready || s.Turn.Phase != state.Running && s.Turn.Phase != state.Submitted {
 		return false
 	}
-	if e := s.Conversation[n-1]; e.Role == "assistant" && e.Streaming && !thinkingMark(e) {
+	if e := &s.Conversation[n-1]; e.Role == "assistant" && e.Streaming && !thinkingMark(e) {
 		return false
 	}
 	return !requestWaits(s)
@@ -1078,13 +1078,15 @@ func thinkingLive(s *state.State) bool {
 // application then draws every 50 ms, else at its 100 ms spinner.
 func Animating(s *state.State, ui UI) bool {
 	still, now := s.Turn.Phase == state.WaitingApproval, ui.Now
-	for i := len(s.Conversation) - 1; i >= 0; i-- {
-		e := s.Conversation[i]
-		if e.Role != "thinking" || e.Thought == nil {
+	at := thoughts(s, ui.Memo) // the thinking entries only (plan 49, design D5)
+	for j := len(at) - 1; j >= 0; j-- {
+		e := &s.Conversation[at[j]]
+		ui.Memo.visited()
+		if e.Thought == nil {
 			continue
 		}
 		t := e.Thought
-		switch thoughtStage(ui, e) {
+		switch thoughtStage(ui, *e) {
 		case thinkLive:
 			start := t.Start
 			if start.IsZero() {

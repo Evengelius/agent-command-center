@@ -3,7 +3,6 @@ package render
 import (
 	"fmt"
 	"strings"
-	"sync"
 	"unicode/utf8"
 
 	"charm.land/lipgloss/v2"
@@ -228,50 +227,67 @@ func spread(left, right line, w int) line {
 	return append(left.fit(w-rw), right...)
 }
 
-// textWidth is the number of terminal cells s takes.
+// textWidth is the number of terminal cells s takes, by its grapheme
+// clusters (plan 49, design D11).
 func textWidth(s string) int {
 	n := 0
-	for _, r := range s {
-		n += runeWidth(r)
+	for i := 0; i < len(s); {
+		// A run of ASCII is a cell a byte, a control none.
+		j := i
+		for ; j < len(s) && s[j] < 0x80; j++ {
+			if b := s[j]; b >= 0x20 && b != 0x7f {
+				n++
+			}
+		}
+		if j == len(s) {
+			break
+		}
+		r, size := utf8.DecodeRuneInString(s[j:])
+		if j > i && factsOf(r)&mark != 0 {
+			// Only a mark joins ASCII: the run's last byte begins its cluster.
+			if j--; s[j] >= 0x20 && s[j] != 0x7f {
+				n--
+			}
+			r, size = rune(s[j]), 1
+		}
+		// Clusters, each code point decoded once, until ASCII again.
+		for {
+			end, w, after := cluster(s, j, r, size)
+			n += w
+			if after.n == 0 {
+				i = end
+				break
+			}
+			j, r, size = end, after.r, after.n
+		}
 	}
 	return n
 }
 
-func runeWidth(r rune) int {
-	if r < 0x300 {
-		if r < 0x20 || r == 0x7f {
-			return 0
-		}
-		return 1
-	}
-	widths.Lock()
-	defer widths.Unlock()
-	w, ok := widths.m[r]
-	if !ok {
-		w = lipgloss.Width(string(r))
-		widths.m[r] = w
-	}
-	return w
-}
-
-// widths holds the width of each rune past U+02FF met so far: measuring one
-// builds a string, and every frame measures its borders and content again.
-var widths = struct {
-	sync.Mutex
-	m map[rune]int
-}{m: map[rune]int{}}
-
-// cut returns the longest prefix of s at most w cells wide.
+// cut returns the longest prefix of s at most w cells wide, never ending
+// inside a grapheme cluster.
 func cut(s string, w int) string {
 	n := 0
-	for i, r := range s {
-		rw := runeWidth(r)
-		if n+rw > w {
+	for i := 0; i < len(s); {
+		j, cw := next(s, i)
+		if n+cw > w {
 			return s[:i]
 		}
-		n += rw
+		n, i = n+cw, j
 	}
 	return s
+}
+
+// tailCut returns the longest suffix of s at most w cells wide, never
+// starting inside a grapheme cluster.
+func tailCut(s string, w int) string {
+	n := textWidth(s)
+	i := 0
+	for i < len(s) && n > w {
+		j, cw := next(s, i)
+		n, i = n-cw, j
+	}
+	return s[i:]
 }
 
 // wrap breaks text into lines at most w cells wide, at spaces where it can.
@@ -331,8 +347,8 @@ func wrapPara(para string, w int) []rowRange {
 		}
 		for textWidth(word) > w {
 			head := cut(word, w)
-			if head == "" { // a rune wider than the row takes a row alone
-				_, n := utf8.DecodeRuneInString(word)
+			if head == "" { // a cluster wider than the row takes a row alone
+				n, _ := next(word, 0)
 				head = word[:n]
 			}
 			out = append(out, rowRange{pos, pos + len(head)})

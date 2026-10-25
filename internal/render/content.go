@@ -214,25 +214,34 @@ type entryCount struct {
 	n          int
 }
 
-// rowCount is entry i's row count, from count when not cached. Streaming
+// counted is entry i's row count when the cache holds it. Streaming
 // entries and approval cards change between frames and are always counted;
 // so are a thinking card, its exit and a phase's details open, which change
 // with the frame's time or a count come later (plan 22, design 6).
-func (c *WrapCache) rowCount(i int, e state.Entry, w int, shape uint16, count func() int) int {
-	if c == nil || e.Streaming || e.Role == "approval" || shape&(shapeAnim|shapeDetails) != 0 {
-		return count()
+func (c *WrapCache) counted(i int, e *state.Entry, w int, shape uint16) (int, bool) {
+	if !c.keeps(e, shape) || i >= len(c.counts) {
+		return 0, false
 	}
-	if i < len(c.counts) {
-		if k := c.counts[i]; k.text == e.Text && k.role == e.Role && k.w == w && k.thinking == e.Thinking && k.shape == shape {
-			return k.n
-		}
+	if k := c.counts[i]; k.text == e.Text && k.role == e.Role && k.w == w && k.thinking == e.Thinking && k.shape == shape {
+		return k.n, true
 	}
-	n := count()
+	return 0, false
+}
+
+// keepCount keeps entry i's row count n, for an entry the cache keeps.
+func (c *WrapCache) keepCount(i int, e *state.Entry, w int, shape uint16, n int) {
+	if !c.keeps(e, shape) {
+		return
+	}
 	for len(c.counts) <= i {
 		c.counts = append(c.counts, entryCount{w: -1})
 	}
 	c.counts[i] = entryCount{e.Text, e.Role, w, e.Thinking, shape, n}
-	return n
+}
+
+// keeps says the cache keeps the entry's count: none changing between frames.
+func (c *WrapCache) keeps(e *state.Entry, shape uint16) bool {
+	return c != nil && !e.Streaming && e.Role != "approval" && shape&(shapeAnim|shapeDetails) == 0
 }
 
 type wrapKey struct {

@@ -83,15 +83,16 @@ func lookAll(s *state.State, ui UI) ([]look, bool) {
 	// A thinking entry is drawn by its stage (plan 22, design 1); an assistant
 	// entry with nothing but a thinking block is never drawn: plan 20's "∴
 	// thinking" gave way to the thinking entry's card (plan 22, design 1).
-	for i, e := range conv {
+	for i := range conv {
+		e := &conv[i] // by reference: an entry is big, and every frame looks at all (plan 49, design D5)
 		if e.Role != "thinking" {
 			out[i].hidden = thinkingMark(e)
 			continue
 		}
 		k := &out[i]
-		k.think = thoughtStage(ui, e)
+		k.think = thoughtStage(ui, *e)
 		k.hidden = k.think == thinkHidden
-		k.details = k.think == thinkSummary && len(ui.Unfolded) > 0 && ui.Unfolded[ThoughtKey(e)]
+		k.details = k.think == thinkSummary && len(ui.Unfolded) > 0 && ui.Unfolded[ThoughtKey(*e)]
 	}
 	// Runs of tool calls: consecutive calls, with the thinking marks and the
 	// thinking entries between two of them; those are folded with the calls
@@ -105,7 +106,7 @@ func lookAll(s *state.State, ui UI) ([]look, bool) {
 		for ; j < len(conv); j++ {
 			if conv[j].Role == "tool" {
 				calls, last = append(calls, j), j
-			} else if !thinkingMark(conv[j]) && conv[j].Role != "thinking" {
+			} else if !thinkingMark(&conv[j]) && conv[j].Role != "thinking" {
 				break
 			}
 		}
@@ -163,7 +164,7 @@ func exchange(s *state.State, out []look, a, b int, undone []int) {
 	}
 	head, msg := -1, -1
 	for k := a; k < b; k++ {
-		e := conv[k]
+		e := &conv[k]
 		// A thinking entry is the CLI's part of the exchange, never its RESULT
 		// (plan 22, design 1).
 		if (e.Role == "assistant" || e.Role == "tool" || e.Role == "thinking") && head < 0 && (!out[k].hidden || out[k].fold > 0) {
@@ -181,7 +182,7 @@ func exchange(s *state.State, out []look, a, b int, undone []int) {
 	if result {
 		result = false
 		for k := a; k < msg; k++ {
-			switch e := conv[k]; e.Role {
+			switch e := &conv[k]; e.Role {
 			case "tool", "approval", "review":
 				result = true
 			case "assistant":
@@ -263,7 +264,7 @@ func cards(s *state.State, out []look) {
 		w := 0
 		for _, k := range group {
 			if out[k].think == thinkNone { // a phase's summary has no name column
-				w = max(w, nameWidth(s, s.Conversation[k]))
+				w = max(w, nameWidth(s, &s.Conversation[k]))
 			}
 		}
 		for _, k := range group {
@@ -271,8 +272,8 @@ func cards(s *state.State, out []look) {
 		}
 		group, role = group[:0], ""
 	}
-	for i, e := range s.Conversation {
-		k := &out[i]
+	for i := range s.Conversation {
+		e, k := &s.Conversation[i], &out[i]
 		if k.hidden && k.fold == 0 {
 			continue
 		}
@@ -289,7 +290,7 @@ func cards(s *state.State, out []look) {
 			// Inside the CLI's part, narration, a group of tool rows and a
 			// request waiting in its box are a row apart (plan 20, the owner's
 			// section 7.3): the row is the block's, its bar.
-			if a, b := part(s, s.Conversation[p], out[p]), part(s, e, *k); k.card == cardAI && (a != b || b == partBox) {
+			if a, b := part(s, &s.Conversation[p], &out[p]), part(s, e, k); k.card == cardAI && (a != b || b == partBox) {
 				k.gap, k.inner = true, true
 			}
 		}
@@ -332,7 +333,7 @@ const (
 // part is which part of a card entry e, drawn with its look k, draws: a
 // thinking entry's live card and exit are a box, its summary row a tool row
 // (plan 22, designs 2 and 8).
-func part(s *state.State, e state.Entry, k look) int {
+func part(s *state.State, e *state.Entry, k *look) int {
 	switch {
 	case k.think == thinkLive || k.think == thinkExit:
 		return partBox
@@ -346,7 +347,7 @@ func part(s *state.State, e state.Entry, k look) int {
 
 // asToolRow says entry e is drawn as a tool row: a call, or an approval once
 // answered.
-func asToolRow(s *state.State, e state.Entry) bool {
+func asToolRow(s *state.State, e *state.Entry) bool {
 	switch e.Role {
 	case "tool":
 		return true
@@ -359,7 +360,7 @@ func asToolRow(s *state.State, e state.Entry) bool {
 
 // nameWidth is the width of a tool row's name part: the call's name, or who
 // asked and the tool for an approval.
-func nameWidth(s *state.State, e state.Entry) int {
+func nameWidth(s *state.State, e *state.Entry) int {
 	name, _, _ := strings.Cut(e.Text, "\n")
 	if e.Role == "approval" {
 		if ap := s.Approvals[e.MessageID]; ap != nil {
@@ -371,7 +372,7 @@ func nameWidth(s *state.State, e state.Entry) int {
 
 // thinkingMark is an assistant entry with nothing but a thinking block: not
 // drawn, the thinking entry draws the phase (plan 22, design 1).
-func thinkingMark(e state.Entry) bool {
+func thinkingMark(e *state.Entry) bool {
 	return e.Role == "assistant" && e.Text == "" && e.Thinking
 }
 

@@ -3,7 +3,6 @@ package render
 import (
 	"slices"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
@@ -96,6 +95,14 @@ type Screen struct {
 	// drawn, the Explorer's then Source Control's, and their looks (plan 43, design
 	// D2), zero when none.
 	Tiles [2]SideTileShown
+	// Layers is what the frame showed of the interaction layers, and the top
+	// one (plan 49, design D7); Plus and Dropdown say it drew the "+" menu
+	// (plan 30) and the commit dropdown (plan 45); rule is the row of the
+	// editor's rule, where zone B drew it, the popups over the editor rising
+	// from it, 0 when zone B drew no editor.
+	Layers         Stack
+	Plus, Dropdown bool
+	rule           int
 	// Commit, Menu and MsgBox are where the frame left the commit button's,
 	// the dropdown's and the message box's images to be drawn (plan 45,
 	// design D5), zero when none.
@@ -131,16 +138,20 @@ type srcKey struct {
 // Draw draws the whole screen: exactly ui.Height lines, none wider than
 // ui.Width, with ui.Sel highlighted.
 func Draw(s *state.State, ui UI) *Screen {
-	sc := &Screen{}
+	// The layers shown (plan 49, design D7); a popup open but not shown
+	// draws nothing in this frame, and the application closes it.
+	st := Layers(s, ui)
+	ui = st.only(ui)
+	sc := &Screen{Layers: st}
 	var ls []line
 	switch {
 	case ui.Width < MinWidth || ui.Height < MinHeight:
 		ls = tooSmall(s, ui)
-	case ui.Worktrees.Open:
+	case st.Shown(LayerWorktrees):
 		ls = worktreesScreen(s, ui)
 	case s.Screen == state.ScreenStartup && ui.Browser.Open:
 		ls = browserScreen(s, ui)
-	case s.Screen == state.ScreenDashboard && ui.Keys:
+	case st.Shown(LayerKeys):
 		ls = keysOverlay(s, ui, sc)
 	case s.Screen == state.ScreenDashboard && ui.View != "" && s.Approvals[ui.View] != nil:
 		ls = viewer(s, ui, s.Approvals[ui.View], sc)
@@ -163,28 +174,20 @@ func Draw(s *state.State, ui UI) *Screen {
 		}
 		sc.lines[i] = l.fit(ui.Width)
 	}
-	if s.Screen == state.ScreenDashboard && ui.Plus && !WindowOpen(ui) && !ui.DraftWin.Open && !ui.Keys && !ui.Worktrees.Open &&
-		ui.Width >= MinWidth && ui.Height >= MinHeight {
+	switch {
+	case st.Shown(LayerPlus):
 		plusMenu(sc, ui) // the "+" menu over zone B (plan 30)
-	}
-	if s.Screen == state.ScreenDashboard && ui.Models.Open && !ui.Plus && !WindowOpen(ui) && !ui.DraftWin.Open && !ui.Keys && !ui.Worktrees.Open &&
-		ui.Width >= MinWidth && ui.Height >= MinHeight {
+	case st.Shown(LayerModels):
 		modelSelector(sc, s, ui) // the model selector over zone B (plan 34)
-	}
-	if s.Screen == state.ScreenDashboard && ui.Modes.Open && !ui.Plus && !ui.Models.Open && !WindowOpen(ui) && !ui.DraftWin.Open && !ui.Keys && !ui.Worktrees.Open &&
-		ui.Width >= MinWidth && ui.Height >= MinHeight {
+	case st.Shown(LayerModes):
 		modesBox(sc, s, ui) // the modes selector over zone B (plan 39)
-	}
-	if s.Screen == state.ScreenDashboard && ui.Source.Open && ui.Source.Menu && !ui.Keys && !ui.Worktrees.Open &&
-		ui.Width >= MinWidth && ui.Height >= MinHeight {
+	case st.Shown(LayerCommit):
 		commitMenu(sc, ui) // the commit button's dropdown over the panel (plan 45)
 	}
-	if s.Screen == state.ScreenDashboard && WindowOpen(ui) && !ui.Keys && !ui.Worktrees.Open &&
-		ui.Width >= MinWidth && ui.Height >= MinHeight {
+	if st.Shown(LayerWindow) {
 		floatWindow(s, ui, sc)
 	}
-	if s.Screen == state.ScreenDashboard && ui.DraftWin.Open && !ui.Keys && !ui.Worktrees.Open &&
-		ui.Width >= MinWidth && ui.Height >= MinHeight {
+	if st.Shown(LayerDraft) {
 		x, y, ww, hh := DraftRect(ui)
 		sc.place(draftWindow(s, ui, ww, hh), x, y, ww)
 	}
@@ -201,8 +204,7 @@ func Draw(s *state.State, ui UI) *Screen {
 			}
 		}
 	}
-	if s.Screen == state.ScreenDashboard && ui.SideHover != 0 && !WindowOpen(ui) && !ui.DraftWin.Open && !ui.Keys && !ui.Worktrees.Open &&
-		ui.Width >= MinWidth && ui.Height >= MinHeight {
+	if st.Tip {
 		sideTooltip(sc, ui) // the hovered tile's name (plan 44, design D1)
 	}
 	if ui.Sixel && s.Screen == state.ScreenDashboard {
@@ -217,6 +219,7 @@ func Draw(s *state.State, ui UI) *Screen {
 		}
 	}
 	ui.Wrap.sweep()
+	ui.Memo.sweep()
 	return sc
 }
 
@@ -290,8 +293,9 @@ func bound(p, at Pos, n int) int {
 	return min(max(p.Off-at.Off, 0), n)
 }
 
-// unit is one drawn unit of content on a row: a character with its marks,
-// a tab, a control character, or an empty line's anchor.
+// unit is one drawn unit of content on a row: a grapheme cluster with the
+// clusters of no width after it (plan 49, design D11), a tab, a control
+// character, or an empty line's anchor.
 type unit struct {
 	x0, x1     int
 	start, end Pos
@@ -314,16 +318,14 @@ func (sc *Screen) units(p byte, y int) []unit {
 			default:
 				cx := x
 				for i := 0; i < len(s.text); {
-					_, n := utf8.DecodeRuneInString(s.text[i:])
-					j := i + n
+					j, cw := next(s.text, i)
 					for j < len(s.text) {
-						r2, n2 := utf8.DecodeRuneInString(s.text[j:])
-						if runeWidth(r2) != 0 {
+						k, w2 := next(s.text, j)
+						if w2 != 0 {
 							break
 						}
-						j += n2
+						j = k
 					}
-					cw := textWidth(s.text[i:j])
 					out = append(out, unit{cx, cx + cw, pos(r.off + i), pos(r.off + j)})
 					cx, i = cx+cw, j
 				}

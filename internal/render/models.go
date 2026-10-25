@@ -378,13 +378,14 @@ func splitCols(s span, x, from, to int) []colPiece {
 			cur.Reset()
 		}
 	}
-	for _, r := range s.text {
+	for i := 0; i < len(s.text); {
+		j, w := next(s.text, i)
 		if in := cx >= from && cx < to; in != on {
 			flush()
 			on = in
 		}
-		cur.WriteRune(r)
-		cx += runeWidth(r)
+		cur.WriteString(s.text[i:j])
+		cx, i = cx+w, j
 	}
 	flush()
 	return out

@@ -40,8 +40,9 @@ type Attachment struct {
 // (ui-design.md, Input editor, Content; Markdown, Code blocks).
 const TabWidth = 4
 
-// cell is one drawn unit of a logical line: a rune, a tab's spaces, or a
-// control character's ^X, with the byte offset it comes from.
+// cell is one drawn unit of a logical line: a grapheme cluster, a tab's
+// spaces, or a control character's ^X, with the byte offset it comes from
+// (plan 49, design D11).
 type cell struct {
 	text string
 	w    int
@@ -54,15 +55,17 @@ type cell struct {
 // visibly as ^X; nothing is dropped (ui-design.md, Input editor, Content).
 func cells(s string) []cell {
 	out := make([]cell, 0, len(s))
-	for i, r := range s {
-		out = append(out, cellAt(s, i, r))
+	for i := 0; i < len(s); {
+		c := cellAt(s, i)
+		out = append(out, c)
+		i += c.n
 	}
 	return out
 }
 
-// cellAt is the drawn unit of rune r at byte i of s.
-func cellAt(s string, i int, r rune) cell {
-	n := utf8.RuneLen(r)
+// cellAt is the drawn unit at byte i of s.
+func cellAt(s string, i int) cell {
+	r, n := utf8.DecodeRuneInString(s[i:])
 	switch {
 	case r == '\t':
 		return cell{"    ", TabWidth, i, 1, false}
@@ -72,31 +75,29 @@ func cellAt(s string, i int, r rune) cell {
 		return cell{"^?", 2, i, 1, true}
 	case r >= 0x80 && r < 0xa0: // C1 controls
 		return cell{fmt.Sprintf("<%02X>", r), 4, i, n, true}
-	case r == utf8.RuneError:
-		if _, n := utf8.DecodeRuneInString(s[i:]); n == 1 {
-			return cell{fmt.Sprintf("<%02X>", s[i]), 4, i, 1, true}
-		}
-		return cell{string(r), 1, i, n, false}
+	case r == utf8.RuneError && n == 1:
+		return cell{fmt.Sprintf("<%02X>", s[i]), 4, i, 1, true}
 	}
-	return cell{s[i : i+n], runeWidth(r), i, n, false} // its bytes: no allocation
+	j, w := next(s, i)
+	return cell{s[i:j], w, i, j - i, false} // its bytes: no allocation
 }
 
-// cellWidth is the width of cellAt(s, i, r), without building its text.
-func cellWidth(s string, i int, r rune) int {
+// cellSpan is the bytes and the width of cellAt(s, i), without building its
+// text.
+func cellSpan(s string, i int) (n, w int) {
+	r, size := utf8.DecodeRuneInString(s[i:])
 	switch {
 	case r == '\t':
-		return TabWidth
+		return 1, TabWidth
 	case r < 0x20 || r == 0x7f:
-		return 2
+		return 1, 2
 	case r >= 0x80 && r < 0xa0:
-		return 4
-	case r == utf8.RuneError:
-		if _, n := utf8.DecodeRuneInString(s[i:]); n == 1 {
-			return 4
-		}
-		return 1
+		return size, 4
+	case r == utf8.RuneError && size == 1:
+		return 1, 4
 	}
-	return runeWidth(r)
+	j, w := next(s, i)
+	return j - i, w
 }
 
 // editorRow is one screen row of the editor: a piece of a logical line.
@@ -128,12 +129,12 @@ func rowsOf(n int, text string, w int) []editorRow {
 // the rows it shows.
 func rowCount(text string, w int) int {
 	rows, cw, k := 1, 0, 0
-	for i, r := range text {
-		cw2 := cellWidth(text, i, r)
+	for i := 0; i < len(text); {
+		n, cw2 := cellSpan(text, i)
 		if cw+cw2 > w && k > 0 {
 			rows, cw, k = rows+1, 0, 0
 		}
-		cw, k = cw+cw2, k+1
+		cw, k, i = cw+cw2, k+1, i+n
 	}
 	return rows
 }
@@ -383,7 +384,9 @@ func drawRow(v EditorView, r editorRow, focused bool) line {
 	for _, c := range r.cells {
 		st, kind := stText, plainText
 		switch {
-		case focused && r.line == v.Line && c.off == v.Col:
+		case focused && r.line == v.Line && c.off <= v.Col && v.Col < c.off+c.n:
+			// The cursor moves by code point; inside a cluster, it is on the
+			// cluster (plan 49, design D11).
 			st, kind, cursorShown = stCursor, cursor, true
 		case v.selected(r.line, c.off):
 			st, kind = stSelected, selected

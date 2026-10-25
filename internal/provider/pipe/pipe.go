@@ -1,6 +1,8 @@
 // Package pipe is what every adapter's session needs between a CLI's pipes
-// and the application: an ordered, unbounded event queue and a bounded line
-// reader (doc/reliability.md, Backpressure). It knows no CLI.
+// and the application: an ordered, unbounded event queue, a bounded line
+// reader (doc/reliability.md, Backpressure), and the process's lifecycle the
+// sessions share (Proc; plan 49, design D8). It knows no CLI: a session
+// gives its CLI's name and what each line means.
 package pipe
 
 import (

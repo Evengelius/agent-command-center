@@ -9,6 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/fixture"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
@@ -117,7 +118,7 @@ func TestCodexSessionAllow(t *testing.T) {
 					}
 					return
 				}
-				if ap.Status != state.Allowed || ap.Answer != "acceptForSession" {
+				if ap.Status != state.Allowed || ap.Answer != event.AllowSession {
 					t.Errorf("approval %q, answer %q", ap.Status, ap.Answer)
 				}
 				if f := frameText(h); !strings.Contains(f, "allowed for the session by you") {

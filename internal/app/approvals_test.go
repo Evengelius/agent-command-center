@@ -283,8 +283,8 @@ func TestToolMarkerInZoneB(t *testing.T) {
 			evOf(event.TurnStarted, nil),
 			evOf(event.ToolStarted, event.Tool{ToolID: "t1", Name: "Bash", Input: in}),
 			evOf(event.ToolStarted, event.Tool{ToolID: "t2", Name: "Read", Input: in}),
-			evOf(event.ToolDecision, event.Verdict{ToolID: "t1", Decision: "accept", ReasonType: "classifier"}),
-			evOf(event.ToolDecision, event.Verdict{ToolID: "t2", Decision: "accept", ReasonType: "mode"}))
+			evOf(event.ToolDecision, event.Verdict{ToolID: "t1", Decision: event.Allow, ReasonType: "classifier"}),
+			evOf(event.ToolDecision, event.Verdict{ToolID: "t2", Decision: event.Allow, ReasonType: "mode"}))
 		f := h.frame()
 		if n := strings.Count(f, "approved by auto-review"); n != 1 {
 			t.Fatalf("%d markers, want 1:\n%s", n, f)

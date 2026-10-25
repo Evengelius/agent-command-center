@@ -182,7 +182,7 @@ func (s *Session) Send(msg provider.Message) error {
 }
 
 // Answer records the answer; no CLI receives it.
-func (s *Session) Answer(id, decision string) error {
+func (s *Session) Answer(id string, decision event.Decision) error {
 	if !s.emit(event.Event{Kind: event.ApprovalResolved, Payload: event.Approval{ID: id, Decision: decision}}) {
 		return errors.New("the mock session is closed")
 	}
@@ -191,7 +191,7 @@ func (s *Session) Answer(id, decision string) error {
 
 // AnswerQuestion records the answer as an allow; no CLI receives it.
 func (s *Session) AnswerQuestion(id string, answers map[string]string) error {
-	return s.Answer(id, "allow")
+	return s.Answer(id, event.Allow)
 }
 
 // Interrupt ends the running turn as interrupted.

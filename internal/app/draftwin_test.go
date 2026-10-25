@@ -63,7 +63,7 @@ func TestDraftWindow(t *testing.T) {
 		}
 
 		// Ctrl+G again does nothing more; f, ? and z are typed.
-		cmds := h.m.dashboardKey(key('g', tea.ModCtrl))
+		cmds := h.m.key(key('g', tea.ModCtrl))
 		if len(cmds) != 0 || !h.m.ui.DraftWin.Open || h.m.edit.Text() != "first\nsecond" {
 			t.Errorf("Ctrl+G in the window: %d commands, open %v, draft %q", len(cmds), h.m.ui.DraftWin.Open, h.m.edit.Text())
 		}

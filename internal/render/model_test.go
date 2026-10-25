@@ -171,7 +171,7 @@ func TestAgentLabelColumn(t *testing.T) {
 		ui := UI{Width: size[0], Height: size[1], Focus: "C"}
 		sc := Draw(s, ui)
 		agents := agentsByActivity(s)
-		cols := cardColumns(agents, currentTools(s, agents), ui, size[0]-4)
+		cols := cardColumns(agents, currentTools(s, nil, agents), ui, size[0]-4)
 		// 27.11: the panel 45, 61 and 74 cells; the label column 17, 33 and
 		// 40; the tool column 16, 16 and 22.
 		if want := map[int][3]int{120: {45, 17, 16}, 160: {61, 33, 16}, 200: {74, 40, 22}}[size[0]]; [3]int{cols.width, cols.label, cols.tool} != want {

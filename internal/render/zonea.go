@@ -50,7 +50,7 @@ func zoneA(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	body := head
 	nodes := make([]string, len(head))
 	for _, r := range rows[top:min(top+room, len(rows))] {
-		l := r.l
+		l := r.line(s, ui, inner) // only the rows shown are made (plan 49, design D5)
 		if focused && r.node.ID != "" && r.node.ID == ui.ACursor {
 			l = cursorLine(l.fit(inner), inner)
 		}

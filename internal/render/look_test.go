@@ -515,7 +515,7 @@ func TestConversationLook(t *testing.T) {
 	t.Run("3.6, 3.7 approvals", func(t *testing.T) {
 		b := newConvBench("claude-code", "claude-haiku-5-5")
 		b.prompt("go")
-		for i, d := range []string{"", "allow", "deny"} {
+		for i, d := range []event.Decision{"", event.Allow, event.Deny} {
 			id := fmt.Sprint(i)
 			b.call("t"+id, "Bash", map[string]string{"command": "ls -" + id}, false, false)
 			b.ev(event.ApprovalRequest, event.Approval{ID: "a" + id, Tool: "Bash", ToolID: "t" + id, Input: json.RawMessage(`{"command":"ls -` + id + `"}`)})
@@ -596,7 +596,7 @@ func TestConversationLook(t *testing.T) {
 		}
 		// The auto-review's verdict in its outcome's colour.
 		b.call("t9", "Write", map[string]string{"file_path": `C:\work\proj\c.txt`, "content": "x"}, true, false)
-		b.ev(event.ToolDecision, event.Verdict{ToolID: "t9", ReasonType: "classifier", Decision: "accept"})
+		b.ev(event.ToolDecision, event.Verdict{ToolID: "t9", ReasonType: "classifier", Decision: event.Allow})
 		for _, l := range bRows(b.s, UI{}, w) {
 			if x, ok := spanOf(l, "approved by auto-review"); ok {
 				if x.st != tint(stDone) {

@@ -88,23 +88,15 @@ type toolInfo struct {
 // currentTools is each listed agent's current tool: its latest call by
 // sequence, a call waiting for the owner included (P3b's "Write"), else the
 // tool the CLI reported (plan 7, item 1); one pass over the calls.
-func currentTools(s *state.State, agents []*state.Agent) map[string]toolInfo {
+func currentTools(s *state.State, m *Memo, agents []*state.Agent) map[string]toolInfo {
 	out := make(map[string]toolInfo, len(agents))
-	last := make(map[string]*state.ToolCall, len(agents))
 	for _, a := range agents {
 		out[a.Key] = toolInfo{name: a.LastTool}
-	}
-	for _, tc := range s.Tools { // a map: the latest by sequence, then by ID, as agentTools orders them
-		if _, listed := out[tc.Agent]; !listed {
-			continue
+		// The latest by sequence, then by ID, as agentTools orders them.
+		if calls := callsOf(s, m, a.Key); len(calls) > 0 {
+			tc := calls[len(calls)-1]
+			out[a.Key] = toolInfo{name: tc.Name, failed: tc.Status == state.ToolFailed}
 		}
-		if b := last[tc.Agent]; b != nil && (tc.Seq < b.Seq || tc.Seq == b.Seq && tc.ID < b.ID) {
-			continue
-		}
-		last[tc.Agent] = tc
-	}
-	for k, tc := range last {
-		out[k] = toolInfo{name: tc.Name, failed: tc.Status == state.ToolFailed}
 	}
 	return out
 }
@@ -238,7 +230,7 @@ func zoneC(s *state.State, ui UI, w, h int, sc *Screen) []line {
 	if s.Agents[ui.Selected] == nil { // the first listed agent, as the timeline shows it
 		ui.Selected = agents[0].Key
 	}
-	tools := currentTools(s, agents)
+	tools := currentTools(s, ui.Memo, agents)
 	cols := cardColumns(agents, tools, ui, inner)
 	lw := cols.width
 	tw := inner - lw - 3

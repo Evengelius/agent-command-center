@@ -252,7 +252,7 @@ func (l *live) approve(r *run, act func(event.Approval) []state.Command, at *tim
 		a := ev.Payload.(event.Approval)
 		l.t.Logf("approval %s (agent %q): %s", a.Tool, ev.Agent, a.Input)
 		if !at.IsZero() || ev.Agent != "" {
-			l.do(r, []state.Command{{Kind: state.CmdAnswer, ID: a.ID, Decision: "decline"}})
+			l.do(r, []state.Command{{Kind: state.CmdAnswer, ID: a.ID, Decision: event.Deny}})
 			return
 		}
 		*at = time.Now()
@@ -360,7 +360,7 @@ func TestLiveGate(t *testing.T) {
 	// A file-change approval accepted writes the file.
 	var asked time.Time
 	accept := func(a event.Approval) []state.Command {
-		return []state.Command{{Kind: state.CmdAnswer, ID: a.ID, Decision: "accept"}}
+		return []state.Command{{Kind: state.CmdAnswer, ID: a.ID, Decision: event.Allow}}
 	}
 	end, evs := l.turn(r, "The code word is "+codeWord+"; remember it. Create the file accept.txt in the current directory containing exactly: ok. Then reply with the single word done.", l.approve(r, accept, &asked))
 	b, err := os.ReadFile(filepath.Join(dir, "accept.txt"))
@@ -373,7 +373,7 @@ func TestLiveGate(t *testing.T) {
 	// decline: no file, the turn ends completed (CX-10 q1, recorded).
 	asked = time.Time{}
 	decline := func(a event.Approval) []state.Command {
-		return []state.Command{{Kind: state.CmdAnswer, ID: a.ID, Decision: "decline"}}
+		return []state.Command{{Kind: state.CmdAnswer, ID: a.ID, Decision: event.Deny}}
 	}
 	end, evs = l.turn(r, "Create the file decline.txt in the current directory containing exactly: no. If the change is refused, do not try any other way; reply with the single word refused.", l.approve(r, decline, &asked))
 	_, text = textDeltas(evs)

@@ -5,6 +5,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/input"
 	"github.com/Evengelius/agent-command-center/internal/render"
 	"github.com/Evengelius/agent-command-center/internal/state"
@@ -43,25 +44,30 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	if m.s.QuitAsked && k.String() == "esc" {
 		return m.do(state.Stay{})
 	}
-	if m.ui.Plus {
+	// The layer on top takes the keys first (plan 49, design D7); a popup
+	// closes on a key it does not take, which goes on to the dashboard.
+	top := render.Layers(m.s, m.ui).Top
+	switch top {
+	case render.LayerPlus:
 		// Any key closes the "+" menu; Esc does nothing more (plan 30).
 		m.ui.Plus, m.ui.PlusHover = false, false
 		if k.String() == "esc" {
 			return nil
 		}
-	}
-	if m.ui.Models.Open && m.s.Screen == state.ScreenDashboard {
+		top = render.LayerNone
+	case render.LayerModels:
 		// The model selector takes its keys while it is open; any other key
 		// closes it and goes on (plan 34, design D9).
 		if cmds, done := m.modelsKey(k); done {
 			return cmds
 		}
-	}
-	if m.ui.Modes.Open && m.s.Screen == state.ScreenDashboard {
+		top = render.LayerNone
+	case render.LayerModes:
 		// The modes selector, the same way (plan 39, design D8).
 		if cmds, done := m.modesKey(k); done {
 			return cmds
 		}
+		top = render.LayerNone
 	}
 	if m.wt != nil {
 		return m.worktreesKey(k)
@@ -78,7 +84,7 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	if m.s.Screen == state.ScreenStartup {
 		return m.startupKey(k)
 	}
-	return m.dashboardKey(k)
+	return m.dashboardKey(k, top)
 }
 
 func (m *Model) startupKey(k tea.KeyPressMsg) []tea.Cmd {
@@ -166,26 +172,28 @@ func (m *Model) focusMessage() {
 	}
 }
 
-func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
-	if m.ui.Keys {
+func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
+	// The layer on top takes its keys (plan 49, design D7): the key overlay;
+	// the window in front, the draft, the quick open or the file viewer,
+	// every key but the global ones (plan 17, Keys; amendments 12 and 13).
+	// A key it passes on goes to the dashboard, never to a window under it.
+	// Over the dashboard itself, the docked panel takes its own while it
+	// has the focus (plan 43, design D7; plan 44, design D5), its dropdown
+	// and its question with them, the diff its own (design D9).
+	switch {
+	case top == render.LayerKeys:
 		if cmds, done := m.overlayKey(k); done {
 			return cmds
 		}
-	}
-	// The window in front, the draft, the quick open or the file viewer,
-	// takes every key but the global ones (plan 17, Keys; amendments 12 and
-	// 13); the docked panel takes its own while it has the focus (plan 43,
-	// design D7; plan 44, design D5), the diff its own (design D9).
-	switch {
-	case m.ui.DraftWin.Open:
+	case top == render.LayerDraft:
 		if cmds, done := m.draftWinKey(k); done {
 			return cmds
 		}
-	case m.ui.Finder.Open:
+	case top == render.LayerWindow && m.ui.Finder.Open:
 		if cmds, done := m.finderKey(k); done {
 			return cmds
 		}
-	case m.ui.File.Open:
+	case top == render.LayerWindow:
 		if cmds, done := m.fileKey(k); done {
 			return cmds
 		}
@@ -210,12 +218,12 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 	}
 	// F4 from any zone, with a card open too: the modes selector (plan 39,
 	// design D8), where plan 12's F4 switched Manual and Auto.
-	if k.String() == "f4" && !render.WindowOpen(m.ui) {
+	if k.String() == "f4" && !windowed(top) {
 		return m.toggleModes()
 	}
 	// Alt+P from any zone: the model selector, Claude Code's own key for its
 	// model picker (plan 34, design D9).
-	if k.String() == "alt+p" && !render.WindowOpen(m.ui) {
+	if k.String() == "alt+p" && !windowed(top) {
 		return m.toggleModels()
 	}
 	// F3: the file the entry or request on screen names, else the Explorer
@@ -463,7 +471,7 @@ func (m *Model) cardKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		if !ap.ForSession || ap.Question { // only a Codex request takes acceptForSession
 			return nil, true // not offered: nothing sent
 		}
-		return m.do(state.Answer{ID: ap.ID, Decision: "acceptForSession"}), true
+		return m.do(state.Answer{ID: ap.ID, Decision: event.AllowSession}), true
 	case "c":
 		return m.do(state.CancelTurn{ID: ap.ID}), true
 	case "esc":
@@ -479,21 +487,17 @@ func (m *Model) cardKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	return nil, k.Text != "" && k.Mod&(tea.ModCtrl|tea.ModAlt) == 0
 }
 
-// decision is the CLI's word for allow once or deny (ui-design.md,
-// Approvals). Allow for the session (s, in cardKey) is never offered for
-// Claude Code (CC-4), and for Codex unless the request's availableDecisions
-// omits acceptForSession (plan 5, item 8; plan 8); the amendments it may
-// list are never offered.
-func (m *Model) decision(allow bool) string {
-	switch {
-	case m.s.Context.Provider == "codex" && allow:
-		return "accept"
-	case m.s.Context.Provider == "codex":
-		return "decline"
-	case allow:
-		return "allow"
+// decision is allow once or deny (ui-design.md, Approvals), in the
+// dashboard's words, which the adapter writes in its CLI's (plan 49, design
+// D10). Allow for the session (s, in cardKey) is never offered for Claude
+// Code (CC-4), and for Codex unless the request's availableDecisions omits
+// it (plan 5, item 8; plan 8); the amendments it may list are never
+// offered.
+func (m *Model) decision(allow bool) event.Decision {
+	if allow {
+		return event.Allow
 	}
-	return "deny"
+	return event.Deny
 }
 
 // focusCard gives the focus to a pending approval card: the oldest with
@@ -573,7 +577,7 @@ func (m *Model) questionKey(ap *state.Approval, key string) (cmds []tea.Cmd, don
 		if !ok {
 			return m.toast("choose an option for each question first"), true
 		}
-		return m.do(state.Answer{ID: ap.ID, Decision: "allow", Answers: answers}), true
+		return m.do(state.Answer{ID: ap.ID, Decision: event.Allow, Answers: answers}), true
 	default:
 		return nil, false
 	}

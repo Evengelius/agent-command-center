@@ -261,7 +261,7 @@ func TestAutoTurnStartAsksForSummaries(t *testing.T) {
 	}
 	r.send("make hello.txt")
 	req := r.wait(event.ApprovalRequest).Payload.(event.Approval)
-	if err := r.sess.Answer(req.ID, "accept"); err != nil {
+	if err := r.sess.Answer(req.ID, event.Allow); err != nil {
 		t.Fatal(err)
 	}
 	r.wait(event.TurnCompleted)

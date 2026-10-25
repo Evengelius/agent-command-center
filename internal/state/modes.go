@@ -130,5 +130,5 @@ func (s *State) chooseMode(a ChooseMode) []Command {
 		s.Session.ApprovalRequested = ""
 	}
 	s.Turn.Notice = ""
-	return []Command{{Kind: CmdSetApprovals, Decision: a.Mode}}
+	return []Command{{Kind: CmdSetApprovals, Mode: a.Mode}}
 }

@@ -121,7 +121,7 @@ func (m *Mapper) Out(raw []byte) []event.Event {
 	case "control_response":
 		return m.controlResponse(l, raw)
 	case "control_cancel_request":
-		return []event.Event{m.ev(event.ApprovalResolved, event.Observed, "", raw, event.Approval{ID: l.RequestID, Decision: "expired"})}
+		return []event.Event{m.ev(event.ApprovalResolved, event.Observed, "", raw, event.Approval{ID: l.RequestID, Decision: event.Withdrawn})}
 	}
 	return []event.Event{m.unknown(raw, l.Type, l.Subtype)}
 }
@@ -169,7 +169,7 @@ func (m *Mapper) In(raw []byte) []event.Event {
 			} `json:"response"`
 		}
 		_ = json.Unmarshal(l.Response, &resp)
-		return []event.Event{m.ev(event.ApprovalResolved, event.Observed, "", raw, event.Approval{ID: resp.RequestID, Decision: resp.Response.Behavior})}
+		return []event.Event{m.ev(event.ApprovalResolved, event.Observed, "", raw, event.Approval{ID: resp.RequestID, Decision: decisionOf(resp.Response.Behavior)})}
 	}
 	return []event.Event{m.ev(event.Sent, event.Observed, "", raw, event.Write{What: l.Type})}
 }
@@ -763,7 +763,7 @@ func (m *Mapper) verdicts(l line, agent string, raw []byte, results []string) []
 		if x.Decision.ReasonType != "classifier" {
 			continue
 		}
-		e := m.ev(event.ToolDecision, event.Observed, agent, raw, event.Verdict{ToolID: x.ID, Decision: x.Decision.Decision, ReasonType: x.Decision.ReasonType})
+		e := m.ev(event.ToolDecision, event.Observed, agent, raw, event.Verdict{ToolID: x.ID, Decision: verdictOf(x.Decision.Decision), ReasonType: x.Decision.ReasonType})
 		e.Item = x.ID
 		out = append(out, e)
 	}
@@ -1102,4 +1102,30 @@ func contentText(c json.RawMessage) string {
 		}
 	}
 	return b.String()
+}
+
+// decisionOf is an answer's behavior in the dashboard's words (plan 49,
+// design D10): allow and deny; a word it does not know stays as it is,
+// which the reducer keeps as an expiry.
+func decisionOf(behavior string) event.Decision {
+	switch behavior {
+	case "allow":
+		return event.Allow
+	case "deny":
+		return event.Deny
+	}
+	return event.Decision(behavior)
+}
+
+// verdictOf is a recorded permission decision in the dashboard's words (plan
+// 49, design D10): accept and reject; a word it does not know stays as it
+// is, which the reducer ignores, as it did.
+func verdictOf(decision string) event.Decision {
+	switch decision {
+	case "accept":
+		return event.Allow
+	case "reject":
+		return event.Deny
+	}
+	return event.Decision(decision)
 }

@@ -1,20 +1,15 @@
 package claude
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
-	"time"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/proc"
@@ -22,20 +17,9 @@ import (
 	"github.com/Evengelius/agent-command-center/internal/provider/pipe"
 )
 
-// MaxLine bounds one stdout line; a longer one is skipped with an error event
-// and reading continues (ASM-20).
-const MaxLine = 64 << 20
-
-// maxStderrLine bounds one stderr line kept for the error tail.
-const maxStderrLine = 4 << 10
-
-// CloseStep is each wait of the close escalation: stdin closed, then the CLI
-// terminated, then its whole tree killed (reliability.md, Close).
-const CloseStep = 5 * time.Second
-
-// drainWait bounds the wait for the readers after the exit, when something
-// the CLI started still holds its pipes open.
-const drainWait = 2 * time.Second
+// CloseStep is each wait of the close escalation (pipe.CloseStep;
+// reliability.md, Close).
+const CloseStep = pipe.CloseStep
 
 // GitBashDefault is where Git for Windows installs its bash.
 const GitBashDefault = `C:\Program Files\Git\bin\bash.exe`
@@ -94,23 +78,13 @@ func envValue(env []string, name string) string {
 
 // Session is one running `claude -p` process.
 type Session struct {
-	p     proc.Process
-	stdin io.WriteCloser
-	step  time.Duration
+	cli *pipe.Proc // the process: its events, readers, writes and close (plan 49, design D8)
 
 	mu     sync.Mutex            // the mapper and the order of events
 	m      *Mapper               //
 	inputs map[string]pendingReq // pending approval id -> its request
 	reqs   int                   // control requests sent
 	reads  int                   // get_settings requests sent (plan 34)
-
-	wmu      sync.Mutex // one write at a time
-	inClosed atomic.Bool
-
-	q       *pipe.Queue
-	exited  chan struct{}
-	closing atomic.Bool
-	once    sync.Once
 }
 
 func (p *Provider) start(ctx context.Context, sc provider.SessionContext, env []string) (*Session, error) {
@@ -123,88 +97,32 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext, env []
 	if err != nil {
 		return nil, fmt.Errorf("Claude Code did not start: %w", err)
 	}
-	step := p.CloseStep
-	if step == 0 {
-		step = CloseStep
-	}
-	now := p.Now
-	if now == nil {
-		now = time.Now
-	}
-	s := &Session{p: pr, stdin: pr.Stdin(), step: step, m: NewMapper(), inputs: map[string]pendingReq{},
-		q: pipe.NewQueue(now), exited: make(chan struct{})}
+	s := &Session{m: NewMapper(), inputs: map[string]pendingReq{}}
 	s.m.SetEffortVar(envValue(env, EffortVar))
-	s.q.Push(event.Event{Provider: ProviderID, Kind: event.SessionSpawned, Origin: event.Observed,
-		Payload: event.Spawned{Argv: append([]string{sc.Executable}, argv...), Dir: sc.ProjectPath}})
-	go s.q.Forward()
-
-	out, errs := make(chan struct{}), make(chan struct{})
-	go func() { defer close(out); s.read(pr.Stdout()) }()
-	go func() { defer close(errs); s.readStderr(pr.Stderr()) }()
-	go s.wait(out, errs)
-	go func() {
-		select {
-		case <-ctx.Done(): // the application's forced kill
-			_ = pr.Kill()
-		case <-s.exited:
-		}
-	}()
+	s.cli = pipe.New(pipe.Config{Name: "Claude Code", Provider: ProviderID, Step: p.CloseStep, Now: p.Now, Mu: &s.mu, Line: s.line}, pr)
+	s.cli.Run(ctx, append([]string{sc.Executable}, argv...), sc.ProjectPath)
 	if err := s.control("initialize", `"hooks":null`); err != nil {
-		s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "initialize not sent: " + err.Error()}})
+		s.cli.Problem("initialize not sent: " + err.Error())
 	}
 	return s, nil
 }
 
-// push queues one event of the adapter's own.
-func (s *Session) push(ev event.Event) {
-	ev.Provider = ProviderID
-	s.mu.Lock()
-	s.q.Push(ev)
-	s.mu.Unlock()
-}
-
-// read maps stdout line by line until end of file. A panic in the mapping is
-// the session's fatal error, and the rest of stdout is read and dropped, so
-// Claude Code never blocks on it before the dashboard closes it (plan 48,
-// design D5; audit finding 6).
-func (s *Session) read(r io.Reader) {
-	br := bufio.NewReaderSize(r, 64<<10)
-	defer func() {
-		if v := recover(); v != nil {
-			s.fatal("reading Claude Code's output failed", v)
-			_, _ = io.Copy(io.Discard, br)
-		}
-	}()
-	for {
-		l, size, over, err := pipe.ReadLine(br, MaxLine)
-		switch {
-		case over:
-			s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{
-				Message: fmt.Sprintf("a line of %d bytes from Claude Code was skipped (limit %d MiB)", size, MaxLine>>20)}})
-		case len(bytes.TrimSpace(l)) > 0:
-			held, ready, due := s.mapOut(l)
-			switch {
-			case ready:
-				// The handshake's answer: its events are held while the
-				// settings read and "/usage" are written, so both are asked
-				// for before the owner can write anything, and their Sent
-				// events follow session.ready (plan 24, amendment 23; P24u;
-				// plan 34). They are written apart: the reader never waits on
-				// stdin, which Claude Code may not be reading while its stdout
-				// is full (plan 48, design D3; audit finding 9).
-				s.apart("asking for the handshake's reads", func() { s.handshakeReads(held) })
-			case due:
-				// A change was answered: the read that says what is in force
-				// (plan 34), written apart.
-				s.apart("asking for the model settings", s.readSettings)
-			}
-		}
-		if err != nil {
-			if !errors.Is(err, io.EOF) && !s.closing.Load() {
-				s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "reading Claude Code's output: " + err.Error()}})
-			}
-			return
-		}
+// line maps one line of stdout, for the shared reader (plan 49, design D8),
+// and has what it calls for written apart: the reader never waits on stdin,
+// which Claude Code may not be reading while its stdout is full (plan 48,
+// design D3; audit finding 9).
+func (s *Session) line(l []byte) {
+	switch held, ready, due := s.mapOut(l); {
+	case ready:
+		// The handshake's answer: its events are held while the settings read
+		// and "/usage" are written, so both are asked for before the owner can
+		// write anything, and their Sent events follow session.ready (plan 24,
+		// amendment 23; P24u; plan 34).
+		s.cli.Apart("asking for the handshake's reads", func() { s.handshakeReads(held) })
+	case due:
+		// A change was answered: the read that says what is in force (plan
+		// 34).
+		s.cli.Apart("asking for the model settings", s.readSettings)
 	}
 }
 
@@ -221,32 +139,12 @@ func (s *Session) mapOut(l []byte) (held []*pipe.Item, ready, due bool) {
 		ready = ready || ev.Kind == event.SessionReady
 	}
 	if ready {
-		return s.q.Hold(evs), true, false
+		return s.cli.Queue().Hold(evs), true, false
 	}
 	for _, ev := range evs {
-		s.q.Push(ev)
+		s.cli.Queue().Push(ev)
 	}
 	return nil, false, s.m.ReadDue()
-}
-
-// apart runs f in a goroutine of its own, as the reader's writes are run
-// (design D3). A panic in f is the session's fatal error, never the end of
-// the program (plan 48, design D5).
-func (s *Session) apart(what string, f func()) {
-	go func() {
-		defer func() {
-			if v := recover(); v != nil {
-				s.fatal(what+" failed", v)
-			}
-		}()
-		f()
-	}()
-}
-
-// fatal queues a recovered panic as the session's fatal error: the dashboard
-// shows it as it ends the session and closes Claude Code (plan 48, design D5).
-func (s *Session) fatal(what string, v any) {
-	s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: what + ": " + provider.Recovered(v), Fatal: true}})
 }
 
 // handshakeReads writes the handshake's settings read and "/usage", then lets
@@ -254,12 +152,12 @@ func (s *Session) fatal(what string, v any) {
 func (s *Session) handshakeReads(held []*pipe.Item) {
 	serr := s.control("get_settings", "")
 	werr := s.readUsage()
-	s.q.Release(held, true)
+	s.cli.Queue().Release(held, true)
 	if serr != nil {
-		s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "model settings not asked for: " + serr.Error()}})
+		s.cli.Problem("model settings not asked for: " + serr.Error())
 	}
 	if werr != nil {
-		s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "usage report not asked for: " + werr.Error()}})
+		s.cli.Problem("usage report not asked for: " + werr.Error())
 	}
 }
 
@@ -288,60 +186,8 @@ func (s *Session) track(ev event.Event) {
 	}
 }
 
-func (s *Session) readStderr(r io.Reader) {
-	br := bufio.NewReaderSize(r, 4<<10)
-	for {
-		l, size, over, err := pipe.ReadLine(br, maxStderrLine)
-		if over {
-			l = []byte(fmt.Sprintf("(a stderr line of %d bytes, not kept)", size))
-		}
-		if len(bytes.TrimSpace(l)) > 0 {
-			s.push(event.Event{Kind: event.Stderr, Origin: event.Observed, Payload: event.Line{Text: string(l)}, Raw: string(l)})
-		}
-		if err != nil {
-			return
-		}
-	}
-}
-
-// wait reports the exit as session.ended, the last event, once the readers
-// are done. A process the CLI started and the job object did not end could
-// hold the pipes open; a blocked read on Windows does not return when its
-// file is closed, so after drainWait the session ends without the readers,
-// saying so, and anything they read later is dropped.
-func (s *Session) wait(out, errs <-chan struct{}) {
-	code, err := s.p.Wait()
-	close(s.exited)
-	timer := time.NewTimer(drainWait)
-	for out != nil || errs != nil {
-		select {
-		case <-out:
-			out = nil
-		case <-errs:
-			errs = nil
-		case <-timer.C:
-			s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{
-				Message: "Claude Code's output stayed open after its exit: a process it started still holds it"}})
-			out, errs = nil, nil
-		}
-	}
-	timer.Stop()
-	s.p.Release()
-	end := event.Ended{Code: code, HasCode: code >= 0}
-	switch {
-	case err != nil:
-		end.Reason = "Claude Code ended: " + err.Error()
-	case s.closing.Load():
-		end.Reason = "Claude Code closed (exit code " + strconv.Itoa(code) + ")"
-	default:
-		end.Reason = "Claude Code exited with code " + strconv.Itoa(code)
-	}
-	s.push(event.Event{Kind: event.SessionEnded, Origin: event.Observed, Payload: end})
-	s.q.Close()
-}
-
 // Events are the session's events; the channel closes after session.ended.
-func (s *Session) Events() <-chan event.Event { return s.q.Out() }
+func (s *Session) Events() <-chan event.Event { return s.cli.Events() }
 
 // write sends one line. Its events are mapped before the write, so a reply
 // can never be mapped first, and released only once the line is written.
@@ -350,24 +196,7 @@ func (s *Session) write(msg any) error { return s.writeWith(msg, s.m.In) }
 // writeWith is write with the mapping of the line's own events: the
 // dashboard's, In, or an internal line's, InInternal.
 func (s *Session) writeWith(msg any, in func([]byte) []event.Event) error {
-	var b bytes.Buffer
-	enc := json.NewEncoder(&b)
-	enc.SetEscapeHTML(false)
-	if err := enc.Encode(msg); err != nil {
-		return err
-	}
-	s.wmu.Lock()
-	defer s.wmu.Unlock()
-	if s.inClosed.Load() {
-		return errors.New("Claude Code's input is closed")
-	}
-	held := s.holdIn(bytes.TrimRight(b.Bytes(), "\n"), in)
-	_, err := s.stdin.Write(b.Bytes())
-	s.q.Release(held, err == nil)
-	if err != nil {
-		return fmt.Errorf("not delivered to Claude Code: %w", err)
-	}
-	return nil
+	return s.cli.Write(msg, func(l []byte) []*pipe.Item { return s.holdIn(l, in) })
 }
 
 // holdIn maps a line the dashboard writes under the lock, released however
@@ -380,7 +209,7 @@ func (s *Session) holdIn(l []byte, in func([]byte) []event.Event) []*pipe.Item {
 	for _, ev := range evs {
 		s.track(ev)
 	}
-	return s.q.Hold(evs)
+	return s.cli.Queue().Hold(evs)
 }
 
 // control sends one control request; body is its fields after the subtype.
@@ -460,29 +289,36 @@ const DenyMessage = "The user denied this in Agent Command Center."
 // q3; plan 5, item 10).
 const QuestionDenyMessage = "The user saw these questions in Agent Command Center, which cannot answer them here, and will answer them in their next message. Wait for that message; do not ask them again."
 
-// Answer answers a pending approval: allow echoes the tool's input
-// unchanged, anything else denies; a readable question is denied with
-// QuestionDenyMessage, and is answered by AnswerQuestion, never by an allow.
-func (s *Session) Answer(id, decision string) error {
+// Answer answers a pending approval in Claude Code's words (plan 49, design
+// D10): allow echoes the tool's input unchanged; deny and cancel deny it, a
+// readable question's deny with QuestionDenyMessage. A question is answered
+// by AnswerQuestion, never by an allow; Claude Code takes no allow for the
+// session (CC-4).
+func (s *Session) Answer(id string, d event.Decision) error {
 	s.mu.Lock()
 	req, ok := s.inputs[id]
 	s.mu.Unlock()
 	if !ok {
 		return fmt.Errorf("%w %q", provider.ErrNoPending, id)
 	}
-	if decision == "allow" && req.question {
+	switch d {
+	case event.Allow, event.Deny, event.Cancel:
+	default:
+		return fmt.Errorf("Claude Code takes no answer %q", d)
+	}
+	if d == event.Allow && req.question {
 		return fmt.Errorf("request %q is a question: it is answered with AnswerQuestion", id)
 	}
-	if decision == "allow" && req.unreadable {
+	if d == event.Allow && req.unreadable {
 		return fmt.Errorf("request %q was not readable: only a deny answers it", id)
 	}
 	input := req.input
 	msg := DenyMessage
-	if decision == "deny" && req.question && !req.unreadable { // not a cancel; an unreadable question was never shown
+	if d == event.Deny && req.question && !req.unreadable { // not a cancel; an unreadable question was never shown
 		msg = QuestionDenyMessage
 	}
 	resp := map[string]any{"behavior": "deny", "message": msg}
-	if decision == "allow" {
+	if d == event.Allow {
 		if len(bytes.TrimSpace(input)) == 0 || string(input) == "null" {
 			input = []byte("{}")
 		}
@@ -512,8 +348,8 @@ func (s *Session) Refresh() error {
 // Claude Code answers itself with no model call (plan 34, P34c). A write
 // that fails while the session is still open is an event of its own.
 func (s *Session) readSettings() {
-	if err := s.control("get_settings", ""); err != nil && !s.closing.Load() && !s.inClosed.Load() {
-		s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "model settings not asked for: " + err.Error()}})
+	if err := s.control("get_settings", ""); err != nil && !s.cli.Closing() && !s.cli.InputClosed() {
+		s.cli.Problem("model settings not asked for: " + err.Error())
 	}
 }
 
@@ -559,44 +395,8 @@ func (s *Session) Capabilities() provider.Capabilities {
 
 // Close closes stdin, then terminates the CLI, then kills its tree, each
 // after CloseStep; it returns when the process has exited or ctx ends, and
-// the escalation goes on in the background.
-func (s *Session) Close(ctx context.Context) error {
-	s.once.Do(func() {
-		s.closing.Store(true)
-		go s.escalate()
-	})
-	select {
-	case <-s.exited:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-}
-
-func (s *Session) escalate() {
-	// A write blocked on a full pipe holds the file: closing it waits for the
-	// write, so it runs apart from the escalation.
-	go func() { s.inClosed.Store(true); _ = s.stdin.Close() }()
-	if s.waitExit() {
-		return
-	}
-	_ = s.p.Terminate()
-	if s.waitExit() {
-		return
-	}
-	_ = s.p.Kill()
-}
-
-func (s *Session) waitExit() bool {
-	t := time.NewTimer(s.step)
-	defer t.Stop()
-	select {
-	case <-s.exited:
-		return true
-	case <-t.C:
-		return false
-	}
-}
+// the escalation goes on in the background (pipe.Proc).
+func (s *Session) Close(ctx context.Context) error { return s.cli.Close(ctx) }
 
 // permissionModes are Claude Code's permission modes by the dashboard's
 // words: the four of the modes selector (plan 39; P39c, 2.1.303 takes each).

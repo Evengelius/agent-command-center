@@ -798,6 +798,7 @@ func TestSourceStates(t *testing.T) {
 // seven conflicts of git, made from two branches: each is a conflict entry,
 // named, with "ours" (stage 2, else HEAD) against the working file.
 func TestSourceConflicts(t *testing.T) {
+	t.Parallel()
 	repo := srcRepo(t)
 	ten := "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n"
 	with3 := func(v string) string { return strings.Replace(ten, "3\n", v+"\n", 1) }
@@ -908,6 +909,7 @@ func TestSourceConflicts(t *testing.T) {
 // TestSourceBranch covers the branch line on real repositories: no commits
 // yet, a branch with its upstream, a detached HEAD with its short id.
 func TestSourceBranch(t *testing.T) {
+	t.Parallel()
 	repo := srcRepo(t)
 	var calls [][]string
 	g := GitCLI{Trace: func(a []string) { calls = append(calls, a) }}
@@ -979,6 +981,7 @@ func TestSourceBranch(t *testing.T) {
 // the snapshot says it (Untracked) rather than listing no change; a tracked
 // project, or one with a tracked file, does not.
 func TestSnapshotUntrackedProject(t *testing.T) {
+	t.Parallel()
 	repo := srcRepo(t)
 	writeAt(t, repo, "top.txt", "top\n")
 	gitT(t, repo, "add", "-A")
@@ -1030,6 +1033,7 @@ func TestSourceNoRepo(t *testing.T) {
 // TestCatFileNames covers a name with a line break, sent NUL terminated, and
 // the answers git gives for a name that is missing, a folder and a file.
 func TestCatFileNames(t *testing.T) {
+	t.Parallel()
 	repo := srcRepo(t)
 	writeAt(t, repo, "a.txt", "alpha\n")
 	writeAt(t, repo, "d/b.txt", "beta\n")
@@ -1058,6 +1062,7 @@ func TestCatFileNames(t *testing.T) {
 
 // TestCatFileSubmodule covers a gitlink: told as git diff tells it.
 func TestCatFileSubmodule(t *testing.T) {
+	t.Parallel()
 	repo := srcRepo(t)
 	writeAt(t, repo, "a.txt", "a\n")
 	gitT(t, repo, "add", "-A")

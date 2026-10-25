@@ -42,8 +42,7 @@ func (m *Model) toggleModes() []tea.Cmd {
 	case !sc.ModesFit(m.s, v, m.ui.Width):
 		return m.toast("no room for the modes above the editor")
 	}
-	m.ui.Plus, m.ui.PlusHover = false, false
-	m.closeModels()
+	m.closePopups() // the one popup open (plan 49, design D7)
 	m.ui.Modes = v
 	return nil
 }

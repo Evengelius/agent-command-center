@@ -208,6 +208,7 @@ func (m *Model) openDetails() {
 // openOverlay shows the key overlay from its top. The view under it keeps
 // its scroll, given back when the overlay closes.
 func (m *Model) openOverlay() {
+	m.closePopups() // nothing stays open under it (plan 49, design D7)
 	if !m.ui.Keys {
 		m.under = scrollPos{m.ui.InspectTop, m.ui.InspectHold}
 	}

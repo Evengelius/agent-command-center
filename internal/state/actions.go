@@ -3,6 +3,7 @@ package state
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -39,8 +40,9 @@ type (
 	InterruptTimeout struct{}
 	ForceStop        struct{}
 	Answer           struct {
-		ID, Decision string
-		Answers      map[string]string // a question's answers: question text to answer (plan 14, item 1)
+		ID       string
+		Decision event.Decision    // the dashboard's words (plan 49, design D10)
+		Answers  map[string]string // a question's answers: question text to answer (plan 14, item 1)
 	}
 	// AnswerFailed is an answer not written; Gone, the CLI had withdrawn the
 	// request (provider.ErrNoPending; plan 47, design D2).
@@ -301,7 +303,7 @@ func (s *State) stopWork() []Command {
 	for _, id := range s.Queue {
 		if ap := s.Approvals[id]; ap.Status == Pending {
 			ap.Status, ap.Cancelled = Answering, true
-			cmds = append(cmds, Command{Kind: CmdAnswer, ID: id, Decision: "cancel"})
+			cmds = append(cmds, Command{Kind: CmdAnswer, ID: id, Decision: event.Cancel})
 		}
 	}
 	switch s.Turn.Phase {
@@ -369,7 +371,7 @@ func (s *State) interrupt() []Command {
 	for _, id := range s.Queue {
 		if ap := s.Approvals[id]; ap.Agent == "" && ap.Status == Pending {
 			ap.Status, ap.Cancelled = Answering, true
-			cmds = append(cmds, Command{Kind: CmdAnswer, ID: id, Decision: "cancel"})
+			cmds = append(cmds, Command{Kind: CmdAnswer, ID: id, Decision: event.Cancel})
 		}
 	}
 	s.Turn.Phase, s.Turn.Notice = Interrupting, ""
@@ -382,21 +384,21 @@ func (s *State) answer(a Answer) []Command {
 		s.Errors = appendBounded(s.Errors, ErrorEntry{Message: "answer for an unknown approval: " + a.ID}, MaxErrors)
 		return nil
 	}
-	if !contains(answers, a.Decision) {
+	if !slices.Contains(answers, a.Decision) {
 		// Answers that persist a rule (permission_suggestions, execpolicy or
 		// network amendments) are never offered (events-and-state.md, Approval machine).
-		s.doNote("answer refused: " + a.Decision)
+		s.doNote("answer refused: " + string(a.Decision))
 		return nil
 	}
-	if a.Decision == "acceptForSession" && !ap.ForSession {
-		s.doNote("answer refused: acceptForSession not offered by " + a.ID) // plan 5, item 8
+	if a.Decision == event.AllowSession && !ap.ForSession {
+		s.doNote("answer refused: allow for the session not offered by " + a.ID) // plan 5, item 8
 		return nil
 	}
 	if ap.Status != Pending {
 		s.doNote("second answer ignored: " + a.ID)
 		return nil
 	}
-	if ap.Question && a.Decision == "allow" {
+	if ap.Question && a.Decision == event.Allow {
 		if why := missingAnswer(ap, a.Answers); why != "" {
 			s.doNote("answer refused: " + why)
 			return nil
@@ -407,7 +409,7 @@ func (s *State) answer(a Answer) []Command {
 		return nil
 	}
 	ap.Status = Answering
-	if ap.Question && a.Decision == "allow" {
+	if ap.Question && a.Decision == event.Allow {
 		ap.Answers = a.Answers
 		return []Command{{Kind: CmdAnswer, ID: a.ID, Decision: a.Decision, Answers: a.Answers}}
 	}
@@ -437,8 +439,9 @@ func (s *State) answerFailed(a AnswerFailed) []Command {
 	return nil
 }
 
-// answers are the decisions the owner can give; none persists a rule.
-var answers = []string{"allow", "deny", "accept", "acceptForSession", "decline", "cancel"}
+// answers are the decisions the owner can give, in the dashboard's words
+// (plan 49, design D10); none persists a rule.
+var answers = []event.Decision{event.Allow, event.AllowSession, event.Deny, event.Cancel}
 
 func (s *State) doNote(msg string) {
 	s.Notes = appendBounded(s.Notes, "action: "+msg, MaxErrors)
@@ -467,7 +470,7 @@ func (s *State) cancelTurn(a CancelTurn) []Command {
 		return s.interrupt() // says why nothing is interrupted
 	}
 	ap.Status, ap.Cancelled = Answering, true
-	cmds := []Command{{Kind: CmdAnswer, ID: a.ID, Decision: "cancel"}}
+	cmds := []Command{{Kind: CmdAnswer, ID: a.ID, Decision: event.Cancel}}
 	return append(cmds, s.interrupt()...)
 }
 

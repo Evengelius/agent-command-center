@@ -37,7 +37,29 @@ func TestMain(m *testing.M) {
 		time.Sleep(15 * time.Second)
 		os.Exit(0)
 	}
-	os.Exit(m.Run())
+	// Git's environment for every test of the package, set once, so the git
+	// tests, each on its own temporary repository, run side by side (plan
+	// 49, design D9): no global or system configuration of the owner's, so
+	// they run the same anywhere and never sign or hook a commit, and a
+	// test identity.
+	dir, err := os.MkdirTemp("", "acc-gitconfig-")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
+	}
+	empty := filepath.Join(dir, "gitconfig")
+	if err := os.WriteFile(empty, nil, 0o600); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
+	}
+	for k, v := range map[string]string{"GIT_CONFIG_GLOBAL": empty, "GIT_CONFIG_NOSYSTEM": "1",
+		"GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "test@example.invalid",
+		"GIT_COMMITTER_NAME": "test", "GIT_COMMITTER_EMAIL": "test@example.invalid"} {
+		os.Setenv(k, v)
+	}
+	code := m.Run()
+	os.RemoveAll(dir)
+	os.Exit(code)
 }
 
 // TestGitPipesBounded is plan 48's criterion 48.7 (design D4; audit finding

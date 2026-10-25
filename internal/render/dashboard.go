@@ -143,7 +143,7 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 	g := layout(s, ui)
 	if g.narrow {
 		// The fallback under 100 columns: A as one row, B and C full width.
-		ls = append(ls, zoneALine(s, w))
+		ls = append(ls, zoneALine(s, ui, w))
 		if ui.Focus == "A" { // the tree takes B's and C's place until F6 leaves it
 			sc.AY = len(ls)
 			ls = append(ls, zoneA(s, ui, w, g.upper+g.ch, sc)...)
@@ -433,7 +433,7 @@ func turnSymbol(s *state.State) span {
 
 // zoneALine is zone A at narrow width: the current stage and its agents in
 // one line; F6 opens the tree.
-func zoneALine(s *state.State, w int) line {
+func zoneALine(s *state.State, ui UI, w int) line {
 	l := line{sp(" A ", stTitle)}
 	if n := len(s.Stages); n == 0 {
 		l = append(l, sp("no turn yet", stGrey))
@@ -441,7 +441,7 @@ func zoneALine(s *state.State, w int) line {
 		st := &s.Stages[n-1]
 		sym, _ := stageStatus(s, st)
 		l = append(l, sym, sp(fmt.Sprintf(" Turn %d", st.N), stText))
-		for _, it := range stageItems(s, st.N) {
+		for _, it := range stageItems(s, ui, st.N) {
 			if a := it.agent; a != nil {
 				l = append(l, sp(" › ", stGrey), agentSymbol(a.Status), sp(" "+a.Label, stText))
 			}
@@ -514,6 +514,7 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	}
 	if sc != nil {
 		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold, Starts: starts, Folds: folds, Entries: entries}
+		sc.rule = sc.Conv.Y + room // the editor's first row is its rule (plan 49, design D7)
 	}
 	body := append(shown, editor...)
 	focused := ui.Focus == "B" || ui.Focus == ""
@@ -544,9 +545,15 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 	lk, act := lookAll(s, ui)
 	size := cardSize(room)
 	starts = make([]int, len(s.Conversation)+1)
-	for i, e := range s.Conversation {
+	for i := range s.Conversation {
+		e := &s.Conversation[i] // by reference, and no closure an entry: every frame counts all (plan 49, design D5)
 		lk[i].size = size
-		rows += ui.Wrap.rowCount(i, e, w, lk[i].shape(), func() int { return len(entryRows(s, ui, nil, i, e, w, lk[i])) })
+		n, ok := ui.Wrap.counted(i, e, w, lk[i].shape())
+		if !ok {
+			n = len(entryRows(s, ui, nil, i, *e, w, lk[i]))
+			ui.Wrap.keepCount(i, e, w, lk[i].shape(), n)
+		}
+		rows += n
 		starts[i+1] = rows
 	}
 	counts := func(i int) int { return starts[i+1] - starts[i] }
@@ -561,12 +568,12 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 		top = min(max(ui.ConvTop, 0), top)
 	}
 	at, end := 0, top+room
-	for i, e := range s.Conversation {
+	for i := range s.Conversation {
 		if at >= end {
 			break
 		}
 		if at+counts(i) > top {
-			rs := entryRows(s, ui, nil, i, e, w, lk[i])
+			rs := entryRows(s, ui, nil, i, s.Conversation[i], w, lk[i])
 			view = append(view, rs[min(max(top-at, 0), len(rs)):min(end-at, len(rs))]...)
 		}
 		at += counts(i)

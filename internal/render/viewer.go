@@ -5,6 +5,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
+	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -40,7 +41,7 @@ func viewer(s *state.State, ui UI, ap *state.Approval, sc *Screen) []line {
 			break
 		}
 		by := "allowed by you "
-		if ap.Answer == "acceptForSession" {
+		if ap.Answer == event.AllowSession {
 			by = "allowed for the session by you "
 		}
 		label, st, outcome = "✓ ALLOWED", stDone, decoLine(by+clockSec(ap.AnsweredAt)+" ", stDone)

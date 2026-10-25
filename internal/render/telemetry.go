@@ -710,8 +710,7 @@ func detailsBody(s *state.State, ui UI, w int) []line {
 }
 
 // cutRight keeps the start of text within w cells and ends it with "…" when
-// it was longer; a long line is first cut to twice w runes, so a 64 KiB
-// line costs no more than a short one.
+// it was longer.
 func cutRight(text string, w int) string {
 	if textWidth(text) <= w {
 		return text
@@ -719,14 +718,7 @@ func cutRight(text string, w int) string {
 	if w <= 1 {
 		return "…"
 	}
-	rs := []rune(text)
-	if len(rs) > 2*w {
-		rs = rs[:2*w]
-	}
-	for len(rs) > 0 && textWidth(string(rs))+1 > w {
-		rs = rs[:len(rs)-1]
-	}
-	return string(rs) + "…"
+	return cut(text, w-1) + "…"
 }
 
 // documentedValues are the values the session's CLI documents, listed in the

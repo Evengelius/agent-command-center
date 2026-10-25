@@ -29,13 +29,132 @@ type treeRow struct {
 	l    line
 	node Node
 	cont bool // a continuation row of its node's block
+	// What the row draws when its line is made only once it shows (plan
+	// 49, design D5): by kind, from tc, a, st or items after prefix, its
+	// connectors; dot is the moving dot's column in them, plus one, 0 for
+	// none. A row of kind rowMade has its line in l.
+	kind   rowKind
+	prefix string
+	tc     *state.ToolCall
+	a      *state.Agent
+	st     *state.Stage
+	items  []item
+	dot    int
+}
+
+// rowKind is what a tree row draws: its line made already, a stage's head,
+// its origin or the names of its items, a call or an agent.
+type rowKind uint8
+
+const (
+	rowMade rowKind = iota
+	rowStage
+	rowOrigin
+	rowNames
+	rowTool
+	rowAgent
+)
+
+// line is the row's line at width w: zone A makes only the lines of the
+// rows it shows, and Tree none (design D5).
+func (r treeRow) line(s *state.State, ui UI, w int) line {
+	l := r.l
+	switch r.kind {
+	case rowStage:
+		l = stageHead(s, r.st, ui, w)
+	case rowOrigin:
+		l = plain("  "+originText(r.st), stGrey).fit(w)
+	case rowNames:
+		l = plain("  "+itemNames(r.items), stGrey).fit(w)
+	case rowTool:
+		l = toolRow(s, ui, r.tc, r.prefix, w)
+	case rowAgent:
+		l = agentLine(r.a, r.prefix, w)
+	}
+	if r.dot > 0 {
+		l = dotted(l, r.dot-1)
+	}
+	return l
+}
+
+// lead is the row's first span as its line draws it at width w, and
+// whether that span is decoration: what movingDot reads, without making
+// the line. A call's or an agent's row fits its connectors, the symbol and
+// the rest in what its origin label leaves of w, cutting from the end:
+// the connectors stay whole while they leave a cell, and the "…" after.
+func (r treeRow) lead(w int) (string, bool) {
+	var origin string
+	switch r.kind {
+	case rowTool:
+		origin = originLabel(r.tc.Origin)
+	case rowAgent:
+		origin = originLabel(r.a.StatusOrigin)
+	case rowMade:
+		if len(r.l) > 0 && r.l[0].ref.kind == refDeco {
+			return r.l[0].text, true
+		}
+		return "", false
+	default:
+		return "", false
+	}
+	room := w
+	if origin != "" {
+		rw := textWidth(" " + origin)
+		if rw >= w {
+			return " " + origin, false // the label alone, cut
+		}
+		room = w - rw
+	}
+	switch {
+	case room-1 <= 0:
+		return "…", true
+	case textWidth(r.prefix) <= room-1:
+		return r.prefix, true
+	}
+	return cut(r.prefix, room-1), true
+}
+
+// dotted is l with the moving dot at column col of its first span.
+func dotted(l line, col int) line {
+	p := []rune(l[0].text)
+	out := make(line, 0, len(l)+2)
+	if col > 0 {
+		out = append(out, deco(string(p[:col]), stFrame))
+	}
+	out = append(out, deco("•", stProgress))
+	if col+1 < len(p) {
+		out = append(out, deco(string(p[col+1:]), stFrame))
+	}
+	return append(out, l[1:]...)
+}
+
+// originText is what a stage's origin row says: the prompt's first line,
+// or that the CLI started it; "" for no row.
+func originText(st *state.Stage) string {
+	if st.ByCLI {
+		return "started by the CLI"
+	}
+	return firstLine(st.Prompt)
+}
+
+// named says itemNames names one item at least, without joining them.
+func named(items []item) bool {
+	for _, it := range items {
+		switch {
+		case it.tool != nil && it.tool.Name != "":
+			return true
+		case it.agent != nil && strings.TrimSpace(kindWord(it.agent.Kind)+" "+it.agent.Label) != "":
+			return true
+		}
+	}
+	return false
 }
 
 // Tree is zone A's nodes in the order they show, folded nodes' children
 // left out: what ↑ and ↓ move through.
 func Tree(s *state.State, ui UI) []Node {
 	var out []Node
-	for _, r := range treeRows(s, ui, zoneAMin) { // the nodes, whatever the width
+	for _, r := range treeRows(s, ui, zoneAMin) { // the nodes, whatever the width; no line made
 		if r.node.ID != "" && !r.cont {
 			out = append(out, r.node)
 		}
@@ -54,7 +173,7 @@ func folded(ui UI, id string, def bool) bool {
 // treeRows are the tree's rows at width w.
 func treeRows(s *state.State, ui UI, w int) []treeRow {
 	var out []treeRow
-	idx := indexItems(s)
+	idx := stageIndex(s, ui)
 	if loose := idx[0]; len(loose) > 0 {
 		out = itemRows(s, ui, out, loose, "", false, w)
 	}
@@ -114,24 +233,19 @@ func stageRows(s *state.State, ui UI, out []treeRow, st *state.Stage, w int, idx
 	id := fmt.Sprintf("s:%d", st.N)
 	f := folded(ui, id, !st.Open)
 	node := Node{ID: id, Foldable: true, Folded: f}
-	out = append(out, treeRow{l: stageHead(s, st, ui, w), node: node})
-	origin := line{}
-	if st.ByCLI {
-		origin = plain("  started by the CLI", stGrey)
-	} else if p := firstLine(st.Prompt); p != "" {
-		origin = plain("  "+p, stGrey)
-	}
+	out = append(out, treeRow{kind: rowStage, st: st, node: node})
+	origin := originText(st) != ""
 	if !f {
-		if len(origin) > 0 {
-			out = append(out, treeRow{l: origin.fit(w)})
+		if origin {
+			out = append(out, treeRow{kind: rowOrigin, st: st})
 		}
 		return itemRows(s, ui, out, idx[st.N], "  ", more(s, st), w)
 	}
-	if len(origin) > 0 {
-		out = append(out, treeRow{l: origin.fit(w), node: node, cont: true})
+	if origin {
+		out = append(out, treeRow{kind: rowOrigin, st: st, node: node, cont: true})
 	}
-	if names := itemNames(idx[st.N]); names != "" {
-		out = append(out, treeRow{l: plain("  "+names, stGrey).fit(w), node: node, cont: true})
+	if items := idx[st.N]; named(items) {
+		out = append(out, treeRow{kind: rowNames, items: items, node: node, cont: true})
 	}
 	return out
 }
@@ -196,7 +310,7 @@ type item struct {
 // stageItems are the orchestrator's tools and the top agents of stage n, in
 // the order they appeared. An agent whose parent is unknown counts as a top
 // agent: it is shown, never dropped.
-func stageItems(s *state.State, n int) []item { return indexItems(s)[n] }
+func stageItems(s *state.State, ui UI, n int) []item { return stageIndex(s, ui)[n] }
 
 // indexItems is every stage's items, stageItems' for each stage, in one
 // pass over the tools and the agents: since plan 24 a folded stage names
@@ -239,7 +353,7 @@ func itemRows(s *state.State, ui UI, out []treeRow, items []item, indent string,
 			branch, next = "└─ ", "   "
 		}
 		if it.tool != nil {
-			out = append(out, treeRow{l: toolRow(s, ui, it.tool, indent+branch, w), node: Node{ID: "t:" + it.tool.ID, Agent: it.tool.Agent}})
+			out = append(out, treeRow{kind: rowTool, tc: it.tool, prefix: indent + branch, node: Node{ID: "t:" + it.tool.ID, Agent: it.tool.Agent}})
 			continue
 		}
 		out = agentRows(s, ui, out, it.agent, indent+branch, indent+next, w)
@@ -247,20 +361,22 @@ func itemRows(s *state.State, ui UI, out []treeRow, items []item, indent string,
 	if more {
 		out = append(out, treeRow{l: line{deco(indent+"└─ ", stFrame), sp("○ (more as events arrive)", stGrey)}})
 		if turnRuns(s) {
-			movingDot(out[from:], len([]rune(indent)), ui.Spinner)
+			movingDot(out[from:], len([]rune(indent)), ui.Spinner, w)
 		}
 	}
 	return out
 }
 
 // movingDot puts a dot on the running stage's connector, at column col of
-// the rows' prefixes, one row further each frame: work flowing down the
-// tree, as in the reference video (reference-design.md; plan 4, step 8).
-func movingDot(rows []treeRow, col, frame int) {
+// the rows' prefixes as drawn at width w, one row further each frame: work
+// flowing down the tree, as in the reference video (reference-design.md;
+// plan 4, step 8). The row draws it when its line is made (plan 49, design
+// D5).
+func movingDot(rows []treeRow, col, frame, w int) {
 	var trunk []int
 	for i, r := range rows {
-		if len(r.l) > 0 && r.l[0].ref.kind == refDeco {
-			if p := []rune(r.l[0].text); col < len(p) && strings.ContainsRune("├│└", p[col]) {
+		if t, decoration := r.lead(w); decoration {
+			if p := []rune(t); col < len(p) && strings.ContainsRune("├│└", p[col]) {
 				trunk = append(trunk, i)
 			}
 		}
@@ -268,17 +384,7 @@ func movingDot(rows []treeRow, col, frame int) {
 	if len(trunk) == 0 {
 		return
 	}
-	r := &rows[trunk[frame%len(trunk)]]
-	p := []rune(r.l[0].text)
-	l := make(line, 0, len(r.l)+2)
-	if col > 0 {
-		l = append(l, deco(string(p[:col]), stFrame))
-	}
-	l = append(l, deco("•", stProgress))
-	if col+1 < len(p) {
-		l = append(l, deco(string(p[col+1:]), stFrame))
-	}
-	r.l = append(l, r.l[1:]...)
+	rows[trunk[frame%len(trunk)]].dot = col + 1
 }
 
 // toolRow is "✓ Write found.txt", observed. A path too long for the row
@@ -286,8 +392,9 @@ func movingDot(rows []treeRow, col, frame int) {
 // 2026-10-20: twelve Read rows all read "C:\User…").
 func toolRow(s *state.State, ui UI, tc *state.ToolCall, prefix string, w int) line {
 	l := line{deco(prefix, stFrame), toolSymbol(s, tc, running(s, ui)), sp(" "+tc.Name, stText)}
-	if t := toolTarget(tc.Input); t != "" {
-		if _, path, _ := approvalDetail(&state.Approval{Input: tc.Input}); path {
+	if f := ui.Memo.input(tc.Input, false); f.tool != "" {
+		t := f.tool
+		if f.path {
 			room := w - l.width() - 2
 			if o := originLabel(tc.Origin); o != "" {
 				room -= textWidth(" " + o)
@@ -366,15 +473,10 @@ func agentRows(s *state.State, ui UI, out []treeRow, a *state.Agent, prefix, ind
 	if len(under) == 0 && !a.Status.Final() && a.LastTool != "" {
 		under = append(under, line{running(s, ui), sp(" "+a.LastTool, stGrey)})
 	}
-	kids := children(s, a.Key)
+	kids := kidsOf(s, ui.Memo, a.Key)
 	id := "a:" + a.Key
 	f := folded(ui, id, false)
-	l := line{deco(prefix, stFrame), agentSymbol(a.Status), sp(" ", stText)}
-	if k := kindWord(a.Kind); k != "" {
-		l = append(l, sp(k+"  ", stGrey))
-	}
-	l = append(l, sp(a.Label, stText))
-	out = append(out, treeRow{l: withOrigin(l, originLabel(a.StatusOrigin), w), node: Node{ID: id, Agent: a.Key, Foldable: len(under)+len(kids) > 0, Folded: f}})
+	out = append(out, treeRow{kind: rowAgent, a: a, prefix: prefix, node: Node{ID: id, Agent: a.Key, Foldable: len(under)+len(kids) > 0, Folded: f}})
 	if f {
 		return out
 	}
@@ -393,6 +495,17 @@ func agentRows(s *state.State, ui UI, out []treeRow, a *state.Agent, prefix, ind
 		out = agentRows(s, ui, out, s.Agents[k], indent+branch, indent+next, w)
 	}
 	return out
+}
+
+// agentLine is an agent's row: its symbol, its kind and its label after
+// prefix, its origin at the right edge.
+func agentLine(a *state.Agent, prefix string, w int) line {
+	l := line{deco(prefix, stFrame), agentSymbol(a.Status), sp(" ", stText)}
+	if k := kindWord(a.Kind); k != "" {
+		l = append(l, sp(k+"  ", stGrey))
+	}
+	l = append(l, sp(a.Label, stText))
+	return withOrigin(l, originLabel(a.StatusOrigin), w)
 }
 
 // kindWord names an agent's kind as the tree shows it.

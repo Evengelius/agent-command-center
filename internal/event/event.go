@@ -229,6 +229,21 @@ type AgentKeys struct {
 	Keys []string
 }
 
+// Decision is an approval's answer in the dashboard's words: the owner's
+// four, and the CLI's withdrawal (plan 49, design D10; audit finding 11).
+// Each adapter writes the owner's in its CLI's words, exactly as its CLI
+// takes them, and reads its CLI's back into these; a word it does not
+// know stays as it is, which the reducer keeps as an expiry.
+type Decision string
+
+const (
+	Allow        Decision = "allow"         // once: Claude Code's allow, Codex's accept
+	AllowSession Decision = "allow-session" // for the session: Codex's acceptForSession
+	Deny         Decision = "deny"          // Claude Code's deny, Codex's decline
+	Cancel       Decision = "cancel"        // deny, the turn interrupted after: Claude Code's deny, Codex's cancel
+	Withdrawn    Decision = "withdrawn"     // the CLI ended the request itself
+)
+
 // Approval is the payload of ApprovalRequest and ApprovalResolved.
 type Approval struct {
 	ID         string
@@ -237,7 +252,7 @@ type Approval struct {
 	Summary    string
 	ToolID     string
 	Input      json.RawMessage
-	Decision   string   // allow, deny (resolved only)
+	Decision   Decision // the answer in the dashboard's words (resolved only; plan 49, design D10)
 	Problem    string   // why the request could not be read, when it could not
 	Offered    []string // the decisions the request lists (Codex availableDecisions, strings only); nil when it lists none
 	ForSession bool     // the request takes an allow for the session (Codex acceptForSession; plan 8)
@@ -423,10 +438,12 @@ type Settings struct {
 
 // Verdict is the payload of ToolDecision: the permission decision the CLI
 // recorded for a tool call (Claude Code tool_result_meta, undocumented).
-// Decision is accept or reject; ReasonType names who decided.
+// Decision is Allow or Deny in the dashboard's words, as the adapter reads
+// its CLI's accept and reject (plan 49, design D10); ReasonType names who
+// decided.
 type Verdict struct {
 	ToolID     string
-	Decision   string
+	Decision   Decision
 	ReasonType string
 }
 

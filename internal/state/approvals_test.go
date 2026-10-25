@@ -39,7 +39,7 @@ func TestProbeClaudeAuto(t *testing.T) {
 	}
 	if d := kinds(evs, event.ToolDecision); len(d) != 1 {
 		t.Fatalf("%d tool decisions, want 1", len(d))
-	} else if v := d[0].Payload.(event.Verdict); v.ToolID != "toolu_01Dx5mj2rxVr2zh2W7db9Jq4" || v.Decision != "accept" || v.ReasonType != "classifier" {
+	} else if v := d[0].Payload.(event.Verdict); v.ToolID != "toolu_01Dx5mj2rxVr2zh2W7db9Jq4" || v.Decision != event.Allow || v.ReasonType != "classifier" {
 		t.Errorf("verdict %+v", v)
 	}
 	if got := s.Tools["toolu_01Dx5mj2rxVr2zh2W7db9Jq4"]; got == nil || got.Reviewed != "approved by auto-review" {
@@ -73,7 +73,7 @@ func TestProbeClaudeClassifierDeny(t *testing.T) {
 	const id = "toolu_011HGtGpJ5zFSU3TXfQH36a1"
 	if d := kinds(evs, event.ToolDecision); len(d) != 1 {
 		t.Fatalf("%d tool decisions, want 1", len(d))
-	} else if v := d[0].Payload.(event.Verdict); v.ToolID != id || v.Decision != "reject" || v.ReasonType != "classifier" {
+	} else if v := d[0].Payload.(event.Verdict); v.ToolID != id || v.Decision != event.Deny || v.ReasonType != "classifier" {
 		t.Errorf("verdict %+v", v)
 	}
 	if got := s.Tools[id]; got == nil || got.Name != "PowerShell" || got.Reviewed != "denied by auto-review" {
@@ -216,12 +216,12 @@ func TestModeRequested(t *testing.T) {
 		t.Fatalf("mode %q", s.Mode())
 	}
 	cmds := s.Do(state.ChooseMode{Mode: state.ModeAuto, Capable: true})
-	if len(cmds) != 1 || cmds[0].Kind != state.CmdSetApprovals || cmds[0].Decision != state.ModeAuto || s.Session.ApprovalRequested != state.ModeAuto {
+	if len(cmds) != 1 || cmds[0].Kind != state.CmdSetApprovals || cmds[0].Mode != state.ModeAuto || s.Session.ApprovalRequested != state.ModeAuto {
 		t.Fatalf("cmds %+v requested %q", cmds, s.Session.ApprovalRequested)
 	}
 	// The mode in force chosen again cancels the request (plan 39); with
 	// nothing asked it asks for nothing.
-	if cmds = s.Do(state.ChooseMode{Mode: state.ModeManual, Capable: true}); len(cmds) != 1 || cmds[0].Decision != state.ModeManual || s.Session.ApprovalRequested != "" {
+	if cmds = s.Do(state.ChooseMode{Mode: state.ModeManual, Capable: true}); len(cmds) != 1 || cmds[0].Mode != state.ModeManual || s.Session.ApprovalRequested != "" {
 		t.Fatalf("back: %+v requested %q", cmds, s.Session.ApprovalRequested)
 	}
 	if cmds = s.Do(state.ChooseMode{Mode: state.ModeManual, Capable: true}); cmds != nil {
@@ -273,10 +273,10 @@ func TestVerdicts(t *testing.T) {
 	for i, id := range []string{"a", "b", "c", "d"} {
 		apply(s, uint64(10+i), event.ToolStarted, event.Tool{ToolID: id, Name: "Bash"})
 	}
-	apply(s, 20, event.ToolDecision, event.Verdict{ToolID: "a", Decision: "accept", ReasonType: "classifier"})
-	apply(s, 21, event.ToolDecision, event.Verdict{ToolID: "b", Decision: "reject", ReasonType: "classifier"})
-	apply(s, 22, event.ToolDecision, event.Verdict{ToolID: "c", Decision: "accept", ReasonType: "mode"})
-	apply(s, 23, event.ToolDecision, event.Verdict{ToolID: "d", Decision: "reject", ReasonType: "user_reject"})
+	apply(s, 20, event.ToolDecision, event.Verdict{ToolID: "a", Decision: event.Allow, ReasonType: "classifier"})
+	apply(s, 21, event.ToolDecision, event.Verdict{ToolID: "b", Decision: event.Deny, ReasonType: "classifier"})
+	apply(s, 22, event.ToolDecision, event.Verdict{ToolID: "c", Decision: event.Allow, ReasonType: "mode"})
+	apply(s, 23, event.ToolDecision, event.Verdict{ToolID: "d", Decision: event.Deny, ReasonType: "user_reject"})
 	want := map[string]string{"a": "approved by auto-review", "b": "denied by auto-review", "c": "", "d": ""}
 	for id, w := range want {
 		if got := s.Tools[id].Reviewed; got != w {
@@ -365,10 +365,14 @@ func TestEscalationStaysCardInAuto(t *testing.T) {
 }
 
 // TestUnreadableWordInMock is plan 47's criterion 47.5: an unreadable request
-// in a mock replay is denied in the word of the CLI its events come from,
-// Codex's "decline", as in a live session (design D3).
+// in a mock replay is denied as in a live session (design D3). Since plan 49
+// (design D10) the reducer says deny for every CLI, in the dashboard's word,
+// which the Codex adapter writes as its decline.
 func TestUnreadableWordInMock(t *testing.T) {
-	for _, tc := range []struct{ cli, word string }{{"codex", "decline"}, {"claude-code", "deny"}} {
+	for _, tc := range []struct {
+		cli  string
+		word event.Decision
+	}{{"codex", event.Deny}, {"claude-code", event.Deny}} {
 		s := state.New()
 		s.Do(state.Launch{Mock: "x"})
 		at := time.Date(2026, 10, 18, 9, 0, 0, 0, time.UTC)

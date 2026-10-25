@@ -7180,3 +7180,210 @@ Write plan 48 for the audit's phase 2 (doc/audit.md, Part 2, C), each fix test-f
 ````
 
 Taken as plan 48 (plan.md, Plan 48).
+
+## Amendment 50, 2026-10-25: the rest of phase 0, and phases 3 and 4 of the audit, for plan 49
+
+After plan 48 was approved and pushed, and told what phases 3 and 4 of
+the audit's roadmap hold and which three phase 0 safeguards are still
+missing, the owner wrote, word for word:
+
+````text
+Agent Command Center — Implement Audit Roadmap Phases 3 & 4
+The previous audit phases have been completed and approved.
+I now want to proceed with the full implementation of Phase 3 (Performance) and Phase 4 (Maintainability) as defined in `doc/audit.md`.
+This is an implementation request, not another architecture assessment.
+1. Execution Decision
+I explicitly authorize proceeding with both phases, even though:
+
+* Phase 3 was originally conditional on performance targets being exceeded.
+* Phase 4 was originally classified as optional or dependent on future triggers.
+
+I want these improvements implemented proactively to strengthen Agent Command Center for future growth.
+Do not spend time debating whether these phases are necessary. That decision has already been made.
+Do not produce another independent audit, feasibility study, comparison of architectural alternatives, or recommendation to postpone the work.
+Read the existing roadmap and relevant project instructions, then proceed with implementation.
+Use your engineering judgment for implementation details, but do not reopen the decision to execute these phases.
+2. Complete the Remaining Phase 0 Safeguards
+Before changing the relevant internals, complete the three remaining regression safeguards identified in the audit:
+Event Queue
+Add deterministic tests covering the event queue between provider adapters and the application.
+Verify:
+
+* Event ordering.
+* Concurrent producers.
+* Delivery during shutdown.
+* Cancellation behavior.
+* Correct handling of blocked or slow consumers.
+* No unexpected deadlocks or lost critical events.
+
+Write Queue
+Add tests covering the ordering of writes to provider processes.
+In particular, verify that approval responses are sent before any subsequent interrupt that depends on them.
+Cover cancellation, concurrent requests, shutdown, and write failures.
+Overlay Matrix
+Add a comprehensive test matrix covering the existing overlays, dialogs, dropdowns, and panels.
+Verify:
+
+* Correct visual priority.
+* Keyboard ownership.
+* Mouse/click ownership.
+* Opening and closing transitions.
+* Focus behavior.
+* Hidden dialogs not intercepting input.
+
+These tests are prerequisites for the Phase 4 changes.
+Do not turn this into a separate planning project. Implement the tests as part of the work.
+3. Phase 3 — Performance Improvements
+Implement the performance improvements described in the audit, even though current latency is below the existing threshold.
+A. Cache Repeated Tool Processing
+Eliminate unnecessary repeated processing performed for each tool row on every frame.
+Cache appropriate derived values, including parsed tool inputs or presentation data where useful.
+Ensure that:
+
+* Cache invalidation is correct.
+* Updated tool information becomes visible immediately.
+* No stale output or stale approval information appears.
+* Cache memory usage remains bounded.
+* The UI remains deterministic.
+
+B. Bound Session-Length-Dependent Scans
+Improve rendering or presentation paths whose work unnecessarily grows with total session history.
+Avoid repeatedly scanning historical data when only a subset is needed for the current frame.
+Preserve:
+
+* Historical information.
+* Scrolling behavior.
+* Tool inspection.
+* Conversation navigation.
+* Existing truncation semantics.
+* UI consistency.
+
+Do not delete history or sacrifice functionality to achieve faster rendering.
+C. Performance Verification
+Use the existing timing suite to verify the implementation.
+Maintain the established 16 ms performance target.
+Measure the resulting performance of long sessions, large tool histories, and active agent execution.
+Do not introduce a new benchmarking project or delay implementation to conduct extensive comparative analysis.
+The purpose is to implement and verify, not to reopen the original optimization decision.
+4. Phase 4 — Maintainability Improvements
+Implement the maintainability improvements identified in the audit.
+A. Centralize Overlay Ownership
+Create one coherent mechanism for determining which overlay, popup, dropdown, or dialog:
+
+* Is visually on top.
+* Receives keyboard input.
+* Receives mouse input.
+* Owns focus.
+* Closes when another UI element opens.
+
+Remove duplicated or inconsistent ownership decisions.
+Preserve the existing visual appearance and interaction behavior.
+This must support future panels such as Skills and Hooks without introducing unnecessary architectural complexity.
+B. Shared Provider Adapter Lifecycle
+Refactor duplicated lifecycle infrastructure shared by the Claude Code and Codex adapters.
+Consolidate genuinely common mechanisms involving:
+
+* Startup.
+* Initialization lifecycle.
+* Waiting.
+* Cancellation.
+* Shutdown.
+* Resource cleanup.
+* Process/session termination.
+
+Do not force Claude Code and Codex into identical protocol semantics.
+Preserve all provider-specific behavior, event ordering, approval handling, startup requirements, and recovery mechanisms.
+The objective is to reduce unnecessary lifecycle duplication while retaining correct provider independence.
+C. Improve Git Test Execution
+Improve the execution speed and maintainability of the existing Git tests.
+Use safe parallel execution where appropriate, with isolated temporary repositories and no shared mutable test state.
+A separate Git package is permissible if necessary for clean dependency boundaries, but do not reorganize unrelated packages merely for this task.
+Preserve all Git safety guarantees.
+D. Normalize Approval Decisions
+Introduce a consistent internal representation of approval decisions.
+Provider-specific terminology, such as `deny` and `decline`, must be translated at the appropriate provider boundary.
+Shared state and application logic should operate on normalized meanings rather than provider-specific wording.
+Preserve exact protocol responses when communicating with each CLI.
+Do not alter actual approval permissions or escalation behavior.
+E. Grapheme-Aware Display Width
+Improve terminal text-width handling so visible grapheme clusters are measured correctly.
+Handle relevant cases such as:
+
+* Combined Unicode characters.
+* Emoji sequences.
+* Zero-width joiners.
+* Flags.
+* Variation selectors.
+* Wide characters.
+
+Preserve existing terminal rendering performance and alignment for ordinary text.
+Add focused regression tests.
+F. GIF First-Frame Decoding
+Avoid unnecessarily decoding every frame of animated GIF files when only a static preview is required.
+Decode the first frame efficiently while preserving:
+
+* Correct preview behavior.
+* Existing image validation.
+* Appropriate memory limits.
+* Compatibility with image attachments.
+
+Do not change the original attachment bytes supplied to providers merely because the preview uses the first frame.
+5. Engineering Standards
+Implement the work to a Staff / Principal Software Engineer standard.
+Follow the established project conventions and architectural boundaries.
+For each coherent change:
+
+1. Add or update appropriate regression tests.
+2. Implement the change.
+3. Run relevant tests.
+4. Fix any regression before continuing.
+
+Maintain the existing application architecture unless a scoped Phase 3 or Phase 4 change requires an adjustment.
+Avoid unrelated redesigns or feature additions.
+Do not change the approved UI appearance.
+Do not alter Claude Code or Codex protocol behavior.
+Preserve Git safety, permissions, session continuity, draft persistence, terminal behavior, and existing performance requirements.
+No unnecessary abstractions or speculative infrastructure.
+6. Validation
+Perform the established project checks, including:
+
+* Go build.
+* gofmt.
+* go vet.
+* Full Go test suite.
+* Race detector on affected packages.
+* Relevant mutation tests.
+* Existing golden-frame tests.
+* Performance tests.
+* Windows Terminal validation for interaction or rendering changes.
+
+Use isolated temporary repositories and controlled test environments.
+Do not execute destructive Git tests against my actual project.
+Any genuine regression must be corrected before completion.
+Report environmental limitations accurately, but do not repeatedly revisit already-validated behaviors without a technical reason.
+7. Delivery
+Implement the remaining Phase 0 safeguards and both phases as a coherent engineering initiative.
+You may organize the work into successive plans or implementation batches to keep the changes reviewable.
+However, the overall scope is already approved:
+Complete Phase 0 safeguards + Phase 3 + Phase 4.
+Do not stop after an exploratory assessment or return merely to recommend whether the work should be done.
+After implementation, provide:
+
+* Summary of all completed changes.
+* Files and packages modified.
+* Tests added or updated.
+* Performance results.
+* Regression-test results.
+* Any remaining limitations.
+* Confirmation that the existing behavior and architecture remain intact.
+
+Keep the implementation uncommitted until I have reviewed the results.
+Do not push anything without my explicit authorization.
+Final Instruction
+Proceed with implementing the remaining Phase 0 safeguards and the complete Phase 3 and Phase 4 roadmap.
+The decision to perform these improvements has already been made.
+Focus on correct implementation, regression prevention, maintainability, and long-term scalability.
+Do not conduct another audit. Do not defer the improvements simply because today's performance targets are already met.
+````
+
+Taken as plan 49 (plan.md, Plan 49).

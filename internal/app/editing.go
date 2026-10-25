@@ -68,6 +68,7 @@ func (m *Model) editorKey(k tea.KeyPressMsg) []tea.Cmd {
 	case "ctrl+delete", "alt+delete":
 		e.DeleteWordRight()
 	case "ctrl+g":
+		m.closePopups()                                // nothing stays open under it (plan 49, design D7)
 		m.ui.DraftWin = render.DraftWindow{Open: true} // the same draft, in a window (amendment 13)
 	default:
 		if mo, extend, ok := motion(k); ok {

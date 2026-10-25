@@ -118,6 +118,7 @@ func TestParseStatus(t *testing.T) {
 // under it a D), a project in a subfolder of the repository, and git writing
 // nothing (its index unchanged though a file's time changed).
 func TestGitStatus(t *testing.T) {
+	t.Parallel()
 	repo := testRepo(t)
 	write(t, filepath.Join(repo, ".gitignore"), "build/\n*.log\n")
 	commit(t, repo, "keep.txt", "keep\n")

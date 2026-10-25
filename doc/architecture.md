@@ -114,7 +114,12 @@ Rules that keep them apart:
 - **One reader goroutine per CLI process** reads stdout line by line into an
   unbounded in-memory queue (part 2 decodes there), so the CLI's pipe never
   blocks, however slowly the event loop drains it. A stderr reader keeps
-  the last 50 lines for error display (ASM-22).
+  the last 50 lines for error display (ASM-22). Both adapters' sessions run
+  on `pipe.Proc` (`internal/provider/pipe/proc.go`, plan 49, design D8): the
+  queue and its lock, the spawn's first event, both readers with their limit
+  and their recovery, the wait that reports the exit last, the line write
+  with its hold, and the close with its escalation; each adapter keeps its
+  protocol (its arguments, its mapper, what a line calls for, its answers).
 - **One forwarder** takes normalised events from the queue, in order, and
   hands them to the Bubble Tea program: each message carries the first event
   waiting and whatever else is already waiting, at most 512 (`maxDrain`,
@@ -151,7 +156,9 @@ Session
                                     as image input (plan 31; Claude Code: base64 image
                                     blocks before the text; Codex: `image` inputs with
                                     data URLs, then the text)
-  Answer(ApprovalID, Decision) error  allow / deny / allow-for-session where offered
+  Answer(ApprovalID, Decision) error  the owner's decision, the dashboard's own word
+                                    (event.Decision: allow, allow for the session where
+                                    offered, deny, cancel), written in the CLI's (plan 49)
   AnswerQuestion(QuestionID, Answers) error   where the CLI supports it
   Interrupt() error                 cancel the running turn
   SetApprovalMode(mode string) error  one of the CLI's modes (plan 12; plan 39): Claude
@@ -195,8 +202,6 @@ screen):
 
 | What differs | Where |
 | - | - |
-| the answer's words: accept and decline for Codex, allow and deny for Claude Code (`decision`) | `internal/app/keys.go` |
-| the word an unreadable request is refused with (`requested`) | `internal/state/reduce.go` |
 | Codex's slash commands held back once (`send`) | `internal/state/actions.go` |
 | the CLI's own resume command printed at the end (`ResumeCommand`) | `internal/app/run.go` |
 | the two supported CLIs, their flags and their startup rows | `internal/app/app.go`, `internal/render/startup.go` |
@@ -205,6 +210,15 @@ screen):
 | the Write and Edit sentence on a pending Claude Code request (`effect`) | `internal/render/approval.go` |
 | zone A's telemetry (zone D until plan 23): Codex's credits or Claude Code's overage, the concurrency limit's reason, the N/A reasons each CLI never reports | `internal/render/telemetry.go` |
 | the model selector's heading, CLAUDE MODELS or CODEX MODELS (`SelectorHeading`), and the CLI its notices name (`cliName`) | `internal/render/models.go`, `internal/state/models.go` |
+
+The owner's answers are no longer among them (plan 49, design D10): the
+keys, the reducer and render know only `event.Decision` (allow, allow for
+the session, deny, cancel, and withdrawn for a request the CLI ended
+itself). Each adapter writes a decision in its CLI's words, byte for byte as
+before, and reads its CLI's words back: Claude Code's allow and deny (a
+cancel is a deny), Codex's accept, acceptForSession, decline and cancel. A
+word an adapter does not know stays as it is, which the reducer keeps as
+an expiry.
 
 ### Claude Code adapter
 
@@ -485,7 +499,7 @@ amendment 32; doc/research/image-paste.md).
 
 | Part | What it does | Where |
 | - | - | - |
-| 5. Input | the system's Open dialog (GetOpenFileNameW, Explorer style, owned by the window in front, on a locked thread with COM), in a command; each file read and checked by its bytes, never its extension: PNG, JPEG and GIF by the standard library, BMP, baseline TIFF, ICO and the WebP header by the dashboard's own readers; an EXIF orientation applied, an animated GIF's first frame and the converted formats sent as PNG; an image over the provider's limits scaled down by area averaging; HEIC, AVIF, JPEG XL, JPEG 2000, PSD, TGA, DDS, HDR, EXR, camera raws and SVG refused by name; the original never written; each file's SHA-256 kept, to tell it changed since (plan 33); each dashboard's stored draft in a folder of its own, its lock held open with no sharing while the draft is its own, its images listed beside its text, its pasted images kept as their SHA-256, the project's stored drafts taken back at a start (its own CLI's first, then the newest), unused files swept, a rename refused by another program tried again (plan 33); the clipboard's image (the "PNG" format's bytes, else the bitmap as PNG) and copied files, through golang.design/x/clipboard; a pasted image's bytes read and checked as a file's are, written only into the stored draft's folder; a thumbnail cut from the centre to a square, rounded and bordered | `internal/input/image*.go`, `dialog*.go`, `draft.go`, `clipboard.go`, `imagethumb.go` |
+| 5. Input | the system's Open dialog (GetOpenFileNameW, Explorer style, owned by the window in front, on a locked thread with COM), in a command; each file read and checked by its bytes, never its extension: PNG, JPEG and GIF by the standard library, BMP, baseline TIFF, ICO and the WebP header by the dashboard's own readers; an EXIF orientation applied, an animated GIF's first frame and the converted formats sent as PNG, a GIF's first frame decoded alone and its other frames only walked by their blocks, refused for what `DecodeAll` refused of the structure (plan 49); an image over the provider's limits scaled down by area averaging; HEIC, AVIF, JPEG XL, JPEG 2000, PSD, TGA, DDS, HDR, EXR, camera raws and SVG refused by name; the original never written; each file's SHA-256 kept, to tell it changed since (plan 33); each dashboard's stored draft in a folder of its own, its lock held open with no sharing while the draft is its own, its images listed beside its text, its pasted images kept as their SHA-256, the project's stored drafts taken back at a start (its own CLI's first, then the newest), unused files swept, a rename refused by another program tried again (plan 33); the clipboard's image (the "PNG" format's bytes, else the bitmap as PNG) and copied files, through golang.design/x/clipboard; a pasted image's bytes read and checked as a file's are, written only into the stored draft's folder; a thumbnail cut from the centre to a square, rounded and bordered | `internal/input/image*.go`, `dialog*.go`, `draft.go`, `clipboard.go`, `imagethumb.go` |
 | The application | the "+" menu's item opens the dialog; the accepted images are the draft's attachments, removable by a chip's ✕ or Ctrl+Shift+X; at send each is read and checked again in the write command, a file gone or changed failing the send with the draft and its images kept, a file whose bytes changed since it was attached read again in its place (plan 33); Alt+V, and Ctrl+V's release when Windows Terminal kept its press (undocumented, probe P32a), attach the clipboard's images, and a paste of copied files' paths attaches them; a pasted image's bytes in memory, by key, and in the stored draft's folder, both dropped once removed or accepted (plan 33); the stored draft written at once when its images change, with a message waiting for its acceptance and what was typed since, let go at quit and Back, a failed save tried again every second (plan 33); the device attributes request at start turns the preview on with Sixel; the thumbnails drawn with Sixel 50 ms after the frame that shows them and after any frame that changes their rows, a vacated place written over with the frame's own cells | `internal/app/attach.go`, `app.go`, `draft.go`, `paste.go`, `preview.go` |
 | 2 and 3. State | the message's images ride on the write command and stay with the turn until it is accepted, a failed write giving them back; the owner's entry is named from them | `internal/state/actions.go`, `reduce.go` |
 | 1. Providers | `Send(provider.Message)`: Claude Code's base64 image blocks before the text, Codex's `image` inputs with data URLs; each adapter's mapper keeps the line it wrote without the image's bytes, and Codex's every line it reads too, since the app-server writes the message back with its images (the event, the log and the screen hold the media type and size) | `internal/provider/claude/images.go`, `codex/images.go` |

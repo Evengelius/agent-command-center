@@ -36,7 +36,7 @@ func zoneCInner(t *testing.T, s *state.State, ui UI) (inner []string, rows []lin
 // (design D9).
 func panelWidth(s *state.State, ui UI) int {
 	agents := agentsByActivity(s)
-	return cardColumns(agents, currentTools(s, agents), ui, ui.Width-4).width
+	return cardColumns(agents, currentTools(s, nil, agents), ui, ui.Width-4).width
 }
 
 // listPart is the panel's part of an inner row: its first lw cells.
@@ -310,7 +310,7 @@ func TestCardColumns(t *testing.T) {
 		}
 		return a
 	}
-	tools := func(as []*state.Agent) map[string]toolInfo { return currentTools(state.New(), as) }
+	tools := func(as []*state.Agent) map[string]toolInfo { return currentTools(state.New(), nil, as) }
 	one := []*state.Agent{ag("general-purpose", "claude-haiku-5-5", "Write")}
 	for _, inner := range []int{96, 116, 152, 204} {
 		if c := cardColumns(one, tools(one), UI{}, inner); c.width != 40 || c.label != 17 || c.tool != 11 {

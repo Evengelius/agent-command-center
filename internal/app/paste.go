@@ -74,7 +74,8 @@ func (m *Model) clipImages() input.ClipboardImages {
 // focused or the Explorer's panel docked beside it (draftBeside), no window
 // over it (app.go, paste).
 func (m *Model) editorTakesPaste() bool {
-	return m.s.Screen == state.ScreenDashboard && m.draftBeside() && m.wt == nil && !render.WindowOpen(m.ui)
+	top := render.Layers(m.s, m.ui).Top // the draft on top, or the dashboard itself (plan 49, design D7)
+	return m.s.Screen == state.ScreenDashboard && m.draftBeside() && m.wt == nil && (top == render.LayerDraft || top == render.LayerNone || top.Popup())
 }
 
 // pasteImages reads the clipboard's images in a command (design D1): its
@@ -199,7 +200,7 @@ func pastedNumber(name string) (int, bool) {
 func (m *Model) terminalPaste(text string) []tea.Cmd {
 	m.pasteCount++
 	m.lastPaste = m.ui.Now
-	if m.msgFocused() && !render.WindowOpen(m.ui) {
+	if top := render.Layers(m.s, m.ui).Top; m.msgFocused() && top != render.LayerWindow && top != render.LayerKeys {
 		m.paste(text) // the commit message takes text alone (plan 45, design D2)
 		return nil
 	}

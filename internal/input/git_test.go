@@ -11,23 +11,15 @@ import (
 	"testing"
 )
 
-// gitEnv makes git ignore the owner's and the system's configuration, so
-// the tests run the same anywhere and never sign or hook a commit.
+// gitEnv skips a test when git is not installed. Git's environment is the
+// package's, set once by TestMain (plan 49, design D9): the owner's and the
+// system's configuration ignored, so the tests run the same anywhere and
+// never sign or hook a commit.
 func gitEnv(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git is not installed")
 	}
-	empty := filepath.Join(t.TempDir(), "gitconfig")
-	if err := os.WriteFile(empty, nil, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("GIT_CONFIG_GLOBAL", empty)
-	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
-	t.Setenv("GIT_AUTHOR_NAME", "test")
-	t.Setenv("GIT_AUTHOR_EMAIL", "test@example.invalid")
-	t.Setenv("GIT_COMMITTER_NAME", "test")
-	t.Setenv("GIT_COMMITTER_EMAIL", "test@example.invalid")
 }
 
 // gitT runs git in dir and fails the test if it fails.
@@ -97,6 +89,7 @@ func TestWorktreePath(t *testing.T) {
 }
 
 func TestGitWorktrees(t *testing.T) {
+	t.Parallel()
 	main := testRepo(t)
 	g := GitCLI{}
 	login := filepath.Join(filepath.Dir(main), "shop.worktrees", "login")
@@ -148,6 +141,7 @@ func TestGitWorktrees(t *testing.T) {
 }
 
 func TestGitAdd(t *testing.T) {
+	t.Parallel()
 	main := testRepo(t)
 	g := GitCLI{}
 	head := gitT(t, main, "rev-parse", "HEAD")
@@ -192,6 +186,7 @@ func TestGitAdd(t *testing.T) {
 }
 
 func TestGitMerge(t *testing.T) {
+	t.Parallel()
 	main := testRepo(t)
 	g := GitCLI{}
 	p := WorktreePath(main, "feature/login")
@@ -229,6 +224,7 @@ func TestGitMerge(t *testing.T) {
 // changes, is refused before any git merge runs, and nothing in it changes:
 // not the owner's merge, not their edited conflict file, not their changes.
 func TestGitMergeRefusals(t *testing.T) {
+	t.Parallel()
 	merged := func(calls [][]string) bool {
 		for _, a := range calls {
 			if slices.Contains(a, "merge") {
@@ -333,6 +329,7 @@ func TestGitMergeRefusals(t *testing.T) {
 }
 
 func TestGitRemove(t *testing.T) {
+	t.Parallel()
 	main := testRepo(t)
 	var calls [][]string
 	g := GitCLI{Trace: func(a []string) { calls = append(calls, a) }}

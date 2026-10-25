@@ -149,6 +149,9 @@ type UI struct {
 	// Wrap keeps the conversation's line breaks between frames; nil wraps
 	// every line each frame, with the same result.
 	Wrap *WrapCache
+	// Memo keeps what the frames derive from the state (plan 49, designs D4
+	// and D5); nil derives it all each frame, with the same result.
+	Memo *Memo
 }
 
 // Pane is a pane of zone A or C the owner scrolled (ui-design.md,
@@ -219,11 +222,12 @@ func elide(p string, w int) string {
 	if w <= 1 {
 		return "…"
 	}
-	rs := []rune(p)
-	for len(rs) > 0 && (textWidth(string(rs))+1 > w || rs[0] == '…') {
-		rs = rs[1:] // never "……" where the cut meets the hidden user folder
+	rest := tailCut(p, w-1)
+	for strings.HasPrefix(rest, "…") { // never "……" where the cut meets the hidden user folder
+		j, _ := next(rest, 0)
+		rest = rest[j:]
 	}
-	return "…" + string(rs)
+	return "…" + rest
 }
 
 func hideUser(p string) string {

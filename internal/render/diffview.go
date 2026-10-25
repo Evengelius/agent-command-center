@@ -132,12 +132,12 @@ func LayoutDiff(v DiffView) *DiffLayout {
 // textCells is a line's cells as diffText draws them, its tabs expanded.
 func textCells(s string) int {
 	col := 0
-	for i, r := range s {
-		if r == '\t' {
-			col += TabWidth - col%TabWidth
-			continue
+	for i := 0; i < len(s); {
+		n, w := cellSpan(s, i)
+		if s[i] == '\t' {
+			w = TabWidth - col%TabWidth
 		}
-		col += cellAt(s, i, r).w
+		col, i = col+w, i+n
 	}
 	return col
 }
@@ -437,12 +437,13 @@ func diffText(ln DiffLine, left, w int) line {
 	}
 	var b strings.Builder
 	col, stop := 0, left+w-2+1 // one cell past the room, for fit's "…"
-	for i, r := range ln.Text {
+	for i, after := 0, 0; i < len(ln.Text); i = after {
 		if col >= stop {
 			break
 		}
-		c := cellAt(ln.Text, i, r)
-		if r == '\t' {
+		c := cellAt(ln.Text, i)
+		after = i + c.n
+		if ln.Text[i] == '\t' {
 			c.text, c.w = strings.Repeat(" ", TabWidth-col%TabWidth), TabWidth-col%TabWidth
 		}
 		switch {

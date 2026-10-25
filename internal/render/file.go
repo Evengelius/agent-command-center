@@ -154,12 +154,12 @@ func appendCols(out, l line, from, to int) line {
 }
 
 // cutCols is the part of text, starting at column x, between the columns
-// from and to: a slice of it unless the edge cuts a wide character, which
+// from and to: a slice of it unless the edge cuts a wide cluster, which
 // becomes spaces.
 func cutCols(text string, x, from, to int) string {
 	start, end, cx := -1, len(text), x
-	for i, r := range text {
-		rw := runeWidth(r)
+	for i := 0; i < len(text); {
+		j, rw := next(text, i)
 		switch {
 		case rw == 0:
 		case cx >= from && cx+rw <= to:
@@ -174,7 +174,7 @@ func cutCols(text string, x, from, to int) string {
 		if end < len(text) {
 			break
 		}
-		cx += rw
+		cx, i = cx+rw, j
 	}
 	if start < 0 {
 		return ""
@@ -182,19 +182,19 @@ func cutCols(text string, x, from, to int) string {
 	return text[start:end]
 }
 
-// cutWide is cutCols where the edge cuts a wide character.
+// cutWide is cutCols where the edge cuts a wide cluster.
 func cutWide(text string, x, from, to int) string {
 	var b strings.Builder
 	cx, kept := x, false
-	for _, r := range text {
-		rw := runeWidth(r)
+	for i := 0; i < len(text); {
+		j, rw := next(text, i)
 		switch {
 		case rw == 0:
 			if kept {
-				b.WriteRune(r)
+				b.WriteString(text[i:j])
 			}
 		case cx >= from && cx+rw <= to:
-			b.WriteRune(r)
+			b.WriteString(text[i:j])
 			kept = true
 		case cx < to && cx+rw > from:
 			b.WriteString(strings.Repeat(" ", min(cx+rw, to)-max(cx, from)))
@@ -202,7 +202,7 @@ func cutWide(text string, x, from, to int) string {
 		default:
 			kept = false
 		}
-		cx += rw
+		cx, i = cx+rw, j
 	}
 	return b.String()
 }
@@ -340,11 +340,14 @@ func codeSpans(f FileView, i int, cur bool, cw int) line {
 	ri, rEnd := 0, len(runs[0].Text)
 	mi := m0
 	col, stop, end := 0, f.Left+cw+1, len(text)
-	for off, r := range text {
+	for off, after := 0, 0; off < len(text); off = after {
 		if col >= stop {
 			end = off
 			break
 		}
+		c := cellAt(text, off)
+		after = off + c.n
+		tab := text[off] == '\t'
 		for ri < len(runs)-1 && off >= rEnd {
 			ri++
 			rEnd += len(runs[ri].Text)
@@ -362,11 +365,10 @@ func codeSpans(f FileView, i int, cur bool, cw int) line {
 				st = stMatchCur
 			}
 		}
-		c := cellAt(text, off, r)
-		if r == '\t' {
+		if tab {
 			c.text, c.w = strings.Repeat(" ", TabWidth-col%TabWidth), TabWidth-col%TabWidth
 		}
-		atom := c.ctrl || r == '\t'
+		atom := c.ctrl || tab
 		switch {
 		case col+c.w <= f.Left && c.w > 0:
 		case col < f.Left:
@@ -728,15 +730,12 @@ func FileCodeWidth(ui UI) int {
 // draws it: tabs to the next multiple of TabWidth, controls as their marks.
 func FileColumn(text string, off int) int {
 	col := 0
-	for i, r := range text {
-		if i >= off {
-			break
+	for i := 0; i < len(text) && i < off; {
+		n, w := cellSpan(text, i)
+		if text[i] == '\t' {
+			w = TabWidth - col%TabWidth
 		}
-		if r == '\t' {
-			col += TabWidth - col%TabWidth
-		} else {
-			col += cellAt(text, i, r).w
-		}
+		col, i = col+w, i+n
 	}
 	return col
 }

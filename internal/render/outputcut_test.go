@@ -20,7 +20,7 @@ func TestOutputCutNote(t *testing.T) {
 	const note = "… 139 KB of earlier output not kept"
 	views := func() (string, string) {
 		_, body := toolView(s, UI{Now: time.Time{}}, e, span{}, 100)
-		return texts(inspectTools(s, a, 100, time.Time{})), texts(body)
+		return texts(inspectTools(s, nil, a, 100, time.Time{})), texts(body)
 	}
 	in, full := views()
 	if !strings.Contains(in, "→ "+note) || !strings.Contains(in, "the tail") || strings.Contains(in, "→ the tail") {

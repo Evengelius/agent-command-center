@@ -64,7 +64,7 @@ func TestInspectP7(t *testing.T) {
 	list, create := agentByLabel(t, s, "/root/list_files"), agentByLabel(t, s, "/root/create_found")
 	now := s.Agents[list.Key].EndedAt
 
-	lt, ct := texts(inspectTools(s, list, wide, now)), texts(inspectTools(s, create, wide, now))
+	lt, ct := texts(inspectTools(s, nil, list, wide, now)), texts(inspectTools(s, nil, create, wide, now))
 	if !strings.Contains(lt, "Get-ChildItem") || strings.Contains(lt, "Join-Path") || strings.Contains(lt, "found.txt") {
 		t.Errorf("list_files Tools:\n%s", lt)
 	}
@@ -113,7 +113,7 @@ func TestInspectP3b(t *testing.T) {
 	if a == nil {
 		t.Fatal("no subagent")
 	}
-	tools := texts(inspectTools(s, a, wide, a.EndedAt))
+	tools := texts(inspectTools(s, nil, a, wide, a.EndedAt))
 	for _, want := range []string{"✓ Bash", "✓ Write", "approval Bash · allowed by you", "approval Write · allowed by you"} {
 		if strings.Count(tools, want) != 1 {
 			t.Errorf("Tools: %q %d times, want 1:\n%s", want, strings.Count(tools, want), tools)
@@ -205,7 +205,7 @@ func TestTreeP3b(t *testing.T) {
 	}
 	rows := texts(func() (ls []line) {
 		for _, r := range treeRows(s, ui, 60) {
-			ls = append(ls, r.l)
+			ls = append(ls, r.line(s, ui, 60))
 		}
 		return
 	}())

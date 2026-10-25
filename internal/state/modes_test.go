@@ -136,7 +136,7 @@ func TestChooseMode(t *testing.T) {
 	s := onCLI(t, "claude-code", state.ModeManual)
 	for _, m := range []string{state.ModeAcceptEdits, state.ModePlan, state.ModeAuto} {
 		cmds := s.Do(state.ChooseMode{Mode: m, Capable: true})
-		if len(cmds) != 1 || cmds[0].Kind != state.CmdSetApprovals || cmds[0].Decision != m || s.Session.ApprovalRequested != m || s.Mode() != state.ModeManual {
+		if len(cmds) != 1 || cmds[0].Kind != state.CmdSetApprovals || cmds[0].Mode != m || s.Session.ApprovalRequested != m || s.Mode() != state.ModeManual {
 			t.Fatalf("%s: %+v, requested %q, mode %q", m, cmds, s.Session.ApprovalRequested, s.Mode())
 		}
 		s.Do(state.ChooseMode{Mode: state.ModeManual, Capable: true}) // back: the request cancelled
@@ -155,7 +155,7 @@ func TestChooseMode(t *testing.T) {
 		t.Fatalf("Full access unconfirmed: %+v, requested %q", cmds, x.Session.ApprovalRequested)
 	}
 	cmds := x.Do(state.ChooseMode{Mode: state.ModeFull, Confirmed: true, Capable: true})
-	if len(cmds) != 1 || cmds[0].Decision != state.ModeFull || x.Session.ApprovalRequested != state.ModeFull || x.Session.ModeNextTurn || x.Mode() != state.ModeManual {
+	if len(cmds) != 1 || cmds[0].Mode != state.ModeFull || x.Session.ApprovalRequested != state.ModeFull || x.Session.ModeNextTurn || x.Mode() != state.ModeManual {
 		t.Fatalf("Full access confirmed: %+v, requested %q, next turn %v, mode %q", cmds, x.Session.ApprovalRequested, x.Session.ModeNextTurn, x.Mode())
 	}
 	// Codex refuses: the mode stays, the request goes, zone B says why.

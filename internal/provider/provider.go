@@ -125,7 +125,9 @@ type Session interface {
 	// Send writes the owner's message, its text byte for byte and its images
 	// as image input (plan 31).
 	Send(msg Message) error
-	Answer(approvalID, decision string) error
+	// Answer answers a pending approval with the owner's decision, which the
+	// adapter writes in its CLI's words (plan 49, design D10).
+	Answer(approvalID string, d event.Decision) error
 	// AnswerQuestion answers a pending question request with the answer to each
 	// question, by its text (plan 14, item 1); Capabilities.Questions says whether
 	// the provider takes it.

@@ -79,7 +79,7 @@ func (b *bench) ask(agent, id, toolID string) []Command {
 	return b.ev(event.ApprovalRequest, agent, event.Approval{ID: id, Tool: "Bash", ToolID: toolID})
 }
 
-func (b *bench) resolve(id, decision string) []Command {
+func (b *bench) resolve(id string, decision event.Decision) []Command {
 	return b.ev(event.ApprovalResolved, "", event.Approval{ID: id, Decision: decision})
 }
 
@@ -496,7 +496,7 @@ var transitions = []machineCase{
 		c.do(Interrupt{})
 		c.eq("from WaitingApproval", c.s.Turn.Phase, Interrupting)
 		c.eq("commands", c.kinds(), "answer,interrupt")
-		c.eq("decision", c.cmds[0].Decision, "cancel")
+		c.eq("decision", c.cmds[0].Decision, event.Cancel)
 		c.eq("marked cancelled", c.s.Approvals["a1"].Cancelled, true) // plan 5, item 10
 	}},
 	{"Turn", "`Interrupting` | turn end reported", func(b *bench) {
@@ -538,8 +538,8 @@ var transitions = []machineCase{
 		b.do(Quit{})
 		b.do(Quit{})
 		b.eq("order", b.kinds(), "answer,answer,interrupt,close")
-		b.eq("orchestrator's", b.cmds[0].ID+" "+b.cmds[0].Decision, "a1 cancel")
-		b.eq("the agent's", b.cmds[1].ID+" "+b.cmds[1].Decision, "a2 cancel")
+		b.eq("orchestrator's", b.cmds[0].ID+" "+string(b.cmds[0].Decision), "a1 cancel")
+		b.eq("the agent's", b.cmds[1].ID+" "+string(b.cmds[1].Decision), "a2 cancel")
 		b.eq("answering", b.s.Approvals["a2"].Status, Answering)
 		b.eq("marked cancelled", b.s.Approvals["a1"].Cancelled && b.s.Approvals["a2"].Cancelled, true) // plan 5, item 10
 		b.eq("turn", b.s.Turn.Phase, Interrupting)
@@ -566,7 +566,7 @@ var transitions = []machineCase{
 		b.eq("turn", b.s.Turn.Phase, Idle)
 		b.eq("outcome", b.s.Turn.Outcome, "completed")
 		b.eq("approval", b.s.Approvals["a1"].Status, Expired)
-		b.resolve("a1", "resolved") // Codex's serverRequest/resolved after the turn end
+		b.resolve("a1", event.Withdrawn) // Codex's serverRequest/resolved after the turn end
 		b.eq("stays expired", b.s.Approvals["a1"].Status, Expired)
 	}},
 	{"Turn", "`Idle` | approval from a background agent", func(b *bench) {
@@ -760,13 +760,13 @@ var transitions = []machineCase{
 	}},
 	{"Approval", "`Pending` | owner allows for the session", func(b *bench) {
 		b.running().ask("", "a0", "")
-		b.do(Answer{ID: "a0", Decision: "acceptForSession"}) // not offered: refused (plan 5, item 8)
+		b.do(Answer{ID: "a0", Decision: event.AllowSession}) // not offered: refused (plan 5, item 8)
 		b.eq("not offered", b.kinds(), "")
 		b.eq("still pending", b.s.Approvals["a0"].Status, Pending)
 		b.ev(event.ApprovalRequest, "", event.Approval{ID: "a1", Tool: "commandExecution", Offered: []string{"accept", "acceptForSession", "decline", "cancel"}, ForSession: true})
-		b.do(Answer{ID: "a1", Decision: "acceptForSession"})
-		b.eq("decision", b.cmds[0].Decision, "acceptForSession")
-		b.resolve("a1", "acceptForSession")
+		b.do(Answer{ID: "a1", Decision: event.AllowSession})
+		b.eq("decision", b.cmds[0].Decision, event.AllowSession)
+		b.resolve("a1", event.AllowSession)
 		b.eq("allowed", b.s.Approvals["a1"].Status, Allowed)
 	}},
 	{"Approval", "`Pending` | owner denies", func(b *bench) {
@@ -788,7 +788,7 @@ var transitions = []machineCase{
 		b.running().ev(event.ApprovalRequest, "", event.Approval{ID: "a1", Problem: "no tool name"})
 		b.eq("status", b.s.Approvals["a1"].Status, Denied)
 		b.eq("commands", b.kinds(), "answer")
-		b.eq("decision", b.cmds[0].Decision, "deny")
+		b.eq("decision", b.cmds[0].Decision, event.Deny)
 		b.eq("turn not waiting", b.s.Turn.Phase, Running)
 	}},
 	{"Approval", "`Answering` | writing the answer fails", func(b *bench) {
@@ -809,7 +809,7 @@ var transitions = []machineCase{
 		b.eq("turn", b.s.Turn.Phase, Running)
 		b.eq("commands", b.kinds(), "")
 		b.eq("notice", b.s.Turn.Notice, notice)
-		b.resolve("a1", "expired")
+		b.resolve("a1", event.Withdrawn)
 		b.eq("withdrawal after", b.s.Approvals["a1"].Status, Expired)
 		b.eq("noted", b.noted("second answer"), false)
 
@@ -817,7 +817,7 @@ var transitions = []machineCase{
 		c := newBench(b.t).running()
 		c.ask("", "a1", "")
 		c.do(Answer{ID: "a1", Decision: "allow"})
-		c.resolve("a1", "expired")
+		c.resolve("a1", event.Withdrawn)
 		c.do(AnswerFailed{ID: "a1", Message: `no pending request "a1"`, Gone: true})
 		c.eq("withdrawal first", c.s.Approvals["a1"].Status, Expired)
 		c.eq("session after", c.s.Session.Phase, Ready)
@@ -831,7 +831,7 @@ var transitions = []machineCase{
 
 		c := newBench(b.t).running()
 		c.ask("", "a1", "")
-		c.resolve("a1", "resolved")
+		c.resolve("a1", event.Withdrawn)
 		c.eq("CLI resolves", c.s.Approvals["a1"].Status, Expired)
 		c.eq("turn", c.s.Turn.Phase, Running)
 
@@ -869,7 +869,7 @@ var transitions = []machineCase{
 	{"Tool call", "`Started` | its approval denied", func(b *bench) {
 		b.running().ev(event.ToolStarted, "", event.Tool{ToolID: "tu1", Name: "Bash"})
 		b.ask("", "a1", "tu1")
-		b.resolve("a1", "decline")
+		b.resolve("a1", event.Deny) // Codex's decline, as its mapper reads it (plan 49, design D10)
 		b.eq("status", b.s.Tools["tu1"].Status, ToolDenied)
 	}},
 	{"Tool call", "`Started`, `Running` | turn or agent ends first", func(b *bench) {
@@ -1124,8 +1124,8 @@ var invalids = []machineCase{
 		b.running().ask("", "a1", "")
 		b.do(Answer{ID: "a1", Decision: "allow"})
 		b.resolve("a1", "allow")
-		b.resolve("a1", "expired")  // Claude Code's control_cancel_request
-		b.resolve("a1", "resolved") // Codex's serverRequest/resolved
+		b.resolve("a1", event.Withdrawn) // Claude Code's control_cancel_request
+		b.resolve("a1", event.Withdrawn) // Codex's serverRequest/resolved
 		b.eq("status", b.s.Approvals["a1"].Status, Allowed)
 		b.eq("noted", b.noted("second answer"), false)
 	}},
@@ -1149,11 +1149,13 @@ var invalids = []machineCase{
 			}
 		}
 		b.ev(event.ApprovalRequest, "", event.Approval{ID: "a3", Problem: "unreadable"})
-		b.eq("unparseable", b.cmds[0].Decision, "deny")
+		b.eq("unparseable", b.cmds[0].Decision, event.Deny)
+		// Codex's the same deny, which its adapter writes as its decline (plan
+		// 49, design D10).
 		b.s.Context.Provider = "codex"
 		b.ev(event.ApprovalRequest, "", event.Approval{ID: "a4", Problem: "unreadable"})
-		b.eq("unparseable, Codex", b.cmds[0].Decision, "decline")
-		b.eq("answer, Codex", b.s.Approvals["a4"].Answer, "decline")
+		b.eq("unparseable, Codex", b.cmds[0].Decision, event.Deny)
+		b.eq("answer, Codex", b.s.Approvals["a4"].Answer, event.Deny)
 	}},
 	{"Approval", "\"Allow and remember\" options that persist a rule", func(b *bench) {
 		b.running().ask("", "a1", "")

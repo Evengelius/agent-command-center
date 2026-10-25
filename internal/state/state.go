@@ -356,7 +356,7 @@ type Approval struct {
 	Problem     string
 	Raw         string
 	Status      ApprovalStatus
-	Answer      string
+	Answer      event.Decision
 	Answers     map[string]string // a question answered: question text to answer, set when sent
 	Cancelled   bool              // answered by a cancel (c, Ctrl+C, quitting), not by d (plan 5, item 10)
 	RequestedAt time.Time
@@ -448,20 +448,27 @@ const (
 
 // State is the whole dashboard state.
 type State struct {
-	Screen           Screen
-	Startup          StartupState
-	Context          Context
-	Session          SessionState
-	Models           Models // the session's models and their settings (plan 34)
-	Turn             TurnState
-	Stages           []Stage // one per turn, in order
-	Conversation     []Entry
-	Agents           map[string]*Agent
-	Order            []string // agents in the order they appeared
-	Ambient          map[string]bool
-	Approvals        map[string]*Approval
-	Queue            []string // approval ids in the order they arrived
-	Tools            map[string]*ToolCall
+	Screen       Screen
+	Startup      StartupState
+	Context      Context
+	Session      SessionState
+	Models       Models // the session's models and their settings (plan 34)
+	Turn         TurnState
+	Stages       []Stage // one per turn, in order
+	Conversation []Entry
+	Agents       map[string]*Agent
+	Order        []string // agents in the order they appeared
+	Ambient      map[string]bool
+	Approvals    map[string]*Approval
+	Queue        []string // approval ids in the order they arrived
+	Tools        map[string]*ToolCall
+	// ToolOrder is every tool call's ID in the order it was added, and
+	// ParentRev counts the times an agent's parent changed: render's memo
+	// takes in the calls added since its last frame, and builds its index
+	// of the turns' items again when an agent was added or its parent
+	// changed (plan 49, design D5).
+	ToolOrder        []string
+	ParentRev        int
 	Metrics          map[string]Value
 	Diffs            map[string]string
 	Errors           []ErrorEntry
@@ -584,7 +591,7 @@ const (
 	CmdDraftAccepted CommandKind = "draft-accepted" // the CLI accepted the message: delete its draft
 	CmdRestoreDraft  CommandKind = "restore-draft"  // put Text back in the editor
 	CmdExit          CommandKind = "exit"           // leave the application
-	CmdSetApprovals  CommandKind = "set-approvals"  // ask for the mode Decision, one of the session's CLI's (plan 39)
+	CmdSetApprovals  CommandKind = "set-approvals"  // ask for Mode, one of the session's CLI's modes (plan 39)
 	CmdModels        CommandKind = "models"         // ask for the model settings of Change (plan 34)
 )
 
@@ -599,7 +606,8 @@ type Command struct {
 	Kind     CommandKind
 	ID       string
 	Text     string
-	Decision string
+	Decision event.Decision    // CmdAnswer: the owner's, in the dashboard's words (plan 49, design D10)
+	Mode     string            // CmdSetApprovals: the mode asked for (plan 39)
 	Answers  map[string]string // CmdAnswer of a question: question text to answer
 	Images   []Attachment      // CmdWrite and CmdRestoreDraft: the message's images (plan 31)
 	Change   ModelChange       // CmdModels: the model settings asked for (plan 34)

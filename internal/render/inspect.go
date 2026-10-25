@@ -39,7 +39,7 @@ func inspect(s *state.State, ui UI, a *state.Agent, sc *Screen) []line {
 	var body []line
 	switch ui.Tab {
 	case 1:
-		body = inspectTools(s, a, w-2, ui.Now)
+		body = inspectTools(s, ui.Memo, a, w-2, ui.Now)
 	case 2:
 		body = inspectDiff(s, a, w-2)
 	case 3:
@@ -214,18 +214,19 @@ func agentTools(s *state.State, key string) []*state.ToolCall {
 
 // inspectTools is each call with its input, status, duration and result,
 // and the approvals asked for it.
-func inspectTools(s *state.State, a *state.Agent, w int, now time.Time) []line {
+func inspectTools(s *state.State, m *Memo, a *state.Agent, w int, now time.Time) []line {
 	var out []line
 	used := map[string]bool{}
-	for _, tc := range agentTools(s, a.Key) {
+	for _, tc := range callsOf(s, m, a.Key) {
 		head := line{toolSymbol(s, tc, deco("◉", stProgress)), sp(" "+tc.Name, stText)}
-		target, _, body := approvalDetail(&state.Approval{Input: tc.Input})
-		if t := toolTarget(tc.Input); t != "" {
+		f := m.input(tc.Input, false)
+		target, body := f.target, f.body
+		if t := f.tool; t != "" {
 			head = append(head, sp("  "+t, stText))
 		}
 		head = append(head, sp("  "+strings.ToLower(string(tc.Status))+" · "+elapsed(tc.StartedAt, tc.EndedAt, now), stGrey))
 		out = append(out, timed(clockSec(tc.StartedAt), head, originLabel(tc.Origin), w))
-		if target == "" && len(body) == 0 && toolTarget(tc.Input) == "" && len(tc.Input) > 0 && string(tc.Input) != "null" {
+		if target == "" && len(body) == 0 && f.tool == "" && len(tc.Input) > 0 && string(tc.Input) != "null" {
 			body = []string{string(tc.Input)}
 		}
 		for _, l := range body {

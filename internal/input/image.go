@@ -358,19 +358,21 @@ func inspectGIF(img *Image, b []byte) ([]byte, image.Image, error) {
 	if err := tooBig(cfg.Width, cfg.Height); err != nil {
 		return nil, nil, err
 	}
-	g, err := gif.DecodeAll(bytes.NewReader(b))
+	// The first frame decoded, the others only walked (plan 49, design D12).
+	first, err := gif.Decode(bytes.NewReader(b))
 	if err != nil {
 		return nil, nil, errors.New("GIF: " + err.Error())
 	}
-	if len(g.Image) == 0 {
-		return nil, nil, errors.New("GIF: no frame")
+	frames, err := gifFrames(b)
+	if err != nil {
+		return nil, nil, errors.New("GIF: " + err.Error())
 	}
 	img.Width, img.Height = cfg.Width, cfg.Height
 	// The first frame on the canvas: what is sent of an animated GIF, as PNG,
 	// said so, and what a resize starts from.
 	canvas := image.NewNRGBA(image.Rect(0, 0, cfg.Width, cfg.Height))
-	draw.Draw(canvas, g.Image[0].Bounds(), g.Image[0], g.Image[0].Bounds().Min, draw.Over)
-	if len(g.Image) == 1 {
+	draw.Draw(canvas, first.Bounds(), first, first.Bounds().Min, draw.Over)
+	if frames == 1 {
 		img.Media = "image/gif"
 		return b, canvas, nil
 	}

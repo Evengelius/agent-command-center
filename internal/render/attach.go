@@ -218,21 +218,22 @@ func (sc *Screen) Region(x, y, w int) string {
 	return out.pad(w).String()
 }
 
-// cellRange is the part of s in its cells [from, to); a character across
-// an edge gives a space for each of its cells inside.
+// cellRange is the part of s in its cells [from, to); a cluster across an
+// edge gives a space for each of its cells inside.
 func cellRange(s string, from, to int) string {
 	var b strings.Builder
 	n := 0
-	for _, r := range s {
-		end := n + runeWidth(r)
+	for i := 0; i < len(s); {
+		j, w := next(s, i)
+		end := n + w
 		switch {
 		case end <= from && end > n, n >= to:
 		case n >= from && end <= to:
-			b.WriteRune(r)
+			b.WriteString(s[i:j])
 		case end > n:
 			b.WriteString(strings.Repeat(" ", min(end, to)-max(n, from)))
 		}
-		n = end
+		n, i = end, j
 	}
 	return b.String()
 }

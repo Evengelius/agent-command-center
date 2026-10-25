@@ -108,6 +108,7 @@ func (m *Model) f3() []tea.Cmd {
 // openFile shows the target's file: read in a command, the window saying
 // so meanwhile.
 func (m *Model) openFile(t render.FileTarget) []tea.Cmd {
+	m.closePopups() // nothing stays open under the window (plan 49, design D7)
 	m.fileGen++
 	m.closeFinder()
 	m.ui.File = render.FileView{Open: true, Full: m.ui.File.Full, Path: t.Path, Opened: t.Opened, State: "reading…", Match: -1}
@@ -387,6 +388,7 @@ func (m *Model) showMatch(i int) {
 // openFinder opens the quick open, from the Explorer, and lists the
 // project in a command.
 func (m *Model) openFinder() []tea.Cmd {
+	m.closePopups() // nothing stays open under the window (plan 49, design D7)
 	m.finderGen++
 	m.ui.Finder = render.FinderView{Open: true, State: "listing…"}
 	m.finderAll = nil

@@ -161,7 +161,11 @@ INT 7):
 - The queue between the reader and the forwarder is unbounded, so a paused
   loop (`$EDITOR`) never blocks the CLI's pipe (architecture.md, Threads of
   execution). Memory over a long session is measured by test 11
-  (`TestLongSession`), which replays a long generated session.
+  (`TestLongSession`), which replays a long generated session. Since plan
+  49 (design D8) one implementation, `pipe.Proc`, holds the queue, the
+  readers, the wait and the close for both adapters, its messages naming
+  the CLI as before; its own tests pin the exit as the last event, the
+  readers given up 2 s after the exit, and the close's escalation.
 - Codex can refuse a request with `-32001` when overloaded (INT 1): the
   refusal is an error with Codex's words, and nothing is retried
   automatically. A refused `turn/start` starts no turn: since plan 34 (the
@@ -301,7 +305,9 @@ Approval machine):
   answer. A pending approval waits until the owner answers, the turn ends,
   or the CLI resolves it (then `Expired`).
 - **A request the dashboard cannot read** is denied (Claude Code) or declined
-  (Codex), and shown as "denied automatically: request not readable" with
+  (Codex): the reducer answers it with the dashboard's deny, which each
+  adapter writes in its CLI's word (plan 49, design D10), and shows it as
+  "denied automatically: request not readable" with
   its raw line in Raw events; an unknown Codex request method gets a JSON-RPC
   error (INT 4). Refusing is the safe side: the CLI's native rules are never
   widened.

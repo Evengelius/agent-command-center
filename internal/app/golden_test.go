@@ -147,7 +147,7 @@ func TestGoldenFrames(t *testing.T) {
 		if len(ids) == 0 {
 			t.Fatal("no orchestrator tool in the mock")
 		}
-		pushEvents(h, "claude-code", evOf(event.ToolDecision, event.Verdict{ToolID: ids[0], Decision: "accept", ReasonType: "classifier"}))
+		pushEvents(h, "claude-code", evOf(event.ToolDecision, event.Verdict{ToolID: ids[0], Decision: event.Allow, ReasonType: "classifier"}))
 		pushEvents(h, "claude-code", evOf(event.ApprovalMode, event.Mode{Mode: event.ModeAuto, Answers: true}))
 		if h.m.State().Mode() != state.ModeAuto {
 			t.Fatalf("mode %q", h.m.State().Mode())

@@ -95,12 +95,616 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 49 - The rest of phase 0, and phases 3 and 4 of the audit
 
-Plan 48 was approved and closed on 2026-10-25 (Closed plans, below). The
-next plan starts when the owner asks for one; the audit's roadmap
-([`doc/audit.md`](doc/audit.md), Part 2) lists what remains, phases 3
-and 4 being conditional or optional.
+Brief amendment 50 (2026-10-25): the owner asks for the three phase 0
+safeguards still missing, then phase 3 (performance) and phase 4
+(maintainability) of the audit's roadmap ([`doc/audit.md`](doc/audit.md),
+Part 1, E, and Part 2, C), all of them, though phase 3 was conditional and
+phase 4 optional:
+- phase 0: the event queue's tests, the write queue's, the overlay matrix;
+- phase 3: A, the tool rows' parsing memoised; B, the per-frame scans that
+  grow with the session bounded; C, both measured by the timing step;
+- phase 4: A, one owner of the overlays; B, the adapters' shared
+  lifecycle; C, the git tests in parallel; D, normalised approval
+  decisions; E, grapheme-aware widths; F, GIF first-frame decoding.
+
+The work comes in five batches, each checked before the next: the
+safeguards first, which pin today's behaviour; then phase 3; then phase
+4's A and B, its C and D, its E and F. A change that fixes a defect a
+safeguard finds is test-first, as in plan 48. The criteria below were
+written before the code. Nothing is committed until the owner has
+reviewed the result, and nothing is pushed without the owner's word.
+
+### What was found (2026-10-25, on ecb87bb)
+
+- **The queues** (audit finding 12).
+  - `pipe.Queue` (`internal/provider/pipe/pipe.go`) is tested by nothing
+    but `TestReadLine`: not its order across producers, its holds, its
+    close, or a reader that does not read.
+  - The application's write queue (`internal/app/writer.go`: 64 jobs, one
+    worker) has no test of its order, of its refusal when full ("too many
+    writes waiting"), or of the close behind it.
+- **The overlays** (finding 4).
+  - Seven overlays are drawn under conditions written out one by one
+    (`render/select.go:166-213`), and they disagree: the commit dropdown's
+    omits the windows, the file window's the draft window.
+  - The keys (`app/keys.go:37-80`, `:169-228`), the mouse
+    (`app/mouse.go:45-245`), `motionFilter` (`:284`) and `View`
+    (`app/app.go:373-396`) each encode their own precedence. Each opener
+    closes its own list of the others (`models.go`, `modes.go`, the "+"
+    band's click, the sidebar's).
+  - Only the two selectors close when the frame could not draw them.
+- **The per-frame work** (finding 7). The timing step on today's code
+  (`scratchpad\plan49\timing-before.txt`) has every test within 16 ms, and:
+  - `TestLongSession`: its frames' p95 is 4.26 ms in the session's first
+    tenth and 14.94 ms in its last, 3.5 times as much; at its end, p50
+    7.17 ms and p95 11.62 ms. Run on its own: 2.2 then 4.5 ms, and an end
+    p95 of 5.2 ms.
+  - `TestThinkingFrame` (5,522 entries, 721 of them thinking): p95 8.14 ms.
+  - A profile of the long session's frames:
+    - zone A takes 52 %: it builds the rows of all 240 turns, then keeps
+      those in view; `indexItems` alone takes 27 %, a pass over the 6,960
+      tools and the 720 agents with a sort;
+    - zone B takes 32 %: `lookAll` and the row counts, over the 5,281
+      entries, each copied;
+    - zone C takes 12 %: `currentTools`, a pass over every tool.
+  - Each tool row parses its tool's input JSON two or three times a frame
+    (`render/tree.go:287-290`, `:411-436`).
+  - `Animating` and `ActivityOn` scan the whole conversation each frame
+    (`render/thinking.go:942`, `:1081`); `agentTools` scans every tool
+    (`inspect.go:201`).
+- **The adapters** (finding 9). `claude/session.go` and
+  `codex/session.go` repeat the same constants, spawn, readers, wait and
+  drain, write framing, `apart`, `fatal`, `Close` and escalation. They
+  differ in the CLI's name and in what a line means.
+- **The git tests** (finding 12). `go test ./internal/input` takes 148 s.
+  - 21 git tests, all sequential, take 143 s of it; the longest takes 32 s.
+  - Each sets git's environment with `t.Setenv` (`gitEnv`), which forbids
+    `t.Parallel`.
+- **The decisions** (finding 11). The CLIs' words travel through the
+  whole program:
+  - the keys choose "accept" or "allow" by the provider
+    (`app/keys.go:487-497`);
+  - the reducer lists all six words (`state/actions.go:441`), maps the
+    CLI's words back (`reduce.go:792-794`), and denies an unreadable
+    request with "decline" for Codex (`reduce.go:755`);
+  - render compares with "acceptForSession" (`approval.go:56`,
+    `viewer.go:43`).
+- **Widths** (finding 5).
+  - `textWidth` and `cut` add up code points (`render/text.go:232-276`).
+    Bubble Tea's cell buffer measures grapheme clusters, since Windows
+    Terminal reports mode 2027.
+  - For ❤️, 👍🏽, 👨‍👩‍👦 and 🇫🇷 the two disagree: 1, 4, 6 and 4 cells
+    against 2 each.
+  - No golden frame and no mock file holds such a sequence.
+- **GIF** (Part 2, C). `inspectGIF` decodes every frame (`gif.DecodeAll`,
+  `input/image.go:361`) to keep the first: an animated GIF's frames are
+  all decoded and held at once.
+
+### Design
+
+- **D1. The event queue pinned** (phase 0). New tests of `pipe.Queue`, in
+  a bubble (`testing/synctest`), where a deadlock fails the test:
+  - eight producers pushing at once: every event leaves once, each
+    producer's in its order, `Seq` from 1 with no gap;
+  - a hold keeps the events after it waiting; released, its events leave
+    in their place; dropped, they never leave and leave no gap;
+  - a close lets the queued events leave, then closes `Out`, and a push
+    after it is dropped; a hold not yet released keeps `Out` open until
+    its release, which every write's path makes;
+  - a reader that does not read: 100,000 pushes return, then all are read
+    in order;
+  - in the application, a session's events all reach the reducer, in
+    order, before its end.
+- **D2. The write queue pinned** (phase 0). New tests in `internal/app`:
+  - `c` on an approval card while the CLI holds the answer: the interrupt
+    is not written before the answer;
+  - the queue full (one write running, 64 waiting): the next is refused at
+    once with "too many writes waiting", and the 65 run in order;
+  - a write that fails, and one that panics, stop none of those after it;
+  - a confirmed quit writes the cancels, the interrupt, then `Close`, in
+    that order; with the queue full, `Close` comes at once.
+- **D3. The overlay matrix** (phase 0). One table-driven test over ten
+  layers: the "+" menu, the model selector, the modes selector, the commit
+  dropdown, the staging question, the file viewer, the quick open, the
+  draft window, the key overlay and the Worktrees view, over the dashboard
+  with its docked panel. For each layer opened as the owner opens it, and
+  for each ordered pair (the first open, then the second's own key or
+  click), it checks:
+  - which layers are open and which is drawn, and that nothing of a closed
+    or covered one is drawn;
+  - which takes the next key and the next click, and that a closed or
+    covered one takes neither;
+  - where the focus is after each closing.
+
+  The matrix states the behaviour the layers must have. The cells today's
+  code fails are its defects: each is recorded in the progress log, then
+  fixed by D7.
+- **D4. Tool rows memoised** (3A).
+  - A tool's derived fields are computed once for an input: its target,
+    and whether that is a path, as `toolTarget`, `toolDetail` and
+    `approvalDetail` give them. The key is the input's identity (its first
+    byte's address and its length), never its contents, so a new input is
+    a new key and an update shows at once.
+  - They are held by a new `render.Memo` in the UI, as `WrapCache` holds
+    the wrapping: a memo, never a source of what is drawn, so a nil memo
+    computes everything with the same frame. What a frame did not use is
+    dropped after the next one: the memo holds what two frames draw, at
+    most.
+- **D5. Scans bounded** (3B). The memo also keeps, for the state it was
+  made from:
+  - each turn's items (the orchestrator's tools and the top agents, as
+    `indexItems` gives them), each agent's tools and its latest call:
+    built once, then each new tool added in its place. The reducer lists
+    the tools in the order they come (`State.ToolOrder`), and counts the
+    changes to an agent's place or name (`State.AgentRev`: an agent
+    added, its parent, kind or label set), which rebuild them;
+  - the conversation's thinking entries, found as the entries are added:
+    `Animating` and `ActivityOn` look at those only.
+
+  Zone A builds only the rows of the window it shows, from a list of the
+  tree's rows that says what each row is; `Tree`'s nodes come from the
+  same list. Zone B's passes over the entries take them by reference, not
+  by copy. Nothing is dropped from the state: the scroll, the inspection,
+  the navigation and the folds read the same values.
+- **D6. Measured** (3C). The timing step, with `TestToolsToFrame` added to
+  it: one open turn of 2,000 tool calls, 30 of them `Write` calls of
+  100 KB, while 8 agents run with 50 calls each; each new call is timed
+  from Update to its frame.
+- **D7. One owner of the overlays** (4A).
+  - `render.Layers(s, ui)` gives the layers open, which the frame shows
+    and the top one, from one ordered list. From the top: the Worktrees
+    view, the key overlay, the draft window, the file window, then at
+    most one popup (the "+" menu, the model selector, the modes selector,
+    the staging question or the commit dropdown), shown only over the
+    dashboard and under no window.
+  - `Draw`, the key routing, the mouse routing, `motionFilter` and the
+    mouse mode take the layers from it; each layer's handlers are
+    unchanged.
+  - Opening a popup closes the others (`openPopup`). A popup the frame
+    does not show closes, as the selectors already do: a window opened
+    over the commit dropdown or the staging question closes them, as a
+    click outside does.
+  - The popups' anchors are recorded by the draws that make them (the
+    editor's rule and its band), not found again by their glyphs.
+  - A new panel or popup is one entry in the list, plus its handlers.
+- **D8. The adapters' shared lifecycle** (4B).
+  - `pipe.Proc` holds what both sessions do the same way: the event queue
+    and the lock that orders it, the spawn's first event, the stdout and
+    stderr readers with their limit and their recovery, the wait that
+    reports the exit last, the line write with its hold, `Apart`,
+    `Fatal`, and `Close` with its escalation. Every message keeps its
+    words, the CLI's name in them.
+  - Each adapter keeps its protocol: its arguments and environment, its
+    mapper, what a line calls for, the handshake's hold, its answers and
+    its requests.
+- **D9. The git tests in parallel** (4C). The package's `TestMain` sets
+  git's environment once for every test: an empty global configuration,
+  no system one, a test identity. The git tests, each on its own temporary
+  repository, then call `t.Parallel`. Those that change the environment
+  (`PATH`, the proxy variables) or the package's variables stay
+  sequential. No git package of its own is needed.
+- **D10. Normalised decisions** (4D).
+  - `event.Decision` holds the owner's answers (allow, allow for the
+    session, deny, cancel), plus withdrawn, for a request the CLI ended
+    itself.
+  - The keys, the reducer and render use only these. Each adapter writes
+    them in its CLI's words, exactly as today: Claude Code's allow and deny
+    (a cancel is a deny), Codex's accept, acceptForSession, decline and
+    cancel. Each mapper reads its CLI's words back into them; a word it
+    does not know stays as it is, which the reducer keeps, as today, as an
+    expiry.
+  - The mode that the approvals command carries moves to a field of its
+    own.
+  - The mock files are written again from the probes (`TestMockFiles
+    -update`): only their decisions change.
+- **D11. Grapheme widths** (4E).
+  - `textWidth`, `cut`, the wrap, the editor's and the content's cells and
+    the hit-testing's units take grapheme clusters. A combining mark, a
+    variation selector, a zero-width joiner and what it joins, an emoji
+    modifier, a flag's second regional indicator, a tag sequence, a keycap
+    and Hangul jamo stay with their base.
+  - A cluster's width is lipgloss's, cached; a single code point's is
+    today's.
+  - The segmentation is the dashboard's own, from Go's Unicode tables, so
+    no dependency is added. Where it is unsure it keeps more together,
+    never less, so a width is never wrong.
+  - Text all in ASCII takes a path of its own, faster than today's.
+  - The editor's cursor still moves by code point; inside a cluster, it
+    is drawn on the cluster.
+- **D12. GIF's first frame** (4F).
+  - `gif.Decode` decodes the first frame only. The rest of the file is
+    walked by its blocks, without decoding them, to tell one frame from
+    several and to check the structure, as `DecodeAll` did.
+  - What is sent stays byte for byte: a single frame's file as it is, an
+    animated GIF's first frame as PNG, said so.
+  - A later frame's damaged pixel data, never used, is no longer a
+    refusal.
+
+### Criteria
+
+1. **49.1 The event queue.** The D1 tests pass on today's code and again
+   at the end. A mutant of `Forward` that skips the hold, and one that
+   numbers the dropped events, each fail them.
+2. **49.2 The write queue.** The D2 tests pass on today's code and at the
+   end. A mutant that runs each write in its own goroutine fails the order
+   test.
+3. **49.3 The overlay matrix.**
+   - It covers the ten layers alone, and each ordered pair the owner can
+     reach.
+   - On today's code it fails only in the cells the progress log records as
+     defects.
+   - At the end it passes whole.
+4. **49.4 Tool rows memoised.**
+   - A frame of 30 `Write` calls with 100 KB inputs, drawn again with
+     nothing changed, parses no input (the memo counts its misses).
+   - A call's new input or status shows in the next frame.
+   - Two frames after a call left the screen, the memo no longer holds it.
+5. **49.5 The memos change no frame.**
+   - Every mock file and probe replay, and the long session, drawn after
+     each event with the memo and without it: the same frames.
+   - The 220 golden frames unchanged.
+6. **49.6 Scans bounded.**
+   - Once built, the memo's index takes in a tool added to the long
+     session's state by visiting that tool alone (it counts its visits).
+   - `Animating` and `ActivityOn` visit no entry but the thinking ones.
+   - Zone A draws only its window's rows.
+7. **49.7 Performance.** The timing step, run alone as
+   `doc/evaluation.md` says, before and after, on this machine:
+   - `TestLongSession`: the last tenth's p95 at most 1.5 times the first
+     tenth's (today 3.5 times); the end's p95 at most half of today's, in
+     the same conditions;
+   - `TestThinkingFrame`: p95 at most half of today's 8.14 ms;
+   - `TestToolsToFrame`: p95 at most 16 ms, measured on today's code first;
+   - every other test within its target, none slower than today's beyond
+     the step's noise (the old tree timed in turn when one looks slower).
+8. **49.8 One owner of the overlays.**
+   - `Draw`, the keys, the mouse, `motionFilter` and the mouse mode read
+     the layers from `render.Layers` only; no other place lists the
+     overlays' precedence.
+   - The overlay matrix passes, its defects fixed. The key and mouse suites
+     and the golden frames are unchanged.
+9. **49.9 The shared lifecycle.**
+   - Both adapters' sessions run on `pipe.Proc`, and the code it replaces
+     is gone from both.
+   - Every adapter test passes unchanged, and the probe replays give the
+     same events. Each message the lifecycle writes is word for word
+     today's.
+   - `pipe.Proc`'s own tests: the exit is the last event; a reader still
+     holding the pipes is given up after 2 s, with its message; `Close`
+     escalates at its steps.
+10. **49.10 The git tests.**
+    - `go test ./internal/input -count=1` within 60 s (today 148 s), every
+      test passing.
+    - It passes three times in a row (`-count=3`), and under `-race`.
+    - No git test touches a repository outside its temporary folders.
+11. **49.11 Normalised decisions.**
+    - No CLI word for a decision is left in `internal/state`,
+      `internal/app` or `internal/render`.
+    - For each decision and each CLI, the line written is byte for byte
+      today's: a table test over both adapters' `Answer`, run first on
+      today's code.
+    - The approval tests pass unchanged and the golden frames are
+      unchanged; the mock files differ in their decisions only.
+12. **49.12 Grapheme widths.**
+    - For combining marks, VS15 and VS16, a skin tone, ZWJ sequences,
+      flags, a tag sequence, a keycap, Hangul jamo, an Indic conjunct and
+      CJK: `textWidth` equals `lipgloss.Width`, and `cut` never splits a
+      cluster and keeps the most that fits. `FuzzTextWidth` runs 60 s
+      without either disagreeing.
+    - A conversation, a tool row, a file and a commit message holding
+      them: every row of the frame is exactly the screen's width by
+      `lipgloss.Width`. On today's code, the rows with a ❤️, a 👍🏽, a
+      👨‍👩‍👦 or a 🇫🇷 are not.
+    - The golden frames unchanged; the keystroke and stream timing tests
+      within their targets.
+13. **49.13 GIF's first frame.**
+    - The test GIFs send the same bytes as today: the single frame's file,
+      and the animated one's first frame as PNG.
+    - A 200-frame 640x480 animated GIF is inspected with under 8 MiB
+      allocated (today's measured first).
+    - A file cut after its first frame, or holding an unknown block, is
+      refused, as today.
+    - `FuzzInspectData` runs 60 s without a crash.
+14. **49.14 No regression.**
+    - Build, vet and gofmt clean; `go test ./...` passes after the last
+      document edit.
+    - The golden frames and the probe replays unchanged; the mock files
+      changed by D10 only.
+    - `-race` passes on input, app, state, render, the providers and pipe.
+15. **49.15 Mutations.** Each change is broken on purpose through `go test
+    -overlay`, and each mutant is caught.
+16. **49.16 Windows Terminal.** At 208x59 and 120x40, on a temporary
+    project and repository:
+    - each popup and window opened in turn, and over each other as the
+      matrix pairs them: the frames as before;
+    - a mock replay holding ❤️, 👍🏽, 👨‍👩‍👦 and 🇫🇷 in a message: zone B's
+      border straight on every row;
+    - an animated GIF attached: its first frame previewed, and named
+      "animated: the first frame is sent".
+
+### Steps
+
+1. The plan and brief amendment 50.
+2. Phase 0: D1, D2, D3 (49.1 to 49.3).
+3. Phase 3: D4 to D6 (49.4 to 49.7).
+4. Phase 4: D7 and D8 (49.8, 49.9); D9 and D10 (49.10, 49.11); D11 and
+   D12 (49.12, 49.13).
+5. The checks (49.14, 49.15), Windows Terminal (49.16), the documents, the
+   evaluation (`doc/plan49-evaluation.md`), the report.
+
+### Progress
+
+- 2026-10-25: step 1 done; step 2 in progress.
+- 2026-10-25: step 2 done (phase 0, no production change); step 3 in
+  progress.
+  - D1: `pipe/queue_test.go`, five tests in bubbles (eight producers, the
+    holds, the close, a hold across the close, 100,000 events unread), and
+    `TestSessionEventsInOrder` (2,048 deltas through the listen, then the
+    end). All pass on today's code.
+    - The last one first failed: the test fed the session's channel after
+      `readyScript`, whose `pushEvents` sends an `eventsMsg` itself, and
+      every `eventsMsg` arms a listen, so two listens shared the channel.
+      In the program only the listen makes them. The test now sends the
+      handshake through the channel too.
+  - D2: `writer_test.go`, five tests (c's cancel then interrupt, the quit's
+    order then its close, the full queue, a failure and a panic, the close
+    at once when full). The scripted session's `Answer` can be held
+    (`hold`) and logs its calls in order. All pass on today's code.
+  - Mutants through `-overlay` (`scratchpad\plan49\mutate49.mjs`): 8 of 8
+    caught (`Forward` past a hold, dropped events numbered, a push after
+    the close kept, the close dropping the queue, a dropped hold
+    released, each write in its own goroutine, a full queue waiting, the
+    close queued behind a full queue).
+  - D3: `layers_test.go`, 100 cells: the ten layers alone and the 90
+    ordered pairs, at 200x60 with Source Control docked, a frame drawn
+    after every message as the program does. Recorded first
+    (`ACC_LAYERS_RECORD`, `scratchpad\plan49\layers-today.txt`), each cell
+    reviewed. 95 hold the approved behaviour; 5 are defects, kept as
+    expected failures in `layerDefects` until D7:
+    - the commit dropdown, and the staging question, stay open under the
+      Worktrees view (Ctrl+W) and are back after it;
+    - the staging question stays open under the key overlay (F1), and
+      takes the next click there;
+    - with the model or the modes selector opened over the staging
+      question (Alt+P, F4), the next click closes the hidden question and
+      not the selector on top.
+  - The matrix's 100 cells take about 13 s and run no faster side by side:
+    `runeWidth` takes one mutex for every character past U+02FF, which
+    D11 makes lock-free.
+- 2026-10-25: step 3 (phase 3) in progress.
+  - `TestToolsToFrame` (D6) was written first and run on a clean copy of
+    today's code (`git archive HEAD`, in the scratchpad): p50 52.97 ms,
+    p95 61.12 ms, max 70.47 ms, over the 16 ms target. Each frame parsed
+    the 30 inputs of 100 KB twice for the tree's rows.
+  - D4 and D5: `render.Memo` (`memo.go`), held in `UI.Memo` and made by the
+    application, swept at each frame's end as `WrapCache` is.
+    - It reads an input once, keyed by its identity: tree rows, zone B's
+      call rows, answered approvals, the inspection's calls.
+    - It keeps an index of the turns' items, the agents' calls and their
+      children. The reducer adds `ToolOrder` and `ParentRev`; `ParentRev`
+      moves only when an agent known before changes its parent, one check
+      at the end of the agent handler. Agents and calls added since are put
+      in their places; `indexItems`, `agentTools`, `children` and
+      `currentTools`' scan of every call are now used only without a memo.
+    - It finds the thinking entries as they come; `Animating` and
+      `ActivityOn` walk those only.
+    - Zone A's rows carry what they draw (`treeRow.kind`); a row's line is
+      made by `treeRow.line` when zone A shows it, and `Tree` makes none.
+      The moving dot reads each row's first span as it would be drawn
+      (`lead`), so it picks the same rows as before without drawing them.
+    - Zone B's passes take entries by reference, and the row count is
+      looked up without a closure holding a copy of each entry (it was
+      made for every entry, every frame).
+  - Measured on its own after D4 and D5: `TestToolsToFrame` p50 1.00 ms,
+    p95 2.01 ms; `TestLongSession`'s last tenth's p95 1.01 to 1.14 times
+    the first tenth's (before about 2), its end's p95 2.0 to 2.4 ms
+    (before 5.1 to 5.3); `TestThinkingFrame` p95 5.0 to 5.3 ms. The whole
+    step's numbers come at step 5, after D11's widths.
+  - Render draws on one goroutine: `ground.on` makes tinted styles on first
+    use, writing shared maps. The new tests that drew in parallel subtests
+    (the memo's comparison, the matrix) crashed or could, so both run their
+    cells one after the other; the comparison draws every event at
+    200x60, and every third and the last also unfolded and at 80x24.
+  - Tests: `memo_test.go`. `TestMemoChangesNoFrame` replays the 13 mock
+    files and 35 recordings (5,545 events) and finds the same frames with
+    the memo and without it. `TestMemoInputs`, `TestMemoIndex`,
+    `TestMemoThinking` and `TestTreeRowsLazy` cover criteria 49.4 and
+    49.6. The golden frames are unchanged.
+  - The whole suite passed after D4 to D6.
+- 2026-10-25: step 4 (phase 4) in progress; D7 done.
+  - `render/layers.go`: `Layer`, `Layers(s, ui)` and its `Stack` (the
+    layers shown, the top one, the tooltip). `Draw` takes the full-screen
+    views and the overlays from it, and draws the frame with a popup not
+    shown closed (`Stack.only`), so nothing of it, hint or image, is drawn.
+  - `app/layers.go`: `closePopups`, called by every opener (the "+" band,
+    both selectors, the commit dropdown and the question, the draft
+    window, the file viewer, the quick open, the key overlay, the
+    Worktrees view); `closeUnshown`, the selectors' closing in `View`
+    made general (the "+" menu and the dropdown now say when they were
+    drawn).
+  - The keys go to the top layer first; a key it passes on goes to the
+    dashboard, never to a window under it: the key overlay passed Ctrl+R
+    and F to the hidden draft window before (`TestPassedKeyGoesToTheDashboard`,
+    which fails on today's code). The mouse, `motionFilter`, the mouse
+    mode, the sidebar's hover and the paste take the top layer too; a
+    paste under the key overlay, which has no field, goes nowhere (it went
+    into the hidden draft or window).
+  - The editor's rule is recorded where zone B draws it (`Screen.rule`);
+    `editorRule` no longer looks for its dashes. The dropdown's room check
+    still reads the panel's border, a check of fit rather than an anchor.
+  - The matrix passes whole, its five defects fixed; on a clean copy of
+    today's code it still fails in exactly those five. The app suite,
+    with its golden frames and key and mouse tests, passes unchanged.
+- 2026-10-25: D8 done.
+  - `pipe/proc.go`: `Proc`, made with `New` and started with `Run` once
+    the session holds it (its reader calls the session's `line`). It holds
+    the queue, session.spawned, both readers with their limit and
+    recovery, the wait and its drain, `Write` with the line's hold,
+    `Push`, `Problem`, `Apart`, `Fatal`, `Close` and its escalation; its
+    messages are the old ones with the CLI's name in them.
+  - Both sessions keep their protocol: Claude Code's `line` with the
+    handshake's hold and the read after a change, Codex's `line` with its
+    replies; `mapOut`, `holdIn`, the answers and the requests unchanged. The
+    adapters lost 464 lines and gained 61.
+  - Every adapter test passes. The two that reached into the internals now
+    moved, `TestReaderPanic` in each, drive the reader through `Proc`, with
+    the same assertions. `TestProcEndsLast`, `TestProcDrain`,
+    `TestProcCloseEscalates` and `TestProcWrite` test `Proc` on its own,
+    in bubbles.
+- 2026-10-25: D9 done.
+  - `TestMain` sets git's environment once; `gitEnv` only skips without
+    git. 17 git tests and the subtests of the five longest call
+    `t.Parallel`. Two subtests that changed the process's environment
+    became sequential tests of their own, with the same assertions:
+    `TestSourceCommitNoIdentity` (it unset git's identity with
+    `os.Unsetenv`, given back only by the old per-test `t.Setenv`) and
+    `TestSourcePushHidesPassword` (the proxy variables). Sequential still:
+    the tests that change `PATH` or the proxy variables, and those that
+    lower a package limit (`TestSourceStates`, `TestGitDiff`, the
+    Explorer's listing).
+  - Measured back to back on a clean copy of today's code and on this one:
+    345 s and 197 s for `go test ./internal/input`. The same tests of
+    today took 148 s this morning: this machine's git calls vary that
+    much with its load. One `git --version` takes about 0.26 s here; 12
+    shells running them side by side gain 1.6 times, a Go program running
+    init, add and commit from 12 goroutines 2.3 to 2.9 times. So the
+    parallel tests bring less than the cores would suggest.
+- 2026-10-25: D10 done.
+  - `event.Decision`: Allow, AllowSession, Deny, Cancel, Withdrawn. The
+    session interface's `Answer`, the state's commands, approvals and
+    actions, the keys and render use them; `Command.Mode` carries the
+    approvals command's mode, which `Decision` carried.
+  - Claude Code's adapter writes Allow as allow and Deny and Cancel as
+    deny, and refuses AllowSession, which no request of its offers; it reads
+    allow, deny and its withdrawal back. Codex's writes accept,
+    acceptForSession, decline and cancel, and reads them back, with the
+    older approved, denied and abort the reducer used to take; an
+    unknown word stays as it is and expires the approval, as before. The
+    auto-review verdict's accept and reject are read as Allow and Deny.
+  - `TestAnswerLines` in each adapter, run first on the clean copy of
+    today's code with today's words: its 9 lines (5 for Claude Code, 4 for
+    Codex) are written byte for byte the same by the new code.
+  - The four Codex mock files, written again, differ in their decisions
+    only (accept becomes allow, resolved withdrawn); Claude Code's already
+    used the dashboard's words. The tests that passed Codex's words, or
+    compared with them, now use the dashboard's; their wire lines are
+    unchanged. Plan 47's `TestUnreadableWordInMock` now expects deny for
+    both CLIs, Codex's adapter writing it as decline.
+- 2026-10-25: D11 done.
+  - `render/cluster.go`: `next` (a cluster's end and width), `joins`
+    (UAX #29's rules as the dashboard keeps them), and each code point's
+    facts (its width, lipgloss's, and its properties), measured once and
+    read without a lock under U+20000. A cluster of several code points
+    takes lipgloss's width, kept for 4,096 clusters.
+  - `textWidth` counts ASCII runs a byte at a time, steps back one byte
+    only before a mark (nothing else joins ASCII), and decodes each other
+    code point once. `cut`, a new `tailCut`, the wrap, the cells of the
+    editor, the content, the file viewer and the diff, the editor's row
+    count, the hit-testing's units, the chips' and the selector's column
+    cuts, `cellText`, `MsgAt`, `elide`, `cutRight` and the startup field
+    take clusters. The editor's cursor inside a cluster is drawn on it;
+    the plan 4 reference test now says so, and its random lines hold
+    clusters.
+  - Found on the way: lipgloss gives the soft hyphen (U+00AD) and the C1
+    controls no cell, where today's `runeWidth` counted one; a single code
+    point's width is now lipgloss's everywhere. Go 1.27's tables are
+    Unicode 17, which has 20 linkers for GB9c, not 6.
+  - Checked against uax29 v2.7.0, the segmenter lipgloss measures with, in
+    a scratch program (`scratchpad\plan49\clusters`): every code point's
+    width and properties, then 5,000,000 random strings from every class
+    of code point: no cluster of uax29's split, no width different. 5% of
+    those strings keep two of uax29's clusters together (a joiner before a
+    code point that is not a pictograph, a linker before a letter that is
+    not a consonant); none of `TestClusterWidths`' texts does.
+  - Tests: `TestClusterWidths` (15 kinds of cluster, ASCII around them or
+    not; `cut` and `tailCut` keep the most whole clusters), `FuzzTextWidth`
+    (60 s, 497,513 inputs, no disagreement with lipgloss), and
+    `TestClusterFrames` in the app: a message, a tool row, a file and a
+    commit message holding the clusters, every row exactly the screen's
+    width at 120x40 and 200x60. On a clean copy of today's code, 26 rows
+    are not. The golden frames are unchanged.
+  - `BenchmarkTextWidth`, back to back with today's code: 180 bytes of
+    ASCII 142 to 194 ns (today 255 to 282), a rule of 200 cells 2.05 to
+    2.18 µs (today 3.0 to 3.4), text mixing CJK, emoji and accents the
+    same (457 to 481 ns, today 455 to 517). The render suite takes 19 s
+    (78 to 106 s before).
+- 2026-10-25: D12 done; step 4 done, step 5 in progress.
+  - `inspectGIF` decodes the first frame with `gif.Decode`, then
+    `gifFrames` (`input/imagegif.go`) walks the file's blocks as
+    `DecodeAll` read them, without decoding pixels: it counts the frames
+    and refuses what `DecodeAll` refused of the structure, in its words.
+  - `TestGIFSent`, run first on the clean copy of today's code: five GIFs
+    (imagetest's single frame and animation, three frames of other sizes
+    and offsets with disposals and a transparent colour, frames with their
+    own colour tables and no global one, comment and plain text
+    extensions) send the same bytes, by length and SHA-256.
+  - `TestGIFRefused`, recorded the same way: cut after the first frame, no
+    trailer, an unknown block, an unknown extension, a graphic control's
+    size or terminator, a later frame's bounds, code size or data cut:
+    refused in today's words. A later frame's damaged pixels, refused
+    before ("lzw: invalid code"), are now taken: the first frame is sent.
+  - `TestGIFMemory`: a 200-frame 640x480 GIF allocates 2.6 MiB (65.8 MiB
+    on today's code).
+  - `FuzzInspectData` ran 62 s (811,610 inputs) without a crash. A new
+    `FuzzGIFFrames` checks the walk takes every GIF `DecodeAll` reads,
+    with as many frames: 61 s, 493,515 inputs, none.
+- 2026-10-25: step 5 in progress.
+  - The whole suite passed (2 min 28 s); `-race` passed on input, app,
+    state, render, the five provider packages and pipe (7 min 36 s).
+  - Mutations (`scratchpad\plan49\mutate49.mjs`, 35 mutants, phase 0's
+    eight among them): the first run caught 31. Two layer mutants (no
+    `closeUnshown`, no `closePopups`) are each caught by the whole app
+    suite, not by the matrix alone: each mechanism backs the other up, and
+    `TestSelectorNoRoom` and `TestCommitWorkflowB` pin them. Two showed test
+    gaps: `TestTreeRowsLazy` drew no call row (every turn folded), so it now
+    unfolds them too; and the cells by code point changed only where rows
+    break, not their widths, so `TestClusterCells` checks the cells, the
+    wrap and the editor's row count. Both caught after. No mutant code
+    left in the tree.
+  - Windows Terminal 1.23.20211.0 (`scratchpad\term\p49.ps1`, `p49call.ps1`):
+    - one kind of cluster a paragraph (`mkmock49b.mjs`), maximised: on
+      today's build zone B's right border breaks on the rows of the VS16
+      heart, the skin tone, the family, the flag, the keycap, the jamo
+      and the rainbow flag; on the new build it is straight on every row
+      but the Devanagari conjunct's (क्ष), which the terminal draws two
+      cells wide where lipgloss, and Bubble Tea's renderer with it,
+      counts one;
+    - each layer opened in turn and the former defects' pairs, both
+      sizes, both builds (`claude-thinking.jsonl`, a temporary repository
+      from `mkrepo49.mjs`): the frames are the same but where the defects
+      were fixed (today's build brings the staging question back after the
+      key overlay), and the 200-frame GIF attached through "Upload from
+      computer" shows its first frame and the toast "anim.gif: animated:
+      the first frame is sent" (the chip "anim.gif · 6 KB").
+  - The input package alone: 79.1 s with the CPU 23% busy before, and
+    three runs in a row pass (275 s). Its floor is the sequential tests,
+    24.5 s, then the parallel phase, which the number of git processes
+    Windows starts bounds: `TestSourceConflicts` takes 5.8 s alone and
+    38 to 64 s in the package. Splitting the two longest tests' cases into
+    parallel subtests made the package slower (100 s), so they are as D9
+    left them; criterion 49.10's 60 s is not reached. Back to back with
+    today's code on a busier machine: 188.6 s today, 114.2 s now.
+  - The timing step alone on both trees: every test within its target;
+    `TestToolsToFrame` p95 42.19 ms today, 2.40 ms now; `TestThinkingFrame`
+    2.55 ms (half of 8.14 ms is 4.07); `TestLongSession`'s last tenth 0.95
+    times its first, but its end's p95 3.00 ms against today's 5.42 ms,
+    and over eight runs in turn medians of 2.62 and 5.06 ms: 52%, not the
+    half criterion 49.7 asked. What remains is zone B's passes over every
+    entry each frame (the looks and the row counts, finding 7's
+    `look.go`), which D5 made take entries by reference without bounding.
+  - The five fuzz targets, 60 s each with the evaluation guide's flags:
+    none failed (`FuzzMapperOut` in both adapters too, D10 having changed
+    their mappers).
+  - Windows Terminal, two more passes: the Explorer, the quick open and the
+    viewer on a file of clusters; the staging question under the Worktrees
+    view and under each selector: today's build shows those defects in the
+    terminal, the new build does not.
+- 2026-10-25: step 5 done. `doc/plan49-evaluation.md`: 11 PASS, 5 FAIL
+  (49.7 and 49.10 short of their targets; 49.8, 49.9 and 49.11 on the word
+  "unchanged" about tests that changed how they call the code, not what
+  they expect). Waiting for the owner's review; nothing committed.
 
 ## Closed plans
 

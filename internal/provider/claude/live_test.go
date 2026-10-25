@@ -117,7 +117,7 @@ func (l *live) turn(r *run, text string, on func(event.Event)) (event.TurnEnd, [
 }
 
 // answer answers every approval request of the turn with decision.
-func (l *live) answer(r *run, decision string) func(event.Event) {
+func (l *live) answer(r *run, decision event.Decision) func(event.Event) {
 	return func(ev event.Event) {
 		if ev.Kind == event.ApprovalRequest {
 			a := ev.Payload.(event.Approval)

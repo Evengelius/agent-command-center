@@ -103,10 +103,13 @@ State
   Session          SessionState        (session machine)
   Conversation     []Entry             the record of zone B
   Turn             TurnState           (turn machine)
-  Agents           map[AgentKey]Agent  + Order []AgentKey
+  Agents           map[AgentKey]Agent  + Order []AgentKey, and ParentRev, the times
+                                       an agent known before changed its parent
+                                       (plan 49: render's index is built again)
   Stages           []Stage             the derived or reported stage tree
   Approvals        map[ApprovalID]Approval, Queue []ApprovalID
-  Tools            map[ToolID]ToolCall
+  Tools            map[ToolID]ToolCall + ToolOrder []ToolID, in the order they
+                                       came (plan 49)
   Telemetry        Telemetry
   Models           Models              the CLI's models, the settings in force
                                        merged from its reports, the change
@@ -125,7 +128,8 @@ Agent        {Key, Parent, Label, Kind (subagent|workflow|bash|thread),
               Tools []ToolID, Messages []Entry, Tokens, StartedAt, EndedAt,
               Retries, Error}
 Approval     {ID, Agent, Tool, Summary, Input, Diff, Options, Status,
-              RequestedAt, AnsweredAt, Answer}
+              RequestedAt, AnsweredAt, Answer (an event.Decision: allow,
+              allow-session, deny, cancel, withdrawn; plan 49)}
 Telemetry    {Quota5h, Quota7d, Context, Tokens, Cost, Model, Agents,
               Concurrency, Duration, Errors, Retries} each a Value
 Value        {Present bool, V, Unit, Origin, Source, ReceivedAt, ResetsAt,
@@ -402,6 +406,14 @@ States: `Pending`, `Answering`, `Allowed`, `Denied`, `Expired`.
 | `Answering` | writing the answer fails otherwise (pipe closed) | `Expired`; session `Crashed` | dash | dash |
 | `Answering` | the CLI withdrew the request before the answer reached it (the adapter's `provider.ErrNoPending`) | `Expired`, and the editor's status line says "the request was withdrawn before the answer reached it"; the session goes on, the withdrawal arriving before or after the failure (plan 47) | dash: the withdrawal is `control_cancel_request` (**P**, P303e) | dash: `serverRequest/resolved` for a request not answered |
 | `Pending` | turn ends, CLI resolves it, or session ends | `Expired` | dash | dash: `serverRequest/resolved` for a request not answered (**P** for answered ones, P6b line 39) |
+
+The owner's answers are the dashboard's own decisions, `event.Decision`
+(plan 49, design D10): allow, allow for the session, deny and cancel, and
+withdrawn for a request the CLI ended itself. The words in the table are
+what each adapter writes for them, byte for byte as before plan 49, and
+reads back into them; the unreadable request is answered with deny, which
+Codex's adapter writes as `decline`. A word an adapter does not know stays
+as it is and expires the approval.
 
 Invalid: a second answer to the same id is ignored and logged; the CLI's
 withdrawal of an approval already ended is ignored, not logged (plan 47);

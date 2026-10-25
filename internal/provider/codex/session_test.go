@@ -469,11 +469,22 @@ func forbidden(line string) string {
 			Decision any `json:"decision"`
 		}
 		_ = json.Unmarshal(m.Result, &d)
-		if s, ok := d.Decision.(string); !ok || !answers[s] {
+		if s, ok := d.Decision.(string); !ok || !wireWord(s) {
 			return fmt.Sprintf("decision %v", d.Decision)
 		}
 	}
 	return ""
+}
+
+// wireWord says w is one of the words Codex takes as a decision, as the
+// adapter writes them (plan 49, design D10).
+func wireWord(w string) bool {
+	for _, v := range answers {
+		if v == w {
+			return true
+		}
+	}
+	return false
 }
 
 // turnSandboxForbidden checks the sandboxPolicy of turn/start and
@@ -633,24 +644,26 @@ func TestHandshakeApprovalInterrupt(t *testing.T) {
 	if req.ID != "0" || req.Tool != "fileChange" || ev.Agent != "" || r.st.Turn.Phase != state.WaitingApproval {
 		t.Errorf("request %+v agent %q, turn %q", req, ev.Agent, r.st.Turn.Phase)
 	}
-	for _, d := range []string{"allow", "deny", "approve"} {
+	// Codex's own words, and the CLI's withdrawal, are no owner's answer:
+	// the adapter takes the dashboard's (plan 49, design D10).
+	for _, d := range []event.Decision{"accept", "approve", event.Withdrawn} {
 		if err := r.sess.Answer(req.ID, d); err == nil {
 			t.Errorf("answer %q accepted", d)
 		}
 	}
-	if err := r.sess.Answer("1", "accept"); !errors.Is(err, provider.ErrNoPending) || err.Error() != `no pending request "1"` {
+	if err := r.sess.Answer("1", event.Allow); !errors.Is(err, provider.ErrNoPending) || err.Error() != `no pending request "1"` {
 		t.Errorf("an unknown request answered: %v, want ErrNoPending (plan 47)", err)
 	}
-	if err := r.sess.Answer(req.ID, "accept"); err != nil {
+	if err := r.sess.Answer(req.ID, event.Allow); err != nil {
 		t.Fatal(err)
 	}
 	if end := r.wait(event.TurnCompleted).Payload.(event.TurnEnd); end.Outcome != "completed" {
 		t.Errorf("turn %+v", end)
 	}
-	if err := r.sess.Answer(req.ID, "accept"); !errors.Is(err, provider.ErrNoPending) {
+	if err := r.sess.Answer(req.ID, event.Allow); !errors.Is(err, provider.ErrNoPending) {
 		t.Errorf("an answered request answered again: %v, want ErrNoPending (plan 47)", err)
 	}
-	if a := r.st.Approvals["0"]; a == nil || a.Status != state.Allowed || a.Answer != "accept" {
+	if a := r.st.Approvals["0"]; a == nil || a.Status != state.Allowed || a.Answer != event.Allow {
 		t.Errorf("approval %+v", a)
 	}
 
@@ -733,7 +746,7 @@ func TestModelFallback(t *testing.T) {
 
 	r.send("make hello.txt")
 	req := r.wait(event.ApprovalRequest).Payload.(event.Approval)
-	if err := r.sess.Answer(req.ID, "accept"); err != nil {
+	if err := r.sess.Answer(req.ID, event.Allow); err != nil {
 		t.Fatal(err)
 	}
 	if end := r.wait(event.TurnCompleted).Payload.(event.TurnEnd); end.Outcome != "completed" {
@@ -792,7 +805,7 @@ func TestChildApproval(t *testing.T) {
 	if ev.Agent != p7Child || r.st.Agents[p7Child] == nil {
 		t.Fatalf("request from %q, agents %v", ev.Agent, r.st.Agents)
 	}
-	if err := r.sess.Answer(ev.Payload.(event.Approval).ID, "accept"); err != nil {
+	if err := r.sess.Answer(ev.Payload.(event.Approval).ID, event.Allow); err != nil {
 		t.Fatal(err)
 	}
 	r.waitFor("main turn end", func(ev event.Event) bool { return ev.Kind == event.TurnCompleted && ev.Agent == "" })
@@ -831,7 +844,7 @@ func TestAnswersEchoTheID(t *testing.T) {
 	r.limits()
 	r.send("hi")
 	first := r.wait(event.ApprovalRequest).Payload.(event.Approval)
-	if err := r.sess.Answer(first.ID, "decline"); err != nil {
+	if err := r.sess.Answer(first.ID, event.Deny); err != nil {
 		t.Fatal(err)
 	}
 	second := r.wait(event.ApprovalRequest).Payload.(event.Approval)
@@ -890,11 +903,11 @@ func TestUnreadableRequest(t *testing.T) {
 	if a := r.wait(event.ApprovalRequest).Payload.(event.Approval); a.Problem == "" {
 		t.Fatalf("request %+v is readable", a)
 	}
-	if err := r.sess.Answer("5", "accept"); err == nil {
+	if err := r.sess.Answer("5", event.Allow); err == nil {
 		t.Error("an unreadable request was accepted")
 	}
 	a := r.st.Approvals["5"]
-	if a == nil || a.Status != state.Denied || a.Answer != "decline" {
+	if a == nil || a.Status != state.Denied || a.Answer != event.Deny {
 		t.Fatalf("approval %+v", a)
 	}
 	if err := r.sess.Answer("5", a.Answer); err != nil {
@@ -1170,7 +1183,7 @@ func TestSetApprovalMode(t *testing.T) {
 	if r.st.Mode() != state.ModeAuto {
 		t.Errorf("mode %q after the turn", r.st.Mode())
 	}
-	if err := r.sess.Answer(req.ID, "accept"); err != nil {
+	if err := r.sess.Answer(req.ID, event.Allow); err != nil {
 		t.Fatal(err)
 	}
 	r.wait(event.TurnCompleted)
@@ -1239,10 +1252,10 @@ func TestModesBetweenTurns(t *testing.T) {
 		{event.ModeManual, "readOnly", "on-request", "user"},
 	} {
 		cmds := r.st.Do(state.ChooseMode{Mode: c.mode, Confirmed: true, Capable: true})
-		if len(cmds) != 1 || cmds[0].Kind != state.CmdSetApprovals || cmds[0].Decision != c.mode {
+		if len(cmds) != 1 || cmds[0].Kind != state.CmdSetApprovals || cmds[0].Mode != c.mode {
 			t.Fatalf("%s: commands %+v", c.mode, cmds)
 		}
-		if err := r.sess.SetApprovalMode(cmds[0].Decision); err != nil {
+		if err := r.sess.SetApprovalMode(cmds[0].Mode); err != nil {
 			t.Fatal(err)
 		}
 		if r.st.Mode() != from || r.st.Session.ApprovalRequested != c.mode {

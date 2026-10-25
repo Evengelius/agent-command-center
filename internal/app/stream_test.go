@@ -67,6 +67,11 @@ type scriptSession struct {
 	answerErr error
 	closes    int
 	sendPanic string // Send panics with it when set (plan 48, design D5)
+	// The write queue's tests (plan 49, design D2): Answer waits for gate
+	// to close when set, and order logs the answers, interrupts and closes
+	// in the order they came.
+	gate  chan struct{}
+	order []string
 }
 
 func newScriptSession() *scriptSession { return &scriptSession{events: make(chan event.Event, 4096)} }
@@ -82,10 +87,17 @@ func (s *scriptSession) Send(msg provider.Message) error {
 	s.msgs = append(s.msgs, msg)
 	return nil
 }
-func (s *scriptSession) Answer(id, decision string) error {
+func (s *scriptSession) Answer(id string, d event.Decision) error {
+	s.mu.Lock()
+	gate := s.gate
+	s.mu.Unlock()
+	if gate != nil {
+		<-gate // the CLI holding the answer, as a full pipe would
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.answers = append(s.answers, id+" "+decision)
+	s.answers = append(s.answers, id+" "+string(d))
+	s.order = append(s.order, "answer "+id+" "+string(d))
 	return s.answerErr
 }
 func (s *scriptSession) AnswerQuestion(id string, answers map[string]string) error {
@@ -99,6 +111,7 @@ func (s *scriptSession) Interrupt() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.interrupts++
+	s.order = append(s.order, "interrupt")
 	return nil
 }
 func (s *scriptSession) Refresh() error { return nil }
@@ -127,6 +140,7 @@ func (s *scriptSession) SetModelSettings(r provider.ModelRequest) error {
 func (s *scriptSession) Close(context.Context) error {
 	s.mu.Lock()
 	s.closes++
+	s.order = append(s.order, "close")
 	s.mu.Unlock()
 	s.close.Do(func() { close(s.events) }) // as a real session ends its events
 	return nil
@@ -136,6 +150,21 @@ func (s *scriptSession) closed() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.closes
+}
+
+// calledInOrder is the answers, interrupts and closes so far, in order.
+func (s *scriptSession) calledInOrder() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.order...)
+}
+
+// hold makes Answer wait until the returned channel closes.
+func (s *scriptSession) hold() chan struct{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.gate = make(chan struct{})
+	return s.gate
 }
 
 func (s *scriptSession) calls() (sent, answers []string, interrupts int) {
