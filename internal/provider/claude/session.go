@@ -163,9 +163,18 @@ func (s *Session) push(ev event.Event) {
 	s.mu.Unlock()
 }
 
-// read maps stdout line by line until end of file.
+// read maps stdout line by line until end of file. A panic in the mapping is
+// the session's fatal error, and the rest of stdout is read and dropped, so
+// Claude Code never blocks on it before the dashboard closes it (plan 48,
+// design D5; audit finding 6).
 func (s *Session) read(r io.Reader) {
 	br := bufio.NewReaderSize(r, 64<<10)
+	defer func() {
+		if v := recover(); v != nil {
+			s.fatal("reading Claude Code's output failed", v)
+			_, _ = io.Copy(io.Discard, br)
+		}
+	}()
 	for {
 		l, size, over, err := pipe.ReadLine(br, MaxLine)
 		switch {
@@ -173,41 +182,21 @@ func (s *Session) read(r io.Reader) {
 			s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{
 				Message: fmt.Sprintf("a line of %d bytes from Claude Code was skipped (limit %d MiB)", size, MaxLine>>20)}})
 		case len(bytes.TrimSpace(l)) > 0:
-			s.mu.Lock()
-			evs := s.m.Out(l)
-			ready := false
-			for _, ev := range evs {
-				s.track(ev)
-				ready = ready || ev.Kind == event.SessionReady
-			}
-			if !ready {
-				for _, ev := range evs {
-					s.q.Push(ev)
-				}
-				due := s.m.ReadDue()
-				s.mu.Unlock()
-				if due {
-					// A change was answered: the read that says what is in
-					// force (plan 34).
-					s.readSettings()
-				}
-				break
-			}
-			// The handshake's answer: its events are held while the settings
-			// read and "/usage" are written, so both are asked for before the
-			// owner can write anything, and their Sent events follow
-			// session.ready (plan 24, amendment 23; P24u; plan 34). A failed
-			// write is an event of its own.
-			held := s.q.Hold(evs)
-			s.mu.Unlock()
-			serr := s.control("get_settings", "")
-			werr := s.readUsage()
-			s.q.Release(held, true)
-			if serr != nil {
-				s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "model settings not asked for: " + serr.Error()}})
-			}
-			if werr != nil {
-				s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "usage report not asked for: " + werr.Error()}})
+			held, ready, due := s.mapOut(l)
+			switch {
+			case ready:
+				// The handshake's answer: its events are held while the
+				// settings read and "/usage" are written, so both are asked
+				// for before the owner can write anything, and their Sent
+				// events follow session.ready (plan 24, amendment 23; P24u;
+				// plan 34). They are written apart: the reader never waits on
+				// stdin, which Claude Code may not be reading while its stdout
+				// is full (plan 48, design D3; audit finding 9).
+				s.apart("asking for the handshake's reads", func() { s.handshakeReads(held) })
+			case due:
+				// A change was answered: the read that says what is in force
+				// (plan 34), written apart.
+				s.apart("asking for the model settings", s.readSettings)
 			}
 		}
 		if err != nil {
@@ -216,6 +205,61 @@ func (s *Session) read(r io.Reader) {
 			}
 			return
 		}
+	}
+}
+
+// mapOut maps one line of stdout under the lock, released however the
+// mapping ends (plan 48, design D5), and queues its events: held, and ready
+// true, when the line is the handshake's answer; due when a settings read is
+// due.
+func (s *Session) mapOut(l []byte) (held []*pipe.Item, ready, due bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	evs := s.m.Out(l)
+	for _, ev := range evs {
+		s.track(ev)
+		ready = ready || ev.Kind == event.SessionReady
+	}
+	if ready {
+		return s.q.Hold(evs), true, false
+	}
+	for _, ev := range evs {
+		s.q.Push(ev)
+	}
+	return nil, false, s.m.ReadDue()
+}
+
+// apart runs f in a goroutine of its own, as the reader's writes are run
+// (design D3). A panic in f is the session's fatal error, never the end of
+// the program (plan 48, design D5).
+func (s *Session) apart(what string, f func()) {
+	go func() {
+		defer func() {
+			if v := recover(); v != nil {
+				s.fatal(what+" failed", v)
+			}
+		}()
+		f()
+	}()
+}
+
+// fatal queues a recovered panic as the session's fatal error: the dashboard
+// shows it as it ends the session and closes Claude Code (plan 48, design D5).
+func (s *Session) fatal(what string, v any) {
+	s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: what + ": " + provider.Recovered(v), Fatal: true}})
+}
+
+// handshakeReads writes the handshake's settings read and "/usage", then lets
+// the handshake's held events go; a failed write is an event of its own.
+func (s *Session) handshakeReads(held []*pipe.Item) {
+	serr := s.control("get_settings", "")
+	werr := s.readUsage()
+	s.q.Release(held, true)
+	if serr != nil {
+		s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "model settings not asked for: " + serr.Error()}})
+	}
+	if werr != nil {
+		s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: "usage report not asked for: " + werr.Error()}})
 	}
 }
 
@@ -317,19 +361,26 @@ func (s *Session) writeWith(msg any, in func([]byte) []event.Event) error {
 	if s.inClosed.Load() {
 		return errors.New("Claude Code's input is closed")
 	}
-	s.mu.Lock()
-	evs := in(bytes.TrimRight(b.Bytes(), "\n"))
-	for _, ev := range evs {
-		s.track(ev)
-	}
-	held := s.q.Hold(evs)
-	s.mu.Unlock()
+	held := s.holdIn(bytes.TrimRight(b.Bytes(), "\n"), in)
 	_, err := s.stdin.Write(b.Bytes())
 	s.q.Release(held, err == nil)
 	if err != nil {
 		return fmt.Errorf("not delivered to Claude Code: %w", err)
 	}
 	return nil
+}
+
+// holdIn maps a line the dashboard writes under the lock, released however
+// the mapping ends (plan 48, design D5); its events are held until the line
+// is written.
+func (s *Session) holdIn(l []byte, in func([]byte) []event.Event) []*pipe.Item {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	evs := in(l)
+	for _, ev := range evs {
+		s.track(ev)
+	}
+	return s.q.Hold(evs)
 }
 
 // control sends one control request; body is its fields after the subtype.

@@ -66,6 +66,7 @@ type scriptSession struct {
 	// What Answer returns, and the Close calls (plan 47, design D2).
 	answerErr error
 	closes    int
+	sendPanic string // Send panics with it when set (plan 48, design D5)
 }
 
 func newScriptSession() *scriptSession { return &scriptSession{events: make(chan event.Event, 4096)} }
@@ -74,6 +75,9 @@ func (s *scriptSession) Events() <-chan event.Event { return s.events }
 func (s *scriptSession) Send(msg provider.Message) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.sendPanic != "" {
+		panic(s.sendPanic)
+	}
 	s.sent = append(s.sent, msg.Text)
 	s.msgs = append(s.msgs, msg)
 	return nil

@@ -314,6 +314,8 @@ States: `Spawning`, `Handshaking`, `Ready`, `Closing`, `Closed`, `Crashed`.
 | `Closing` | process exited with a message still `Submitted` | `Closed`; the message goes back to the editor and the stored draft (ASM-23) | dash | dash |
 | `Closing` | 5 s, then 5 s more, elapsed | forced kill, then `Closed` | **P** job kill mid-turn, 41 ms, resumable (plan 4, L1 (g); CC-10 q13) | **P** job kill mid-turn, 24 ms, no process left (plan 4, L3; CX-10 q8) |
 | `Ready`, `Handshaking` | process exited unexpectedly or stdout EOF | `Crashed` | dash | dash |
+| `Spawning`, `Handshaking`, `Ready` | a panic recovered: an adapter's error marked `Fatal`, or the application's in a write (`Panicked`) | `Crashed`, the message as the reason; the CLI closed (plan 48) | dash | dash |
+| `Closing`, `Closed`, `Crashed` | a panic recovered | stays; the message kept as an error, so the owner's quit still ends (plan 48) | dash | dash |
 
 Invalid: a user message, approval answer or interrupt while not `Ready` is
 refused with a visible notice, and the draft is kept; events read after
@@ -417,7 +419,7 @@ States: `Started`, `Running`, `Completed`, `Failed`, `Denied`,
 | From | Trigger | To | Claude Code | Codex |
 | - | - | - | - | - |
 | (none) | `tool.started` | `Started` | **P** `tool_use` (P2) | **P** `item/started` (P6b) |
-| `Started` | output or progress | `Running` | **D** `tool_progress` heartbeats | **P** `item/commandExecution/outputDelta` (P7b; none in P6b or P7) |
+| `Started` | output or progress | `Running`; a streamed output keeps its last 64 KiB, the bytes dropped counted, until the completion's output replaces it (plan 48) | **D** `tool_progress` heartbeats | **P** `item/commandExecution/outputDelta` (P7b; none in P6b or P7) |
 | `Started`, `Running` | `tool.completed` without error | `Completed` | **P** `tool_result` (P2) | **P** `item/completed` (P6b) |
 | `Started`, `Running` | `tool.completed` with an error | `Failed` | **D** `is_error` | **D** `status:"failed"` |
 | `Started` | its approval denied | `Denied` | **D** | **D** |

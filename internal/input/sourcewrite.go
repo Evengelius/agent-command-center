@@ -150,6 +150,9 @@ func (g GitCLI) exec(dir string, stdin []byte, env []string, sub string, args []
 		disarm := stop.arm(cmd.Process.Pid, locks)
 		err = cmd.Wait()
 		disarm()
+		if errors.Is(err, exec.ErrWaitDelay) {
+			err = nil // git ended with 0; a child kept its pipes (gitWaitDelay)
+		}
 	}
 	res := gitResult{out: out.String(), errOut: errb.String()}
 	var ee *exec.ExitError

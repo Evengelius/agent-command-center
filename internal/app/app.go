@@ -832,7 +832,16 @@ func (m *Model) detect() tea.Cmd {
 				ctx, cancel := context.WithTimeout(context.Background(), limit)
 				defer cancel()
 				done := make(chan provider.Detection, 1)
-				go func() { done <- p.Detect(ctx) }()
+				go func() {
+					// A panic in the detection is its CLI's problem, never the
+					// program's end (plan 48, design D5; audit finding 6).
+					defer func() {
+						if v := recover(); v != nil {
+							done <- provider.Detection{ID: p.ID(), Name: p.DisplayName(), Problem: "detection failed: " + provider.Recovered(v)}
+						}
+					}()
+					done <- p.Detect(ctx)
+				}()
 				select {
 				case d := <-done:
 					found[i] = d

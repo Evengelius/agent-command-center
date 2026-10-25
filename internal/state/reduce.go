@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
 )
@@ -185,6 +186,9 @@ func (s *State) apply(ev event.Event) []Command {
 		}
 		return nil
 	case event.Problem:
+		if ev.Kind == event.Error && p.Fatal {
+			return s.fatal(ev, p.Message)
+		}
 		// A refused request the session works without never ends the
 		// handshake (plan 46, design D2); any other error does.
 		if ev.Kind == event.Error && s.Session.Phase == Handshaking && !p.Optional {
@@ -321,6 +325,19 @@ func (s *State) ended(ev event.Event, p event.Ended) []Command {
 		return cmds
 	}
 	return s.crash(ev, "the CLI exited unexpectedly", false)
+}
+
+// fatal is a panic an adapter or the application recovered (plan 48, design
+// D5): a session starting or ready crashes, msg the reason, and its CLI is
+// closed. Otherwise msg is only kept as an error: the owner's quit still
+// ends the program, and an ended session stays as it ended.
+func (s *State) fatal(ev event.Event, msg string) []Command {
+	switch s.Session.Phase {
+	case Spawning, Handshaking, Ready:
+		return s.crash(ev, msg, true)
+	}
+	s.Errors = appendBounded(s.Errors, ErrorEntry{Seq: ev.Seq, At: ev.At, Message: msg}, MaxErrors)
+	return nil
 }
 
 // crash moves the session to Crashed with its consequences on the other
@@ -496,7 +513,12 @@ func (s *State) tool(ev event.Event, p event.Tool) []Command {
 			t.Status = ToolRunning
 		}
 		if p.Output != "" {
-			t.Output += p.Output
+			// Only the tail is kept: each delta copied the whole output, on
+			// the loop that draws the screen (plan 48, design D2; audit
+			// finding 7a).
+			var cut int
+			t.Output, cut = liveTail(t.Output + p.Output)
+			t.OutputCut += int64(cut)
 		}
 	case event.ToolCompleted:
 		final := ToolCompleted
@@ -511,10 +533,34 @@ func (s *State) tool(ev event.Event, p event.Tool) []Command {
 			t.History = append(t.History, "second completion ignored")
 			return nil
 		}
-		t.Status, t.Output, t.EndedAt, t.Origin = final, p.Output, ev.At, ev.Origin
+		t.Status, t.Output, t.OutputCut, t.EndedAt, t.Origin = final, p.Output, 0, ev.At, ev.Origin
 		t.ExitCode, t.HasExitCode = p.ExitCode, p.HasExitCode
 	}
 	return nil
+}
+
+// MaxLiveOutput is the most of a running call's streamed output the state
+// keeps, its tail; the completed call's output replaces it whole (plan 48,
+// design D2).
+const MaxLiveOutput = 64 << 10
+
+// liveTail is out's last MaxLiveOutput bytes or fewer, from a line's start
+// when one begins in them, else from a character's, and the bytes dropped.
+func liveTail(out string) (string, int) {
+	if len(out) <= MaxLiveOutput {
+		return out, 0
+	}
+	cut := len(out) - MaxLiveOutput
+	switch i := strings.IndexByte(out[cut:], '\n'); {
+	case out[cut-1] == '\n': // a line starts there
+	case i >= 0 && cut+i+1 < len(out):
+		cut += i + 1
+	default:
+		for cut < len(out) && !utf8.RuneStart(out[cut]) {
+			cut++
+		}
+	}
+	return out[cut:], cut
 }
 
 // ensureAgent returns the node of a key, creating an unannounced one.

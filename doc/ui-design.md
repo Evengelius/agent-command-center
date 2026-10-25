@@ -1057,8 +1057,12 @@ events (events-and-state.md, Conversation record); nothing is simulated.
     no notification of an agent's command separates the streams, so the
     error line cannot be singled out; the exit code comes from the item's
     `exitCode`, never parsed from the text, and a failing command most often
-    ends with its error. Enter still shows the whole output; Claude Code's
-    failures and Codex's without an exit code keep the first-line rule;
+    ends with its error. Enter still shows the whole output. While a Codex
+    command runs, only the last 64 KiB of its streamed output are kept, and
+    the inspection and the full view open it with "… 139 KB of earlier
+    output not kept" until the completed item's output replaces it whole
+    (plan 48, design D2). Claude Code's failures and Codex's without an
+    exit code keep the first-line rule;
   - an agent's launch is its Agent call's row, `✓ Agent  general-purpose ·
     <description>` (the agent's own text and calls stay in C and in
     inspection: subagent text is not streamed by Claude Code,
@@ -2378,6 +2382,14 @@ the agent that asked, and marks that agent "!" in A and a pink "●" in C.
   bold on a dark pink ground with half-block ends (in brackets on a
   16-colour terminal); once F2 gives the card the focus, its keys in its
   place.
+- **Format characters** (plan 48, design D6; audit finding 8): on the
+  card, its answered row, a question's lines and the request's full view
+  (and a tool call's full view, which shows its input the same way), the
+  bidi controls (U+061C, U+200E, U+200F, U+202A to U+202E, U+2066 to
+  U+2069) and the zero-width spaces (U+200B, U+2060, U+FEFF) are drawn as
+  `<U+XXXX>`, so a request reads as it runs. The zero-width joiner stays,
+  for emoji sequences and the scripts that need it. Elsewhere text is drawn
+  as it comes, its C0 and C1 controls as everywhere (`^X`, `<XX>`).
 - **Answers** (keys act only when the card has focus; F2 gives it focus,
   oldest pending first; ↑ ↓ move between pending cards):
 

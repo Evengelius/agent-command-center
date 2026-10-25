@@ -61,7 +61,7 @@ func viewer(s *state.State, ui UI, ap *state.Approval, sc *Screen) []line {
 	if ap.Status != state.Pending {
 		keys = scrollKeys
 	}
-	head := spread(line{deco(" ◀ back (Esc)   ", stTitle), deco(label, st), deco("  "+approvalWho(s, ap)+" · "+ap.Tool, stBold)}, outcome, w)
+	head := spread(line{deco(" ◀ back (Esc)   ", stTitle), deco(label, st), deco("  "+revealed(approvalWho(s, ap)+" · "+ap.Tool), stBold)}, outcome, w)
 	return fullScreen(s, ui, sc, head, viewerBodyFor(s, ui, ap, w-2), keys)
 }
 
@@ -73,24 +73,28 @@ func viewerBody(s *state.State, ap *state.Approval, w int) []line {
 
 // viewerBodyFor is viewerBody with the owner's choices of a question.
 func viewerBodyFor(s *state.State, ui UI, ap *state.Approval, w int) []line {
-	target, _, body := approvalDetail(ap)
+	raw, _, body := approvalDetail(ap)
+	// The request's format characters are drawn, never applied (plan 48,
+	// design D6), here and in a tool call's full view, which shows its input
+	// as this view does.
+	target, body := revealed(raw), revealedLines(body)
 	var out []line
 	if target != "" {
 		out = append(out, wrapped(target, w, stBold, "")...)
 	}
-	if ap.Summary != "" && ap.Summary != target {
-		out = append(out, wrapped(ap.Summary, w, stText, "")...)
+	if ap.Summary != "" && ap.Summary != raw {
+		out = append(out, wrapped(revealed(ap.Summary), w, stText, "")...)
 	}
 	if ap.Problem != "" {
-		out = append(out, wrapped(ap.Problem, w, stFailed, "")...)
+		out = append(out, wrapped(revealed(ap.Problem), w, stFailed, "")...)
 	}
 	if diffs := approvalDiffs(s, ap); len(diffs) > 0 {
 		for _, d := range diffs {
 			if len(out) > 0 {
 				out = append(out, line{})
 			}
-			if hideUser(d.path) != target { // Claude Code names the file as the target
-				out = append(out, line{sp(hideUser(d.path), stBold), sp("  "+d.kind, stGrey)}.fit(w))
+			if hideUser(d.path) != raw { // Claude Code names the file as the target
+				out = append(out, line{sp(revealed(hideUser(d.path)), stBold), sp("  "+d.kind, stGrey)}.fit(w))
 			}
 			for _, l := range d.lines {
 				st := stText
@@ -100,7 +104,7 @@ func viewerBodyFor(s *state.State, ui UI, ap *state.Approval, w int) []line {
 				case strings.HasPrefix(l, "-"):
 					st = stFailed
 				}
-				out = append(out, wrapped(l, w, st, "  ")...)
+				out = append(out, wrapped(revealed(l), w, st, "  ")...)
 			}
 		}
 		return out
@@ -246,6 +250,9 @@ func toolView(s *state.State, ui UI, e state.Entry, back span, w int) (line, []l
 	body = append(body, line{}, line{deco("OUTPUT", stBold)})
 	if tc.Output == "" {
 		return head, append(body, plain("no output", stGrey))
+	}
+	if tc.OutputCut > 0 {
+		body = append(body, plain(cutNote(tc.OutputCut), stGrey))
 	}
 	for _, l := range strings.Split(strings.TrimRight(tc.Output, "\n"), "\n") {
 		body = append(body, wrapped(l, w, stText, "  ")...)

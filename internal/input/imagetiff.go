@@ -12,6 +12,31 @@ import (
 // 8 bits a sample, RGB, RGBA or grayscale, chunky, in strips. A compressed
 // or any other TIFF is refused by name; a DNG is a camera raw, refused.
 
+// tiffTags are the tags the reader uses: the size, the samples and their
+// bits, the compression, the photometric interpretation, the strips, the
+// planar configuration and DNG's version.
+var tiffTags = map[uint16]bool{256: true, 257: true, 258: true, 259: true, 262: true, 273: true, 277: true, 279: true, 284: true, 50706: true}
+
+// tiffEntry is the first directory entry of a tag the reader uses, its count
+// values of size bytes read from src when used, never copied (plan 48, design
+// D1; audit finding 2).
+type tiffEntry struct {
+	bo          binary.ByteOrder
+	size, count int
+	src         []byte
+}
+
+// at is the entry's value k, an integer.
+func (e tiffEntry) at(k int) uint32 {
+	switch e.size {
+	case 1:
+		return uint32(e.src[k])
+	case 2:
+		return uint32(e.bo.Uint16(e.src[k*2:]))
+	}
+	return e.bo.Uint32(e.src[k*4:])
+}
+
 // tiffCompression names the compression values a TIFF may carry.
 var tiffCompression = map[uint32]string{2: "CCITT", 3: "T4", 4: "T6", 5: "LZW", 6: "JPEG", 7: "JPEG", 8: "Deflate", 32773: "PackBits", 32946: "Deflate"}
 
@@ -40,11 +65,16 @@ func decodeTIFF(b []byte) (*image.NRGBA, error) {
 	if ifd+2+n*12 > len(b) {
 		return nil, errors.New("truncated IFD")
 	}
-	// The tags: each entry's values, read as integers.
-	tags := map[uint16][]uint32{}
+	// The tags the reader uses, the first entry of each, their values left in
+	// the file; any other tag is skipped, its values never read (plan 48,
+	// design D1; audit finding 2).
+	tags := map[uint16]tiffEntry{}
 	for i := range n {
 		e := b[ifd+2+i*12:]
 		tag, typ, count := bo.Uint16(e[0:2]), bo.Uint16(e[2:4]), int(bo.Uint32(e[4:8]))
+		if _, seen := tags[tag]; seen || !tiffTags[tag] {
+			continue
+		}
 		size := map[uint16]int{1: 1, 3: 2, 4: 4}[typ]
 		if size == 0 || count <= 0 || count > 1<<20 {
 			continue // a type the reader does not need (rationals, ASCII)
@@ -57,22 +87,11 @@ func decodeTIFF(b []byte) (*image.NRGBA, error) {
 			}
 			src = b[off:]
 		}
-		vals := make([]uint32, count)
-		for k := range count {
-			switch size {
-			case 1:
-				vals[k] = uint32(src[k])
-			case 2:
-				vals[k] = uint32(bo.Uint16(src[k*2:]))
-			case 4:
-				vals[k] = bo.Uint32(src[k*4:])
-			}
-		}
-		tags[tag] = vals
+		tags[tag] = tiffEntry{bo: bo, size: size, count: count, src: src}
 	}
 	first := func(tag uint16, def uint32) uint32 {
-		if v := tags[tag]; len(v) > 0 {
-			return v[0]
+		if v := tags[tag]; v.count > 0 {
+			return v.at(0)
 		}
 		return def
 	}
@@ -94,8 +113,8 @@ func decodeTIFF(b []byte) (*image.NRGBA, error) {
 		return nil, errors.New("planar samples: not read")
 	}
 	samples := int(first(277, 1))
-	for _, bits := range tags[258] {
-		if bits != 8 {
+	for k := range tags[258].count {
+		if bits := tags[258].at(k); bits != 8 {
 			return nil, fmt.Errorf("%d bits a sample: not read", bits)
 		}
 	}
@@ -107,18 +126,18 @@ func decodeTIFF(b []byte) (*image.NRGBA, error) {
 		return nil, fmt.Errorf("photometric %d with %d samples: not read", photo, samples)
 	}
 	offsets, counts := tags[273], tags[279]
-	if len(offsets) == 0 || len(offsets) != len(counts) {
+	if offsets.count == 0 || offsets.count != counts.count {
 		return nil, errors.New("no strips")
 	}
 	rowBytes := width * samples
 	img := image.NewNRGBA(image.Rect(0, 0, width, height))
 	y := 0
-	for i, off := range offsets {
-		cnt := int(counts[i])
-		if int(off)+cnt > len(b) || int(off) < 0 {
+	for i := range offsets.count {
+		off, cnt := int(offsets.at(i)), int(counts.at(i))
+		if off+cnt > len(b) || off < 0 {
 			return nil, errors.New("truncated strip")
 		}
-		strip := b[off : int(off)+cnt]
+		strip := b[off : off+cnt]
 		for len(strip) >= rowBytes && y < height {
 			for x := range width {
 				p := strip[x*samples:]

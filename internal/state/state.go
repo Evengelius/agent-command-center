@@ -372,6 +372,7 @@ type ToolCall struct {
 	Status    ToolStatus
 	Origin    event.Origin
 	Output    string
+	OutputCut int64 // bytes of a running call's output not kept (plan 48, design D2)
 	History   []string
 	StartedAt time.Time
 	EndedAt   time.Time

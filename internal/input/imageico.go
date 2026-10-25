@@ -44,6 +44,15 @@ func decodeICO(b []byte) (*image.NRGBA, error) {
 	}
 	data := b[off : off+size]
 	if bytes.HasPrefix(data, []byte("\x89PNG\r\n\x1a\n")) {
+		// Its size first: decoding makes the whole image before reading its
+		// data (plan 48, design D1; audit finding 2).
+		cfg, err := png.DecodeConfig(bytes.NewReader(data))
+		if err != nil {
+			return nil, errors.New("its PNG: " + err.Error())
+		}
+		if err := tooBig(cfg.Width, cfg.Height); err != nil {
+			return nil, err
+		}
 		im, err := png.Decode(bytes.NewReader(data))
 		if err != nil {
 			return nil, errors.New("its PNG: " + err.Error())

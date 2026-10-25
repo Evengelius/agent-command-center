@@ -128,6 +128,10 @@ func detail(text string, w int) line {
 	return line{deco("          ", stNone), sp(text, stGrey)}.fit(w)
 }
 
+// cutNote says how much of a running call's output the state did not keep,
+// only its tail (plan 48, design D2).
+func cutNote(n int64) string { return "… " + byteSize(n) + " of earlier output not kept" }
+
 // inspectMessages is the agent's start, its messages as the CLI delivered
 // them, and its end.
 func inspectMessages(s *state.State, a *state.Agent, w int) []line {
@@ -228,9 +232,12 @@ func inspectTools(s *state.State, a *state.Agent, w int, now time.Time) []line {
 			out = append(out, detail(l, w))
 		}
 		if tc.Output != "" {
+			if tc.OutputCut > 0 {
+				out = append(out, detail("→ "+cutNote(tc.OutputCut), w))
+			}
 			for i, l := range strings.Split(strings.TrimRight(tc.Output, "\n"), "\n") {
 				mark := "  "
-				if i == 0 {
+				if i == 0 && tc.OutputCut == 0 {
 					mark = "→ "
 				}
 				out = append(out, detail(mark+l, w))

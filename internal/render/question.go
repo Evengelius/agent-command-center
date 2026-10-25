@@ -123,7 +123,7 @@ func questionLines(qs []Question, p Pick, focused bool, w int) []line {
 		if focused && i == p.At {
 			st = stAttentionBold
 		}
-		out = append(out, wrapDeco("  "+mark+title, w, "      ", st)...)
+		out = append(out, wrapDeco("  "+mark+revealed(title), w, "      ", st)...) // plan 48, design D6
 		for j, o := range q.Options {
 			box := "○"
 			switch {
@@ -142,7 +142,7 @@ func questionLines(qs []Question, p Pick, focused bool, w int) []line {
 			if p.Chosen[i][j] {
 				ost = stText
 			}
-			out = append(out, wrapDeco(text, w, "          ", ost)...)
+			out = append(out, wrapDeco(revealed(text), w, "          ", ost)...)
 		}
 	}
 	return out
@@ -153,7 +153,7 @@ func answeredLines(qs []Question, answers map[string]string, w int) []line {
 	var out []line
 	for _, q := range qs {
 		if a, ok := answers[q.Text]; ok {
-			out = append(out, wrapDeco("  "+q.Text+" → "+a, w, "    ", stGrey)...)
+			out = append(out, wrapDeco("  "+revealed(q.Text)+" → "+revealed(a), w, "    ", stGrey)...)
 		}
 	}
 	return out

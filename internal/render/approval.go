@@ -39,11 +39,13 @@ func approvalCard(s *state.State, ui UI, i int, e state.Entry, w int, k look) []
 // question's answers, or why it was refused, under it.
 func answeredRows(s *state.State, i int, e state.Entry, ap *state.Approval, w int, k look) []line {
 	target, path, _ := approvalDetail(ap)
+	target = revealed(target) // plan 48, design D6
 	var detail line
 	if target != "" {
 		detail = line{deco(target, stMuted)}
 	}
-	name := append(line{deco(approvalWho(s, ap)+" · ", stMuted)}, oneRow(i, e, stToolName)...)
+	e.Text = revealed(e.Text)
+	name := append(line{deco(revealed(approvalWho(s, ap))+" · ", stMuted)}, oneRow(i, e, stToolName)...)
 	at := clockSec(ap.AnsweredAt)
 	sym, outcome, st := deco("✓", stDone), "allowed by you "+at, stDone
 	var more []line
@@ -83,7 +85,11 @@ func pendingBox(s *state.State, ui UI, i int, e state.Entry, ap *state.Approval,
 	edge := func(a, b string) line {
 		return decoLine(a+strings.Repeat("─", max(w-2, 0))+b, stAttention)
 	}
-	target, path, body := approvalDetail(ap)
+	raw, path, body := approvalDetail(ap)
+	// The request's format characters are drawn, never applied (plan 48,
+	// design D6).
+	target, body := revealed(raw), revealedLines(body)
+	e.Text = revealed(e.Text)
 	// The owner's structure (amendment 16, section 5.2): "! APPROVAL ·
 	// general-purpose · Write", its time and origin at the right, then the
 	// target on its own row: a path loses its left end, a command its right
@@ -92,7 +98,7 @@ func pendingBox(s *state.State, ui UI, i int, e state.Entry, ap *state.Approval,
 	if ap.Question {
 		label = "? QUESTION"
 	}
-	head := line{deco(label, stAttentionBold), deco(" · "+approvalWho(s, ap)+" · ", stMuted)}
+	head := line{deco(label, stAttentionBold), deco(" · "+revealed(approvalWho(s, ap))+" · ", stMuted)}
 	head = append(head, oneRow(i, e, stAttentionBold)...)
 	right := line{deco("  "+clock(ap.RequestedAt), stGrey), deco("  "+originLabel(e.Origin), stAttention)}
 	out := []line{edge("╭", "╮"), in(spread(head, right, inner))}
@@ -115,7 +121,7 @@ func pendingBox(s *state.State, ui UI, i int, e state.Entry, ap *state.Approval,
 			out = append(out, in(l))
 		}
 	} else if title, rows := approvalPreview(ap, body, pw); title != "" {
-		rows = append([]line{{deco("▸ ", stMuted), deco(title, stMuted)}}, rows...)
+		rows = append([]line{{deco("▸ ", stMuted), deco(revealed(title), stMuted)}}, rows...)
 		if nest {
 			sub := func(l line) line {
 				return append(append(line{deco("│ ", stFrame)}, l.fit(pw)...), deco(" │", stFrame))
@@ -131,12 +137,12 @@ func pendingBox(s *state.State, ui UI, i int, e state.Entry, ap *state.Approval,
 			}
 		}
 	}
-	if d := ap.Summary; d != "" && d != target && d != baseOf(target) {
-		for _, l := range wrap(d, inner) {
+	if d := ap.Summary; d != "" && d != raw && d != baseOf(raw) {
+		for _, l := range wrap(revealed(d), inner) {
 			out = append(out, in(plain(l, stText)))
 		}
 	}
-	if d := effect(s, ap, target, len(body) > 0); d != "" {
+	if d := revealed(effect(s, ap, raw, len(body) > 0)); d != "" {
 		for _, l := range wrap(d, inner) {
 			out = append(out, in(plain(l, stMuted)))
 		}

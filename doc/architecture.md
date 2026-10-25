@@ -587,6 +587,18 @@ changes no part's role either.
 | 5. Input | `realPath` gives a drive letter path, or `\\server\share\…`, without the final path's `\\?\` (`dosPath`) | `internal/input/browse_windows.go` |
 | The application | the quit key passes whether a git operation runs; `syncCommit` names its step; an answer error matching `ErrNoPending` is `Gone`; `dropSourcePopups`, called by `closeSource` and `openExplorer` | `internal/app/keys.go`, `commit.go`, `app.go`, `source.go`, `explorer.go` |
 
+Plan 48 (brief amendment 49; [audit.md](audit.md)'s phase 2, robustness
+at the boundaries) changes no part's role either.
+
+| Part | What changes | Where |
+| - | - | - |
+| 1. Execution | the Claude Code reader writes nothing itself: its handshake reads and the read after a change run apart (`apart`); in both adapters the reader recovers a panic into an error marked `Fatal` and drains stdout, the goroutines started for writes recover, and the mapping holds the mutex in functions that release it by `defer` (`mapOut`, `holdIn`); `provider.Recovered`, a panic as text | `internal/provider/claude/session.go`, `codex/session.go`, `provider/recovered.go` |
+| 2. Collection | `event.Problem.Fatal` | `internal/event/event.go` |
+| 3. State | a running call's streamed output keeps its tail (`MaxLiveOutput`, `liveTail`, `ToolCall.OutputCut`); a fatal error or `Panicked` crashes a starting or ready session and closes its CLI (`fatal`) | `internal/state/reduce.go`, `actions.go`, `state.go` |
+| 4. Rendering | the note of output not kept (`cutNote`); a request's bidi controls and zero-width spaces drawn as `<U+XXXX>` on its card, answered row, questions and full view (`revealed`) | `internal/render/inspect.go`, `viewer.go`, `text.go`, `approval.go`, `question.go` |
+| 5. Input | the TIFF reader's entries left in the file (`tiffEntry`); an icon's PNG size checked first; git's `WaitDelay`, `exec.ErrWaitDelay` taken as git's success, `stream` read beside `Wait` | `internal/input/imagetiff.go`, `imageico.go`, `git.go`, `sourcewrite.go` |
+| The application | the write worker recovers into `Panicked` (`runWrite`); the detection recovers into the CLI's problem | `internal/app/writer.go`, `app.go` |
+
 ## Build order
 
 Input to plan 3's roadmap, from AM4's priorities (P1 to P6) and AGENTS.md

@@ -49,6 +49,45 @@ orphaned if the dashboard is killed (ASM-19). Codex killed mid-turn by its
 job object leaves no process behind: all 9 were gone 24 ms after the kill
 (plan 4, L3; CX-10 q8).
 
+**Panics in the dashboard's own goroutines** (plan 48, design D5; audit
+finding 6). Bubble Tea recovers its loop and its commands, but not the
+goroutines the dashboard starts itself, where a panic would end the program
+with the terminal still in its modes. Those that handle what comes from
+outside recover:
+- each adapter's stdout reader: the panic becomes an error marked `Fatal`,
+  and the rest of stdout is read and dropped, so the CLI never blocks on a
+  full pipe;
+- the goroutines an adapter starts for its writes (Codex's replies and
+  handshake steps, Claude Code's handshake reads and settings read): the
+  same error;
+- the application's write worker: `Panicked`;
+- the detection: the CLI's problem, "detection failed: …", and the startup
+  screen goes on.
+
+A fatal error or `Panicked` crashes a session that is starting or ready,
+the panic's value and place as the reason on the failure card ("panic: …
+(at function, file:line)"), and closes its CLI; while the owner's quit
+closes it, it is only kept as an error, so the quit still ends. The
+adapters map lines under their mutex in functions that release it by
+`defer`, so a recovered panic leaves no lock held. The stderr readers, the
+queue's forwarder, the waits and the mock replay parse nothing from
+outside and do not recover.
+
+**Bounds on what comes from outside** (plan 48):
+- the TIFF reader reads only the tags it uses, the first of each, their
+  values from the file when used: a crafted file allocates nothing in
+  proportion to its tag counts (design D1);
+- an icon's PNG has its size checked before it is decoded (design D1);
+- a running command's streamed output keeps its last 64 KiB, the rest
+  counted and said in the inspection and the full view; the completed item
+  replaces it whole (design D2);
+- the Claude Code reader never writes to stdin, as Codex's never did: a CLI
+  that stops reading its stdin cannot stop the reader (design D3);
+- a git call waits at most 2 s, once git has ended, for its pipes to close
+  (`WaitDelay`): a hook or helper that keeps them cannot hold a read, a
+  commit or a push for ever, and git's success is taken as such (design
+  D4).
+
 ## Fallbacks for every source
 
 What happens when each event source of

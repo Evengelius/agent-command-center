@@ -314,6 +314,9 @@ type Problem struct {
 	// Optional says the refused request is one the session works without
 	// (plan 46, design D2): its Error never ends the handshake.
 	Optional bool `json:",omitempty"`
+	// Fatal says the adapter recovered a panic (plan 48, design D5): the
+	// session ends, its CLI closed, the message as the reason.
+	Fatal bool `json:",omitempty"`
 }
 
 // The approval modes the adapters name (plan 12, item 2; plan 39): Manual

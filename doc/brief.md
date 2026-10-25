@@ -7169,3 +7169,14 @@ Let's continue
 
 Taken as the roadmap's next step, the rest of phase 1 (`doc/audit.md`,
 Part 2, C), as plan 47 (plan.md, Plan 47).
+
+## Amendment 49, 2026-10-25: the audit's phase 2, for plan 48
+
+After plan 47 was approved and pushed, and told that phase 2 of the
+audit's roadmap came next, the owner wrote, word for word:
+
+````text
+Write plan 48 for the audit's phase 2 (doc/audit.md, Part 2, C), each fix test-first. Plan first, criteria before code, nothing committed until I review.
+````
+
+Taken as plan 48 (plan.md, Plan 48).

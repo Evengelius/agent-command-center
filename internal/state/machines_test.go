@@ -390,6 +390,46 @@ var transitions = []machineCase{
 		c.ev(event.SessionEnded, "", event.Ended{Reason: "stdout EOF"})
 		c.eq("from Handshaking", c.s.Session.Phase, Crashed)
 	}},
+	{"Session", "`Spawning`, `Handshaking`, `Ready` | a panic recovered", func(b *bench) {
+		// Plan 48, design D5: an adapter's fatal error, or the application's
+		// in a write, ends the session, its message the reason, the CLI
+		// closed.
+		const msg = "reading Claude Code's output failed: panic: x"
+		b.running().ev(event.Error, "", event.Problem{Message: msg, Fatal: true})
+		b.eq("ready", b.s.Session.Phase, Crashed)
+		b.eq("reason", b.s.Session.Reason, msg)
+		b.eq("commands", b.kinds(), "close")
+		b.eq("turn", b.s.Turn.Phase, Idle)
+
+		c := newBench(b.t).handshaking()
+		c.do(Panicked{Message: "writing to the CLI failed: panic: y"})
+		c.eq("handshaking", c.s.Session.Phase, Crashed)
+		c.eq("its reason", c.s.Session.Reason, "writing to the CLI failed: panic: y")
+		c.eq("its commands", c.kinds(), "close")
+
+		d := newBench(b.t).starting()
+		d.ev(event.Error, "", event.Problem{Message: msg, Fatal: true})
+		d.eq("spawning", d.s.Session.Phase, Crashed)
+		d.eq("the startup", d.s.Startup.Phase, StartFailed)
+	}},
+	{"Session", "`Closing`, `Closed`, `Crashed` | a panic recovered", func(b *bench) {
+		b.ready().do(Quit{})
+		b.ev(event.Error, "", event.Problem{Message: "late: panic: x", Fatal: true})
+		b.eq("closing", b.s.Session.Phase, Closing)
+		b.eq("no command", b.kinds(), "")
+		b.eq("kept", b.s.Errors[len(b.s.Errors)-1].Message, "late: panic: x")
+		b.do(Panicked{Message: "late write: panic: y"})
+		b.eq("still closing", b.s.Session.Phase, Closing)
+		b.exit(0)
+		b.eq("the quit ends", b.s.Session.Phase, Closed)
+
+		c := newBench(b.t).ready()
+		c.exit(3)
+		c.do(Panicked{Message: "after the crash: panic: z"})
+		c.eq("crashed", c.s.Session.Phase, Crashed)
+		c.eq("its reason kept", c.s.Session.Reason, "the CLI exited unexpectedly")
+		c.eq("its commands", c.kinds(), "")
+	}},
 
 	// Turn machine
 	{"Turn", "`Idle` | owner sends a message", func(b *bench) {

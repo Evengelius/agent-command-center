@@ -116,8 +116,16 @@ func (g GitCLI) command(ctx context.Context, dir string, read bool, args []strin
 	cmd := exec.CommandContext(ctx, exe, full...)
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0",
 		"GIT_MERGE_AUTOEDIT=no", "LC_ALL=C", "LANGUAGE=C")
+	// A hook or helper that keeps git's pipes once git has ended never keeps
+	// the call waiting (plan 48, design D4; audit finding 3c).
+	cmd.WaitDelay = gitWaitDelay
 	return cmd, nil
 }
+
+// gitWaitDelay is how long a call waits, once git has ended, for its pipes
+// to close; then they are closed, and git's success, exec.ErrWaitDelay, is
+// taken as such: git exited 0 and its output was read.
+const gitWaitDelay = 2 * time.Second
 
 // call runs git and returns its standard output.
 func (g GitCLI) call(limit time.Duration, dir string, read bool, args []string) (string, error) {
@@ -130,6 +138,9 @@ func (g GitCLI) call(limit time.Duration, dir string, read bool, args []string) 
 	var out, errb bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errb
 	err = cmd.Run()
+	if errors.Is(err, exec.ErrWaitDelay) {
+		err = nil // see gitWaitDelay
+	}
 	if ctx.Err() == context.DeadlineExceeded {
 		return "", fmt.Errorf("git %s took more than %s", args[0], limit)
 	}
@@ -163,20 +174,30 @@ func (g GitCLI) stream(limit time.Duration, dir string, stdin io.Reader, read fu
 		return err
 	}
 	var errb bytes.Buffer
-	cmd.Stdin, cmd.Stderr = stdin, &errb
-	pipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
+	// Git's stdout comes through a pipe of the dashboard's, read here while
+	// Wait runs beside it: Wait ends gitWaitDelay after git at the latest, and
+	// closes the pipe. A StdoutPipe drained before Wait waited for any child
+	// holding it (plan 48, design D4; audit finding 3c).
+	pr, pw := io.Pipe()
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = stdin, pw, &errb
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	rerr := read(bufio.NewReaderSize(pipe, 64<<10))
+	waited := make(chan error, 1)
+	go func() {
+		err := cmd.Wait()
+		pw.Close()
+		waited <- err
+	}()
+	rerr := read(bufio.NewReaderSize(pr, 64<<10))
 	if rerr != nil {
 		cancel()
 	}
-	_, _ = io.Copy(io.Discard, pipe)
-	err = cmd.Wait()
+	_, _ = io.Copy(io.Discard, pr)
+	err = <-waited
+	if errors.Is(err, exec.ErrWaitDelay) {
+		err = nil // see gitWaitDelay
+	}
 	if ctx.Err() == context.DeadlineExceeded {
 		return fmt.Errorf("git %s took more than %s", args[0], limit)
 	}

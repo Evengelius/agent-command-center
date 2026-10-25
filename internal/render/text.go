@@ -86,6 +86,48 @@ func visible(s string) string {
 	return b.String()
 }
 
+// revealed is a request's text as its approval card, answered row and full
+// view draw it: the format characters that could make it read otherwise than
+// it runs, the bidi controls and the zero-width spaces, drawn as <U+XXXX>
+// (plan 48, design D6; audit finding 8). The zero-width joiner stays, for
+// emoji sequences and the scripts that need it; other text is drawn as it
+// comes.
+func revealed(s string) string {
+	if !strings.ContainsFunc(s, hiddenFormat) {
+		return s
+	}
+	var b strings.Builder
+	for _, r := range s {
+		if hiddenFormat(r) {
+			fmt.Fprintf(&b, "<U+%04X>", r)
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// hiddenFormat is a bidi control, U+061C, U+200E, U+200F, U+202A to U+202E
+// and U+2066 to U+2069, or a zero-width space, U+200B, U+2060 and U+FEFF.
+func hiddenFormat(r rune) bool {
+	switch {
+	case r == 0x061C, r == 0x200B, r == 0x200E, r == 0x200F, r == 0x2060, r == 0xFEFF:
+		return true
+	case r >= 0x202A && r <= 0x202E, r >= 0x2066 && r <= 0x2069:
+		return true
+	}
+	return false
+}
+
+// revealedLines is revealed of each line.
+func revealedLines(ls []string) []string {
+	out := make([]string, len(ls))
+	for i, l := range ls {
+		out[i] = revealed(l)
+	}
+	return out
+}
+
 // decoLine is a line of one decoration span.
 func decoLine(text string, st *lipgloss.Style) line { return line{deco(text, st)} }
 

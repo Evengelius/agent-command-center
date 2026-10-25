@@ -211,24 +211,25 @@ func (s *Session) problem(msg string) {
 // read maps stdout line by line until end of file. What a line calls for
 // (the next handshake step, a reply) is written apart: the reader never
 // waits on stdin, which the CLI may not be reading while its stdout is full.
+// A panic in the mapping is the session's fatal error, and the rest of stdout
+// is read and dropped, so Codex never blocks on it before the dashboard
+// closes it (plan 48, design D5; audit finding 6).
 func (s *Session) read(r io.Reader) {
 	br := bufio.NewReaderSize(r, 64<<10)
+	defer func() {
+		if v := recover(); v != nil {
+			s.fatal("reading Codex's output failed", v)
+			_, _ = io.Copy(io.Discard, br)
+		}
+	}()
 	for {
 		l, size, over, err := pipe.ReadLine(br, MaxLine)
 		switch {
 		case over:
 			s.problem(fmt.Sprintf("a line of %d bytes from Codex was skipped (limit %d MiB)", size, MaxLine>>20))
 		case len(bytes.TrimSpace(l)) > 0:
-			s.mu.Lock()
-			evs := s.m.Out(l)
-			for _, ev := range evs {
-				s.track(ev)
-				s.q.Push(ev)
-			}
-			next := s.react(l, evs)
-			s.mu.Unlock()
-			if next != nil {
-				go next()
+			if next := s.mapOut(l); next != nil {
+				s.apart("replying to Codex", next)
 			}
 		}
 		if err != nil {
@@ -595,19 +596,60 @@ func (s *Session) write(msg any) error {
 	if s.inClosed.Load() {
 		return errors.New("Codex's input is closed")
 	}
-	s.mu.Lock()
-	evs := s.m.In(bytes.TrimRight(b.Bytes(), "\n"))
-	for _, ev := range evs {
-		s.track(ev)
-	}
-	held := s.q.Hold(evs)
-	s.mu.Unlock()
+	held := s.holdIn(bytes.TrimRight(b.Bytes(), "\n"))
 	_, err := s.stdin.Write(b.Bytes())
 	s.q.Release(held, err == nil)
 	if err != nil {
 		return fmt.Errorf("not delivered to Codex: %w", err)
 	}
 	return nil
+}
+
+// holdIn maps a line the dashboard writes under the lock, released however
+// the mapping ends (plan 48, design D5); its events are held until the line
+// is written.
+func (s *Session) holdIn(l []byte) []*pipe.Item {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	evs := s.m.In(l)
+	for _, ev := range evs {
+		s.track(ev)
+	}
+	return s.q.Hold(evs)
+}
+
+// mapOut maps one line of stdout under the lock, released however the
+// mapping ends (plan 48, design D5), queues its events, and returns what the
+// line calls for, to be written apart.
+func (s *Session) mapOut(l []byte) func() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	evs := s.m.Out(l)
+	for _, ev := range evs {
+		s.track(ev)
+		s.q.Push(ev)
+	}
+	return s.react(l, evs)
+}
+
+// apart runs f in a goroutine of its own: the reader never waits on stdin. A
+// panic in f is the session's fatal error, never the end of the program
+// (plan 48, design D5).
+func (s *Session) apart(what string, f func()) {
+	go func() {
+		defer func() {
+			if v := recover(); v != nil {
+				s.fatal(what+" failed", v)
+			}
+		}()
+		f()
+	}()
+}
+
+// fatal queues a recovered panic as the session's fatal error: the dashboard
+// shows it as it ends the session and closes Codex (plan 48, design D5).
+func (s *Session) fatal(what string, v any) {
+	s.push(event.Event{Kind: event.Error, Origin: event.Observed, Payload: event.Problem{Message: what + ": " + provider.Recovered(v), Fatal: true}})
 }
 
 // request sends one request; params nil sends none.

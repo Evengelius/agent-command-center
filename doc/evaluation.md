@@ -96,7 +96,7 @@ owner's normal working conditions (owner, 2026-10-16), since the target is
 about real use:
 
 ```text
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame|TestOutputToFrame)$' -count=1 -v
 ```
 
 - Allowed: the owner's usual applications open and idle (VS Code, browsers,
@@ -148,9 +148,36 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   images are in each frame's signature; characters, Backspace, a new line
   and the arrows, the field grown to three rows and scrolling, each key
   timed to its frame: p95 within 16 ms (`keystrokeTarget`).
+- `TestOutputToFrame` (plan 48, criterion 48.5): a running Codex command's
+  output streamed in 8,192 deltas of 8 KiB (64 MiB), each delta timed from
+  Update to its frame: p95 within 16 ms (`streamTarget`); then the
+  completion's output is the call's. Outside the timing step it streams 512
+  deltas and only logs the time.
 - A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
   profile, the same test on the last commit) and report it as the loop above
   says.
+
+## Fuzzing
+
+Plan 48 (audit finding 6) added three fuzz targets for what comes from
+outside: `FuzzInspectData` (`internal/input`: every image reader, seeded
+with every file `imagetest` writes and the checked-in WebP) and
+`FuzzMapperOut` (in each adapter: scripts of recorded lines, the CLI's to
+`Out` and the dashboard's to `In`). `go test ./...` runs their seeds as
+ordinary tests. A plan that changes a reader or a mapper fuzzes it for a
+bounded time, each target alone:
+
+```text
+go test ./internal/input -run '^$' -fuzz '^FuzzInspectData$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
+go test ./internal/provider/claude -run '^$' -fuzz '^FuzzMapperOut$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
+go test ./internal/provider/codex -run '^$' -fuzz '^FuzzMapperOut$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
+```
+
+- `-fuzzminimizetime 2s`: by default Go minimises each new interesting input
+  for up to 60 s and runs nothing else meanwhile, which stopped the image
+  fuzzer at 0 inputs a second (plan 48, D1).
+- A crash is a FAIL: Go keeps its input under the package's
+  `testdata/fuzz/`, where it stays as a seed once the reader is fixed.
 
 ## The race detector
 

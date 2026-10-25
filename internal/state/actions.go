@@ -49,6 +49,10 @@ type (
 		Gone        bool
 	}
 	CancelTurn struct{ ID string } // c on an approval card: cancel it, then interrupt the turn
+	// Panicked is a panic the application recovered in a write to the
+	// session (plan 48, design D5): the session ends in order, its CLI
+	// closed, the message as the reason.
+	Panicked struct{ Message string }
 	// ChooseMode asks for one of the session's CLI's modes (plan 39);
 	// Codex's Full access only Confirmed; Capable is the session's Modes,
 	// NextTurn its ModelsNextTurn: the mode goes with the next message.
@@ -82,6 +86,7 @@ func (ForceStop) action()        {}
 func (Answer) action()           {}
 func (AnswerFailed) action()     {}
 func (CancelTurn) action()       {}
+func (Panicked) action()         {}
 func (ChooseMode) action()       {}
 func (ApprovalFailed) action()   {}
 func (CloseTimeout) action()     {}
@@ -205,6 +210,8 @@ func (s *State) Do(a Action) []Command {
 		return s.cancelTurn(a)
 	case AnswerFailed:
 		return s.answerFailed(a)
+	case Panicked:
+		return s.fatal(event.Event{}, a.Message)
 	case CloseTimeout:
 		if s.Session.Phase == Closing {
 			return []Command{{Kind: CmdKill}}
