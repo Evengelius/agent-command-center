@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
+╭──────────────────────────────────╮╭──────────────────────────────────────────────────────────────────────────╮╭──────╮
+│ A · ORCHESTRATOR                 ││ SOURCE CONTROL                                                         ⌄ ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│ ──────────────────────────────── ││ demo-project · main                                                      ││      │
+│ STAGES · inferred from activity  ││                                                                          ││      │
+│ ✓ TURN 1                      0s ││  Add Source Control diff viewer                                          ││      │
+│   Use the Agent tool to launch … ││                                                                          ││      │
+│   Agent · agent general-purpose  ││                                                                          ││      │
+│                                  ││                                                                          ││      │
+│ ✓ TURN 2                      0s ││                                                                          ││      │
+│   started by the CLI             ││                                                                          ││      │
+│ ──────────────────────────────── ││                                                                          ││      │
+│ ✦ TELEMETRY        Enter details ││                                                                          ││      │
+│ ▾ SESSION USAGE                  ││    !  sample/merge.go                                                    ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Tokens 159.4k session total    ││ ▾ CHANGES                                                              5 ││      │
+│   Est. cost $0.01 API-equiv.     ││                                                                          ││      │
+│ ▾ QUOTA WINDOWS                  ││    M  sample/viewer.go                                                   ││      │
+│   Session (5hr)             35%† ││    M  README.md                                                          ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││    D  sample/viewer_test.go                                              ││      │
+│   Resets in 14h 40m              ││    U  codex-api-key.jsonl                                                ││      │
+│   Weekly (7 day)            47%† ││    U  › notes/                                                           ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Resets in 1d 20h               ││ ▾ STAGED CHANGES                                                       3 ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                            ✓ COMPLETED │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md   │
+│     00:00   21.5k tok   │  tool: Write   │                     │ found.txt path:…                                    │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter Commit & Push · Esc close · F1 keys

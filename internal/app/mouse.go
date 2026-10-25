@@ -56,6 +56,18 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 		// it; while it is open, a click on its item closes it and opens the
 		// Open dialog (plan 31), a click anywhere else closes it and goes on.
 		// A click on a chip's ✕ removes its image.
+		if mo.Button == tea.MouseLeft && !m.ui.DraftWin.Open && (m.ui.Source.Menu || m.ui.Source.Ask > 0) {
+			// The commit button's dropdown and the staging question (plan 45,
+			// designs D4 and D6): a click outside either closes it and does
+			// nothing else.
+			p, item := m.screen.ItemAt(mo.X, mo.Y)
+			mine := p == render.SourcePanel && (m.ui.Source.Menu && (item == render.ItemCommitMenu || item == render.ItemCommitMore) ||
+				m.ui.Source.Ask > 0 && (item == render.ItemAskYes || item == render.ItemAskNo))
+			if !mine {
+				m.ui.Source.Menu, m.ui.Source.MenuHot = false, false
+				return m.answer(false)
+			}
+		}
 		if mo.Button == tea.MouseLeft && !m.ui.DraftWin.Open {
 			switch p, item := m.screen.ItemAt(mo.X, mo.Y); {
 			case p == render.SidePanel:
@@ -129,7 +141,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			case render.ExplorerPanel:
 				return m.explorerClick(item) // the panel's own, no selection (plan 43, design D7)
 			case render.SourcePanel:
-				return m.sourceClick(item) // the same for Source Control's (plan 44, design D5)
+				return m.sourceClick(item, mo.X, mo.Y) // the same for Source Control's (plan 44, design D5)
 			}
 			m.press(mo)
 		}
@@ -141,6 +153,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			// it as it is, and it never changes what is selected.
 			m.sideHover(m.sideTileAt(mo.X, mo.Y))
 			m.ui.Source.Hover = m.sourceHoverAt(mo.X, mo.Y) // Source Control's row (plan 44, design D5)
+			m.ui.Source.MenuHot = m.menuHotAt(mo.X, mo.Y)   // the dropdown's item (plan 45, design D4)
 		}
 		if m.ui.Plus && !m.drag.on {
 			m.ui.PlusHover = m.screen.PanelAt(mo.X, mo.Y) == 'U' // the hover (plan 30, design D3)
@@ -275,7 +288,7 @@ func motionFilter(tm tea.Model, msg tea.Msg) tea.Msg {
 	}
 	m, ok := tm.(*Model)
 	if !ok || m.ui.Plus || m.ui.Models.Open || m.ui.Modes.Open || m.drag.on || m.sideTileAt(mo.X, mo.Y) != m.ui.SideHover ||
-		m.sourceHoverAt(mo.X, mo.Y) != m.ui.Source.Hover {
+		m.sourceHoverAt(mo.X, mo.Y) != m.ui.Source.Hover || m.ui.Source.Menu && m.menuHotAt(mo.X, mo.Y) != m.ui.Source.MenuHot {
 		return msg
 	}
 	m.motionDropped++

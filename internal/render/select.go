@@ -96,6 +96,12 @@ type Screen struct {
 	// drawn, the Explorer's then Source Control's, and their looks (plan 43, design
 	// D2), zero when none.
 	Tiles [2]SideTileShown
+	// Commit, Menu and MsgBox are where the frame left the commit button's,
+	// the dropdown's and the message box's images to be drawn (plan 45,
+	// design D5), zero when none.
+	Commit CommitShown
+	Menu   MenuShown
+	MsgBox MsgShown
 }
 
 // Cols are a zone's columns on the screen: the first and how many.
@@ -169,6 +175,10 @@ func Draw(s *state.State, ui UI) *Screen {
 		ui.Width >= MinWidth && ui.Height >= MinHeight {
 		modesBox(sc, s, ui) // the modes selector over zone B (plan 39)
 	}
+	if s.Screen == state.ScreenDashboard && ui.Source.Open && ui.Source.Menu && !ui.Keys && !ui.Worktrees.Open &&
+		ui.Width >= MinWidth && ui.Height >= MinHeight {
+		commitMenu(sc, ui) // the commit button's dropdown over the panel (plan 45)
+	}
 	if s.Screen == state.ScreenDashboard && WindowOpen(ui) && !ui.Keys && !ui.Worktrees.Open &&
 		ui.Width >= MinWidth && ui.Height >= MinHeight {
 		floatWindow(s, ui, sc)
@@ -199,6 +209,7 @@ func Draw(s *state.State, ui UI) *Screen {
 		// The sidebar's tiles' images over their blank cells, where no
 		// window covers them (plan 43, design D2).
 		sc.sideTilesShown(ui)
+		sc.commitShown(ui) // the commit controls' images (plan 45, design D5)
 	}
 	if !ui.Sel.Empty() && ui.Sel.From.Panel != 'E' {
 		for i, l := range sc.lines {

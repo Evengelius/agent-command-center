@@ -1926,34 +1926,38 @@ in the quick open; F12 and the terminal's own selection copy from it.
 The second tile of the [right sidebar](#right-sidebar) shows or hides the
 project's Git changes as a panel in the Explorer's docked place, as VS
 Code's Source Control does (plan 44, brief amendment 45; the owner's image
-`references/14-source-control.png` and example layout). It is read only:
-no staging, unstaging, discarding, committing or any other change to the
-repository. Golden frame `source`, 120x40, where the panel takes zone B's
-place, its cursor on `sample/viewer.go`:
+`references/14-source-control.png` and example layout). Under its
+repository row, the message field and the Commit button commit and push
+(plan 45, brief amendment 46; [Commit and push](#commit-and-push)); nothing
+else changes the repository: no unstaging, discarding or other action.
+Golden frame `source`, 120x40, where the panel takes zone B's place, its
+cursor on `sample/viewer.go`:
 
 ```text
 ╭──────────────────────────────────╮╭──────────────────────────────────────────────────────────────────────────╮╭──────╮
 │ A · ORCHESTRATOR                 ││ SOURCE CONTROL                                                         ⌄ ││      │
 │ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ──────────────────────────────────────────────────────────────────────── ││  ≡   │
 │ ──────────────────────────────── ││ demo-project · main                                                      ││      │
-│ STAGES · inferred from activity  ││                                                                          ││      │
-│ ✓ TURN 1                      0s ││ ▾ MERGE CHANGES                                                        1 ││▎     │
-│   Use the Agent tool to launch … ││                                                                          ││▎ ⑂   │
-│   Agent · agent general-purpose  ││    !  sample/merge.go                                                    ││▎     │
-│                                  ││                                                                          ││      │
-│ ✓ TURN 2                      0s ││ ▾ CHANGES                                                              5 ││      │
+│ STAGES · inferred from activity  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│ ✓ TURN 1                      0s ││ │Message                                                               │ ││▎     │
+│   Use the Agent tool to launch … ││ ╰──────────────────────────────────────────────────────────────────────╯ ││▎ ⑂   │
+│   Agent · agent general-purpose  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││▎     │
+│                                  ││ │                             ✓ Commit                             │ ⌄ │ ││      │
+│ ✓ TURN 2                      0s ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
 │   started by the CLI             ││                                                                          ││      │
-│ ──────────────────────────────── ││    M  sample/viewer.go                                                   ││      │
-│ ✦ TELEMETRY        Enter details ││    M  README.md                                                          ││      │
-│ ▾ SESSION USAGE                  ││    D  sample/viewer_test.go                                              ││      │
-│   Context 4% of 1M ░░░░░░░░░░░░░ ││    U  codex-api-key.jsonl                                                ││      │
-│   Tokens 159.4k session total    ││    U  › notes/                                                           ││      │
+│ ──────────────────────────────── ││ ▾ MERGE CHANGES                                                        1 ││      │
+│ ✦ TELEMETRY        Enter details ││                                                                          ││      │
+│ ▾ SESSION USAGE                  ││    !  sample/merge.go                                                    ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Tokens 159.4k session total    ││ ▾ CHANGES                                                              5 ││      │
 │   Est. cost $0.01 API-equiv.     ││                                                                          ││      │
-│ ▾ QUOTA WINDOWS                  ││ ▾ STAGED CHANGES                                                       3 ││      │
-│   Session (5hr)             35%† ││                                                                          ││      │
-│   ███████████░░░░░░░░░░░░░░░░░░░ ││    M  README.md                                                          ││      │
-│   Resets in 14h 40m              ││    R  tools/replay.jsonl ← tools/old.jsonl                               ││      │
-│   Weekly (7 day)            47%† ││    A  codex-spawn-request.jsonl                                          ││      │
+│ ▾ QUOTA WINDOWS                  ││    M  sample/viewer.go                                                   ││      │
+│   Session (5hr)             35%† ││    M  README.md                                                          ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││    D  sample/viewer_test.go                                              ││      │
+│   Resets in 14h 40m              ││    U  codex-api-key.jsonl                                                ││      │
+│   Weekly (7 day)            47%† ││    U  › notes/                                                           ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Resets in 1d 20h               ││ ▾ STAGED CHANGES                                                       3 ││      │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
 ⋮
  ↑↓ move · → open · ← fold · Enter diff · r refresh · Esc back to the input · F6 zone · F3 Explorer · F1 keys
@@ -1989,7 +1993,7 @@ changed again since is in both sections, each with its own letter: never
 one merged status. An ignored path is never a change. The cursor's row is on the purple band (the
 selectors' `#342B47`), the row under the pointer on a subtler ground
 (`#221D2E`). The rows scroll to keep the cursor in view; the header, the
-rule and the repository's row stay.
+rule, the repository's row and the commit controls stay.
 
 | Letter | Meaning | Colour |
 | - | - | - |
@@ -2025,16 +2029,17 @@ seconds. A read equal to the last changes nothing on screen; a new one
 updates the lists, the cursor kept on its file, in another section if it
 moved there. The same read gives the Explorer's markers.
 
-**Git, read only** (design D10). One `git rev-parse --show-prefix
+**Git's reads** (plan 44, design D10). One `git rev-parse --show-prefix
 --show-toplevel` and one `git status --porcelain=v1 -z --branch
 --untracked-files=normal --ignored -- .` a read, each through `git -c
 core.fsmonitor=false`, with no optional lock and no prompt; never a command
 that writes. As any `git status`, git may run the repository's own clean
-filters (Git LFS) to compare a file whose time changed (probe P44a).
+filters (Git LFS) to compare a file whose time changed (probe P44a). The
+only writes are the commit controls' ([Commit and push](#commit-and-push)).
 
 | Key | Action |
 | - | - |
-| ↑ ↓ PgUp PgDn Home End | move the cursor over headers, files and folders; the wheel over the panel moves it 3 rows |
+| ↑ ↓ PgUp PgDn Home End | move the cursor over headers, files and folders; the wheel over the panel moves it 3 rows; ↑ on the first row goes to the Commit button |
 | → | open a folded section or an untracked folder |
 | ← | fold a section or an opened folder; on a file, to its section's header |
 | Enter | a file's [diff](#diff-view), the comparison of its section; on a header or a folder, fold or open it |
@@ -2047,6 +2052,144 @@ Enter: a file's diff opens, a header folds or opens. The pointer's row is
 hovered, the program's filter passing only a motion that changes it.
 Nothing is selected in the panel; F12 and the terminal's selection copy
 from it.
+
+### Commit and push
+
+Plan 45 (brief amendment 46, the owner's image
+`references/15-commit-push.png`; [reference-design.md, Commit and
+push](reference-design.md#commit-and-push)): under the repository row, a
+message field and a Commit button with a separator and a chevron; under
+the button, only once the chevron opened it, a dropdown with one item,
+"Commit & Push". Golden frame `commit-menu`, 120x40, a message typed, the
+button given the keys and its dropdown opened by →:
+
+```text
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ──────────────────────────────────────────────────────────────────────── ││  ≡   │
+│ ──────────────────────────────── ││ demo-project · main                                                      ││      │
+│ STAGES · inferred from activity  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│ ✓ TURN 1                      0s ││ │Add Source Control diff viewer                                        │ ││▎     │
+│   Use the Agent tool to launch … ││ ╰──────────────────────────────────────────────────────────────────────╯ ││▎ ⑂   │
+│   Agent · agent general-purpose  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││▎     │
+│                                  ││ │                             ✓ Commit                             │ ⌄ │ ││      │
+│ ✓ TURN 2                      0s ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
+│   started by the CLI             ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│ ──────────────────────────────── ││ │  Commit & Push                                                       │ ││      │
+│ ✦ TELEMETRY        Enter details ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
+│ ▾ SESSION USAGE                  ││    !  sample/merge.go                                                    ││      │
+⋮
+ Enter Commit & Push · Esc close · F1 keys
+```
+
+**The drawing.** The message box (its outline `#2E304E`, `#8062D9` with the
+focus, its inside `#151722`, "Message" in `#71789E` while empty), three rows
+with one line of message, up to five with three, the text from its second
+cell, wrapped as zone B's draft; the button (fill `#312C55`, outline
+`#8062D9`, the title colour with the keyboard's focus, label and chevron
+`#ECE5F9`, separator `#745EBA`; halfway to the page while it has nothing to
+do), three rows, "✓ Commit", "Push" or the operation running ("Staging…",
+"Committing…", "Pushing…", with its seconds from the second one:
+"Pushing… 12 s", "Pushing… 1:05"; "Cancelling…") centred in its left
+part, the separator, then "⌄" in its last cells; the dropdown (ground
+`#10101A`, outline `#935EF5`, "Commit & Push" `#EDE7F8` three cells in, on
+a rounded band `#23213C` while the pointer is on it or the keys opened it)
+right under the button, its columns the button's, over the panel's own
+rows, never outside the panel.
+With Sixel, the button and the dropdown are an image each (rounded
+corners, the check mark, the separator and the chevron drawn, the labels by
+GDI in Cascadia Mono at 17 pixels), the message box's outline four images
+around its text cells; without, rounded box characters in the same
+colours. The button has no hover look. The controls show while the panel
+has a repository. Under them, one note, wrapped: a validation in the
+attention colour, a success in green, a failure in red; or the staging
+question; while a push runs, "Esc cancels the push." in grey, or why a stop
+cannot be now in the attention colour.
+
+**The main action, from Git** (design D7). Push while the branch has an
+upstream that exists and is ahead of it (the status read's branch line,
+`main...origin/main [ahead 1]`); otherwise Commit, dimmed with no change.
+After a commit on a branch with an upstream, Push; after the push, Commit;
+after a restart, what Git says. With staged changes and commits to push,
+Push pushes the commits and Commit & Push commits, then pushes all. No
+upstream, a gone upstream, no remote or a detached HEAD leave Commit.
+
+**Commit** (designs D6 and D8). An empty or blank message says "Enter a
+commit message." and runs no git; no change at all, "No changes to
+commit."; a conflict, "Resolve the merge conflicts first.". Something
+staged: the index alone is committed, a partially staged file's unstaged
+part left out. Nothing staged: "Nothing is staged. Stage the N changes
+listed under CHANGES and commit them?" with "Stage and commit" (exactly
+those paths staged, then the commit) and "Cancel" (nothing). The commit
+refuses a rebase, cherry-pick, revert or am in progress, staged changes
+outside the project's folder, and a staged set other than the one shown
+("The staged changes changed since they were shown: check them, then commit
+again."), by its paths or by a file's staged content (design D14: each
+staged file's blob in the index, read with the status shown, compared by
+one `git cat-file --batch-check` just before the commit; a path holding a
+line break by its path alone); then `git -c user.useConfigOnly=true
+commit --file=-`, the message as typed on standard input, hooks and
+signing as configured. It counts once HEAD is a new commit on the old one:
+"Committed <id>.", the field cleared if it still holds the text committed.
+A failure shows git's words, a hook's included, the message kept.
+
+**Push** (design D9). To the upstream only, `git push --porcelain <remote>
+refs/heads/<branch>:<ref>`, `push.followTags` and `push.recurseSubmodules`
+off for the call; never forced. Refused with its explanation, no push run:
+a detached HEAD, no remote, no upstream ("The branch main has no upstream.
+Set one in a terminal: git push -u origin main"), a local upstream, a gone
+upstream, push settings sending the branch elsewhere, nothing to push.
+Credentials through git's own helper; no prompt on the dashboard's console
+(`GIT_TERMINAL_PROMPT=0`, `SSH_ASKPASS_REQUIRE=force`). A rejection said as
+such: non-fast-forward ("Pull or merge them in a terminal, then push."), the
+remote's with its reason; other failures in git's words, a URL's user and
+password removed. Nothing pulled, merged, rebased, reset or retried.
+
+**Commit & Push** (design D10). The push's destination checked first, its
+refusal before any commit; then the commit, stopping there if it fails;
+then the push: "Committed <id> and pushed to origin/main.", or "Committed
+<id>, but the push failed: …", the commit kept, the field cleared, the
+button on Push for the push alone.
+
+**One at a time** (design D11). While an operation runs, the button shows
+it and every other action is ignored; the dashboard keeps working. When it
+ends, git's status is read in the same command, so the button changes on
+Git's word. An operation has no time limit.
+
+**A long operation** (design D15). From its second second the button
+counts the time it has run, redrawn each second. Esc cancels a push: git's
+process group is asked to stop (a console Ctrl+Break: git and its
+transport, a credential helper, end at once), but only while none of the
+lock files a push could hold exists (the index's, HEAD's, packed-refs, the
+branch's and its remote-tracking ref's); while one does, "git is updating
+the repository: try again in a moment." and the push goes on. The break
+names git's own group only, git's pid held from its start until its end
+takes the stop back (probes P45b to P45e: sent to a pid that leads no
+group, it would reach that process's parent, the dashboard). Asked, the
+button says "Cancelling…", then the note "The push was cancelled. The
+remote may have received it: Push again to check." ("Committed <id>; the
+push was cancelled. …" for Commit & Push, the commit kept), the button on
+Git's word; a lock file git left would be named, for the owner to delete,
+never deleted. Staging and a commit cannot be cancelled: git, stopped,
+leaves its lock files behind (probe P45a), and a commit's hooks may run for
+long; Esc during them does what it does otherwise.
+
+| Where | Key | Action |
+| - | - | - |
+| Field | characters, Enter, ←→↑↓, Home, End, Ctrl+←→, Shift, Ctrl+A, Ctrl+Z, Ctrl+Y, Ctrl+C, Ctrl+X, Ctrl+V, a paste | zone B's editor's: Enter a new line, a paste kept byte for byte, never committing |
+| Field | ↓ on the last line | to the button |
+| Field | Esc | back to zone B, the message kept |
+| Button | Enter, Space | the main action |
+| Button | →, Alt+↓ | open the dropdown, its item selected |
+| Button | ↑, ↓ | to the field, to the list |
+| Panel | Ctrl+Enter | the main action, from the field, the button or the list |
+| Dropdown | Enter, Space; Esc | Commit & Push; close |
+| Question | ←→; Enter; Esc | choose; confirm; cancel |
+| Panel, a push running | Esc | cancel the push, unless git holds a lock file |
+
+**The mouse.** A click on the field gives it the keys, the cursor where it
+lands; on the button's left part, the main action (it takes no keys); on the
+chevron, the dropdown opens or closes; on the dropdown's item, Commit &
+Push. A click outside the dropdown or the question closes it and does
+nothing else.
 
 ## Diff view
 

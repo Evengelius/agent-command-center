@@ -256,6 +256,46 @@ func TestGoldenFrames(t *testing.T) {
 			return h
 		}
 	}
+	// The commit controls (plan 45, brief amendment 46): a message typed in
+	// the field, reached by ↑ from the list's first row and ↑ again, then
+	// the button given the keys by ↓ and its dropdown opened by →, its item
+	// on the band; with Sixel, the controls' cells blank for their images;
+	// the button on Push after a commit (an upstream, no conflict), its note
+	// under it.
+	commitRig := func(t *testing.T, git input.Git, keys ...tea.KeyPressMsg) *harness {
+		h := dashGit(t, git)
+		h.send(tea.WindowSizeMsg{Width: 200, Height: 60})
+		for _, c := range h.m.showSource() {
+			h.exec(c)
+		}
+		h.settle()
+		for _, k := range append(append([]tea.KeyPressMsg{key(tea.KeyHome, 0), key(tea.KeyUp, 0), key(tea.KeyUp, 0)},
+			typedText("Add Source Control diff viewer")...), keys...) {
+			h.send(k)
+		}
+		return h
+	}
+	commitMenu := func(t *testing.T) *harness {
+		h := commitRig(t, sourceGit(), key(tea.KeyDown, 0), key(tea.KeyRight, 0))
+		if v := h.m.ui.Source; !v.Menu || !v.MenuHot || h.m.msg.Text() != "Add Source Control diff viewer" {
+			t.Fatalf("the dropdown: open %v, hot %v, message %q", v.Menu, v.MenuHot, h.m.msg.Text())
+		}
+		return h
+	}
+	commitSixel := func(t *testing.T) *harness {
+		h := commitMenu(t)
+		h.send(PrimaryDeviceAttributesEvent{61, 4, 6, 7, 14})
+		return h
+	}
+	commitPush := func(t *testing.T) *harness {
+		g := sourceGit()
+		g.snap.Entries, g.snap.Branch.Upstream = g.snap.Entries[1:], "origin/main"
+		h := commitRig(t, &fakeWrite{fakeGit: g}, key(tea.KeyEnter, tea.ModCtrl))
+		if v := h.m.ui.Source; v.Action != render.ActionPush || v.Notice != "Committed abc0001." {
+			t.Fatalf("after the commit: action %q, note %q", v.Action, v.Notice)
+		}
+		return h
+	}
 	sourceNone := func(t *testing.T) *harness {
 		h := dashGit(t, &fakeGit{statusErr: input.NotRepoError{Dir: `C:\work\demo-project`}})
 		h.send(tea.WindowSizeMsg{Width: 200, Height: 60})
@@ -376,7 +416,8 @@ func TestGoldenFrames(t *testing.T) {
 		{"models-claude-effort", selector("claude-models.jsonl", down(4, key(tea.KeyLeft, 0))...)}, {"models-codex", selector("codex-models.jsonl")},
 		{"models-codex-more", selector("codex-models.jsonl", down(3, key(tea.KeyEnter, 0))...)},
 		{"startup", startup}, {"dashboard", dash}, {"plus-menu", plusMenu}, {"attachments", attached}, {"attachments-sent", sent}, {"attachments-preview", preview}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))},
-		{"source", source()}, {"source-none", sourceNone}, {"source-diff", source(key(tea.KeyEnter, 0))}, {"source-diff-wide", source(key(tea.KeyEnter, 0), typed('f'))}} {
+		{"source", source()}, {"source-none", sourceNone}, {"source-diff", source(key(tea.KeyEnter, 0))}, {"source-diff-wide", source(key(tea.KeyEnter, 0), typed('f'))},
+		{"commit-menu", commitMenu}, {"commit-sixel", commitSixel}, {"commit-push", commitPush}} {
 		for _, size := range sizes {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)

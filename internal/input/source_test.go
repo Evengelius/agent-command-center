@@ -99,7 +99,7 @@ func TestParseSnapshot(t *testing.T) {
 		if !reflect.DeepEqual(entries, want) {
 			t.Errorf("entries = %+v,\nwant %+v", entries, want)
 		}
-		if branch != (GitBranch{Name: "main"}) {
+		if branch != (GitBranch{Name: "main", Upstream: "origin/main"}) {
 			t.Errorf("branch = %+v", branch)
 		}
 		if len(marks.Files) != 6 || marks.Files["é à.txt"] != 'U' || marks.Files["sub/t.txt"] != 'R' || len(marks.Ignored) != 2 {
@@ -114,13 +114,16 @@ func TestParseSnapshot(t *testing.T) {
 		}{
 			{"## main", GitBranch{Name: "main"}},
 			{"## feature/login-2", GitBranch{Name: "feature/login-2"}},
-			{"## main...origin/main", GitBranch{Name: "main"}},
-			{"## main...origin/main [ahead 1]", GitBranch{Name: "main"}},
-			{"## main...origin/main [ahead 1, behind 2]", GitBranch{Name: "main"}},
-			{"## main...origin/main [gone]", GitBranch{Name: "main"}},
+			{"## main...origin/main", GitBranch{Name: "main", Upstream: "origin/main"}},
+			{"## main...origin/main [ahead 1]", GitBranch{Name: "main", Upstream: "origin/main", Ahead: 1}},
+			{"## main...origin/main [behind 2]", GitBranch{Name: "main", Upstream: "origin/main", Behind: 2}},
+			{"## main...origin/main [ahead 1, behind 2]", GitBranch{Name: "main", Upstream: "origin/main", Ahead: 1, Behind: 2}},
+			{"## feature/x...fork/feature/x [ahead 12, behind 30]", GitBranch{Name: "feature/x", Upstream: "fork/feature/x", Ahead: 12, Behind: 30}},
+			{"## main...origin/main [gone]", GitBranch{Name: "main", Upstream: "origin/main", Gone: true}},
 			{"## HEAD (no branch)", GitBranch{Name: "HEAD", Detached: true}},
 			{"## No commits yet on main", GitBranch{Name: "main", NoCommits: true}},
-			{"## No commits yet on main...origin/main [gone]", GitBranch{Name: "main", NoCommits: true}},
+			{"## No commits yet on main...origin/main", GitBranch{Name: "main", NoCommits: true, Upstream: "origin/main"}},
+			{"## No commits yet on main...origin/main [gone]", GitBranch{Name: "main", NoCommits: true, Upstream: "origin/main", Gone: true}},
 			{"## Initial commit on master", GitBranch{Name: "master", NoCommits: true}},
 		} {
 			// The branch record comes first, with an entry after it, and it
@@ -424,6 +427,22 @@ func TestSourceStates(t *testing.T) {
 			ent("", '?', '?', "untracked.txt", ""),
 		}
 		got := append([]GitEntry(nil), snap.Entries...)
+		// The staged entries' blobs (plan 45, design D14): the index's, "-"
+		// for a staged deletion, none for an entry not staged.
+		for i := range got {
+			e := &got[i]
+			want := ""
+			switch {
+			case e.X == 'D':
+				want = "-"
+			case isStaged(*e):
+				want = gitT(t, repo, "rev-parse", ":0:"+e.RepoPath)
+			}
+			if e.Index != want {
+				t.Errorf("%s: blob %q, want %q", e.Path, e.Index, want)
+			}
+			e.Index = ""
+		}
 		// The type change's Y depends on whether the system makes links.
 		for i := range got {
 			if got[i].Path == "t-type.txt" {
@@ -931,7 +950,7 @@ func TestSourceBranch(t *testing.T) {
 	if out := gitT(t, repo, "status", "--porcelain=v1", "--branch"); !strings.Contains(out, "[ahead 1]") {
 		t.Fatalf("not ahead: %s", out)
 	}
-	if snap, err = g.Snapshot(repo); err != nil || snap.Branch != (GitBranch{Name: "main"}) {
+	if snap, err = g.Snapshot(repo); err != nil || snap.Branch != (GitBranch{Name: "main", Upstream: "origin/main", Ahead: 1}) {
 		t.Errorf("ahead of origin/main: %+v, %v", snap.Branch, err)
 	}
 	for _, c := range calls[len(calls)-2:] {

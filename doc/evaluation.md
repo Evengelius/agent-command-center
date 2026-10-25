@@ -96,7 +96,7 @@ owner's normal working conditions (owner, 2026-10-16), since the target is
 about real use:
 
 ```text
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame)$' -count=1 -v
 ```
 
 - Allowed: the owner's usual applications open and idle (VS Code, browsers,
@@ -143,6 +143,11 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   line in ten changed (2,000 hunks) open in the diff view at 120x40 and
   208x59, unified and widened side by side; ↓ ↑ PgDn PgUp, n N and the wheel,
   each timed to its frame: p95 within 16 ms (`keystrokeTarget`).
+- `TestMessageToFrame` (plan 45, criterion 45.16): Source Control's
+  message field at 120x40 and 208x59, with Sixel, so the commit controls'
+  images are in each frame's signature; characters, Backspace, a new line
+  and the arrows, the field grown to three rows and scrolling, each key
+  timed to its frame: p95 within 16 ms (`keystrokeTarget`).
 - A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
   profile, the same test on the last commit) and report it as the loop above
   says.

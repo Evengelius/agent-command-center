@@ -197,6 +197,13 @@ type Model struct {
 	diffEntryOpen           input.GitEntry
 	diffStamp               string
 	diffGen                 int
+	// The commit controls (commit.go, plan 45): the message field, the
+	// operation running and its steps' generation, the question's offer.
+	msg   input.Editor
+	op    *gitOp
+	opGen int
+	opSeq int
+	ask   *asked
 	// This session's registration (plan 16, Sessions): nil when none.
 	lock    *input.SessionLock
 	locking bool
@@ -239,6 +246,12 @@ type Model struct {
 	slide    slide // the effort slider's glide (plan 37)
 	// pillLabels are the mode pill's titles as GDI drew them (plan 39).
 	pillLabels map[string]*image.Alpha
+	// liveLabel is a running operation's label as GDI drew it, the one that
+	// shows: it changes every second (plan 45, design D15).
+	liveLabel struct {
+		key  string
+		mask *image.Alpha
+	}
 
 	screen  *render.Screen // the last frame drawn: what the mouse points at
 	repaint bool           // the palette changed: the next frame draws every row
@@ -445,6 +458,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.folderRead(msg)
 	case diffMsg:
 		m.diffRead(msg)
+	case opMsg:
+		cmds = append(cmds, m.stepDone(msg)...)
+	case opTickMsg:
+		cmds = append(cmds, m.opTicked(msg)...)
 	case wtDiffMsg:
 		m.worktreeDiffed(msg)
 	case lockMsg:
@@ -587,6 +604,7 @@ func (m *Model) syncUI() {
 	}
 	m.ui.Draft = m.edit.Text()
 	m.ui.Editor = m.editorView()
+	m.syncCommit() // the commit controls (plan 45)
 	m.ui.Path = m.path.Text()
 	r := input.ResolvePath(m.path.Text(), m.env)
 	m.ui.Resolved, m.ui.PathProblem, m.ui.PathWarning = r.Path, r.Problem, r.Warning
@@ -980,6 +998,8 @@ func (m *Model) paste(text string) {
 		m.path.Insert(input.CleanPath(text))
 	case m.s.Screen == state.ScreenDashboard && render.WindowOpen(m.ui):
 		m.filePaste(text) // the window takes it, or drops it
+	case m.s.Screen == state.ScreenDashboard && m.msgFocused():
+		m.msg.Paste(text) // the commit message (plan 45, design D2): never commits
 	case m.s.Screen == state.ScreenDashboard && m.draftBeside():
 		m.edit.Paste(text) // line breaks as LF, nothing else changed; never submits
 	}

@@ -6523,3 +6523,621 @@ Implement genuine Git-backed change inspection, not a simulated list or a plain 
 ````
 
 Taken as plan 44 (plan.md, Plan 44).
+
+## Amendment 46, 2026-10-25: Commit and Push in Source Control, for plan 45
+
+After plan 44 was approved and pushed, the owner sent an image, copied as
+`references/15-commit-push.png` (`47.png`, 604x508: the dashboard's Source
+Control panel redrawn, "SOURCE CONTROL" and its "⌄", the repository and
+branch row, a message field with the placeholder "Message", a purple
+"✓ Commit" button with a separator and a chevron, and under it an open
+dropdown with one item, "Commit & Push"), and wrote, word for word:
+
+````text
+# Agent Command Center — Source Control: Commit & Push Implementation
+
+## Objective
+
+The Source Control interface design is complete and approved.
+
+Your task is now to implement the actual **Git Commit and Push functionality**, using the **attached screenshot as the authoritative visual specification**.
+
+The application already has working Git repository detection, file status indicators, and a diff viewer.
+
+Extend the existing Source Control implementation. Do not rebuild the Git integration or redesign the interface.
+
+The required workflows are:
+
+1. **Commit → Push** — two separate actions.
+2. **Commit & Push** — both actions performed sequentially.
+
+All operations must target the currently selected Git repository.
+
+---
+
+## 1. Strict Visual Design
+
+The attached screenshot is the final approved design.
+
+Reproduce and preserve exactly:
+
+- The `SOURCE CONTROL` header.
+- The repository name and current branch.
+- The commit message input with placeholder `Message`.
+- The purple/lavender Commit button.
+- The checkmark icon.
+- The vertical separator inside the button.
+- The downward chevron on the right.
+- The dark dropdown with purple border.
+- The single `Commit & Push` option.
+- The existing rounded corners, spacing, typography, and colors.
+
+**Do not change the approved design.**
+
+### Important
+
+The dropdown containing `Commit & Push` must be **hidden by default**.
+
+It must appear **only after clicking the downward chevron** on the right side of the Commit button.
+
+Clicking the main Commit button must not open the dropdown.
+
+Clicking outside the dropdown must close it.
+
+The dropdown must be horizontally aligned with the main Commit button, using the same left and right boundaries.
+
+Do not introduce extra footer rows or unnecessary empty space.
+
+---
+
+## 2. Commit Message Input
+
+The text field directly beneath the repository/branch label is used to enter the Git commit message.
+
+### Appearance
+
+Placeholder:
+
+`Message`
+
+Keep the current design intact.
+
+### Behavior
+
+- Allow the user to enter and edit a commit message.
+- Support ordinary keyboard navigation and clipboard paste.
+- Preserve the entered message when switching between Source Control and Explorer.
+- Do not clear the message merely because the panel loses focus.
+- Do not submit a commit while the user is still typing.
+
+### Validation
+
+A commit requires a non-empty message.
+
+If the user clicks Commit or Commit & Push without entering a message:
+
+- Do not execute Git.
+- Keep the message field visible.
+- Show a concise validation message.
+- Preserve the current state.
+
+Trim surrounding whitespace for validation, but do not unnecessarily alter the user's message.
+
+Never create an empty commit unless such functionality is separately requested.
+
+---
+
+## 3. Workflow A — Commit, Then Push
+
+This is the primary workflow.
+
+### Step 1 — Enter a message
+
+The user enters a commit message in the `Message` field.
+
+Example:
+
+`Add Source Control diff viewer`
+
+### Step 2 — Click Commit
+
+The main button initially displays:
+
+`✓ Commit`
+
+Clicking it performs a real Git commit using the supplied message.
+
+### Expected behavior
+
+1. Verify the active Git repository.
+2. Verify that the current repository state permits a commit.
+3. Validate the commit message.
+4. Determine which changes will be included.
+5. Perform the commit using the existing Git integration.
+6. Wait for Git to confirm success.
+7. Refresh Source Control status.
+8. Preserve all remaining uncommitted changes.
+
+**Never report success before Git confirms that the commit was created.**
+
+### Step 3 — Change the button to Push
+
+After a successful commit, the main button must change from:
+
+`✓ Commit`
+
+to:
+
+`Push`
+
+The new label must be displayed in the **same button**, preserving its:
+
+- Position.
+- Width.
+- Height.
+- Purple/lavender styling.
+- Rounded corners.
+- Existing typography and alignment.
+
+Do not create a second button.
+
+The button now represents the next logical action: pushing the committed changes.
+
+### Step 4 — Click Push
+
+Clicking Push must execute a real Git push to the configured upstream remote.
+
+### Expected behavior
+
+1. Verify the current branch.
+2. Verify the upstream remote configuration.
+3. Push the local commits using standard, safe Git behavior.
+4. Wait for the Git command to complete.
+5. Report success or failure accurately.
+6. Refresh repository status.
+
+Never use `--force`, `--force-with-lease`, or history rewriting.
+
+### After successful Push
+
+- Refresh the repository status.
+- Remove the pending-push state when Git confirms synchronization.
+- Return the main action to `Commit` when appropriate.
+- Keep any new, uncommitted changes intact.
+- Clear the commit message only after a successful commit.
+
+The transition between Commit and Push must reflect the **actual Git state**, not merely an in-memory Boolean.
+
+If unpushed commits already exist when the application starts or resumes, detect them correctly.
+
+---
+
+## 4. Workflow B — Commit & Push
+
+This is the secondary workflow.
+
+### Step 1 — Enter a message
+
+The user enters a commit message in the same `Message` field.
+
+### Step 2 — Click the Chevron
+
+Clicking the small downward chevron on the right of the Commit button opens the dropdown.
+
+The dropdown must contain exactly one option:
+
+`Commit & Push`
+
+**Do not add a second Commit option.**
+
+The main button already performs Commit.
+
+Do not introduce:
+
+- Commit (Amend).
+- Commit & Sync.
+- Force Push.
+- Additional Git commands.
+
+### Step 3 — Click Commit & Push
+
+Clicking `Commit & Push` must:
+
+1. Validate the commit message.
+2. Verify the Git repository and changes.
+3. Execute the commit.
+4. Confirm that the commit succeeded.
+5. Execute the push.
+6. Confirm the push result.
+7. Refresh Source Control.
+
+These operations must happen **sequentially**, never simultaneously.
+
+The push must not begin before the commit succeeds.
+
+### Successful result
+
+When both operations succeed:
+
+- Close the dropdown.
+- Refresh the Git status.
+- Clear the committed message.
+- Restore the appropriate main-button state.
+- Show a concise confirmation.
+
+### Commit failure
+
+If the commit fails:
+
+- Stop immediately.
+- Do not attempt to push.
+- Preserve the message and relevant UI state.
+- Report the actual Git error.
+
+### Push failure
+
+If the commit succeeds but the push fails:
+
+- **Keep the successful local commit.**
+- Do not undo or recreate the commit.
+- Do not repeat the commit automatically.
+- Report that the commit succeeded but the push failed.
+- Change the main button to `Push`, allowing the user to retry only the push.
+
+This is especially important to prevent duplicate commits.
+
+---
+
+## 5. Dropdown and Hover Behavior
+
+The attached screenshot defines the dropdown appearance.
+
+### Hidden state
+
+By default, show only the main button:
+
+`✓ Commit   |   v`
+
+No dropdown is visible.
+
+### Open state
+
+After clicking the chevron, display the dropdown directly beneath the button.
+
+It contains one row:
+
+`Commit & Push`
+
+### Hover effect — strict requirement
+
+Implement the purple/lavender background hover effect **only on the `Commit & Push` dropdown item**.
+
+When the mouse enters that row:
+
+- Apply the approved purple-tinted background.
+- Keep its rounded rectangular shape.
+- Preserve text contrast.
+- Do not move or resize the dropdown.
+
+When the mouse leaves:
+
+- Restore its normal appearance.
+
+Do not introduce an additional hover-background effect on the main Commit button.
+
+Preserve its existing styling and necessary keyboard-focus indication.
+
+### Closing behavior
+
+Close the dropdown when:
+
+- The user clicks outside.
+- The user presses Escape.
+- The user selects Commit & Push.
+
+Do not allow the dropdown to overlap unrelated dashboard elements unpredictably.
+
+---
+
+## 6. Safe Git Staging Semantics
+
+This requires special attention.
+
+The application already distinguishes staged and unstaged changes.
+
+Respect Git's actual index semantics.
+
+### If staged changes exist
+
+Commit only the staged content.
+
+Do not silently include additional unstaged changes from the same files.
+
+### If no changes are staged
+
+If there are eligible unstaged or untracked changes, offer an explicit confirmation to stage the intended files before committing.
+
+The user must be able to understand which changes will be included.
+
+Do not silently stage every file in the repository.
+
+If the user declines staging, do not commit.
+
+### If there are no changes
+
+Do not create an empty commit.
+
+Show a concise message such as:
+
+`No changes to commit.`
+
+### Partially staged files
+
+Preserve the distinction between staged and unstaged content.
+
+Do not accidentally include changes the user has deliberately left unstaged.
+
+The same rules apply to both Commit and Commit & Push.
+
+---
+
+## 7. Push Safety and Remote Handling
+
+Use the active repository's actual Git configuration.
+
+Before pushing, verify:
+
+- Current branch.
+- Remote availability.
+- Upstream configuration.
+- Whether local commits need pushing.
+- Whether the operation can proceed safely.
+
+### No configured remote
+
+Do not invent a remote or automatically create one.
+
+Display a clear explanation.
+
+### No upstream branch
+
+Do not silently select an arbitrary destination.
+
+Explain that an upstream must be configured.
+
+### Authentication required
+
+Use Git's existing supported credential mechanism.
+
+Do not request, store, or log access tokens directly.
+
+### Non-fast-forward rejection
+
+Report the rejection.
+
+Do not automatically pull, merge, rebase, reset, or force-push.
+
+### Other failures
+
+Handle:
+
+- Network unavailable.
+- Authentication failure.
+- Permission denied.
+- Remote rejected.
+- Protected branch.
+- Concurrent repository changes.
+- Git hooks rejecting the commit.
+- User cancellation where supported.
+
+Do not attempt dangerous automatic recovery.
+
+---
+
+## 8. Main Button State Management
+
+The main button must represent the real Git workflow state.
+
+### Required states
+
+| Git state | Main action |
+|---|---|
+| Changes ready to commit | Commit |
+| Commit completed, pending push | Push |
+| Push failed, commit exists locally | Push |
+| Push completed, new changes available | Commit |
+| No actionable changes or commits | Commit, disabled where appropriate |
+
+When a new commit is successfully created, Push must become available immediately.
+
+When the application restarts, it must derive the pending-push state from Git rather than forgetting it.
+
+If staged changes and unpushed commits coexist, do not hide either capability or discard pending work. Preserve a coherent way to complete both operations.
+
+### UI synchronization
+
+Keep synchronized:
+
+- Main button label.
+- Commit-message field.
+- Git status indicators.
+- Current branch.
+- Changes list.
+- Staged changes list.
+- Pending-push state.
+- Operation results.
+
+No fake state transitions.
+
+---
+
+## 9. Prevent Duplicate Operations
+
+Git operations must not be accidentally executed multiple times.
+
+While Commit or Push is running:
+
+- Prevent duplicate submissions.
+- Disable conflicting actions temporarily.
+- Keep the interface responsive.
+- Show concise progress feedback.
+
+Rapid repeated clicks must not create duplicate commits.
+
+If the user performs Commit & Push, do not allow a second Commit operation to start concurrently.
+
+Do not automatically retry a failed commit or push.
+
+---
+
+## 10. Preserve the Existing Interface
+
+The approved screenshot is the authoritative design reference.
+
+Do not redesign Source Control.
+
+Do not modify:
+
+- The Source Control header.
+- The repository and branch presentation.
+- The Changes list.
+- The existing Git status indicators.
+- The diff viewer.
+- Explorer.
+- The right activity sidebar.
+- Zone A.
+- Zone B conversation.
+- Zone C.
+- Telemetry.
+- Model selection.
+- Effort selector.
+- Ultracode.
+- Permission modes.
+- Image attachments.
+- Global footer.
+
+Only implement the requested Commit and Push controls, plus the minimum necessary validation and feedback.
+
+---
+
+## 11. Testing and Verification
+
+Use isolated temporary Git repositories for functional tests.
+
+**Do not create test commits or pushes in my actual Agent Command Center repository.**
+
+### Commit tests
+
+Verify:
+
+1. Valid commit message.
+2. Empty commit message.
+3. No changes available.
+4. Staged changes.
+5. Unstaged changes.
+6. Untracked files.
+7. Partially staged files.
+8. Commit success.
+9. Commit failure.
+10. Commit hook rejection.
+11. Duplicate-click prevention.
+
+### Push tests
+
+Use local bare Git repositories as test remotes.
+
+Verify:
+
+1. Successful push.
+2. Missing remote.
+3. Missing upstream.
+4. Remote rejection.
+5. Non-fast-forward rejection.
+6. Push failure after successful commit.
+7. Retry Push without recreating the commit.
+8. Correct pending-push state after restarting the application.
+
+### Combined workflow tests
+
+Verify:
+
+1. Commit & Push succeeds.
+2. Commit fails and Push never starts.
+3. Commit succeeds but Push fails.
+4. No duplicate commit is created during retries.
+5. The dropdown closes appropriately.
+6. The button state reflects actual Git history.
+
+### UI tests
+
+Verify:
+
+1. Dropdown hidden by default.
+2. Clicking the chevron opens it.
+3. Exactly one option appears.
+4. Clicking outside closes it.
+5. Escape closes it.
+6. The dropdown aligns with the main button.
+7. Commit & Push hover matches the screenshot.
+8. The main Commit button does not gain the new dropdown-item hover effect.
+9. Commit becomes Push after a successful commit.
+10. Existing Source Control navigation remains functional.
+
+Run the project's existing regression tests.
+
+Do not weaken existing acceptance criteria.
+
+---
+
+## 12. Delivery Requirements
+
+Before declaring completion, provide:
+
+1. Summary of the implemented Git operations.
+2. Explanation of staging behavior.
+3. Explanation of Commit → Push state transitions.
+4. Explanation of Commit & Push failure handling.
+5. Evidence from isolated Git integration tests.
+6. Regression-test results.
+7. Actual Windows Terminal screenshots showing:
+   - The message field.
+   - The Commit button.
+   - The Commit & Push dropdown.
+   - The hover effect.
+   - The main button changed to Push after committing.
+8. Any unresolved limitations.
+
+Do not mark a workflow successful unless Git confirms the corresponding operation.
+
+**Do not commit the implementation until I have reviewed the results.**
+
+---
+
+## Final Instruction
+
+The attached screenshot is the final approved visual specification.
+
+Implement two genuine Git workflows:
+
+**Workflow A**
+
+`Enter message → Commit → Push`
+
+**Workflow B**
+
+`Enter message → Open dropdown → Commit & Push`
+
+The dropdown must remain hidden until the user clicks the chevron.
+
+It must contain only `Commit & Push`.
+
+The approved purple hover effect applies to the dropdown item, not the main Commit button.
+
+After a successful commit, the main Commit button becomes Push.
+
+Respect Git staging semantics, preserve existing changes, and never silently perform unsafe repository operations.
+
+**Match the attached design strictly. Preserve everything else in Agent Command Center.**
+````
+
+Taken as plan 45 (plan.md, Plan 45).

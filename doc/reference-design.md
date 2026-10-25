@@ -16,6 +16,7 @@ point at it. Two references, with different roles:
 | `09-plus-menu.png` (492x196), from amendment 30 | **the "+" menu**: the "+" clicked, on an active background, a menu above it with a folder icon and "Upload from computer" highlighted under the mouse | [The "+" menu](#the-plus-menu) |
 | `12-sidebar-collapsed.png` (955x332), `13-sidebar-explorer.webp` (1393x479), from amendment 44 | **the right sidebar**: a narrow box right of zone B with two icons, the Explorer's and Skills' (Source Control's since amendment 45); the Explorer docked between zone B and the sidebar, its tree, the Explorer's icon selected | [The right sidebar](#the-right-sidebar) |
 | `14-source-control.png` (218x160), from amendment 45 | **Source Control**: VS Code's panel header "Source Control" with its "···", a "Changes" section, a commit message box and a Commit button, the organisation to follow, not its theme | [Source Control](#source-control) |
+| `15-commit-push.png` (604x508), from amendment 46 | **Commit and push**: the dashboard's Source Control panel with a "Message" field, a purple "✓ Commit" button with its separator and chevron, and its open dropdown, "Commit & Push" on a rounded band; the authoritative design | [Commit and push](#commit-and-push) |
 
 **It is a visual reference, not a product.** The reference looks like a
 promotional mock-up ("CLAUDE CODE ULTRACODE TIP"). Its model names, flags
@@ -634,12 +635,66 @@ paths, in the dashboard's own colours ([ui-design.md, Source
 Control](ui-design.md#source-control)).
 
 What differs:
-- The commit message box and the Commit button are left out: the
-  amendment keeps this phase read only ("Do not implement committing,
-  staging actions, or Git synchronization in this phase").
+- The commit message box and the Commit button were left out by plan 44:
+  the amendment kept that phase read only ("Do not implement committing,
+  staging actions, or Git synchronization in this phase"). Plan 45 adds
+  them after the owner's later image ([Commit and push](#commit-and-push)).
 - The header's "···" is the Explorer's "⌄", which hides the panel: there is
   no menu of actions to open.
 - A rule under the header and the repository's row, as in the Explorer's
   panel (plan 43), where the example has a blank row.
 - MERGE CHANGES comes first when git reports conflicts, as VS Code lists
   them, a section the example does not show.
+
+## Commit and push
+
+Brief amendment 46 (plan 45): `15-commit-push.png` (604x508, the owner's
+`47.png`), the dashboard's Source Control panel redrawn: "SOURCE CONTROL"
+and its "⌄", the rule, "agent-command-center · main", then a message field
+with the placeholder "Message", a purple "✓ Commit" button with a vertical
+separator and a chevron, and under it an open dropdown with one item,
+"Commit & Push", on a rounded band. The amendment calls it the authoritative
+visual specification.
+
+Its colours, read from the pixels (`scratchpad\plan45\imgpx.ps1`: each
+region's most frequent colour, and the brightest tenth of its pixels that
+stand out):
+
+| Element | Colour |
+| - | - |
+| The page | `#0C0D0F` |
+| The message box's inside, outline, placeholder | `#151722`, `#2E304E` (`#282A46` to `#2E304E` antialiased), `#71789E` |
+| The button's fill, outline, label, separator, chevron | `#312C55`, `#8062D9` (`#7C5FD4` to `#8062D9`), `#ECE5F9`, `#745EBA`, `#ECE5FB` |
+| The dropdown's ground, outline | `#10101A`, `#935EF5` (`#8B5CF6` to `#9660F8`) |
+| The hovered item's band, its text | `#23213C`, `#EDE7F8` |
+
+Its geometry, a row being 43 pixels of the image and a cell 22.5 across:
+the three boxes span the panel's inner width; each is two rows high to the
+eye (88, 86 and 112 pixels); the message box starts about one row under
+the repository row, the button 29 pixels under it, the dropdown 12 pixels
+under the button; the separator stands at five sixths of the button's
+width, 16 pixels short of its top and bottom; the chevron is centred in the
+last sixth; the check mark and "Commit" are centred in the left part; the
+band is inset about 14 pixels at its sides and 16 above and below, its
+corners rounded; the boxes' corners have a radius of about 10 pixels.
+
+What plan 45 takes: everything listed above, in those colours, as Sixel
+images where a cell would need three colours (a rounded outline with a fill
+on either side), text cells inside the message box ([ui-design.md, Commit
+and push](ui-design.md#commit-and-push)).
+
+What differs:
+- "Message", "Commit" and "Commit & Push" are drawn in the dashboard's
+  monospace (Cascadia Mono, by the terminal or by GDI in the images) at the
+  terminal's size, where the image uses a proportional face a little
+  larger: the dashboard's typography is kept, as the amendment asks.
+- The vertical gaps follow the cells: the box, the button and the dropdown
+  each take three rows, their outlines in the middle of the first and last,
+  so the button stands a row under the box (the image: two thirds of a row)
+  and the dropdown half a row under the button (a quarter); the dropdown's
+  box is 52 pixels of its 60.
+- The image shows the item hovered; its band shows only while the pointer
+  is on it or the keys opened the dropdown, as the amendment asks.
+- The dimmed button (nothing to do), the focus outline and the "Push" label
+  are not in the image; they keep its geometry and colours, the dimmed ones
+  halfway to the page, the focus outline in the title colour.

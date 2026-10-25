@@ -172,8 +172,8 @@ func (m *Model) closeWindows() {
 // screen (plan 43, design D8; plan 44, design D5). The panel in zone B's
 // place, or the diff there, leaves them to no one, as zones A and C do.
 func (m *Model) draftBeside() bool {
-	if m.ui.Diff.Open {
-		return false
+	if m.ui.Diff.Open || m.msgFocused() {
+		return false // the commit message takes the keys and pastes (plan 45, design D2)
 	}
 	return m.ui.Focus == "B" || m.ui.Focus == "R" && render.PanelShown(m.ui) && !render.PanelCompact(m.s, m.ui)
 }

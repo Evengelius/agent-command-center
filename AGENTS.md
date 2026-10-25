@@ -22,8 +22,8 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-25, when the owner approved plan
-44, Source Control and a Git diff viewer (brief amendment 45).** Plans 1 to 44 (research; architecture and reliability; proposal; the
+**Status: plan 45 active since 2026-10-25, Commit, Push and Commit & Push
+in Source Control (brief amendment 46).** Plans 1 to 44 (research; architecture and reliability; proposal; the
 MVP; post-MVP improvements; plan 5's known limits; the open list after plan 6; Codex's allow for the session; plan 8's items left not verified; a spawned Codex agent's label and the timing step; a live approval offering the allow for the session; Manual or Auto approvals; a reviewer's refusal live; nothing left open; recent projects, favourites and a project browser; git worktree management; a file viewer, an Explorer and the draft in a window; an adaptive layout; zone B as the centerpiece; strict conformance to the owner's two approved templates; what the review of d84e5d4 found; a live thinking indicator in zone B; the acc launcher in the project; zone A with the telemetry and the usage report read; the unrecognised lines named; zone A without notes; zone C with the execution timeline; the top right after the owner's image; the input editor's row after the owner's image; the "+" menu after the owner's image; image upload; image paste and preview; unsent drafts and images through crashes and restarts; the model selector, its effort and Ultracode; the Ultracode toggle after the owner's image; the selector's cursor and a pointer that has not moved; the effort slider after the owner's images; instant Codex model and effort changes, as in VS Code; the permission modes selector after the owner's images; no empty rows in zone C's execution timeline; no authorization on low-risk review rows; the mouse in zone B, a click to fold and a double click to open; a right activity sidebar with the Explorer docked; Source Control and a Git diff viewer) are closed; the MVP was approved on 2026-10-17. `plan.md` holds the active
 plan's progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.
@@ -95,7 +95,7 @@ go build ./...                                 build everything
 go vet ./...                                   static checks
 gofmt -l .                                     must print nothing
 go test ./...                                  every deterministic test; no CLI, no quota
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame)$' -count=1 -v
                                                the keystroke timing step, run alone (doc\evaluation.md)
 go test ./internal/app -run TestGoldenFrames -update     rewrite golden frames; review the diff
 go test ./internal/provider/mock -run TestMockFiles -update  rewrite testdata\mock from the probes
@@ -150,7 +150,9 @@ and need the owner's approval where it says so. tmux is not used.
   (amendment 40). One agent
   CLI per session, no switching during a session. The Worktrees view runs
   git in the chosen repository only, never with `--force`, and a worktree
-  becomes the working directory only by starting a session on it.
+  becomes the working directory only by starting a session on it. Source
+  Control commits the index and pushes to the upstream only, never forcing,
+  amending or rewriting history (amendment 46).
 - **MVP scope is fixed** by amendment 4: build none of the features it leaves
   out (model configuration, cross-provider collaboration, provider
   switching, session profiles, orchestration settings), except recent
@@ -160,8 +162,9 @@ and need the owner's approval where it says so. tmux is not used.
   project, which replace the editor integration (amendments 11 and 12,
   plan 17), the session's model, effort and Ultracode selection,
   asked for in amendment 34 (plan 34), the permission modes selector,
-  asked for in amendment 40 (plan 39), and Source Control with a read-only
-  Git diff viewer, asked for in amendment 45 (plan 44). The ones left out are
+  asked for in amendment 40 (plan 39), Source Control with a read-only
+  Git diff viewer, asked for in amendment 45 (plan 44), and its commit and
+  push, asked for in amendment 46 (plan 45). The ones left out are
   **[Nice to have]**: future improvements, never listed as remaining, built
   only if the owner asks for one in a new plan (`plan.md`, Nice to have).
 - **Dependencies are fixed** at the four the owner approved on 2026-10-16

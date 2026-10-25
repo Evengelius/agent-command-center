@@ -138,7 +138,8 @@ func (m *Model) previewFrame() {
 func (m *Model) previewSignature() string {
 	ts, tg, sl := m.screen.Thumbs(), m.screen.Toggle, m.screen.Slider
 	md, mp, st := m.screen.Modes, m.screen.ModePill, m.screen.Tiles
-	if len(ts) == 0 && !tg.Shown && !sl.Shown && !md.Strips && !mp.Shown && !st[0].Shown && !st[1].Shown {
+	cm, mn, mb := m.screen.Commit, m.screen.Menu, m.screen.MsgBox
+	if len(ts) == 0 && !tg.Shown && !sl.Shown && !md.Strips && !mp.Shown && !st[0].Shown && !st[1].Shown && !cm.Shown && !mn.Shown && !mb.Shown {
 		return ""
 	}
 	var b strings.Builder
@@ -174,6 +175,18 @@ func (m *Model) previewSignature() string {
 			fmt.Fprintf(&b, "tile %dx%d %d %d %+v\n", m.ui.Width, m.ui.Height, t.X, t.Y, t.Look)
 			addRows(t.Y, render.SideTileRows)
 		}
+	}
+	if cm.Shown {
+		fmt.Fprintf(&b, "commit %d %d %+v\n", cm.X, cm.Y, cm.Look) // the commit controls (plan 45, design D5)
+		addRows(cm.Y, render.BtnRows)
+	}
+	if mn.Shown {
+		fmt.Fprintf(&b, "menu %d %d %+v\n", mn.X, mn.Y, mn.Look)
+		addRows(mn.Y, render.MenuRows)
+	}
+	if mb.Shown {
+		fmt.Fprintf(&b, "msgbox %d %d %+v\n", mb.X, mb.Y, mb.Look)
+		addRows(mb.Y, mb.Look.Rows+2)
 	}
 	for _, t := range ts {
 		key, pixels, sum := "", false, [32]byte{}
@@ -382,6 +395,7 @@ func (m *Model) thumbSequence() string {
 			fmt.Fprintf(&draw, "\x1b[%d;%dH%s", t.Y+1, t.X+1, render.SideSixel(t.Look))
 			now = append(now, render.Thumb{Item: -6 - i, X: t.X, Y: t.Y, W: render.SideTileCells, H: render.SideTileRows})
 		}
+		now = append(now, m.commitSequence(&draw)...) // the commit controls (plan 45, design D5)
 	}
 	var clear strings.Builder
 	for _, old := range m.drawn {

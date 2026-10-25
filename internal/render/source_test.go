@@ -242,14 +242,14 @@ func TestSourcePanel(t *testing.T) {
 	v := sourceDemo()
 	v.Open, v.Repo, v.Branch, v.Cursor = true, "agent-command-center", "main", "f:staged:gone.go"
 	ui := UI{Width: 200, Height: 60, Focus: "R", Source: v}
-	ls := sourcePanel(ui, 36, 12)
+	ls := sourcePanel(ui, 36, 18) // 12 rows and the commit controls' six (plan 45)
 	text := texts(ls)
 	for _, s := range []string{"SOURCE CONTROL", "⌄", "agent-command-center · main", "STAGED CHANGES", "D  gone.go"} {
 		if !strings.Contains(text, s) {
 			t.Errorf("%q not drawn:\n%s", s, text)
 		}
 	}
-	if len(ls) != 12 || strings.Contains(text, "MERGE CHANGES") {
+	if len(ls) != 18 || strings.Contains(text, "MERGE CHANGES") {
 		t.Errorf("%d rows, the top not scrolled off:\n%s", len(ls), text)
 	}
 	if ls[0][0].st != stTitle {
@@ -271,9 +271,10 @@ func TestSourcePanel(t *testing.T) {
 		{SourceView{Open: true, Repo: "demo", Branch: "main"}, "No changes"},
 		{SourceView{Open: true, Repo: "demo", Note: "git: index locked", Failed: true}, "git: index locked"},
 	} {
-		ls := sourcePanel(UI{Width: 200, Height: 60, Focus: "B", Source: c.v}, 31, 12) // 208 columns' panel
+		ui := UI{Width: 200, Height: 60, Focus: "B", Source: c.v}
+		ls := sourcePanel(ui, 31, 18) // 208 columns' panel
 		var words []string
-		for _, l := range ls[4:] {
+		for _, l := range ls[4+len(commitControls(ui, 27)):] { // under the commit controls (plan 45)
 			words = append(words, strings.Fields(strings.Trim(plainOf(l), "│"))...)
 		}
 		if got := strings.Join(words, " "); !strings.HasPrefix(got, c.want) {

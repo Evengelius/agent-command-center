@@ -199,6 +199,10 @@ func pastedNumber(name string) (int, bool) {
 func (m *Model) terminalPaste(text string) []tea.Cmd {
 	m.pasteCount++
 	m.lastPaste = m.ui.Now
+	if m.msgFocused() && !render.WindowOpen(m.ui) {
+		m.paste(text) // the commit message takes text alone (plan 45, design D2)
+		return nil
+	}
 	ci := m.clipImages()
 	if ci == nil || !m.editorTakesPaste() || m.sess == nil || m.limits().MaxCount == 0 || !looksLikePaths(text) {
 		m.paste(text)

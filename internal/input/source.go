@@ -39,6 +39,10 @@ type GitEntry struct {
 	// RepoPath and RepoOrig are the same relative to the repository's top
 	// level, as git's objects name them (for cat-file).
 	RepoPath, RepoOrig string
+	// Index is a staged entry's blob in the index as the snapshot read it,
+	// "-" when the index holds none (a staged deletion), "" for an entry
+	// not staged: the commit compares it (plan 45, design D14).
+	Index string
 }
 
 // GitBranch is the branch line of git status (plan 44, design D4).
@@ -51,6 +55,14 @@ type GitBranch struct {
 	// NoCommits says the branch has no commit yet.
 	NoCommits bool
 	Head      string
+	// Upstream is the branch's upstream as git short-names it ("origin/main"),
+	// "" when it has none (plan 45, design D7). Ahead and Behind are the
+	// commits the branch has that the upstream has not, and the reverse; both
+	// 0 when the branch line says nothing. Gone says the upstream is
+	// configured but its branch no longer exists on the remote.
+	Upstream      string
+	Ahead, Behind int
+	Gone          bool
 }
 
 // GitSnapshot is git's view of a project at one moment (plan 44, design D2):
@@ -302,6 +314,45 @@ func (g GitCLI) catFile(dir string, specs []string) ([]object, error) {
 		return nil
 	}, args...)
 	return objs, err
+}
+
+// stagedBlobs is the index's blob of each repository path, by one git
+// cat-file --batch-check of ":0:<path>", the content never read: "-" for a
+// path the index does not hold (a staged deletion). A path holding a line
+// break is left out, cat-file reading its names a line each; its entry is
+// compared by its path alone (plan 45, design D14).
+func (g GitCLI) stagedBlobs(dir string, paths []string) (map[string]string, error) {
+	var asked []string
+	for _, p := range paths {
+		if !strings.ContainsAny(p, "\r\n") {
+			asked = append(asked, p)
+		}
+	}
+	blobs := map[string]string{}
+	if len(asked) == 0 {
+		return blobs, nil
+	}
+	var in strings.Builder
+	for _, p := range asked {
+		in.WriteString(":0:" + p + "\n")
+	}
+	err := g.stream(readLimit, dir, strings.NewReader(in.String()), func(r *bufio.Reader) error {
+		for _, p := range asked {
+			l, err := r.ReadString('\n')
+			if err != nil {
+				return errors.New("git cat-file ended before it answered")
+			}
+			l = strings.TrimRight(l, "\r\n")
+			if strings.HasSuffix(l, " missing") || strings.HasSuffix(l, " ambiguous") {
+				blobs[p] = "-"
+				continue
+			}
+			id, _, _ := strings.Cut(l, " ") // "<id> <type> <size>", or "<id> submodule"
+			blobs[p] = id
+		}
+		return nil
+	}, "cat-file", "--batch-check")
+	return blobs, err
 }
 
 // readObject reads one answer of git cat-file --batch: "<id> <type> <size>"

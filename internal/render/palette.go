@@ -125,6 +125,28 @@ var (
 	cDiffAddGround = colour{"#12301F", ""}
 	cDiffDel       = colour{"#FFC4C4", "9"}
 	cDiffDelGround = colour{"#3A161A", ""}
+	// Source Control's commit controls (plan 45, design D5; the owner's image
+	// references/15-commit-push.png, read from its pixels): the message
+	// box's inside, outline, outline with the focus and placeholder; the
+	// button's fill, outline, label and separator, and each halfway to the
+	// page (#0C0D0F) while it has nothing to do; the dropdown's ground,
+	// outline, band and text. No ground on 16 colours.
+	cMsgInside     = colour{"#151722", ""}
+	cMsgOutline    = colour{"#2E304E", "8"}
+	cMsgFocus      = colour{"#8062D9", "5"}
+	cMsgHolder     = colour{"#71789E", "8"}
+	cBtnFill       = colour{"#312C55", ""}
+	cBtnOutline    = colour{"#8062D9", "5"}
+	cBtnLabel      = colour{"#ECE5F9", "15"}
+	cBtnSep        = colour{"#745EBA", "5"}
+	cBtnFillDim    = colour{"#1E1C32", ""}
+	cBtnOutlineDim = colour{"#463774", "8"}
+	cBtnLabelDim   = colour{"#7C7984", "8"}
+	cBtnSepDim     = colour{"#403564", "8"}
+	cMenuGround    = colour{"#10101A", ""}
+	cMenuOutline   = colour{"#935EF5", "13"}
+	cMenuBand      = colour{"#23213C", ""}
+	cMenuText      = colour{"#EDE7F8", "15"}
 )
 
 // modelColours colours a model by its family; any other model is text.
@@ -221,6 +243,13 @@ var (
 	// Source Control's section titles and a type change's letter (plan 44,
 	// design D4); the diff's added and removed text (design D8).
 	stTitleBold, stInfo, stDiffAdd, stDiffDel = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	// The commit controls in text (plan 45, design D5): the message box's
+	// outline, with the focus, its placeholder; the button's outline, with
+	// the focus, dimmed, its label and separator, both dimmed; the
+	// dropdown's outline and text.
+	stMsgOutline, stMsgFocus, stMsgHolder                                = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	stBtnOutline, stBtnFocus, stBtnOutlineDim, stBtnLabel, stBtnLabelDim = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	stBtnSep, stBtnSepDim, stMenuOutline, stMenuText                     = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 
 	stMdHeading = stTitle
 	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
@@ -347,6 +376,18 @@ func paint() {
 	paintStyle(stInfo, fg(cLink))
 	paintStyle(stDiffAdd, fg(cDiffAdd))
 	paintStyle(stDiffDel, fg(cDiffDel))
+	paintStyle(stMsgOutline, fg(cMsgOutline))
+	paintStyle(stMsgFocus, fg(cMsgFocus))
+	paintStyle(stMsgHolder, fg(cMsgHolder))
+	paintStyle(stBtnOutline, fg(cBtnOutline))
+	paintStyle(stBtnFocus, fg(cTitle))
+	paintStyle(stBtnOutlineDim, fg(cBtnOutlineDim))
+	paintStyle(stBtnLabel, fg(cBtnLabel))
+	paintStyle(stBtnLabelDim, fg(cBtnLabelDim))
+	paintStyle(stBtnSep, fg(cBtnSep))
+	paintStyle(stBtnSepDim, fg(cBtnSepDim))
+	paintStyle(stMenuOutline, fg(cMenuOutline))
+	paintStyle(stMenuText, fg(cMenuText))
 	if sixteen { // no ground to spare: the pill is its bold pink text
 		paintStyle(stPill, stAttentionBold.Background(lipgloss.NoColor{}))
 		paintStyle(stPillEnd, lipgloss.NewStyle())
@@ -403,7 +444,15 @@ var (
 	sourceHoverGround = &ground{c: cSourceHover, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	diffAddGround     = &ground{c: cDiffAddGround, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	diffDelGround     = &ground{c: cDiffDelGround, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	grounds           = []*ground{toolGround, activeGround, bandGround, trackGround, offGround, dimGround, sliderTrackGround, sliderFillGround, sliderLockGround, modesGround, modesBandGround, sideSelGround, sideSelHoverGround, sourceHoverGround, diffAddGround, diffDelGround}
+	// The commit controls' grounds in text (plan 45, design D5): the
+	// message box's inside, the button's fill and dimmed fill, the
+	// dropdown's ground and band.
+	msgGround      = &ground{c: cMsgInside, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	btnGround      = &ground{c: cBtnFill, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	btnDimGround   = &ground{c: cBtnFillDim, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	menuGround     = &ground{c: cMenuGround, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	menuBandGround = &ground{c: cMenuBand, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	grounds        = []*ground{toolGround, activeGround, bandGround, trackGround, offGround, dimGround, sliderTrackGround, sliderFillGround, sliderLockGround, modesGround, modesBandGround, sideSelGround, sideSelHoverGround, sourceHoverGround, diffAddGround, diffDelGround, msgGround, btnGround, btnDimGround, menuGround, menuBandGround}
 )
 
 // active is st on the active ground (plan 30).

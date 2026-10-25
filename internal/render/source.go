@@ -38,6 +38,33 @@ type SourceView struct {
 	Cursor string
 	Top    int
 	Hover  int
+	// The commit controls (plan 45, brief amendment 46). Msg is the message
+	// field as the frame draws it (design D2). Place is where the panel's
+	// keys go: "" the list, PlaceMsg the field, PlaceBtn the button. Action
+	// is the button's, ActionCommit or ActionPush, from Git (design D7); Dim
+	// says it has nothing to do; Busy names the operation running, "" none
+	// (design D11). Menu says the dropdown is open, MenuHot its item on the
+	// band (design D4). Ask is the number of changes the question offers to
+	// stage, 0 with no question, AskPush for Commit & Push, AskNo the focus
+	// on Cancel (design D6). Notice is the note under the button and
+	// NoticeKind its kind (design D12).
+	Msg        EditorView
+	Place      string
+	Action     string
+	Dim        bool
+	Busy       string
+	Menu       bool
+	MenuHot    bool
+	Ask        int
+	AskPush    bool
+	AskNo      bool
+	Notice     string
+	NoticeKind byte
+	// BusyHint is said under the button while an operation runs, in the
+	// attention colour with BusyWarn: how to cancel a push, or why a stop
+	// could not be (design D15).
+	BusyHint string
+	BusyWarn bool
 }
 
 // SourceEntry is one path in git's status: X the index's letter, Y the
@@ -234,8 +261,26 @@ const SourcePanel = 'G'
 const sourceFixed = 5
 
 // SourceRoom is how many rows of the list the panel shows on this screen,
-// what PgUp and PgDn move by.
-func SourceRoom(s *state.State, ui UI) int { return max(layout(s, ui).upper-sourceFixed, 0) }
+// what PgUp and PgDn move by: its rows less the commit controls' (plan
+// 45, design D1).
+func SourceRoom(s *state.State, ui UI) int {
+	return max(layout(s, ui).upper-sourceFixed-len(commitControls(ui, sourceWidth(s, ui)-4)), 0)
+}
+
+// sourceWidth is the panel's width on this screen, as dashboard gives it:
+// beside the diff while one shows, else the docked place's; 0 when it is
+// not drawn.
+func sourceWidth(s *state.State, ui UI) int {
+	g := layout(s, ui)
+	if ui.Diff.Open {
+		if g.narrow {
+			return 0
+		}
+		d := DiffBox(s, ui)
+		return max(g.aw+g.bw+g.pw-d.X-d.W, 0)
+	}
+	return g.pw
+}
 
 // sourcePanel is the Source Control panel w by h (design D4): the header
 // "SOURCE CONTROL" with its "⌄", a rule, the repository's row, then the
@@ -249,7 +294,9 @@ func sourcePanel(ui UI, w, h int) []line {
 		teleRule(inner),
 		repoRow(v, inner),
 	}
-	room := max(h-sourceFixed, 0)
+	controls := commitControls(ui, inner) // the commit controls (plan 45, design D1)
+	body = append(body, controls...)
+	room := max(h-sourceFixed-len(controls), 0)
 	rows := SourceRows(v)
 	switch {
 	case v.Note != "":
@@ -263,7 +310,8 @@ func sourcePanel(ui UI, w, h int) []line {
 		cur := SourceCursor(rows, v.Cursor)
 		top := ListTop(v.Top, max(cur, 0), room, len(rows))
 		for i := top; i < top+room && i < len(rows); i++ {
-			r := sourceRow(rows[i], i == cur, v.Hover == i+1, inner)
+			// No cursor band while the commit controls have the keys (plan 45).
+			r := sourceRow(rows[i], i == cur && v.Place == "", v.Hover == i+1, inner)
 			for j := range r {
 				r[j].ref = ref{panel: SourcePanel, kind: refDeco, item: i + 1}
 			}
@@ -423,11 +471,15 @@ var sourceHints = []string{
 
 // sourceKeys is the footer's text while the panel has the focus, on a
 // screen w columns wide.
-func sourceKeys(w int) string {
-	for _, k := range sourceHints {
+func sourceKeys(w int) string { return fitHint(sourceHints, w) }
+
+// fitHint is the first of hints, the longest first, that fits w columns,
+// else the last.
+func fitHint(hints []string, w int) string {
+	for _, k := range hints {
 		if textWidth(k)+1 <= w {
 			return k
 		}
 	}
-	return sourceHints[len(sourceHints)-1]
+	return hints[len(hints)-1]
 }

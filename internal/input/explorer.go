@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -114,7 +115,7 @@ func (m GitMarks) IsIgnored(p string) bool {
 // (plan 44, design D2), a single code path for the Explorer and the Source
 // Control. Outside a repository it is NotRepoError; without git, ErrNoGit.
 func (g GitCLI) Status(dir string) (GitMarks, error) {
-	snap, err := g.Snapshot(dir)
+	snap, err := g.snapshot(dir, false) // the markers need no blob
 	if err != nil {
 		return GitMarks{}, err
 	}
@@ -127,7 +128,11 @@ func (g GitCLI) Status(dir string) (GitMarks, error) {
 // nothing (no optional lock, no file system monitor), its paths made
 // relative to dir; a detached HEAD costs a third call for its short id.
 // Outside a repository it is NotRepoError; without git, ErrNoGit.
-func (g GitCLI) Snapshot(dir string) (GitSnapshot, error) {
+func (g GitCLI) Snapshot(dir string) (GitSnapshot, error) { return g.snapshot(dir, true) }
+
+// snapshot is Snapshot, the staged entries' blobs read only with blobs
+// (plan 45, design D14): the Explorer's markers need none.
+func (g GitCLI) snapshot(dir string, blobs bool) (GitSnapshot, error) {
 	out, err := g.runRead(readLimit, dir, "rev-parse", "--show-prefix", "--show-toplevel")
 	if err != nil {
 		if errors.Is(err, ErrNoGit) {
@@ -163,7 +168,32 @@ func (g GitCLI) Snapshot(dir string) (GitSnapshot, error) {
 		}
 		snap.Branch.Head = strings.TrimSpace(id)
 	}
+	// The staged entries' blobs, which a commit compares with the index's
+	// then (plan 45, design D14): one cat-file, none with nothing staged.
+	var staged []string
+	for _, e := range snap.Entries {
+		if blobs && isStaged(e) {
+			staged = append(staged, e.RepoPath)
+		}
+	}
+	if len(staged) > 0 {
+		blobs, err := g.stagedBlobs(dir, staged)
+		if err != nil {
+			return GitSnapshot{}, err
+		}
+		for i, e := range snap.Entries {
+			if isStaged(e) {
+				snap.Entries[i].Index = blobs[e.RepoPath]
+			}
+		}
+	}
 	return snap, nil
+}
+
+// isStaged says the index holds a change of e against HEAD that a commit
+// takes: not untracked, ignored or in conflict.
+func isStaged(e GitEntry) bool {
+	return e.X != ' ' && e.X != '?' && e.X != '!' && ConflictName(e.X, e.Y) == ""
 }
 
 // ParseStatus reads git status --porcelain=v1 -z: the Explorer's markers
@@ -240,19 +270,34 @@ func ParseSnapshot(out, prefix string) (entries []GitEntry, branch GitBranch, ma
 
 // parseBranch reads the branch record of git status --branch, after its
 // "## ": "main", "main...origin/main [ahead 1]", "HEAD (no branch)" or "No
-// commits yet on main" (git before 2.14 wrote "Initial commit on").
+// commits yet on main" (git before 2.14 wrote "Initial commit on"). The
+// upstream and its track follow the name: "main...origin/main [ahead 1,
+// behind 2]", "[ahead 1]", "[behind 2]" or "[gone]" (plan 45, design D7).
 func parseBranch(s string) GitBranch {
-	name := func(s string) string {
-		n, _, _ := strings.Cut(s, "...") // a branch name never holds "..."
-		return n
-	}
+	var b GitBranch
 	for _, lead := range []string{"No commits yet on ", "Initial commit on "} {
 		if rest, ok := strings.CutPrefix(s, lead); ok {
-			return GitBranch{Name: name(rest), NoCommits: true}
+			s, b.NoCommits = rest, true
+			break
 		}
 	}
-	if s == "HEAD (no branch)" {
+	if s == "HEAD (no branch)" && !b.NoCommits {
 		return GitBranch{Name: "HEAD", Detached: true}
 	}
-	return GitBranch{Name: name(s)}
+	// A branch name holds no space and no "[", so the track is what follows
+	// the last " [".
+	if i := strings.LastIndex(s, " ["); i >= 0 && strings.HasSuffix(s, "]") {
+		for _, f := range strings.Split(s[i+2:len(s)-1], ", ") {
+			if f == "gone" {
+				b.Gone = true
+			} else if n, ok := strings.CutPrefix(f, "ahead "); ok {
+				b.Ahead, _ = strconv.Atoi(n)
+			} else if n, ok := strings.CutPrefix(f, "behind "); ok {
+				b.Behind, _ = strconv.Atoi(n)
+			}
+		}
+		s = s[:i]
+	}
+	b.Name, b.Upstream, _ = strings.Cut(s, "...") // a branch name never holds "..."
+	return b
 }

@@ -256,6 +256,7 @@ func (m *Model) showSource() []tea.Cmd {
 func (m *Model) closeSource() {
 	if m.ui.Source.Open {
 		m.ui.Source.Open = false
+		m.ui.Source.Menu, m.ui.Source.MenuHot, m.ui.Source.Ask, m.ask = false, false, 0, nil // the dropdown and the question go with it (plan 45)
 		if m.ui.Focus == "R" {
 			m.ui.Focus = "B"
 		}
@@ -271,6 +272,13 @@ func (m *Model) closePanels() {
 // sourceKey handles a key while Source Control has the focus (design D5):
 // its keys, the global ones passed on as beside the Explorer's panel.
 func (m *Model) sourceKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
+	// The commit controls first (plan 45): the dropdown, the question, the
+	// field and the button take their keys and pass the dashboard's on.
+	if cmds, done := m.commitKey(k); done {
+		return cmds, true
+	} else if m.ui.Source.Place != "" || m.ui.Source.Ask > 0 {
+		return nil, false
+	}
 	s := k.String()
 	switch s {
 	case "f1", "f3", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
@@ -296,6 +304,10 @@ func (m *Model) sourceKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	case "r":
 		return []tea.Cmd{m.readSnapshot()}, true
 	case "up":
+		if m.controlsShown() && (cur < 0 || render.SourceCursor(rows, "") == cur) {
+			v.Place = render.PlaceBtn // up from the list's first row: the button (plan 45, design D3)
+			break
+		}
 		m.sourceMove(rows, cur, -1, room)
 	case "down":
 		m.sourceMove(rows, cur, 1, room)
@@ -432,13 +444,18 @@ func (m *Model) folderRead(msg folderMsg) {
 
 // sourceClick is a click on the panel: its "⌄" hides it; a row takes the
 // cursor and acts as Enter, a file opening its diff (design D5).
-func (m *Model) sourceClick(item int) []tea.Cmd {
+func (m *Model) sourceClick(item, x, y int) []tea.Cmd {
 	m.ui.Sel = render.Selection{}
 	if item == render.ItemPanelHide {
 		m.closeSource()
 		return nil
 	}
 	m.ui.Focus = "R"
+	m.countClick(x, y)
+	if cmds, done := m.commitClick(item, x, y); done {
+		return cmds // the commit controls' (plan 45)
+	}
+	m.ui.Source.Place = "" // a click on the list gives it the keys
 	rows := render.SourceRows(m.ui.Source)
 	i := item - 1
 	if i < 0 || i >= len(rows) || !rows[i].Selectable() {
