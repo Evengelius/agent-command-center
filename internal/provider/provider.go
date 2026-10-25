@@ -5,10 +5,17 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/Evengelius/agent-command-center/internal/event"
 )
+
+// ErrNoPending is what Answer and AnswerQuestion wrap when the request is no
+// longer pending, the CLI having withdrawn it before the answer reached it
+// (plan 47, design D2): the application expires the approval rather than
+// ending the session.
+var ErrNoPending = errors.New("no pending request")
 
 // Detection is what detecting one CLI found.
 type Detection struct {

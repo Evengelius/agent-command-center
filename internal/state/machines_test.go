@@ -253,7 +253,7 @@ var transitions = []machineCase{
 		b.ready()
 		b.eq("session", b.s.Session.Phase, Ready)
 	}},
-	{"Session", "`Handshaking` | 60 s timeout, error response, `cwd` mismatch", func(b *bench) {
+	{"Session", "`Handshaking` | 60 s timeout, an error response other than an optional read's, `cwd` mismatch", func(b *bench) {
 		b.handshaking().do(HandshakeTimeout{})
 		b.eq("timeout", b.s.Session.Phase, Crashed)
 		b.eq("timeout commands", b.kinds(), "close")
@@ -262,6 +262,12 @@ var transitions = []machineCase{
 		c.ev(event.Error, "", event.Problem{Message: "unsupported version"})
 		c.eq("error response", c.s.Session.Phase, Crashed)
 		c.eq("error commands", c.kinds(), "close")
+
+		// An optional read's refusal is kept and the handshake goes on (plan 46, design D2).
+		o := newBench(b.t).handshaking()
+		o.ev(event.Error, "", event.Problem{Message: "model/list refused by Codex: unavailable", Optional: true})
+		o.eq("optional refusal", o.s.Session.Phase, Handshaking)
+		o.eq("optional refusal commands", o.kinds(), "")
 
 		d := newBench(b.t).handshaking()
 		d.ev(event.SessionStarted, "", event.Started{SessionID: "s1", Cwd: `C:\elsewhere`})
@@ -316,6 +322,30 @@ var transitions = []machineCase{
 		c.eq("what stops", c.s.Running(), "2 agents still running")
 		c.do(Quit{})
 		c.eq("no turn to interrupt", c.kinds(), "close")
+	}},
+	{"Session", "`Ready`, `Crashed` | owner quits while a git operation runs", func(b *bench) {
+		// Plan 47, criterion 47.2 (design D1).
+		b.ready().do(Quit{GitRunning: true})
+		b.eq("asks", b.kinds(), "")
+		b.eq("asked", b.s.QuitAsked, true)
+		b.do(Stay{})
+		b.eq("stays", b.s.QuitAsked, false)
+		b.do(Quit{GitRunning: true})
+		b.do(Quit{GitRunning: true})
+		b.eq("quits", b.kinds(), "close")
+
+		c := newBench(b.t).ready()
+		c.exit(1)
+		c.eq("crashed", c.s.Session.Phase, Crashed)
+		c.do(Quit{GitRunning: true})
+		c.eq("asks while crashed", c.s.QuitAsked, true)
+		c.do(Quit{GitRunning: true})
+		c.eq("exits", c.kinds(), "exit")
+
+		d := newBench(b.t).ready()
+		d.exit(1)
+		d.do(Quit{})
+		d.eq("nothing runs: exits at once", d.kinds(), "exit")
 	}},
 	{"Session", "`Closing` | process exited", func(b *bench) {
 		b.ready().do(Quit{})
@@ -728,6 +758,32 @@ var transitions = []machineCase{
 		b.eq("approval", b.s.Approvals["a1"].Status, Expired)
 		b.eq("session", b.s.Session.Phase, Crashed)
 	}},
+	{"Approval", "`Answering` | the CLI withdrew the request before the answer reached it", func(b *bench) {
+		// The failure first, then the withdrawal (plan 47, design D2).
+		const notice = "the request was withdrawn before the answer reached it"
+		b.running().ask("", "a1", "")
+		b.do(Answer{ID: "a1", Decision: "allow"})
+		b.do(AnswerFailed{ID: "a1", Message: `no pending request "a1"`, Gone: true})
+		b.eq("approval", b.s.Approvals["a1"].Status, Expired)
+		b.eq("session", b.s.Session.Phase, Ready)
+		b.eq("turn", b.s.Turn.Phase, Running)
+		b.eq("commands", b.kinds(), "")
+		b.eq("notice", b.s.Turn.Notice, notice)
+		b.resolve("a1", "expired")
+		b.eq("withdrawal after", b.s.Approvals["a1"].Status, Expired)
+		b.eq("noted", b.noted("second answer"), false)
+
+		// The withdrawal first, then the failure.
+		c := newBench(b.t).running()
+		c.ask("", "a1", "")
+		c.do(Answer{ID: "a1", Decision: "allow"})
+		c.resolve("a1", "expired")
+		c.do(AnswerFailed{ID: "a1", Message: `no pending request "a1"`, Gone: true})
+		c.eq("withdrawal first", c.s.Approvals["a1"].Status, Expired)
+		c.eq("session after", c.s.Session.Phase, Ready)
+		c.eq("commands after", c.kinds(), "")
+		c.eq("notice after", c.s.Turn.Notice, notice)
+	}},
 	{"Approval", "`Pending` | turn ends, CLI resolves it, or session ends", func(b *bench) {
 		b.running().ask("", "a1", "")
 		b.turnEnd("", "completed")
@@ -1023,6 +1079,15 @@ var invalids = []machineCase{
 		b.resolve("a1", "deny")
 		b.eq("status", b.s.Approvals["a1"].Status, Allowed)
 		b.eq("noted", b.noted("second answer ignored"), true)
+	}},
+	{"Approval", "the CLI's withdrawal of an approval already ended is ignored, not logged", func(b *bench) {
+		b.running().ask("", "a1", "")
+		b.do(Answer{ID: "a1", Decision: "allow"})
+		b.resolve("a1", "allow")
+		b.resolve("a1", "expired")  // Claude Code's control_cancel_request
+		b.resolve("a1", "resolved") // Codex's serverRequest/resolved
+		b.eq("status", b.s.Approvals["a1"].Status, Allowed)
+		b.eq("noted", b.noted("second answer"), false)
 	}},
 	{"Approval", "an answer for an unknown id shows an error", func(b *bench) {
 		b.running().do(Answer{ID: "zz", Decision: "allow"})

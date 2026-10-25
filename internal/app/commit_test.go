@@ -17,6 +17,7 @@ import (
 
 	"github.com/Evengelius/agent-command-center/internal/input"
 	"github.com/Evengelius/agent-command-center/internal/render"
+	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
 // Plan 45 (brief amendment 46): Commit, Push and Commit & Push in Source
@@ -460,6 +461,47 @@ func TestCommitStaging(t *testing.T) {
 		h.send(ctrlEnter)
 		if got := h.m.ui.Source.Notice; got != "Resolve the merge conflicts first." || len(w.logged("commit")) != 2 {
 			t.Errorf("a conflict: %q, writes %q", got, w.log)
+		}
+	})
+}
+
+// TestCommitExplorerOverAsk is criterion 47.6 (plan 47, design D4): the
+// Explorer opened over the staging question drops it with Source Control's
+// panel, so the next click acts: Source Control's tile shows the panel
+// again, with no question, and nothing is staged.
+func TestCommitExplorerOverAsk(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		h, w := commitRigOn(t, "")
+		typeMessage(t, h, "Staged only")
+		h.send(ctrlEnter) // the staged entries committed: nothing staged now
+		typeMessage(t, h, "All of it")
+		h.send(ctrlEnter)
+		if h.m.ui.Source.Ask == 0 {
+			t.Fatalf("no staging question:\n%s", h.frame())
+		}
+		h.send(keyOf(tea.KeyF3))
+		if !h.m.ui.Explorer.Open || h.m.ui.Source.Open {
+			t.Fatalf("F3: Explorer %v, Source Control %v", h.m.ui.Explorer.Open, h.m.ui.Source.Open)
+		}
+		x, y := itemCell(t, h, render.SidePanel, render.SideSource)
+		mouseClick(t, h, x, y)
+		if v := h.m.ui.Source; !v.Open || v.Ask != 0 || strings.Contains(h.frame(), "Nothing is staged") {
+			t.Fatalf("a click on Source Control's tile: open %v, ask %d\n%s", v.Open, v.Ask, h.frame())
+		}
+		// The compact rule hides the panel through closeSource, the same
+		// helper's other caller: zone B given the focus under 100 columns.
+		typeMessage(t, h, " again")
+		h.send(ctrlEnter)
+		h.send(tea.WindowSizeMsg{Width: 90, Height: 40})
+		if h.m.ui.Source.Ask == 0 || !h.m.ui.Source.Open {
+			t.Fatalf("compact: ask %d, open %v", h.m.ui.Source.Ask, h.m.ui.Source.Open)
+		}
+		h.send(key(tea.KeyF6, tea.ModShift))
+		if v := h.m.ui.Source; v.Open || v.Ask != 0 || h.m.ask != nil || h.m.ui.Focus != "B" {
+			t.Fatalf("zone B in the compact layout: open %v, ask %d, focus %q", v.Open, v.Ask, h.m.ui.Focus)
+		}
+		if got := w.logged("stage"); len(got) != 0 {
+			t.Errorf("staged: %q", got)
 		}
 	})
 }
@@ -1111,5 +1153,43 @@ func TestCommitTicks(t *testing.T) {
 		if h.m.op != nil {
 			t.Fatal("the push not cancelled")
 		}
+	})
+}
+
+// TestCommitQuitAsks is plan 47's criterion 47.1 (design D1): Ctrl+Q while
+// a commit or a push runs asks to confirm, naming it, and quits only on a
+// second Ctrl+Q; Esc stays, the operation going on.
+func TestCommitQuitAsks(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		h, w := commitRig(t)
+		typeMessage(t, h, "Slow")
+		hold := w.holdOn()
+		h.send(ctrlEnter) // the commit, held
+		h.send(ctrlQ)
+		if !h.m.State().QuitAsked || h.quit {
+			t.Fatalf("Ctrl+Q during the commit: asked %v, quit %v", h.m.State().QuitAsked, h.quit)
+		}
+		if f := h.frame(); !strings.Contains(f, "quit? the commit is still running · Ctrl+Q again to quit · Esc to stay") {
+			t.Errorf("the question does not name the commit:\n%s", f)
+		}
+		h.send(keyOf(tea.KeyEscape))
+		if h.m.State().QuitAsked || h.quit || h.m.op == nil {
+			t.Fatalf("Esc: asked %v, quit %v, the commit running %v", h.m.State().QuitAsked, h.quit, h.m.op != nil)
+		}
+		w.mu.Lock()
+		w.stoppable = true
+		w.mu.Unlock()
+		close(hold)
+		h.settle()
+		clickQueued(t, h, render.ItemCommitMain, 0, 0) // the push
+		h.send(ctrlQ)
+		if f := h.frame(); !h.m.State().QuitAsked || !strings.Contains(f, "quit? the push is still running · Ctrl+Q again to quit · Esc to stay") {
+			t.Errorf("Ctrl+Q during the push: asked %v\n%s", h.m.State().QuitAsked, f)
+		}
+		h.send(ctrlQ)
+		if s := h.m.State(); s.QuitAsked || s.Startup.Phase != state.Exited {
+			t.Errorf("a second Ctrl+Q: asked %v, startup %q, want the quit under way", s.QuitAsked, s.Startup.Phase)
+		}
+		h.send(keyOf(tea.KeyEscape)) // the push stopped, nothing left waiting
 	})
 }

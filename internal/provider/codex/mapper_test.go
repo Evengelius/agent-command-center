@@ -905,3 +905,35 @@ func TestOptionalReadsKeepHandshake(t *testing.T) {
 		}
 	}
 }
+
+// TestReplayNotes is plan 47's criterion 47.4: no app-server recording,
+// replayed through the state, leaves the note "event without a known
+// payload" (design D3); P5 and P5b are codex exec's, not the app server's.
+// The notes are a bounded ring that only the details view reads, so each
+// event's are read alone.
+func TestReplayNotes(t *testing.T) {
+	names, err := filepath.Glob("../../../testdata/probes/p*-codex-*.jsonl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	names = slices.DeleteFunc(names, func(n string) bool { return strings.Contains(n, "-codex-exec") })
+	if len(names) != len(appServer)+1 { // P39x has its own test
+		t.Fatalf("recordings %v, want the %d of appServer and P39x", names, len(appServer))
+	}
+	for _, path := range names {
+		_, per := replay(t, filepath.Base(path))
+		s := state.New()
+		for _, evs := range per {
+			for _, e := range evs {
+				s.Notes = nil
+				s.Apply(e)
+				for _, n := range s.Notes {
+					if strings.Contains(n, "event without a known payload") {
+						t.Errorf("%s: %s", filepath.Base(path), n)
+					}
+				}
+			}
+		}
+	}
+	t.Logf("%d recordings", len(names))
+}

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"path/filepath"
 	"reflect"
@@ -16,6 +17,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/fixture"
 	"github.com/Evengelius/agent-command-center/internal/proc"
 	"github.com/Evengelius/agent-command-center/internal/provider"
@@ -533,3 +535,53 @@ func (s wireStdin) Write(b []byte) (int, error) {
 	return s.p.inW.Write(b)
 }
 func (s wireStdin) Close() error { return s.p.inW.Close() }
+
+// TestAnswerWithdrawn is plan 47's criterion 47.3: an answer to a request the
+// CLI has withdrawn expires the approval, says so, and the session goes on
+// (design D2); the withdrawal arriving after is no second answer. Any other
+// failure to write an answer still ends the session.
+func TestAnswerWithdrawn(t *testing.T) {
+	ask := func(t *testing.T, err error) (*harness, *scriptCLI) {
+		t.Helper()
+		h, cli := readyScript(t, "claude-code", false, event.Started{SessionID: "s1", Version: "2.1.300", PermissionMode: "default", ApprovalMode: event.ModeManual})
+		cli.sess.answerErr = err
+		pushEvents(h, "claude-code", evOf(event.TurnStarted, nil), evOf(event.ApprovalRequest, event.Approval{ID: "r1", Tool: "Bash", ToolID: "t1", Input: json.RawMessage(`{"command":"ls"}`)}))
+		h.send(key(tea.KeyF2, 0))
+		h.send(typed('a'))
+		if _, answers, _ := cli.sess.calls(); len(answers) != 1 {
+			t.Fatalf("answers %q, want one", answers)
+		}
+		return h, cli
+	}
+	t.Run("withdrawn", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			h, cli := ask(t, fmt.Errorf("%w %q", provider.ErrNoPending, "r1"))
+			s := h.m.State()
+			if ap := s.Approvals["r1"]; ap.Status != state.Expired || s.Session.Phase != state.Ready || s.Turn.Phase != state.Running || cli.sess.closed() != 0 {
+				t.Fatalf("approval %q, session %q, turn %q, %d closes; want Expired, Ready, Running, none", ap.Status, s.Session.Phase, s.Turn.Phase, cli.sess.closed())
+			}
+			if f := h.frame(); !strings.Contains(f, "the request was withdrawn before the answer reached it") {
+				t.Errorf("no notice in the status line:\n%s", f)
+			}
+			pushEvents(h, "claude-code", evOf(event.ApprovalResolved, event.Approval{ID: "r1", Decision: "expired"}))
+			s = h.m.State()
+			if ap := s.Approvals["r1"]; ap.Status != state.Expired || s.Session.Phase != state.Ready {
+				t.Errorf("after the withdrawal: approval %q, session %q", ap.Status, s.Session.Phase)
+			}
+			for _, n := range s.Notes {
+				if strings.Contains(n, "second answer") {
+					t.Errorf("the withdrawal noted as an answer: %q", n)
+				}
+			}
+		})
+	})
+	t.Run("pipe closed", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			h, cli := ask(t, errors.New("write |1: the pipe is being closed"))
+			s := h.m.State()
+			if ap := s.Approvals["r1"]; ap.Status != state.Expired || s.Session.Phase != state.Crashed || cli.sess.closed() == 0 {
+				t.Fatalf("approval %q, session %q, %d closes; want Expired, Crashed, closed", ap.Status, s.Session.Phase, cli.sess.closed())
+			}
+		})
+	})
+}

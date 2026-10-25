@@ -273,11 +273,18 @@ func (m *Model) showSource() []tea.Cmd {
 func (m *Model) closeSource() {
 	if m.ui.Source.Open {
 		m.ui.Source.Open = false
-		m.ui.Source.Menu, m.ui.Source.MenuHot, m.ui.Source.Ask, m.ask = false, false, 0, nil // the dropdown and the question go with it (plan 45)
+		m.dropSourcePopups()
 		if m.ui.Focus == "R" {
 			m.ui.Focus = "B"
 		}
 	}
+}
+
+// dropSourcePopups closes the commit button's dropdown and the staging
+// question, which go with Source Control's panel however it is hidden (plan
+// 45; plan 47, design D4).
+func (m *Model) dropSourcePopups() {
+	m.ui.Source.Menu, m.ui.Source.MenuHot, m.ui.Source.Ask, m.ask = false, false, 0, nil
 }
 
 // closePanels hides whichever panel shows: the compact rule's.

@@ -576,6 +576,17 @@ Plan 46 (brief amendment 47; the first three fixes of
 | 2. Collection, 3. State | `event.Problem.Optional`: the Codex mapper marks a refused `config/read` or `model/list` page; the reducer's handshake rule ends the session only on an Error that is not Optional | `internal/event/event.go`, `internal/provider/codex/mapper.go`, `internal/state/reduce.go` |
 | The application | opened untracked folders read again after each status read and each opening, the reads numbered per folder so that an older one never replaces a newer one (`readFolders`, `folderSeq`, `folderSeen`) | `internal/app/source.go`, `commit.go`, `app.go` |
 
+Plan 47 (brief amendment 48; the rest of [audit.md](audit.md)'s phase 1)
+changes no part's role either.
+
+| Part | What changes | Where |
+| - | - | - |
+| 1. Execution | `provider.ErrNoPending`, wrapped by both adapters' "no pending request" errors, their text unchanged | `internal/provider/provider.go`, `claude/session.go`, `codex/session.go` |
+| 3. State | `Quit.GitRunning`: Ctrl+Q asks while a git operation runs, whatever the session's phase; `AnswerFailed.Gone`: an answer that a withdrawal beat expires its approval, the session going on, and a late withdrawal is no second answer; the Mode case returns; an unreadable request's word from `CLI()` | `internal/state/actions.go`, `reduce.go` |
+| 4. Rendering | the quit question names the git operation (`UI.GitRunning`) | `internal/render/dashboard.go`, `render.go` |
+| 5. Input | `realPath` gives a drive letter path, or `\\server\share\…`, without the final path's `\\?\` (`dosPath`) | `internal/input/browse_windows.go` |
+| The application | the quit key passes whether a git operation runs; `syncCommit` names its step; an answer error matching `ErrNoPending` is `Gone`; `dropSourcePopups`, called by `closeSource` and `openExplorer` | `internal/app/keys.go`, `commit.go`, `app.go`, `source.go`, `explorer.go` |
+
 ## Build order
 
 Input to plan 3's roadmap, from AM4's priorities (P1 to P6) and AGENTS.md

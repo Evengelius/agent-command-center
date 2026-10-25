@@ -1,6 +1,9 @@
-// Package input is the input editor and the clipboard (doc/ui-design.md, Input
-// editor and Clipboard). It knows nothing of any provider: the same editor
-// serves every agent CLI.
+// Package input is part 5 of doc/architecture.md (The five parts): the input
+// editor and the clipboard (doc/ui-design.md, Input editor and Clipboard),
+// and what the application itself reads and writes on the machine: the
+// project's files and git, images, drafts, recent projects, sessions and the
+// configuration. It knows nothing of any provider: the same editor serves
+// every agent CLI.
 package input
 
 import (

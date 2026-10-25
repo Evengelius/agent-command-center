@@ -37,11 +37,13 @@ type (
 
 // openExplorer opens the Explorer as it was left: the project and every
 // folder shown open read again, git's status asked, Source Control hidden
-// from the docked place (plan 44, design D1). The status is the one Source
-// Control reads too (design D2), its markers taken by applySnapshot.
+// from the docked place (plan 44, design D1), its dropdown and question with
+// it (plan 47, design D4). The status is the one Source Control reads too
+// (design D2), its markers taken by applySnapshot.
 func (m *Model) openExplorer() []tea.Cmd {
 	m.explorerGen++
 	m.ui.Source.Open = false
+	m.dropSourcePopups()
 	v := &m.ui.Explorer
 	root := m.fileRoot()
 	v.Open, v.Name = true, filepath.Base(root)

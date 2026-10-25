@@ -276,7 +276,13 @@ Approval machine):
   `acceptForSession` lasts for the session only; it is offered unless the
   request's `availableDecisions` omits it (plan 8).
 - If writing the answer fails (the pipe closed), the session is `Crashed`
-  and the approval `Expired`.
+  and the approval `Expired`. An answer to a request the CLI withdrew just
+  before (Claude Code's `control_cancel_request`, Codex's
+  `serverRequest/resolved`, the adapter then holding no pending request:
+  `provider.ErrNoPending`) only expires the approval: the editor's status
+  line says "the request was withdrawn before the answer reached it" and the
+  session goes on, whether the withdrawal reaches the state before or after
+  the failure (plan 47, design D2).
 - **The modes are the CLI's own** (plan 39, brief amendment 40): the
   dashboard never changes a mode by itself; every session starts in
   Manual (Claude Code's `default`; Codex's Ask for approval, the read-only

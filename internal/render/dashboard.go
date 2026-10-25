@@ -813,8 +813,15 @@ func placeholder(s *state.State) string {
 func editorStatus(s *state.State, ui UI) string {
 	switch {
 	case s.QuitAsked:
-		// From the state now: a turn that ended since is no longer named.
-		if w := s.Running(); w != "" {
+		// From the state and the git operation now: what ended since is no
+		// longer named (plan 47, design D1).
+		w, g := s.Running(), ui.GitRunning
+		switch {
+		case w != "" && g != "":
+			return "quit? " + w + " will be stopped and " + g + " is still running · Ctrl+Q again to quit · Esc to stay"
+		case g != "":
+			return "quit? " + g + " is still running · Ctrl+Q again to quit · Esc to stay"
+		case w != "":
 			return "quit? " + w + " will be stopped · Ctrl+Q again to quit · Esc to stay"
 		}
 		return "quit? nothing runs now · Ctrl+Q again to quit · Esc to stay"

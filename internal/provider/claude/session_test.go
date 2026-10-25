@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -420,8 +421,8 @@ func TestHandshakeAndTurn(t *testing.T) {
 	if v := r.st.Metrics["context.window"]; !v.Present || v.Documented {
 		t.Errorf("context window %+v", v)
 	}
-	if err := r.sess.Answer(req.ID, "allow"); err == nil {
-		t.Error("an answered request was answered again")
+	if err := r.sess.Answer(req.ID, "allow"); !errors.Is(err, provider.ErrNoPending) || err.Error() != fmt.Sprintf("no pending request %q", req.ID) {
+		t.Errorf("an answered request answered again: %v, want ErrNoPending (plan 47)", err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

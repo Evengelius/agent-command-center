@@ -795,7 +795,7 @@ func (s *Session) Answer(id, decision string) error {
 	req, ok := s.approvals[id]
 	s.mu.Unlock()
 	if !ok {
-		return fmt.Errorf("no pending request %q", id)
+		return fmt.Errorf("%w %q", provider.ErrNoPending, id)
 	}
 	if req.unreadable && (decision == "accept" || decision == "acceptForSession") {
 		return fmt.Errorf("request %q was not readable: only a decline answers it", id)

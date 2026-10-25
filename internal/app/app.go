@@ -762,7 +762,8 @@ func (m *Model) command(c state.Command) tea.Cmd {
 				return actionMsg{state.AnswerFailed{ID: id, Message: "no session"}}
 			}
 			if err := sendAnswer(sess, id, d, answers); err != nil {
-				return actionMsg{state.AnswerFailed{ID: id, Message: err.Error()}}
+				// A request the CLI withdrew first expires (plan 47, design D2).
+				return actionMsg{state.AnswerFailed{ID: id, Message: err.Error(), Gone: errors.Is(err, provider.ErrNoPending)}}
 			}
 			return nil
 		}, actionMsg{state.AnswerFailed{ID: id, Message: "too many writes waiting"}})

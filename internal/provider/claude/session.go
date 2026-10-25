@@ -417,7 +417,7 @@ func (s *Session) Answer(id, decision string) error {
 	req, ok := s.inputs[id]
 	s.mu.Unlock()
 	if !ok {
-		return fmt.Errorf("no pending request %q", id)
+		return fmt.Errorf("%w %q", provider.ErrNoPending, id)
 	}
 	if decision == "allow" && req.question {
 		return fmt.Errorf("request %q is a question: it is answered with AnswerQuestion", id)
@@ -572,7 +572,7 @@ func (s *Session) AnswerQuestion(id string, answers map[string]string) error {
 	s.mu.Unlock()
 	switch {
 	case !ok:
-		return fmt.Errorf("no pending request %q", id)
+		return fmt.Errorf("%w %q", provider.ErrNoPending, id)
 	case !req.question:
 		return fmt.Errorf("request %q is not a question", id)
 	case req.unreadable:

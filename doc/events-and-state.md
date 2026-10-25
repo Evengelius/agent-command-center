@@ -309,6 +309,7 @@ States: `Spawning`, `Handshaking`, `Ready`, `Closing`, `Closed`, `Crashed`.
 | `Ready` | `session.started` with a `cwd` other than the project (Claude Code reports it with the first turn) | `Crashed`, the process closed | dash | dash |
 | `Ready` | owner quits | `Closing`: pending approvals answered `cancel`, the turn interrupted, then stdin closed, in that order | dash | dash |
 | `Ready` | owner quits while a turn or an agent runs | stays `Ready`, asks to confirm (ui-design.md, Keys): a second Ctrl+Q quits, Esc stays | dash | dash |
+| `Ready`, `Crashed` | owner quits while a git operation runs | stays, asks to confirm whatever the session's phase, naming the operation (ui-design.md, Keys): a second Ctrl+Q quits, Esc stays (plan 47) | dash | dash |
 | `Closing` | process exited | `Closed` | **P** P2 (exit after stdin closed) | **D** |
 | `Closing` | process exited with a message still `Submitted` | `Closed`; the message goes back to the editor and the stored draft (ASM-23) | dash | dash |
 | `Closing` | 5 s, then 5 s more, elapsed | forced kill, then `Closed` | **P** job kill mid-turn, 41 ms, resumable (plan 4, L1 (g); CC-10 q13) | **P** job kill mid-turn, 24 ms, no process left (plan 4, L3; CX-10 q8) |
@@ -396,11 +397,13 @@ States: `Pending`, `Answering`, `Allowed`, `Denied`, `Expired`.
 | `Pending` | owner denies | `Answering` → `Denied` | **P** deny with a message (plan 5, L9; P13c) | **P** `decline` (plan 4, L3; CX-10 q1) |
 | `Pending` | owner cancels the turn | `Answering` → `Denied`, then the turn interrupts | dash: deny, then `interrupt` | **P** `cancel`, the turn interrupted 8 ms later (plan 4, L3; CX-10 q1) |
 | `Pending` | the request cannot be parsed | `Denied` automatically, shown with its raw line | dash (INT 4 fallback) | dash: `decline`, or a JSON-RPC error for an unknown method (P6b driver) |
-| `Answering` | writing the answer fails (pipe closed) | `Expired`; session `Crashed` | dash | dash |
+| `Answering` | writing the answer fails otherwise (pipe closed) | `Expired`; session `Crashed` | dash | dash |
+| `Answering` | the CLI withdrew the request before the answer reached it (the adapter's `provider.ErrNoPending`) | `Expired`, and the editor's status line says "the request was withdrawn before the answer reached it"; the session goes on, the withdrawal arriving before or after the failure (plan 47) | dash: the withdrawal is `control_cancel_request` (**P**, P303e) | dash: `serverRequest/resolved` for a request not answered |
 | `Pending` | turn ends, CLI resolves it, or session ends | `Expired` | dash | dash: `serverRequest/resolved` for a request not answered (**P** for answered ones, P6b line 39) |
 
-Invalid: a second answer to the same id is ignored and logged; an answer
-for an unknown id shows an error; nothing is ever answered without the
+Invalid: a second answer to the same id is ignored and logged; the CLI's
+withdrawal of an approval already ended is ignored, not logged (plan 47);
+an answer for an unknown id shows an error; nothing is ever answered without the
 owner's action except unparseable requests, which are denied (never
 allowed). "Allow and remember" options that persist a rule
 (`permission_suggestions`, execpolicy or network amendments) are not

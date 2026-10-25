@@ -363,3 +363,29 @@ func TestEscalationStaysCardInAuto(t *testing.T) {
 		}
 	}
 }
+
+// TestUnreadableWordInMock is plan 47's criterion 47.5: an unreadable request
+// in a mock replay is denied in the word of the CLI its events come from,
+// Codex's "decline", as in a live session (design D3).
+func TestUnreadableWordInMock(t *testing.T) {
+	for _, tc := range []struct{ cli, word string }{{"codex", "decline"}, {"claude-code", "deny"}} {
+		s := state.New()
+		s.Do(state.Launch{Mock: "x"})
+		at := time.Date(2026, 10, 18, 9, 0, 0, 0, time.UTC)
+		var cmds []state.Command
+		for i, e := range []event.Event{
+			{Kind: event.SessionSpawned, Payload: event.Spawned{}},
+			{Kind: event.SessionReady, Payload: event.Ready{}},
+			{Kind: event.SessionStarted, Payload: event.Started{SessionID: "s"}},
+			{Kind: event.TurnStarted},
+			{Kind: event.ApprovalRequest, Payload: event.Approval{ID: "r1", Problem: "no tool name"}},
+		} {
+			e.Seq, e.At, e.Origin, e.Provider = uint64(i+1), at, event.Observed, tc.cli
+			cmds = s.Apply(e)
+		}
+		ap := s.Approvals["r1"]
+		if len(cmds) != 1 || cmds[0].Kind != state.CmdAnswer || cmds[0].Decision != tc.word || ap == nil || ap.Status != state.Denied || ap.Answer != tc.word {
+			t.Errorf("%s: commands %+v, approval %+v; want one answer %q", tc.cli, cmds, ap, tc.word)
+		}
+	}
+}

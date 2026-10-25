@@ -80,6 +80,10 @@ type UI struct {
 	// Cascadia Mono nor Consolas): the pill is drawn as text even with
 	// Sixel (plan 39, design D7).
 	PillNoFont bool
+	// GitRunning names Source Control's git operation while it runs ("the
+	// commit", "the push", "the staging"), "" when none: the quit question
+	// names it (plan 47, design D1).
+	GitRunning string
 	// The editor's send and newline keys in force, as the screen names them
 	// ("Ctrl+Enter"), in the configuration file's order (plan 21, item 5.1);
 	// none is the defaults. KeysProblem is why the file's keys were not used,

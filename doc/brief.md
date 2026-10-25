@@ -7156,3 +7156,16 @@ Approved: write plan 46 for the first three fixes (3a merge pre-check, 1a non-fa
 ````
 
 Taken as plan 46 (plan.md, Plan 46).
+
+## Amendment 48, 2026-10-25: the rest of the audit's phase 1, for plan 47
+
+After plan 46 was approved and pushed, and told that the rest of the
+audit's roadmap was in `doc/audit.md`, Part 2, the owner wrote, word for
+word:
+
+````text
+Let's continue
+````
+
+Taken as the roadmap's next step, the rest of phase 1 (`doc/audit.md`,
+Part 2, C), as plan 47 (plan.md, Plan 47).

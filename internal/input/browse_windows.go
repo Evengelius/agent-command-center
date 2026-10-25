@@ -58,9 +58,15 @@ func realPath(p string) (string, error) {
 	if int(n) > len(buf) {
 		return "", syscall.ENAMETOOLONG
 	}
-	s := windows.UTF16ToString(buf[:n])
-	if rest, ok := strings.CutPrefix(s, `\?\UNC\`); ok {
-		return `\` + rest, nil
+	return dosPath(windows.UTF16ToString(buf[:n])), nil
+}
+
+// dosPath is a final path name without the `\\?\` prefix the system gives
+// it: a drive letter path, or `\\server\share\…` for `\\?\UNC\server\share\…`
+// (plan 47, design D5).
+func dosPath(s string) string {
+	if rest, ok := strings.CutPrefix(s, `\\?\UNC\`); ok {
+		return `\\` + rest
 	}
-	return strings.TrimPrefix(s, `\?\`), nil
+	return strings.TrimPrefix(s, `\\?\`)
 }

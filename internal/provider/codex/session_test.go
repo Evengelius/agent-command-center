@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -637,8 +638,8 @@ func TestHandshakeApprovalInterrupt(t *testing.T) {
 			t.Errorf("answer %q accepted", d)
 		}
 	}
-	if err := r.sess.Answer("1", "accept"); err == nil {
-		t.Error("an unknown request was answered")
+	if err := r.sess.Answer("1", "accept"); !errors.Is(err, provider.ErrNoPending) || err.Error() != `no pending request "1"` {
+		t.Errorf("an unknown request answered: %v, want ErrNoPending (plan 47)", err)
 	}
 	if err := r.sess.Answer(req.ID, "accept"); err != nil {
 		t.Fatal(err)
@@ -646,8 +647,8 @@ func TestHandshakeApprovalInterrupt(t *testing.T) {
 	if end := r.wait(event.TurnCompleted).Payload.(event.TurnEnd); end.Outcome != "completed" {
 		t.Errorf("turn %+v", end)
 	}
-	if err := r.sess.Answer(req.ID, "accept"); err == nil {
-		t.Error("an answered request was answered again")
+	if err := r.sess.Answer(req.ID, "accept"); !errors.Is(err, provider.ErrNoPending) {
+		t.Errorf("an answered request answered again: %v, want ErrNoPending (plan 47)", err)
 	}
 	if a := r.st.Approvals["0"]; a == nil || a.Status != state.Allowed || a.Answer != "accept" {
 		t.Errorf("approval %+v", a)

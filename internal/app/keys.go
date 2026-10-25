@@ -37,7 +37,8 @@ func (m *Model) zonesWith() []string {
 func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	if k.String() == "ctrl+q" {
 		m.wt = nil // a quit question shows on the screen under it
-		return m.do(state.Quit{})
+		// A git operation asks to confirm too (plan 47, design D1).
+		return m.do(state.Quit{GitRunning: m.op != nil})
 	}
 	if m.s.QuitAsked && k.String() == "esc" {
 		return m.do(state.Stay{})

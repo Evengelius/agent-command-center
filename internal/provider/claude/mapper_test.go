@@ -7,6 +7,7 @@ import (
 
 	"github.com/Evengelius/agent-command-center/internal/event"
 	"github.com/Evengelius/agent-command-center/internal/fixture"
+	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
 func replay(t *testing.T, name string) ([]fixture.Record, [][]event.Event) {
@@ -389,4 +390,31 @@ func TestRecordingsHavePermissionDecision(t *testing.T) {
 		t.Error("no tool result in the recordings")
 	}
 	t.Logf("%d recordings, %d tool results", len(names), results)
+}
+
+// TestReplayNotes is plan 47's criterion 47.4: no Claude Code recording,
+// replayed through the state, leaves the note "event without a known
+// payload" (design D3). The notes are a bounded ring that only the details
+// view reads, so each event's are read alone.
+func TestReplayNotes(t *testing.T) {
+	names, err := filepath.Glob("../../../testdata/probes/p*-claude-*.jsonl")
+	if err != nil || len(names) == 0 {
+		t.Fatalf("recordings %v: %v", names, err)
+	}
+	for _, path := range names {
+		_, per := replay(t, filepath.Base(path))
+		s := state.New()
+		for _, evs := range per {
+			for _, e := range evs {
+				s.Notes = nil
+				s.Apply(e)
+				for _, n := range s.Notes {
+					if strings.Contains(n, "event without a known payload") {
+						t.Errorf("%s: %s", filepath.Base(path), n)
+					}
+				}
+			}
+		}
+	}
+	t.Logf("%d recordings", len(names))
 }

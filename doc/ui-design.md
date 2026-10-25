@@ -779,7 +779,7 @@ drives (events-and-state.md):
                  │          turn completed / failed; result in B (I8)      │
                  └────────── follow-up, same session (F10, I9) ────────────┘
 
- Ctrl+Q at any point: confirm if a turn runs, close the CLI, restore the terminal.
+ Ctrl+Q at any point: confirm if a turn or a git operation runs, close the CLI, restore the terminal.
 ```
 
 While a turn runs, the draft can be edited but not sent: the editor's status
@@ -2205,7 +2205,9 @@ long; Esc during them does what it does otherwise.
 lands; on the button's left part, the main action (it takes no keys); on the
 chevron, the dropdown opens or closes; on the dropdown's item, Commit &
 Push. A click outside the dropdown or the question closes it and does
-nothing else.
+nothing else. Both go with the panel however it is hidden: F3's Explorer in
+its place, or zone B taking the focus in the compact layout (plan 47,
+design D4).
 
 ## Diff view
 
@@ -2706,7 +2708,7 @@ The same file can name Codex's proxy (plan 22, amendment 19).
 | Ctrl+W | the [Worktrees](#worktrees) view of the session's repository: list, diff, merge, remove | plan 16; brief amendment 10 |
 | F1, `?` | key overlay | ASM-9 |
 | Ctrl+R | after a crash only: resume the same CLI session in a new process ([reliability.md, Resumption](reliability.md#resumption)) | ASM-9 |
-| Ctrl+Q | quit; asks to confirm while a turn or an agent runs | ASM-9 |
+| Ctrl+Q | quit; asks to confirm while a turn or an agent runs, or Source Control's staging, commit or push, whatever the session's phase, naming what runs ("quit? the commit is still running · Ctrl+Q again to quit · Esc to stay"); a second Ctrl+Q quits, git left to finish on its own | ASM-9; plan 47 |
 
 **Shift+Enter in Windows Terminal.** In VT input mode the console reports
 Shift+Enter as a plain carriage return, the same as Enter (measured, plan 4,

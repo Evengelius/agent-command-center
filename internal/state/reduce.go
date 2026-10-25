@@ -214,6 +214,7 @@ func (s *State) apply(ev event.Event) []Command {
 		return nil
 	case event.Mode:
 		s.approvalMode(ev, p)
+		return nil
 	case event.ModeLimits:
 		s.Session.ModesUnavailable = p.Unavailable
 		return nil
@@ -703,9 +704,10 @@ func (s *State) requested(ev event.Event, p event.Approval) []Command {
 	s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "approval", Agent: ev.Agent, MessageID: id, Text: p.Tool, Origin: ev.Origin, At: ev.At})
 	if p.Problem != "" {
 		// An unreadable request is denied, never allowed (INT 4 fallback),
-		// in the CLI's word: Codex declines (reliability.md, Approvals).
+		// in the CLI's word: Codex declines (reliability.md, Approvals), in a
+		// mock replay of Codex's too (plan 47, design D3).
 		deny := "deny"
-		if s.Context.Provider == "codex" {
+		if s.CLI() == "codex" {
 			deny = "decline"
 		}
 		a.Status, a.Answer, a.AnsweredAt = Denied, deny, ev.At
@@ -733,7 +735,9 @@ func (s *State) resolved(ev event.Event, p event.Approval) []Command {
 		return nil
 	}
 	if a.Status.Final() {
-		if p.Decision != "" && p.Decision != "resolved" {
+		// The CLI resolving or withdrawing it ("expired", Claude Code's
+		// control_cancel_request) is no second answer (plan 47, design D2).
+		if p.Decision != "" && p.Decision != "resolved" && p.Decision != "expired" {
 			s.note(ev, "second answer ignored: "+p.ID)
 		}
 		return nil

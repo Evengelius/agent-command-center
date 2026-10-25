@@ -20,8 +20,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, "agent-command-center:", err)
 		os.Exit(app.ExitError)
 	}
-	// Both adapters detect their CLI; their sessions arrive in steps 2
-	// (Claude Code) and 5 (Codex), and until then Start reports it.
+	// Both adapters, Claude Code's and Codex's, detect their CLI and start its
+	// sessions, reading the real environment through host.
 	host := provider.SystemHost()
 	// The application's own configuration file: the editor's send and newline
 	// keys, read once, here (plan 21, item 5.1). A problem is shown on the

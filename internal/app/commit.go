@@ -113,6 +113,11 @@ func (m *Model) syncCommit() {
 	v := &m.ui.Source
 	v.Action, v.Dim = m.commitState()
 	v.Busy, v.BusyHint, v.BusyWarn = "", "", false
+	m.ui.GitRunning = ""
+	if op := m.op; op != nil && len(op.steps) > 0 {
+		// What the quit question names (plan 47, design D1).
+		m.ui.GitRunning = map[string]string{stepStage: "the staging", stepCommit: "the commit", stepPush: "the push", stepTarget: "the push"}[op.steps[0]]
+	}
 	if op := m.op; op != nil && len(op.steps) > 0 {
 		// The running step, its elapsed time from its second second; a push
 		// says how to cancel it, or why a stop could not be (design D15).

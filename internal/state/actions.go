@@ -27,7 +27,7 @@ type (
 	SpawnFailed      struct{ Message string }
 	HandshakeTimeout struct{}
 	Back             struct{}
-	Quit             struct{}
+	Quit             struct{ GitRunning bool }
 	Stay             struct{} // Esc while Ctrl+Q asks to confirm: the session goes on
 	Resume           struct{} // start the crashed session's CLI session again in a new process
 	Send             struct {
@@ -42,8 +42,13 @@ type (
 		ID, Decision string
 		Answers      map[string]string // a question's answers: question text to answer (plan 14, item 1)
 	}
-	AnswerFailed struct{ ID, Message string }
-	CancelTurn   struct{ ID string } // c on an approval card: cancel it, then interrupt the turn
+	// AnswerFailed is an answer not written; Gone, the CLI had withdrawn the
+	// request (provider.ErrNoPending; plan 47, design D2).
+	AnswerFailed struct {
+		ID, Message string
+		Gone        bool
+	}
+	CancelTurn struct{ ID string } // c on an approval card: cancel it, then interrupt the turn
 	// ChooseMode asks for one of the session's CLI's modes (plan 39);
 	// Codex's Full access only Confirmed; Capable is the session's Modes,
 	// NextTurn its ModelsNextTurn: the mode goes with the next message.
@@ -145,7 +150,7 @@ func (s *State) Do(a Action) []Command {
 			s.Startup.Phase, s.Startup.Failure = Asking, ""
 		}
 	case Quit:
-		return s.quit()
+		return s.quit(a.GitRunning)
 	case Stay:
 		s.QuitAsked = false
 	case Resume:
@@ -199,10 +204,7 @@ func (s *State) Do(a Action) []Command {
 	case CancelTurn:
 		return s.cancelTurn(a)
 	case AnswerFailed:
-		if ap := s.Approvals[a.ID]; ap != nil && ap.Status == Answering {
-			ap.Status = Expired
-			return s.crash(event.Event{}, "the answer could not be written: "+a.Message, true)
-		}
+		return s.answerFailed(a)
 	case CloseTimeout:
 		if s.Session.Phase == Closing {
 			return []Command{{Kind: CmdKill}}
@@ -223,15 +225,17 @@ func (s *State) start() []Command {
 	return []Command{{Kind: CmdStartSession}}
 }
 
-func (s *State) quit() []Command {
+func (s *State) quit(gitRunning bool) []Command {
 	switch s.Startup.Phase {
 	case Detecting, Asking, Validating, StartFailed, "":
 		s.Startup.Phase = Exited
 		return []Command{{Kind: CmdExit}}
 	}
-	if s.Running() != "" && !s.QuitAsked {
+	if (s.Running() != "" || gitRunning) && !s.QuitAsked {
 		// ui-design.md, Keys: Ctrl+Q asks to confirm while a turn or an
-		// agent runs (reliability.md, Interruption and cancellation).
+		// agent runs (reliability.md, Interruption and cancellation), and
+		// while a git operation runs, whatever the session's phase (plan
+		// 47, design D1).
 		s.QuitAsked = true // the editor status asks (render)
 		return nil
 	}
@@ -401,6 +405,29 @@ func (s *State) answer(a Answer) []Command {
 		return []Command{{Kind: CmdAnswer, ID: a.ID, Decision: a.Decision, Answers: a.Answers}}
 	}
 	return []Command{{Kind: CmdAnswer, ID: a.ID, Decision: a.Decision}}
+}
+
+// answerFailed is an answer not written. The CLI having withdrawn the request
+// first, the approval expires, the status line says so and the session goes
+// on, whichever of the withdrawal and the failure comes first (plan 47, design
+// D2); any other failure ends the session.
+func (s *State) answerFailed(a AnswerFailed) []Command {
+	ap := s.Approvals[a.ID]
+	switch {
+	case ap == nil:
+	case a.Gone:
+		if ap.Status == Answering {
+			ap.Status = Expired
+			s.settleWaiting()
+		}
+		if ap.Status == Expired && s.Session.Phase == Ready {
+			s.Turn.Notice = "the request was withdrawn before the answer reached it"
+		}
+	case ap.Status == Answering:
+		ap.Status = Expired
+		return s.crash(event.Event{}, "the answer could not be written: "+a.Message, true)
+	}
+	return nil
 }
 
 // answers are the decisions the owner can give; none persists a rule.

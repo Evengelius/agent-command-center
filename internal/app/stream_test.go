@@ -63,6 +63,9 @@ type scriptSession struct {
 	// SetModelSettings calls, in order.
 	models, nextTurn, ultracode bool
 	changes                     []provider.ModelRequest
+	// What Answer returns, and the Close calls (plan 47, design D2).
+	answerErr error
+	closes    int
 }
 
 func newScriptSession() *scriptSession { return &scriptSession{events: make(chan event.Event, 4096)} }
@@ -79,7 +82,7 @@ func (s *scriptSession) Answer(id, decision string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.answers = append(s.answers, id+" "+decision)
-	return nil
+	return s.answerErr
 }
 func (s *scriptSession) AnswerQuestion(id string, answers map[string]string) error {
 	s.mu.Lock()
@@ -118,8 +121,17 @@ func (s *scriptSession) SetModelSettings(r provider.ModelRequest) error {
 	return nil
 }
 func (s *scriptSession) Close(context.Context) error {
+	s.mu.Lock()
+	s.closes++
+	s.mu.Unlock()
 	s.close.Do(func() { close(s.events) }) // as a real session ends its events
 	return nil
+}
+
+func (s *scriptSession) closed() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.closes
 }
 
 func (s *scriptSession) calls() (sent, answers []string, interrupts int) {

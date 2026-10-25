@@ -2,6 +2,7 @@ package claude
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,8 +47,11 @@ func TestAnswerQuestion(t *testing.T) {
 	if err := r.sess.Answer("q14", "allow"); err == nil {
 		t.Error("Answer allow on a question was accepted")
 	}
-	if err := r.sess.AnswerQuestion("nope", map[string]string{}); err == nil {
-		t.Error("an unknown request was answered")
+	if err := r.sess.AnswerQuestion("nope", map[string]string{}); !errors.Is(err, provider.ErrNoPending) || err.Error() != `no pending request "nope"` {
+		t.Errorf("an unknown request answered: %v, want ErrNoPending (plan 47)", err)
+	}
+	if err := r.sess.Answer("nope", "deny"); !errors.Is(err, provider.ErrNoPending) || err.Error() != `no pending request "nope"` {
+		t.Errorf("an unknown request denied: %v, want ErrNoPending (plan 47)", err)
 	}
 	answers := map[string]string{"Which colour?": "Rouge café ✓", "Which days?": "Monday, Tuesday"}
 	if err := r.sess.AnswerQuestion("q14", answers); err != nil {
