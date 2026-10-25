@@ -123,3 +123,11 @@ Limitations:
   shown as written.
 - The git tests take 79 to 114 s here, over the 60 s target.
 - The fuzzers ran 60 s each: a sample of their inputs, not a proof.
+
+**The commit and the push (2026-10-25), after the owner's approval.** The
+owner approved plan 49 on 2026-10-25 and accepted 49.7, 49.8, 49.9, 49.10
+and 49.11 as documented exceptions: they stay FAIL above, as reported.
+Commit 5c06d39 (107 files: 88 modified, 19 added) and the approval commit
+were pushed to `origin`; `origin/main` equals `main`, the working tree is
+clean, and the author is `Evengelius <molimoabel@gmail.com>`, with no
+attribution line: PASS. The block above stays as it was reported.
