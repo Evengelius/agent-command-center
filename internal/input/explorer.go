@@ -2,6 +2,7 @@ package input
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -93,33 +94,95 @@ type GitMarks struct {
 	Ignored map[string]bool
 }
 
-// Status is git's markers for the project dir: one git status that writes
-// nothing (no optional lock), its paths made relative to dir. Outside a
-// repository it is NotRepoError; without git, ErrNoGit.
-func (g GitCLI) Status(dir string) (GitMarks, error) {
-	prefix, err := g.run(readLimit, dir, "rev-parse", "--show-prefix")
-	if err != nil {
-		if errors.Is(err, ErrNoGit) {
-			return GitMarks{}, err
-		}
-		if strings.Contains(strings.ToLower(err.Error()), "not a git repository") {
-			return GitMarks{}, NotRepoError{Dir: dir}
-		}
-		return GitMarks{}, err
+// IsIgnored reports whether git ignores the project-relative path p: p
+// itself, or a folder above it, is in Ignored. The files under an untracked
+// folder that git ignores are listed there and not among the changes (plan
+// 44, design D4).
+func (m GitMarks) IsIgnored(p string) bool {
+	if m.Ignored[p] || m.Ignored[p+"/"] {
+		return true
 	}
-	out, err := g.run(readLimit, dir, "status", "--porcelain=v1", "-z", "--untracked-files=normal", "--ignored", "--", ".")
-	if err != nil {
-		return GitMarks{}, err
+	for i := 0; i < len(p); i++ {
+		if p[i] == '/' && m.Ignored[p[:i+1]] {
+			return true
+		}
 	}
-	return ParseStatus(out, strings.TrimSpace(prefix)), nil
+	return false
 }
 
-// ParseStatus reads git status --porcelain=v1 -z: "XY path", a rename or a
-// copy followed by its source path, each ended by a NUL, the paths relative
-// to the repository; prefix, the project's place in it, is taken off and a
-// path outside it left out.
+// Status is git's markers for the project dir: the markers of one Snapshot
+// (plan 44, design D2), a single code path for the Explorer and the Source
+// Control. Outside a repository it is NotRepoError; without git, ErrNoGit.
+func (g GitCLI) Status(dir string) (GitMarks, error) {
+	snap, err := g.Snapshot(dir)
+	if err != nil {
+		return GitMarks{}, err
+	}
+	return snap.Marks, nil
+}
+
+// Snapshot is git's view of the project dir for the Explorer's markers and
+// the Source Control's lists (plan 44, design D2), read only: git rev-parse
+// for the project's place in the repository, then one git status that writes
+// nothing (no optional lock, no file system monitor), its paths made
+// relative to dir; a detached HEAD costs a third call for its short id.
+// Outside a repository it is NotRepoError; without git, ErrNoGit.
+func (g GitCLI) Snapshot(dir string) (GitSnapshot, error) {
+	out, err := g.runRead(readLimit, dir, "rev-parse", "--show-prefix", "--show-toplevel")
+	if err != nil {
+		if errors.Is(err, ErrNoGit) {
+			return GitSnapshot{}, err
+		}
+		if strings.Contains(strings.ToLower(err.Error()), "not a git repository") {
+			return GitSnapshot{}, NotRepoError{Dir: dir}
+		}
+		return GitSnapshot{}, err
+	}
+	prefix, top, _ := strings.Cut(out, "\n")
+	prefix, top = strings.TrimSuffix(prefix, "\r"), strings.TrimRight(top, "\r\n")
+	if top == "" {
+		return GitSnapshot{}, fmt.Errorf("git has no top level for %s", dir)
+	}
+	st, err := g.runRead(readLimit, dir, "status", "--porcelain=v1", "-z", "--branch", "--untracked-files=normal", "--ignored", "--", ".")
+	if err != nil {
+		return GitSnapshot{}, err
+	}
+	snap := GitSnapshot{Top: filepath.FromSlash(top), Prefix: prefix}
+	snap.Entries, snap.Branch, snap.Marks = ParseSnapshot(st, prefix)
+	for _, r := range strings.Split(st, "\x00") {
+		// The project's folder untracked as a whole: its one record, the
+		// prefix itself, which ParseSnapshot leaves out.
+		if p, ok := strings.CutPrefix(r, "?? "); ok && prefix != "" && strings.EqualFold(p, prefix) {
+			snap.Untracked = true
+		}
+	}
+	if snap.Branch.Detached {
+		id, err := g.runRead(readLimit, dir, "rev-parse", "--short", "HEAD")
+		if err != nil {
+			return GitSnapshot{}, err
+		}
+		snap.Branch.Head = strings.TrimSpace(id)
+	}
+	return snap, nil
+}
+
+// ParseStatus reads git status --porcelain=v1 -z: the Explorer's markers
+// of ParseSnapshot.
 func ParseStatus(out, prefix string) GitMarks {
-	gm := GitMarks{Files: map[string]byte{}, Ignored: map[string]bool{}}
+	_, _, marks := ParseSnapshot(out, prefix)
+	return marks
+}
+
+// ParseSnapshot reads git status --porcelain=v1 -z --branch (plan 44, design
+// D2): the branch record "## ..." if there is one, then "XY path", a rename
+// or a copy followed by its source path, each ended by a NUL, the paths
+// relative to the repository. prefix, the project's place in it, is taken
+// off and a path outside it left out. The entries are the changes in git's
+// order, the ignored never among them; the markers are the Explorer's, one
+// for a path with X and Y merged, a rename's source skipped, the ignored
+// paths apart.
+func ParseSnapshot(out, prefix string) (entries []GitEntry, branch GitBranch, marks GitMarks) {
+	marks = GitMarks{Files: map[string]byte{}, Ignored: map[string]bool{}}
 	rel := func(p string) (string, bool) {
 		if len(p) < len(prefix) || !strings.EqualFold(p[:len(prefix)], prefix) {
 			return "", false
@@ -130,12 +193,20 @@ func ParseStatus(out, prefix string) GitMarks {
 	recs := strings.Split(out, "\x00")
 	for i := 0; i < len(recs); i++ {
 		r := recs[i]
+		if s, ok := strings.CutPrefix(r, "## "); ok { // no entry starts with two #
+			branch = parseBranch(s)
+			continue
+		}
 		if len(r) < 4 || r[2] != ' ' {
 			continue
 		}
 		x, y := r[0], r[1]
-		if x == 'R' || x == 'C' {
+		from := ""
+		if x == 'R' || x == 'C' || y == 'R' || y == 'C' {
 			i++ // the source path
+			if i < len(recs) {
+				from = recs[i]
+			}
 		}
 		p, ok := rel(r[3:])
 		if !ok {
@@ -143,20 +214,45 @@ func ParseStatus(out, prefix string) GitMarks {
 		}
 		switch {
 		case x == '!' && y == '!':
-			gm.Ignored[p] = true
+			marks.Ignored[p] = true
+			continue
 		case x == '?' && y == '?':
-			gm.Files[p] = 'U'
+			marks.Files[p] = 'U'
 		case x == 'U' || y == 'U' || x == 'A' && y == 'A' || x == 'D' && y == 'D':
-			gm.Files[p] = '!'
+			marks.Files[p] = '!'
 		case x == 'R':
-			gm.Files[p] = 'R'
+			marks.Files[p] = 'R'
 		case x == 'A' || x == 'C':
-			gm.Files[p] = 'A'
+			marks.Files[p] = 'A'
 		case x == 'D' || y == 'D':
-			gm.Files[p] = 'D'
+			marks.Files[p] = 'D'
 		default:
-			gm.Files[p] = 'M'
+			marks.Files[p] = 'M'
+		}
+		e := GitEntry{X: x, Y: y, Path: p, RepoPath: r[3:], Orig: from, RepoOrig: from}
+		if o, ok := rel(from); ok {
+			e.Orig = o // a source outside the project, which git does not list, stays as it wrote it
+		}
+		entries = append(entries, e)
+	}
+	return entries, branch, marks
+}
+
+// parseBranch reads the branch record of git status --branch, after its
+// "## ": "main", "main...origin/main [ahead 1]", "HEAD (no branch)" or "No
+// commits yet on main" (git before 2.14 wrote "Initial commit on").
+func parseBranch(s string) GitBranch {
+	name := func(s string) string {
+		n, _, _ := strings.Cut(s, "...") // a branch name never holds "..."
+		return n
+	}
+	for _, lead := range []string{"No commits yet on ", "Initial commit on "} {
+		if rest, ok := strings.CutPrefix(s, lead); ok {
+			return GitBranch{Name: name(rest), NoCommits: true}
 		}
 	}
-	return gm
+	if s == "HEAD (no branch)" {
+		return GitBranch{Name: "HEAD", Detached: true}
+	}
+	return GitBranch{Name: name(s)}
 }

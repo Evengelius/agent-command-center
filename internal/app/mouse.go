@@ -60,15 +60,20 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			switch p, item := m.screen.ItemAt(mo.X, mo.Y); {
 			case p == render.SidePanel:
 				// The sidebar (plan 43, design D5): the Explorer's tile shows or
-				// hides its panel as F3 does, closing a popup as a click outside
-				// it does; Skills' tile and the sidebar's frame change nothing at
-				// all, no state, focus or selection.
-				if item != render.SideExplorer {
+				// hides its panel as F3 does, Source Control's its own (plan 44,
+				// design D1), each closing a popup as a click outside it does;
+				// the sidebar's frame changes nothing at all, no state, focus or
+				// selection.
+				if item != render.SideExplorer && item != render.SideSource {
 					return nil
 				}
 				m.ui.Plus, m.ui.PlusHover = false, false
+				m.ui.SideHover, m.ui.SideTipOff = item, true // the click answers the tooltip, until the pointer leaves the tile
 				m.closeModels()
 				m.closeModes()
+				if item == render.SideSource {
+					return m.toggleSource()
+				}
 				return m.toggleExplorer()
 			case p == render.PillPanel:
 				// The model pill opens and closes the model selector (plan 34),
@@ -120,8 +125,11 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 		}
 		// Over the draft window, only the window takes a click (amendment 13).
 		if mo.Button == tea.MouseLeft && (!m.ui.DraftWin.Open || m.screen.PanelAt(mo.X, mo.Y) == 'E') {
-			if p, item := m.screen.ItemAt(mo.X, mo.Y); p == render.ExplorerPanel {
+			switch p, item := m.screen.ItemAt(mo.X, mo.Y); p {
+			case render.ExplorerPanel:
 				return m.explorerClick(item) // the panel's own, no selection (plan 43, design D7)
+			case render.SourcePanel:
+				return m.sourceClick(item) // the same for Source Control's (plan 44, design D5)
 			}
 			m.press(mo)
 		}
@@ -131,7 +139,8 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			// pointer, 0 off the tiles, a button held or not (a press on a
 			// tile starts no drag); a report wandering within a tile leaves
 			// it as it is, and it never changes what is selected.
-			m.ui.SideHover = m.sideTileAt(mo.X, mo.Y)
+			m.sideHover(m.sideTileAt(mo.X, mo.Y))
+			m.ui.Source.Hover = m.sourceHoverAt(mo.X, mo.Y) // Source Control's row (plan 44, design D5)
 		}
 		if m.ui.Plus && !m.drag.on {
 			m.ui.PlusHover = m.screen.PanelAt(mo.X, mo.Y) == 'U' // the hover (plan 30, design D3)
@@ -155,7 +164,8 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			m.extend(mo)
 		}
 	case tea.MouseReleaseMsg:
-		m.ui.SideHover = m.sideTileAt(mo.X, mo.Y) // where the button came up
+		m.sideHover(m.sideTileAt(mo.X, mo.Y)) // where the button came up
+		m.ui.Source.Hover = m.sourceHoverAt(mo.X, mo.Y)
 		if m.drag.on {
 			m.drag.moved = m.drag.moved || mo.X != m.drag.x || mo.Y != m.drag.y
 			m.extend(mo)
@@ -214,6 +224,10 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			}
 		} else if p == render.ExplorerPanel {
 			m.explorerWheel(mo.Button) // over the panel only (plan 43, design D7)
+		} else if p == render.SourcePanel {
+			m.sourceWheel(mo.Button) // the same for Source Control's (plan 44, design D5)
+		} else if p == render.DiffPanel {
+			m.diffWheel(mo.Button) // the diff under the pointer (plan 44, design D9)
 		}
 	}
 	return nil
@@ -226,6 +240,14 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 func (m *Model) sideHoverable() bool {
 	return m.screen != nil && m.screen.Side.W > 0 && m.s.Screen == state.ScreenDashboard && m.wt == nil &&
 		!m.ui.MouseOff && !render.WindowOpen(m.ui) && !m.ui.DraftWin.Open
+}
+
+// sideHover sets the sidebar's hovered tile, its tooltip back once the
+// pointer is on another tile or off them (plan 44, design D1).
+func (m *Model) sideHover(tile int) {
+	if tile != m.ui.SideHover {
+		m.ui.SideHover, m.ui.SideTipOff = tile, false
+	}
 }
 
 // sideTileAt is the sidebar's tile under the pointer at (x, y) on the frame
@@ -241,18 +263,19 @@ func (m *Model) sideTileAt(x, y int) int {
 // run.go): it drops, before Update and View, a motion report with no button
 // that would change nothing: no popup is open, whose hover follows every
 // motion (the "+" menu, the model selector, the modes selector), no drag
-// runs, and the sidebar's tile under the pointer, 0 off the tiles, is the
-// one hovered already. The all-motion reporting the sidebar's hover needs
-// thus costs a frame only when the hover changes. It runs on the program's
-// event loop, as Update and View do, and reads the frame drawn last; the
-// model counts what it drops.
+// runs, the sidebar's tile under the pointer, 0 off the tiles, is the one
+// hovered already, and so is Source Control's row (plan 44, design D5). The
+// all-motion reporting the hovers need thus costs a frame only when one
+// changes. It runs on the program's event loop, as Update and View do, and
+// reads the frame drawn last; the model counts what it drops.
 func motionFilter(tm tea.Model, msg tea.Msg) tea.Msg {
 	mo, ok := msg.(tea.MouseMotionMsg)
 	if !ok || mo.Button != tea.MouseNone {
 		return msg
 	}
 	m, ok := tm.(*Model)
-	if !ok || m.ui.Plus || m.ui.Models.Open || m.ui.Modes.Open || m.drag.on || m.sideTileAt(mo.X, mo.Y) != m.ui.SideHover {
+	if !ok || m.ui.Plus || m.ui.Models.Open || m.ui.Modes.Open || m.drag.on || m.sideTileAt(mo.X, mo.Y) != m.ui.SideHover ||
+		m.sourceHoverAt(mo.X, mo.Y) != m.ui.Source.Hover {
 		return msg
 	}
 	m.motionDropped++

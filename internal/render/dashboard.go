@@ -62,7 +62,7 @@ func layout(s *state.State, ui UI) geometry {
 		region := h - 4 // the bars, zone A's line and the footer
 		ch := cHeight(inPlay, region, 0, true)
 		g := geometry{narrow: true, upper: region - ch, ch: ch, bw: w}
-		if ui.Explorer.Open {
+		if PanelShown(ui) {
 			g.bw, g.pw = 0, w // no sidebar: the panel in zone B's place
 		}
 		return g
@@ -75,7 +75,7 @@ func layout(s *state.State, ui UI) geometry {
 	ch := cHeight(inPlay, region, minB, false)
 	g := geometry{upper: region - ch, ch: ch, aw: zoneAWidth(w), sw: sideWidth}
 	g.bw = w - g.aw - g.sw
-	if ui.Explorer.Open {
+	if PanelShown(ui) {
 		if pw := explorerWidth(w); g.bw-pw >= dockMinB {
 			g.bw, g.pw = g.bw-pw, pw
 		} else {
@@ -85,13 +85,26 @@ func layout(s *state.State, ui UI) geometry {
 	return g
 }
 
-// ExplorerCompact says the Explorer's panel is shown in zone B's place, no
-// zone B drawn: under 100 columns, or where zone B would keep fewer than
-// dockMinB columns beside it (plan 43, design D1). There zone B taking the
-// focus hides the panel, the application's compact rule.
-func ExplorerCompact(s *state.State, ui UI) bool {
+// PanelCompact says the docked panel is shown in zone B's place, no zone B
+// drawn: under 100 columns, or where zone B would keep fewer than dockMinB
+// columns beside it (plan 43, design D1). There zone B taking the focus
+// hides the panel, the application's compact rule.
+func PanelCompact(s *state.State, ui UI) bool {
 	g := layout(s, ui)
 	return g.pw > 0 && g.bw == 0
+}
+
+// PanelShown says a panel is in the docked place: the Explorer's or Source
+// Control's, one at a time (plan 44, design D1).
+func PanelShown(ui UI) bool { return ui.Explorer.Open || ui.Source.Open }
+
+// dockPanel is the docked panel w by h: Source Control's while shown, else
+// the Explorer's.
+func dockPanel(ui UI, w, h int) []line {
+	if ui.Source.Open {
+		return sourcePanel(ui, w, h)
+	}
+	return explorerPanel(ui, w, h)
 }
 
 // dashboard draws the working screen at the layout the width selects.
@@ -138,26 +151,49 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		}
 		sc.Conv.Y = len(ls) + 1
 		sc.B, sc.Panel = Cols{W: g.bw}, Cols{W: g.pw}
-		if g.pw > 0 {
-			ls = append(ls, explorerPanel(ui, w, g.upper)...) // no sidebar: the panel in zone B's place
-		} else {
+		switch {
+		case ui.Diff.Open: // the diff in zone B's place, before a panel (plan 44, design D8)
+			sc.B, sc.Panel, sc.Diff = Cols{}, Cols{}, Cols{0, w}
+			ls = append(ls, diffView(ui, w, g.upper)...)
+		case g.pw > 0:
+			ls = append(ls, dockPanel(ui, w, g.upper)...) // no sidebar: the panel in zone B's place
+		default:
 			ls = append(ls, zoneB(s, ui, w, g.upper, editorMinRows, sc)...)
 		}
 		ls = append(ls, zoneC(s, ui, w, g.ch, sc)...)
-		return append(ls, keyFooter(s, ui, w, g.pw > 0, sendNewline(ui)+" · F6 zone · F2 approve · F3 Explorer · F1 keys"))
+		return append(ls, keyFooter(s, ui, w, g.pw > 0 || ui.Diff.Open, sendNewline(ui)+" · F6 zone · F2 approve · F3 Explorer · F1 keys"))
 	}
 
 	sc.Conv.Y = len(ls) + 1
 	sc.AY = len(ls)
-	upper := [][]line{zoneA(s, ui, g.aw, g.upper, sc)}
-	if g.bw > 0 {
-		upper = append(upper, zoneB(s, ui, g.bw, g.upper, editorMinRows, sc))
-	}
-	if g.pw > 0 {
-		upper = append(upper, explorerPanel(ui, g.pw, g.upper))
+	sc.B, sc.Panel, sc.Side = Cols{g.aw, g.bw}, Cols{g.aw + g.bw, g.pw}, Cols{g.aw + g.bw + g.pw, g.sw}
+	var upper [][]line
+	if ui.Diff.Open {
+		// The diff in zone B's place (plan 44, design D8), the panel docked
+		// beside it where the diff keeps diffMinW columns, else the diff in
+		// the panel's place too; wide, over zone A.
+		d := DiffBox(s, ui)
+		sc.Diff, sc.B = d, Cols{}
+		if d.X > 0 {
+			upper = append(upper, zoneA(s, ui, g.aw, g.upper, sc))
+		}
+		upper = append(upper, diffView(ui, d.W, g.upper))
+		if pw := g.aw + g.bw + g.pw - d.X - d.W; pw > 0 {
+			sc.Panel = Cols{d.X + d.W, pw}
+			upper = append(upper, dockPanel(ui, pw, g.upper))
+		} else {
+			sc.Panel = Cols{}
+		}
+	} else {
+		upper = append(upper, zoneA(s, ui, g.aw, g.upper, sc))
+		if g.bw > 0 {
+			upper = append(upper, zoneB(s, ui, g.bw, g.upper, editorMinRows, sc))
+		}
+		if g.pw > 0 {
+			upper = append(upper, dockPanel(ui, g.pw, g.upper))
+		}
 	}
 	upper = append(upper, sidebar(ui, g.sw, g.upper))
-	sc.B, sc.Panel, sc.Side = Cols{g.aw, g.bw}, Cols{g.aw + g.bw, g.pw}, Cols{g.aw + g.bw + g.pw, g.sw}
 	ls = append(ls, beside(upper...)...)
 	ls = append(ls, zoneC(s, ui, w, g.ch, sc)...) // the whole width, its timeline inside (plan 27)
 	hints := sendNewline(ui) + " · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit"
@@ -169,7 +205,7 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		// of the line, Ctrl+Q quit (plan 17, F3 in the footer; plan 29).
 		hints = strings.Replace(hints, ui.newlineKeys()[0]+" newline · ", "", 1)
 	}
-	return append(ls, keyFooter(s, ui, w, g.bw == 0, hints))
+	return append(ls, keyFooter(s, ui, w, g.bw == 0 || ui.Diff.Open, hints))
 }
 
 // editorMinRows is the input's least height: one row under the rule, then
@@ -189,6 +225,10 @@ func footer(s *state.State, ui UI, hints string) string {
 		return "↑↓ select · Enter inspect · z zoom · PgUp PgDn Home End scroll · F6 zone · Esc back to the input · F1 keys"
 	case ui.Focus == "A":
 		return aFooter
+	case ui.Focus == "D" && ui.Diff.Open:
+		return diffHints(ui.Diff, ui.Width)
+	case ui.Focus == "R" && ui.Source.Open:
+		return sourceKeys(ui.Width)
 	case ui.Focus == "R" && ui.Explorer.Open:
 		return explorerHints(ui.Width)
 	}
@@ -202,17 +242,17 @@ func boolInt(b bool) int {
 	return 0
 }
 
-// keyFooter is the footer row: the key hints, except where the Explorer's
-// panel takes zone B's place (noB), hiding its editor's status row and its
-// cards, or has the focus: there the quit question (noB) and then a waiting
-// approval come first, in the attention colour, as in the old window's
-// footer (plan 43's review).
+// keyFooter is the footer row: the key hints, except where the docked panel
+// or the diff takes zone B's place (noB), hiding its editor's status row and
+// its cards, or either has the focus: there the quit question (noB) and then
+// a waiting approval come first, in the attention colour, as in the old
+// window's footer (plan 43's review; plan 44, design D12).
 func keyFooter(s *state.State, ui UI, w int, noB bool, hints string) line {
 	if ui.Toast == "" && !ui.MouseOff {
 		switch {
 		case noB && s.QuitAsked:
 			return plain(" "+editorStatus(s, ui), stAttentionBold).fit(w)
-		case (noB || ui.Focus == "R" && ui.Explorer.Open) && anyPending(s):
+		case (noB || ui.Focus == "R" && PanelShown(ui) || ui.Focus == "D" && ui.Diff.Open) && anyPending(s):
 			return plain(" ◆ approval waiting · F2 to answer", stAttentionBold).fit(w)
 		}
 	}

@@ -44,7 +44,7 @@ type UI struct {
 	Worktrees       WorktreesView // the Worktrees view, over either screen while Open (plan 16)
 
 	// Dashboard.
-	Focus    string // "A", "B", "C", or "R" for the Explorer's panel (plan 43, design D7)
+	Focus    string // "A", "B", "C", "R" for the docked panel (plan 43, design D7), or "D" for the diff (plan 44, design D9)
 	Draft    string // the editor's text
 	Editor   EditorView
 	Selected string // the agent selected in zone C
@@ -128,10 +128,17 @@ type UI struct {
 	File     FileView
 	Finder   FinderView
 	Explorer ExplorerView
+	// Source is Source Control, docked in the Explorer's place while
+	// Source.Open, one of the two at a time; Diff a file's diff, opened from
+	// it, in zone B's place while Diff.Open (plan 44, designs D1 and D8).
+	Source SourceView
+	Diff   DiffView
 	// SideHover is the sidebar's tile under the pointer: 0 none,
-	// SideExplorer or SideSkills (plan 43, design D4); hover never changes
-	// what is selected.
-	SideHover int
+	// SideExplorer or SideSource (plan 43, design D4; plan 44, design D1);
+	// hover never changes what is selected. SideTipOff hides its tooltip
+	// after a click on it, until the pointer leaves it (plan 44, design D1).
+	SideHover  int
+	SideTipOff bool
 	// DraftWin is the draft in a window, Ctrl+G (amendment 13).
 	DraftWin DraftWindow
 

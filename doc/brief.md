@@ -5955,3 +5955,571 @@ The final implementation must faithfully match both supplied screenshots within 
 ````
 
 Taken as plan 43 (plan.md, Plan 43).
+
+## Amendment 45, 2026-10-25: Source Control and a Git diff viewer, for plan 44
+
+After plan 43 was approved and pushed, the owner sent an image, copied as
+`references/14-source-control.png` (`46.png`, 218x160: the top of VS
+Code's Source Control view, "Source Control" and its "···", a "Changes"
+section, a commit message field and a Commit button), and wrote, word for
+word:
+
+````text
+# Agent Command Center — Source Control & Git Diff Viewer
+
+## Objective
+
+Implement the **Source Control functionality** in Agent Command Center, using the attached Visual Studio Code screenshot as the visual and interaction reference.
+
+The second icon in the existing right-hand activity sidebar is **Source Control (Git)**, not Skills.
+
+Agent Command Center already has:
+
+- A working Explorer integrated into the right sidebar.
+- Git repository detection.
+- Git status indicators such as `M` for modified files.
+- Existing file-navigation and inspection capabilities.
+
+**Reuse these existing capabilities. Do not build a second independent Git-status system.**
+
+The objective is to provide a native terminal experience similar to VS Code's Source Control:
+
+1. View changed files in the current Git repository.
+2. Identify each file's Git status.
+3. Separate staged and unstaged changes.
+4. Open a changed file to inspect its actual Git diff.
+5. Clearly distinguish added, modified, and deleted lines.
+6. Keep the existing dashboard and Explorer functionality intact.
+
+This task focuses on **reviewing changes**, not performing Git mutations.
+
+---
+
+## 1. Right Sidebar — Source Control Icon
+
+The sidebar currently contains two icons:
+
+1. Explorer.
+2. The icon previously reserved for Skills.
+
+The second icon must now represent **Source Control**.
+
+### Required behavior
+
+Clicking the Source Control icon must open the Source Control panel in the same docked area currently used by Explorer.
+
+The two panels are mutually exclusive.
+
+- Clicking Explorer opens Explorer.
+- Clicking Source Control opens Source Control.
+- Switching between them preserves their existing navigation state where practical.
+- Clicking the currently active icon can collapse its panel.
+
+**F3 must continue to toggle Explorer exactly as it does today.**
+
+Do not reassign F3 to Source Control.
+
+### Icon design
+
+Use the existing branch-shaped icon, since it already visually communicates version control.
+
+Preserve the approved sidebar styling:
+
+- Dark background.
+- Purple/lavender active highlight.
+- Rounded selection background.
+- Subtle hover effect.
+- Active-state indicator.
+- Existing dimensions and spacing.
+
+The tooltip must now read:
+
+`Source Control`
+
+Do not introduce a Skills panel or implement Skills functionality.
+
+---
+
+## 2. Source Control Panel — Visual Structure
+
+Use the attached VS Code screenshot as the reference.
+
+The panel must display:
+
+**SOURCE CONTROL**
+
+Below the heading, show Git changes from the active project.
+
+### Example layout
+
+```text
+SOURCE CONTROL                     ...
+
+agent-command-center · main
+
+▾ CHANGES                         3
+
+   M  internal/app/app.go
+   D  internal/render/old.go
+   U  internal/render/new.go
+
+▾ STAGED CHANGES                  1
+
+   M  internal/state/reduce.go
+```
+
+This is an illustrative structure. Actual content must come from Git.
+
+### Styling
+
+Keep the existing Agent Command Center visual language:
+
+- Dark background.
+- Lavender/purple section headings.
+- Compact file rows.
+- Clear indentation.
+- Muted directory paths.
+- Distinct file-status labels.
+- Subtle hovered-row background.
+- Purple selected-row highlight.
+- Readable counts for each section.
+
+Do not reproduce VS Code's light or gray theme.
+
+Adapt its organization to Agent Command Center's already approved colors.
+
+### Important scope decision
+
+The reference image also contains a commit message field and a Commit button.
+
+**Do not implement committing, staging actions, or Git synchronization in this phase.**
+
+The current objective is accurate Git-status visualization and read-only diff inspection.
+
+---
+
+## 3. Git Status Detection
+
+Reuse the existing Git integration wherever possible.
+
+Display the real state of the working repository.
+
+Support the relevant Git statuses:
+
+| Status | Meaning |
+|---|---|
+| M | Modified |
+| A | Added |
+| D | Deleted |
+| R | Renamed |
+| C | Copied, where reported |
+| U | Untracked |
+| Conflict | Unmerged/conflicting changes |
+
+Use actual Git state, not filename extensions or filesystem modification timestamps.
+
+### Technical expectations
+
+Investigate the existing version-control implementation first.
+
+For robust status parsing, consider Git's machine-readable porcelain format, including NUL-delimited paths.
+
+Handle:
+
+- Spaces in filenames.
+- Unicode filenames.
+- Renamed files.
+- Deleted files.
+- Newly added files.
+- Untracked files.
+- Staged files.
+- Partially staged files.
+- Merge conflicts.
+- Nested directories.
+- Repositories with many modified files.
+
+Do not mistake ignored files for ordinary changes.
+
+A file may have both staged and unstaged modifications. Represent both states accurately rather than merging them into an incorrect single status.
+
+---
+
+## 4. Automatically Update the Changes List
+
+The Source Control panel must reflect actual changes made to the project.
+
+For example:
+
+1. Claude Code edits `app.go`.
+2. Git identifies the file as modified.
+3. `app.go` appears in Source Control with `M`.
+4. The user opens it and reviews the diff.
+5. After the change is reverted or committed externally, the list updates accordingly.
+
+This must work whether changes originate from:
+
+- Claude Code.
+- Codex.
+- Agent Command Center.
+- An external editor.
+- Git commands performed outside the application.
+
+Use filesystem notifications or appropriately throttled status refreshes as supported by the existing architecture.
+
+Avoid excessive Git subprocesses, unnecessary polling, or full-dashboard redraws.
+
+Provide a manual refresh mechanism if needed.
+
+---
+
+## 5. Opening a File Must Show Its Git Diff
+
+**This is the most important functionality.**
+
+When I select a modified file in Source Control and press Enter, or click it, I want to see exactly what changed.
+
+Not just the current contents of the file.
+
+I want a comparison between the relevant Git versions.
+
+### Required behavior
+
+For an unstaged modification:
+
+Compare the working-tree version with the index version.
+
+For a staged modification:
+
+Compare the index version with `HEAD`.
+
+This distinction is important because the same file can contain both staged and unstaged changes.
+
+### Example
+
+Original file:
+
+```go
+func calculateTotal(a, b int) int {
+    return a + b
+}
+```
+
+Modified file:
+
+```go
+func calculateTotal(a, b int) int {
+    return a + b + 10
+}
+```
+
+The diff viewer must show something equivalent to:
+
+```diff
+ func calculateTotal(a, b int) int {
+-    return a + b
++    return a + b + 10
+ }
+```
+
+### Visual styling
+
+Use readable, semantic diff colors:
+
+- **Green:** added lines.
+- **Red:** removed lines.
+- **Muted neutral:** unchanged context.
+- **Lavender/blue:** diff headings and file metadata.
+
+The red and green have semantic meaning and are appropriate exceptions to the predominantly purple application theme.
+
+The user must immediately understand what was added, removed, or modified.
+
+Do not represent a modified file merely by displaying its complete current contents.
+
+---
+
+## 6. Diff Viewer Layout
+
+Use VS Code's diff-review experience as inspiration, adapted to a native terminal interface.
+
+### Preferred behavior
+
+Opening a Source Control entry should show the diff in the main content area, with a clear way to return to the conversation.
+
+The Source Control sidebar stays visible.
+
+The existing conversation and unsent draft must remain preserved.
+
+### Diff presentation
+
+Prefer:
+
+- Side-by-side comparison when the terminal is sufficiently wide.
+- Unified diff when there is insufficient horizontal space.
+
+Example side-by-side concept:
+
+```text
+app.go — Working Changes
+
+ORIGINAL                 MODIFIED
+────────────────────────────────────────
+
+12  return a + b       12  return a + b + 10
+    [removed]               [added]
+```
+
+Use the actual terminal dimensions to determine whether a side-by-side view is readable.
+
+Do not force a split layout that causes excessive truncation.
+
+### Required diff features
+
+- Filename and relative path.
+- Comparison type: staged or unstaged.
+- Original and modified line numbers where applicable.
+- Correctly highlighted additions and deletions.
+- Unchanged context around modifications.
+- Scrollable content.
+- Keyboard and mouse navigation.
+- Horizontal scrolling or sensible wrapping for long lines.
+- Navigation between changed sections.
+- Clear indication when a file has no textual diff.
+
+Preserve the original conversation while the diff is being inspected.
+
+Closing the diff viewer must restore the conversation and its previous scroll position.
+
+---
+
+## 7. Special Git Cases
+
+The diff viewer must correctly handle more than ordinary modified files.
+
+### New or untracked file
+
+Show its content as added lines, compared against an empty previous version.
+
+### Deleted file
+
+Show the removed content as deleted lines.
+
+### Renamed file
+
+Display the previous and new paths, and show content changes if any.
+
+### Partially staged file
+
+Allow the user to inspect staged and unstaged changes separately.
+
+### Binary file
+
+Do not display binary bytes as terminal text.
+
+Show a concise message explaining that the file is binary and that a textual diff is unavailable.
+
+### Large files
+
+Avoid freezing the UI.
+
+Use bounded rendering, lazy loading, or other appropriate techniques.
+
+### Merge conflicts
+
+Identify the conflict state accurately and present available diff information without falsely claiming that it has been resolved.
+
+---
+
+## 8. Preserve the Existing Explorer
+
+The current Explorer already supports browsing files and displaying Git status indicators.
+
+This behavior must remain intact.
+
+The new Source Control panel should reuse the same underlying Git information when appropriate.
+
+Avoid two contradictory representations of a file's status.
+
+For example:
+
+- Explorer displays `M` beside `app.go`.
+- Source Control lists `app.go` as modified.
+- The corresponding diff shows the actual modifications.
+
+These three views must remain consistent.
+
+### Navigation
+
+- F3 still toggles Explorer.
+- Clicking Explorer switches to its existing file tree.
+- Clicking Source Control switches to the Git changes list.
+- Switching views must not reset the conversation.
+- Existing Explorer folder expansion and selection state should be retained.
+
+---
+
+## 9. Safety — Read-Only Git Inspection
+
+This phase must not perform Git mutations.
+
+Do not introduce functionality to:
+
+- Stage or unstage files.
+- Discard changes.
+- Commit.
+- Amend commits.
+- Reset.
+- Checkout.
+- Rebase.
+- Push or pull.
+
+Those actions are outside the current scope.
+
+Only use read-only Git operations to inspect repository state and differences.
+
+Avoid external diff tools, pagers, text-conversion commands, or other Git configurations that might execute unrelated programs when inspecting a file.
+
+Never modify the Git index or working tree merely to produce a diff.
+
+The existing Claude Code and Codex approval and sandbox behaviors must remain unchanged.
+
+---
+
+## 10. Non-Git Projects
+
+If the selected project does not contain a Git repository, the Source Control panel must remain functional as an interface but show a clear empty state.
+
+For example:
+
+`No Git repository found for this project.`
+
+Do not invent a repository.
+
+Do not automatically run `git init`.
+
+Do not display fabricated file changes.
+
+---
+
+## 11. Strict Scope Protection
+
+Keep all previously approved UI components unchanged.
+
+### Zone A
+
+Preserve orchestrator, stages, session telemetry, quota windows, and existing interactions.
+
+### Zone B
+
+Preserve conversation styling, thinking indicators, approval cards, results, composer, attachments, model selection, effort, and permission modes.
+
+Only introduce the necessary temporary diff-review presentation when a file is opened from Source Control.
+
+### Zone C
+
+Preserve the entire full-width Agent Monitoring layout, including the existing Execution Timeline.
+
+### Right sidebar
+
+Preserve the existing sidebar geometry, borders, icons, hover backgrounds, and selection styling.
+
+The second icon is now Source Control.
+
+Do not introduce additional icons.
+
+---
+
+## 12. Verification
+
+Before declaring completion, perform deterministic tests covering:
+
+1. Repository detection.
+2. Modified files.
+3. Added files.
+4. Deleted files.
+5. Renamed files.
+6. Untracked files.
+7. Staged changes.
+8. Unstaged changes.
+9. Files with both staged and unstaged edits.
+10. Actual added and removed line rendering.
+11. Correct Git revision comparisons.
+12. File selection and diff opening.
+13. Diff scrolling and navigation.
+14. Returning from diff view to the original conversation.
+15. Switching between Explorer and Source Control.
+16. F3 retaining its current behavior.
+17. Automatic refresh when files change.
+18. Non-Git projects.
+19. Binary files and large diffs.
+20. Existing keyboard, mouse, and draft behavior.
+
+Use isolated temporary Git repositories containing deliberately created modifications.
+
+Do not modify my real project simply to generate test cases.
+
+Run the existing build, formatting, vetting, and regression tests.
+
+Do not weaken acceptance criteria to obtain passing results.
+
+---
+
+## 13. Visual Evidence
+
+Provide actual Windows Terminal screenshots demonstrating:
+
+### Screenshot A — Source Control
+
+The Source Control panel listing actual modified, deleted, and untracked files, with their respective statuses.
+
+### Screenshot B — Diff Viewer
+
+A selected file showing:
+
+- Added lines in green.
+- Removed lines in red.
+- Line numbers.
+- Original versus modified content.
+
+### Screenshot C — Staged versus Unstaged
+
+A file with both staged and unstaged changes, showing correct separate comparisons.
+
+### Screenshot D — Navigation
+
+The Explorer and Source Control panels accessible from their respective sidebar icons, with Zone C remaining full width.
+
+Compare the Source Control organization to the attached VS Code reference while preserving Agent Command Center's own visual design.
+
+---
+
+## 14. Delivery
+
+Report:
+
+1. How existing Git detection and status logic were reused.
+2. How staged and unstaged differences are calculated.
+3. Where and how the diff viewer is integrated.
+4. Which Git statuses and file types are supported.
+5. Test results and regression evidence.
+6. Actual Windows Terminal screenshots.
+7. Any limitations requiring a later improvement.
+
+**Do not commit until I have reviewed the screenshots and implementation results.**
+
+## Final Instruction
+
+The second activity-sidebar icon is now **Source Control**, not Skills.
+
+The attached VS Code screenshot is the reference for the Source Control interface.
+
+The core requirement is straightforward:
+
+**When a file changes, it appears in Source Control with its real Git status. Clicking that file opens a readable diff showing exactly what was added, removed, or modified.**
+
+Preserve the existing Explorer, F3 behavior, full-width Zone C, conversation, and all other approved UI designs.
+
+Implement genuine Git-backed change inspection, not a simulated list or a plain file viewer.
+````
+
+Taken as plan 44 (plan.md, Plan 44).

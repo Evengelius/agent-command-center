@@ -90,8 +90,10 @@ type Screen struct {
 	// Explorer's panel and the sidebar (plan 43, design D1), zero wide when
 	// not drawn: the popups over zone B end at its right edge (design D9).
 	B, Panel, Side Cols
+	// Diff is the diff box's columns while it shows (plan 44, design D8).
+	Diff Cols
 	// Tiles are where the frame left the sidebar's tiles' images to be
-	// drawn, the Explorer's then Skills', and their looks (plan 43, design
+	// drawn, the Explorer's then Source Control's, and their looks (plan 43, design
 	// D2), zero when none.
 	Tiles [2]SideTileShown
 }
@@ -188,6 +190,10 @@ func Draw(s *state.State, ui UI) *Screen {
 				sc.ModePill = ModePillShown{Shown: true, X: x, Y: y, Look: look}
 			}
 		}
+	}
+	if s.Screen == state.ScreenDashboard && ui.SideHover != 0 && !WindowOpen(ui) && !ui.DraftWin.Open && !ui.Keys && !ui.Worktrees.Open &&
+		ui.Width >= MinWidth && ui.Height >= MinHeight {
+		sideTooltip(sc, ui) // the hovered tile's name (plan 44, design D1)
 	}
 	if ui.Sixel && s.Screen == state.ScreenDashboard {
 		// The sidebar's tiles' images over their blank cells, where no

@@ -11,18 +11,20 @@ import (
 // references/12-sidebar-collapsed.png and 13-sidebar-explorer.webp): from
 // 100 columns a box of the zones' thin grey border right of zone B on the
 // upper row, no title, with two square tiles under its top edge, the
-// Explorer's on its rows 1 to 3 and Skills' on its rows 5 to 7 (design D2),
-// with Sixel images over blank cells (sidebarimage.go), else in text. A
-// click on the Explorer's shows or hides the Explorer's panel, as F3 does;
-// Skills' is visual only (design D5). The tile under the pointer is hovered
+// Explorer's on its rows 1 to 3 and Source Control's on its rows 5 to 7
+// (design D2), with Sixel images over blank cells (sidebarimage.go), else in
+// text. A click on the Explorer's shows or hides the Explorer's panel, as F3
+// does; one on Source Control's shows or hides its panel in the same place
+// (plan 44, design D1). The tile under the pointer is hovered
 // (UI.SideHover, design D4), which never changes what is selected.
 
 // SidePanel is the sidebar's panel letter; its tiles' cells carry their
-// tile, SideExplorer or SideSkills, its frame's and blank cells 0.
+// tile, SideExplorer or SideSource (Skills' until plan 44), its frame's and
+// blank cells 0.
 const (
 	SidePanel    = 'K'
 	SideExplorer = 1
-	SideSkills   = 2
+	SideSource   = 2
 )
 
 // The sidebar's width, its frame included, and a tile's cells and rows:
@@ -34,7 +36,7 @@ const (
 )
 
 // sideTiles are the tiles in order with the box row each starts on.
-var sideTiles = []struct{ tile, row int }{{SideExplorer, 1}, {SideSkills, 5}}
+var sideTiles = []struct{ tile, row int }{{SideExplorer, 1}, {SideSource, 5}}
 
 // SideLook is a tile's look (plan 43, design D3).
 type SideLook int
@@ -48,11 +50,13 @@ const (
 	SideSelectedHover
 )
 
-// sideLook is tile's look on this frame: selected while it is the
-// Explorer's and the panel is shown, hovered while the pointer is over it;
-// a hover never takes the selection away (design D4).
+// sideLook is tile's look on this frame: selected while its panel is
+// shown, the Explorer's or Source Control's (plan 44, design D1), hovered
+// while the pointer is over it; a hover never takes the selection away
+// (design D4).
 func sideLook(ui UI, tile int) SideLook {
-	sel, hover := tile == SideExplorer && ui.Explorer.Open, ui.SideHover == tile
+	sel := tile == SideExplorer && ui.Explorer.Open || tile == SideSource && ui.Source.Open
+	hover := ui.SideHover == tile
 	switch {
 	case sel && hover:
 		return SideSelectedHover
@@ -65,10 +69,10 @@ func sideLook(ui UI, tile int) SideLook {
 }
 
 // sideGlyph is each tile's icon in text, one cell wide: "≡" from Cascadia
-// Mono for the Explorer, "⑂" for Skills, which Cascadia Mono lacks and
+// Mono for the Explorer, "⑂" for Source Control, which Cascadia Mono lacks and
 // Windows Terminal takes from Segoe UI Symbol, narrower than a cell there
 // (plan 43, design D2; measured from the fonts' tables).
-var sideGlyph = map[int]string{SideExplorer: "≡", SideSkills: "⑂"}
+var sideGlyph = map[int]string{SideExplorer: "≡", SideSource: "⑂"}
 
 // sideKey is what the sidebar's rows depend on: its size, its tiles' looks
 // in text (with Sixel the images carry them, the cells the same in every
@@ -94,7 +98,7 @@ var sideRows = struct {
 func sidebar(ui UI, w, h int) []line {
 	k := sideKey{w: w, h: h, sixel: ui.Sixel, sixteen: sixteen}
 	if !ui.Sixel {
-		k.looks = [2]SideLook{sideLook(ui, SideExplorer), sideLook(ui, SideSkills)}
+		k.looks = [2]SideLook{sideLook(ui, SideExplorer), sideLook(ui, SideSource)}
 	}
 	sideRows.Lock()
 	defer sideRows.Unlock()
@@ -196,13 +200,39 @@ func sideTile(tile int, look SideLook, sixel bool) []line {
 	return out
 }
 
+// sideLabels name the tiles in their tooltip (plan 44, design D1).
+var sideLabels = map[int]string{SideExplorer: "Explorer", SideSource: "Source Control"}
+
+// sideTooltip draws the hovered tile's name left of the sidebar, beside the
+// tile's middle row, on the selectors' hover ground, over the cells of the
+// panel or zone B there for as long as the pointer stays on the tile, none
+// after a click on it until the pointer leaves it (plan 44, design D1). Its
+// cells are the sidebar's, no tile's: a click on it does nothing.
+func sideTooltip(sc *Screen, ui UI) {
+	label := sideLabels[ui.SideHover]
+	if label == "" || sc.Side.W == 0 || ui.SideTipOff {
+		return
+	}
+	for _, t := range sideTiles {
+		if t.tile != ui.SideHover {
+			continue
+		}
+		text := " " + label + " "
+		x, y := sc.Side.X-textWidth(text), sc.AY+t.row+SideTileRows/2
+		if x < 0 || y < 0 || y >= len(sc.lines) {
+			return
+		}
+		sc.place([]line{{sideDeco(text, bandGround.on(stText), 0)}}, x, y, textWidth(text))
+	}
+}
+
 // sideDeco is a span of the sidebar: decoration, panel K, item its tile.
 func sideDeco(text string, st *lipgloss.Style, item int) span {
 	return span{text: text, st: st, ref: ref{panel: SidePanel, kind: refDeco, item: item}}
 }
 
 // SideTile is the sidebar's tile at the frame's cell (x, y), SideExplorer
-// or SideSkills; 0 off the tiles, on the sidebar's frame or its blank
+// or SideSource; 0 off the tiles, on the sidebar's frame or its blank
 // cells (plan 43, design D4): the tile a pointer there hovers.
 func (sc *Screen) SideTile(x, y int) int {
 	if sc.Side.W == 0 || x < sc.Side.X || x >= sc.Side.X+sc.Side.W {

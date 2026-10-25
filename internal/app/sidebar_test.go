@@ -72,7 +72,7 @@ func TestExplorerToggle(t *testing.T) {
 		check := func(when string, open bool, focus string, bw int) {
 			t.Helper()
 			f := h.frame()
-			selected := strings.Contains(f, "││▎ ≡   │") // the Explorer's tile in its selected look
+			selected := strings.Contains(f, "│▎ ≡   │") // the Explorer's tile in its selected look, a tooltip beside it or not
 			if h.m.ui.Explorer.Open != open || h.m.ui.Focus != focus || h.m.screen.B.W != bw || selected != open {
 				t.Fatalf("%s: shown %v, focus %q, zone B %d columns, tile selected %v; want %v, %q, %d\n%s",
 					when, h.m.ui.Explorer.Open, h.m.ui.Focus, h.m.screen.B.W, selected, open, focus, bw, f)
@@ -111,49 +111,9 @@ func TestExplorerToggle(t *testing.T) {
 	})
 }
 
-// TestSkillsTile is criterion 43.6's Skills (design D5): a click on its
-// tile, the pointer on it already as a real one arrives (hovering it),
-// changes nothing at all, the panel shown or hidden, a popup open or not:
-// the same frame, focus, selection and draft, and no command.
-func TestSkillsTile(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		h, s := selectorRig(t)
-		h.send(tea.WindowSizeMsg{Width: 200, Height: 60})
-		h.send(tea.PasteMsg{Content: "a draft kept"})
-		h.send(key(tea.KeyLeft, tea.ModShift)) // a selection in the draft
-		calls := func() string { a, b, c := s.calls(); return fmt.Sprint(a, b, c, s.modelChanges()) }
-		for _, shown := range []bool{false, true} {
-			if shown {
-				h.send(key(tea.KeyF3, 0))
-				h.send(key(tea.KeyEscape, 0)) // zone B's focus, the panel kept
-			}
-			for _, popup := range []bool{false, true} {
-				if popup {
-					h.send(key('p', tea.ModAlt))
-				}
-				name := fmt.Sprintf("panel shown %v, selector open %v", shown, popup)
-				x, y := itemCell(t, h, render.SidePanel, render.SideSkills)
-				mouseAt(t, h, moveTo(x, y))
-				before, focus, ui, sent := h.m.View().Content, h.m.ui.Focus, h.m.ui, calls()
-				from, to, sel := h.m.edit.Selection()
-				for _, msg := range []tea.Msg{click(x, y), tea.MouseReleaseMsg{X: x, Y: y, Button: tea.MouseLeft}} {
-					if _, cmd := h.m.Update(msg); cmd != nil {
-						t.Errorf("%s: %T gave a command", name, msg)
-					}
-				}
-				f2, t2, sel2 := h.m.edit.Selection()
-				if h.m.View().Content != before || h.m.ui.Focus != focus || h.m.ui.Sel != ui.Sel || h.m.ui.Models.Open != ui.Models.Open ||
-					h.m.ui.Explorer.Open != ui.Explorer.Open || h.m.ui.Plus != ui.Plus || calls() != sent || h.m.edit.Text() != "a draft kept" ||
-					f2 != from || t2 != to || sel2 != sel {
-					t.Errorf("%s: a click on Skills changed something", name)
-				}
-				if popup {
-					h.send(key(tea.KeyEscape, 0))
-				}
-			}
-		}
-	})
-}
+// TestSkillsTile, a click on the placeholder Skills tile changing nothing
+// (criterion 43.6), is gone with the tile: the second tile is Source
+// Control since plan 44, TestSourceTile (source_test.go).
 
 // TestExplorerF3 is criterion 43.6's F3 (design D5): its file meaning kept
 // in its three cases, the panel left as it was; from a full view naming no
@@ -589,8 +549,8 @@ func TestExplorerDraftKeys(t *testing.T) {
 		h.send(tea.WindowSizeMsg{Width: 200, Height: 60})
 		h.send(tea.PasteMsg{Content: "hello world"})
 		h.send(key(tea.KeyF3, 0))
-		if h.m.ui.Focus != "R" || render.ExplorerCompact(h.m.State(), h.m.ui) {
-			t.Fatalf("F3: focus %q, compact %v; want the panel docked with the focus", h.m.ui.Focus, render.ExplorerCompact(h.m.State(), h.m.ui))
+		if h.m.ui.Focus != "R" || render.PanelCompact(h.m.State(), h.m.ui) {
+			t.Fatalf("F3: focus %q, compact %v; want the panel docked with the focus", h.m.ui.Focus, render.PanelCompact(h.m.State(), h.m.ui))
 		}
 		h.send(tea.PasteMsg{Content: " again"})
 		if got := h.m.edit.Text(); got != "hello world again" || h.m.ui.Focus != "R" {
@@ -616,8 +576,8 @@ func TestExplorerDraftKeys(t *testing.T) {
 		}
 
 		h.send(tea.WindowSizeMsg{Width: 120, Height: 40})
-		if !render.ExplorerCompact(h.m.State(), h.m.ui) || h.m.ui.Focus != "R" {
-			t.Fatalf("120x40: compact %v, focus %q", render.ExplorerCompact(h.m.State(), h.m.ui), h.m.ui.Focus)
+		if !render.PanelCompact(h.m.State(), h.m.ui) || h.m.ui.Focus != "R" {
+			t.Fatalf("120x40: compact %v, focus %q", render.PanelCompact(h.m.State(), h.m.ui), h.m.ui.Focus)
 		}
 		h.send(tea.PasteMsg{Content: " lost"})
 		h.send(key('c', tea.ModCtrl))
@@ -666,7 +626,7 @@ func TestExplorerF2(t *testing.T) {
 			if !h.m.ui.Explorer.Open {
 				h.send(key(tea.KeyF3, 0))
 			}
-			compact := render.ExplorerCompact(h.m.State(), h.m.ui)
+			compact := render.PanelCompact(h.m.State(), h.m.ui)
 			if f := lastRow(h); h.m.ui.Focus != "R" || !strings.Contains(f, "◆ approval waiting · F2 to answer") {
 				t.Errorf("%dx%d, the panel focused: focus %q, footer %q", size.Width, size.Height, h.m.ui.Focus, f)
 			}
@@ -695,8 +655,8 @@ func TestExplorerHiddenB(t *testing.T) {
 		r.emit(event.TurnStarted, nil)
 		h.settle()
 		h.send(key(tea.KeyF3, 0))
-		if !render.ExplorerCompact(h.m.State(), h.m.ui) || h.m.ui.Focus != "R" {
-			t.Fatalf("120x40, F3: compact %v, focus %q", render.ExplorerCompact(h.m.State(), h.m.ui), h.m.ui.Focus)
+		if !render.PanelCompact(h.m.State(), h.m.ui) || h.m.ui.Focus != "R" {
+			t.Fatalf("120x40, F3: compact %v, focus %q", render.PanelCompact(h.m.State(), h.m.ui), h.m.ui.Focus)
 		}
 		h.send(key('q', tea.ModCtrl))
 		if f := lastRow(h); !h.m.State().QuitAsked || !strings.Contains(f, "quit? ") || !strings.Contains(f, "Ctrl+Q again to quit · Esc to stay") {
@@ -712,8 +672,8 @@ func TestExplorerHiddenB(t *testing.T) {
 			for h.m.ui.Focus != focus {
 				h.send(key(tea.KeyF6, 0))
 			}
-			if f := lastRow(h); !render.ExplorerCompact(h.m.State(), h.m.ui) || !strings.Contains(f, "◆ approval waiting · F2 to answer") {
-				t.Errorf("focus %s: compact %v, footer %q", focus, render.ExplorerCompact(h.m.State(), h.m.ui), f)
+			if f := lastRow(h); !render.PanelCompact(h.m.State(), h.m.ui) || !strings.Contains(f, "◆ approval waiting · F2 to answer") {
+				t.Errorf("focus %s: compact %v, footer %q", focus, render.PanelCompact(h.m.State(), h.m.ui), f)
 			}
 		}
 	})
@@ -773,11 +733,11 @@ func TestSideHoverRelease(t *testing.T) {
 		if h.m.ui.SideHover != 0 {
 			t.Errorf("held off the tile and released in zone B: hover %d, want none", h.m.ui.SideHover)
 		}
-		sx, sy := itemCell(t, h, render.SidePanel, render.SideSkills)
+		sx, sy := itemCell(t, h, render.SidePanel, render.SideSource)
 		mouseAt(t, h, click(60, 20))
 		mouseAt(t, h, tea.MouseReleaseMsg{X: sx, Y: sy, Button: tea.MouseLeft})
-		if h.m.ui.SideHover != render.SideSkills {
-			t.Errorf("released on Skills' tile: hover %d, want Skills'", h.m.ui.SideHover)
+		if h.m.ui.SideHover != render.SideSource {
+			t.Errorf("released on Source Control's tile: hover %d, want Source Control's", h.m.ui.SideHover)
 		}
 	})
 }

@@ -11,15 +11,23 @@ import (
 )
 
 // zones is the F6 order (ui-design.md, Keys); zone D is gone since plan 24.
-// The Explorer's panel, "R", comes after B while it is shown (plan 43,
-// design D7): zonesWith.
+// The docked panel, "R", comes after B while it is shown (plan 43, design
+// D7), the diff, "D", in B's place while it is open (plan 44, design D8):
+// zonesWith.
 var zones = []string{"B", "C", "A"}
 
-// zonesWith is the F6 order on this screen: B, the Explorer's panel when
-// shown, C, A.
+// zonesWith is the F6 order on this screen: B or the diff in its place, the
+// docked panel when drawn, C, A.
 func (m *Model) zonesWith() []string {
-	if m.ui.Explorer.Open {
-		return []string{"B", "R", "C", "A"}
+	b := "B"
+	if m.ui.Diff.Open {
+		b = "D"
+	}
+	switch {
+	case render.PanelShown(m.ui) && !render.PanelUnderDiff(m.s, m.ui):
+		return []string{b, "R", "C", "A"}
+	case b == "D":
+		return []string{"D", "C", "A"}
 	}
 	return zones
 }
@@ -165,8 +173,8 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 	}
 	// The window in front, the draft, the quick open or the file viewer,
 	// takes every key but the global ones (plan 17, Keys; amendments 12 and
-	// 13); the Explorer's panel takes its own while it has the focus (plan
-	// 43, design D7).
+	// 13); the docked panel takes its own while it has the focus (plan 43,
+	// design D7; plan 44, design D5), the diff its own (design D9).
 	switch {
 	case m.ui.DraftWin.Open:
 		if cmds, done := m.draftWinKey(k); done {
@@ -178,6 +186,14 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg) []tea.Cmd {
 		}
 	case m.ui.File.Open:
 		if cmds, done := m.fileKey(k); done {
+			return cmds
+		}
+	case m.ui.Diff.Open && m.ui.Focus == "D":
+		if cmds, done := m.diffViewKey(k); done {
+			return cmds
+		}
+	case m.ui.Source.Open && m.ui.Focus == "R":
+		if cmds, done := m.sourceKey(k); done {
 			return cmds
 		}
 	case m.ui.Explorer.Open && m.ui.Focus == "R":

@@ -1,10 +1,12 @@
 package input
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -86,19 +88,45 @@ func (e *gitError) Error() string { return e.msg }
 // run is git -C dir args, with no standard input, no prompt and no
 // optional lock (a read never writes), in English, within limit.
 func (g GitCLI) run(limit time.Duration, dir string, args ...string) (string, error) {
+	return g.call(limit, dir, false, args)
+}
+
+// runRead is run for the Source Control's reads (plan 44, design D10): the
+// same, with the file system monitor off, so that a read never starts its
+// daemon. Only rev-parse, status and cat-file are called through it.
+func (g GitCLI) runRead(limit time.Duration, dir string, args ...string) (string, error) {
+	return g.call(limit, dir, true, args)
+}
+
+// command is git -C dir args as run builds it, not started; read adds the
+// file system monitor off. It is ErrNoGit without git on the PATH.
+func (g GitCLI) command(ctx context.Context, dir string, read bool, args []string) (*exec.Cmd, error) {
 	exe, err := exec.LookPath("git")
 	if err != nil {
-		return "", ErrNoGit
+		return nil, ErrNoGit
 	}
-	full := append([]string{"-C", dir, "-c", "core.quotepath=off"}, args...)
+	full := []string{"-C", dir, "-c", "core.quotepath=off"}
+	if read {
+		full = append(full, "-c", "core.fsmonitor=false")
+	}
+	full = append(full, args...)
 	if g.Trace != nil {
 		g.Trace(full)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), limit)
-	defer cancel()
 	cmd := exec.CommandContext(ctx, exe, full...)
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0",
 		"GIT_MERGE_AUTOEDIT=no", "LC_ALL=C", "LANGUAGE=C")
+	return cmd, nil
+}
+
+// call runs git and returns its standard output.
+func (g GitCLI) call(limit time.Duration, dir string, read bool, args []string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), limit)
+	defer cancel()
+	cmd, err := g.command(ctx, dir, read, args)
+	if err != nil {
+		return "", err
+	}
 	var out, errb bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errb
 	err = cmd.Run()
@@ -107,16 +135,59 @@ func (g GitCLI) run(limit time.Duration, dir string, args ...string) (string, er
 	}
 	var ee *exec.ExitError
 	if errors.As(err, &ee) {
-		msg := strings.Join(strings.Fields(strings.TrimSpace(errb.String())), " ")
-		if msg == "" {
-			msg = fmt.Sprintf("git %s failed (exit %d)", args[0], ee.ExitCode())
-		}
-		return out.String(), &gitError{code: ee.ExitCode(), msg: msg}
+		return out.String(), failure(args, errb.String(), ee)
 	}
 	if err != nil {
 		return "", err
 	}
 	return out.String(), nil
+}
+
+// failure is git's refusal as an error: what it said, or its exit code.
+func failure(args []string, stderr string, ee *exec.ExitError) *gitError {
+	msg := strings.Join(strings.Fields(strings.TrimSpace(stderr)), " ")
+	if msg == "" {
+		msg = fmt.Sprintf("git %s failed (exit %d)", args[0], ee.ExitCode())
+	}
+	return &gitError{code: ee.ExitCode(), msg: msg}
+}
+
+// stream is a read call fed by stdin whose standard output is read by read
+// as git writes it, so that an object over the limit never sits in memory
+// (plan 44, design D6). A failure of read stops git and is returned.
+func (g GitCLI) stream(limit time.Duration, dir string, stdin io.Reader, read func(*bufio.Reader) error, args ...string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), limit)
+	defer cancel()
+	cmd, err := g.command(ctx, dir, true, args)
+	if err != nil {
+		return err
+	}
+	var errb bytes.Buffer
+	cmd.Stdin, cmd.Stderr = stdin, &errb
+	pipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	rerr := read(bufio.NewReaderSize(pipe, 64<<10))
+	if rerr != nil {
+		cancel()
+	}
+	_, _ = io.Copy(io.Discard, pipe)
+	err = cmd.Wait()
+	if ctx.Err() == context.DeadlineExceeded {
+		return fmt.Errorf("git %s took more than %s", args[0], limit)
+	}
+	if rerr != nil {
+		return rerr
+	}
+	var ee *exec.ExitError
+	if errors.As(err, &ee) {
+		return failure(args, errb.String(), ee)
+	}
+	return err
 }
 
 func (g GitCLI) Worktrees(dir string) ([]Worktree, error) {

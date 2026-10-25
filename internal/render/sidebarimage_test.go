@@ -20,7 +20,7 @@ import (
 // hovered, #20253D inside #8C5DD0, the bar, the icon #BAC6D8; each within 6
 // levels. Around the tile, at its rounded corners and outside, the pixels
 // are transparent. The Explorer's icon is a vertical trunk with a crossbar
-// and a foot and two folder blobs, the upper with its tab; Skills' three
+// and a foot and two folder blobs, the upper with its tab; Source Control's three
 // node discs and their links.
 func TestSideImages(t *testing.T) {
 	type look struct {
@@ -37,7 +37,7 @@ func TestSideImages(t *testing.T) {
 		t.Error("the hovered icon is not brighter than the inactive one")
 	}
 	bar := hexColour("#A272F1")
-	for _, tile := range []int{SideExplorer, SideSkills} {
+	for _, tile := range []int{SideExplorer, SideSource} {
 		for lk, want := range looks {
 			name := fmt.Sprintf("tile %d, look %d", tile, lk)
 			img := SideImage(SideTileLook{Tile: tile, Look: lk})
@@ -105,7 +105,7 @@ func TestSideImages(t *testing.T) {
 						t.Errorf("%s: (%d, %d) %s, want the ground between the tree's parts", name, p[0], p[1], hexOf(at(p[0], p[1])))
 					}
 				}
-			case SideSkills:
+			case SideSource:
 				// Three node discs, each wider than a link.
 				for _, c := range [][2]int{{23, 21}, {37, 21}, {23, 38}} {
 					if n := countNear(img, image.Rect(c[0]-3, c[1]-3, c[0]+4, c[1]+4), want.icon, 6); n < 25 {
@@ -155,7 +155,7 @@ func TestSideImages(t *testing.T) {
 // unset (P2 = 1) and its raster 60x60; the eight images differ.
 func TestSideSixel(t *testing.T) {
 	seen := map[string]SideTileLook{}
-	for _, tile := range []int{SideExplorer, SideSkills} {
+	for _, tile := range []int{SideExplorer, SideSource} {
 		for _, lk := range []SideLook{SideInactive, SideHover, SideSelected, SideSelectedHover} {
 			k := SideTileLook{Tile: tile, Look: lk}
 			s := SideSixel(k)
@@ -174,14 +174,18 @@ func TestSideSixel(t *testing.T) {
 // 6x3 cells blank, carrying their tile, the frame the same in every look,
 // so a hover or the selection never has the renderer write them; the
 // screen records each tile's first cell and look for its image. Without
-// Sixel, under 100 columns or under a full-screen window, no image.
+// Sixel, under 100 columns or under a full-screen window, no image. Since
+// plan 44 (design D1) a hover draws its tooltip left of the sidebar on the
+// tile's middle row: every other cell is the unhovered frame's, the
+// sidebar's on that row too.
 func TestSideTileCells(t *testing.T) {
 	s := probeState(t, "p2-claude-conversation.jsonl", claude.ProviderID, claude.NewMapper())
 	for _, size := range [][2]int{{120, 40}, {156, 44}, {200, 60}, {208, 59}} {
 		w, h := size[0], size[1]
 		for _, open := range []bool{false, true} {
 			var frame string
-			for _, hover := range []int{0, SideExplorer, SideSkills} {
+			var base *Screen
+			for _, hover := range []int{0, SideExplorer, SideSource} {
 				ui := UI{Width: w, Height: h, Focus: "B", Sixel: true, SideHover: hover}
 				if open {
 					ui.Explorer = shownExplorer()
@@ -190,12 +194,26 @@ func TestSideTileCells(t *testing.T) {
 				sc := Draw(s, ui)
 				f := sc.String()
 				if frame == "" {
-					frame = f
-				} else if f != frame {
-					t.Errorf("%s: the frame differs from the same frame unhovered", name)
+					frame, base = f, sc
+				} else {
+					ty := map[int]int{SideExplorer: 3, SideSource: 7}[hover] + 1
+					label := " " + sideLabels[hover] + " "
+					lx := w - 8 - textWidth(label)
+					fl, hl := strings.Split(frame, "\n"), strings.Split(f, "\n")
+					for i := range fl {
+						if i != ty && fl[i] != hl[i] {
+							t.Errorf("%s: row %d differs from the same frame unhovered", name, i)
+						}
+					}
+					if got := cellRange(plainOf(sc.lines[ty]), lx, lx+textWidth(label)); got != label {
+						t.Errorf("%s: the tooltip %q, want %q", name, got, label)
+					}
+					if sc.Region(0, ty, lx) != base.Region(0, ty, lx) || sc.Region(w-8, ty, 8) != base.Region(w-8, ty, 8) {
+						t.Errorf("%s: the tooltip's row changed outside the tooltip", name)
+					}
 				}
-				for i, tile := range []int{SideExplorer, SideSkills} {
-					y := map[int]int{SideExplorer: 3, SideSkills: 7}[tile]
+				for i, tile := range []int{SideExplorer, SideSource} {
+					y := map[int]int{SideExplorer: 3, SideSource: 7}[tile]
 					want := SideTileShown{Shown: true, X: w - 7, Y: y, Look: SideTileLook{Tile: tile, Look: sideLook(ui, tile)}}
 					if sc.Tiles[i] != want {
 						t.Errorf("%s: tile %d shown %+v, want %+v", name, tile, sc.Tiles[i], want)

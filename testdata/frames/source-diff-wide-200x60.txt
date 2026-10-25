@@ -1,0 +1,60 @@
+ >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                                                                                                Mock data 2.1.300
+╭─ DIFF · viewer.go ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── +5 −2 ─╮╭────────────────────────────╮╭──────╮
+│ sample/viewer.go · Working tree: index → working tree                                                                                                          ││ SOURCE CONTROL           ⌄ ││      │
+│ ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ││ ────────────────────────── ││  ≡   │
+│ ORIGINAL  index                                                               │ MODIFIED  working tree                                                         ││ demo-project · main        ││      │
+│ @@ -7,8 +7,11 @@                                                                                                                                               ││                            ││      │
+│   7                                                                           │  7                                                                             ││ ▾ MERGE CHANGES          1 ││▎     │
+│   8   // Hex is the colour as #rrggbb.                                        │  8   // Hex is the colour as #rrggbb.                                          ││                            ││▎ ⑂   │
+│   9   func (c Colour) Hex() string {                                          │  9   func (c Colour) Hex() string {                                            ││    !  sample/merge.go      ││▎     │
+│  10 −     return fmt.Sprintf("#%06X", c.RGB)                                  │ 10 +     return fmt.Sprintf("#%06x", c.RGB)                                    ││                            ││      │
+│  11   }                                                                       │ 11   }                                                                         ││ ▾ CHANGES                5 ││      │
+│  12                                                                           │ 12                                                                             ││                            ││      │
+│  13   // Dark says the colour is dark.                                        │ 13   // Dark says the colour is dark.                                          ││    M  sample/viewer.go     ││      │
+│  14 − func (c Colour) Dark() bool { return c.RGB < 0x808080 }                 │ 14 + func (c Colour) Dark() bool {                                             ││    M  README.md            ││      │
+│                                                                               │ 15 +     r, g, b := c.RGB>>16, c.RGB>>8&0xFF, c.RGB&0xFF                       ││    D  …/viewer_test.go     ││      │
+│                                                                               │ 16 +     return r*299+g*587+b*114 < 128000                                     ││    U  codex-api-key.jsonl  ││      │
+│                                                                               │ 17 + }                                                                         ││    U  › notes/             ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││ ▾ STAGED CHANGES         3 ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││    M  README.md            ││      │
+│                                                                                                                                                                ││    R  …/replay.jsonl ← to… ││      │
+│                                                                                                                                                                ││    A  codex-spawn-request… ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+│                                                                                                                                                                ││                            ││      │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯╰────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                                                                                                    0 ACTIVE · 1 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                                                                                                            ✓ COMPLETED │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md found.txt path: <probe-root>\probe-work\p3b\found.txt                             │
+│     00:00   21.5k tok   │  tool: Write   │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+│                                          │                                                                                                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ↑↓ PgUp PgDn Home End scroll · ←→ shift · n N change · f wide · r compare again · Esc back · F1 keys

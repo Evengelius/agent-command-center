@@ -35,6 +35,12 @@ type fakeGit struct {
 	statusErr  error
 	block      chan struct{}
 	calls      []string
+	// Source Control's (plan 44, source_test.go): the status's entries,
+	// branch and top beside marks; each file's sides by "path staged", and
+	// their error.
+	snap     input.GitSnapshot
+	sides    map[string]input.DiffPair
+	sidesErr error
 }
 
 func (f *fakeGit) wait() {

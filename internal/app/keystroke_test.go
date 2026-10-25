@@ -14,10 +14,10 @@ import (
 )
 
 // The timing step (evaluation.md, Keystroke timing; seven tests since plan
-// 22, eight since plan 34, nine since plan 43): test 6's measures, on the wall clock with the garbage collector on,
+// 22, eight since plan 34, nine since plan 43, ten since plan 44): test 6's measures, on the wall clock with the garbage collector on,
 // run on their own, never in parallel with the other packages' tests:
 //
-//	go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame)$' -count=1 -v
+//	go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame)$' -count=1 -v
 //
 // Each starts with warmUp untimed keys, so the first frames' allocations and
 // caches are not counted; the target stays 16 ms at the 95th percentile, and
@@ -162,7 +162,7 @@ func TestMotionToFrame(t *testing.T) {
 			}
 			bx := sc.Side.X - 3 // zone B's or the panel's cell, left of the sidebar
 			path := []tea.MouseMotionMsg{{X: ex + 1, Y: ey + 1}, {X: bx, Y: ey + 1}, {X: sx + 2, Y: sy + 1}, {X: bx, Y: sy + 1}}
-			hover := []int{render.SideExplorer, 0, render.SideSkills, 0}
+			hover := []int{render.SideExplorer, 0, render.SideSource, 0}
 			var ds []time.Duration
 			dropped := h.m.motionDropped
 			for i := 0; i < warmUp+400; i++ {

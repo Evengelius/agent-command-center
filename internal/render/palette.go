@@ -116,6 +116,15 @@ var (
 	// project root's, a file's, light lavender greys, not bold.
 	cExpDirName  = colour{"#A0ABD8", "7"}
 	cExpFileName = colour{"#9EAAD5", "7"}
+	// Source Control's hovered row (plan 44, design D4), subtler than the
+	// cursor's purple band.
+	cSourceHover = colour{"#221D2E", ""}
+	// The diff's lines (plan 44, design D8): an added line's text and ground,
+	// green, a removed one's, red; on 16 colours the text alone.
+	cDiffAdd       = colour{"#B4F1C6", "10"}
+	cDiffAddGround = colour{"#12301F", ""}
+	cDiffDel       = colour{"#FFC4C4", "9"}
+	cDiffDelGround = colour{"#3A161A", ""}
 )
 
 // modelColours colours a model by its family; any other model is text.
@@ -209,6 +218,9 @@ var (
 	// Its folders' and files' names, and both on the cursor row's
 	// background (design D6).
 	stExpDirName, stExpFileName, stExpRowDirName, stExpRowFileName = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	// Source Control's section titles and a type change's letter (plan 44,
+	// design D4); the diff's added and removed text (design D8).
+	stTitleBold, stInfo, stDiffAdd, stDiffDel = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 
 	stMdHeading = stTitle
 	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
@@ -331,6 +343,10 @@ func paint() {
 	paintStyle(stExpFileName, fg(cExpFileName))
 	paintStyle(stExpRowDirName, stExpDirName.Background(cTreeRow.get()))
 	paintStyle(stExpRowFileName, stExpFileName.Background(cTreeRow.get()))
+	paintStyle(stTitleBold, fg(cTitle).Bold(true))
+	paintStyle(stInfo, fg(cLink))
+	paintStyle(stDiffAdd, fg(cDiffAdd))
+	paintStyle(stDiffDel, fg(cDiffDel))
 	if sixteen { // no ground to spare: the pill is its bold pink text
 		paintStyle(stPill, stAttentionBold.Background(lipgloss.NoColor{}))
 		paintStyle(stPillEnd, lipgloss.NewStyle())
@@ -382,7 +398,12 @@ var (
 	// selector's band, bandGround.
 	sideSelGround      = &ground{c: cSideSel, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	sideSelHoverGround = &ground{c: cSideSelHover, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	grounds            = []*ground{toolGround, activeGround, bandGround, trackGround, offGround, dimGround, sliderTrackGround, sliderFillGround, sliderLockGround, modesGround, modesBandGround, sideSelGround, sideSelHoverGround}
+	// Source Control's hovered row, and the diff's added and removed lines'
+	// grounds (plan 44, designs D4 and D8).
+	sourceHoverGround = &ground{c: cSourceHover, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	diffAddGround     = &ground{c: cDiffAddGround, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	diffDelGround     = &ground{c: cDiffDelGround, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	grounds           = []*ground{toolGround, activeGround, bandGround, trackGround, offGround, dimGround, sliderTrackGround, sliderFillGround, sliderLockGround, modesGround, modesBandGround, sideSelGround, sideSelHoverGround, sourceHoverGround, diffAddGround, diffDelGround}
 )
 
 // active is st on the active ground (plan 30).

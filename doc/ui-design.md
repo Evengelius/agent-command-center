@@ -631,8 +631,8 @@ sidebar's tiles show in their text form here, as in every golden frame
   a thin rule between messages (amendment 17); the input sits at B's
   bottom edge under its rule.
 - The sidebar, right of B ([Right sidebar](#right-sidebar)): the
-  Explorer's tile "≡" on its box's rows 1 to 3 and Skills' "⑂" on rows 5
-  to 7, both inactive. The Explorer shown would take B's place here (B
+  Explorer's tile "≡" on its box's rows 1 to 3 and Source Control's "⑂" on
+  rows 5 to 7, both inactive. The Explorer shown would take B's place here (B
   would keep 50 columns beside its 26), as golden frame `explorer` at
   120x40 shows.
 - C is full width and 12 rows (plan 27): inside its frame the header "C ·
@@ -1695,29 +1695,40 @@ amendment 44;
 a box of its own, 8 columns wide, with the zones' thin grey border and no
 title, as high as zones A and B, zone C full width under it. Two tiles near
 its top, 6 cells by 3 rows, centred: the Explorer's on the box's rows 1 to
-3, Skills' on rows 5 to 7; no text label, no tooltip. Under 100 columns
-there is no sidebar; F3 still shows the Explorer, in zone B's place.
+3, [Source Control](#source-control)'s on rows 5 to 7 (Skills', a
+placeholder, until plan 44, brief amendment 45); no text label. Under 100
+columns there is no sidebar; F3 still shows the Explorer, in zone B's place,
+and Source Control, shown wider, stays in it.
 
 Each tile takes one of four looks (design D3, the colours read from the
 references' pixels):
 
 | Look | When | Image (Sixel) | Text form |
 | - | - | - | - |
-| inactive | Skills, always; the Explorer while its panel is hidden | the icon in muted grey `#6F7C88`, no tile | the glyph in that grey |
+| inactive | a tile while its panel is hidden | the icon in muted grey `#6F7C88`, no tile | the glyph in that grey |
 | hover | the pointer on the tile | a rounded tile of the selectors' hover ground `#342B47` (the model selector's band), the icon brighter `#B9C3D3` | the glyph lit `#A6B3C6` on the band |
-| selected | the Explorer while its panel shows | a rounded tile `#181C30` inside a thin `#7A4EBA` outline, the `#A272F1` accent bar along its left edge, the icon `#A6B3C6` | "▎" in the accent colour, the glyph lit on `#181C30` |
+| selected | a tile while its panel shows, one at a time | a rounded tile `#181C30` inside a thin `#7A4EBA` outline, the `#A272F1` accent bar along its left edge, the icon `#A6B3C6` | "▎" in the accent colour, the glyph lit on `#181C30` |
 | selected and hovered | both | the same a shade lighter: `#20253D`, outline `#8C5DD0`, icon `#BAC6D8` | the glyph lit on `#20253D` |
 
 The Explorer's icon is a tree, a trunk with a crossbar and a foot and two
-folders at its right; Skills' is three nodes, the left two linked by a line,
-the top right one by a branch; both on one 24-unit grid, the same stroke.
-With Sixel each tile is a 60x60 image over its 18 blank cells, which never
-change, drawn after the frame as the mode pill is (plan 39), then again
-after any frame that changes the rows it lies on and after every size
-report ([Rendering](#rendering)). Without Sixel the text form draws the
-Explorer as "≡" and Skills as "⑂", centred in the tile's middle row, as in
-the golden frames. Selected stays selected after the pointer leaves; hover
-and selected are separate, a hovered Skills leaving the Explorer selected.
+folders at its right; Source Control's is three nodes, the left two linked
+by a line, the top right one by a branch, git's own figure; both on one
+24-unit grid, the same stroke. With Sixel each tile is a 60x60 image over
+its 18 blank cells, which never change, drawn after the frame as the mode
+pill is (plan 39), then again after any frame that changes the rows it lies
+on and after every size report ([Rendering](#rendering)). Without Sixel the
+text form draws the Explorer as "≡" and Source Control as "⑂", centred in
+the tile's middle row, as in the golden frames. Selected stays selected
+after the pointer leaves; hover and selected are separate, a hovered Source
+Control leaving the Explorer selected.
+
+**Tooltip** (plan 44, design D1). While the pointer is on a tile, its name,
+" Explorer " or " Source Control ", shows left of the sidebar on the tile's
+middle row, in the text colour on the selectors' hover ground (`#342B47`),
+over the cells of the panel or zone B there; it goes when the pointer leaves
+the tile, and a click on the tile hides it until the pointer leaves. Its
+cells are the sidebar's, no tile's: a click on it does nothing, and the
+tile's own 18 cells never change for it.
 
 **Hover.** While the sidebar shows, the mouse reports every motion (mode
 1003; cell motion, 1002, otherwise). Only a change of the tile under the
@@ -1731,9 +1742,12 @@ button held, and where the button comes up. A drag started elsewhere hovers
 nothing on its way.
 
 **Clicks.** A click on the Explorer's tile shows or hides the panel, as F3
-does: one state, the same focus either way. A click on Skills does nothing:
-no state, focus, selection or draft changes and no command, Skills being a
-placeholder for a later plan (brief amendment 44).
+does: one state, the same focus either way. A click on Source Control's
+shows or hides its panel the same way, with the focus (plan 44, design D1).
+The two panels share the docked place, one at a time: showing one hides the
+other, which keeps its state (the Explorer's folders and cursor, Source
+Control's sections and cursor) for its next showing. F3 stays the
+Explorer's: with Source Control shown, F3 shows the Explorer in its place.
 
 ## Explorer
 
@@ -1856,9 +1870,10 @@ a listing cut at 10,000 entries no deleted folder is added, since it may be
 past the cut. A folder empty on the disk but holding deleted paths lists
 them. Enter or a click on a deleted file opens nothing.
 
-**Git's markers.** One `git --no-optional-locks status --porcelain=v1 -z
---untracked-files=normal --ignored -- .` each time it shows, in a command;
-it writes nothing.
+**Git's markers.** From git's status, read in a command when the panel
+shows and kept current while it shows, as [Source Control](#source-control)
+reads it (plan 44, design D3): one read gives both views, so they never
+disagree; it writes nothing.
 
 | Marker | Meaning | Colour |
 | - | - | - |
@@ -1905,6 +1920,254 @@ zone B it scrolls zone B, never the panel. A click on a row gives the panel
 the focus and puts the cursor there; a click on the cursor's row is Enter; a
 click in zone B gives zone B the focus. Nothing is selected in the panel, as
 in the quick open; F12 and the terminal's own selection copy from it.
+
+## Source Control
+
+The second tile of the [right sidebar](#right-sidebar) shows or hides the
+project's Git changes as a panel in the Explorer's docked place, as VS
+Code's Source Control does (plan 44, brief amendment 45; the owner's image
+`references/14-source-control.png` and example layout). It is read only:
+no staging, unstaging, discarding, committing or any other change to the
+repository. Golden frame `source`, 120x40, where the panel takes zone B's
+place, its cursor on `sample/viewer.go`:
+
+```text
+╭──────────────────────────────────╮╭──────────────────────────────────────────────────────────────────────────╮╭──────╮
+│ A · ORCHESTRATOR                 ││ SOURCE CONTROL                                                         ⌄ ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ──────────────────────────────────────────────────────────────────────── ││  ≡   │
+│ ──────────────────────────────── ││ demo-project · main                                                      ││      │
+│ STAGES · inferred from activity  ││                                                                          ││      │
+│ ✓ TURN 1                      0s ││ ▾ MERGE CHANGES                                                        1 ││▎     │
+│   Use the Agent tool to launch … ││                                                                          ││▎ ⑂   │
+│   Agent · agent general-purpose  ││    !  sample/merge.go                                                    ││▎     │
+│                                  ││                                                                          ││      │
+│ ✓ TURN 2                      0s ││ ▾ CHANGES                                                              5 ││      │
+│   started by the CLI             ││                                                                          ││      │
+│ ──────────────────────────────── ││    M  sample/viewer.go                                                   ││      │
+│ ✦ TELEMETRY        Enter details ││    M  README.md                                                          ││      │
+│ ▾ SESSION USAGE                  ││    D  sample/viewer_test.go                                              ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││    U  codex-api-key.jsonl                                                ││      │
+│   Tokens 159.4k session total    ││    U  › notes/                                                           ││      │
+│   Est. cost $0.01 API-equiv.     ││                                                                          ││      │
+│ ▾ QUOTA WINDOWS                  ││ ▾ STAGED CHANGES                                                       3 ││      │
+│   Session (5hr)             35%† ││                                                                          ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││    M  README.md                                                          ││      │
+│   Resets in 14h 40m              ││    R  tools/replay.jsonl ← tools/old.jsonl                               ││      │
+│   Weekly (7 day)            47%† ││    A  codex-spawn-request.jsonl                                          ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
+⋮
+ ↑↓ move · → open · ← fold · Enter diff · r refresh · Esc back to the input · F6 zone · F3 Explorer · F1 keys
+```
+
+**Where it shows.** In the Explorer's place, with its rules: docked between
+zone B and the sidebar where zone B keeps 64 columns, in zone B's place
+otherwise, the compact rule hiding it when zone B takes the focus there
+([Explorer, Where it shows](#explorer)). Its focus is "R", as the
+Explorer's, in the F6 order after B; one of the two panels at a time.
+
+**The panel.** A box in the title colour while it has the focus. A header
+row, "SOURCE CONTROL" in the title colour and bold, "⌄" at its right end (a
+click there hides it); a rule; the repository's row, its folder's name in
+the folder colour and " · " and the branch muted: the branch, "detached at
+<id>" or "no commits yet on <branch>". Then, as in the owner's example, each
+section with entries, a blank row before its header and, open, one after:
+
+- **MERGE CHANGES**, the conflicts (git's unmerged pairs `UU AA DD AU UA DU
+  UD`), when there are any;
+- **CHANGES**, the working tree against the index (git's Y), with the
+  untracked paths;
+- **STAGED CHANGES**, the index against HEAD (git's X).
+
+A header is "▾" open or "▸" folded, its name in the title colour and bold,
+its count of rows at the right. A file is three cells in: its letter, two
+spaces, its path from the project, the directory muted and the name in the
+file colour, a rename's or copy's source after " ← " muted. Where the
+panel is narrow, the directory gives way first, its leading folders as
+"…/" ("…/state/reduce.go"), so that the name stays in view, then the end is
+cut with "…"; a rename's source is cut before its name. A file staged and
+changed again since is in both sections, each with its own letter: never
+one merged status. An ignored path is never a change. The cursor's row is on the purple band (the
+selectors' `#342B47`), the row under the pointer on a subtler ground
+(`#221D2E`). The rows scroll to keep the cursor in view; the header, the
+rule and the repository's row stay.
+
+| Letter | Meaning | Colour |
+| - | - | - |
+| M | modified | amber |
+| A | added (staged) | green |
+| D | deleted | red |
+| R, C | renamed, copied, the source after "←" | green |
+| T | type changed (a file became a link) | blue |
+| U | untracked | green |
+| ! | a conflict, under MERGE CHANGES | red |
+
+**Untracked folders.** Git names an untracked folder once, "U  › dir/";
+→, Enter or a click opens it on its files, read from the disk in a command
+(its files, sorted, two cells deeper, at most 1,000, "first 1,000 files"
+after a cut list; no `.git`, no link, no credential file), "reading…"
+meanwhile, its reason in the attention colour when it cannot be read; ← or
+Enter folds it.
+
+**Empty states.** "No changes" in grey; "No Git repository found for this
+project." where the project is in no repository, and nothing else is run;
+"The project's folder is untracked in this repository: git lists none of
+its files apart." where the project's folder lies untracked in a larger
+repository, git naming it once; "git not found" where git is not on the
+PATH; git's own error in the attention colour. A note takes as many rows as
+it needs, never cut.
+
+**Refresh** (design D3). Git's status is read in a command when a panel
+shows, on "r", after a tool call or a turn ends, and every 3 seconds while a
+panel or a diff shows, none while neither does. One read at a time: a read
+asked while one runs is made once it ends. A slow read spaces them out: the
+next waits ten times the last read's and comparison's time, at most 30
+seconds. A read equal to the last changes nothing on screen; a new one
+updates the lists, the cursor kept on its file, in another section if it
+moved there. The same read gives the Explorer's markers.
+
+**Git, read only** (design D10). One `git rev-parse --show-prefix
+--show-toplevel` and one `git status --porcelain=v1 -z --branch
+--untracked-files=normal --ignored -- .` a read, each through `git -c
+core.fsmonitor=false`, with no optional lock and no prompt; never a command
+that writes. As any `git status`, git may run the repository's own clean
+filters (Git LFS) to compare a file whose time changed (probe P44a).
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | move the cursor over headers, files and folders; the wheel over the panel moves it 3 rows |
+| → | open a folded section or an untracked folder |
+| ← | fold a section or an opened folder; on a file, to its section's header |
+| Enter | a file's [diff](#diff-view), the comparison of its section; on a header or a folder, fold or open it |
+| r | read git's status again |
+| Esc | back to zone B, the panel kept (hidden where it takes zone B's place) |
+| F2, F3, F6, Tab, and the dashboard's keys | as beside the Explorer's panel: F3 shows the Explorer in its place |
+
+**The mouse.** A click on a row gives the panel the focus and acts as
+Enter: a file's diff opens, a header folds or opens. The pointer's row is
+hovered, the program's filter passing only a motion that changes it.
+Nothing is selected in the panel; F12 and the terminal's selection copy
+from it.
+
+## Diff view
+
+Enter or a click on a file in Source Control shows its diff in zone B's
+place, as VS Code's diff editor does, adapted to the terminal (plan 44,
+designs D6 to D9). Zone A, the panel, the sidebar and zone C stay as they
+are; zone B's conversation, draft, images and scroll are kept, and drawn
+again exactly as they were when the diff closes. Golden frame
+`source-diff`, 120x40, the panel docked beside it:
+
+```text
+╭──────────────────────────────────╮╭─ DIFF · viewer.go ───────────────────── +5 −2 ─╮╭────────────────────────╮╭──────╮
+│ A · ORCHESTRATOR                 ││ sample/viewer.go · Working tree: index → work… ││ SOURCE CONTROL       ⌄ ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ────────────────────────────────────────────── ││ ────────────────────── ││  ≡   │
+│ ──────────────────────────────── ││ @@ -7,8 +7,11 @@                               ││ demo-project · main    ││      │
+│ STAGES · inferred from activity  ││   7   7                                        ││                        ││      │
+│ ✓ TURN 1                      0s ││   8   8   // Hex is the colour as #rrggbb.     ││ ▾ MERGE CHANGES      1 ││▎     │
+│   Use the Agent tool to launch … ││   9   9   func (c Colour) Hex() string {       ││                        ││▎ ⑂   │
+│   Agent · agent general-purpose  ││  10     −     return fmt.Sprintf("#%06X", c.R… ││    !  sample/merge.go  ││▎     │
+│                                  ││      10 +     return fmt.Sprintf("#%06x", c.R… ││                        ││      │
+│ ✓ TURN 2                      0s ││  11  11   }                                    ││ ▾ CHANGES            5 ││      │
+│   started by the CLI             ││  12  12                                        ││                        ││      │
+│ ──────────────────────────────── ││  13  13   // Dark says the colour is dark.     ││    M  sample/viewer.go ││      │
+│ ✦ TELEMETRY        Enter details ││  14     − func (c Colour) Dark() bool { retur… ││    M  README.md        ││      │
+│ ▾ SESSION USAGE                  ││      14 + func (c Colour) Dark() bool {        ││    D  …/viewer_test.go ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││      15 +     r, g, b := c.RGB>>16, c.RGB>>8&… ││    U  codex-api-key.j… ││      │
+│   Tokens 159.4k session total    ││      16 +     return r*299+g*587+b*114 < 1280… ││    U  › notes/         ││      │
+│   Est. cost $0.01 API-equiv.     ││      17 + }                                    ││                        ││      │
+⋮
+ ↑↓ PgUp PgDn Home End scroll · ←→ shift · n N change · f wide · r compare again · Esc back · F1 keys
+```
+
+Widened with "f" at 200x60, over zone A, side by side (golden frame
+`source-diff-wide`, its first 120 columns):
+
+```text
+╭─ DIFF · viewer.go ──────────────────────────────────────────────────────────────────────────────────────────────────────
+│ sample/viewer.go · Working tree: index → working tree
+│ ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+│ ORIGINAL  index                                                               │ MODIFIED  working tree
+│ @@ -7,8 +7,11 @@
+│   7                                                                           │  7
+│   8   // Hex is the colour as #rrggbb.                                        │  8   // Hex is the colour as #rrggbb.
+│   9   func (c Colour) Hex() string {                                          │  9   func (c Colour) Hex() string {
+│  10 −     return fmt.Sprintf("#%06X", c.RGB)                                  │ 10 +     return fmt.Sprintf("#%06x", c.RGB)
+│  11   }                                                                       │ 11   }
+│  12                                                                           │ 12
+│  13   // Dark says the colour is dark.                                        │ 13   // Dark says the colour is dark.
+│  14 − func (c Colour) Dark() bool { return c.RGB < 0x808080 }                 │ 14 + func (c Colour) Dark() bool {
+│                                                                               │ 15 +     r, g, b := c.RGB>>16, c.RGB>>8&0xFF, c.RGB&0xFF
+│                                                                               │ 16 +     return r*299+g*587+b*114 < 128000
+│                                                                               │ 17 + }
+```
+
+**Where it shows.** In zone B's place, the docked panel beside it. Where the
+panel takes zone B's place (100 to 135 columns), the diff takes it and the
+panel docks beside it at its own width while the diff keeps 48 columns,
+from 118 columns, the owner's "The Source Control sidebar stays visible";
+narrower, and under 100 columns, the diff takes the whole place, Esc
+bringing the panel back. "f" widens it over zone A, and back. Its focus is
+"D", in zone B's place in the F6 order; the focus never goes to the draft
+while it shows, so a paste goes nowhere, as from zones A and C.
+
+**The comparison** (design D6). A file in CHANGES compares the index with
+the working tree ("Working tree: index → working tree"); in STAGED CHANGES,
+HEAD with the index ("Staged: HEAD → index"), a rename's source at HEAD
+against its new path in the index; untracked, nothing with the working
+tree; deleted, the old side with nothing; a conflict, "ours" (stage 2, else
+HEAD) with the working file, "Conflict, both modified, unresolved: ours →
+working tree", never said resolved. A file with both comparisons says "Tab
+staged" or "Tab working tree" on its path row, and Tab shows the other.
+HEAD's and the index's sides are git's blobs as stored, read by one `git
+cat-file --batch`: no filter, no text conversion, no external diff, no
+pager. The working file is read from the disk with the file viewer's
+refusals (inside the project, no credential file, 32 MiB at most). A CR
+before an LF is dropped on both sides.
+
+**The lines** (design D7). A Myers comparison (`internal/diff`), three lines
+of context, in hunks headed "@@ -a,b +c,d @@" in lavender; computed in a
+command, "comparing…" meanwhile. Unified under 150 columns of text: the old
+and new line numbers in grey, "−" or "+", the text; a removed line in light
+red (`#FFC4C4`) on a dark red ground (`#3A161A`), an added one in light green
+(`#B4F1C6`) on a dark green ground (`#12301F`), the whole row; context in
+the muted text colour. Side by side from 150 columns: ORIGINAL and MODIFIED
+with what each side is, a removed run facing the added run after it, blank
+where a side has none. A side whose last line, shown, has no line end
+says so, as git's "\ No newline at end of file": beside its name side by
+side, on a grey row under the rule unified. Over 20,000 edits, or a middle
+of over 100,000 lines a side, the middle between the common head and tail
+shows removed then added, said in the attention colour; a long file whose
+changes lie close together is compared line by line. Long lines are cut
+with "…" and shift sideways with ← →; tabs to the next multiple of 4, other
+control characters as the editor shows them ("^M").
+
+**Without lines.** In the lines' place: "Binary file: no textual diff (1.2
+KiB → 1.3 KiB)" (a NUL in a side's first 8,000 bytes); "Git LFS file: its
+content is kept outside git, no textual diff" (a pointer against content);
+"Too large to compare (… → …, 32.0 MiB at most)"; "Only the line endings
+differ"; "No textual changes"; in the attention colour, the file viewer's
+refusals as it says them ("a credential file: not opened", "outside the
+project: …") and git's error.
+
+**Kept current.** Each status read compares the open file again when a
+side's blob or the working file's size or time changed, its scroll kept;
+otherwise nothing is compared or drawn again.
+
+**The mouse.** The wheel over the diff scrolls it 3 rows; a click gives it
+the focus. Nothing is selected in it, as in the panels: F12 and the
+terminal's own selection copy from it.
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | scroll; the wheel over it too |
+| ← → | shift the lines 8 columns, the longest line's end the limit |
+| n N | the next / previous change, under its hunk's header |
+| Tab | the file's other comparison, when it has both, the panel's cursor on its row; else the next zone |
+| f | wide, over zone A, and back |
+| r | read git's status again and compare again |
+| Esc | close it: Source Control with the focus, its cursor on the file, zone B as it was |
+| F2 | the oldest pending approval's card: the diff closes, zone B and its card back in its place (from the panel beside it too); a waiting approval is said first in the footer |
+| F1, F3, F4, F6, Alt+P, Ctrl+Q, … | as on the dashboard; F3 shows the Explorer in the panel's place, the diff staying beside it |
 
 ## Approvals
 
@@ -2268,15 +2531,15 @@ The same file can name Codex's proxy (plan 22, amendment 19).
 | Shift+Enter | newline; in Windows Terminal through win32-input-mode (below) | TI 4.3 |
 | Alt+Enter | newline, except on WT (fullscreen) | TI 4.3, 9 |
 | `\` then Enter | newline (Claude Code's convention) | TI 4.2 |
-| Ctrl+C | copy the selection if there is one (the draft's while zone B, or the Explorer's panel docked beside it, has the focus: plan 43); else interrupt the running turn; else show "Ctrl+Q quits" | TI 6.3 item 4; ASM-9 |
+| Ctrl+C | copy the selection if there is one (the draft's while zone B, or the panel docked beside it, has the focus: plans 43 and 44); else interrupt the running turn; else show "Ctrl+Q quits" | TI 6.3 item 4; ASM-9 |
 | Ctrl+Shift+C | copy the selection | TI 6.3 |
 | Ctrl+O | copy the orchestrator's last message (as Codex does) | TI 6.2; ASM-9 |
 | Ctrl+G | open the draft in the [draft window](#draft-window), in the terminal; in it Ctrl+F full screen, Esc back | TI 8 (both CLIs use Ctrl+G); brief amendment 13 |
-| F2 | go to the oldest pending approval; the Explorer's panel stays (plan 43) | ASM-9 |
-| F3 | the file the entry, full view or request in front names, in the [file viewer](#file-viewer); else the [Explorer](#explorer)'s panel shown or hidden, the focus with it, as a click on its tile in the [right sidebar](#right-sidebar); from the viewer or the quick open, close them and show or hide the panel; from a full view naming no file, the inspection, the details view or a zoomed zone, close them and show the panel | plan 17; plan 43; brief amendments 11, 12 and 44 |
+| F2 | go to the oldest pending approval; the docked panel stays (plan 43), the diff closes (plan 44) | ASM-9 |
+| F3 | the file the entry, full view or request in front names, in the [file viewer](#file-viewer); else the [Explorer](#explorer)'s panel shown or hidden, the focus with it, as a click on its tile in the [right sidebar](#right-sidebar), [Source Control](#source-control) giving it the docked place; from the viewer or the quick open, close them and show or hide the panel; from a full view naming no file, the inspection, the details view or a zoomed zone, close them and show the panel | plan 17; plan 43; plan 44; brief amendments 11, 12, 44 and 45 |
 | F4 | open or close the [modes selector](#input-editor), from any focus; the mode pill's click does the same; Manual (Ask for approval) at every launch, never saved | plan 12; plan 39; brief amendments 8 and 40 |
 | Alt+P | open or close the [model selector](#input-editor), from any focus (Claude Code's own key for its model picker); the pill's click does the same | plan 34; brief amendment 34 |
-| F6 / Shift+F6 | next / previous zone (B, the Explorer's panel while shown, C, A) | ASM-9; plan 43 |
+| F6 / Shift+F6 | next / previous zone (B, or the diff in its place, the docked panel, the Explorer's or Source Control's, while shown, C, A) | ASM-9; plan 43; plan 44 |
 | Tab / Shift+Tab | next / previous zone, outside the editor (in the editor Tab inserts a tab) | ASM-9 |
 | Esc | close the "+" menu (plan 30), the model selector (plan 34), the modes selector (plan 39; from its Full access confirmation, back to the modes), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
 | Shift+PgUp / Shift+PgDn | scroll the conversation from any focus | ASM-9 |
@@ -2345,6 +2608,28 @@ the console reads plain VT input after Ctrl+Q.
 | / | the quick open: type to narrow, Enter opens, Esc back |
 | Esc | close the folder the cursor is in; at the top, back to the input, the panel kept beside it (hidden where it takes zone B's place) |
 | F3 | hide the panel, back to the input |
+
+**Source Control** (a panel its tile shows or hides, with the focus, [Source Control](#source-control))
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | move; the wheel over it too, a click on a file opens its diff |
+| → ← | open or fold a section or an untracked folder; ← on a file, to its section |
+| Enter | a file's diff, in zone B's place; on a section, fold or open it |
+| r | read git's status again |
+| Esc | back to the input, the panel kept beside it (hidden where it takes zone B's place) |
+
+**A file's diff** (Enter or a click on a file in Source Control, [Diff view](#diff-view))
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | scroll; the wheel too |
+| ← → | shift the lines sideways, 8 columns |
+| n N | the next / previous change |
+| Tab | the file's other comparison, staged or working tree, when it has both; else the next zone |
+| f | wide, over zone A, and back |
+| r | read git's status again and compare again |
+| Esc | back to Source Control, its cursor on the file, zone B as it was |
 
 **The model selector** (Alt+P or a click on the pill, [Input editor](#input-editor))
 

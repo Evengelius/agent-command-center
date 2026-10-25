@@ -84,19 +84,19 @@ frame built from the one before it equals the frame drawn afresh, escape codes
 included.
 
 **The timing step, on its own.** A time is judged against its target only in
-the timing step, built with the `timing` tag. Seven timed tests carry the tag,
+the timing step, built with the `timing` tag. Eight timed tests carry the tag,
 so `go test ./...` never runs them. Two more, `TestPasteToFrame` and
 `TestStreamToFrame` (`internal/app/perf_test.go`), run in `go test ./...` too,
 for their other checks: a 50,000-line paste kept byte for byte, and a
 2,000-line streamed answer kept as one entry and drawn to its end. There
 `overTarget` logs their time as "not judged outside the timing step", as it
 does under `-race` (`timingBuild`, `timing_on_test.go` and
-`timing_off_test.go`; plan 21, item 2). The step runs the nine, under the
+`timing_off_test.go`; plan 21, item 2). The step runs the ten, under the
 owner's normal working conditions (owner, 2026-10-16), since the target is
 about real use:
 
 ```text
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame)$' -count=1 -v
 ```
 
 - Allowed: the owner's usual applications open and idle (VS Code, browsers,
@@ -139,6 +139,10 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   within 16 ms (`keystrokeTarget`); then idle motion, within a tile and
   left of the sidebar, every report dropped by the filter before `Update`
   and `View`, counted, or the test fails.
+- `TestDiffToFrame` (plan 44, criterion 44.13): a 20,000-line file with one
+  line in ten changed (2,000 hunks) open in the diff view at 120x40 and
+  208x59, unified and widened side by side; ↓ ↑ PgDn PgUp, n N and the wheel,
+  each timed to its frame: p95 within 16 ms (`keystrokeTarget`).
 - A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
   profile, the same test on the last commit) and report it as the loop above
   says.

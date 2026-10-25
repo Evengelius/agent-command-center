@@ -14,7 +14,8 @@ point at it. Two references, with different roles:
 | `07-top-right.webp` (1685x504), from amendment 28 | **the top right**: "● LIVE" over the provider's name and version alone, over zone B's edge with the session's state | [The top right](#the-top-right) |
 | `08-input-editor.png` (1685x139), from amendment 29 | **the input editor's row**: a "+" box, the pill "Fable 5.1 High · Ultracode", "⚡ Auto" at the right end, design placeholders | [The input editor's row](#the-input-editors-row) |
 | `09-plus-menu.png` (492x196), from amendment 30 | **the "+" menu**: the "+" clicked, on an active background, a menu above it with a folder icon and "Upload from computer" highlighted under the mouse | [The "+" menu](#the-plus-menu) |
-| `12-sidebar-collapsed.png` (955x332), `13-sidebar-explorer.webp` (1393x479), from amendment 44 | **the right sidebar**: a narrow box right of zone B with two icons, the Explorer's and Skills'; the Explorer docked between zone B and the sidebar, its tree, the Explorer's icon selected | [The right sidebar](#the-right-sidebar) |
+| `12-sidebar-collapsed.png` (955x332), `13-sidebar-explorer.webp` (1393x479), from amendment 44 | **the right sidebar**: a narrow box right of zone B with two icons, the Explorer's and Skills' (Source Control's since amendment 45); the Explorer docked between zone B and the sidebar, its tree, the Explorer's icon selected | [The right sidebar](#the-right-sidebar) |
+| `14-source-control.png` (218x160), from amendment 45 | **Source Control**: VS Code's panel header "Source Control" with its "···", a "Changes" section, a commit message box and a Commit button, the organisation to follow, not its theme | [Source Control](#source-control) |
 
 **It is a visual reference, not a product.** The reference looks like a
 promotional mock-up ("CLAUDE CODE ULTRACODE TIP"). Its model names, flags
@@ -563,13 +564,15 @@ brightest tenth of each element's pixels):
 - **The sidebar**, a box of its own right of zone B (and of the Explorer
   panel when it shows), its border thin and dark, about 8 cells wide at
   the references' scale; two tiles near its top, about 6 cells by 3 rows
-  each: the Explorer's and, one row below, Skills'.
+  each: the Explorer's and, one row below, Skills' (Source Control's since
+  amendment 45).
 - **The selected tile** (the Explorer's, in both images): a rounded square
   of `#181C30` with a thin `#7A4EBA` outline, an accent bar of `#A272F1`
   along its left edge, the icon `#A6B3C6`: a tree, a trunk with a crossbar
   and a foot, two folders at its right.
-- **The inactive tile** (Skills): no tile, the icon `#6F7C88`: three
-  nodes, the left two linked by a line, the top right one by a branch.
+- **The inactive tile** (Skills, now Source Control): no tile, the icon
+  `#6F7C88`: three nodes, the left two linked by a line, the top right one
+  by a branch.
 - **The Explorer panel**, between zone B and the sidebar, about 30 cells
   wide at 208 columns: a box whose border is lavender while it has the
   focus; a header row "EXPLORER" in `#A785DD`, bold, with a chevron at its
@@ -605,3 +608,38 @@ What differs:
   images' at 9 points: their brightest pixels read `#50759E` and `#6E7786`
   for the `#6CA1DB` and `#A3B1C9` set.
 - The cells: the tree's rows one cell apart, the tiles 6 cells by 3 rows.
+
+## Source Control
+
+Brief amendment 45 (plan 44): `14-source-control.png` (218x160), a crop of
+VS Code's Source Control view in its dark theme, with the owner's example
+layout in the amendment's text. The image shows:
+
+- **The header**, "Source Control" in light grey with "···" at its right.
+- **A section**, "⌄ Changes", its chevron before its name.
+- **A commit message box**, "Message (Ctrl+…" with a sparkle at its right,
+  and a **Commit button**, "✓ Commit" in a brown box with a dropdown
+  chevron.
+
+The amendment's text gives the panel's organisation: "SOURCE CONTROL" with
+its "···", the repository and branch ("agent-command-center · main"), then
+"▾ CHANGES" and "▾ STAGED CHANGES" each with its count at the right, blank
+rows around each header, the files three cells in as "M  internal/app/app.go",
+the directory muted; lavender headings, a subtle hovered row, a purple
+selected row; "Do not reproduce VS Code's light or gray theme."
+
+What plan 44 takes from them: the header, the sections and their order,
+the counts at the right, the blank rows, the files' indent, letters and
+paths, in the dashboard's own colours ([ui-design.md, Source
+Control](ui-design.md#source-control)).
+
+What differs:
+- The commit message box and the Commit button are left out: the
+  amendment keeps this phase read only ("Do not implement committing,
+  staging actions, or Git synchronization in this phase").
+- The header's "···" is the Explorer's "⌄", which hides the panel: there is
+  no menu of actions to open.
+- A rule under the header and the repository's row, as in the Explorer's
+  panel (plan 43), where the example has a blank row.
+- MERGE CHANGES comes first when git reports conflicts, as VS Code lists
+  them, a section the example does not show.

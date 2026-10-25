@@ -25,11 +25,28 @@ import (
 // moveTo is a motion report with no button at x, y.
 func moveTo(x, y int) tea.MouseMotionMsg { return tea.MouseMotionMsg{X: x, Y: y} }
 
+// tooltipOnly says frame after is before with a tile's tooltip, label,
+// left of the sidebar on row y (plan 44, design D1): every other row the
+// same, that row ending as before from the sidebar's frame on.
+func tooltipOnly(before, after string, y int, label string) bool {
+	bl, al := strings.Split(before, "\n"), strings.Split(after, "\n")
+	if len(bl) != len(al) || y >= len(al) {
+		return false
+	}
+	for i := range bl {
+		if i != y && bl[i] != al[i] {
+			return false
+		}
+	}
+	i := strings.LastIndex(al[y], label+"│")
+	return i >= 0 && strings.HasSuffix(bl[y], al[y][i+len(label):])
+}
+
 // TestSideHover is criterion 43.5's hover (design D4), at 120x40 and
 // 200x60: a motion with no button onto a tile hovers it, one off it
 // unhovers it, a report wandering within a tile changes nothing and is
 // dropped before Update; a drag over a tile hovers nothing; hovering
-// Skills while the Explorer is selected keeps the Explorer selected, the
+// Source Control while the Explorer is selected keeps the Explorer selected, the
 // panel shown with its focus; hovered, each tile shows its look.
 func TestSideHover(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
@@ -38,7 +55,7 @@ func TestSideHover(t *testing.T) {
 			h.send(size)
 			name := fmt.Sprintf("%dx%d", size.Width, size.Height)
 			ex, ey := itemCell(t, h, render.SidePanel, render.SideExplorer)
-			sx, sy := itemCell(t, h, render.SidePanel, render.SideSkills)
+			sx, sy := itemCell(t, h, render.SidePanel, render.SideSource)
 			hover := func(want int, what string) {
 				t.Helper()
 				if h.m.ui.SideHover != want {
@@ -48,8 +65,10 @@ func TestSideHover(t *testing.T) {
 			before := h.m.View().Content
 			mouseAt(t, h, moveTo(ex, ey))
 			hover(render.SideExplorer, "onto the Explorer's tile")
-			if after := h.m.View().Content; after == before || plainText(after) != plainText(before) {
-				t.Errorf("%s: the hovered tile's look not drawn, or more than its look changed", name)
+			// Its look drawn, and its tooltip beside it on its middle row (plan
+			// 44, design D1); no other row changed.
+			if after := h.m.View().Content; after == before || !tooltipOnly(plainText(before), plainText(after), ey+1, " Explorer ") {
+				t.Errorf("%s: the hovered tile's look not drawn, or more than its look and tooltip changed", name)
 			}
 			d := h.m.motionDropped
 			for dy := range render.SideTileRows {
@@ -64,7 +83,7 @@ func TestSideHover(t *testing.T) {
 			mouseAt(t, h, moveTo(ex+render.SideTileCells, ey)) // the sidebar's right edge
 			hover(0, "onto the sidebar's frame")
 			mouseAt(t, h, moveTo(sx+3, sy+2))
-			hover(render.SideSkills, "onto Skills' tile")
+			hover(render.SideSource, "onto Source Control's tile")
 			mouseAt(t, h, moveTo(10, 10))
 			hover(0, "into zone A")
 			mouseAt(t, h, click(60, 10)) // a selection dragged from zone B over a tile
@@ -74,18 +93,18 @@ func TestSideHover(t *testing.T) {
 			hover(render.SideExplorer, "the drag released on the tile, the pointer on it")
 			mouseAt(t, h, moveTo(10, 10))
 		}
-		// Skills hovered while the Explorer is selected: the Explorer stays
+		// Source Control hovered while the Explorer is selected: the Explorer stays
 		// selected, the panel shown, its focus kept; with Sixel the frame
 		// leaves each tile its own look.
 		h.send(PrimaryDeviceAttributesEvent{61, 4})
 		h.send(key(tea.KeyF3, 0))
-		sx, sy := itemCell(t, h, render.SidePanel, render.SideSkills)
+		sx, sy := itemCell(t, h, render.SidePanel, render.SideSource)
 		mouseAt(t, h, moveTo(sx, sy))
 		h.m.View()
 		tiles := h.m.screen.Tiles
-		if h.m.ui.SideHover != render.SideSkills || !h.m.ui.Explorer.Open || h.m.ui.Focus != "R" ||
+		if h.m.ui.SideHover != render.SideSource || !h.m.ui.Explorer.Open || h.m.ui.Focus != "R" ||
 			tiles[0].Look.Look != render.SideSelected || tiles[1].Look.Look != render.SideHover {
-			t.Errorf("Skills hovered with the Explorer selected: hover %d, shown %v, focus %q, looks %+v %+v",
+			t.Errorf("Source Control hovered with the Explorer selected: hover %d, shown %v, focus %q, looks %+v %+v",
 				h.m.ui.SideHover, h.m.ui.Explorer.Open, h.m.ui.Focus, tiles[0].Look, tiles[1].Look)
 		}
 		ex, ey := itemCell(t, h, render.SidePanel, render.SideExplorer)
@@ -174,7 +193,7 @@ func TestMotionFilter(t *testing.T) {
 // when they change the hover; the others are dropped before it.
 func TestMotionFilterProgram(t *testing.T) {
 	// The sidebar at 120x40: the Explorer's tile at columns 113 to 118,
-	// rows 3 to 5, Skills' rows 7 to 9; zone B at column 50.
+	// rows 3 to 5, Source Control's rows 7 to 9; zone B at column 50.
 	report := func(x, y int) string { return fmt.Sprintf("%c[<35;%d;%dM", 0x1b, x+1, y+1) }
 	moves := [][2]int{{50, 10}, {113, 3}, {115, 4}, {118, 5}, {114, 8}, {50, 10}, {51, 11}}
 	in, w := io.Pipe()
@@ -319,21 +338,23 @@ func TestSideDraw(t *testing.T) {
 		tiles := h.m.screen.Tiles
 		inactive := func(tl int) render.SideTileLook { return render.SideTileLook{Tile: tl, Look: render.SideInactive} }
 		if tiles[0] != (render.SideTileShown{Shown: true, X: 113, Y: 3, Look: inactive(render.SideExplorer)}) ||
-			tiles[1] != (render.SideTileShown{Shown: true, X: 113, Y: 7, Look: inactive(render.SideSkills)}) {
+			tiles[1] != (render.SideTileShown{Shown: true, X: 113, Y: 7, Look: inactive(render.SideSource)}) {
 			t.Fatalf("the tiles %+v", tiles)
 		}
 		if raws := last(); len(raws) != 1 || !strings.Contains(raws[0], tile(tiles[0])+tile(tiles[1])) {
 			t.Fatalf("the tiles' drawing %q", trunc(raws))
 		}
 		// A hover: one drawing, the Explorer's tile hovered, its cells as they
-		// were.
+		// were; the frame changed by the tile's tooltip alone (plan 44, design
+		// D1).
 		n := len(h.m.kicks)
 		rows := h.m.screen.String()
 		mouseAt(t, h, moveTo(115, 4))
 		h.frame()
 		tg := h.m.screen.Tiles[0]
-		if len(h.m.kicks) != n+1 || tg.Look.Look != render.SideHover || h.m.screen.String() != rows {
-			t.Fatalf("hovered: %d drawings asked, the tile %+v, the frame changed %v", len(h.m.kicks)-n, tg, h.m.screen.String() != rows)
+		if len(h.m.kicks) != n+1 || tg.Look.Look != render.SideHover || !tooltipOnly(plainText(rows), plainText(h.m.screen.String()), tg.Y+1, " Explorer ") {
+			t.Fatalf("hovered: %d drawings asked, the tile %+v, more than the tooltip changed %v", len(h.m.kicks)-n, tg,
+				!tooltipOnly(plainText(rows), plainText(h.m.screen.String()), tg.Y+1, " Explorer "))
 		}
 		if raws := last(); len(raws) != 1 || !strings.Contains(raws[0], tile(tg)) {
 			t.Fatalf("the hovered tile's drawing %q", trunc(raws))
@@ -372,7 +393,7 @@ func TestSideDraw(t *testing.T) {
 				t.Errorf("99 columns: the tile's row at %d,%d not written over", p[0], p[1])
 			}
 		}
-		for _, tl := range []int{render.SideExplorer, render.SideSkills} {
+		for _, tl := range []int{render.SideExplorer, render.SideSource} {
 			for _, lk := range []render.SideLook{render.SideInactive, render.SideHover, render.SideSelected, render.SideSelectedHover} {
 				if strings.Contains(raws[0], render.SideSixel(render.SideTileLook{Tile: tl, Look: lk})) {
 					t.Errorf("99 columns: tile %d drawn in look %d", tl, lk)

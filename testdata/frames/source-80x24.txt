@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
+ A ✓ Turn 2                                               (inferred)   F6: tree
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ SOURCE CONTROL                                                             ⌄ │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ demo-project · main                                                          │
+│                                                                              │
+│ ▾ MERGE CHANGES                                                            1 │
+│                                                                              │
+│    !  sample/merge.go                                                        │
+│                                                                              │
+│ ▾ CHANGES                                                                  5 │
+│                                                                              │
+│    M  sample/viewer.go                                                       │
+│    M  README.md                                                              │
+│    D  sample/viewer_test.go                                                  │
+│    U  codex-api-key.jsonl                                                    │
+│    U  › notes/                                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑↓ move · ←→ fold · Enter diff · r refresh · Esc back · F3 Explorer · F1 keys

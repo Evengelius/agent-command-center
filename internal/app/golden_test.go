@@ -216,6 +216,58 @@ func TestGoldenFrames(t *testing.T) {
 		}
 		return h
 	}
+	// Plan 44 (amendment 45): Source Control shown, a change of each kind,
+	// its cursor on a file; then that file's diff in zone B's place, unified,
+	// and widened over zone A, side by side from 150 columns; not a
+	// repository.
+	sourceGit := func() *fakeGit {
+		old := "package sample\n\nimport \"fmt\"\n\n// Colour is an RGB value.\ntype Colour struct{ RGB int }\n\n" +
+			"// Hex is the colour as #rrggbb.\nfunc (c Colour) Hex() string {\n\treturn fmt.Sprintf(\"#%06X\", c.RGB)\n}\n\n" +
+			"// Dark says the colour is dark.\nfunc (c Colour) Dark() bool { return c.RGB < 0x808080 }\n"
+		cur := strings.Replace(strings.Replace(old, "#%06X", "#%06x", 1), "func (c Colour) Dark() bool { return c.RGB < 0x808080 }\n",
+			"func (c Colour) Dark() bool {\n\tr, g, b := c.RGB>>16, c.RGB>>8&0xFF, c.RGB&0xFF\n\treturn r*299+g*587+b*114 < 128000\n}\n", 1)
+		return &fakeGit{snap: input.GitSnapshot{Top: `C:\work\demo-project`, Branch: input.GitBranch{Name: "main"}, Entries: []input.GitEntry{
+			{X: 'U', Y: 'U', Path: "sample/merge.go", RepoPath: "sample/merge.go"},
+			{X: ' ', Y: 'M', Path: "sample/viewer.go", RepoPath: "sample/viewer.go"},
+			{X: 'M', Y: 'M', Path: "README.md", RepoPath: "README.md"},
+			{X: 'R', Y: ' ', Path: "tools/replay.jsonl", Orig: "tools/old.jsonl", RepoPath: "tools/replay.jsonl", RepoOrig: "tools/old.jsonl"},
+			{X: 'A', Y: ' ', Path: "codex-spawn-request.jsonl", RepoPath: "codex-spawn-request.jsonl"},
+			{X: ' ', Y: 'D', Path: "sample/viewer_test.go", RepoPath: "sample/viewer_test.go"},
+			{X: '?', Y: '?', Path: "codex-api-key.jsonl", RepoPath: "codex-api-key.jsonl"},
+			{X: '?', Y: '?', Path: "notes/", RepoPath: "notes/"},
+		}}, sides: map[string]input.DiffPair{
+			"sample/viewer.go false": {Old: input.DiffSide{Name: "index", ID: "1a", Data: []byte(old)}, New: input.DiffSide{Name: "working tree", Data: []byte(cur)}},
+		}}
+	}
+	source := func(keys ...tea.KeyPressMsg) func(*testing.T) *harness {
+		return func(t *testing.T) *harness {
+			h := dashGit(t, sourceGit())
+			h.send(tea.WindowSizeMsg{Width: 200, Height: 60})
+			for _, c := range h.m.showSource() {
+				h.exec(c)
+			}
+			h.settle()
+			for _, k := range append([]tea.KeyPressMsg{key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0)}, keys...) {
+				h.send(k)
+			}
+			if v := h.m.ui.Source; !v.Open || v.Cursor != "f:changes:sample/viewer.go" || v.Note != "" {
+				t.Fatalf("Source Control: shown %v, cursor %q, note %q", v.Open, v.Cursor, v.Note)
+			}
+			return h
+		}
+	}
+	sourceNone := func(t *testing.T) *harness {
+		h := dashGit(t, &fakeGit{statusErr: input.NotRepoError{Dir: `C:\work\demo-project`}})
+		h.send(tea.WindowSizeMsg{Width: 200, Height: 60})
+		for _, c := range h.m.showSource() {
+			h.exec(c)
+		}
+		h.settle()
+		if v := h.m.ui.Source; !v.Open || v.Note != "No Git repository found for this project." {
+			t.Fatalf("Source Control: shown %v, note %q", v.Open, v.Note)
+		}
+		return h
+	}
 	// draft is the draft window, Ctrl+G, over the dashboard (amendment 13).
 	draft := func(keys ...tea.KeyPressMsg) func(*testing.T) *harness {
 		return func(t *testing.T) *harness {
@@ -323,7 +375,8 @@ func TestGoldenFrames(t *testing.T) {
 	}{{"models-claude", selector("claude-models.jsonl")}, {"models-claude-more", selector("claude-models.jsonl", down(3, key(tea.KeyEnter, 0))...)},
 		{"models-claude-effort", selector("claude-models.jsonl", down(4, key(tea.KeyLeft, 0))...)}, {"models-codex", selector("codex-models.jsonl")},
 		{"models-codex-more", selector("codex-models.jsonl", down(3, key(tea.KeyEnter, 0))...)},
-		{"startup", startup}, {"dashboard", dash}, {"plus-menu", plusMenu}, {"attachments", attached}, {"attachments-sent", sent}, {"attachments-preview", preview}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))}} {
+		{"startup", startup}, {"dashboard", dash}, {"plus-menu", plusMenu}, {"attachments", attached}, {"attachments-sent", sent}, {"attachments-preview", preview}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))},
+		{"source", source()}, {"source-none", sourceNone}, {"source-diff", source(key(tea.KeyEnter, 0))}, {"source-diff-wide", source(key(tea.KeyEnter, 0), typed('f'))}} {
 		for _, size := range sizes {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)

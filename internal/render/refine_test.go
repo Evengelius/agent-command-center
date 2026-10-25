@@ -297,8 +297,8 @@ func TestKeyOverlayRows(t *testing.T) {
 			t.Errorf("ui-design.md key %q missing from the overlay", k)
 		}
 	}
-	if n != 55 { // B's entries: Enter, → and ← apart since the owner's live review; plan 34's seven; plan 37's ← →
-		t.Errorf("%d rows read from ui-design.md, want 55", n)
+	if n != 67 { // B's entries: Enter, → and ← apart since the owner's live review; plan 34's seven; plan 37's ← →; plan 44's Source Control (5) and diff (7)
+		t.Errorf("%d rows read from ui-design.md, want 67", n)
 	}
 	for _, l := range strings.Split(texts(keysBody(78)), "\n") {
 		if strings.Contains(l, "…") || textWidth(l) > 78 {

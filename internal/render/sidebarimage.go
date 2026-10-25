@@ -14,7 +14,7 @@ import (
 // its four looks.
 
 // SideTileLook is a tile as its image draws it: the tile, SideExplorer or
-// SideSkills, and its look.
+// SideSource, and its look.
 type SideTileLook struct {
 	Tile int
 	Look SideLook
@@ -122,7 +122,7 @@ func sideGround(img *image.NRGBA, fill, outline color.NRGBA, bar bool) {
 
 // sideIcon draws tile's icon in c over img (design D3): the Explorer's a
 // tree, its trunk with a crossbar to the upper folder and a foot to the
-// lower one, both folders filled, each with its tab; Skills' three filled
+// lower one, both folders filled, each with its tab; Source Control's three filled
 // nodes and their links, a branch from the left line up to the right node.
 func sideIcon(img *image.NRGBA, tile int, c color.NRGBA) {
 	const s = sideUnit
@@ -143,7 +143,7 @@ func sideIcon(img *image.NRGBA, tile int, c color.NRGBA) {
 				return inRounded(px, py, x0, y0+1.4*s, x1, y1, 1.6*s, 0) || inRounded(px, py, x0, y0, x0+4.6*s, y0+3*s, 1.2*s, 0)
 			}, c)
 		}
-	case SideSkills:
+	case SideSource:
 		strokePaths(img, [][]pt{p(6, 5, 6, 19), p(6, 13.2, 14.5, 13.2, 17.5, 10.6, 17.5, 5)}, nil, sideStroke*s, c)
 		r := 2.7 * s
 		strokePaths(img, nil, [][3]float64{{ox + 6*s, oy + 5*s, r}, {ox + 17.5*s, oy + 5*s, r}, {ox + 6*s, oy + 19*s, r}}, 0, c)

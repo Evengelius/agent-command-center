@@ -171,11 +171,11 @@ func TestLayoutWidths(t *testing.T) {
 }
 
 // TestSidebarTiles is criterion 43.3 (designs D2 and D3), the text form:
-// exactly two tiles, the Explorer's then Skills', 6 cells by 3 rows on the
+// exactly two tiles, the Explorer's then Source Control's, 6 cells by 3 rows on the
 // sidebar's rows 1 to 3 and 5 to 7, centred; inactive, the icon muted on no
 // ground; selected (the Explorer's while its panel is shown), its ground,
 // the lavender "▎" in its left cell and the icon lit; hovered, the hover
-// band; a hovered Skills keeps the Explorer selected.
+// band; a hovered Source Control keeps the Explorer selected.
 func TestSidebarTiles(t *testing.T) {
 	defer UsePalette(pickTrue)
 	UsePalette(pickTrue)
@@ -204,7 +204,7 @@ func TestSidebarTiles(t *testing.T) {
 		}{
 			{false, 0, SideInactive, SideInactive},
 			{true, 0, SideSelected, SideInactive},
-			{true, SideSkills, SideSelected, SideHover},
+			{true, SideSource, SideSelected, SideHover},
 			{true, SideExplorer, SideSelectedHover, SideInactive},
 			{false, SideExplorer, SideHover, SideInactive},
 		} {
@@ -219,18 +219,18 @@ func TestSidebarTiles(t *testing.T) {
 				for x := range w {
 					if p, it := sc.ItemAt(x, y); p == SidePanel && it != 0 {
 						cells[it]++
-						top := map[int]int{SideExplorer: 3, SideSkills: 7}[it] // under the box's top edge on row 2
+						top := map[int]int{SideExplorer: 3, SideSource: 7}[it] // under the box's top edge on row 2
 						if x < w-7 || x > w-2 || y < top || y > top+2 {
 							t.Errorf("%s: tile %d's cell at %d,%d, outside columns %d to %d and rows %d to %d", name, it, x, y, w-7, w-2, top, top+2)
 						}
 					}
 				}
 			}
-			if len(cells) != 2 || cells[SideExplorer] != 18 || cells[SideSkills] != 18 {
+			if len(cells) != 2 || cells[SideExplorer] != 18 || cells[SideSource] != 18 {
 				t.Errorf("%s: tiles' cells %v, want two of 18", name, cells)
 			}
-			for tile, want := range map[int]SideLook{SideExplorer: c.explorer, SideSkills: c.skills} {
-				top := map[int]int{SideExplorer: 3, SideSkills: 7}[tile]
+			for tile, want := range map[int]SideLook{SideExplorer: c.explorer, SideSource: c.skills} {
+				top := map[int]int{SideExplorer: 3, SideSource: 7}[tile]
 				lk := looks[want]
 				for r := range 3 {
 					l := sc.lines[top+r]

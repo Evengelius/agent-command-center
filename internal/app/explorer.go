@@ -36,9 +36,12 @@ type (
 )
 
 // openExplorer opens the Explorer as it was left: the project and every
-// folder shown open read again, git's status asked.
+// folder shown open read again, git's status asked, Source Control hidden
+// from the docked place (plan 44, design D1). The status is the one Source
+// Control reads too (design D2), its markers taken by applySnapshot.
 func (m *Model) openExplorer() []tea.Cmd {
 	m.explorerGen++
+	m.ui.Source.Open = false
 	v := &m.ui.Explorer
 	root := m.fileRoot()
 	v.Open, v.Name = true, filepath.Base(root)
@@ -57,6 +60,9 @@ func (m *Model) openExplorer() []tea.Cmd {
 		if r.Open && !r.Deleted {
 			cmds = append(cmds, m.readDir(r.Path))
 		}
+	}
+	if _, ok := m.sourceGit(); ok {
+		return append(cmds, m.readSnapshot())
 	}
 	gen, git := m.explorerGen, m.git()
 	return append(cmds, func() tea.Msg {
@@ -162,11 +168,14 @@ func (m *Model) closeWindows() {
 }
 
 // draftBeside says the draft takes the clipboard's keys and pastes: zone B
-// has the focus, or the Explorer's panel docked beside zone B has it, the
-// draft on screen (plan 43, design D8). The panel in zone B's place leaves
-// them to no one, as zones A and C do.
+// has the focus, or the panel docked beside zone B has it, the draft on
+// screen (plan 43, design D8; plan 44, design D5). The panel in zone B's
+// place, or the diff there, leaves them to no one, as zones A and C do.
 func (m *Model) draftBeside() bool {
-	return m.ui.Focus == "B" || m.ui.Focus == "R" && m.ui.Explorer.Open && !render.ExplorerCompact(m.s, m.ui)
+	if m.ui.Diff.Open {
+		return false
+	}
+	return m.ui.Focus == "B" || m.ui.Focus == "R" && render.PanelShown(m.ui) && !render.PanelCompact(m.s, m.ui)
 }
 
 // backToExplorer closes the viewer and shows the Explorer with the focus,

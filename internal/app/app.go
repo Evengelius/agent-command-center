@@ -185,6 +185,18 @@ type Model struct {
 	explorerGen                   int      // the Explorer's (explorer.go), its reads and git
 	fileBytes                     int64    // the file shown, its size on disk
 	finderAll                     []string // the project's files, as listed
+	// Source Control (source.go, plan 44): git's status reads, one at a time
+	// (statusBusy; statusAgain asks one more), their generation and the last
+	// one's time, the poll timed last; the snapshot read last, nil before one
+	// or outside a repository; the open diff's entry, its sides' stamp, its
+	// generation and the last comparison's time.
+	statusGen, pollGen      int
+	statusBusy, statusAgain bool
+	statusTook, diffTook    time.Duration
+	snap                    *input.GitSnapshot
+	diffEntryOpen           input.GitEntry
+	diffStamp               string
+	diffGen                 int
 	// This session's registration (plan 16, Sessions): nil when none.
 	lock    *input.SessionLock
 	locking bool
@@ -358,10 +370,11 @@ func (m *Model) View() tea.View {
 	v.AltScreen = true
 	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
-		if m.ui.Plus || m.ui.Models.Open || m.ui.Modes.Open || m.sideHoverable() {
+		if m.ui.Plus || m.ui.Models.Open || m.ui.Modes.Open || m.sideHoverable() || m.ui.Source.Open && m.screen.Panel.W > 0 {
 			// The menu's or a selector's hover follows the pointer (plans 30, 34,
 			// 39), the sidebar's tiles' too while the frame shows them (plan
-			// 43, design D4); motionFilter drops the reports that change none.
+			// 43, design D4), and Source Control's rows (plan 44, design D5);
+			// motionFilter drops the reports that change none.
 			v.MouseMode = tea.MouseModeAllMotion
 		}
 	}
@@ -424,6 +437,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.dirRead(msg)...)
 	case statusMsg:
 		m.gitRead(msg)
+	case snapshotMsg:
+		cmds = append(cmds, m.snapshotRead(msg)...)
+	case pollMsg:
+		cmds = append(cmds, m.polled(msg)...)
+	case folderMsg:
+		m.folderRead(msg)
+	case diffMsg:
+		m.diffRead(msg)
 	case wtDiffMsg:
 		m.worktreeDiffed(msg)
 	case lockMsg:
@@ -436,11 +457,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.sess != m.sess {
 			break // a previous session's leftovers
 		}
+		changed := false
 		for _, ev := range msg.evs {
 			cmds = append(cmds, m.run(m.s.Apply(ev))...)
 			if ev.Kind == event.SessionSpawned {
 				cmds = append(cmds, m.opt.After(HandshakeTimeout, actionMsg{state.HandshakeTimeout{}}))
 			}
+			// A tool call's or a turn's end may have changed the project's
+			// files: Source Control reads git's status again (plan 44, design
+			// D3).
+			changed = changed || ev.Kind == event.ToolCompleted || ev.Kind == event.TurnCompleted
+		}
+		if changed {
+			cmds = append(cmds, m.sourceEvent()...)
 		}
 		if !msg.closed {
 			cmds = append(cmds, listen(m.sess))
@@ -525,20 +554,33 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // syncUI copies what the renderer needs from the editors.
 func (m *Model) syncUI() {
 	m.settleCard()
-	if m.ui.Focus == "R" && !m.ui.Explorer.Open {
-		m.ui.Focus = "B" // the Explorer's panel hidden: zone B has the focus back (plan 43, design D5)
+	if m.ui.Focus == "R" && !render.PanelShown(m.ui) {
+		m.ui.Focus = "B" // the docked panel hidden: zone B has the focus back (plan 43, design D5)
 	}
-	if m.ui.Focus == "B" && m.ui.Explorer.Open && render.ExplorerCompact(m.s, m.ui) {
+	switch {
+	case m.ui.Diff.Open && m.ui.Focus == "B" && m.ui.Card != "":
+		// An approval's card given the focus (F2, from any zone): zone B,
+		// where the card is, takes the diff's place back (plan 44, design D12).
+		m.closeDiff()
+	case m.ui.Diff.Open && m.ui.Focus == "B":
+		m.ui.Focus = "D" // the diff in zone B's place takes its focus (plan 44, design D8)
+	case !m.ui.Diff.Open && m.ui.Focus == "D":
+		m.ui.Focus = "B"
+	case m.ui.Focus == "R" && render.PanelUnderDiff(m.s, m.ui):
+		m.closeDiff() // the panel given the focus in the diff's place: the panel shows (design D8)
+	}
+	if m.ui.Focus == "B" && render.PanelShown(m.ui) && render.PanelCompact(m.s, m.ui) {
 		// Plan 43's compact rule: where the panel takes zone B's place, the
 		// compact layout from 100 columns and the narrow one under 100
 		// (design D1), zone B taking the focus hides the panel, whatever
 		// gave it the focus (Esc on a top-level row, F6 or Tab, F2, Esc from
 		// zone A or C, a click, a resize that leaves no room to dock it), so
-		// typed text never goes into a draft that is not drawn.
-		m.closeExplorer()
+		// typed text never goes into a draft that is not drawn; Source
+		// Control's the same (plan 44, design D4).
+		m.closePanels()
 	}
 	if m.ui.SideHover != 0 && !m.sideHoverable() {
-		m.ui.SideHover = 0 // no sidebar under the pointer, or a window over it (plan 43, design D4)
+		m.sideHover(0) // no sidebar under the pointer, or a window over it (plan 43, design D4)
 	}
 	if m.ui.Focus != "A" && m.ui.Focus != "C" {
 		m.ui.Zoom = false // only a panel zooms; reaching B by F6, Tab or a click restores
