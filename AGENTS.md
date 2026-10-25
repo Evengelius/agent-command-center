@@ -211,6 +211,87 @@ and need the owner's approval where it says so. tmux is not used.
   the identity set in this repository (`Evengelius <molimoabel@gmail.com>`),
   never the global, work one; check `git config user.email` before a commit.
 
+## Engineering Standards — Staff / Principal Level
+
+The judgment and discipline of a Staff or Principal engineer, in
+implementation, debugging, refactoring, technical decisions and review:
+correctness, simplicity, maintainability, reliability, performance, security
+and long-term sustainability. They add to the rules of this file and replace
+none; the detailed rules stay in `doc\`.
+
+- **Judgment over dogma.** The simplest explicit solution that is correct.
+  Clean Code, SOLID, DRY, KISS and YAGNI where they bring a concrete benefit,
+  never a pattern applied mechanically or an abstraction for a hypothetical
+  need. Weigh correctness, complexity, performance, extensibility and
+  maintenance cost; leave code that is already right as it is.
+- **Idiomatic Go.** The language's conventions and the project's patterns:
+  cohesive packages, explicit dependencies, composition, plain names and
+  straightforward control flow. Errors handled where they occur, with their
+  context, never hidden; ownership, cancellation, cleanup and concurrency
+  visible in the code. No interface, indirection or generalisation without a
+  present need.
+- **Architectural integrity.** The five parts stay apart (Conventions): the
+  reducer pure and deterministic, its side effects returned as commands;
+  rendering a projection of the state, with no I/O in it. Extend the existing
+  mechanisms (`pipe.Proc`, the write queue, `render.Layers`, the memos)
+  rather than build competing ones; reorganise packages or rewrite the
+  architecture only for a concrete requirement and with the owner's
+  agreement.
+- **Each provider as it is.** Claude Code and Codex differ in protocol,
+  capabilities, lifecycle and approvals: share what is genuinely common, keep
+  what differs at the adapter boundary (`event.Decision` inside, each CLI's
+  own words outside). Event order, session continuity and approvals stay
+  correct, and nothing is invented (The conversation is real; Real values or
+  "N/A"; Prefer documented interfaces).
+- **Correctness and concurrency.** Design for failure modes and invariants:
+  cancellation, shutdown, timeouts, partial failures, races, ownership and
+  recovery. Keep the order of events, commands, writes and approval answers.
+  No goroutine leak, no blocking call on the event loop, no unbounded growth
+  without a documented reason (the reader's event queue is unbounded by
+  design: `doc\reliability.md`, Concurrent output); no failure dropped, no
+  state left inconsistent, and drafts, sessions, repositories and
+  configurations protected.
+- **Terminal and performance.** The approved design and interactions stay
+  unless the owner asks for a change. Overlays go through `render.Layers`
+  (drawing, keys, mouse, paste, focus), text widths through `render`'s
+  grapheme-aware functions; the terminal's size, wrapping, scrolling and
+  Windows Terminal's behaviour are accounted for. No repeated parsing,
+  redundant scan, avoidable allocation or blocking I/O on a frame's path; the
+  latency budgets hold (`doc\ui-design.md`, Budget; `doc\evaluation.md`,
+  Keystroke timing). A cache is a memo: correct, bounded, never a source of
+  what is drawn.
+- **Git and data safety.** Staged, unstaged, untracked and partly staged
+  changes stay apart; a git operation takes in only the files asked for, and
+  protects merges, local commits, worktrees and uncommitted work. Hard
+  constraints stand as written (no forcing, amending or rewriting history;
+  the CLIs' permissions and configuration untouched unless the owner asks),
+  and any other consequential operation waits for the owner's approval, as
+  commits do.
+- **Tests and regressions.** Make important behaviour verifiable
+  deterministically: focused tests for new behaviour and real regression
+  risks, on the probe recordings, state-machine tests, golden frames,
+  architecture test and timing step where they apply, with boundaries,
+  failures, cancellation and concurrency where they matter. Never weaken a
+  test, lower a threshold or rewrite an expected output to make a run pass;
+  review every rewritten golden frame or mock file as a diff.
+- **Focused changes.** The smallest coherent change that meets the
+  requirement, extending what exists rather than building beside it: no
+  unrelated cleanup, speculative feature or cosmetic refactoring (Change what
+  fails, not what works). Beyond what that rule allows, proactive
+  improvements only when the owner asks, behaviour-preserving and of
+  demonstrable value. More code or more architecture is not more quality.
+- **Accountability.** Understand the execution flow and the contracts before
+  a consequential change, and review your own change for correctness,
+  complexity and regressions; raise material trade-offs without stalling
+  ordinary work. Say precisely what changed, why and how it was verified,
+  never claiming a verification without its evidence (Evaluate). Scope,
+  architecture, dependencies, commits and releases are the owner's to decide.
+
+Engineer for correctness today, maintainability tomorrow and sustainable
+evolution: proportionate decisions, not maximal abstraction. Protect what
+works, improve what genuinely benefits from it, and keep Agent Command Center
+reliable, understandable, fast and focused on agentic development.
+
 ## Conventions
 
 - Go code is gofmt-formatted and follows `doc\architecture.md` (five parts;
