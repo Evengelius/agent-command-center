@@ -183,3 +183,10 @@ tests `internal/input/selection_test.go`, `internal/app/selection_test.go`,
 `internal/render/source_test.go`; `testdata/frames/source-selection-*.txt`
 (five); `doc/brief.md` (amendment 51), `doc/ui-design.md`,
 `doc/architecture.md`, `AGENTS.md`, `plan.md`, and this file.
+
+**The commit and the push (2026-10-26), after the owner's approval.** The
+owner approved plan 50 on 2026-10-26. Commit b9f8323 (26 files: 18
+modified, 8 added) and the approval commit were pushed to `origin`;
+`origin/main` equals `main`, the working tree is clean, and the author is
+`Evengelius <molimoabel@gmail.com>`, with no attribution line: PASS. The
+two blocks above stay as they were reported.
