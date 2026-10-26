@@ -256,6 +256,22 @@ func TestGoldenFrames(t *testing.T) {
 			return h
 		}
 	}
+	// Plan 50 (amendment 51): three files selected by Ctrl+click, the first
+	// one the cursor's, its diff open, the third hovered; the button
+	// "Commit 3 files". Also drawn at 208x59, the acc tab maximised.
+	sourceSelection := func(t *testing.T) *harness {
+		h := source()(t)
+		for _, k := range []string{"f:changes:sample/viewer.go", "f:staged:codex-spawn-request.jsonl", "f:changes:codex-api-key.jsonl"} {
+			ctrlClick(t, h, rowItem(t, h, k))
+		}
+		hover := rowItem(t, h, "f:changes:codex-api-key.jsonl")
+		x, y := itemCell(t, h, render.SourcePanel, hover)
+		mouseAt(t, h, tea.MouseMotionMsg{X: x, Y: y})
+		if v := h.m.ui.Source; len(v.Selected) != 3 || v.Hover != hover || v.Cursor != "f:changes:sample/viewer.go" || !h.m.ui.Diff.Open {
+			t.Fatalf("the selection %q, hover %d, cursor %q, diff open %v", selectedPaths(h), v.Hover, v.Cursor, h.m.ui.Diff.Open)
+		}
+		return h
+	}
 	// The commit controls (plan 45, brief amendment 46): a message typed in
 	// the field, reached by ↑ from the list's first row and ↑ again, then
 	// the button given the keys by ↓ and its dropdown opened by →, its item
@@ -417,8 +433,12 @@ func TestGoldenFrames(t *testing.T) {
 		{"models-codex-more", selector("codex-models.jsonl", down(3, key(tea.KeyEnter, 0))...)},
 		{"startup", startup}, {"dashboard", dash}, {"plus-menu", plusMenu}, {"attachments", attached}, {"attachments-sent", sent}, {"attachments-preview", preview}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"browser", browserRig(false, key(tea.KeyDown, 0), key(tea.KeyDown, 0), key(tea.KeyDown, 0))}, {"browser-filter", browserRig(false, typed('p'), typed('a'))}, {"browser-reading", browserRig(true)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))},
 		{"source", source()}, {"source-none", sourceNone}, {"source-diff", source(key(tea.KeyEnter, 0))}, {"source-diff-wide", source(key(tea.KeyEnter, 0), typed('f'))},
-		{"commit-menu", commitMenu}, {"commit-sixel", commitSixel}, {"commit-push", commitPush}} {
-		for _, size := range sizes {
+		{"commit-menu", commitMenu}, {"commit-sixel", commitSixel}, {"commit-push", commitPush}, {"source-selection", sourceSelection}} {
+		szs := sizes
+		if sc.name == "source-selection" {
+			szs = append(slices.Clone(sizes), [2]int{208, 59}) // the acc tab maximised (plan 50, criterion 50.10)
+		}
+		for _, size := range szs {
 			w, hgt := size[0], size[1]
 			name := fmt.Sprintf("%s-%dx%d", sc.name, w, hgt)
 			t.Run(name, func(t *testing.T) {

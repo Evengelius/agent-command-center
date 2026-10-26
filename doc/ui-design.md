@@ -2064,14 +2064,37 @@ only writes are the commit controls' ([Commit and push](#commit-and-push)).
 | ← | fold a section or an opened folder; on a file, to its section's header |
 | Enter | a file's [diff](#diff-view), the comparison of its section; on a header or a folder, fold or open it |
 | r | read git's status again |
-| Esc | back to zone B, the panel kept (hidden where it takes zone B's place) |
+| Esc | clears the selection (plan 50); with none, back to zone B, the panel kept (hidden where it takes zone B's place) |
 | F2, F3, F6, Tab, and the dashboard's keys | as beside the Explorer's panel: F3 shows the Explorer in its place |
 
 **The mouse.** A click on a row gives the panel the focus and acts as
 Enter: a file's diff opens, a header folds or opens. The pointer's row is
 hovered, the program's filter passing only a motion that changes it.
-Nothing is selected in the panel; F12 and the terminal's selection copy
+No text is selected in the panel; F12 and the terminal's selection copy
 from it.
+
+**The selection** (plan 50, brief amendment 51; designs D1 to D9). Ctrl
+and a click on a file's row, a change's or a file's of an opened untracked
+folder, put the file in the selection, or take it out; a file on two rows,
+staged and unstaged, is selected on both. The first file selected opens as
+a click opens it, the cursor there and its diff shown; the others leave the
+cursor and the diff as they are, and taking out the file whose diff shows
+changes nothing else. On a header, a folder, a note, a blank row or the
+commit controls, Ctrl and a click do nothing, and they make no double
+click. A plain click on a file's row clears the selection and shows that
+file's diff; a plain click on a header, a folder or the commit controls,
+Enter and the arrows do what they do without a selection, and keep it;
+Esc on the list clears it. With none selected, Commit and Commit & Push
+commit the whole index as before, whatever diff shows. Each status read drops
+the files that are no longer a change; a commit made from the selection
+clears it, a refusal or a failure keeps it. A selected file's row: "▎" in
+its first cell in the title colour (`#C4B5FD`), on the sidebar's selected
+ground (`#181C30`, `#20253D` hovered); the cursor's row keeps the band,
+with the "▎". The button reads "Commit N files" ("Commit 1 file"), the
+branch ahead or not, and the hints name Ctrl+click and "Esc clear the
+selection". Windows Terminal 1.23 passes Ctrl with a click (plan 50,
+criterion 50.1), never Shift: Shift and a click select the terminal's
+text.
 
 ### Commit and push
 
@@ -2149,7 +2172,38 @@ line break by its path alone); then `git -c user.useConfigOnly=true
 commit --file=-`, the message as typed on standard input, hooks and
 signing as configured. It counts once HEAD is a new commit on the old one:
 "Committed <id>.", the field cleared if it still holds the text committed.
-A failure shows git's words, a hook's included, the message kept.
+A failure shows git's words, a hook's included, the message kept. After
+the question's staging the staging stays, as git leaves it after a failed
+commit: the note adds "The N changes staged for it stay staged." (plan 50,
+design D8; amendment 51), and a retry asks nothing for them.
+
+**A selection's commit** (plan 50, design D7). With files selected,
+Commit and Commit & Push commit them alone. At once, from the panel's
+status: a conflict, "Resolve the merge conflicts first."; a selected file
+with both staged and unstaged changes, "<path> has staged and unstaged
+changes, and a selection commits whole files: leave it out of the
+selection, or stage the rest in a terminal."; one deleted in the index but
+still on disk, "<path> is deleted in the index but still on disk: leave it
+out of the selection, or commit it from a terminal.". Selected files not
+staged: "Stage the N selected files and commit them?" ("Stage the N
+selected files that are not staged, and commit all M?" beside staged ones),
+with "Stage and commit" and "Cancel". Before any write, a check refuses a
+rebase, am, cherry-pick, revert or merge in progress ("A merge is in
+progress: commit it whole, without a selection."), a conflict, a selected
+file changed since it was shown, and a rename's source outside the project
+or back on disk, reading git's status path by path (`--no-renames`) as
+`--only` takes the paths, so that a file moved on disk with both its rows
+selected, which the staging makes a rename, is committed as that rename;
+then exactly the files to stage are staged; then `git -c
+user.useConfigOnly=true commit --only --file=-`, the selected paths and a
+rename's source as literal pathspecs read from a file: git builds the
+commit from HEAD in its own transaction, with the owner's hooks, clean-up
+and signing, and leaves the rest of the index, staged or not, as it is. It
+counts once HEAD is a new commit on the old one holding exactly the
+selection, each file as staged; a commit other than that (a hook that
+stages another file, say) says "Committed <id>, but <what>: check it in a
+terminal.", the commit kept, never rewritten, and Commit & Push does not
+push it.
 
 **Push** (design D9). To the upstream only, `git push --porcelain <remote>
 refs/heads/<branch>:<ref>`, `push.followTags` and `push.recurseSubmodules`

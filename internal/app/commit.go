@@ -22,10 +22,11 @@ import (
 // same command, so the button changes on Git's word (design D11).
 
 // The steps of an operation (designs D8 to D10), in their order: Commit &
-// Push's destination checked, the question's paths staged, the commit, the
-// push.
+// Push's destination checked, a selection checked before its staging (plan
+// 50, design D7), the question's paths staged, the commit, the push.
 const (
 	stepTarget = "target"
+	stepCheck  = "check"
 	stepStage  = "stage"
 	stepCommit = "commit"
 	stepPush   = "push"
@@ -34,9 +35,13 @@ const (
 // gitOp is the operation running: its steps left, what they take, and what
 // the done ones gave.
 type gitOp struct {
-	steps   []string
-	stage   []string
-	expect  []input.GitEntry
+	steps  []string
+	stage  []string
+	expect []input.GitEntry
+	// sel is a selection's files, which its commit commits alone (plan 50,
+	// design D7); nil, the whole index. staged says the stage step was done.
+	sel     []input.GitEntry
+	staged  bool
 	message string
 	push    bool // Commit & Push, or Push alone
 	commit  *input.CommitResult
@@ -72,10 +77,13 @@ type opMsg struct {
 }
 
 // asked is the question's offer (design D6): the CHANGES entries to stage,
-// for Commit & Push or not.
+// for Commit & Push or not; or a selection's (plan 50, design D7), its files
+// and those of them to stage.
 type asked struct {
 	entries []input.GitEntry
 	push    bool
+	sel     []input.GitEntry
+	stage   []string
 }
 
 // sourceWrite is the Source Control's writes, when the git in use has them.
@@ -102,6 +110,9 @@ func (m *Model) commitState() (action string, dim bool) {
 	if m.snap == nil {
 		return render.ActionCommit, true
 	}
+	if len(m.ui.Source.Selected) > 0 {
+		return render.ActionCommit, false // a selection's, the branch ahead or not (plan 50, design D6)
+	}
 	if b := m.snap.Branch; b.Upstream != "" && !b.Gone && b.Ahead > 0 {
 		return render.ActionPush, false
 	}
@@ -116,7 +127,7 @@ func (m *Model) syncCommit() {
 	m.ui.GitRunning = ""
 	if op := m.op; op != nil && len(op.steps) > 0 {
 		// What the quit question names (plan 47, design D1).
-		m.ui.GitRunning = map[string]string{stepStage: "the staging", stepCommit: "the commit", stepPush: "the push", stepTarget: "the push"}[op.steps[0]]
+		m.ui.GitRunning = map[string]string{stepCheck: "the commit", stepStage: "the staging", stepCommit: "the commit", stepPush: "the push", stepTarget: "the push"}[op.steps[0]]
 	}
 	if op := m.op; op != nil && len(op.steps) > 0 {
 		// The running step, its elapsed time from its second second; a push
@@ -258,6 +269,9 @@ func (m *Model) commitAction(push bool) []tea.Cmd {
 			}
 		}
 	}
+	if sel := m.selection(); len(sel) > 0 {
+		return m.commitSelected(sel, push)
+	}
 	switch {
 	case len(staged) > 0:
 		return m.startOp(&gitOp{steps: commitSteps(push, false), expect: staged, message: m.msg.Text(), push: push})
@@ -266,8 +280,82 @@ func (m *Model) commitAction(push bool) []tea.Cmd {
 		return nil
 	}
 	m.ask = &asked{entries: changes, push: push}
-	v.Ask, v.AskPush, v.AskNo, v.Notice = len(changes), push, false, ""
+	v.Ask, v.AskSel, v.AskPush, v.AskNo, v.Notice = len(changes), 0, push, false, ""
 	return nil
+}
+
+// selection is the selected files as git's status last read them, sorted by
+// path, a file of an untracked folder as untracked (plan 50, design D1).
+func (m *Model) selection() []input.GitEntry {
+	if len(m.ui.Source.Selected) == 0 || m.snap == nil {
+		return nil
+	}
+	paths := make([]string, 0, len(m.ui.Source.Selected))
+	for p := range m.ui.Source.Selected {
+		paths = append(paths, p)
+	}
+	slices.Sort(paths)
+	var sel []input.GitEntry
+	for _, p := range paths {
+		n := len(sel)
+		for _, e := range m.snap.Entries {
+			if e.Path == p {
+				sel = append(sel, e)
+			}
+		}
+		if len(sel) == n {
+			sel = append(sel, input.GitEntry{X: '?', Y: '?', Path: p, RepoPath: m.snap.Prefix + p})
+		}
+	}
+	return sel
+}
+
+// commitSelected is Commit, or Commit & Push, of the selection sel (plan 50,
+// design D7): a file a commit cannot take whole refused at once, by the
+// panel's status; files not staged, the question first; else the commit.
+func (m *Model) commitSelected(sel []input.GitEntry, push bool) []tea.Cmd {
+	var stage []string
+	for i := 0; i < len(sel); {
+		j := i + 1
+		for j < len(sel) && sel[j].Path == sel[i].Path {
+			j++ // a path's entries, side by side in sel
+		}
+		if err := input.WholeRefusal(sel[i].Path, sel[i:j]); err != nil {
+			m.notice(err.Error(), render.NoticeCheck)
+			return nil
+		}
+		if e := sel[i]; e.X == ' ' || e.X == '?' {
+			stage = append(stage, e.Path)
+		}
+		i = j
+	}
+	if len(stage) > 0 {
+		v := &m.ui.Source
+		m.ask = &asked{push: push, sel: sel, stage: stage}
+		v.Ask, v.AskSel, v.AskPush, v.AskNo, v.Notice = len(stage), len(v.Selected), push, false, ""
+		return nil
+	}
+	return m.startOp(&gitOp{steps: selectionSteps(push, false), sel: sel, message: m.msg.Text(), push: push})
+}
+
+// selectionSteps are a selection's commit's steps (plan 50, design D7):
+// with files to stage, a check before the staging, the only write before
+// the commit.
+func selectionSteps(push, stage bool) []string {
+	steps := commitSteps(push, stage)
+	if stage {
+		steps = slices.Insert(steps, slices.Index(steps, stepStage), stepCheck)
+	}
+	return steps
+}
+
+// stayStaged says the changes a question's staging staged stay staged once
+// the commit after it failed (plan 50, design D8; amendment 51).
+func stayStaged(n int) string {
+	if n == 1 {
+		return "The change staged for it stays staged."
+	}
+	return fmt.Sprintf("The %d changes staged for it stay staged.", n)
 }
 
 // commitSteps are a commit's steps: the push's destination first for
@@ -291,13 +379,18 @@ func commitSteps(push, stage bool) []string {
 // offered paths, then commits; no does nothing.
 func (m *Model) answer(yes bool) []tea.Cmd {
 	a := m.ask
-	m.ask, m.ui.Source.Ask = nil, 0
+	m.ask, m.ui.Source.Ask, m.ui.Source.AskSel = nil, 0, 0
 	if !yes || a == nil || m.op != nil {
 		return nil
 	}
 	if strings.TrimSpace(m.msg.Text()) == "" {
 		m.notice("Enter a commit message.", render.NoticeCheck)
 		return nil
+	}
+	if a.sel != nil {
+		// A selection's (plan 50, design D7): checked, then exactly its
+		// files not staged staged, then committed alone.
+		return m.startOp(&gitOp{steps: selectionSteps(a.push, true), stage: a.stage, sel: a.sel, message: m.msg.Text(), push: a.push})
 	}
 	paths := make([]string, len(a.entries))
 	for i, e := range a.entries {
@@ -338,17 +431,26 @@ func (m *Model) runStep() tea.Cmd {
 	op := m.op
 	m.opGen++
 	gen, step, dir, last := m.opGen, op.steps[0], m.fileRoot(), len(op.steps) == 1
-	stage, expect, message, stop := op.stage, op.expect, op.message, op.stop
+	stage, expect, message, stop, sel := op.stage, op.expect, op.message, op.stop, op.sel
 	return func() tea.Msg {
 		out := opMsg{gen: gen, step: step}
 		switch step {
 		case stepTarget:
 			_, out.err = sw.PushTarget(dir)
+		case stepCheck:
+			out.err = sw.CheckSelection(dir, sel)
 		case stepStage:
 			out.err = sw.Stage(dir, stage)
 		case stepCommit:
 			var r input.CommitResult
-			if r, out.err = sw.Commit(dir, message, expect); out.err == nil {
+			if sel != nil {
+				// A commit made other than the selection is still made (plan
+				// 50, design D7).
+				var u input.Unexpected
+				if r, out.err = sw.CommitSelection(dir, message, sel, stage); out.err == nil || errors.As(out.err, &u) {
+					out.commit = &r
+				}
+			} else if r, out.err = sw.Commit(dir, message, expect); out.err == nil {
 				out.commit = &r
 			}
 		case stepPush:
@@ -378,10 +480,14 @@ func (m *Model) stepDone(msg opMsg) []tea.Cmd {
 	if msg.pushed != nil {
 		op.pushed = msg.pushed
 	}
+	if msg.step == stepStage && msg.err == nil {
+		op.staged = true
+	}
 	op.steps = op.steps[1:]
 	if msg.err == nil && len(op.steps) > 0 {
 		if msg.step == stepCommit {
 			m.clearCommitted(op.message) // the commit made: the field cleared before the push (design D10)
+			m.clearSelection(op)
 		}
 		return []tea.Cmd{m.runStep()}
 	}
@@ -400,6 +506,7 @@ func (m *Model) stepDone(msg opMsg) []tea.Cmd {
 	}
 	if op.commit != nil {
 		m.clearCommitted(op.message)
+		m.clearSelection(op)
 	}
 	switch {
 	case msg.err != nil && msg.step == stepPush && op.commit != nil && cancelled(msg.err):
@@ -408,6 +515,15 @@ func (m *Model) stepDone(msg opMsg) []tea.Cmd {
 		m.notice(fmt.Sprintf("Committed %s, but the push failed: %s", op.commit.Short, msg.err.Error()), render.NoticeFailed)
 	case msg.err != nil:
 		m.noticeErr("", msg.err)
+		if msg.step == stepCommit && op.staged && op.commit == nil {
+			// The question's staging is not undone (plan 50, design D8): git's
+			// words, a full stop if they end with none, then that.
+			n := strings.TrimRight(m.ui.Source.Notice, " ")
+			if n != "" && !strings.ContainsAny(n[len(n)-1:], ".!?:") {
+				n += "."
+			}
+			m.ui.Source.Notice = n + " " + stayStaged(len(op.stage))
+		}
 	case op.commit != nil && op.pushed != nil:
 		m.notice(fmt.Sprintf("Committed %s and pushed to %s.", op.commit.Short, op.pushed.Target.Upstream), render.NoticeDone)
 	case op.commit != nil:
@@ -430,6 +546,14 @@ func lowerFirst(s string) string {
 		return s
 	}
 	return strings.ToLower(s[:1]) + s[1:]
+}
+
+// clearSelection clears the selection a commit was made from (plan 50,
+// design D9).
+func (m *Model) clearSelection(op *gitOp) {
+	if op.sel != nil {
+		m.ui.Source.Selected = nil
+	}
 }
 
 // clearCommitted clears the field once Git has confirmed the commit made

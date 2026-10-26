@@ -7387,3 +7387,74 @@ Do not conduct another audit. Do not defer the improvements simply because today
 ````
 
 Taken as plan 49 (plan.md, Plan 49).
+
+## Amendment 51, 2026-10-26: Source Control multi-selection, for plan 50
+
+On 2026-10-25, after plan 49 was approved and pushed, the owner wrote, word
+for word:
+
+````text
+Next Plan — Source Control Multi-Selection
+I want to add Ctrl + left-click multi-selection to the Source Control sidebar, allowing me to select multiple files and commit only those files.
+Requirements:
+
+* Ctrl + left-click toggles a file's selection.
+* Selected files are visually distinguishable.
+* Normal clicks preserve the existing behavior.
+* The first selected file becomes the active file, and its diff is displayed.
+* Additional files selected with Ctrl + left-click are added to the selection without changing the displayed diff.
+* If the active file is deselected, define a clear and predictable fallback behavior.
+* Commit and Commit & Push correctly handle the selected files.
+* Unselected files and their staged/unstaged changes remain untouched.
+* Preserve Git safety, including partially staged files and other edge cases.
+* Keep the existing UI design and interactions consistent.
+
+The selection determines which files will be committed; the active file determines which diff is displayed.
+Inspect the current implementation and determine the safest approach, including whether Windows Terminal reliably exposes the required mouse modifier.
+Follow the repository's engineering standards and evaluation requirements. Avoid unnecessary complexity or unrelated changes.
+Propose the plan first and wait for my approval before implementing.
+````
+
+Told the proposed plan (Windows Terminal 1.23 passes Ctrl with a click, by
+its source; the selection committed by `git commit --only`, each selected
+file fully staged; a partly staged file refused; unstaged and untracked
+files staged only after the question; a plain click keeping the selection
+and Esc clearing it; the active file's diff kept when it is deselected; the
+button's "Commit N files"), the owner wrote on 2026-10-26, word for word:
+
+````text
+I agree with Plan 50.
+
+One clarification before approval: if the user confirms "Stage and commit", but the commit subsequently fails (e.g., due to a Git hook), what happens to the staged changes?
+
+Please clarify the expected behavior and ensure it's tested.
+
+If this is addressed, you have my approval to proceed with Plan 50, following the repository's existing engineering and evaluation rules.
+````
+
+Answered: the files the question staged stay staged, as git leaves them
+after a failed `git commit`; the note under the button says so, for this
+question and for plan 45's; real-git tests with a pre-commit hook that
+exits 1 check it. Taken as plan 50 (plan.md, Plan 50).
+
+After plan 50 was built and evaluated (13 of 13 PASS, nothing committed),
+the owner wrote on 2026-10-26, word for word:
+
+````text
+Before committing Plan 50, I'd like one interaction adjustment:
+
+* A normal left-click on a file row clears the multi-selection and displays that file's diff.
+* Ctrl + left-click remains the way to build or toggle a multi-selection.
+* With no files selected, Commit and Commit & Push must preserve their original whole-index behavior, regardless of which file's diff is displayed.
+* With files selected, only those files are committed.
+
+Also, change "files staged" to "changes staged" where appropriate.
+Update the relevant tests, documentation, and evaluation.
+Then review the complete diff, focusing on Git safety, regressions, and unintended changes.
+Report your findings and verification results. Do not commit or push until I approve.
+````
+
+Taken into plan 50 (plan.md, Plan 50: D4 and D8 changed, criteria 50.3
+and 50.8 changed with them, 50.14 added). The review found a file moved
+on disk, both its rows selected, refused once staged; fixed in D7.3,
+criteria 50.4 and 50.6 extended with it.

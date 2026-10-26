@@ -142,7 +142,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			case render.ExplorerPanel:
 				return m.explorerClick(item) // the panel's own, no selection (plan 43, design D7)
 			case render.SourcePanel:
-				return m.sourceClick(item, mo.X, mo.Y) // the same for Source Control's (plan 44, design D5)
+				return m.sourceClick(item, mo.X, mo.Y, mo.Mod&tea.ModCtrl != 0) // the same for Source Control's (plan 44, design D5; plan 50, D2)
 			}
 			m.press(mo)
 		}

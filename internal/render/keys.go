@@ -119,7 +119,8 @@ func fixedKeyTable() []keyGroup {
 			{"→ ←", "open or fold a section or an untracked folder; ← on a file, to its section"},
 			{"Enter", "a file's diff, in the conversation's place; on a section, fold or open it"},
 			{"r", "read git's status again"},
-			{"Esc", "back to the input, Source Control kept beside it (hidden where it takes the conversation's place)"},
+			{"Ctrl+click", "select a file for Commit, or deselect it; the first one selected opens its diff"},
+			{"Esc", "clear the selection; with none, back to the input, Source Control kept beside it (hidden where it takes the conversation's place)"},
 		}},
 		{"A FILE'S DIFF (Enter or a click on a file in Source Control)", [][2]string{
 			{"↑ ↓ PgUp PgDn Home End", "scroll; the wheel too"},

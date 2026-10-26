@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -227,6 +228,11 @@ func (m *Model) applySnapshot(snap input.GitSnapshot, err error) {
 			delete(v.Opened, p)
 		}
 	}
+	for p := range v.Selected {
+		if !stillChanged(p, snap.Entries) {
+			delete(v.Selected, p) // no longer a change (plan 50, design D1)
+		}
+	}
 	rows := render.SourceRows(*v)
 	if i := render.SourceCursor(rows, v.Cursor); path != "" && (i < 0 || rows[i].Key != v.Cursor) {
 		for _, r := range rows {
@@ -318,6 +324,10 @@ func (m *Model) sourceKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	room := render.SourceRoom(m.s, m.ui)
 	switch s {
 	case "esc":
+		if len(v.Selected) > 0 {
+			v.Selected = nil // the selection cleared, nothing else (plan 50, design D4)
+			break
+		}
 		m.ui.Focus = "B" // the panel kept (design D5)
 	case "f2":
 		return m.focusCard("", true), true
@@ -472,8 +482,13 @@ func (m *Model) folderRead(msg folderMsg) {
 }
 
 // sourceClick is a click on the panel: its "⌄" hides it; a row takes the
-// cursor and acts as Enter, a file opening its diff (design D5).
-func (m *Model) sourceClick(item, x, y int) []tea.Cmd {
+// cursor and acts as Enter, a file opening its diff (design D5), the
+// selection cleared (plan 50, design D4). With Ctrl it is the selection's
+// (plan 50, design D2).
+func (m *Model) sourceClick(item, x, y int, ctrl bool) []tea.Cmd {
+	if ctrl {
+		return m.sourceCtrlClick(item)
+	}
 	m.ui.Sel = render.Selection{}
 	if item == render.ItemPanelHide {
 		m.closeSource()
@@ -490,7 +505,54 @@ func (m *Model) sourceClick(item, x, y int) []tea.Cmd {
 	if i < 0 || i >= len(rows) || !rows[i].Selectable() {
 		return nil
 	}
+	if rows[i].File() {
+		m.ui.Source.Selected = nil // a plain click on a file, the selection cleared (plan 50, design D4)
+	}
 	return m.sourceOpenRow(rows[i], false, true)
+}
+
+// sourceCtrlClick toggles a file row's path in the selection (plan 50,
+// design D2): the panel takes the focus as for a click, and the first file
+// selected opens as a plain click opens it, the cursor there and its diff
+// shown; the others leave the cursor and the diff as they are. On any other
+// row or place of the panel it does nothing. It counts as no click of a
+// double click.
+func (m *Model) sourceCtrlClick(item int) []tea.Cmd {
+	rows := render.SourceRows(m.ui.Source)
+	i := item - 1
+	if i < 0 || i >= len(rows) || !rows[i].File() {
+		return nil
+	}
+	m.click.n = 0
+	m.ui.Sel = render.Selection{}
+	m.ui.Focus = "R"
+	v := &m.ui.Source
+	v.Place = ""
+	r := rows[i]
+	if v.Selected[r.Path] {
+		delete(v.Selected, r.Path) // the diff and the cursor stay (design D3)
+		return nil
+	}
+	first := len(v.Selected) == 0
+	if v.Selected == nil {
+		v.Selected = map[string]bool{}
+	}
+	v.Selected[r.Path] = true
+	if first {
+		return m.sourceOpenRow(r, false, true)
+	}
+	return nil
+}
+
+// stillChanged says p is a change of entries, or a file of one of their
+// untracked folders (plan 50, design D1).
+func stillChanged(p string, entries []input.GitEntry) bool {
+	for _, e := range entries {
+		if e.Path == p || e.X == '?' && strings.HasSuffix(e.Path, "/") && strings.HasPrefix(p, e.Path) {
+			return true
+		}
+	}
+	return false
 }
 
 // sourceWheel moves the panel's cursor wheelRows rows, the pointer over it.

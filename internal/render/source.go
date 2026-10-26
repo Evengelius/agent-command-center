@@ -38,6 +38,9 @@ type SourceView struct {
 	Cursor string
 	Top    int
 	Hover  int
+	// Selected is the selection of files a Commit commits alone, by their
+	// project-relative paths (plan 50, design D1); empty, none.
+	Selected map[string]bool
 	// The commit controls (plan 45, brief amendment 46). Msg is the message
 	// field as the frame draws it (design D2). Place is where the panel's
 	// keys go: "" the list, PlaceMsg the field, PlaceBtn the button. Action
@@ -48,16 +51,19 @@ type SourceView struct {
 	// stage, 0 with no question, AskPush for Commit & Push, AskNo the focus
 	// on Cancel (design D6). Notice is the note under the button and
 	// NoticeKind its kind (design D12).
-	Msg        EditorView
-	Place      string
-	Action     string
-	Dim        bool
-	Busy       string
-	Menu       bool
-	MenuHot    bool
-	Ask        int
-	AskPush    bool
-	AskNo      bool
+	Msg     EditorView
+	Place   string
+	Action  string
+	Dim     bool
+	Busy    string
+	Menu    bool
+	MenuHot bool
+	Ask     int
+	AskPush bool
+	AskNo   bool
+	// AskSel is the selection's size when the question is a selection's
+	// (plan 50, design D7); 0 for plan 45's.
+	AskSel     int
 	Notice     string
 	NoticeKind byte
 	// BusyHint is said under the button while an operation runs, in the
@@ -176,6 +182,11 @@ type SourceRow struct {
 // Selectable is true for a row the cursor stops on: a header, a file or a
 // folder, not a note or a blank row.
 func (r SourceRow) Selectable() bool { return r.Kind != 'n' && r.Kind != 'b' }
+
+// File is true for a row of a file a selection can hold: a change's, not an
+// untracked folder's, or a file's of an opened untracked folder (plan 50,
+// design D1).
+func (r SourceRow) File() bool { return r.Kind == 'f' || r.Kind == 'u' }
 
 // SourceRows is the list as drawn, after the owner's example (brief
 // amendment 45): each section with entries, a blank row, its header, then
@@ -311,7 +322,7 @@ func sourcePanel(ui UI, w, h int) []line {
 		top := ListTop(v.Top, max(cur, 0), room, len(rows))
 		for i := top; i < top+room && i < len(rows); i++ {
 			// No cursor band while the commit controls have the keys (plan 45).
-			r := sourceRow(rows[i], i == cur && v.Place == "", v.Hover == i+1, inner)
+			r := sourceRow(rows[i], i == cur && v.Place == "", v.Hover == i+1, rows[i].File() && v.Selected[rows[i].Path], inner)
 			for j := range r {
 				r[j].ref = ref{panel: SourcePanel, kind: refDeco, item: i + 1}
 			}
@@ -361,8 +372,10 @@ func letterStyle(c byte) *lipgloss.Style {
 // owner's example, its status letter, its directory muted and its name, a
 // rename's source after "←"; an untracked folder with "›" or "⌄"; a file of
 // an opened folder two cells deeper; a note in grey; a blank row. The
-// cursor's row on the purple band, the hovered one on a subtler ground.
-func sourceRow(r SourceRow, cur, hover bool, w int) line {
+// cursor's row on the purple band, the hovered one on a subtler ground; a
+// selected file's with "▎" in its first cell in the title colour, on the
+// sidebar's selected ground, a shade lighter hovered (plan 50, design D5).
+func sourceRow(r SourceRow, cur, hover, sel bool, w int) line {
 	if r.Kind == 'b' {
 		return blankRow(w)
 	}
@@ -370,6 +383,10 @@ func sourceRow(r SourceRow, cur, hover bool, w int) line {
 	switch {
 	case cur:
 		g = bandGround
+	case sel && hover:
+		g = sideSelHoverGround
+	case sel:
+		g = sideSelGround
 	case hover:
 		g = sourceHoverGround
 	}
@@ -395,7 +412,11 @@ func sourceRow(r SourceRow, cur, hover bool, w int) line {
 		if r.Kind == 'u' {
 			indent = "     "
 		}
-		l = line{deco(indent, on(stNone)), deco(string(r.Letter), on(letterStyle(r.Letter))), deco("  ", on(stNone))}
+		lead := line{deco(indent, on(stNone))}
+		if sel {
+			lead = line{deco("▎", on(stTitle)), deco(indent[1:], on(stNone))}
+		}
+		l = append(lead, deco(string(r.Letter), on(letterStyle(r.Letter))), deco("  ", on(stNone)))
 		if r.Kind == 'd' {
 			mark := "› "
 			if r.Open {
@@ -469,9 +490,23 @@ var sourceHints = []string{
 	"↑↓ · Enter diff · r refresh · Esc back · F3 Explorer",
 }
 
+// sourceSelHints are the panel's hints while a selection holds files (plan
+// 50, design D6): Ctrl+click and Esc's clearing named.
+var sourceSelHints = []string{
+	"↑↓ PgUp PgDn Home End move · → open · ← fold · Enter diff · Ctrl+click select · Esc clear the selection · r refresh · F6 zone · F1 keys",
+	"↑↓ move · → open · ← fold · Enter diff · Ctrl+click select · Esc clear the selection · r refresh · F6 zone · F1 keys",
+	"↑↓ move · Enter diff · Ctrl+click select · Esc clear the selection · F1 keys",
+	"↑↓ · Enter diff · Ctrl+click · Esc clear",
+}
+
 // sourceKeys is the footer's text while the panel has the focus, on a
-// screen w columns wide.
-func sourceKeys(w int) string { return fitHint(sourceHints, w) }
+// screen w columns wide; selecting says a selection holds files.
+func sourceKeys(w int, selecting bool) string {
+	if selecting {
+		return fitHint(sourceSelHints, w)
+	}
+	return fitHint(sourceHints, w)
+}
 
 // fitHint is the first of hints, the longest first, that fits w columns,
 // else the last.

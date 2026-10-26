@@ -322,6 +322,13 @@ func (g GitCLI) catFile(dir string, specs []string) ([]object, error) {
 // break is left out, cat-file reading its names a line each; its entry is
 // compared by its path alone (plan 45, design D14).
 func (g GitCLI) stagedBlobs(dir string, paths []string) (map[string]string, error) {
+	return g.blobsAt(dir, ":0", paths)
+}
+
+// blobsAt is stagedBlobs for rev's tree, ":0" being the index's stage 0: a
+// selection's commit compares its blobs with the index's (plan 50, design
+// D7).
+func (g GitCLI) blobsAt(dir, rev string, paths []string) (map[string]string, error) {
 	var asked []string
 	for _, p := range paths {
 		if !strings.ContainsAny(p, "\r\n") {
@@ -334,7 +341,7 @@ func (g GitCLI) stagedBlobs(dir string, paths []string) (map[string]string, erro
 	}
 	var in strings.Builder
 	for _, p := range asked {
-		in.WriteString(":0:" + p + "\n")
+		in.WriteString(rev + ":" + p + "\n")
 	}
 	err := g.stream(readLimit, dir, strings.NewReader(in.String()), func(r *bufio.Reader) error {
 		for _, p := range asked {

@@ -231,7 +231,7 @@ func footer(s *state.State, ui UI, hints string) string {
 		if h := commitHints(ui.Source); h != nil {
 			return fitHint(h, ui.Width) // the commit controls' (plan 45, design D12)
 		}
-		return sourceKeys(ui.Width)
+		return sourceKeys(ui.Width, len(ui.Source.Selected) > 0)
 	case ui.Focus == "R" && ui.Explorer.Open:
 		return explorerHints(ui.Width)
 	}

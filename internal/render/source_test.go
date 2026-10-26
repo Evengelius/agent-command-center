@@ -173,7 +173,7 @@ func TestSourceRowLooks(t *testing.T) {
 		{SourceRow{Kind: 'n', Note: "first 2 files"}, "     first 2 files     "},
 		{SourceRow{Kind: 'b'}, "                       "},
 	} {
-		l := sourceRow(c.r, false, false, 23)
+		l := sourceRow(c.r, false, false, false, 23)
 		if got := plainOf(l); got != c.want || l.width() != 23 {
 			t.Errorf("%+v: %q (%d cells), want %q", c.r, got, l.width(), c.want)
 		}
@@ -186,7 +186,7 @@ func TestSourceRowLooks(t *testing.T) {
 		20: "   M  …/reduce.go   ",
 		12: "   M  reduc…",
 	} {
-		l := sourceRow(SourceRow{Kind: 'f', Letter: 'M', Path: "internal/state/reduce.go"}, false, false, w)
+		l := sourceRow(SourceRow{Kind: 'f', Letter: 'M', Path: "internal/state/reduce.go"}, false, false, false, w)
 		if got := plainOf(l); got != want || l.width() != w {
 			t.Errorf("a long path in %d cells: %q, want %q", w, got, want)
 		}
@@ -196,12 +196,12 @@ func TestSourceRowLooks(t *testing.T) {
 		50: "   R  internal/util/text.go ← internal/util/strin…",
 		27: "   R  …/util/text.go ← int…",
 	} {
-		l := sourceRow(SourceRow{Kind: 'f', Letter: 'R', Path: "internal/util/text.go", Orig: "internal/util/strings.go"}, false, false, w)
+		l := sourceRow(SourceRow{Kind: 'f', Letter: 'R', Path: "internal/util/text.go", Orig: "internal/util/strings.go"}, false, false, false, w)
 		if got := plainOf(l); got != want || l.width() != w {
 			t.Errorf("a rename in %d cells: %q, want %q", w, got, want)
 		}
 	}
-	l := sourceRow(SourceRow{Kind: 'f', Letter: 'D', Path: "src/gone.go"}, false, false, 30)
+	l := sourceRow(SourceRow{Kind: 'f', Letter: 'D', Path: "src/gone.go"}, false, false, false, 30)
 	if x, _ := spanOf(l, "D"); x.st != stFailed {
 		t.Error("D is not red")
 	}
@@ -216,7 +216,7 @@ func TestSourceRowLooks(t *testing.T) {
 			t.Errorf("%c: wrong colour", c)
 		}
 	}
-	h := sourceRow(SourceRow{Kind: 'h', Section: SectionChanges, Open: true, Count: 3}, false, false, 30)
+	h := sourceRow(SourceRow{Kind: 'h', Section: SectionChanges, Open: true, Count: 3}, false, false, false, 30)
 	if x, _ := spanOf(h, "CHANGES"); x.st != stTitleBold {
 		t.Error("the header's name is not bold in the title colour")
 	}
@@ -224,10 +224,40 @@ func TestSourceRowLooks(t *testing.T) {
 		cur, hover bool
 		g          *ground
 	}{{true, false, bandGround}, {false, true, sourceHoverGround}, {true, true, bandGround}} {
-		l := sourceRow(SourceRow{Kind: 'f', Letter: 'M', Path: "a.go"}, c.cur, c.hover, 20)
+		l := sourceRow(SourceRow{Kind: 'f', Letter: 'M', Path: "a.go"}, c.cur, c.hover, false, 20)
 		for _, x := range l {
 			if x.st != c.g.on(stNone) && x.st != c.g.on(stProgress) && x.st != c.g.on(stExpFileName) {
 				t.Errorf("cursor %v, hover %v: %q not on its ground", c.cur, c.hover, x.text)
+			}
+		}
+	}
+}
+
+// TestSourceRowSelected is criterion 50.10's rows (plan 50, design D5): a
+// selected file's row as an unselected one but its first cell, "▎" in the
+// title colour, every span on the sidebar's selected ground, its hover
+// shade under the pointer, the cursor's band on the cursor's row with the
+// "▎" kept; a file of an opened folder the same.
+func TestSourceRowSelected(t *testing.T) {
+	for _, r := range []SourceRow{{Kind: 'f', Letter: 'M', Path: "src/a.go"}, {Kind: 'u', Letter: 'U', Path: "web/a.js"}} {
+		plain := plainOf(sourceRow(r, false, false, false, 24))
+		for _, c := range []struct {
+			cur, hover bool
+			g          *ground
+		}{{false, false, sideSelGround}, {false, true, sideSelHoverGround}, {true, false, bandGround}, {true, true, bandGround}} {
+			l := sourceRow(r, c.cur, c.hover, true, 24)
+			if got, want := plainOf(l), "▎"+plain[1:]; got != want || l.width() != 24 {
+				t.Errorf("%s, cursor %v, hover %v: %q (%d cells), want %q", r.Path, c.cur, c.hover, got, l.width(), want)
+			}
+			if x, ok := spanOf(l, "▎"); !ok || x.st != c.g.on(stTitle) {
+				t.Errorf("%s, cursor %v, hover %v: the mark not in the title colour on its ground", r.Path, c.cur, c.hover)
+			}
+			for _, x := range l {
+				switch x.st {
+				case c.g.on(stNone), c.g.on(stTitle), c.g.on(letterStyle(r.Letter)), c.g.on(stGrey), c.g.on(stExpFileName):
+				default:
+					t.Errorf("%s, cursor %v, hover %v: %q not on its ground", r.Path, c.cur, c.hover, x.text)
+				}
 			}
 		}
 	}
@@ -284,10 +314,10 @@ func TestSourcePanel(t *testing.T) {
 			t.Error("the frame is not grey without the focus")
 		}
 	}
-	if got := sourceKeys(200); !strings.HasPrefix(got, "↑↓ PgUp PgDn Home End move") {
+	if got := sourceKeys(200, false); !strings.HasPrefix(got, "↑↓ PgUp PgDn Home End move") {
 		t.Errorf("footer at 200: %q", got)
 	}
-	if got := sourceKeys(60); textWidth(got) >= 60 {
+	if got := sourceKeys(60, false); textWidth(got) >= 60 {
 		t.Errorf("footer at 60: %q", got)
 	}
 }

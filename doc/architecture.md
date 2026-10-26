@@ -613,6 +613,16 @@ at the boundaries) changes no part's role either.
 | 5. Input | the TIFF reader's entries left in the file (`tiffEntry`); an icon's PNG size checked first; git's `WaitDelay`, `exec.ErrWaitDelay` taken as git's success, `stream` read beside `Wait` | `internal/input/imagetiff.go`, `imageico.go`, `git.go`, `sourcewrite.go` |
 | The application | the write worker recovers into `Panicked` (`runWrite`); the detection recovers into the CLI's problem | `internal/app/writer.go`, `app.go` |
 
+Plan 50 (brief amendment 51; ui-design.md, Source Control, The selection,
+and Commit and push) adds a selection of files that Commit commits alone.
+No provider or state change.
+
+| Part | What changes | Where |
+| - | - | - |
+| 5. Input | `SourceWrite.CheckSelection` and `CommitSelection`: a rebase, am, cherry-pick, revert or merge in progress (`merging`), a conflict, a selected file changed since it was shown, partly staged or deleted in the index beside its file on disk (`WholeRefusal`, which the panel asks too), a rename's source outside the project or back on disk, each a `Refusal` before any write, git's status read path by path (`--no-renames`) so that a file moved on disk, both its rows selected, stays two paths once staged; then `git -c user.useConfigOnly=true commit --only --file=-`, the files and a rename's source as literal pathspecs from a file, git building the commit from HEAD in its own transaction and leaving the rest of the index; after it, HEAD a new commit on the old one (`madeOn`, `Commit`'s too), holding exactly the selection, each blob the index's (`holds`, `blobsAt`), else an `Unexpected`, the commit made | `internal/input/sourcewrite.go`, `source.go` |
+| 4. Rendering | `SourceView.Selected` and `AskSel`; a selected file's row with "▎" on the sidebar's selected ground (`sourceRow`), "Commit N files" (`ButtonLabel`), the selection's question (`AskSelText`), the hints with a selection (`sourceSelHints`), the key list's Ctrl+click | `internal/render/source.go`, `commit.go`, `dashboard.go`, `keys.go` |
+| The application | Ctrl+click on a file row (`sourceCtrlClick`), a plain click on a file row clearing the selection (`sourceClick`), Esc's clearing, the selection kept to the changes at each status read (`stillChanged`); Commit with a selection (`commitSelected`): a file not whole refused at once, files not staged the question, then the steps check, stage and commit (`selectionSteps`, `stepCheck`); after a failed commit the question's staging said to stay (`stayStaged`), for plan 45's question too; the selection cleared by a commit made from it | `internal/app/source.go`, `commit.go`, `mouse.go` |
+
 ## Build order
 
 Input to plan 3's roadmap, from AM4's priorities (P1 to P6) and AGENTS.md

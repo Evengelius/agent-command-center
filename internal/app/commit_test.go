@@ -41,6 +41,63 @@ type fakeWrite struct {
 	// 45, design D15).
 	stoppable, stopBusy bool
 	pushHold            chan struct{}
+	// checkErr is CheckSelection's error, unexpected the What of the
+	// Unexpected CommitSelection gives, "" none (plan 50, design D7);
+	// relisted the entries CommitSelection lists again after its commit, as
+	// files edited on disk meanwhile.
+	checkErr   error
+	unexpected string
+	relisted   []input.GitEntry
+}
+
+// selPaths is a selection's paths, joined by commas.
+func selPaths(sel []input.GitEntry) string {
+	ps := make([]string, len(sel))
+	for i, e := range sel {
+		ps[i] = e.Path
+	}
+	return strings.Join(ps, ",")
+}
+
+func (f *fakeWrite) CheckSelection(dir string, sel []input.GitEntry) error {
+	f.waitHold()
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.log = append(f.log, "check "+selPaths(sel))
+	return f.checkErr
+}
+
+// CommitSelection logs the message, the selection and the files staged for
+// it, and leaves the status as a commit of exactly those files would.
+func (f *fakeWrite) CommitSelection(dir, message string, sel []input.GitEntry, staged []string) (input.CommitResult, error) {
+	f.waitHold()
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.log = append(f.log, "commit-sel "+message+" "+selPaths(sel)+" staged "+strings.Join(staged, ","))
+	f.expects = append(f.expects, slices.Clone(sel))
+	if f.commitErr != nil {
+		return input.CommitResult{}, f.commitErr
+	}
+	f.made++
+	in := map[string]bool{}
+	for _, e := range sel {
+		in[e.Path] = true
+	}
+	var left []input.GitEntry
+	for _, e := range f.snap.Entries {
+		if !in[e.Path] {
+			left = append(left, e)
+		}
+	}
+	f.snap.Entries = append(left, f.relisted...)
+	if f.snap.Branch.Upstream != "" {
+		f.snap.Branch.Ahead++
+	}
+	r := input.CommitResult{Hash: fmt.Sprintf("%040d", f.made), Short: fmt.Sprintf("abc%04d", f.made)}
+	if f.unexpected != "" {
+		return r, input.Unexpected{Commit: r, What: f.unexpected}
+	}
+	return r, nil
 }
 
 // calledStatus is the status reads made so far.

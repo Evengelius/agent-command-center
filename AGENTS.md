@@ -22,9 +22,8 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-25, when the owner approved plan
-49, the rest of the audit's phase 0, and its phases 3 and 4 (`doc/audit.md`;
-brief amendment 50).** Plans 1 to 49 are closed, one entry each in
+**Status: plan 50 active since 2026-10-26, Source Control multi-selection
+(brief amendment 51).** Plans 1 to 49 are closed, one entry each in
 `plan.md`, Closed plans; the MVP was approved on 2026-10-17. `plan.md` holds
 the active plan's progress and test evidence; each closed plan's results are
 in its evaluation file, and its full record in git.
@@ -152,7 +151,8 @@ not in this list: it runs alone, with the exact command and conditions of
 - **The dashboard's git never forces or rewrites history.** The Worktrees
   view runs git in the chosen repository only, never with `--force`, and a
   worktree becomes the working directory only by starting a session on it.
-  Source Control commits the index and pushes to the upstream only, never
+  Source Control commits the index, or the staged content of the selected
+  files alone (amendment 51), and pushes to the upstream only, never
   forcing, amending or rewriting history (amendment 46).
 - **MVP scope is fixed** by amendment 4: build none of the features it leaves
   out (model configuration, cross-provider collaboration, provider
@@ -161,10 +161,11 @@ not in this list: it runs alone, with the exact command and conditions of
   browser; git worktree management; a file viewer in the terminal with an
   Explorer of the project, in place of the editor integration; the session's
   model, effort and Ultracode selection; the permission modes selector;
-  Source Control with a read-only Git diff viewer, and its commit and push
-  (brief, amendments 9 to 12, 34, 40, 45 and 46). The ones left out are
-  **[Nice to have]**: future improvements, never listed as remaining, built
-  only if the owner asks for one in a new plan (`plan.md`, Nice to have).
+  Source Control with a read-only Git diff viewer, its commit and push, and
+  a selection's commit (brief, amendments 9 to 12, 34, 40, 45, 46 and 51).
+  The ones left out are **[Nice to have]**: future improvements, never
+  listed as remaining, built only if the owner asks for one in a new plan
+  (`plan.md`, Nice to have).
 - **Dependencies are fixed** at the four the owner approved on 2026-10-16
   (Bubble Tea, Lip Gloss, x/clipboard, x/sys, pinned in `go.mod`), plus
   Chroma for the file viewer's highlighting (2026-10-18); another

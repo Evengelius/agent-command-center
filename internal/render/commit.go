@@ -123,13 +123,17 @@ type (
 
 // ButtonLabel is the button's label and whether the check mark leads it:
 // the running operation's, "Push", else "Commit" after the check (design
-// D3).
+// D3), "Commit N files" with a selection (plan 50, design D6).
 func ButtonLabel(v SourceView) (string, bool) {
 	switch {
 	case v.Busy != "":
 		return v.Busy, false
 	case v.Action == ActionPush:
 		return pushLabel, false
+	case len(v.Selected) == 1:
+		return commitLabel + " 1 file", true
+	case len(v.Selected) > 1:
+		return fmt.Sprintf("%s %d files", commitLabel, len(v.Selected)), true
 	}
 	return commitLabel, true
 }
@@ -283,7 +287,11 @@ func commitNotice(v SourceView, inner int) []line {
 	}
 	if v.Ask > 0 {
 		var out []line
-		for _, l := range wrapDeco(AskText(v.Ask, v.AskPush), inner, "", stText) {
+		text := AskText(v.Ask, v.AskPush)
+		if v.AskSel > 0 {
+			text = AskSelText(v.Ask, v.AskSel, v.AskPush)
+		}
+		for _, l := range wrapDeco(text, inner, "", stText) {
 			out = append(out, noticeLine(l))
 		}
 		yes, no := " "+askYes+" ", " "+askNo+" "
@@ -319,6 +327,25 @@ func noticeLine(l line) line {
 		l[i].ref = ref{panel: SourcePanel, kind: refDeco, item: ItemNotice}
 	}
 	return l
+}
+
+// AskSelText is the question of a selection's commit (plan 50, design D7):
+// staging the n of its files that are not staged, then the commit of all
+// of them, or the commit and the push.
+func AskSelText(n, of int, push bool) string {
+	then := "commit"
+	if push {
+		then = "commit and push"
+	}
+	switch {
+	case n == 1 && of == 1:
+		return "Stage the selected file and " + then + " it?"
+	case n == of:
+		return fmt.Sprintf("Stage the %d selected files and %s them?", n, then)
+	case n == 1:
+		return fmt.Sprintf("Stage the selected file that is not staged, and %s all %d?", then, of)
+	}
+	return fmt.Sprintf("Stage the %d selected files that are not staged, and %s all %d?", n, then, of)
 }
 
 // AskText is the question of design D6 for n changes: staging them, then

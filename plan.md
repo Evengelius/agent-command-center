@@ -95,12 +95,315 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 50 - Source Control multi-selection
 
-Plan 49 was approved and closed on 2026-10-25 (Closed plans, below). The
-next plan starts when the owner asks for one; the audit's roadmap
-([`doc/audit.md`](doc/audit.md), Part 2) is done, its phases 0 to 4
-implemented by plans 46 to 49.
+Brief amendment 51 (2026-10-26): Ctrl + left-click selects several files in
+Source Control, and Commit and Commit & Push commit only those. A plain
+click keeps today's behaviour, and, at the owner's word after the
+evaluation, clears the selection when it opens a file's diff; the first
+file selected becomes the active one, its diff shown, and the files added
+after it leave the diff as it is. With none selected, Commit and Commit &
+Push commit the whole index, as before, whatever diff shows.
+The selection says what is committed, the active file which diff is shown.
+Unselected files, staged or not, are left as they are, and amendment 46's
+staging rules hold: only staged content is committed, never a change left
+unstaged, and nothing is staged without the question's yes.
+
+The criteria below were written before the code. Nothing is committed until
+the owner has reviewed the result, and nothing is pushed without the
+owner's word.
+
+### What was found (2026-10-26, on eeec3b7)
+
+- **The click.** A click on a Source Control row moves the cursor and acts
+  as Enter: a file's diff opens, its section's comparison
+  (`app/source.go:476`, `:406`, `:543`; ui-design.md, Source Control, "The
+  mouse"). The click's modifiers reach `mouse()` (`tea.Mouse.Mod`, Shift
+  read at `app/mouse.go:318`), not `sourceClick`.
+- **Windows Terminal 1.23.20211.0** (microsoft/terminal at that tag) sends
+  a Ctrl+click to the application with its Ctrl bit, 0x10 of the SGR
+  encoding (`src/terminal/input/mouseInput.cpp:239`), unless a hyperlink is
+  under the pointer, which Ctrl+click opens instead
+  (`src/cascadia/TerminalControl/ControlInteractivity.cpp:249-264`); only
+  Shift keeps a click from the application (`:651-659`). The dashboard
+  draws no hyperlink. ultraviolet reads the bit from an SGR report
+  (`third_party/ultraviolet/decoder.go:1661-1682`) and from a console mouse
+  event (`terminal_reader_windows.go:125-137`).
+- **The commit** (plan 45). Commit commits the whole index after its checks
+  (`input/sourcewrite.go:242`): no rebase, am, cherry-pick or revert, no
+  conflict, nothing staged outside the project, the staged paths and blobs
+  those shown (designs D8, D14). With nothing staged, the question stages
+  every change first (design D6). Nothing commits part of the index.
+- **`git commit --only`** (git 2.56, `scratchpad\p50-git-only.sh`, in a
+  scratch repository):
+  - a fully staged file: committed alone, another staged file left staged;
+  - a partly staged file (`MM`): its unstaged line committed too;
+  - half a rename: accepted, an add with no delete; both sides: `R100`;
+  - an untracked file: "pathspec 'u.txt' did not match any file(s) known
+    to git";
+  - a file deleted from the index but on disk: its disk copy taken (here,
+    nothing left to commit);
+  - a name with a space, a bracket and a leading dash, as a literal
+    pathspec from a file, the message on standard input: committed;
+  - the pre-commit hook runs, and sees the selection alone staged;
+  - during a merge: "fatal: cannot do a partial commit during a merge."
+- **A failure after the question's staging** (plan 45). Nothing unstages:
+  the files stay staged, and the note shows git's words alone
+  (`app/commit.go:370`); no test runs real git through it.
+
+### Design
+
+- **D1. The selection.** A set of project-relative file paths, held by the
+  application (`SourceView.Selected`), not saved. A file row is a change's
+  (not an untracked folder's) or a file's of an opened untracked folder; a
+  path on two rows, staged and unstaged, is selected on both. Each status
+  read drops the paths that are no longer a change (a folder's file: no
+  longer under an untracked folder).
+- **D2. Ctrl+click.** On a file row, Ctrl+click toggles its path. When it
+  starts a selection (none before), it also does what a plain click on the
+  row does: the cursor goes there and its diff opens. Otherwise the cursor
+  and the diff stay as they are. On the panel's headers, folders, notes,
+  blank rows and controls, Ctrl+click does nothing. A Ctrl+click counts as
+  no click of a double click.
+- **D3. The active file.** The file whose diff is open: a plain click's,
+  Enter's, or the first Ctrl+click's. Deselecting it changes nothing else:
+  its diff and the cursor stay.
+- **D4. Plain clicks and keys** (changed at the owner's word after the
+  evaluation, amendment 51). A plain click on a file's row clears the
+  selection and shows that file's diff, as a click does today. A plain
+  click on a header, a folder or the commit controls, Enter and the arrows
+  do what they do today and leave the selection as it is. Esc on the list
+  clears a selection; with none, it does what it does today. With none
+  selected, Commit and Commit & Push are plan 45's, the whole index,
+  whatever diff shows.
+- **D5. The look.** A selected file's row: "▎" in its first cell in the
+  title colour, on the sidebar's selected ground (`cSideSel`), its hover
+  shade (`cSideSelHover`) under the pointer; the cursor's row keeps the
+  band, with the "▎" when it is selected. No new colour.
+- **D6. The button.** With a selection, the action is Commit, the branch
+  ahead or not, and the label "Commit N files" ("Commit 1 file"); the
+  dropdown's Commit & Push commits the selection, then pushes. The footer's
+  hints and the key list name Ctrl+click and Esc.
+- **D7. The commit.** Commit with a selection:
+  1. at once, from the panel's status: a conflict, or a selected file
+     partly staged (staged and unstaged changes, or deleted from the index
+     with its file on disk), refuses, naming it;
+  2. selected files with unstaged changes only, or untracked: the question
+     (plan 45, design D6) offers to stage them, with their number; Cancel
+     does nothing;
+  3. a check before any write (`SourceWrite.CheckSelection`): a merge,
+     rebase, am, cherry-pick or revert in progress; a conflict; a selected
+     file changed since it was shown, partly staged, or a rename's source
+     outside the project or back on disk: each refuses. The check reads
+     git's status path by path (`--no-renames`), as `--only` takes the
+     paths: a rename shown is its file added and its source deleted, and a
+     file moved on disk with both its rows selected, which the staging
+     makes a rename, stays two paths (the review, step 7);
+  4. on the question's yes, the staging of exactly those files (`Stage`);
+  5. the commit (`SourceWrite.CommitSelection`): the check again, the files
+     the staging staged taken as they now are; then
+     `git -c user.useConfigOnly=true commit --only --file=-`, the selected
+     paths and a rename's source as literal pathspecs from a file
+     (`GIT_LITERAL_PATHSPECS=1`, `--pathspec-from-file`,
+     `--pathspec-file-nul`). Git builds the commit from HEAD in its own
+     transaction, with the owner's hooks, clean-up and signing, and leaves
+     the rest of the index as it is. No selected file has an unstaged
+     change, so the working-tree content `--only` takes is its staged
+     content;
+  6. after it: HEAD a new commit on the old one, holding exactly the
+     selected paths and their sources, each blob the one the check read
+     from the index. A mismatch is told as a failure, the commit kept
+     (nothing is rewritten), and Commit & Push does not push.
+- **D8. A failure after the question's staging** (the owner's question,
+  amendment 51). The staging is not undone: the files stay staged, as git
+  leaves them after a failed `git commit`, their content on disk and in the
+  index, the working tree and the other files untouched. Undoing it would
+  write the index again after a failure, and could destroy what something
+  else staged meanwhile. The note gives git's words, then "The N changes
+  staged for it stay staged." ("The change staged for it stays staged.";
+  "changes", not "files", at the owner's word after the evaluation), for
+  this question and for plan 45's; the message is kept, and the selection;
+  a retry asks nothing for the files now staged.
+- **D9. The selection's end.** A commit made from it clears it; a refusal
+  or a failure keeps it.
+
+### Criteria
+
+1. **50.1 The modifier.** In Windows Terminal, with `TEA_TRACE`, maximised
+   and at 120x40: a Ctrl+left-click on a Source Control row arrives as
+   `ESC[<16;x;yM`, a plain click as `ESC[<0;x;yM`; Ctrl held alone types
+   nothing and does nothing in zone B's editor, the message field and the
+   panel's list.
+2. **50.2 Nothing changes without a selection.** No existing test changes
+   what it expects; every golden frame and mock replay is unchanged.
+3. **50.3 Ctrl+click.** State tests with `tea.ModCtrl` clicks: D2, D3, D4
+   and D9 each as written (D4 as the owner changed it), on rows of both
+   sections, a partly staged file's two rows, a folder's file, and the
+   headers, folders, notes and controls.
+4. **50.4 What is committed** (real git): the commit holds exactly the
+   selection, for a fully staged file; an unstaged one and an untracked
+   one, staged by the question; a folder's file; a staged deletion and an
+   unstaged one; a rename, both sides; a file moved on disk, both its rows
+   selected, neither side staged before, its file or its deletion (the
+   review, step 7); names with a space, a bracket and a leading dash; a
+   project in a subfolder of its repository (a file staged outside it left
+   staged); a branch's first commit.
+5. **50.5 What is left alone** (the same tests): the unselected files'
+   index entries (`git ls-files -s`) and working-tree content byte for byte
+   the same, staged, unstaged or partly staged; no working-tree file
+   changed.
+6. **50.6 Refusals before any write.** Each D7 refusal leaves the index file
+   and HEAD byte for byte unchanged and says why: a partly staged file, one
+   deleted from the index with its file on disk, a conflict, a merge, a
+   rebase, a change since shown, a rename's source outside the project, a
+   rename's source back on disk or back in the index (the review, step 7),
+   an empty message.
+7. **50.7 Hooks.** A pre-commit hook runs once and sees the selection alone
+   staged; one that exits 1 makes no commit.
+8. **50.8 A failure after the question** (amendment 51; real git, a
+   pre-commit hook exiting 1), for the selection's question and for plan
+   45's: HEAD unchanged; exactly the question's files staged, their blobs
+   their working-tree content; the working tree and the other files
+   unchanged; the note git's words, then "The N changes staged for it stay
+   staged."; the message and the selection kept; once the hook is removed,
+   Commit commits exactly them, asking nothing.
+9. **50.9 Commit & Push.** The destination checked first; the selection
+   committed, then pushed; a failed check after the commit pushes nothing.
+10. **50.10 The look.** Golden frames of a selected row, a selected cursor
+    row and a hovered selected row, and of "Commit N files", at 120x40 and
+    208x59, each reviewed as a diff; the terminal run's PNGs (50.12) show
+    them.
+11. **50.11 Mutants.** Removing the partly staged refusal, the merge
+    refusal, a rename's source from the pathspecs, the check of the
+    committed paths, D8's note, or the first Ctrl+click's diff: each caught
+    by a test.
+12. **50.12 The terminal run.** In Windows Terminal, maximised then at
+    120x40, on a demo repository: three files selected by Ctrl+click (one
+    staged, one unstaged, one untracked), the question answered, Commit;
+    git shows exactly those committed and the others as they were.
+13. **50.13 The checks.** `go build ./...`, `go vet ./...`, `gofmt -l .`
+    empty, `go test ./...`, `-race` on `internal/input` and `internal/app`,
+    and the timing step run alone all pass, `TestAgentsMDWithinCodexLimit`
+    included.
+14. **50.14 Without a selection, the whole index** (added at the owner's
+    word after the evaluation, amendment 51). A plain click on a file's row
+    clears the selection and shows that file's diff; a plain click on a
+    header, a folder or the controls keeps it. With none selected, Commit
+    and Commit & Push run plan 45's whole-index commit (the double's log
+    `commit <message>`, its expected entries every staged one; never
+    `commit-sel`). In Windows Terminal, maximised then at 120x40: two files
+    Ctrl+clicked, a third file plain-clicked, then Commit: git shows the
+    whole index committed, the unstaged changes as they were.
+
+### Steps
+
+1. Record amendment 51 and this plan; then 50.1, the modifier, which
+   decides whether the rest goes on.
+2. `input`: `CheckSelection` and `CommitSelection`, with their real-git
+   tests.
+3. `app`: the selection, the clicks and Esc, the button, the question, the
+   steps, D8's note.
+4. `render`: the rows, the label, the hints and the key list.
+5. The documents: ui-design.md (Source Control), architecture.md, and
+   AGENTS.md (the hard constraint, the status).
+6. Verification (50.2 to 50.13), then `doc/plan50-evaluation.md`.
+7. The owner's change after the evaluation (amendment 51): D4's plain
+   click, D8's words, 50.14; the checks again; a review of the complete
+   diff for git safety, regressions and unintended changes; the evaluation
+   brought up to date.
+
+### Progress
+
+- 2026-10-26: step 1 done; step 2 in progress.
+  - Amendment 51 and this plan recorded.
+  - 50.1 on today's build (eeec3b7, `scratchpad\term\acc-p50a.exe`), in
+    Windows Terminal maximised (208x59, the acc profile) and at 120x40, the
+    plan 45 repository, `TEA_TRACE` on (`term\p50.ps1`: p49.ps1 with
+    `-trace` and the `cclick` and `ctrlhold` steps; `Term.CtrlClick` and
+    `CtrlHold` release Ctrl in a `finally`):
+    - the Ctrl+click on `reduce.go` read as `ESC[<16;186;22M` and
+      `ESC[<16;60;22M`, then its `m`; the plain clicks as `ESC[<0;...M`;
+      no other modifier bit on a click;
+    - Ctrl held (12 key-downs, then the key-up; read as
+      `ESC[17;29;0;1;40;1_`, up `ESC[17;29;0;0;32;1_`) in the list, the
+      message field, zone B's editor and the diff view: no row of the
+      screen changed, at both sizes (`out-p50a`, `out-p50b`);
+    - no terminal-hosted Claude Code or Codex session was open (the
+      desktop app's and VS Code's left alone); the clipboard unchanged.
+- 2026-10-26: steps 2 to 5 done; step 6 in progress.
+  - Step 2, `input` (`sourcewrite.go`, `source.go`): `CheckSelection`,
+    `CommitSelection`, `WholeRefusal`, `merging`, `holds`, `blobsAt`,
+    `Unexpected`; `Commit`'s failure mapping and its check of the new
+    commit moved, unchanged, into `commitFailed` and `madeOn`, which both
+    commits use. `selection_test.go`: 21 subtests on real git (what is
+    committed, what is left alone, nine refusals with the index file and
+    HEAD byte for byte unchanged, the hook's view, a refusing hook leaving
+    the question's files staged, two Unexpected). The input package's
+    tests pass whole (95 s).
+  - Step 3, `app`: `sourceCtrlClick`, Esc, `stillChanged`,
+    `commitSelected`, `selectionSteps` with `stepCheck`, `stayStaged`
+    (a full stop added when git's words end with none),
+    `clearSelection`; `selection_test.go`: `TestSelectionClicks`,
+    `TestSelectionCommit`, `TestSelectionFailures` over the double,
+    `TestSelectionGit` on real git (both questions, a hook exiting 1).
+    The fake writes gained `CheckSelection` and `CommitSelection`.
+  - Step 4, `render`: the selected row (`sourceRow`'s `sel`), "Commit N
+    files", `AskSelText`, `sourceSelHints` (the hints without a selection
+    unchanged), the key list's Ctrl+click row and Esc's words;
+    `TestSourceRowSelected`; the golden case `source-selection` at the
+    four sizes and 208x59, five new files, no other golden changed. Six
+    existing calls of `sourceRow` and two of `sourceKeys` pass the new
+    argument, "no selection"; what they expect is unchanged.
+  - Step 5: ui-design.md (Source Control's key table, "The mouse", "The
+    selection", "Commit", "A selection's commit"), architecture.md (plan
+    50's table), AGENTS.md (the hard constraint, the MVP scope; 20,598
+    bytes). Ctrl+click is told in prose, not as a row of a key table:
+    `TestKeyOverlayRows` counts those rows (67).
+  - Step 6, the mutants (`scratchpad\plan50\mutate50.mjs`, through
+    `-overlay`; 428 s): 50.11's six caught, and 14 of 15 more. The one
+    missed, the selection kept after its commit, showed D9 untested apart
+    from the status read's pruning: `TestSelectionClearedByCommit` (a
+    file listed again after its commit) added, and the mutant run again:
+    caught, 21 of 21.
+- 2026-10-26: step 6 done. The whole suite (179 s), `-race` on input and
+  app (0 races), the timing step alone (every p95 at most 4.01 ms), the
+  terminal run at both sizes (one commit of exactly the three files, the
+  other three as they were): 13 of 13 PASS
+  ([`doc/plan50-evaluation.md`](doc/plan50-evaluation.md)). Waiting for the
+  owner's review; nothing committed.
+- 2026-10-26: step 7, the owner's change after the evaluation (amendment
+  51), done, and the review's defect fixed.
+  - D4: a plain click on a file's row clears the selection (`sourceClick`);
+    D8's note says "changes" (`stayStaged`); 50.3 and 50.8 changed, 50.14
+    added. `TestSelectionClicks` checks D4 as changed;
+    `TestSelectionWholeIndex` is 50.14 over the double.
+  - The review of the complete diff (the orchestrator, and the verifier
+    agent read-only) found one defect. A file moved on disk, both its rows
+    selected (` D` and `??`), was refused once the question had staged
+    them: git's status, asked for both paths, paired them as one rename, and
+    the check found no entry for the source ("old.txt changed since it was
+    shown"); the same with either side staged before. It failed safe (no
+    commit, both files staged, the note true). Fixed test first: three
+    real-git cases in `input` and one through the application in
+    `TestSelectionGit`, each failing before; `selection()` reads
+    `git status --no-renames` and checks path by path, a rename shown being
+    its file, added, and its source, deleted and not back on disk (two
+    refusal cases more). Two comments the plan had made stale corrected
+    (`sourcewrite.go`'s header, `git.go`'s `runRead`).
+  - D7.3 and criteria 50.4 and 50.6 extended with the fix; ui-design.md,
+    architecture.md and the brief's note on amendment 51 with them.
+  - Checks on the final tree: the whole suite (185 s); `-race` on input
+    (137 s) and app (277 s), 0 races; the mutants 27 of 27 (737 s, six
+    new: the click both ways, the fix four ways); the terminal runs on
+    `acc-p50c.exe`, maximised and at 120x40 (`term\p50call2.ps1`,
+    `out-p50d`): 50.12 again, and 50.14 (two files Ctrl+clicked, a third
+    plain-clicked, the marks gone, Commit: the whole index committed, the
+    unstaged changes and the untracked file as they were), the clipboard
+    unchanged; the timing step alone (on mains, every p95 at most 4.52 ms):
+    14 of 14 PASS
+    ([`doc/plan50-evaluation.md`](doc/plan50-evaluation.md), the first
+    evaluation's block kept as reported). Waiting for the owner's approval;
+    nothing committed.
 
 ## Closed plans
 
