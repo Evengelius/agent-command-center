@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
+╭──────────────────────────────────╮╭──────────────────────────────────────────────────────────────────────────╮╭──────╮
+│ A · ORCHESTRATOR                 ││ EXPLORER                                                               ⌄ ││▎     │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ──────────────────────────────────────────────────────────────────────── ││▎ ≡   │
+│ ──────────────────────────────── ││    mock                                                                ││▎     │
+│ STAGES · inferred from activity  ││      sample                                                         ●  ││      │
+│ ✓ TURN 1                      0s ││         viewer.go                                                    M  ││      │
+│   Use the Agent tool to launch … ││         viewer_test.go                                               D  ││  ⑂   │
+│   Agent · agent general-purpose  ││      tools                                                          D  ││      │
+│                                  ││       claude-api-key-context-refused.jsonl                              ││      │
+│ ✓ TURN 2                      0s ││       claude-models.jsonl                                               ││      │
+│   started by the CLI             ││       claude-quota-windows.jsonl                                        ││      │
+│ ──────────────────────────────── ││       claude-subagent-approval.jsonl                                    ││      │
+│ ✦ TELEMETRY        Enter details ││       claude-thinking-subagent.jsonl                                    ││      │
+│ ▾ SESSION USAGE                  ││       claude-thinking.jsonl                                             ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││       codex-api-key.jsonl                                            U  ││      │
+│   Tokens 159.4k session total    ││       codex-models-next-turn.jsonl                                      ││      │
+│   Est. cost $0.01 API-equiv.     ││       codex-models.jsonl                                                ││      │
+│ ▾ QUOTA WINDOWS                  ││       codex-no-5h-window.jsonl                                          ││      │
+│   Session (5hr)             35%† ││       codex-plan6-limits.jsonl                                       !  ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││       codex-spawn-request.jsonl                                      A  ││      │
+│   Resets in 14h 40m              ││       codex-subagents.jsonl                                             ││      │
+│   Weekly (7 day)            47%† ││                                                                          ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Resets in 1d 20h               ││                                                                          ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                            ✓ COMPLETED │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md   │
+│     00:00   21.5k tok   │  tool: Write   │                     │ found.txt path:…                                    │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ↑↓ move · → open · ← close · Enter view · / quick open · Esc back to the input · F6 zone · F3 Explorer · F1 keys

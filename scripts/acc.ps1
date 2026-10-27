@@ -6,10 +6,11 @@
 #
 # In Windows Terminal the dashboard opens in a tab of its own, in the same
 # window, with the profile "Agent Command Center" (font size 9, the owner's
-# size); the tab closes when the dashboard exits cleanly. The profile is a
-# Terminal fragment, the extension Windows Terminal documents for apps,
-# written below when missing or different; Terminal's own settings.json is
-# never edited. Outside Windows Terminal the dashboard runs in place.
+# size; Cascadia Mono NF when it can, plan 55); the tab closes when the
+# dashboard exits cleanly. The profile is a Terminal fragment, the extension
+# Windows Terminal documents for apps, written below when missing or
+# different; Terminal's own settings.json is never edited. Outside Windows
+# Terminal the dashboard runs in place.
 #
 # No param block: the program's arguments (--provider, --mock...) stay in
 # $args unbound. ASCII only: Windows PowerShell 5.1 reads a BOM-less script
@@ -20,7 +21,39 @@ $here = (Get-Location).ProviderPath
 $profileName = 'Agent Command Center'
 $profileGuid = '{27195de0-7daf-4340-8ef6-2c640982bd39}'
 
+# NerdFontReady says whether the tab can name Cascadia Mono NF, whose icons
+# the Explorer draws (plan 55, design D2): the font registered for the user
+# or the machine, and installed before the Windows Terminal this script runs
+# in started, as Terminal reads the fonts when it starts and warns about a
+# face it cannot find. The dashboard checks the same (input.NerdIcons).
+function NerdFontReady {
+    $installed = $null
+    foreach ($key in 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts', 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts') {
+        if (-not (Test-Path $key)) { continue }
+        foreach ($p in (Get-ItemProperty $key).PSObject.Properties) {
+            if (-not $p.Name.StartsWith('Cascadia Mono NF ')) { continue }
+            $file = [string]$p.Value
+            if (-not [System.IO.Path]::IsPathRooted($file)) { $file = Join-Path "$env:WINDIR\Fonts" $file }
+            if (-not (Test-Path -LiteralPath $file)) { continue }
+            $at = (Get-Item -LiteralPath $file).CreationTime
+            if ($null -eq $installed -or $at -gt $installed) { $installed = $at }
+        }
+    }
+    if ($null -eq $installed) { return $false }
+    # The Windows Terminal among this script's ancestors, each parent older
+    # than its child, so that a reused process id is not taken for one.
+    $child = Get-CimInstance Win32_Process -Filter "ProcessId=$PID"
+    for ($i = 0; $i -lt 16 -and $child; $i++) {
+        $parent = Get-CimInstance Win32_Process -Filter "ProcessId=$($child.ParentProcessId)"
+        if (-not $parent -or $parent.CreationDate -gt $child.CreationDate) { return $false }
+        if ($parent.Name -eq 'WindowsTerminal.exe') { return $installed -lt $parent.CreationDate }
+        $child = $parent
+    }
+    return $false
+}
+
 if ($env:WT_SESSION -and -not $env:ACC_IN_TAB -and $env:WT_PROFILE_ID -ne $profileGuid) {
+    $font = if (NerdFontReady) { '"font": { "face": "Cascadia Mono NF", "size": 9 },' } else { '"font": { "size": 9 },' }
     $fragmentDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\AgentCommandCenter'
     $fragmentFile = Join-Path $fragmentDir 'agent-command-center.json'
     # Its commandline is one no other command starts with: Terminal gives a
@@ -34,7 +67,7 @@ if ($env:WT_SESSION -and -not $env:ACC_IN_TAB -and $env:WT_PROFILE_ID -ne $profi
       "guid": "$profileGuid",
       "name": "$profileName",
       "commandline": "powershell.exe -NoLogo -NoExit -Command \"Write-Host 'Agent Command Center: type acc in a project folder to start the dashboard.'\"",
-      "font": { "size": 9 },
+      $font
       "closeOnExit": "graceful",
       "tabTitle": "$profileName"
     }

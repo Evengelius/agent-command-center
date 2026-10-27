@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
+ A ✓ Turn 2                                               (inferred)   F6: tree
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ EXPLORER                                                                   ⌄ │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│    mock                                                                    │
+│      sample                                                             ●  │
+│         viewer.go                                                        M  │
+│         viewer_test.go                                                   D  │
+│      tools                                                              D  │
+│       claude-api-key-context-refused.jsonl                                  │
+│       claude-models.jsonl                                                   │
+│       claude-quota-windows.jsonl                                            │
+│       claude-subagent-approval.jsonl                                        │
+│       claude-thinking-subagent.jsonl                                        │
+│       claude-thinking.jsonl                                                 │
+│       codex-api-key.jsonl                                                U  │
+│       codex-models-next-turn.jsonl                                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ ↑↓ · → open · ← close · Enter view · / find · Esc back · F3 Explorer

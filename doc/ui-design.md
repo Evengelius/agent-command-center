@@ -1940,6 +1940,58 @@ icons, U+1F5C0 and U+1F5CE, are one cell by the width table; Cascadia Mono
 lacks them and Windows Terminal draws them from Segoe UI Symbol, wider than
 a cell, so two spaces follow each, as after the "+" menu's (plan 30).
 
+**The icons in the acc tab (plan 55, brief amendment 56).** Where the
+dashboard runs in Windows Terminal's acc tab and Cascadia Mono NF was
+installed before that Windows Terminal started (`input.NerdIcons`, plan
+55's D3), the tree draws Nerd Font v3 glyphs from that face instead: the
+codicons' `chevron_right` and `chevron_down` (U+EAB6, U+EAB4) in the same
+grey, and before each name an icon in its kind's colour
+(`render/expicons.go`), one cell wide with the same two spaces after it, so
+no row, indent, mark or width moves. A folder's icon comes from its name,
+else a closed or open folder; a file's from its whole name, then its kind
+of name (`LICENSE.*`, `.env.*`, `Dockerfile.*`), then its extension, else
+Seti's default file; names and extensions compared in lower case. An
+ignored row's icon takes its name's grey, a deleted row's its red; on the
+cursor row each keeps its colour, on the row's ground. Every colour has the
+palette's 16-colour fallback. Anywhere else (another terminal or profile,
+no font, a terminal started before the font) the glyphs above, unchanged.
+The panel's header keeps its "⌄". Golden frames `explorer-nerd` at 79x24,
+80x24, 120x40 and 200x60: the `explorer` frames with only the chevrons and
+the icons changed.
+
+| Icon (Nerd Font name) | Code point | Colour | For |
+| - | - | - | - |
+| `custom-folder`, `custom-folder_open` | U+E5FF, U+E5FE | `#6CA1DB` | any other folder, closed and open |
+| `custom-folder_git` | U+E5FB | `#F14E32` | `.git` |
+| `custom-folder_github` | U+E5FD | `#C9D1D9` | `.github` |
+| `custom-folder_config` | U+E5FC | `#23A9F2`; `#6CA1DB` | `.vscode`; `.idea`, `.config`, `.codex` |
+| `custom-folder_npm` | U+E5FA | `#CB3837` | `node_modules` |
+| `oct-sparkle_fill` | U+F51B | `#D97757` | `.claude` (the codicons' sparkle is not in the font) |
+| `cod-terminal` | U+EA85 | `#89E051` | `cmd`, `scripts`, `bin` |
+| `cod-book` | U+EAA4 | `#4DB6AC` | `doc`, `docs` |
+| `cod-code` | U+EAC4 | `#B392F0` | `internal`, `src`, `lib`, `pkg` |
+| `cod-beaker` | U+EA79 | `#E5C07B` | `test`, `tests`, `testdata`, `__tests__` |
+| `cod-bookmark` | U+EAA5 | `#F78C6C` | `references` |
+| `cod-package` | U+EB29 | `#D19A66` | `third_party`, `vendor` |
+| `seti-go` | U+E627 | `#00ADD8` | `.go`, `go.mod`, `go.sum`, `go.work` |
+| `seti-markdown` | U+E609 | `#519ABA` | `.md`, `.markdown` |
+| `seti-powershell` | U+E683 | `#5391FE` | `.ps1`, `.psm1`, `.psd1` |
+| `cod-terminal_cmd`, `seti-shell` | U+EBC4, U+E691 | `#89E051` | `.cmd`, `.bat`; `.sh`, `.bash`, `.zsh` |
+| `oct-file_binary` | U+F471 | `#A3B1C9` | `.exe`, `.dll`, `.so` |
+| `seti-json` | U+E60B | `#CBCB41` | `.json`, `.jsonl`, `.jsonc` |
+| `seti-yml` | U+E6A8 | `#A074C4` | `.yaml`, `.yml` |
+| `seti-config` | U+E615 | `#6D8086` | `.toml`, `.ini`, `.cfg`, `.conf`, `.properties`, `.env`, `.editorconfig` |
+| `seti-xml`, `seti-html`, `seti-css` | U+E619, U+E60E, U+E614 | `#E37933`, `#E34C26`, `#519ABA` | `.xml`; `.html`, `.htm`; `.css`, `.scss` |
+| `seti-javascript`, `seti-typescript` | U+E60C, U+E628 | `#CBCB41`, `#5391FE` | `.js`, `.mjs`, `.cjs`; `.ts`, `.tsx` |
+| `seti-java`, `seti-maven`, `seti-gradle` | U+E66D, U+E674, U+E660 | `#E37933`, `#C71A36`, `#4DB6AC` | `.java`; `pom.xml`; `.gradle`, `gradlew` |
+| `seti-python` | U+E606 | `#4B8BBE` | `.py` |
+| `seti-db`, `seti-csv` | U+E64D, U+E64A | `#ECA517`, `#89E051` | `.sql`, `.db`, `.sqlite`; `.csv`, `.tsv` |
+| `seti-docker`, `seti-makefile` | U+E650, U+E673 | `#2496ED`, `#E37933` | `Dockerfile`, `.dockerignore`, compose files; `Makefile` |
+| `seti-image`, `seti-pdf`, `seti-zip` | U+E60D, U+E67D, U+E6AA | `#A074C4`, `#E34C26`, `#ECA517` | images; `.pdf`; archives |
+| `seti-lock`, `seti-license` | U+E672, U+E60A | `#BBA77A`, `#D0BF41` | `.lock`, `package-lock.json`; `LICENSE`, `LICENCE`, `COPYING` |
+| `seti-git`, `seti-npm` | U+E65D, U+E616 | `#F14E32`, `#CB3837` | `.gitignore`, `.gitattributes`, `.gitmodules`, `.gitkeep`; `package.json` |
+| `seti-default` | U+E64E | `#A3B1C9` | any other file, logs and text included |
+
 **Reading.** Each folder is read when it is opened, in a command, inside
 the project only: its folders, then its files, each sorted without case;
 no `.git`, no credential file (by name, as in the quick open), nothing

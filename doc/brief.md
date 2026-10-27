@@ -7630,3 +7630,44 @@ I see another problem specifically for the "recent projets" part : we cannot scr
 Taken as plan 54 (plan.md, Plan 54): the wheel over the PROJECTS list
 moves its selection as ↑ and ↓ do, as the dashboard's Explorer and Source
 Control lists move their cursor, one project a notch.
+
+## Amendment 56, 2026-10-27: Nerd Font icons in the Explorer, for plan 55
+
+After plan 54 was approved and pushed, the owner sent a screenshot of the
+docked Explorer (this repository's tree: chevrons, one folder glyph and
+one file glyph) and wrote, word for word:
+
+````text
+I would like to enhance my icons in Explorer, because I'm pretty convinced we can do way better than that
+
+What do you think?
+
+Tell me first
+````
+
+Told: the icons are two generic Unicode symbols that Cascadia Mono does
+not have, drawn by a fallback font, the same icon for every file; three
+ways (Nerd Font icons from Microsoft's Cascadia Mono NF, pixel-art Sixel
+images, emoji or other symbols); the first recommended. The owner chose,
+word for word:
+
+````text
+Go with Nerd Font icons (Cascadia Mono NF) with per-type colours and a fallback: propose the plan, including the font install.
+````
+
+Proposed as plan 55 (plan.md, Plan 55). The owner wrote, word for word:
+
+````text
+Plan 55 looks good, and I agree with the proposed Cascadia Mono NF approach.
+Before implementation, please incorporate three final requirements:
+
+1. Verify that switching to Cascadia Mono NF does not introduce any noticeable visual regression in the already-approved Plan 51 home screen.
+2. Ensure the fallback behavior is reliable when ACC runs in a terminal without the required font.
+3. Keep the scope strictly limited to Explorer icons and the necessary font configuration. No unrelated UI changes.
+
+Preserve existing functionality and performance standards.
+Once these points are reflected in Plan 55, proceed sequentially with implementation, including the font installation as described.
+````
+
+Taken into plan 55 (plan.md, Plan 55: requirements R1 to R3, D2, D3 and
+D5 sharpened, criteria 55.2, 55.4 and 55.6 extended).

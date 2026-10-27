@@ -116,6 +116,33 @@ var (
 	// project root's, a file's, light lavender greys, not bold.
 	cExpDirName  = colour{"#A0ABD8", "7"}
 	cExpFileName = colour{"#9EAAD5", "7"}
+	// The Explorer's Nerd Font icons' colours (plan 55, design D4): each
+	// kind's usual one, as VS Code's icon themes give it.
+	cIconGo         = colour{"#00ADD8", "14"}
+	cIconBlue       = colour{"#519ABA", "12"}
+	cIconPowerShell = colour{"#5391FE", "12"}
+	cIconGreen      = colour{"#89E051", "10"}
+	cIconYellow     = colour{"#CBCB41", "11"}
+	cIconPurple     = colour{"#A074C4", "13"}
+	cIconConfig     = colour{"#6D8086", "8"}
+	cIconOrange     = colour{"#E37933", "3"}
+	cIconRed        = colour{"#E34C26", "9"}
+	cIconMaven      = colour{"#C71A36", "1"}
+	cIconTeal       = colour{"#4DB6AC", "6"}
+	cIconPython     = colour{"#4B8BBE", "12"}
+	cIconAmber      = colour{"#ECA517", "3"}
+	cIconDocker     = colour{"#2496ED", "12"}
+	cIconLock       = colour{"#BBA77A", "3"}
+	cIconLicense    = colour{"#D0BF41", "11"}
+	cIconGit        = colour{"#F14E32", "9"}
+	cIconNpm        = colour{"#CB3837", "1"}
+	cIconGitHub     = colour{"#C9D1D9", "7"}
+	cIconVSCode     = colour{"#23A9F2", "12"}
+	cIconClaude     = colour{"#D97757", "3"}
+	cIconCode       = colour{"#B392F0", "13"}
+	cIconTest       = colour{"#E5C07B", "11"}
+	cIconBookmark   = colour{"#F78C6C", "9"}
+	cIconPackage    = colour{"#D19A66", "3"}
 	// Source Control's hovered row (plan 44, design D4), subtler than the
 	// cursor's purple band.
 	cSourceHover = colour{"#221D2E", ""}
@@ -451,6 +478,7 @@ func paint() {
 	paintStyle(stExpFile, fg(cExpFile))
 	paintStyle(stExpRowFolder, stExpFolder.Background(cTreeRow.get()))
 	paintStyle(stExpRowFile, stExpFile.Background(cTreeRow.get()))
+	paintExpIcons() // the Nerd Font icons' (plan 55)
 	paintStyle(stExpDirName, fg(cExpDirName))
 	paintStyle(stExpFileName, fg(cExpFileName))
 	paintStyle(stExpRowDirName, stExpDirName.Background(cTreeRow.get()))

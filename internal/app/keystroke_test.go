@@ -139,68 +139,71 @@ func motionTime(h *harness, msg tea.Msg) time.Duration {
 
 // TestMotionToFrame is plan 43's criterion 43.5 timing (design D4): with
 // Sixel, as in Windows Terminal, at 120x40 and the acc tab's 208x59, the
-// Explorer's panel hidden and shown, the pointer moving from tile to tile
-// over the sidebar, each report changing the hover timed from the filter
-// through Update to its frame; then idle motion, wandering within a tile
-// and over the zone left of the sidebar, every report dropped by the
-// filter before Update and View, counted.
+// Explorer's panel hidden and shown, without and with the Nerd Font icons
+// (plan 55, criterion 55.6), the pointer moving from tile to tile over the
+// sidebar, each report changing the hover timed from the filter through
+// Update to its frame; then idle motion, wandering within a tile and over
+// the zone left of the sidebar, every report dropped by the filter before
+// Update and View, counted.
 func TestMotionToFrame(t *testing.T) {
-	h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")}})
-	h.settle()
-	h.send(PrimaryDeviceAttributesEvent{61, 4})
-	for _, size := range []tea.WindowSizeMsg{{Width: 120, Height: 40}, {Width: 208, Height: 59}} {
-		h.send(size)
-		for _, shown := range []bool{false, true} {
-			if h.m.ui.Explorer.Open != shown {
-				h.send(key(tea.KeyF3, 0))
-			}
-			h.m.View()
-			sc := h.m.screen
-			ex, ey, sx, sy := sc.Tiles[0].X, sc.Tiles[0].Y, sc.Tiles[1].X, sc.Tiles[1].Y
-			if !sc.Tiles[0].Shown || !sc.Tiles[1].Shown || h.m.ui.Explorer.Open != shown {
-				t.Fatalf("%dx%d: the tiles %+v, the panel shown %v", size.Width, size.Height, sc.Tiles, h.m.ui.Explorer.Open)
-			}
-			bx := sc.Side.X - 3 // zone B's or the panel's cell, left of the sidebar
-			path := []tea.MouseMotionMsg{{X: ex + 1, Y: ey + 1}, {X: bx, Y: ey + 1}, {X: sx + 2, Y: sy + 1}, {X: bx, Y: sy + 1}}
-			hover := []int{render.SideExplorer, 0, render.SideSource, 0}
-			var ds []time.Duration
-			dropped := h.m.motionDropped
-			for i := 0; i < warmUp+400; i++ {
-				d := motionTime(h, path[i%len(path)])
-				if h.m.ui.SideHover != hover[i%len(hover)] {
-					t.Fatalf("%dx%d: report %d left the hover %d", size.Width, size.Height, i, h.m.ui.SideHover)
+	for _, nerd := range []bool{false, true} {
+		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")}, NerdIcons: nerd})
+		h.settle()
+		h.send(PrimaryDeviceAttributesEvent{61, 4})
+		for _, size := range []tea.WindowSizeMsg{{Width: 120, Height: 40}, {Width: 208, Height: 59}} {
+			h.send(size)
+			for _, shown := range []bool{false, true} {
+				if h.m.ui.Explorer.Open != shown {
+					h.send(key(tea.KeyF3, 0))
 				}
-				if i >= warmUp {
-					ds = append(ds, d)
+				h.m.View()
+				sc := h.m.screen
+				ex, ey, sx, sy := sc.Tiles[0].X, sc.Tiles[0].Y, sc.Tiles[1].X, sc.Tiles[1].Y
+				if !sc.Tiles[0].Shown || !sc.Tiles[1].Shown || h.m.ui.Explorer.Open != shown {
+					t.Fatalf("%dx%d, icons %v: the tiles %+v, the panel shown %v", size.Width, size.Height, nerd, sc.Tiles, h.m.ui.Explorer.Open)
 				}
-			}
-			if h.m.motionDropped != dropped {
-				t.Fatalf("%dx%d: %d hover changes dropped", size.Width, size.Height, h.m.motionDropped-dropped)
-			}
-			p50, p95, worst := percentile(ds, 0.50), percentile(ds, 0.95), percentile(ds, 1)
-			t.Logf("sidebar hover, the panel shown %v, at %dx%d, %d reports after %d warm-up: p50 %v, p95 %v, max %v (target p95 ≤ %v)",
-				shown, size.Width, size.Height, len(ds), warmUp, p50, p95, worst, keystrokeTarget)
-			if p95 > keystrokeTarget {
-				overTarget(t, "hover at %dx%d, the panel shown %v: p95 %v over the %v target", size.Width, size.Height, shown, p95, keystrokeTarget)
-			}
+				bx := sc.Side.X - 3 // zone B's or the panel's cell, left of the sidebar
+				path := []tea.MouseMotionMsg{{X: ex + 1, Y: ey + 1}, {X: bx, Y: ey + 1}, {X: sx + 2, Y: sy + 1}, {X: bx, Y: sy + 1}}
+				hover := []int{render.SideExplorer, 0, render.SideSource, 0}
+				var ds []time.Duration
+				dropped := h.m.motionDropped
+				for i := 0; i < warmUp+400; i++ {
+					d := motionTime(h, path[i%len(path)])
+					if h.m.ui.SideHover != hover[i%len(hover)] {
+						t.Fatalf("%dx%d, icons %v: report %d left the hover %d", size.Width, size.Height, nerd, i, h.m.ui.SideHover)
+					}
+					if i >= warmUp {
+						ds = append(ds, d)
+					}
+				}
+				if h.m.motionDropped != dropped {
+					t.Fatalf("%dx%d, icons %v: %d hover changes dropped", size.Width, size.Height, nerd, h.m.motionDropped-dropped)
+				}
+				p50, p95, worst := percentile(ds, 0.50), percentile(ds, 0.95), percentile(ds, 1)
+				t.Logf("sidebar hover, the panel shown %v, icons %v, at %dx%d, %d reports after %d warm-up: p50 %v, p95 %v, max %v (target p95 ≤ %v)",
+					shown, nerd, size.Width, size.Height, len(ds), warmUp, p50, p95, worst, keystrokeTarget)
+				if p95 > keystrokeTarget {
+					overTarget(t, "hover at %dx%d, the panel shown %v, icons %v: p95 %v over the %v target", size.Width, size.Height, shown, nerd, p95, keystrokeTarget)
+				}
 
-			// Idle motion: 400 reports within the Explorer's tile, 400 over the
-			// zone left of the sidebar; the filter drops each one.
-			var idle []time.Duration
-			motionTime(h, tea.MouseMotionMsg{X: ex, Y: ey})
-			dropped = h.m.motionDropped
-			for i := range 400 {
-				idle = append(idle, motionTime(h, tea.MouseMotionMsg{X: ex + i%render.SideTileCells, Y: ey + i/render.SideTileCells%render.SideTileRows}))
-			}
-			motionTime(h, tea.MouseMotionMsg{X: bx, Y: ey}) // off the tile: a change, not dropped
-			for i := range 400 {
-				idle = append(idle, motionTime(h, tea.MouseMotionMsg{X: bx - i%20, Y: ey + i/20%6}))
-			}
-			got := h.m.motionDropped - dropped
-			t.Logf("idle motion, the panel shown %v, at %dx%d: %d of %d reports dropped by the filter before Update and View; p50 %v, p95 %v, max %v",
-				shown, size.Width, size.Height, got, len(idle), percentile(idle, 0.50), percentile(idle, 0.95), percentile(idle, 1))
-			if got != len(idle) {
-				t.Errorf("idle motion at %dx%d, the panel shown %v: %d of %d reports dropped", size.Width, size.Height, shown, got, len(idle))
+				// Idle motion: 400 reports within the Explorer's tile, 400 over the
+				// zone left of the sidebar; the filter drops each one.
+				var idle []time.Duration
+				motionTime(h, tea.MouseMotionMsg{X: ex, Y: ey})
+				dropped = h.m.motionDropped
+				for i := range 400 {
+					idle = append(idle, motionTime(h, tea.MouseMotionMsg{X: ex + i%render.SideTileCells, Y: ey + i/render.SideTileCells%render.SideTileRows}))
+				}
+				motionTime(h, tea.MouseMotionMsg{X: bx, Y: ey}) // off the tile: a change, not dropped
+				for i := range 400 {
+					idle = append(idle, motionTime(h, tea.MouseMotionMsg{X: bx - i%20, Y: ey + i/20%6}))
+				}
+				got := h.m.motionDropped - dropped
+				t.Logf("idle motion, the panel shown %v, icons %v, at %dx%d: %d of %d reports dropped by the filter before Update and View; p50 %v, p95 %v, max %v",
+					shown, nerd, size.Width, size.Height, got, len(idle), percentile(idle, 0.50), percentile(idle, 0.95), percentile(idle, 1))
+				if got != len(idle) {
+					t.Errorf("idle motion at %dx%d, the panel shown %v, icons %v: %d of %d reports dropped", size.Width, size.Height, shown, nerd, got, len(idle))
+				}
 			}
 		}
 	}

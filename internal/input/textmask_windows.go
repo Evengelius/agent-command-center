@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 	"unicode/utf16"
 	"unsafe"
 
@@ -199,12 +200,21 @@ var terminalFont = sync.OnceFunc(func() {
 })
 
 // terminalDir is the folder of the WindowsTerminal.exe among this process's
-// ancestors, "" when there is none: each parent checked to have started
-// before its child, so that a reused process id is not taken for one.
+// ancestors, "" when there is none.
 func terminalDir() string {
+	dir, _ := hostTerminal()
+	return dir
+}
+
+// hostTerminal is the folder of the WindowsTerminal.exe among this
+// process's ancestors and when it started, "" and the zero time when there
+// is none: each parent checked to have started before its child, so that a
+// reused process id is not taken for one. Plan 55 reads its start (design
+// D3): it read the fonts installed then.
+func hostTerminal() (string, time.Time) {
 	snap, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
-		return ""
+		return "", time.Time{}
 	}
 	defer windows.CloseHandle(snap)
 	type proc struct {
@@ -240,18 +250,18 @@ func terminalDir() string {
 	for range 16 {
 		p, found := procs[pid]
 		if !found || !ok {
-			return ""
+			return "", time.Time{}
 		}
 		at, path, alive := started(p.parent)
 		if !alive || at.Nanoseconds() > child.Nanoseconds() {
-			return "" // the parent is gone, or a later process took its id
+			return "", time.Time{} // the parent is gone, or a later process took its id
 		}
 		if strings.EqualFold(procs[p.parent].exe, "WindowsTerminal.exe") && path != "" {
-			return filepath.Dir(path)
+			return filepath.Dir(path), time.Unix(0, at.Nanoseconds())
 		}
 		pid, child = p.parent, at
 	}
-	return ""
+	return "", time.Time{}
 }
 
 // textFont is the first of textFaces GDI has, em pixels its character

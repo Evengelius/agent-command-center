@@ -344,11 +344,11 @@ func explorerPanel(ui UI, w, h int) []line {
 	body := []line{
 		spread(decoLine("EXPLORER", stTitle), line{panelDeco("⌄", stTitle, ItemPanelHide)}, inner),
 		teleRule(inner),
-		rootRow(v.Name, inner),
+		rootRow(v.Name, inner, ui.NerdIcons),
 	}
 	top := ListTop(v.Top, max(cur, 0), room, len(rows))
 	for i := top; i < top+room && i < len(rows); i++ {
-		r := explorerRow(v.Git, rows[i], i == cur, inner)
+		r := explorerRow(v.Git, rows[i], i == cur, inner, ui.NerdIcons)
 		for j := range r {
 			r[j].ref = ref{panel: ExplorerPanel, kind: refDeco, item: i + 1}
 		}
@@ -365,9 +365,12 @@ func explorerPanel(ui UI, w, h int) []line {
 
 // rootRow is the project's own row over the tree, w cells: "⌄", a folder's
 // icon and the project folder's name, as an open folder's, its name in a
-// folder's colour.
-func rootRow(name string, w int) line {
+// folder's colour; with nerd, Nerd Font's chevron and open folder (plan 55).
+func rootRow(name string, w int, nerd bool) line {
 	l := line{deco(expOpen, stGrey), deco(expFolder, stExpFolder), deco(expGap, stNone)}
+	if nerd {
+		l = line{deco(nfOpen, stGrey), deco(nfFolderOpen.glyph, nfFolderOpen.st), deco(expGap, stNone)}
+	}
 	return append(l, deco(elide(name, max(w-l.width(), 1)), stExpDirName))
 }
 
@@ -381,8 +384,10 @@ func panelDeco(text string, st *lipgloss.Style, item int) span {
 // folder's icon in blue or a file's in grey, the name in a light lavender
 // grey, a folder's or a file's, git's marker on the right; the name dimmed
 // when git ignores it, red when deleted, on the cursor row's background
-// when cur (plan 17; plan 43, design D6).
-func explorerRow(g GitView, r ExplorerRow, cur bool, w int) line {
+// when cur (plan 17; plan 43, design D6). With nerd, Nerd Font's chevrons
+// and the entry's icon in its colour, greyed or red with an ignored or
+// deleted name (plan 55, design D4).
+func explorerRow(g GitView, r ExplorerRow, cur bool, w int, nerd bool) line {
 	indent := strings.Repeat("  ", r.Depth+1)
 	if r.Path == "" {
 		return line{deco(indent+"  ", stNone), deco(elide(r.Name, max(w-len(indent)-2, 1)), either(r.Failed, stAttention, stGrey))}
@@ -403,6 +408,19 @@ func explorerRow(g GitView, r ExplorerRow, cur bool, w int) line {
 		head, icon, iconSt = expClosed, expFolder, either(cur, stExpRowFolder, stExpFolder)
 		if r.Open {
 			head = expOpen
+		}
+	}
+	if nerd {
+		i := expIconFor(r.Name, r.Dir, r.Open)
+		icon, iconSt = i.glyph, either(cur, i.row, i.st)
+		if r.Deleted || ignored {
+			iconSt = nameSt // the name's red or grey
+		}
+		if r.Dir {
+			head = nfClosed
+			if r.Open {
+				head = nfOpen
+			}
 		}
 	}
 	var right line

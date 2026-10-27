@@ -401,11 +401,11 @@ func TestExplorerNames(t *testing.T) {
 		{ExplorerRow{Path: "tmp.log", Name: "tmp.log"}, false, stGrey},
 		{ExplorerRow{Path: "tmp.log", Name: "tmp.log"}, true, stExpRowGrey},
 	} {
-		if sp, _ := spanOf(explorerRow(g, c.row, c.cur, 30), c.row.Name); sp.st != c.st {
+		if sp, _ := spanOf(explorerRow(g, c.row, c.cur, 30, false), c.row.Name); sp.st != c.st {
 			t.Errorf("%q, cursor %v: the name's style is not the one wanted", c.row.Name, c.cur)
 		}
 	}
-	if sp, _ := spanOf(rootRow("proj", 30), "proj"); sp.st != stExpDirName {
+	if sp, _ := spanOf(rootRow("proj", 30, false), "proj"); sp.st != stExpDirName {
 		t.Error("the root row's name is not in a folder's colour")
 	}
 }

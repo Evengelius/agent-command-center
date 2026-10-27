@@ -51,6 +51,7 @@ func main() {
 		Projects:          &input.Projects{},
 		PickImages:        input.PickImages,
 		PickFolder:        input.PickFolder,
+		NerdIcons:         input.NerdIcons(os.Getenv),
 		Git:               input.GitCLI{},
 		Sessions:          &input.Sessions{},
 	})

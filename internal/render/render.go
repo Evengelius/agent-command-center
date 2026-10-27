@@ -42,6 +42,9 @@ type UI struct {
 	ProjectsProblem string        // the list cannot be read or written
 	FolderProblem   string        // why the folder dialog failed (plan 52, design D3)
 	Worktrees       WorktreesView // the Worktrees view, over either screen while Open (plan 16)
+	// NerdIcons is true where the Explorer draws Cascadia Mono NF's icons,
+	// false where its own glyphs (plan 55, design D3).
+	NerdIcons bool
 	// Version and System are the header's application version and operating
 	// system (plan 51, design D5): "0.1.0", "Windows".
 	Version, System string

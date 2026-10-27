@@ -115,7 +115,7 @@ func TestExplorerMarks(t *testing.T) {
 	}
 	g2 := NewGitView(map[string]byte{"build/a.o": 'M'}, map[string]bool{"build/": true})
 	for _, cur := range []bool{false, true} {
-		l := explorerRow(g2, ExplorerRow{Path: "build/a.o", Name: "a.o", Depth: 1}, cur, 30)
+		l := explorerRow(g2, ExplorerRow{Path: "build/a.o", Name: "a.o", Depth: 1}, cur, 30, false)
 		if l.width() != 30 || strings.Contains(plainOf(l), "M") {
 			t.Errorf("an ignored row, cursor %v: %q", cur, plainOf(l))
 		}
@@ -125,7 +125,7 @@ func TestExplorerMarks(t *testing.T) {
 	}
 	// Plan 43, design D6: one step under the root row, "⌄" before an open
 	// folder, its icon, two spaces, the name; the marker at the right.
-	l := explorerRow(g, ExplorerRow{Path: "src", Name: "src", Dir: true, Open: true}, false, 20)
+	l := explorerRow(g, ExplorerRow{Path: "src", Name: "src", Dir: true, Open: true}, false, 20, false)
 	if got := plainOf(l); got != "  ⌄ 🗀  src        ● " {
 		t.Errorf("an open dirty folder: %q", got)
 	}
@@ -174,7 +174,7 @@ func TestExplorerDeleted(t *testing.T) {
 		}
 	}
 	for _, cur := range []bool{false, true} {
-		l := explorerRow(g, rows[15], cur, 20)
+		l := explorerRow(g, rows[15], cur, 20, false)
 		if got := plainOf(l); got != "    🗎  main.go    D " {
 			t.Errorf("a deleted file, cursor %v: %q", cur, got)
 		}

@@ -658,6 +658,31 @@ field's text, its failure a note.
 | 5. Input | the common item dialog for folders (IFileOpenDialog with FOS_PICKFOLDERS, through COM by its method table, x/sys's LazyDLL), owned by the window in front, on its own locked OS thread with COM, opening at a start folder (`PickFolder`); none outside Windows; `realPath` and `dosPath` moved out of the browser's files | `internal/input/folder_windows.go`, `folder_other.go`, `realpath_windows.go`, `realpath_other.go` |
 | The application | the button's click and Ctrl+O open it in a command, one at a time, none while validating, at the field's directory, else its nearest existing parent, else the starting folder (`openFolder`, `folderStart`); the folder chosen in the field with the focus, a failure kept until the next dialog or Ctrl+N (`folderPicked`, `resetForm`); `Options.PickFolder`, `input.PickFolder` in the real run | `internal/app/folder.go`, `home.go`, `keys.go`, `app.go`, `cmd/agent-command-center/main.go` |
 
+## The Explorer's icons
+
+Plan 55 (brief amendment 56; ui-design.md, Explorer). In the acc tab, with
+Cascadia Mono NF installed for the owner (`%LOCALAPPDATA%\Microsoft\Windows\Fonts`,
+`HKCU\...\Fonts`), the Explorer's rows draw Nerd Font icons and chevrons;
+anywhere else, today's glyphs. Whether the terminal has the font is decided
+twice, by the same rule: by the launcher, which names the face in the acc
+tab's fragment before the tab opens, and by the dashboard, which draws the
+icons. The rule: the acc profile (`WT_PROFILE_ID`), the font registered for
+the user or the machine, and its files made before the Windows Terminal
+among the process's ancestors started, as Terminal reads fonts when it
+starts. The files' creation time stands for the install's, so a font's
+files and its registration go in together, as Windows' installer puts them;
+a registration made from a shell of the Claude desktop app stays in that
+app's private registry (MSIX), where Terminal never reads it (plan 55,
+found at step 5). No state changes: the flag is read once at start and
+rendered.
+
+| Part | What it does | Where |
+| - | - | - |
+| 4. Rendering | the icons by name, kind of name and extension, their colours with 16-colour fallbacks painted with the palette (`expIconFor`, `expIcons`, `paintExpIcons`); the rows' chevrons and icons when `UI.NerdIcons`, an ignored or deleted row's icon in its name's style, widths unchanged (`explorerRow`, `rootRow`) | `internal/render/expicons.go`, `explorer.go`, `palette.go`, `render.go` |
+| 5. Input | the rule (`nerdIconsUsable`); the font's registry values and its files' creation time (`nerdFontInstalled`), the hosting Windows Terminal and its start (`hostTerminal`, the walk `terminalDir` uses since plan 51); false outside Windows (`NerdIcons`) | `internal/input/nerdfont.go`, `nerdfont_windows.go`, `nerdfont_other.go`, `textmask_windows.go` |
+| The application | `Options.NerdIcons` into `UI.NerdIcons`; `input.NerdIcons(os.Getenv)` in the real run | `internal/app/app.go`, `cmd/agent-command-center/main.go` |
+| The launcher | the same rule in PowerShell (`NerdFontReady`), the fragment's `"face": "Cascadia Mono NF"` when it holds, none otherwise | `scripts/acc.ps1` |
+
 ## Build order
 
 Input to plan 3's roadmap, from AM4's priorities (P1 to P6) and AGENTS.md

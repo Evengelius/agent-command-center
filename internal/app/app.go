@@ -120,6 +120,10 @@ type Options struct {
 	// folder chosen, "" when cancelled (plan 52); nil has no dialog: the
 	// folder button and Ctrl+O say so on the startup screen.
 	PickFolder func(start string) (string, error)
+	// NerdIcons is true where the Explorer can draw Cascadia Mono NF's icons,
+	// input.NerdIcons in the real run (plan 55, design D3); false keeps the
+	// panel's own glyphs.
+	NerdIcons bool
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -338,7 +342,7 @@ func New(opt Options) *Model {
 	m := &Model{opt: opt, s: state.New(), detected: map[string]provider.Detection{}}
 	m.env = input.PathEnv{Windows: filepath.Separator == '\\', Home: opt.Home, Cwd: opt.Cwd}
 	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache(), Memo: render.NewMemo(),
-		KeysProblem: opt.KeysProblem, CodexProxy: opt.CodexProxy, CodexProxyProblem: opt.CodexProxyProblem}
+		KeysProblem: opt.KeysProblem, CodexProxy: opt.CodexProxy, CodexProxyProblem: opt.CodexProxyProblem, NerdIcons: opt.NerdIcons}
 	m.ui.SendKeys, m.ui.NewlineKeys = opt.Keys.Display()
 	m.ui.Version, m.ui.System = Version, systemName(runtime.GOOS) // the home screen's header (plan 51, design D5)
 	m.path.SetText(m.startProject())

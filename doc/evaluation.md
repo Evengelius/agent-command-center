@@ -136,12 +136,13 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   expanded list, each key timed to its frame at 120x40 and 208x59: p95
   within 16 ms (`keystrokeTarget`).
 - `TestMotionToFrame` (plan 43, criterion 43.5): with Sixel, at 120x40
-  and 208x59, the Explorer's panel hidden and shown, the pointer moving
-  from tile to tile over the sidebar, each report that changes the hover
-  timed from the program's filter through `Update` to its frame: p95
-  within 16 ms (`keystrokeTarget`); then idle motion, within a tile and
-  left of the sidebar, every report dropped by the filter before `Update`
-  and `View`, counted, or the test fails.
+  and 208x59, the Explorer's panel hidden and shown, without and with the
+  Nerd Font icons (plan 55), the pointer moving from tile to tile over the
+  sidebar, each report that changes the hover timed from the program's
+  filter through `Update` to its frame: p95 within 16 ms
+  (`keystrokeTarget`); then idle motion, within a tile and left of the
+  sidebar, every report dropped by the filter before `Update` and `View`,
+  counted, or the test fails.
 - `TestDiffToFrame` (plan 44, criterion 44.13): a 20,000-line file with one
   line in ten changed (2,000 hunks) open in the diff view at 120x40 and
   208x59, unified and widened side by side; ↓ ↑ PgDn PgUp, n N and the wheel,
