@@ -7599,3 +7599,22 @@ chose "Replace it everywhere": the folder button and Ctrl+O ("Open
 Project") both open the Windows dialog, and the browser is removed with
 its code, tests, golden frames and documents (it stays in git's history).
 Taken as plan 52 (plan.md, Plan 52).
+
+## Amendment 54, 2026-10-27: a project chosen in the list fills the field, for plan 53
+
+After plan 52 was approved and pushed, the owner asked, word for word:
+
+````text
+How do selecting recent projects work? Is it already implemented or not ? Tell me
+````
+
+Answered: implemented since plan 15, redrawn by plan 51; the list's
+selection is used only at Start, and choosing a row leaves the Project
+directory field's text as it was. Asked whether choosing a project should
+also fill the field, the owner chose, word for word:
+
+````text
+Make choosing a project in the list also put its path into the Project directory field, as a new plan.
+````
+
+Taken as plan 53 (plan.md, Plan 53).

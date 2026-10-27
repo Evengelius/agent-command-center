@@ -230,8 +230,9 @@ func homeCell(t *testing.T, h *harness, item int) (int, int) {
 
 // TestHomeMouse is plan 51's design D11, in picture mode and in grid mode:
 // the home screen takes the mouse, F12 gives it back; an option chooses its
-// agent CLI, the field takes the focus, a project's row is selected, its
-// star toggles the favourite, the folder button opens the folder dialog
+// agent CLI, the field takes the focus, a project's row is selected and
+// its path put in the field (plan 53), its star toggles the favourite and
+// puts it there too, the folder button opens the folder dialog
 // (plan 52, criterion 52.1), START SESSION starts as Enter does; a right
 // click does nothing.
 func TestHomeMouse(t *testing.T) {
@@ -267,12 +268,16 @@ func TestHomeMouse(t *testing.T) {
 				}
 				x, y = homeCell(t, h, render.HomeItemRow+2)
 				h.send(click(x, y))
-				if h.m.ui.ProjectSel != 2 || h.m.ui.Field != 3 {
-					t.Errorf("the third row: selected %d, focus %d", h.m.ui.ProjectSel, h.m.ui.Field)
+				if h.m.ui.ProjectSel != 2 || h.m.ui.Field != 3 || h.m.path.Text() != h.m.projectList[2].Path {
+					t.Errorf("the third row: selected %d, focus %d, field %q (plan 53)", h.m.ui.ProjectSel, h.m.ui.Field, h.m.path.Text())
 				}
 				path, fav := h.m.projectList[2].Path, h.m.projectList[2].Favourite
+				h.m.path.SetText(`C:\elsewhere`)
 				x, y = homeCell(t, h, render.HomeItemStar+2)
 				h.send(click(x, y))
+				if h.m.path.Text() != path {
+					t.Errorf("the star: field %q, want its project's %q (plan 53)", h.m.path.Text(), path)
+				}
 				for _, p := range h.m.projectList {
 					if p.Path == path && p.Favourite == fav {
 						t.Errorf("the star: %s still favourite %v", path, fav)

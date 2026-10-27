@@ -10,7 +10,7 @@
  │                                                                                          │ │                                                                                                       │
  │  2.  Project directory                                                                   │ │  ★  acme-portal               D:\clients\acme-portal                                           never  │
  │ ╭──────────────────────────────────────────────────────────────────────────────────┬───╮ │ │                                                                                                       │
- │ │ C:\work\demo-project                                                             │ 🗀 │ │ │  ◷ RECENT PROJECTS                                                                                    │
+ │ │ C:\javadev\projets\scratch                                                       │ 🗀 │ │ │  ◷ RECENT PROJECTS                                                                                    │
  │ ╰──────────────────────────────────────────────────────────────────────────────────┴───╯ │ │  ☆  agent-command-center      C:\javadev\projets\agent-command-center                            now  │
  │                                                                                          │ │ ───────────────────────────────────────────────────────────────────────────────────────────────────── │
  │                                                                                          │ │  ☆  billing-service           C:\javadev\projets\billing-service                              8m ago  │

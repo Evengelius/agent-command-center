@@ -286,6 +286,7 @@ func (m *Model) homeMouse(msg tea.MouseMsg) []tea.Cmd {
 			return nil
 		}
 		m.ui.ProjectSel, m.ui.Field = i, 3
+		m.chooseProject() // the field takes its path (plan 53, design D1)
 		if kind == render.HomeItemStar {
 			return []tea.Cmd{m.starProject()}
 		}

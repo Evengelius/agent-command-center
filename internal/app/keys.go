@@ -98,6 +98,7 @@ func (m *Model) startupKey(k tea.KeyPressMsg) []tea.Cmd {
 				step = 1
 			}
 			m.ui.ProjectSel = max(min(m.ui.ProjectSel+step, len(m.projectList)-1), 0)
+			m.chooseProject() // the field takes its path (plan 53, design D1)
 			return nil
 		}
 		m.moveChoice(k.String() == "down")
@@ -145,8 +146,8 @@ func (m *Model) startupKey(k tea.KeyPressMsg) []tea.Cmd {
 // (plan 51, design D11): with the list's focus its project, then the
 // answers validated.
 func (m *Model) confirmStart() []tea.Cmd {
-	if m.ui.Field == 3 && m.ui.ProjectSel < len(m.projectList) {
-		m.path.SetText(m.projectList[m.ui.ProjectSel].Path)
+	if m.ui.Field == 3 {
+		m.chooseProject() // Enter on the list chooses its row (plan 53, design D2)
 	}
 	cmds := m.do(state.Confirm{Provider: m.ui.Choice, Project: m.path.Text()})
 	m.focusMessage()

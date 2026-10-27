@@ -11,7 +11,7 @@
  │                                                    │ │  ★  acme-portal               …clients\acme-portal   never  │
  │  2.  Project directory                             │ │                                                             │
  │ ╭────────────────────────────────────────────┬───╮ │ │  ◷ RECENT PROJECTS                                          │
- │ │ C:\work\demo-project                       │ 🗀 │ │ │  ☆  agent-command-center      …gent-command-center     now  │
+ │ │ C:\javadev\projets\scratch                 │ 🗀 │ │ │  ☆  agent-command-center      …gent-command-center     now  │
  │ ╰────────────────────────────────────────────┴───╯ │ │ ─────────────────────────────────────────────────────────── │
  │                                                    │ │  ☆  billing-service           …ets\billing-service  8m ago  │
  │                                                    │ │ ─────────────────────────────────────────────────────────── │

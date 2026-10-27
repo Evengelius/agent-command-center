@@ -241,8 +241,12 @@ PROJECTS lists FAVORITES (★) then RECENT PROJECTS (☆), each by its last
 start, at the design's row spacing in picture mode, separators between
 the rows: the directory's name, its path and its age ("now", "8m ago",
 "2h ago", "1d ago", "never" for a directory starred from plan 15's
-browser before any session) (D7). It is a Tab stop after the project field, its
-selected row on a band. A section with no row is hidden; with no project,
+browser before any session) (D7). It is a Tab stop after the project
+field, its selected row on a band. Choosing a project, by ↑/↓ in the list
+or a click on its row or its star, puts its path into the project field,
+replacing its text, so that the field shows what Start uses; the list
+keeps the focus (amendment 54, plan 53). Tab onto the list, f and Del
+leave the field as it is. A section with no row is hidden; with no project,
 "No projects yet". When the rows do not all fit, the list follows the
 selection, a slim mark at its right showing where it is. A store that
 cannot be read shows "Recent projects unavailable:" and the reason in the
@@ -270,7 +274,7 @@ project browser, removed by amendment 53.
 
 | Key | Action |
 | - | - |
-| ↑ / ↓ | choose the agent CLI (on question 1); move in Projects |
+| ↑ / ↓ | choose the agent CLI (on question 1); move in Projects, the project's path into the field |
 | Tab / Shift+Tab | next / previous field (question 1, question 2, Projects, START SESSION) |
 | Enter | Start: validate both answers, then start; in Projects, with that project's path |
 | f / Del | in Projects: star or unstar / forget that project |
@@ -287,8 +291,9 @@ keys work as above, unshown.
 The mouse (D11), as on the dashboard, F12 giving it back to the terminal
 (not in Worktrees): a left click on an option chooses that agent CLI; on
 the field, gives it the focus; on its folder button, opens the folder
-dialog; on a project's row, selects it; on its star, stars or unstars
-it; on START SESSION, starts as Enter does. No double click, wheel or
+dialog; on a project's row, selects it and puts its path into the field;
+on its star, stars or unstars it, its path into the field too; on START
+SESSION, starts as Enter does. No double click, wheel or
 footer click. The terminal's own selection then takes Shift and a drag,
 or F12.
 

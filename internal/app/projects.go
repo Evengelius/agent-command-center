@@ -74,6 +74,14 @@ func (m *Model) recordProject(path string) tea.Cmd {
 	return m.projectsCmd(func(p input.Projects, l []input.Project) []input.Project { return p.Record(l, path, at) })
 }
 
+// chooseProject puts the selected project's path in the field, so that the
+// field shows what Start uses (plan 53, design D1).
+func (m *Model) chooseProject() {
+	if m.ui.ProjectSel < len(m.projectList) {
+		m.path.SetText(m.projectList[m.ui.ProjectSel].Path)
+	}
+}
+
 // forgetProject removes the selected project from the list.
 func (m *Model) forgetProject() tea.Cmd {
 	if m.ui.ProjectSel >= len(m.projectList) {

@@ -12,7 +12,7 @@
  │                                  │ │  ☆  agent-command-center         now  │
  │  2.  Project directory           │ │  ☆  billing-service           8m ago  │
  │ ╭──────────────────────────┬───╮ │ │  ☆  a-project-with-a-very-l… 58m ago  │
- │ │ C:\work\demo-project     │ 🗀 │ │ │  ☆  infra                     7h ago  │
+ │ │ …javadev\projets\scratch │ 🗀 │ │ │  ☆  infra                     7h ago  │
  │ ╰──────────────────────────┴───╯ │ │  ☆  mobile-app               14h ago  │
  │                                  │ │  ☆  web                       1d ago  │
  │                                  │ │  ☆  tools                     2d ago  │

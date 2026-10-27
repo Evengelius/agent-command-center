@@ -201,6 +201,54 @@ func TestProjectListKeys(t *testing.T) {
 	})
 }
 
+// TestProjectChosen is plan 53's criteria 53.1 and 53.2 by the keys: ↑ and
+// ↓ in the list put the selected project's path in the field, its live
+// checks with it, the list keeping the focus; Tab onto the list, f and Del
+// leave the field's text; Enter on the list starts with the selected row's
+// path. The clicks are TestHomeMouse's.
+func TestProjectChosen(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		dirs := []string{t.TempDir(), t.TempDir(), t.TempDir()}
+		var list []input.Project
+		for i, d := range dirs {
+			list = append(list, input.Project{Path: d, Used: testNow.Add(-time.Duration(i) * time.Hour)})
+		}
+		start := t.TempDir()
+		h := newHarness(t, Options{Providers: bothCLIs, Cwd: start, Projects: storeWith(t, list)})
+		h.settle()
+		h.send(key(tea.KeyTab, 0))
+		h.send(key(tea.KeyTab, 0)) // the list, its first row selected
+		if h.m.ui.Field != 3 || h.m.path.Text() != start {
+			t.Fatalf("Tab onto the list: focus %d, field %q, want %q", h.m.ui.Field, h.m.path.Text(), start)
+		}
+		h.send(key(tea.KeyDown, 0))
+		if h.m.ui.Field != 3 || h.m.path.Text() != dirs[1] || h.m.ui.Resolved != dirs[1] {
+			t.Errorf("↓: focus %d, field %q, resolved %q, want %q", h.m.ui.Field, h.m.path.Text(), h.m.ui.Resolved, dirs[1])
+		}
+		h.send(key(tea.KeyUp, 0))
+		if h.m.path.Text() != dirs[0] {
+			t.Errorf("↑: field %q, want %q", h.m.path.Text(), dirs[0])
+		}
+
+		h.send(key(tea.KeyDown, 0))
+		h.m.path.SetText(start) // the field no longer the selected row's
+		h.send(typed('f'))      // the second project starred: first in the list now, still selected
+		if sel := h.m.projectList[h.m.ui.ProjectSel]; h.m.path.Text() != start || sel.Path != dirs[1] || !sel.Favourite {
+			t.Errorf("f: field %q, want %q; selected %+v", h.m.path.Text(), start, sel)
+		}
+		h.send(key(tea.KeyDown, 0)) // the first project, second now
+		h.send(key(tea.KeyDelete, 0))
+		if h.m.path.Text() != dirs[0] || len(h.m.projectList) != 2 {
+			t.Errorf("Del: field %q, want the forgotten %q; %d listed", h.m.path.Text(), dirs[0], len(h.m.projectList))
+		}
+
+		h.send(key(tea.KeyEnter, 0)) // the selection on the third project now
+		if s := h.m.State(); s.Context.Project != dirs[2] || h.m.path.Text() != dirs[2] {
+			t.Errorf("Enter: project %q, field %q, want %s", s.Context.Project, h.m.path.Text(), dirs[2])
+		}
+	})
+}
+
 // TestProjectStoreProblems is criterion 1.6 of plan 15: a list that cannot
 // be read says so on the startup screen, never as an empty list; one that
 // cannot be written says so too.

@@ -12,7 +12,7 @@
  │                                  │ │  ☆  mobile-app               14h ago  │
  │  2.  Project directory           │ │ ▏☆  web                       1d ago▕ │
  │ ╭──────────────────────────┬───╮ │ │  ☆  scratch                   1d ago  │
- │ │ C:\work\demo-project     │ 🗀 │ │ │  ☆  tools                     2d ago  │
+ │ │ C:\javadev\projets\web   │ 🗀 │ │ │  ☆  tools                     2d ago  │
  │ ╰──────────────────────────┴───╯ │ │  ☆  payments                  3d ago  │
  │                                  │ │                                       │
  │                                  │ │                                       │
