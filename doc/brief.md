@@ -7618,3 +7618,15 @@ Make choosing a project in the list also put its path into the Project directory
 ````
 
 Taken as plan 53 (plan.md, Plan 53).
+
+## Amendment 55, 2026-10-27: the mouse wheel over the project list, for plan 54
+
+After plan 53 was approved and pushed, the owner wrote, word for word:
+
+````text
+I see another problem specifically for the "recent projets" part : we cannot scroll up or down with mouse on it, navigation is only through keyboard
+````
+
+Taken as plan 54 (plan.md, Plan 54): the wheel over the PROJECTS list
+moves its selection as ↑ and ↓ do, as the dashboard's Explorer and Source
+Control lists move their cursor, one project a notch.

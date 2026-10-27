@@ -73,7 +73,7 @@ func homeGrid(s *state.State, ui UI, g HomeGeom) ([]line, HomeGeom) {
 		ls = append(ls, homeBlank(w))
 	}
 	lp := homePanel("NEW SESSION", fitGridRows(left, ph-3), lw)
-	rp := homePanel("PROJECTS", homeProjectRows(ui, rw-2, ph-3), rw)
+	rp := homeListArea(homePanel("PROJECTS", homeProjectRows(ui, rw-2, ph-3), rw))
 	for i := range ph {
 		l := line{sp(" ", pageGround.on(stNone))}
 		l = append(append(l, lp[i]...), sp(" ", pageGround.on(stNone)))
@@ -115,7 +115,7 @@ func homeGridStacked(s *state.State, ui UI, g HomeGeom) ([]line, HomeGeom) {
 	}
 	panel(homePanel("NEW SESSION", fitGridRows(left, lh-3), w-2), w-2)
 	if rest >= 5 {
-		panel(homePanel("PROJECTS", homeProjectRows(ui, w-4, rest-3), w-2), w-2)
+		panel(homeListArea(homePanel("PROJECTS", homeProjectRows(ui, w-4, rest-3), w-2)), w-2)
 	}
 	for len(ls) < h-1 {
 		ls = append(ls, homeBlank(w))
@@ -130,6 +130,20 @@ func homeTag(l line, item int) line {
 		l[i].ref = ref{panel: HomePanel, kind: refDeco, item: item}
 	}
 	return l
+}
+
+// homeListArea gives the PROJECTS panel's spans that carry no item, its
+// frame, title, headings and gaps, the list's: there the wheel moves the
+// selection (plan 54, design D3).
+func homeListArea(ls []line) []line {
+	for _, l := range ls {
+		for i := range l {
+			if l[i].ref.item == 0 {
+				l[i].ref = ref{panel: HomePanel, kind: refDeco, item: HomeItemList}
+			}
+		}
+	}
+	return ls
 }
 
 // homeBlank is a blank row on the page's ground.

@@ -308,6 +308,66 @@ func TestHomeMouse(t *testing.T) {
 	}
 }
 
+// TestHomeWheel is plan 54's criteria 54.1 and 54.2, in picture mode and in
+// grid mode: a wheel notch over a project's row, its star or the panel's
+// other cells moves the list's selection one project, the field taking its
+// path and the list the focus; at the ends nothing more; the wheel over
+// NEW SESSION or the footer, and a click on the panel's other cells, change
+// nothing.
+func TestHomeWheel(t *testing.T) {
+	for _, c := range []struct {
+		name  string
+		w, h  int
+		sixel bool
+	}{{"picture", 208, 59, true}, {"grid", 80, 24, false}} {
+		t.Run(c.name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				h := newHarness(t, Options{Providers: bothCLIs, Cwd: `C:\work\demo-project`, Projects: storeWith(t, favouriteProjects())})
+				h.settle()
+				h.send(tea.WindowSizeMsg{Width: c.w, Height: c.h})
+				if c.sixel {
+					h.send(PrimaryDeviceAttributesEvent{61, 4, 6, 7, 14})
+				}
+				wheel := func(item int, b tea.MouseButton) {
+					t.Helper()
+					x, y := homeCell(t, h, item)
+					h.send(tea.MouseWheelMsg{X: x, Y: y, Button: b})
+				}
+				want := func(what string, sel int) {
+					t.Helper()
+					if h.m.ui.ProjectSel != sel || h.m.ui.Field != 3 || h.m.path.Text() != h.m.projectList[sel].Path {
+						t.Errorf("%s: row %d (want %d), focus %d, field %q", what, h.m.ui.ProjectSel, sel, h.m.ui.Field, h.m.path.Text())
+					}
+				}
+				wheel(render.HomeItemRow, tea.MouseWheelDown)
+				want("down over the first row", 1)
+				wheel(render.HomeItemStar+1, tea.MouseWheelDown)
+				want("down over a star", 2)
+				wheel(render.HomeItemList, tea.MouseWheelUp)
+				want("up over the panel's other cells", 1)
+				wheel(render.HomeItemList, tea.MouseWheelUp)
+				wheel(render.HomeItemList, tea.MouseWheelUp)
+				want("up past the first", 0)
+				last := len(h.m.projectList) - 1
+				for range last + 2 {
+					wheel(render.HomeItemList, tea.MouseWheelDown)
+				}
+				want("down past the last", last)
+
+				h.m.ui.Field = 1
+				h.m.path.SetText(`C:\typed`)
+				wheel(render.HomeItemField, tea.MouseWheelDown)
+				h.send(tea.MouseWheelMsg{X: 3, Y: c.h - 1, Button: tea.MouseWheelUp}) // the footer
+				x, y := homeCell(t, h, render.HomeItemList)
+				h.send(click(x, y))
+				if h.m.ui.ProjectSel != last || h.m.ui.Field != 1 || h.m.path.Text() != `C:\typed` {
+					t.Errorf("elsewhere: row %d, focus %d, field %q", h.m.ui.ProjectSel, h.m.ui.Field, h.m.path.Text())
+				}
+			})
+		})
+	}
+}
+
 // TestHomeCtrlN is plan 51's design D9: Ctrl+N puts the form back as the
 // screen opened it, the default agent CLI, the starting folder, the focus
 // on Agent CLI, the list's first row, no message; not while a start is

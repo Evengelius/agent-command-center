@@ -257,10 +257,14 @@ func (m *Model) homeGlyphs() render.Glyphs { return &m.glyphs }
 // homeMouse is a click on the home screen (plan 51, design D11): an option
 // chooses its agent CLI, the field takes the focus, the folder button
 // opens the folder dialog as Ctrl+O does (plan 52), a project's row is
-// selected, its star
-// toggles the favourite as f does, START SESSION starts as Enter does.
-// Only a left click acts: no double click, wheel or footer click.
+// selected, its star toggles the favourite as f does, START SESSION starts
+// as Enter does. Only a left click acts, no double click or footer click;
+// the wheel is homeWheel's (plan 54).
 func (m *Model) homeMouse(msg tea.MouseMsg) []tea.Cmd {
+	if wheel, ok := msg.(tea.MouseWheelMsg); ok {
+		m.homeWheel(wheel)
+		return nil
+	}
 	click, ok := msg.(tea.MouseClickMsg)
 	if !ok || click.Button != tea.MouseLeft || m.screen == nil {
 		return nil
@@ -292,6 +296,28 @@ func (m *Model) homeMouse(msg tea.MouseMsg) []tea.Cmd {
 		}
 	}
 	return nil
+}
+
+// homeWheel is the wheel on the home screen (plan 54, design D1): over the
+// PROJECTS panel a notch moves the list's selection one project, as ↑ and
+// ↓ do, the list taking the focus; elsewhere nothing.
+func (m *Model) homeWheel(w tea.MouseWheelMsg) {
+	if m.screen == nil || len(m.projectList) == 0 {
+		return
+	}
+	p, item := m.screen.ItemAt(w.X, w.Y)
+	kind, _ := render.HomeItemOf(item)
+	if p != render.HomePanel || kind != render.HomeItemRow && kind != render.HomeItemStar && kind != render.HomeItemList {
+		return
+	}
+	switch w.Button {
+	case tea.MouseWheelUp:
+		m.ui.Field = 3
+		m.moveProject(-1)
+	case tea.MouseWheelDown:
+		m.ui.Field = 3
+		m.moveProject(1)
+	}
 }
 
 // resetForm is Ctrl+N (plan 51, design D9): the form as the screen opened

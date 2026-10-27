@@ -293,8 +293,12 @@ The mouse (D11), as on the dashboard, F12 giving it back to the terminal
 the field, gives it the focus; on its folder button, opens the folder
 dialog; on a project's row, selects it and puts its path into the field;
 on its star, stars or unstars it, its path into the field too; on START
-SESSION, starts as Enter does. No double click, wheel or
-footer click. The terminal's own selection then takes Shift and a drag,
+SESSION, starts as Enter does. No double click or footer click. The
+wheel over the PROJECTS panel, its rows, headings or frame, moves the
+list's selection one project a notch, as ↑ and ↓ do, the list taking the
+focus (amendment 55, plan 54): one a notch, not the dashboard lists'
+three, as each step chooses a project; elsewhere on the screen the wheel
+does nothing. The terminal's own selection then takes Shift and a drag,
 or F12.
 
 ### Follows and departs

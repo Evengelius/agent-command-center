@@ -239,11 +239,13 @@ type HomeLook struct {
 const HomePanel = 'H'
 
 // The home screen's items: an option, a project's row and its star are
-// these plus their index.
+// these plus their index. HomeItemList is the PROJECTS panel's other
+// cells, where the wheel moves the list's selection (plan 54, design D3).
 const (
 	HomeItemField  = 1
 	HomeItemFolder = 2
 	HomeItemStart  = 3
+	HomeItemList   = 4
 	HomeItemOption = 1 << 20
 	HomeItemRow    = 2 << 20
 	HomeItemStar   = 3 << 20
@@ -483,8 +485,9 @@ type homeTarget struct {
 
 // homeTargets are the cells a click acts on in picture mode (design D11):
 // each option, the field, its folder button, START SESSION, each
-// project's row and its star; a cell is a target's when its middle lies in
-// the target's place.
+// project's row and its star, and last the PROJECTS panel for the wheel
+// (plan 54, design D3); a cell is the first target's whose place holds
+// its middle.
 func homeTargets(l HomeLook) []homeTarget {
 	g := l.Geom
 	var out []homeTarget
@@ -510,11 +513,14 @@ func homeTargets(l HomeLook) []homeTarget {
 			add(HomeItemRow+r.Index, g.X(674), g.Y(r.Y-14.5), g.X(1319), g.Y(r.Y+14.5))
 		}
 	}
+	add(HomeItemList, g.X(631), g.Y(380.5-l.Grow), g.X(1331), g.Y(710)) // the panel's frame
 	return out
 }
 
 // homeTargetRow is row y's blank cells from x0 to x1 on the page's ground,
-// each run of a target's cells a span carrying its item.
+// each run of a target's cells a span carrying its item; where targets
+// overlap, the earlier one's (the PROJECTS panel's under its rows, plan
+// 54).
 func homeTargetRow(ts []homeTarget, y, x0, x1 int) line {
 	var l line
 	for x := x0; x < x1; {
@@ -524,7 +530,8 @@ func homeTargetRow(ts []homeTarget, y, x0, x1 int) line {
 				continue
 			}
 			if x >= t.r.Min.X && x < t.r.Max.X {
-				item, end = t.item, min(t.r.Max.X, x1)
+				// The run ends at its own end or where an earlier target begins.
+				item, end = t.item, min(end, t.r.Max.X)
 				break
 			}
 			if t.r.Min.X > x {

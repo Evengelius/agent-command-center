@@ -24,10 +24,9 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-27, when the owner approved plan
-53, a project chosen in the list fills the field (brief amendment 54).**
-Plans 1 to 53 are closed, one entry each in `plan.md`, Closed plans; the
-MVP was approved on 2026-10-17. `plan.md` holds the active plan's
+**Status: plan 54 active since 2026-10-27, the mouse wheel over the
+project list (brief amendment 55).** Plans 1 to 53 are closed, one entry
+each in `plan.md`, Closed plans; the MVP was approved on 2026-10-17. `plan.md` holds the active plan's
 progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.
 

@@ -626,8 +626,8 @@ func TestHomePictureNotes(t *testing.T) {
 
 // Plan 51, design D11: the cells a click acts on, in picture and in grid
 // mode: each option, the field, its folder button, START SESSION, a
-// project's row and its star; nothing on the header, the banner or the
-// footer.
+// project's row and its star, and the PROJECTS panel's for the wheel (plan
+// 54); nothing on the header, the banner or the footer.
 func TestHomeTargets(t *testing.T) {
 	s, ui := homeTestUI()
 	for _, c := range []struct {
@@ -649,14 +649,72 @@ func TestHomeTargets(t *testing.T) {
 				}
 			}
 		}
-		for _, item := range []int{HomeItemOption, HomeItemOption + 1, HomeItemField, HomeItemFolder, HomeItemStart, HomeItemRow, HomeItemStar, HomeItemRow + 6, HomeItemStar + 6} {
+		for _, item := range []int{HomeItemOption, HomeItemOption + 1, HomeItemField, HomeItemFolder, HomeItemStart, HomeItemRow, HomeItemStar, HomeItemRow + 6, HomeItemStar + 6, HomeItemList} {
 			if count[item] == 0 {
 				t.Errorf("%dx%d sixel %v: no cell for item %#x", c.w, c.h, c.sixel, item)
 			}
 		}
+		// Plan 54, design D3: the list's cells right of NEW SESSION's, and on
+		// rows with no project too, the headings and the gaps.
+		session, list := -1, c.w
+		listRows, projectRows := map[int]bool{}, map[int]bool{}
+		for y := range c.h {
+			for x := range c.w {
+				p, item := sc.ItemAt(x, y)
+				if p != HomePanel {
+					continue
+				}
+				switch kind, _ := HomeItemOf(item); kind {
+				case HomeItemOption, HomeItemField, HomeItemFolder, HomeItemStart:
+					session = max(session, x)
+				case HomeItemList:
+					list, listRows[y] = min(list, x), true
+				case HomeItemRow, HomeItemStar:
+					projectRows[y] = true
+				}
+			}
+		}
+		heading := false
+		for y := range listRows {
+			heading = heading || !projectRows[y]
+		}
+		if list <= session || !heading {
+			t.Errorf("%dx%d sixel %v: the list's cells from column %d, NEW SESSION's to %d; on a row with no project %v", c.w, c.h, c.sixel, list, session, heading)
+		}
 		if kind, i := HomeItemOf(HomeItemStar + 6); kind != HomeItemStar || i != 6 {
 			t.Errorf("HomeItemOf: %#x %d", kind, i)
 		}
+	}
+}
+
+// Plan 54, design D3, in grid mode's stacked layout, NEW SESSION's notes too
+// long beside PROJECTS: the PROJECTS panel, all under START SESSION,
+// carries the list's item too.
+func TestHomeTargetsStacked(t *testing.T) {
+	s, ui := homeTestUI()
+	ui.Width, ui.Height, ui.Sixel = 80, 40, false
+	ui.KeysProblem = strings.Repeat("config.json cannot be read, the default keys apply. ", 9)
+	ui.CodexProxyProblem = strings.Repeat("codex.proxy must start with http:// or https://. ", 9)
+	sc := Draw(s, ui)
+	start, rows, list, top := -1, 0, 0, ui.Height
+	for y := range ui.Height {
+		for x := range ui.Width {
+			p, item := sc.ItemAt(x, y)
+			if p != HomePanel {
+				continue
+			}
+			switch kind, _ := HomeItemOf(item); kind {
+			case HomeItemStart:
+				start = max(start, y)
+			case HomeItemRow:
+				rows++
+			case HomeItemList:
+				list, top = list+1, min(top, y)
+			}
+		}
+	}
+	if start < 0 || rows == 0 || list == 0 || top <= start {
+		t.Errorf("stacked: START SESSION's last row %d, %d cells of rows, %d of the list from row %d", start, rows, list, top)
 	}
 }
 

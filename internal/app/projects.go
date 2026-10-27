@@ -82,6 +82,14 @@ func (m *Model) chooseProject() {
 	}
 }
 
+// moveProject moves the list's selection step projects, within the list,
+// and chooses the one it lands on (plan 53, design D1): ↑ and ↓, and the
+// wheel over the list (plan 54).
+func (m *Model) moveProject(step int) {
+	m.ui.ProjectSel = max(min(m.ui.ProjectSel+step, len(m.projectList)-1), 0)
+	m.chooseProject()
+}
+
 // forgetProject removes the selected project from the list.
 func (m *Model) forgetProject() tea.Cmd {
 	if m.ui.ProjectSel >= len(m.projectList) {

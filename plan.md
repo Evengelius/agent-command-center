@@ -96,12 +96,75 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 54 - The mouse wheel over the project list
 
-Plan 53 was approved and closed on 2026-10-27 (Closed plans, below). The
-next plan starts when the owner asks for one; the audit's roadmap
-([`doc/audit.md`](doc/audit.md), Part 2) is done, its phases 0 to 4
-implemented by plans 46 to 49.
+Brief amendment 55 (2026-10-27): the home screen's PROJECTS list could be
+navigated by the keyboard only; the mouse wheel over it moves its
+selection.
+
+### What was found (2026-10-27, on efe42ca)
+
+- `homeMouse` acts on left clicks only; plan 51 (design D11) left the
+  wheel out on the home screen.
+- On the dashboard, the wheel over the Explorer and Source Control moves
+  their cursor `wheelRows` (3) rows, the list following it
+  (`explorerWheel`, `sourceWheel`).
+- The home list already follows its selection when it does not all fit,
+  centred on it with a slim mark (`homeProjectRows`, the picture's rows).
+- Clicks find their item through the screen's cells: each project's row
+  and star carry one (`homeTargets` in picture mode, `homeTag` in grid
+  mode); the panel's headings, gaps and margins carry none.
+
+### Design
+
+- **D1. The wheel over the PROJECTS panel** moves the list's selection one
+  project a notch, up or down, as ↑ and ↓ do: the project is chosen (plan
+  53: its path into the field) and the list takes the focus; the list
+  follows the selection as for the keys; at either end nothing more.
+- **D2. One project a notch**, not the dashboard lists' three: each step
+  here chooses a project, so a notch lands on the next one, as ↓ does.
+- **D3. The panel's cells** carry a list item (`HomeItemList`) under the
+  rows' and the stars' (picture mode: the panel's frame; grid mode: its
+  lines), so the wheel acts over the whole panel; a click there does
+  nothing, as before.
+- **D4. Unchanged:** the clicks, the keys, the windowing; the wheel over
+  NEW SESSION, the header, the banner or the footer does nothing.
+
+### Criteria
+
+1. **54.1 The wheel over the list:** over a project's row, its star, a
+   heading and a gap, a notch down or up moves the selection one project,
+   the field taking its path and the list the focus, in picture and grid
+   mode; at the ends nothing more; by state tests.
+2. **54.2 Elsewhere nothing:** the wheel over NEW SESSION and the footer
+   changes nothing; a click on the panel's heading does nothing; the
+   golden frames unchanged.
+3. **54.3 Windows Terminal** at 208x59: wheel notches over the list move
+   the band and the field one project each, down then up.
+4. **54.4 The checks:** build, vet, gofmt, the whole suite, mutants on the
+   change through `go test -overlay`.
+
+### Steps
+
+1. Amendment 55 and this plan.
+2. The change, its tests.
+3. The documents.
+4. Verification (54.1 to 54.4), then `doc/plan54-evaluation.md`.
+
+### Progress
+
+- 2026-10-27: step 1 done: amendment 55, this plan.
+- 2026-10-27: steps 2 and 3 done. `homeWheel` and `moveProject`
+  (`app/home.go`, `app/projects.go`; ↑ and ↓ through `moveProject` too);
+  `HomeItemList` with its picture target last in `homeTargets`, a run
+  ending where an earlier target begins (`homeTargetRow`), and
+  `homeListArea` on both grid layouts' PROJECTS panel. Tests:
+  `TestHomeWheel`, `TestHomeTargets` extended, `TestHomeTargetsStacked`.
+  Documents: ui-design.md (the mouse), architecture.md (The home screen).
+- 2026-10-27: step 4 done, [doc/plan54-evaluation.md](doc/plan54-evaluation.md):
+  4 of 4 PASS. Windows Terminal at 208x59 (`term\p54wheel.ps1`): one
+  project a notch, down and up, the field following. Mutants: 11 of 11
+  caught. Waiting for the owner's review.
 
 ## Closed plans
 

@@ -97,8 +97,7 @@ func (m *Model) startupKey(k tea.KeyPressMsg) []tea.Cmd {
 			if k.String() == "down" {
 				step = 1
 			}
-			m.ui.ProjectSel = max(min(m.ui.ProjectSel+step, len(m.projectList)-1), 0)
-			m.chooseProject() // the field takes its path (plan 53, design D1)
+			m.moveProject(step)
 			return nil
 		}
 		m.moveChoice(k.String() == "down")
