@@ -7458,3 +7458,122 @@ Taken into plan 50 (plan.md, Plan 50: D4 and D8 changed, criteria 50.3
 and 50.8 changed with them, 50.14 added). The review found a file moved
 on disk, both its rows selected, refused once staged; fixed in D7.3,
 criteria 50.4 and 50.6 extended with it.
+
+## Amendment 52, 2026-10-26: the home screen redesign, for plan 51
+
+After plan 50 was approved and pushed, the owner sent an image, copied as
+`references/16-home-screen.webp` (`48.webp`, 1347x757: the home screen
+redrawn, a header "AGENT COMMAND CENTER" with "v0.1.0 │ Windows │ ●
+Ready", a pixel-art Space Invaders scene, a "NEW SESSION" panel with the
+agent CLI as two option boxes, the project directory field with a folder
+button and a filled "START SESSION →", a "PROJECTS" panel with FAVORITES
+and RECENT PROJECTS in seven rows, and a footer of shortcuts, Ctrl+N,
+Ctrl+O, Ctrl+P and Ctrl+Q), and wrote, word for word:
+
+````text
+Plan 51 — Home Screen Redesign
+I want to completely redesign Agent Command Center's home screen.
+The image attached to this message is the final, approved design and the single source of truth for its visual appearance.
+1. Strict Design Fidelity
+Zero visual deviations. Absolutely none.
+Reproduce the reference as faithfully as technically possible, including its:
+
+* Layout, proportions, positioning, and spacing.
+* Purple color palette, typography, borders, and visual effects.
+* Animated space background.
+* New Session and Projects panels.
+* Header, footer, and overall visual hierarchy.
+
+Do not simplify, reinterpret, or introduce alternative designs.
+If terminal limitations prevent exact reproduction, explain the limitations and obtain my approval before making compromises.
+2. Animated Space Invaders Banner
+The upper section must reproduce the reference's pixel-art Space Invaders aesthetic, but animated.
+
+* Small aliens appear at randomized positions across the entire width.
+* Aliens move and descend dynamically.
+* The spaceship moves autonomously in all directions, shooting at aliens.
+* Successful hits trigger pixel-art explosion effects.
+* Preserve the reference's colors, spatial background, and overall appearance.
+* Ensure smooth animation without compromising responsiveness or performance.
+
+This is a decorative animation, not an interactive game.
+Choose the animation timing and technical approach yourself.
+3. Preserve Existing Functionality
+Do not reinvent what already exists.
+Reuse the current session creation, CLI selection, project browsing, favorites, recent projects, and navigation functionality.
+Adapt the presentation and make only the necessary corrections or additions to match the approved design.
+Preserve existing behavior, keyboard shortcuts, and safety guarantees. Identify any controls shown in the mockup that do not currently exist rather than silently inventing functionality.
+4. Implementation
+Inspect the repository and its engineering standards.
+You decide the most appropriate implementation sequence, based on the existing architecture and dependencies.
+Work sequentially, with clear acceptance criteria and verification steps.
+Avoid overengineering, unnecessary dependencies, and unrelated changes.
+First, propose the implementation plan for my review. Do not modify anything until I approve it.
+The objective is simple: make ACC's home screen look exactly like the attached reference while preserving its existing functionality.
+````
+
+Told the proposed plan (the design measured at about 150x40 cells;
+terminal text with Sixel images for what is not text; the banner animated
+by Sixel tiles; the limits of the cell grid, of the sizes and of the
+typeface; the controls the image shows that do not exist: the version, the
+status, Ctrl+N, Ctrl+P, the mouse), the owner wrote, word for word:
+
+````text
+The overall Plan 51 looks good. I agree with the sequential implementation approach and the proposed animation strategy.
+Before approving it, I'd like you to refine a few points:
+1. Strict Visual Fidelity
+The attached image you received remains the single source of truth.
+Investigate whether the existing Sixel/GDI rendering capabilities can reproduce the reference more accurately, particularly:
+
+* The original project row spacing.
+* All seven visible project entries.
+* The positioning and proportions of the interface.
+
+Do not accept visual compromises prematurely. If something genuinely cannot be reproduced, explain why and request my approval.
+2. Responsive Behavior
+The Space Invaders animation is decorative and must never compromise usability.
+
+* Large terminals: reproduce the complete reference design, including the animation.
+* Intermediate terminals: retain the animation only when sufficient space is available.
+* Small terminals (e.g., 80×24): hide the entire animated banner and prioritize the New Session and Projects panels.
+
+Determine the appropriate breakpoint based on actual layout constraints.
+When the banner is hidden, its animation must stop consuming resources.
+3. Existing Functionality and New Interactions
+Avoid introducing unnecessary features simply to reproduce labels shown in the mockup.
+Regarding your proposed decisions:
+
+* Ctrl+P: I agree with leaving out the Command Palette. Do not implement a new feature solely to match the mockup.
+* Ctrl+N: I do not want it mapped to Start Session, as that would be misleading. Propose a behavior consistent with "New Session", or explain why the shortcut should be omitted.
+* Mouse interactions: I agree with adding mouse support to the home screen's relevant interactive elements, including CLI selection, project selection, favorites, project browsing, and Start Session. Preserve existing keyboard behavior. Avoid unnecessary interactions or complexity.
+
+Reuse existing functionality wherever possible. Any additional functionality must be justified by an actual need.
+4. Animation and Implementation
+I agree with your proposed Space Invaders animation, performance safeguards, and sequential development approach.
+Keep the implementation focused, maintainable, and consistent with the repository's engineering standards.
+Please revise Plan 51 accordingly, clearly identifying any remaining decisions requiring my approval. Do not modify anything yet.
+````
+
+Told the revised plan (probes in Windows Terminal: the design's four text
+sizes and its 30-pixel rows drawn as images by GDI, in Windows Terminal's
+own Cascadia Mono, matching it; a picture mode from 118 columns and a grid
+mode below; the banner from 8 free rows; Ctrl+N resetting the form; the
+mouse mapped onto existing actions; eight decisions), the owner wrote, word
+for word:
+
+````text
+The revised plan looks excellent, and I agree with your recommended decisions.
+
+One final safeguard before implementation: ensure that rendering the interface as Sixel images does not compromise the Project directory field's existing editing, selection, and copy/paste behavior.
+
+If preserving these interactions requires a different rendering approach for the input field, prioritize functionality and explain any visual impact.
+
+Otherwise, Plan 51 is approved with your recommended decisions. Proceed sequentially, starting with step 1, and preserve the visual review checkpoint before step 4.
+````
+
+Answered: the field's editing and paste are input, which drawing does not
+touch; its selection and copy are the terminal's own selection of the text
+on screen, which an image would lose. So in picture mode the field's text
+stays terminal text, its outline, ground and folder button images around
+it, as the commit message box's (plan 45): the path at the terminal's text
+size, not the design's. Taken as plan 51 (plan.md, Plan 51).

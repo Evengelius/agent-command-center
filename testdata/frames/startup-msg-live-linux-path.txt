@@ -1,24 +1,24 @@
- >_ AGENT COMMAND CENTER                                            New session
-────────────────────────────────────────────────────────────────────────────────
+ ⊞ AGENT COMMAND CENTER                       │  v0.1.0  │  Windows  │  ● Ready
 
-    Configure your workspace
-    Select an agent CLI and the project to work on.
+ ╭──────────────────────────────────╮ ╭───────────────────────────────────────╮
+ │ › NEW SESSION  ───────────────── │ │ › PROJECTS  ───────────────────────── │
+ │                                  │ │                                       │
+ │  1.  Agent CLI                   │ │  No projects yet                      │
+ │ ▏ ◉  Claude Code (2.1.300)     ▕ │ │                                       │
+ │                                  │ │                                       │
+ │   ○  OpenAI Codex (0.145.0)      │ │                                       │
+ │                                  │ │                                       │
+ │  2.  Project directory           │ │                                       │
+ │ ╭──────────────────────────┬───╮ │ │                                       │
+ │ │ /home/u/app              │ 🗀 │ │ │                                       │
+ │ ╰──────────────────────────┴───╯ │ │                                       │
+ │                                  │ │                                       │
+ │  ✗ A Linux path. On Windows      │ │                                       │
+ │    use C:\…, or /mnt/c/… for a   │ │                                       │
+ │    Windows drive                 │ │                                       │
+ │                                  │ │                                       │
+ │         START SESSION →          │ │                                       │
+ │                                  │ │                                       │
+ ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯
 
-    1. Agent CLI *
-       (•) Claude Code     2.1.300   C:\Users\…\.local\bin\claude.exe
-       ( ) OpenAI Codex    0.145.0   …al\Programs\OpenAI\Codex\bin\codex.exe
-    ────────────────────────────────────────────────────────────────────────
-    2. Project directory *
-       ╭────────────────────────────────────────────────────────────────╮
-       │ /home/u/app                                                    │
-       ╰────────────────────────────────────────────────────────────────╯
-       ✗ A Linux path. On Windows use C:\…, or /mnt/c/… for a Windows drive
-       Type a full path; ~ and /mnt/c/… are expanded. Default: current dir.
-    ────────────────────────────────────────────────────────────────────────
-                  ╭──────────────────────────────────────────╮
-                  │             Start session  →             │
-                  ╰──────────────────────────────────────────╯
-
-
-
- ↑↓ agent · Tab next field · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit
+ › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit

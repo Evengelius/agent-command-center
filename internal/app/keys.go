@@ -128,18 +128,33 @@ func (m *Model) startupKey(k tea.KeyPressMsg) []tea.Cmd {
 			return []tea.Cmd{m.starProject()}
 		}
 	case "enter":
-		if m.ui.Field == 3 && m.ui.ProjectSel < len(m.projectList) {
-			m.path.SetText(m.projectList[m.ui.ProjectSel].Path)
-		}
-		cmds := m.do(state.Confirm{Provider: m.ui.Choice, Project: m.path.Text()})
-		m.focusMessage()
-		return cmds
+		return m.confirmStart()
+	case "ctrl+n":
+		// The form as the screen opened it (plan 51, design D9).
+		return m.resetForm()
+	case "f12":
+		// Capture off: Windows Terminal selects on its own, as on the
+		// dashboard (plan 51, design D11).
+		m.ui.MouseOff = !m.ui.MouseOff
+		return nil
 	default:
 		if m.ui.Field == 1 {
 			return m.editKey(&m.path, k, true)
 		}
 	}
 	return nil
+}
+
+// confirmStart is Enter on the startup screen, and START SESSION's click
+// (plan 51, design D11): with the list's focus its project, then the
+// answers validated.
+func (m *Model) confirmStart() []tea.Cmd {
+	if m.ui.Field == 3 && m.ui.ProjectSel < len(m.projectList) {
+		m.path.SetText(m.projectList[m.ui.ProjectSel].Path)
+	}
+	cmds := m.do(state.Confirm{Provider: m.ui.Choice, Project: m.path.Text()})
+	m.focusMessage()
+	return cmds
 }
 
 // moveChoice moves the radio selection among the installed CLIs.

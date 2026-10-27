@@ -161,18 +161,18 @@ func TestStartupGate(t *testing.T) {
 				t.Fatalf("phase %q screen %q", s.Startup.Phase, s.Screen)
 			}
 			h.send(tea.WindowSizeMsg{Width: 120, Height: 40})
-			// Whitespace collapsed: a message is found whole across its wrap.
-			text := strings.Join(strings.Fields(plainText(h.m.View().Content)), " ")
+			// NEW SESSION's text: a message is found whole across its wrap.
+			panel := homePanel(h.m.View().Content, 0)
 			for _, want := range []string{
 				"✗ No supported agent CLI found. Install Claude Code or Codex CLI, then restart.",
 				"not installed: claude not found on PATH",
 				"not installed: codex not found on PATH",
 			} {
-				if !strings.Contains(text, want) {
-					t.Errorf("frame lacks %q", want)
+				if !homeSays(panel, want) {
+					t.Errorf("NEW SESSION lacks %q", want)
 				}
 			}
-			if strings.Contains(text, "✗ not installed") {
+			if homeSays(panel, "✗ not installed") {
 				t.Error("the field message repeats the no-CLI message")
 			}
 		})

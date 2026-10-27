@@ -57,3 +57,48 @@ func TestTextMask(t *testing.T) {
 		t.Errorf("empty: %v %v", e.Bounds(), err)
 	}
 }
+
+// TestGlyph is plan 51's design D3: a character for the home screen's
+// picture as GDI draws it in Cascadia Mono (Consolas where it is missing),
+// drawn four times larger and averaged down: a mask 3em/2 high and as wide
+// as the character's cell, rounded up, the character in its middle, its
+// capitals from about 0.3em down to 1.0em, smooth (many partial pixels);
+// semi-bold heavier; a space no ink.
+func TestGlyph(t *testing.T) {
+	m, err := Glyph('H', 20, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := m.Bounds()
+	if b.Dy() != 30 || b.Dx() < 10 || b.Dx() > 13 {
+		t.Fatalf("H at 20: bounds %v", b)
+	}
+	top, bottom, ink, partial := inkRows(m)
+	if top < 4 || top > 8 || bottom < 18 || bottom > 21 || partial*4 < ink {
+		t.Errorf("H at 20: rows %d to %d, %d inked pixels, %d partial", top, bottom, ink, partial)
+	}
+	left, right := b.Dx(), -1
+	for y := range b.Dy() {
+		for x := range b.Dx() {
+			if m.AlphaAt(x, y).A > 0 {
+				left, right = min(left, x), max(right, x)
+			}
+		}
+	}
+	if d := left - (b.Dx() - 1 - right); d < -1 || d > 1 {
+		t.Errorf("H at 20: ink from column %d to %d of %d, not centred", left, right, b.Dx())
+	}
+	sum := func(m *image.Alpha) (n int) {
+		for _, a := range m.Pix {
+			n += int(a)
+		}
+		return n
+	}
+	bold, err := Glyph('H', 20, true)
+	if err != nil || sum(bold) <= sum(m) {
+		t.Errorf("semi-bold H: %d of ink, regular %d (%v)", sum(bold), sum(m), err)
+	}
+	if sp, err := Glyph(' ', 20, false); err != nil || sum(sp) != 0 {
+		t.Errorf("space: %d of ink (%v)", sum(sp), err)
+	}
+}

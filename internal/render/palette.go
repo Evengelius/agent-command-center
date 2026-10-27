@@ -147,6 +147,87 @@ var (
 	cMenuOutline   = colour{"#935EF5", "13"}
 	cMenuBand      = colour{"#23213C", ""}
 	cMenuText      = colour{"#EDE7F8", "15"}
+	// The home screen (plan 51; the owner's image,
+	// references/16-home-screen.webp, read from its pixels in
+	// reference-design.md, The home screen): a fill's commonest colour, a
+	// mark's the mean of its brightest pixels, which a thin stroke reaches
+	// at its middle only. No ground on 16 colours.
+	cHomePage        = colour{"#090B0C", ""}
+	cHomeBanner      = colour{"#050709", ""}
+	cHomeDot         = colour{"#14161C", "8"}
+	cHomeStar        = colour{"#D8C4FC", "15"}
+	cHomeHalftone    = colour{"#ABA5CB", "8"}
+	cHomeHalftoneRim = colour{"#2A2152", "5"}
+	cHomeSparkle     = colour{"#F4E6FF", "15"}
+	cHomeSparkleDim  = colour{"#7C70A0", "8"}
+	cHomeSparkleGlow = colour{"#3A0A9C", "5"}
+	cHomeLogo        = colour{"#988AC3", "5"}
+	cHomeTitle       = colour{"#C7C4E2", "7"}
+	cHomeVersion     = colour{"#9998AE", "8"}
+	cHomeSystem      = colour{"#A9A7C1", "7"}
+	cHomeBar         = colour{"#6B6789", "8"}
+	cHomeReady       = colour{"#67C999", "10"}
+	cHomeStatus      = colour{"#A4A2BD", "7"}
+	cHomeFrame       = colour{"#615F75", "8"}
+	cHomeChevron     = colour{"#CBC5EA", "7"}
+	cHomePanelTitle  = colour{"#D2CCEA", "15"}
+	cHomeUnderline   = colour{"#1D1D28", "8"}
+	cHomeRule        = colour{"#634B95", "5"}
+	cHomeRuleLow     = colour{"#513A86", "5"}
+	cHomeNumber      = colour{"#BBBCC3", "7"}
+	cHomeAsk         = colour{"#D7D8E2", "15"}
+	cHomeChosenLine  = colour{"#8073A7", "5"}
+	cHomeChosenFill  = colour{"#181228", ""}
+	cHomeChosenName  = colour{"#CCC2E8", "13"}
+	cHomeChosenVer   = colour{"#AEA3CF", "5"}
+	cHomeOtherLine   = colour{"#17181F", "8"}
+	cHomeOtherName   = colour{"#C8C9D5", "7"}
+	cHomeOtherVer    = colour{"#848598", "8"}
+	cHomeRadioOn     = colour{"#9480C5", "13"}
+	cHomeRadioDot    = colour{"#A381F1", "13"}
+	cHomeRadioOff    = colour{"#807E9B", "8"}
+	cHomeField       = colour{"#0F1317", ""}
+	cHomeFieldTop    = colour{"#ACA5C0", "7"}
+	cHomeFieldLow    = colour{"#76758A", "8"}
+	cHomeDivider     = colour{"#494957", "8"}
+	cHomeFolder      = colour{"#9790B0", "7"}
+	cHomePath        = colour{"#C1C1CF", "7"}
+	cHomeButton      = colour{"#9C80FB", "13"}
+	cHomeButtonText  = colour{"#24145C", "0"}
+	cHomeSection     = colour{"#787596", "5"}
+	cHomeSectionIcon = colour{"#B3AFCB", "7"}
+	cHomeClock       = colour{"#B8B1CF", "7"}
+	cHomeStarOn      = colour{"#9D81EF", "13"}
+	cHomeStarOff     = colour{"#707086", "8"}
+	cHomeName        = colour{"#CECFD9", "7"}
+	cHomeNameSel     = colour{"#E9E7F5", "15"}
+	cHomeRowPath     = colour{"#747688", "8"}
+	cHomeRowPathSel  = colour{"#908FAA", "8"}
+	cHomeAge         = colour{"#717385", "8"}
+	cHomeAgeSel      = colour{"#8B8AA7", "8"}
+	cHomeBand        = colour{"#16171F", ""}
+	cHomeBandTop     = colour{"#282834", "8"}
+	cHomeBandSide    = colour{"#1D1E26", "8"}
+	cHomeSeparator   = colour{"#14171C", "8"}
+	cHomeFootLine    = colour{"#0B0C17", ""}
+	cHomeFootChevron = colour{"#CFBBFD", "13"}
+	cHomeShortcuts   = colour{"#B6A7D9", "13"}
+	cHomeCapLine     = colour{"#20232B", "8"}
+	cHomeCapFill     = colour{"#0F1016", ""}
+	cHomeCapText     = colour{"#BBB9CF", "7"}
+	cHomeAction      = colour{"#83829D", "8"}
+	cHomeFootBar     = colour{"#6E638B", "8"}
+	// What the image does not show (plan 51, designs D6 and D10): START
+	// SESSION dimmed, halfway to the page, and its label; the focus's
+	// outline, the radio's purple, and START SESSION's, the selected name's
+	// white; the list's band with the focus and its top line, a shade
+	// brighter than without.
+	cHomeButtonDim     = colour{"#53468A", "5"}
+	cHomeButtonTextDim = colour{"#A9A0CB", "8"}
+	cHomeFocus         = colour{"#A381F1", "13"}
+	cHomeFocusOnButton = colour{"#E9E7F5", "15"}
+	cHomeBandFocus     = colour{"#22222E", ""}
+	cHomeBandFocusTop  = colour{"#3A3A4C", "8"}
 )
 
 // modelColours colours a model by its family; any other model is text.
@@ -250,6 +331,8 @@ var (
 	stMsgOutline, stMsgFocus, stMsgHolder                                = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 	stBtnOutline, stBtnFocus, stBtnOutlineDim, stBtnLabel, stBtnLabelDim = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 	stBtnSep, stBtnSepDim, stMenuOutline, stMenuText                     = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	// The home screen's project path in its field (plan 51, design D4).
+	stHomePath = new(lipgloss.Style)
 
 	stMdHeading = stTitle
 	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
@@ -388,6 +471,7 @@ func paint() {
 	paintStyle(stBtnSepDim, fg(cBtnSepDim))
 	paintStyle(stMenuOutline, fg(cMenuOutline))
 	paintStyle(stMenuText, fg(cMenuText))
+	paintStyle(stHomePath, fg(cHomePath))
 	if sixteen { // no ground to spare: the pill is its bold pink text
 		paintStyle(stPill, stAttentionBold.Background(lipgloss.NoColor{}))
 		paintStyle(stPillEnd, lipgloss.NewStyle())
@@ -398,6 +482,9 @@ func paint() {
 
 	for i, m := range modelColours {
 		paintStyle(modelStyles[i], fg(m.c))
+	}
+	for k, st := range homeStyles {
+		paintStyle(st, homeStyleOf(k))
 	}
 	for _, g := range grounds {
 		for base, t := range g.tints {
@@ -452,8 +539,44 @@ var (
 	btnDimGround   = &ground{c: cBtnFillDim, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	menuGround     = &ground{c: cMenuGround, tints: map[*lipgloss.Style]*lipgloss.Style{}}
 	menuBandGround = &ground{c: cMenuBand, tints: map[*lipgloss.Style]*lipgloss.Style{}}
-	grounds        = []*ground{toolGround, activeGround, bandGround, trackGround, offGround, dimGround, sliderTrackGround, sliderFillGround, sliderLockGround, modesGround, modesBandGround, sideSelGround, sideSelHoverGround, sourceHoverGround, diffAddGround, diffDelGround, msgGround, btnGround, btnDimGround, menuGround, menuBandGround}
+	// The home screen's page and its project field's inside (plan 51); in
+	// grid mode, the chosen option's inside, START SESSION's fill and its
+	// dimmed fill, the list's band without and with the focus, a key cap's
+	// inside.
+	pageGround      = &ground{c: cHomePage, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	fieldGround     = &ground{c: cHomeField, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	chosenGround    = &ground{c: cHomeChosenFill, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	buttonGround    = &ground{c: cHomeButton, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	buttonDimGround = &ground{c: cHomeButtonDim, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	rowBandGround   = &ground{c: cHomeBand, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	rowFocusGround  = &ground{c: cHomeBandTop, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	capGround       = &ground{c: cHomeCapFill, tints: map[*lipgloss.Style]*lipgloss.Style{}}
+	grounds         = []*ground{toolGround, activeGround, bandGround, trackGround, offGround, dimGround, sliderTrackGround, sliderFillGround, sliderLockGround, modesGround, modesBandGround, sideSelGround, sideSelHoverGround, sourceHoverGround, diffAddGround, diffDelGround, msgGround, btnGround, btnDimGround, menuGround, menuBandGround, pageGround, fieldGround, chosenGround, buttonGround, buttonDimGround, rowBandGround, rowFocusGround, capGround}
 )
+
+// homeKey is a home screen text style: its colour, semi-bold or not.
+type homeKey struct {
+	c    colour
+	bold bool
+}
+
+// homeStyles are the home screen's text styles in grid mode (plan 51),
+// made on first use and painted again with the palette.
+var homeStyles = map[homeKey]*lipgloss.Style{}
+
+// homeStyle is the shared style of colour c, bold or not.
+func homeStyle(c colour, bold bool) *lipgloss.Style {
+	k := homeKey{c, bold}
+	if st := homeStyles[k]; st != nil {
+		return st
+	}
+	st := new(lipgloss.Style)
+	paintStyle(st, homeStyleOf(k))
+	homeStyles[k] = st
+	return st
+}
+
+func homeStyleOf(k homeKey) lipgloss.Style { return fg(k.c).Bold(k.bold) }
 
 // active is st on the active ground (plan 30).
 func active(st *lipgloss.Style) *lipgloss.Style { return activeGround.on(st) }

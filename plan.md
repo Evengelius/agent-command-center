@@ -95,12 +95,394 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 51 - Home screen redesign
 
-Plan 50 was approved and closed on 2026-10-26 (Closed plans, below). The
-next plan starts when the owner asks for one; the audit's roadmap
-([`doc/audit.md`](doc/audit.md), Part 2) is done, its phases 0 to 4
-implemented by plans 46 to 49.
+Brief amendment 52 (2026-10-26): the home screen (the startup screen) made
+to look like the owner's image, `references/16-home-screen.webp`, the
+single source of truth for its look, with an animated Space Invaders
+banner; its functions kept: CLI detection and choice, the project field,
+validation, the project store, the browser, Worktrees and every key. The
+owner approved the revised plan with its recommended decisions and one
+safeguard: the project field keeps its editing, selection and copy/paste.
+A visual review with the owner comes before step 4.
+
+### What was found (2026-10-26, on dc26ad4)
+
+- **Today's screen.** `render/startup.go` draws one centred column; the
+  keys are `app/keys.go`'s `startupKey` (↑↓, Tab, Shift+Tab, Enter, f, Del,
+  Ctrl+O, Ctrl+W, Esc, Ctrl+Q). The project field is an `input.Editor`
+  edited by `editKey` on one line (typing, Backspace, Delete, ← →, Home,
+  End, Ctrl+V, a bracketed paste); it has no selection of its own: text is
+  selected and copied by the terminal, from the screen. The mouse is off on
+  this screen (`app.go` sets a mouse mode on the dashboard only); an idle
+  startup screen schedules no frame; the application has no version.
+- **The design** (measured in
+  [reference-design.md, The home screen](doc/reference-design.md#the-home-screen)):
+  1347x757 pixels; six text sizes, their characters 7.7 (the header's
+  right), 8.0 (project rows, footer), 8.4 (section titles), 8.95 (the
+  title), 9.1 (questions, CLI choices, the field) and 10.6 pixels (panel
+  titles, the button) apart; project rows about 29.3 pixels apart, 1.6
+  rows of a terminal at its scale; header 0-45, banner 45-375, panels
+  380-710, footer 712-757.
+- **Windows Terminal 1.23.20211.0**, probed by `scratchpad\plan51\probe`
+  (`probe51.exe`, maximised at 9 pt, 208x59, and at 120x40):
+  - it answers CSI 14t and 16t in virtual pixels, 10x20 a cell: the real
+    cell (9.0x17.0 screen pixels at 9 pt) cannot be read, and images are
+    resampled to it (90% across, 85% down at 9 pt);
+  - an image drawn over text hides it, the text kept in the buffer (UI
+    Automation reads it); text written over an image replaces it in those
+    cells;
+  - a tab's shell is a child of `WindowsTerminal.exe`, whose folder in its
+    package holds `CascadiaMono.ttf`, readable by the owner's account;
+    GDI loads it privately (`AddFontResourceExW`, `FR_PRIVATE`), for the
+    process alone; the design's Projects panel
+    drawn by GDI at the design's sizes and row spacing lies on the design,
+    in place, at both sizes;
+  - costs: a 600x40-pixel tile 1.2 ms to encode and 0.6 ms in the
+    terminal (p50); a list's two-row move 1.6 ms in the terminal; the
+    whole screen 100 ms to encode at 208x59 and 40 ms in the terminal; a
+    banner frame of 40 sprite tiles (24.5 KB) 7 to 13 ms to encode, the
+    terminal at 18 to 27% of a core at 12.5 frames a second.
+
+### Design
+
+- **D1. Two modes.** Picture mode when the terminal draws Sixel and the
+  design scale k = min(cols×10/1347, rows×20/427), in image pixels per
+  design pixel, is at least 0.875 (from 118 columns): the header, the
+  panels and the footer drawn as images, the design scaled by k, the
+  header at the top, the footer on the last rows, the panels just above
+  it, horizontally centred. Grid mode otherwise: the same structure in
+  terminal text, one text size on whole rows, frames in box drawing, in
+  the design's colours (each with its 16-colour fallback).
+- **D2. The banner** fills the rows between the header and the panels when
+  the terminal draws Sixel and at least 8 rows are free (a band of aliens,
+  a shot's flight and the ship); otherwise it is hidden, and a hidden
+  banner schedules no frame, sends nothing and keeps no buffer. The breaks
+  this gives: 208x59 picture, banner 26 rows; 150x40 picture, 16 rows;
+  120x40 picture, 20 rows; 120x30 picture, 10 rows; 120x26 picture, no
+  banner; 100x40 grid, 22 rows; 80x24 grid, no banner.
+- **D3. Text in images** is drawn by GDI in Cascadia Mono, loaded from the
+  hosting Windows Terminal's package (found from the terminal's process),
+  else an installed Cascadia Mono, else Consolas (today's fallback), each
+  of the design's text kinds at its size times k (thirteen, measured in
+  step 2), drawn four times larger and averaged down.
+- **D4. The project field** (the owner's safeguard): in picture mode its
+  text is terminal text on one row, its cursor, horizontal scrolling and
+  the terminal's own selection and copy as today, and editing and paste,
+  which are input, unchanged; its outline, ground, rounded corners and
+  folder button are images around that row, as the commit message box's
+  (plan 45). The row is the one nearest the design's, the box centred on
+  it. The visual impact: the path at the terminal's text size, about 30%
+  smaller than the design's at 208x59, the same within 1% at 150x40,
+  about 23% larger at 120x40. Every other cell under the picture is blank:
+  no text lies under an image.
+- **D5. The header:** the design's logo and title; "v0.1.0" from a version
+  constant, 0.1.0; "Windows" from the operating system; the status from
+  the startup machine: "Detecting…", "Ready", "Validating…", "No agent
+  CLI".
+- **D6. New Session:** the design's option boxes, the chosen one in purple,
+  each CLI's version in parentheses; a CLI not installed greyed, "not
+  installed: <reason>" for its version, not choosable; "(detecting…)" and
+  START SESSION dimmed while detecting; validation messages and warnings
+  in the row between the field and START SESSION, the panel growing into
+  the banner when they wrap; the resolved path there only when it differs
+  from what is typed (`~`, `/mnt/c/…`). Gone: the subtitle, the `*`, the
+  CLI's path, the help line, the branch.
+- **D7. Projects:** FAVORITES (★) and RECENT PROJECTS (☆) from the store,
+  at the design's row spacing; the band on the list's selected row; the
+  separators; ages as the design writes them ("now", "8m ago", "2h ago",
+  "1d ago", "never"); more projects than fit: the list follows the
+  selection, with a slim scroll mark; the store's problems and "No
+  projects yet" in the panel; a section with no row hidden.
+- **D8. The footer:** "Shortcuts:" with Ctrl+N New Session, Ctrl+O Open
+  Project and Ctrl+Q Quit, Ctrl+Q's group in Ctrl+P's place (no command
+  palette, the owner's decision). ↑↓, Tab, Enter, f, Del and Ctrl+W work
+  as today, documented, not shown.
+- **D9. Ctrl+N** puts the form back as the screen opened it: the default
+  agent CLI, the starting project folder, the focus on Agent CLI, no
+  message; not while validating.
+- **D10. Focus:** the focused control outlined in the design's purple (the
+  option box, the field, START SESSION; the list's band brighter); the
+  field's cursor as today.
+- **D11. The mouse:** the screen takes clicks, as the dashboard, F12 giving
+  the mouse back to the terminal: an option chooses it; the field takes
+  the focus; the folder button opens the browser (Ctrl+O); a project row
+  is selected; a star toggles the favourite (f); START SESSION starts
+  (Enter). No double click, wheel or footer click. The terminal's own
+  selection then takes Shift and a drag, or F12.
+- **D12. The banner's scene**, as agreed: the design's background (its
+  ground, dot grid, halftone bands, stars and sparkles) drawn once a size;
+  its sprites (two kinds of alien, two frames each, the ship, the
+  two-bolt shots, the pink explosion) with their glow; aliens appearing at
+  random places across the width, drifting, descending and replaced; the
+  ship wandering in every direction and firing; a hit exploding; 10 to
+  12.5 frames a second, only the tiles that change sent, in a fixed
+  palette; paused while the terminal window lacks the focus; seeded, so
+  tests are deterministic.
+- **D13. Updates in picture mode:** the picture drawn whole on entry and
+  after a resize (debounced), then only the tiles an update changes (an
+  outline when the focus moves, list rows when the selection moves, a
+  star, the status), after the frame and in synchronized output, as
+  today's images.
+- **D14. Unchanged:** the project browser, the Worktrees view, the
+  dashboard; validation and the store; every key.
+
+### Criteria
+
+1. **51.1 Picture fidelity.** Windows Terminal screenshots at 208x59,
+   150x40 and 120x40 against the design scaled by k: every element of the
+   design present; every edge within 2 screen pixels of the design's,
+   apart from the terminal's resampling, measured and reported; flat
+   colours within 2 per channel; the seven project rows at the design's
+   spacing; each text at the design's size times k, except the field's
+   path (D4).
+2. **51.2 Modes and banner** as D2 lists them, at the seven sizes, by state
+   tests and screenshots.
+3. **51.3 A hidden banner** schedules no frame, writes no tile and keeps no
+   buffer.
+4. **51.4 Behaviour unchanged.** The tests of the startup screen, the
+   store, validation, the browser and Worktrees keep their expectations,
+   apart from drawn text the design changes (listed); the keys as today,
+   plus Ctrl+N; the field's editing, paste, and the terminal's selection
+   and copy of its text, as today (D4).
+5. **51.5 The mouse** as D11 maps it, by state tests.
+6. **51.6 The banner's behaviour**, a fixed seed over 1,000 frames: aliens
+   appearing across the whole width, moving and descending; the ship
+   moving in all four directions and firing; each hit exploding; aliens
+   replaced.
+7. **51.7 Performance.** Typing in the field with the banner running,
+   keystroke to frame p95 at most 16 ms at 208x59 (the timing step); a
+   banner frame at most 2 ms (p95) in the application; the terminal at
+   most 8% of a core while the banner runs; the picture on screen within
+   300 ms of entering.
+8. **51.8 Grid mode** right without Sixel and in 16 colours: golden frames
+   at the four sizes and the message frames, each reviewed as a diff.
+9. **51.9 End to end.** In Windows Terminal, maximised then at 120x40: a
+   session started from the new screen by the keyboard and by the mouse;
+   Ctrl+N; the field's path selected by the terminal and pasted back; the
+   clipboard restored.
+10. **51.10 Mutants** on the new logic, through `go test -overlay`.
+11. **51.11 The checks:** build, vet, gofmt, the whole suite, `-race` on
+    `internal/app` and `internal/render`, the timing step alone.
+
+### Steps
+
+1. Record amendment 52 and this plan; the design measured into
+   reference-design.md (every element's geometry, the text sizes, the
+   colours from the pixels, the icons, the banner's background and
+   sprites); the breaks (D1, D2) and the font's source (D3) fixed.
+2. The picture: the layout at a scale, a compositor (rounded boxes,
+   lines, icons, GDI text), tiles and the updates they need, a
+   fixed-palette encoding; pixel tests with a deterministic stand-in for
+   GDI's glyphs.
+3. Grid mode, with its golden frames. Then **the owner's visual review**:
+   screenshots beside the design, picture mode at 208x59, 150x40 and
+   120x40, grid mode at 100x30 and 80x24.
+4. The application: the modes and breaks, images after frames, resizes,
+   focus, keys, Ctrl+N, the mouse, messages.
+5. The banner (D12), with its tests and timing.
+6. The documents: ui-design.md, architecture.md, AGENTS.md.
+7. Verification (51.1 to 51.11), then `doc/plan51-evaluation.md`.
+
+### Progress
+
+- 2026-10-26: step 1 done. Amendment 52 recorded, the image copied as
+  `references/16-home-screen.webp` (byte for byte, SHA-256 ab1c95bc…),
+  this plan written with the probe's results; the design measured into
+  reference-design.md, The home screen (regions, the six text sizes and
+  their colours, every box, icon and row, the banner's ground, lattice,
+  bands, stars and sprites; the sprites' pixel grids left to step 5); the
+  breaks fixed (D1, D2) and the font's source checked (D3). The picture is
+  put on screen by step 2 already, so that the review before step 4 shows
+  the real screen.
+- 2026-10-26: step 2 done. The picture (`render/home.go`, `homepaint.go`,
+  `hometile.go`; `app/home.go`): the layout at a scale, the painter, GDI's
+  glyphs, the tiles and their updates, after the frame. Found and fixed in
+  Windows Terminal:
+  - a Sixel image whose last band of six pixels passes the screen's bottom
+    scrolls the screen a row: the picture's last three rows (60 pixels,
+    ten bands) are a tile of their own, any change reaching them written
+    as that tile;
+  - Sixel's colours are percentages, a colour drawn within 1.3 of a unit
+    of its own; a median cut per tile drew the page 2 units apart in two
+    tiles (a seam): each tile keeps its 32 commonest colours exact, the
+    same in every tile (D13's "fixed palette" for the picture; the
+    banner's own in step 5);
+  - GDI's hinting draws text crisper and heavier than the design's
+    smooth text: each glyph is drawn four times larger and averaged down;
+    its ink then matches the design's within about 10% at 208x59, 150x40
+    and 120x40 (Regular; SemiLight lighter, SemiBold heavier).
+  The design measured again, on its glyph centres and stems in
+  continuous coordinates (reference-design.md, The home screen, Text):
+  thirteen text kinds, each its advance, capitals' height and place
+  (the questions 8.58 apart, not 9.1; the names 8.19, the paths 8.02; the
+  footer 7.78 to 7.88; START SESSION 9.92, semi-bold); the project rows'
+  middles fitted within 0.3 pixels (the favourites 30.09 apart, the recent
+  projects 28.7); the separators midway; the marks' colours the mean of
+  their brightest pixels. Painted at the design's scale beside the
+  design, every edge and text within a pixel or two (the field's path
+  apart, D4). Tests: `render/home_test.go` (layout, rows, frame, painter,
+  tiles, exact colours), `app/home_test.go` (the sequence), `input`'s
+  TestGlyph; mutants through `-overlay` for the exact colours and the
+  last rows' tile.
+- 2026-10-26: step 3 done. Grid mode (`render/homegrid.go`, replacing
+  `startup`): the header and a blank row; with Sixel, the banner's rows
+  above the panels' least height (14 rows: D2's 22 at 100x40, none at
+  80x24), an image over blank cells; the panels side by side in the
+  design's proportions, in box drawing: the options and START SESSION a
+  row each on their fills, the field in a box with its folder button, the
+  messages between the field and START SESSION, wrapped whole; the
+  projects in their sections with separators while they all fit, the
+  list following the selection with a slim mark when they do not; the
+  focus's outline as purple ends of the focused row (D10); a blank row
+  and the footer. The panels grow into the banner and the blank rows when
+  NEW SESSION needs it; when its messages need more rows than the screen
+  has beside PROJECTS, NEW SESSION takes the width and PROJECTS goes under
+  it. 16 colours: no ground, START SESSION's label in the button's
+  colour. Golden frames rewritten (18 startup frames, each reviewed), the
+  tests of the old screen's wording adapted to the panels (the message
+  frames, the start gate, the Codex proxy's lines: read in NEW SESSION
+  whatever the wrap; "Start session" now "START SESSION →"); the
+  selection move's size bound in TestHomeSequence a third of the whole
+  (the smooth glyphs' tiles: 70 KB of 266 KB). Screenshots beside the
+  design at 208x59, 150x40, 120x40 (picture) and 100x30, 80x24 (grid):
+  waiting for the owner's review before step 4.
+- 2026-10-27: the owner approved the look; step 4 done. In picture mode
+  the focused control outlined in the design's purple, START SESSION's in
+  white, the list's band brighter (D10); START SESSION dimmed while
+  detecting, with no agent CLI, while validating; the notes between the
+  field and START SESSION, a line each beyond the first growing the panels
+  into the banner (16 design pixels a line, the field with them), a
+  reason too long for its option among them in full; PROJECTS' store
+  problem or "No projects yet" above its rows, the slim mark when the
+  rows do not all fit (D6, D7); the notes shared with grid mode. The
+  mouse (D11): the home screen takes clicks (F12 gives them back, not in
+  the browser or Worktrees), each cell a click acts on carrying its item
+  (`render.HomePanel`): an option, the field, its folder button, START
+  SESSION (as Enter), a project's row, its star. Ctrl+N (D9): a startup
+  machine transition, `Detecting`/`Asking` | form reset, documented in
+  events-and-state.md with its invalid clause and tested by
+  TestStateMachines. The picture waits 120 ms after a size report before
+  it is drawn whole, and the second drawing writes the first's sequence
+  again rather than encoding it twice (D13). Checked in Windows Terminal
+  by the mouse, maximised: the field, a row, a star, an option, START
+  SESSION's note, Ctrl+N. The harness's SendInput Tab reaches the
+  application twice (TEA_TRACE: two key-down records a press), so the Tab
+  order is covered by the unit tests. Tests: TestHomePictureFocus,
+  TestHomePictureNotes, TestHomeTargets, TestHomeScrollMark (render),
+  TestHomeMouse, TestHomeCtrlN, TestHomeSettle (app).
+- 2026-10-27: step 5 done. The banner (D12). Its background gains the
+  design's halftone bands and sparkles, measured on the design: four bands
+  of the lattice's dots, brighter to their middles and dithered at their
+  edges; four white crosses and two dim ones; their places scaled to the
+  banner's height. The scene (`render/banner.go`): aliens appearing at
+  random places clear of the others, 33 to the design's area (40 at most),
+  marching as the classic game's, the aliens of a band of rows stepping
+  together every 0.6 s, the three bands in turn, turning at the edges and
+  before another, waiting above one, leaving at 68% of the height and
+  replaced; the ship wandering in its band and firing two-bolt shots,
+  aimed when an alien is above it; a hit exploding into a starburst and
+  pink particles in a dithered purple haze. The view
+  (`render/bannerview.go`) draws it over a copy of the background, on the
+  whole rows within the design's banner: the sprites at the design's 2.5
+  design pixels a pixel, crisp, in three shades with a two-step glow, so
+  that a moving sprite's tile holds few colours; each frame's tiles the
+  cells of what appeared, moved or went, in the view's fixed palette (its
+  48 commonest colours exact), the pixels a frame did not change
+  transparent (Windows Terminal keeps what lies under them); the picture's
+  banner rows written whole in the same palette, so that the two meet
+  without a seam. The application (`app/home.go`): the view kept with the
+  picture, a frame every 100 ms (BannerTick) while the window has the
+  focus (focus reports, `?1004`), the scene kept across a resize at the
+  same scale and when the panels grow; a hidden banner keeps no view and
+  asks for no frame. The whole drawing's tiles are encoded at once, one
+  goroutine each, the banner's together, and `encodeSixel` reads each band
+  once (its output the old one's byte for byte, checked on 3,000 random
+  images): the whole drawing at 208x59 from 393 to 55 ms. Measured in
+  Windows Terminal, maximised at 208x59: with each alien on its own clock
+  at 12.5 frames a second, the terminal took 10.9% of a core (14.4 of the
+  banner's 25 rows touched a frame); at 10 frames a second, D12's least,
+  with the march, 6.6% (WindowsTerminal 5.0%, its OpenConsole 1.6%; 10.4
+  rows a frame), the application 4.6% (3.0% on the same screen without a
+  banner); without the focus the frames stop (the terminal 0.7%, the
+  focus reports CSI O and CSI I received). Timing, on the performance
+  counter (Go's clock steps by 0.5 ms here): a banner frame p50 0.46 ms,
+  p95 1.27 ms, max 2.6 ms, 8.3 KB; a key in the project field with the
+  banner running p95 0.13 ms; the picture on entering 195 ms at worst,
+  the 120 ms wait included. Seen in Windows Terminal maximised and at
+  150x40, 120x40 (picture) and 100x40 (grid): no seam, no trail after
+  25 s. Tests: TestBannerScene (51.6, 1,000 frames of a fixed seed),
+  TestBannerFrames (no pixel changed outside the tiles sent; the terminal
+  given the frames' images shows the banner drawn whole), TestBannerKept
+  (render); TestHomeBanner (51.3: the frames, the second drawing, the
+  focus, a hidden banner) and TestHomeSequence's tiles (app); the timing
+  step's TestBannerToFrame, TestHomeKeysToFrame and TestHomePictureTime
+  (`app/hometiming_test.go`, Windows only for the counter).
+- 2026-10-27: step 6 done. ui-design.md's Startup screen rewritten for the
+  home screen: its modes and breaks, the picture, the banner, the
+  questions, the messages, the projects, the browser, the keys and the
+  mouse, what follows and departs from the owner's image, grid mode's
+  mock-ups drawn by the renderer; its Animations name the banner.
+  reference-design.md: the banner's bands, sparkles, sprites and explosion
+  as measured, and its departures (the march, 10 frames a second, the
+  crisp sprites, the dithered haze). architecture.md: The home screen, its
+  parts and files; the banner's timer and the picture's encoding
+  goroutines in Threads of execution. evaluation.md: the timing step's
+  sixteen tests and plan 51's three. events-and-state.md: the banner's
+  frames among the timers. AGENTS.md: the home screen in its summary
+  (20,706 bytes).
+- 2026-10-27: step 7 done, [doc/plan51-evaluation.md](doc/plan51-evaluation.md):
+  10 PASS, 1 FAIL. 51.1: the project field's box, which D4 puts on the
+  terminal row nearest the design's, lies 3.6 screen pixels from the
+  design's at 208x59 and 6.5 at 120x40, every other edge within 1.91.
+  51.9's copy of the path and its paste back not verified: the antivirus
+  quarantined the harness that saved and restored the owner's clipboard
+  around them. Mutants: 22 of 23 caught, one equivalent. Waiting for the
+  owner's decision on 51.1 and approval.
+- 2026-10-27: the owner found the animation too slow. The livelier pace
+  (`render/banner.go`): the march every 0.4 s in two bands, the aliens'
+  drift and descent about twice as fast, the ship 1.4 times, more shots,
+  faster bolts, snappier explosions; chosen among five paces simulated
+  through overlays for the rows a frame touches (11.8, from 10.4). A
+  banner frame p95 1.66 ms (target 2), 11 KB; Windows Terminal 5.7 to
+  8.9% of a core over seven samples (mean 7.75%), the old pace 6.0 to
+  8.3% in the same hours, the machine's load swinging from 1 to 74%: the
+  8% target is at the edge, recorded as a FAIL in the evaluation's
+  addendum, waiting for the owner's decision.
+- 2026-10-27: the owner asked for a far faster ship dash, then withdrew it
+  and asked for the ship's pace raised again, not drastically. The dash
+  and its afterimages are out (the three banner files as before it,
+  checked against the pace above); the ship's legs go at 100 to 220
+  design pixels a second (70 to 150). 11.8 rows a frame as before, a
+  banner frame p95 1.60 ms (target 2), 11 KB; checked in Windows Terminal
+  at 208x59, its share of a core not sampled again. The block is in the
+  evaluation's addendum.
+- 2026-10-27: the owner asked for the ship a little faster still, not
+  drastically: its legs at 125 to 275 design pixels a second. 11.6 rows a
+  frame; checked in Windows Terminal at 208x59. The timing step missed:
+  a banner frame p95 2.05 ms (target 2) with the machine busy (Task
+  Manager 45% of a core, Edge 39%); timed in turn, the previous pace
+  missed too (p95 up to 2.70 ms), this one no slower. A FAIL in the
+  evaluation's addendum, waiting for the owner's decision. The owner
+  found this pace right.
+- 2026-10-27: the timing step again, the owner's applications idle (Task
+  Manager closed; on mains, the CPU 5 to 28% busy just before): all
+  sixteen pass. The banner frame p50 0.69 ms, p95 1.76 ms, max 2.80 ms
+  (target 2); the home keys p95 0.12 ms; the picture's worst 200 ms
+  (target 260); the slowest of the others TestStreamToFrame, p95 4.55 ms
+  (target 16). The earlier miss was the machine's load.
+- 2026-10-27: Windows Terminal at the final pace, the owner's applications
+  idle: 7.54, 7.46 and 7.70% of a core over 60 s (target 8), the
+  evaluation's build between them 7.16 and 7.04%. 51.7 passes both its
+  parts on a quiet machine; the earlier FAIL blocks stay recorded.
+- 2026-10-27: the owner accepted 51.1 as a documented exception: the
+  field's box on the terminal row nearest the design's, the path centred
+  in it (D4); it stays FAIL in the evaluation, and ui-design.md and
+  reference-design.md list it among the departures. Left: 51.9's paste
+  back, the owner's check by hand, and the plan's approval.
+- 2026-10-27: the owner checked 51.9's paste back by hand: the field's
+  path copied from the terminal's selection and pasted back came back
+  exactly. Plan 51 waits for the owner's approval.
 
 ## Closed plans
 

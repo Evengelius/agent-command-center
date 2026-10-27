@@ -22,9 +22,8 @@ func TestFootersFit(t *testing.T) {
 		}
 	}
 	for _, w := range []int{80, 99, 100, 200} {
-		for field := range 4 {
-			fits("startup field "+string(rune('0'+field)), startupKeys(field, w), w)
-		}
+		// The home screen's footer, the same in every field (plan 51, design D8).
+		fits("home screen", strings.TrimRight(rowsText([]line{homeGridFooter(UI{}, w)}), " \n"), w)
 	}
 	rows := []WorktreeRow{{Branch: "main", Main: true}}
 	for _, v := range []WorktreesView{

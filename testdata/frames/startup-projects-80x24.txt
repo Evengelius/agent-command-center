@@ -1,24 +1,24 @@
- >_ AGENT COMMAND CENTER                                            New session
-────────────────────────────────────────────────────────────────────────────────
-    Configure your workspace
-    Select an agent CLI and the project to work on.
-    1. Agent CLI *
-       (•) Claude Code     2.1.300   C:\Tools\claude.exe
-       ( ) OpenAI Codex    not installed: adapter not built yet
-    ────────────────────────────────────────────────────────────────────────
-    2. Project directory *
-       ╭────────────────────────────────────────────────────────────────╮
-       │ C:\work\demo-project                                           │
-       ╰────────────────────────────────────────────────────────────────╯
-       → C:\work\demo-project
-       Type a full path; ~ and /mnt/c/… are expanded. Default: current dir.
-    ────────────────────────────────────────────────────────────────────────
-    Projects   1–3 of 10
-           agent-command-cent… …adev\projets\agent-command-center   just now
-           billing-service     C:\javadev\projets\billing-service  8 min ago
-           a-project-with-a-v… …t-with-a-very-long-directory-name 58 min ago
-    ────────────────────────────────────────────────────────────────────────
-                  ╭──────────────────────────────────────────╮
-                  │             Start session  →             │
-                  ╰──────────────────────────────────────────╯
- ↑↓ agent · Tab next field · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit
+ ⊞ AGENT COMMAND CENTER                       │  v0.1.0  │  Windows  │  ● Ready
+
+ ╭──────────────────────────────────╮ ╭───────────────────────────────────────╮
+ │ › NEW SESSION  ───────────────── │ │ › PROJECTS  ───────────────────────── │
+ │                                  │ │                                       │
+ │  1.  Agent CLI                   │ │  ◷ RECENT PROJECTS                    │
+ │ ▏ ◉  Claude Code (2.1.300)     ▕ │ │  ☆  agent-command-center         now  │
+ │                                  │ │  ☆  billing-service           8m ago  │
+ │   ○  OpenAI Codex not            │ │  ☆  a-project-with-a-very-l… 58m ago  │
+ │      installed: adapter not      │ │  ☆  docs                      3h ago  │
+ │      built yet                   │ │  ☆  infra                     7h ago  │
+ │                                  │ │  ☆  mobile-app               14h ago  │
+ │  2.  Project directory           │ │  ☆  web                       1d ago  │
+ │ ╭──────────────────────────┬───╮ │ │  ☆  scratch                   1d ago  │
+ │ │ C:\work\demo-project     │ 🗀 │ │ │  ☆  tools                     2d ago  │
+ │ ╰──────────────────────────┴───╯ │ │  ☆  payments                  3d ago  │
+ │                                  │ │                                       │
+ │                                  │ │                                       │
+ │         START SESSION →          │ │                                       │
+ │                                  │ │                                       │
+ │                                  │ │                                       │
+ ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯
+
+ › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit

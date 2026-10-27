@@ -27,59 +27,137 @@ child, cost N/A, an observed plan). Colours are described in
 
 ## Startup screen
 
-The first screen (AM4 S1-S15). Two mandatory questions, validated before the
-dashboard opens; since plan 15, the recent and favourite projects under them
-and a project browser (amendment 9).
+The first screen, the home screen (AM4 S1-S15; amendment 52, plan 51): two
+mandatory questions, validated before the dashboard opens, the recent and
+favourite projects beside them and a project browser (amendment 9), under
+an animated banner. It follows the owner's image
+`references/16-home-screen.webp`, measured in
+[reference-design.md, The home screen](reference-design.md#the-home-screen):
+a header, the banner, two panels, NEW SESSION and PROJECTS, and a footer.
+
+### Modes
+
+- **Picture mode**, when the terminal draws Sixel images and the design's
+  scale k = min(columns×10/1347, rows×20/427), in image pixels a design
+  pixel, is at least 0.875 (from 118 columns; plan 51, D1): the header, the
+  panels and the footer are images of the design drawn at k, the header at
+  the top, the footer on the last rows, the panels just above it,
+  horizontally centred. Their text is drawn by GDI in Cascadia Mono,
+  loaded from the hosting Windows Terminal's package, else an installed
+  one, else Consolas, each of the design's thirteen text kinds at its size
+  times k (D3). Every cell under the picture is blank but the project
+  field's text (below); without a font GDI can draw, grid mode.
+- **Grid mode** otherwise: the same structure in terminal text, one text
+  size on whole rows, frames in box drawing, in the design's colours (each
+  with its 16-colour fallback), the focused control's row between purple
+  ends ▏ ▕.
+- **The banner** fills the rows between the header and the panels when the
+  terminal draws Sixel and at least 8 rows are free; otherwise it is hidden
+  and costs nothing (D2). Maximised at 208x59 (the acc tab), the picture
+  and a banner of 26 rows; at 150x40, 16 rows; 120x40, 20; 120x30, 10;
+  120x26, none; in grid mode at 100x40, 22 rows; at 80x24, none.
+
+Grid mode at 80x24, the list focused on its second favourite:
 
 ```text
- >_ AGENT COMMAND CENTER                                            New session 
-────────────────────────────────────────────────────────────────────────────────
+ ⊞ AGENT COMMAND CENTER                       │  v0.1.0  │  Windows  │  ● Ready 
                                                                                 
-    Configure your workspace                                                    
-    Select an agent CLI and the project to work on.                             
+ ╭──────────────────────────────────╮ ╭───────────────────────────────────────╮ 
+ │ › NEW SESSION  ───────────────── │ │ › PROJECTS  ───────────────────────── │ 
+ │                                  │ │                                       │ 
+ │  1.  Agent CLI                   │ │  ☆ FAVORITES                          │ 
+ │   ◉  Claude Code (2.1.300)       │ │  ★  docs                      3h ago  │ 
+ │                                  │ │                                       │ 
+ │   ○  OpenAI Codex (0.163.0)      │ │ ▏★  scratch                   1d ago▕ │ 
+ │                                  │ │                                       │ 
+ │  2.  Project directory           │ │  ★  acme-portal                never  │ 
+ │ ╭──────────────────────────┬───╮ │ │                                       │ 
+ │ │ …ts\agent-command-center │ 🗀 │ │ │  ◷ RECENT PROJECTS                    │ 
+ │ ╰──────────────────────────┴───╯ │ │  ☆  agent-command-center         now  │ 
+ │                                  │ │ ───────────────────────────────────── │ 
+ │                                  │ │  ☆  billing-service           8m ago  │ 
+ │         START SESSION →          │ │ ───────────────────────────────────── │ 
+ │                                  │ │  ☆  infra                     7h ago  │ 
+ │                                  │ │ ───────────────────────────────────── │ 
+ │                                  │ │  ☆  web                       1d ago  │ 
+ │                                  │ │                                       │ 
+ ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯ 
                                                                                 
-    1. Agent CLI *                                                              
-       (•) Claude Code     2.1.300   C:\Users\…\.local\bin\claude.exe           
-       ( ) OpenAI Codex    0.145.0   C:\Users\…\codex.exe                       
-    ────────────────────────────────────────────────────────────────────────    
-    2. Project directory *                                                      
-       ╭────────────────────────────────────────────────────────────────╮       
-       │ C:\javadev\projets\agent-command-center█                       │       
-       ╰────────────────────────────────────────────────────────────────╯       
-       → C:\javadev\projets\agent-command-center   git: main                    
-       Type a full path; ~ and /mnt/c/… are expanded. Default: current dir.     
-    ────────────────────────────────────────────────────────────────────────    
-                   ╭──────────────────────────────────────────╮                 
-                   │            Start session  →              │                 
-                   ╰──────────────────────────────────────────╯                 
-                                                                                
-                                                                                
-                                                                                
- ↑↓ agent · Tab next field · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit    
+ › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit 
 ```
+
+### The picture
+
+Drawn whole on entering and after a resize, once the size has stayed the
+same for 120 ms (a window dragged reports a size every few tens of
+milliseconds), then only the cells a change touches: an outline when the
+focus moves, rows when the selection moves, a star, the status (D13).
+Each image is written after the frame, in synchronized output, the
+cursor saved and restored; a second drawing 250 ms later writes the
+first's sequence again, in case the frame came out after it. Each tile
+keeps its 32 commonest colours exact, so tiles meet without a seam; the
+last three rows are a tile of their own, as an image whose last band of
+six pixels passes the screen's bottom scrolls the screen.
+
+The project field (D4, the owner's safeguard): its text is terminal text
+on one row, with its cursor, horizontal scrolling, editing and paste, and
+the terminal's own selection and copy; its outline, ground, rounded
+corners and folder button are images around that row, as the commit
+message box's (plan 45). The path is at the terminal's text size, not the
+design's.
+
+The focus (D10): the focused control outlined in the design's purple, the
+chosen option's box and the field; START SESSION's ring white; the list's
+band brighter. START SESSION is dimmed while detecting, with no agent CLI
+and while validating.
+
+### The banner
+
+The design's background, drawn once a size: its ground, the dot lattice,
+four halftone bands, stars and six sparkles. Over it a scene (D12):
+aliens of two kinds appearing at random places across the width, clear
+of each other, drifting and descending as the classic game's march, the
+aliens of a band of rows stepping together every 0.4 s, the two bands in
+turn; turning at the edges and before another, waiting above one, and
+replaced once they come down near the ship; the ship wandering in every
+direction in its band and firing two-bolt shots, aimed when an alien is
+above it; a hit exploding into a starburst and pink particles in a purple
+haze. It is decorative: no key acts on it.
+
+Ten frames a second (`render.BannerTick`). A frame sends only the cells
+what moved touches: the pixels it changed, in the scene's fixed palette,
+the others transparent (Windows Terminal keeps what lies under them); the
+banner's rows of the picture are written in the same palette, so the two
+meet without a seam. The frames stop while the terminal's window lacks
+the focus (focus reports, `?1004`) and come back with it; a hidden banner
+keeps no scene and asks for no frame. The scene goes on across a resize
+at the same scale and when NEW SESSION's notes grow the panels into it.
+At 208x59 a frame takes 0.69 ms in the application (p95 1.76 ms) and
+sends about 11 KB; Windows Terminal then takes about 7.6% of a core with
+the machine quiet (7.5 to 7.7%), up to 8.9% with the machine's other load
+(plan 51, the owner's pace after step 7).
 
 ### Questions
 
-1. **Agent CLI**: radio buttons, Claude Code then OpenAI Codex (AM4 S1;
-   AM5). Each row shows what detection found: the version and the
-   executable's path, with the user folder elided (`C:\Users\…`). While
-   detection runs (startup machine `Detecting`), each row shows
-   "detecting…" with a spinner and Start is disabled. A CLI not found is
-   shown "not installed" with the reason (`codex not found on PATH`,
-   "version unreadable: exit 1") and is **not selectable** (AM4 S2, S3;
-   events-and-state.md, Startup machine). The selection defaults to
-   `--provider` if given and installed, else the first installed CLI
-   (ASM-8).
-2. **Project directory**: a one-line text field, prefilled with the current
-   directory or `--project` (AM4 S7, S12; ASM-8). Under it, a live line
-   shows the **resolved path** the agent will receive, recomputed on every
-   keystroke without any I/O (steps 1 to 3 of INT paths, "Validation, in
-   order": trim, expand `~`, translate WSL forms, classify, make absolute);
-   `Stat` and the read check (steps 4 and 5) run only on Start. When the
-   directory is a git work tree, the line adds the branch read from
-   `.git/HEAD` after validation (display only; architecture.md, Session
-   context). One help line: "Type a full path; ~ and /mnt/c/… are expanded.
-   Default: current dir."
+NEW SESSION holds them (D6):
+
+1. **Agent CLI**: an option box each, Claude Code then OpenAI Codex (AM4
+   S1; AM5), the chosen one in purple, each followed by the version
+   detection found, in parentheses. While detection runs (startup machine
+   `Detecting`), "(detecting…)" in its place and START SESSION dimmed. A
+   CLI not found is greyed, "not installed: <reason>" in its version's
+   place (`codex not found on PATH`, "version unreadable: exit 1"), and is
+   **not choosable** (AM4 S2, S3; events-and-state.md, Startup machine).
+   The choice defaults to `--provider` if given and installed, else the
+   first installed CLI (ASM-8).
+2. **Project directory**: the field, prefilled with the current directory
+   or `--project` (AM4 S7, S12; ASM-8), its folder button opening the
+   [project browser](#project-browser). The path the agent will receive,
+   recomputed on every keystroke without any I/O (steps 1 to 3 of INT
+   paths, "Validation, in order": trim, expand `~`, translate WSL forms,
+   classify, make absolute), is shown under it only when it differs from
+   what is typed (`~`, `/mnt/c/…`); `Stat` and the read check (steps 4 and
+   5) run only on Start.
 
 A paste into the path field arrives as one bracketed paste (TI 3.2):
 surrounding quotes (Explorer's "Copy as path") and the trailing newline are
@@ -87,15 +165,17 @@ removed; a paste never starts the session.
 
 ### Validation and messages
 
-On Start (Enter anywhere on the screen), both answers are validated; the
-session starts only if both pass (AM4 S9, S10, S14). A failure keeps the
-screen, puts the message under its field in red with ✗, and moves the focus
-there. Messages, from INT paths, each with the resolved path or the
+On Start (Enter anywhere on the screen, or a click on START SESSION), both
+answers are validated; the session starts only if both pass (AM4 S9, S10,
+S14). A failure keeps the screen, puts the message between the field and
+START SESSION in red with ✗, wrapped whole, and moves the focus there; in
+picture mode each line beyond the first grows the panels into the banner
+(D6). Messages, from INT paths, each with the resolved path or the
 corrected example:
 
-| Case | Message under the field |
+| Case | Message |
 | - | - |
-| No CLI installed | ✗ No supported agent CLI found. Install Claude Code or Codex CLI, then restart. (Start stays disabled) |
+| No CLI installed | ✗ No supported agent CLI found. Install Claude Code or Codex CLI, then restart. (START SESSION stays dimmed) |
 | Selected CLI fails its version check | ✗ Claude Code: `claude --version` failed (exit 1): `<first stderr line>` |
 | Path does not exist | ✗ Does not exist: `C:\Users\…\projets\agent-comand-center` |
 | Path is a file | ✗ Is a file, not a directory: `<resolved path>` |
@@ -108,34 +188,38 @@ corrected example:
 | Windows path in Linux or macOS | ✗ A Windows path |
 | Translated WSL path fails `Stat` | ✗ Does not exist: `<translated path>` (the WSL mount root may not be `/mnt/`) |
 
-The screen with two failures, Codex missing and a mistyped path:
+The screen with two failures, Codex missing and a mistyped path, in grid
+mode at 80x24:
 
 ```text
- >_ AGENT COMMAND CENTER                                            New session 
-────────────────────────────────────────────────────────────────────────────────
+ ⊞ AGENT COMMAND CENTER                       │  v0.1.0  │  Windows  │  ● Ready 
                                                                                 
-    Configure your workspace                                                    
-    Select an agent CLI and the project to work on.                             
+ ╭──────────────────────────────────╮ ╭───────────────────────────────────────╮ 
+ │ › NEW SESSION  ───────────────── │ │ › PROJECTS  ───────────────────────── │ 
+ │                                  │ │                                       │ 
+ │  1.  Agent CLI                   │ │  No projects yet                      │ 
+ │   ◉  Claude Code (2.1.300)       │ │                                       │ 
+ │                                  │ │                                       │ 
+ │   ○  OpenAI Codex not            │ │                                       │ 
+ │      installed: codex not        │ │                                       │ 
+ │      found on PATH               │ │                                       │ 
+ │                                  │ │                                       │ 
+ │  2.  Project directory           │ │                                       │ 
+ │ ╭──────────────────────────┬───╮ │ │                                       │ 
+ │ │ …ts/agent-comand-center█ │ 🗀 │ │ │                                       │ 
+ │ ╰──────────────────────────┴───╯ │ │                                       │ 
+ │  ✗ Does not exist:               │ │                                       │ 
+ │    C:\Users\…\projets\agent-com  │ │                                       │ 
+ │    and-center                    │ │                                       │ 
+ │                                  │ │                                       │ 
+ │         START SESSION →          │ │                                       │ 
+ ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯ 
                                                                                 
-    1. Agent CLI *                                                              
-       (•) Claude Code     2.1.300   C:\Users\…\.local\bin\claude.exe           
-       ( ) OpenAI Codex    not installed: codex not found on PATH               
-    ────────────────────────────────────────────────────────────────────────    
-    2. Project directory *                                                      
-       ╭────────────────────────────────────────────────────────────────╮       
-       │ ~/projets/agent-comand-center█                                 │       
-       ╰────────────────────────────────────────────────────────────────╯       
-       ✗ Does not exist: C:\Users\…\projets\agent-comand-center                 
-       Type a full path; ~ and /mnt/c/… are expanded. Default: current dir.     
-    ────────────────────────────────────────────────────────────────────────    
-                   ╭──────────────────────────────────────────╮                 
-                   │            Start session  →              │                 
-                   ╰──────────────────────────────────────────╯                 
-                                                                                
-                                                                                
-                                                                                
- ↑↓ agent · Tab next field · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit    
+ › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit 
 ```
+
+When NEW SESSION needs more rows than the screen has beside PROJECTS, it
+takes the width and PROJECTS goes under it.
 
 Warnings (shown in amber with !, Start still allowed): a UNC path ("a
 network share can be slow or disappear"); a `\\wsl$` or `\\wsl.localhost`
@@ -153,35 +237,31 @@ agent CLI then fails to start. At most 10 recent projects are kept; a
 favourite is never dropped. A mock run passes no store: nothing is read or
 written and the screen is unchanged.
 
-Under the project field, "Projects" lists favourites first (★), then the
-other recent projects, each group by its last start: the directory's name,
-its path and its age ("3 h ago", "never" for a directory starred from the
-browser before any session). It is a Tab stop between the project field
-and Start, shown only when not empty, with as many rows as fit so the Start
-button stays whole at 80x24; when rows are left out the heading shows the
-window ("1–3 of 11"). A store that cannot be read shows "Recent projects
-unavailable:" and the reason in its place, never an empty list; one that
-cannot be written shows "Recent projects not saved:" and the reason.
-
-```text
-    Projects   1–3 of 11
-         ★ docs                C:\javadev\projets\docs               3 h ago
-       › ★ scratch             C:\javadev\projets\scratch            1 d ago
-         ★ acme-portal         D:\clients\acme-portal                  never
-```
+PROJECTS lists FAVORITES (★) then RECENT PROJECTS (☆), each by its last
+start, at the design's row spacing in picture mode, separators between
+the rows: the directory's name, its path and its age ("now", "8m ago",
+"2h ago", "1d ago", "never" for a directory starred from the browser
+before any session) (D7). It is a Tab stop after the project field, its
+selected row on a band. A section with no row is hidden; with no project,
+"No projects yet". When the rows do not all fit, the list follows the
+selection, a slim mark at its right showing where it is. A store that
+cannot be read shows "Recent projects unavailable:" and the reason in the
+panel, never an empty list; one that cannot be written, "Recent projects
+not saved:" and the reason.
 
 ### Project browser
 
-Ctrl+O on the startup screen (not while validating) opens the browser full
-screen at the project field's resolved directory, else its nearest existing
-parent, else the home directory. It lists directories only, sorted without
-case, with ★ for a favourite, "git" for a directory holding `.git` (a
-directory or a file) and "link" for a link or junction to a directory.
-Hidden and system directories are left out and counted until Ctrl+H. The
-first row, "Use this directory", chooses the directory shown; then `..`;
-then the subdirectories. A directory is read off the update loop, with
-"reading…" until it is listed; one that cannot be listed shows its error in
-red with ✗, worded as validation words it, and stays browsable upwards. On
+Ctrl+O on the startup screen (not while validating), or a click on the
+field's folder button, opens the browser full screen at the project
+field's resolved directory, else its nearest existing parent, else the
+home directory. It lists directories only, sorted without case, with ★
+for a favourite, "git" for a directory holding `.git` (a directory or a
+file) and "link" for a link or junction to a directory. Hidden and system
+directories are left out and counted until Ctrl+H. The first row, "Use
+this directory", chooses the directory shown; then `..`; then the
+subdirectories. A directory is read off the update loop, with "reading…"
+until it is listed; one that cannot be listed shows its error in red with
+✗, worded as validation words it, and stays browsable upwards. On
 Windows, `..` at a drive's root lists the drives. The rows are windowed
 around the selection, their window on the right of the count line.
 
@@ -215,37 +295,48 @@ around the selection, their window on the right of the count line.
 | Ctrl+H | show or hide the hidden directories |
 | Esc | clear the filter, then close with the project field unchanged |
 
-### Keys
+### Keys and the mouse
 
 | Key | Action |
 | - | - |
 | ↑ / ↓ | choose the agent CLI (on question 1); move in Projects |
-| Tab / Shift+Tab | next / previous field (question 1, question 2, Projects, Start) |
+| Tab / Shift+Tab | next / previous field (question 1, question 2, Projects, START SESSION) |
 | Enter | Start: validate both answers, then start; in Projects, with that project's path |
 | f / Del | in Projects: star or unstar / forget that project |
+| Ctrl+N | the form as the screen opened it: the default agent CLI, the starting project folder, the focus on question 1, the list's first row, no message; not while validating (D9) |
 | Ctrl+O | open the project browser |
 | Ctrl+W | open the [Worktrees](#worktrees) view on the project field's repository |
+| F12 | give the mouse back to the terminal, and take it again |
 | Editing keys | as in the [Input editor](#input-editor), on one line |
 | Ctrl+Q | quit |
 
-Below 100 columns the footer leaves Enter out to fit Ctrl+W within 79 cells;
-from 100 it shows "Enter start" too. On Projects it reads "↑↓ · Enter start
-· f star · Del forget · Ctrl+W worktrees · Ctrl+Q quit" (plan 16).
+The footer shows Ctrl+N, Ctrl+O and Ctrl+Q, as the design (D8); the other
+keys work as above, unshown.
+
+The mouse (D11), as on the dashboard, F12 giving it back to the terminal
+(not in the browser or Worktrees): a left click on an option chooses that
+agent CLI; on the field, gives it the focus; on its folder button, opens
+the browser; on a project's row, selects it; on its star, stars or unstars
+it; on START SESSION, starts as Enter does. No double click, wheel or
+footer click. The terminal's own selection then takes Shift and a drag,
+or F12.
 
 ### Follows and departs
 
-Against [RD, Image 1](reference-design.md#image-1-startup-configuration):
+Against the owner's image, `references/16-home-screen.webp` (amendment 52;
+[reference-design.md, The home screen](reference-design.md#the-home-screen),
+"What differs"):
 
-| Image 1 | Here | Why |
+| The image | Here | Why |
 | - | - | - |
-| Title bar "AGENT COMMAND CENTER", "New session" on the right | Same | AM4 S15 |
-| Violet heading "Configure your workspace" and one line of help | Same; the help says "agent CLI" for "AI agent" | AM4 S15 |
-| Two numbered questions, red asterisks, thin separators | Same | AM4 S15 |
-| Three agents, including Google Gemini CLI | Two: Claude Code and OpenAI Codex | AM5 |
-| Each agent a bare name | Each row adds the detected version and path, or "not installed" | AM4 S2, S3 |
-| "Browse directories, recent projects, or enter a path" | A help line for manual entry and the resolved path shown live; the recent and favourite projects under it, and Ctrl+O for the browser | AM4 S13, X1-X3; amendment 9 (RD, "Where the images and amendment 4's text differ") |
-| "Optional session settings" | Absent | AM4: exactly two questions; X10 |
-| One wide light button "Preview configuration →" | One wide light button "Start session →", which validates then starts | AM4 S14 |
+| One size, 1347x757 | Picture mode at the design's scale k from 118 columns with Sixel; grid mode otherwise | D1 |
+| Text in a smooth monospace | Cascadia Mono drawn by GDI, four times larger and averaged down | D3 |
+| The field's path at the design's size | At the terminal's size: terminal text, for its selection and copy | D4, the owner's safeguard |
+| The field's box at the design's place | On the terminal row nearest it, centred on it, the path in its middle: up to half a row off, 3.6 screen pixels at 208x59 and 6.5 at 120x40 | D4; criterion 51.1, accepted by the owner as a documented exception |
+| A still banner | A moving scene, at 10 frames a second, the aliens marching by bands of rows, the sprites crisp with a two-step glow | D12; criterion 51.7 |
+| "Ctrl+P Command Palette" in the footer | Absent, Ctrl+Q's group in its place | D8: no command palette |
+| "v0.1.0", "Windows", "Ready" | A version constant, the system, the startup machine's status | D5 |
+| Validation, warnings, detection | Not in the image: in NEW SESSION between the field and START SESSION; START SESSION dimmed | D6 |
 
 ## Worktrees
 
@@ -2651,6 +2742,9 @@ connectors").
   never stored, but for two facts of the interface: the phases a frame drew
   live, which alone play their exit, and when the activity line's
   condition began, which it shows 200 ms after (plan 22, correction C6).
+- The home screen's banner ([Startup screen, The banner](#the-banner)):
+  10 frames a second while it is drawn and the terminal's window has the
+  focus, none while it is hidden (plan 51).
 - Elsewhere no slide, fade or blink: the thinking card's dim-to-full
   transitions are the only fades. No animation when idle, so an idle
   dashboard draws nothing (plan 22, criterion 3.2).

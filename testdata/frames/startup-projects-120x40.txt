@@ -1,40 +1,40 @@
- >_ AGENT COMMAND CENTER                                                                                    New session
-────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ ⊞ AGENT COMMAND CENTER                                                               │  v0.1.0  │  Windows  │  ● Ready
 
-                      Configure your workspace
-                      Select an agent CLI and the project to work on.
+ ╭────────────────────────────────────────────────────╮ ╭─────────────────────────────────────────────────────────────╮
+ │ › NEW SESSION  ─────────────────────────────────── │ │ › PROJECTS  ─────────────────────────────────────────────── │
+ │                                                    │ │                                                             │
+ │  1.  Agent CLI                                     │ │  ◷ RECENT PROJECTS                                          │
+ │ ▏ ◉  Claude Code (2.1.300)                       ▕ │ │  ☆  agent-command-center      …gent-command-center     now  │
+ │                                                    │ │                                                             │
+ │   ○  OpenAI Codex not installed: adapter not       │ │  ☆  billing-service           …ets\billing-service  8m ago  │
+ │      built yet                                     │ │ ─────────────────────────────────────────────────────────── │
+ │                                                    │ │  ☆  a-project-with-a-very-l…  …long-directory-name 58m ago  │
+ │  2.  Project directory                             │ │ ─────────────────────────────────────────────────────────── │
+ │ ╭────────────────────────────────────────────┬───╮ │ │  ☆  docs                      …avadev\projets\docs  3h ago  │
+ │ │ C:\work\demo-project                       │ 🗀 │ │ │ ─────────────────────────────────────────────────────────── │
+ │ ╰────────────────────────────────────────────┴───╯ │ │  ☆  infra                     …vadev\projets\infra  7h ago  │
+ │                                                    │ │ ─────────────────────────────────────────────────────────── │
+ │                                                    │ │  ☆  mobile-app                …\projets\mobile-app 14h ago  │
+ │                  START SESSION →                   │ │ ─────────────────────────────────────────────────────────── │
+ │                                                    │ │  ☆  web                       …javadev\projets\web  1d ago  │
+ │                                                    │ │ ─────────────────────────────────────────────────────────── │
+ │                                                    │ │  ☆  scratch                   …dev\projets\scratch  1d ago  │
+ │                                                    │ │ ─────────────────────────────────────────────────────────── │
+ │                                                    │ │  ☆  tools                     …vadev\projets\tools  2d ago  │
+ │                                                    │ │ ─────────────────────────────────────────────────────────── │
+ │                                                    │ │  ☆  payments                  …ev\projets\payments  3d ago  │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ ╰────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────────────╯
 
-                      1. Agent CLI *
-                         (•) Claude Code     2.1.300   C:\Tools\claude.exe
-                         ( ) OpenAI Codex    not installed: adapter not built yet
-                      ────────────────────────────────────────────────────────────────────────────
-                      2. Project directory *
-                         ╭────────────────────────────────────────────────────────────────────╮
-                         │ C:\work\demo-project                                               │
-                         ╰────────────────────────────────────────────────────────────────────╯
-                         → C:\work\demo-project
-                         Type a full path; ~ and /mnt/c/… are expanded. Default: current dir.
-                      ────────────────────────────────────────────────────────────────────────────
-                      Projects
-                             agent-command-cent… …\javadev\projets\agent-command-center   just now
-                             billing-service     C:\javadev\projets\billing-service      8 min ago
-                             a-project-with-a-v… …oject-with-a-very-long-directory-name 58 min ago
-                             docs                C:\javadev\projets\docs                   3 h ago
-                             infra               C:\javadev\projets\infra                  7 h ago
-                             mobile-app          C:\javadev\projets\mobile-app            14 h ago
-                             web                 C:\javadev\projets\web                    1 d ago
-                             scratch             C:\javadev\projets\scratch                1 d ago
-                             tools               C:\javadev\projets\tools                  2 d ago
-                             payments            C:\javadev\projets\payments               3 d ago
-                      ────────────────────────────────────────────────────────────────────────────
-                                      ╭──────────────────────────────────────────╮
-                                      │             Start session  →             │
-                                      ╰──────────────────────────────────────────╯
-
-
-
-
-
-
-
- ↑↓ agent · Tab next field · Enter start · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit
+ › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit

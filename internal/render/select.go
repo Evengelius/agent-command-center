@@ -109,6 +109,9 @@ type Screen struct {
 	Commit CommitShown
 	Menu   MenuShown
 	MsgBox MsgShown
+	// Home is the home screen's picture to draw (plan 51, design D13), zero
+	// outside picture mode.
+	Home HomeShown
 }
 
 // Cols are a zone's columns on the screen: the first and how many.
@@ -164,7 +167,21 @@ func Draw(s *state.State, ui UI) *Screen {
 	case s.Screen == state.ScreenDashboard:
 		ls = dashboard(s, ui, sc)
 	default:
-		ls = startup(s, ui)
+		// The home screen (plan 51, design D1): a picture over cells of the
+		// page's ground when the terminal is large enough and draws Sixel
+		// with GDI's text, its project field's text in cells; else in text,
+		// the banner an image over its rows when it shows (design D2).
+		g := HomeLayout(ui.Width, ui.Height, ui.Sixel)
+		if g.Picture && ui.PillNoFont {
+			g = gridLayout(ui.Width, ui.Height, ui.Sixel)
+		}
+		if g.Picture {
+			l := homeLook(s, ui, g)
+			ls = homePicture(ui, l)
+			sc.Home = HomeShown{Shown: true, Look: l}
+		} else if ls, g = homeGrid(s, ui, g); g.Banner {
+			sc.Home = HomeShown{Shown: true, Look: HomeLook{Geom: g, FieldRow: -1}}
+		}
 	}
 	sc.lines = make([]line, ui.Height)
 	for i := range sc.lines {

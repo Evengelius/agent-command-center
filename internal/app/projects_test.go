@@ -253,8 +253,8 @@ func TestAge(t *testing.T) {
 		d    time.Duration
 		want string
 	}{
-		{0, "just now"}, {59 * time.Second, "just now"}, {time.Minute, "1 min ago"}, {59 * time.Minute, "59 min ago"},
-		{time.Hour, "1 h ago"}, {23 * time.Hour, "23 h ago"}, {24 * time.Hour, "1 d ago"}, {29 * 24 * time.Hour, "29 d ago"},
+		{0, "now"}, {59 * time.Second, "now"}, {time.Minute, "1m ago"}, {59 * time.Minute, "59m ago"},
+		{time.Hour, "1h ago"}, {23 * time.Hour, "23h ago"}, {24 * time.Hour, "1d ago"}, {29 * 24 * time.Hour, "29d ago"},
 	} {
 		if got := age(c.d, testNow.Add(-c.d)); got != c.want {
 			t.Errorf("age(%v) = %q, want %q", c.d, got, c.want)

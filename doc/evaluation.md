@@ -84,20 +84,22 @@ frame built from the one before it equals the frame drawn afresh, escape codes
 included.
 
 **The timing step, on its own.** A time is judged against its target only in
-the timing step, built with the `timing` tag. Ten timed tests carry the tag,
-so `go test ./...` never runs them. Three more, `TestPasteToFrame`,
+the timing step, built with the `timing` tag. Thirteen timed tests carry the
+tag, so `go test ./...` never runs them; plan 51's three
+(`hometiming_test.go`) are built on Windows only, for its performance
+counter. Three more, `TestPasteToFrame`,
 `TestStreamToFrame` (`internal/app/perf_test.go`) and `TestOutputToFrame`
 (`outputtiming_test.go`), run in `go test ./...` too, for their other
 checks: a 50,000-line paste kept byte for byte, a 2,000-line streamed answer
 kept as one entry and drawn to its end, a command's streamed output kept as
 the call's. There `overTarget` logs their time as "not judged outside the
 timing step", as it does under `-race` (`timingBuild`, `timing_on_test.go`
-and `timing_off_test.go`; plan 21, item 2). The step runs the thirteen,
+and `timing_off_test.go`; plan 21, item 2). The step runs the sixteen,
 under the owner's normal working conditions (owner, 2026-10-16), since the
 target is about real use:
 
 ```text
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame|TestOutputToFrame|TestToolsToFrame)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame|TestOutputToFrame|TestToolsToFrame|TestBannerToFrame|TestHomeKeysToFrame|TestHomePictureTime)$' -count=1 -v
 ```
 
 - Allowed: the owner's usual applications open and idle (VS Code, browsers,
@@ -158,6 +160,17 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   calls, 30 of them `Write` calls of 100 KB, while 8 agents run 50 calls
   each; the last tenth of the events each timed from Update to its frame at
   200x60: p95 within 16 ms (`streamTarget`).
+- Plan 51, criterion 51.7, the home screen at 208x59 with Sixel, its
+  banner running, timed on the performance counter (Go's clock steps by
+  0.5 ms on this machine): `TestBannerToFrame`, 1,000 banner frames, each
+  from its message through Update to its frame: p95 within 2 ms
+  (`bannerTarget`), the bytes a frame sends reported;
+  `TestHomeKeysToFrame`, typing in the project field, a banner frame
+  between two keys: p95 within 16 ms (`keystrokeTarget`);
+  `TestHomePictureTime`, the picture drawn whole on entering, ten times,
+  the 120 ms wait for the size to settle counted: the worst within 260 ms
+  (`pictureTarget`), the terminal's 40 ms to show it (probe P51) making
+  the criterion's 300.
 - A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
   profile, the same test on the last commit) and report it as the loop above
   says.

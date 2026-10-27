@@ -17,6 +17,7 @@ point at it. Two references, with different roles:
 | `12-sidebar-collapsed.png` (955x332), `13-sidebar-explorer.webp` (1393x479), from amendment 44 | **the right sidebar**: a narrow box right of zone B with two icons, the Explorer's and Skills' (Source Control's since amendment 45); the Explorer docked between zone B and the sidebar, its tree, the Explorer's icon selected | [The right sidebar](#the-right-sidebar) |
 | `14-source-control.png` (218x160), from amendment 45 | **Source Control**: VS Code's panel header "Source Control" with its "···", a "Changes" section, a commit message box and a Commit button, the organisation to follow, not its theme | [Source Control](#source-control) |
 | `15-commit-push.png` (604x508), from amendment 46 | **Commit and push**: the dashboard's Source Control panel with a "Message" field, a purple "✓ Commit" button with its separator and chevron, and its open dropdown, "Commit & Push" on a rounded band; the authoritative design | [Commit and push](#commit-and-push) |
+| `16-home-screen.webp` (1347x757), from amendment 52 | **The home screen**: a header with the version, the system and the status, a pixel-art Space Invaders banner, the NEW SESSION and PROJECTS panels, a footer of shortcuts; the single source of truth for its look | [The home screen](#the-home-screen) |
 
 **It is a visual reference, not a product.** The reference looks like a
 promotional mock-up ("CLAUDE CODE ULTRACODE TIP"). Its model names, flags
@@ -698,3 +699,180 @@ What differs:
 - The dimmed button (nothing to do), the focus outline and the "Push" label
   are not in the image; they keep its geometry and colours, the dimmed ones
   halfway to the page, the focus outline in the title colour.
+
+## The home screen
+
+Brief amendment 52 (plan 51): `16-home-screen.webp` (1347x757, the owner's
+`48.webp`), the home screen redrawn, the single source of truth for its
+look. Measured from its pixels (`scratchpad\plan51\refscan`, the image
+decoded by Windows' WebP codec): a mark's colour is the commonest among its
+brightest pixels, a fill's its commonest; places are the image's pixels,
+"design pixels", x from the left, y from the top. The image is lossy: a
+colour read this way is within a few units of the one meant. The column
+1342-1346 and the rows 0-1 are white: the screenshot's window edge, not
+the design.
+
+**Regions.** The page `#090B0C`. The header, 0-45; the banner, 45-375, on
+its own ground `#050709`, which fades from the page's over about 15 pixels
+at its top (37-56) and its bottom (361-379); the panels, 380-710; the
+footer, 712-757, a faint line `#0B0C17` along its top (711-713).
+
+**Text.** A monospace in thirteen kinds (the face is not one installed
+here), measured in continuous coordinates (a pixel x spans x to x+1): the
+advance fitted through each text's glyph centres, the first cell's start
+(its first centre less half an advance), the capitals' height and middle
+read on vertical stems where the coverage crosses half its run's:
+
+| Text | Cell start | Advance | Capitals, middle | Colour |
+| - | - | - | - | - |
+| The title, "AGENT COMMAND CENTER" | 45.54 | 8.94 | 10.1, 18.88 | `#C7C4E2` |
+| "v0.1.0", "Windows", "Ready" | 1078.48, 1165.66, 1278.25 | 7.69 | 9.4, 18.84 | `#9998AE`, `#A9A7C1`, `#A4A2BD` |
+| "NEW SESSION", "PROJECTS" | 50.76, 679.85 | 10.63 | 11.2, 402.15 | `#D2CCEA` |
+| "START SESSION", semi-bold; the arrow's shaft x 374.5-386, y 666.8 | 235.0 | 9.92 | 10.8, 667.37 | `#24145C` on the button |
+| "1." and "2.", then "Agent CLI" and "Project directory" | 30.85, 60.9 | 8.58 | 10.3; 441.8 and 569.88 | `#BBBCC3` the numbers, `#D7D8E2` the words |
+| The CLIs' names, "Claude Code", "OpenAI Codex" | 78.4 | 8.96 | 10.5; 476.8 and 519.8 | chosen `#CCC2E8`, other `#C8C9D5` |
+| Their versions, a space and a pixel after the name | 186.76, 196.23 | 8.77 | 10.5, as the name | chosen `#AEA3CF`, other `#848598` |
+| The field's path | 46 | 9.0 | 10.4, 606.4 | `#C1C1CF` |
+| "FAVORITES", "RECENT PROJECTS" | 682.64 | 8.36 | 9.3, the heading's (below) | `#787596` |
+| A project's name | 698.1 | 8.19 | 9.6, its row's (below) | `#CECFD9` (`#E9E7F5` on the band) |
+| Its path, its age | 917.9, 1238.3 | 8.02 | 9.6, as the name | path `#747688` (`#908FAA`), age `#717385` (`#8B8AA7`) |
+| "Shortcuts:", semi-bold | 32.86 | 7.89 | 9.5, 738.75 | `#B6A7D9` |
+| A key's text; an action | 150.61, 366.75, 591.83, 836.15; 219.2, 435.79, 659.36, 903.91 | 7.88; 7.78 | 9.5, 738.75 | `#BBB9CF`; `#83829D` |
+
+A mark's colour is the mean of its brightest pixels, which a thin stroke
+reaches at its middle only (the commonest of them, used before, was its
+edge's). The text weighs as Cascadia Mono Regular drawn smoothly: its
+ink, at 208x59, 150x40 and 120x40, within about 10% of the design's
+(SemiLight lighter, SemiBold heavier; plan 51, step 2).
+
+**The header.** The logo, a two-by-two grid of rounded square outlines,
+x 8-24, y 11-26 (each square about 7 pixels, its line 1.3, its corners 2.5),
+`#8B7FB1`; the title. At the right, thin vertical bars at x 1058, 1144 and
+1239 (y 9-28, `#625F7B`) before "v0.1.0", "Windows" and the status; the
+status a green dot, x 1259-1267, y 14-22, `#52C98A`, then "Ready".
+
+**The panels.** Each a rounded rectangle, its line about 1.2 pixels,
+`#615F75` (`#4C495C` where it falls between two pixels), its corners of
+radius about 7: NEW SESSION x 7.5-616, PROJECTS x 631-1331, both y
+380.5-710. In each:
+
+- the title: a chevron (a thin ">", 7x12, its line 1.5, `#918DAA`) at x 26
+  and 655, the title at 52 and 682, capitals 396-407; under the chevron and
+  the title, a dim line `#1D1D28` (y 414-415, x 28-166 and 654-763); then,
+  about 18 pixels on, a purple rule to 22 pixels short of the panel's
+  right edge (x 184-594 and 786-1310), two pixels, `#634B95` over
+  `#513A86`.
+- NEW SESSION: "1.  Agent CLI"; two option boxes, x 29.5-594.5, radius
+  about 6: the chosen one y 457.5-495.5, its outline `#8073A7`, its inside
+  `#181228`; the other y 498.5-539, its outline faint, `#17181F`, its
+  inside the page. In each a radio, centred at x 54 (y 476 and 519),
+  radius 8.5, its ring 1.3 pixels: chosen, ring `#9480C5` and a dot of
+  radius about 4, `#A381F1`; not chosen, ring `#63647D`. Then "2.  Project
+  directory"; the field, x 29.5-594, y 586-625, radius about 6, inside
+  `#0F1317`, its outline lighter at the top (`#ACA5C0`) than at the bottom
+  (`#76758A`), sides `#9A9AA8`; a divider at x 549 (`#494957`) and right
+  of it the folder button, its icon x 562-580, y 598-614. Then START
+  SESSION: x 29.5-594, y 644.5-688.5, radius about 6, filled `#9C80FB`
+  (`#9B80FB` at its top to `#9A7DFB` at its bottom), its label centred,
+  `#24145C`.
+- PROJECTS: "FAVORITES" after an outline star (x 655-670, y 430-445,
+  `#B3AFCB`), its capitals' middle at 438.36; rows at 468.36, 498.03 and
+  528.53; "RECENT PROJECTS" after a clock (x 654-670, y 562-578,
+  `#B8B1CF`) at 570.45, rows at 599.92, 628.62, 657.39 and 686.03 (the
+  capitals' middles, on the paths' P): the favourites 30.09 apart, the
+  recent projects 28.7, a heading's first row 29.73 below it, the next
+  heading 41.92 under a section's last row. Each row: a star centred at
+  x 662.6, filled `#9D81EF` for a favourite (16x16), an outline
+  `#707086` otherwise (15x15); the name, the path, the age. The selected
+  row on a band `#16171F`, x 644-1319, y 452.4-484, its top line
+  `#282834` (y 453), its sides a shade lighter, `#1D1E26`. Separators
+  `#121416` to `#161A20`, about a pixel, midway between two rows
+  (513.6, 614.5, 643.3, 671.5), 15.5 under a heading (585.8) and 16 under
+  a section's last row (544.2); none beside the band or under the last.
+
+**The icons**, each a vector shape in the image: the folder, an outline
+with a tab at its top left (its line 1.5, corners 1.5, `#8C85A3`); the
+stars, five points with rounded tips; the clock, a ring of radius 7.5
+(line 1.3) with one hand to twelve and one to four; the chevrons; the arrow
+of START SESSION, a shaft of about 12 pixels and a chevron head, its line
+1.6; the radios and the green dot.
+
+**The footer.** A chevron (x 10-15, y 734-743, `#CFBBFD`), "Shortcuts:"
+(semi-bold), then for each shortcut a key cap and its action: a rounded
+rectangle, radius about 4, outline `#20232B`, inside `#0F1016` ("Ctrl+N":
+x 141-208, y 727-749), its key at the cap's middle, then the action:
+"Ctrl+N" at 152, "New Session" 220-303; "Ctrl+O" 368, "Open Project" 437;
+"Ctrl+P" 593, "Command Palette" 661; "Ctrl+Q" 838, "Quit" 904. Thin
+vertical bars (`#4A4262`) between the groups, at x 334, 559 and 804.
+
+**The banner.** Its ground `#050709`; a lattice of faint dots, one pixel
+each, `#12141A` to `#1A1C22`, about 7.9 pixels across and 8.2 down (the
+image's own spacing wanders between about 7.8 and 8.3); white and lavender
+stars (`#CEADFB` and brighter) of one to three pixels. On the lattice,
+four halftone bands (measured on 10-pixel cells, plan 51, step 5): its
+dots brighter, a bright pixel with a soft purple edge, lavender grey
+(`#5C5774` at a band's edges to `#C4BEE2` at its middle, mostly `#8784A4`
+to `#A39DC1`), fewer toward the edges. Two run from the left edge down to
+the right, through (15, 78) to (200, 205), half as wide as 19 pixels at
+its start and 11 at its end, and through (5, 262) to (215, 362), 15 to 8;
+one from the top right corner through (1332, 52) to (1158, 205), 22 to
+20; one from inside the right side, (1310, 252) to (1040, 365), 18 to 10.
+Six sparkles: four white crosses (`#F4E6FF`, arms about 4.5 pixels, 1.6
+thick, in a violet glow `#3A0A9C` of about 8) centred at (33, 224.5),
+(461.5, 335), (1240.5, 259.5) and (1313, 192.5); two dim ones (`#7C70A0`,
+arms about 4, their middles dark) at (1305.5, 57.5) and (1278, 327.5).
+Its sprites, pixel art, each pixel of it 2.5 design pixels, with a soft
+purple glow, their pixel grids transcribed from the image enlarged twelve
+times (`render/bannerart.go`):
+- aliens of two kinds, 33 across the width: a lavender one (`#DBC0FC`,
+  `#D0B2F8` below), 11x9 pixels, 27.5x22.5, antennae, two dark eyes, arms
+  down at its sides; a purple one (`#9E7CFC` at its top to `#8469D6`),
+  11x9, antennae, two dark eyes, a wide body and four legs; each a second
+  frame, its arms or legs moved;
+- the ship, 17x13 pixels (42.5x32.5), lavender and purple, a pointed nose,
+  a dark cockpit, swept wings with fins, two exhaust blocks;
+- its shots, two vertical bolts (x 666-673, y 287-328), each one pixel by
+  seven, white `#FFF6FF` in a purple glow;
+- an explosion, about 107x93 (x 740-846, y 140-232): a bright starburst
+  (`#FFC8FF`, its rays `#FFA8FC`), square particles of two to four pixels
+  in bright pinks (`#FFB6FF` to `#FFD8FF`, luma 200 to 230) scattered
+  round it, in a purple haze (`#300642` to `#3B094E` within about 10
+  pixels of its middle).
+
+What plan 51 takes: everything above. In picture mode (plan.md, Plan 51,
+D1) the image's measures are drawn as Sixel images at a scale k, its text
+by GDI ([ui-design.md, Startup screen](ui-design.md#startup-screen)).
+
+What differs, approved by the owner (amendment 52):
+- The face: Cascadia Mono, the terminal's own, at each text kind's size,
+  drawn four times larger and averaged down, as smooth as the design's.
+- Sixel's colours are percentages: each colour is drawn within 1.3 of a
+  unit of its value, the same in every image.
+- Windows Terminal maps 10x20 image pixels to a cell whatever its real
+  size, which it does not report: images are resampled, at the acc tab's
+  9 points 90% across and 85% down, so a little softer and about 6%
+  flatter than drawn.
+- The project field's path is terminal text at the terminal's size (plan
+  51, D4): its selection and copy are the terminal's, which an image would
+  lose.
+- The project field's box lies on the terminal row nearest the design's,
+  centred on it, the path in its middle: up to half a row from the
+  design's place, 3.6 screen pixels at 208x59 and 6.5 at 120x40 (D4;
+  criterion 51.1, accepted by the owner as a documented exception on
+  2026-10-27).
+- Below the picture mode's size, or without Sixel, grid mode: the same
+  structure in terminal text on whole rows.
+- The controls the image shows that do not exist: Ctrl+P is left out (no
+  command palette); "v0.1.0" comes from a version constant, "Windows" from
+  the system, the status from the startup machine, Ctrl+N resets the form
+  (plan.md, Plan 51, D5, D8, D9).
+- The banner moves (D12), drawn so that the terminal stays within 8% of a
+  core (criterion 51.7; plan 51, step 5): 10 frames a second; the aliens
+  march as the classic game's, those of a band of rows stepping together
+  every 0.4 s, the two bands in turn, each alien its own drift and descent;
+  the sprites crisp, each image pixel the sprite pixel under its middle,
+  in three shades, their glow in two steps; the explosion's haze in five
+  strengths dithered, the same all its life. Fewer colours and rows a
+  frame than the image's soft shading would take: each alien on its own
+  clock at 12.5 frames, the terminal took 10.9% of a core.
+- The bands' dots lie on the lattice's regular spacing.

@@ -5,7 +5,12 @@ package input
 import (
 	"errors"
 	"image"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
 	"syscall"
+	"unicode/utf16"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -31,6 +36,7 @@ var (
 	procGdiFlush              = gdi32.NewProc("GdiFlush")
 	procGetTextFaceW          = gdi32.NewProc("GetTextFaceW")
 	procGetTextExtentPoint32W = gdi32.NewProc("GetTextExtentPoint32W")
+	procAddFontResourceExW    = gdi32.NewProc("AddFontResourceExW")
 	textFaces                 = []string{"Cascadia Mono", "Consolas"}
 	errNoFace                 = errors.New("neither Cascadia Mono nor Consolas is installed")
 	errGDI                    = errors.New("GDI could not draw the text")
@@ -50,6 +56,8 @@ type bitmapInfo struct {
 // GDI's constants used here.
 const (
 	fwNormal          = 400
+	fwSemiBold        = 600
+	frPrivate         = 0x10 // AddFontResourceExW: for this process alone
 	defaultCharset    = 1
 	outTTPrecis       = 4
 	clipDefault       = 0
@@ -109,12 +117,155 @@ func TextMask(text string, em, top, h int) (*image.Alpha, error) {
 	return mask, nil
 }
 
+// glyphScale is how many times larger Glyph draws a character before
+// averaging it down: GDI's hinting snaps stems to whole pixels, which at
+// the home screen's sizes draws text crisper and heavier than the
+// design's smooth text (plan 51, step 3).
+const glyphScale = 4
+
+// Glyph is r drawn by GDI white on black at em pixels, semi-bold when
+// bold, smoothly (glyphScale): a coverage mask as wide as GDI measures the
+// character, rounded up, the character centred in it, and 3em/2 high, its
+// cell's top at the mask's top (plan 51, design D3).
+func Glyph(r rune, em int, bold bool) (*image.Alpha, error) {
+	dc, _, _ := procCreateCompatibleDC.Call(0)
+	if dc == 0 {
+		return nil, errGDI
+	}
+	defer procDeleteDC.Call(dc)
+	weight := fwNormal
+	if bold {
+		weight = fwSemiBold
+	}
+	font, err := faceFont(dc, em*glyphScale, weight)
+	if err != nil {
+		return nil, err
+	}
+	defer procDeleteObject.Call(font)
+	u := utf16.Encode([]rune{r})
+	var size struct{ cx, cy int32 }
+	if r, _, _ := procGetTextExtentPoint32W.Call(dc, uintptr(unsafe.Pointer(&u[0])), uintptr(len(u)), uintptr(unsafe.Pointer(&size))); r == 0 || size.cx <= 0 {
+		return nil, errGDI
+	}
+	sw, sh := (int(size.cx)+glyphScale-1)/glyphScale, em*3/2 // the mask's size
+	w, h := sw*glyphScale, sh*glyphScale
+	bi := bitmapInfo{size: 40, width: int32(w), height: -int32(h), planes: 1, bitCount: 32}
+	var bits unsafe.Pointer
+	dib, _, _ := procCreateDIBSection.Call(dc, uintptr(unsafe.Pointer(&bi)), 0, uintptr(unsafe.Pointer(&bits)), 0, 0)
+	if dib == 0 || bits == nil {
+		return nil, errGDI
+	}
+	defer procDeleteObject.Call(dib)
+	procSelectObject.Call(dc, dib)
+	procSelectObject.Call(dc, font)
+	procSetTextColor.Call(dc, 0x00FFFFFF)
+	procSetBkMode.Call(dc, transparentBkMode)
+	if r, _, _ := procTextOutW.Call(dc, uintptr((w-int(size.cx))/2), 0, uintptr(unsafe.Pointer(&u[0])), uintptr(len(u))); r == 0 {
+		return nil, errGDI
+	}
+	procGdiFlush.Call()
+	px := unsafe.Slice((*byte)(bits), w*h*4)
+	mask := image.NewAlpha(image.Rect(0, 0, sw, sh))
+	for y := range sh {
+		for x := range sw {
+			sum := 0 // the block's coverage
+			for by := y * glyphScale; by < (y+1)*glyphScale; by++ {
+				for bx := x * glyphScale; bx < (x+1)*glyphScale; bx++ {
+					i := (by*w + bx) * 4
+					sum += int(max(px[i], px[i+1], px[i+2]))
+				}
+			}
+			mask.Pix[y*mask.Stride+x] = uint8((sum + glyphScale*glyphScale/2) / (glyphScale * glyphScale))
+		}
+	}
+	return mask, nil
+}
+
+// terminalFont loads, once, the Cascadia Mono of the Windows Terminal this
+// process runs in, for this process alone (AddFontResourceExW, FR_PRIVATE):
+// the terminal ships it in its package, where GDI does not look (plan 51,
+// design D3). The terminal is the first WindowsTerminal.exe among the
+// process's ancestors; without one nothing is loaded.
+var terminalFont = sync.OnceFunc(func() {
+	dir := terminalDir()
+	if dir == "" {
+		return
+	}
+	p, err := syscall.UTF16PtrFromString(filepath.Join(dir, "CascadiaMono.ttf"))
+	if err != nil {
+		return
+	}
+	procAddFontResourceExW.Call(uintptr(unsafe.Pointer(p)), frPrivate, 0)
+})
+
+// terminalDir is the folder of the WindowsTerminal.exe among this process's
+// ancestors, "" when there is none: each parent checked to have started
+// before its child, so that a reused process id is not taken for one.
+func terminalDir() string {
+	snap, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
+	if err != nil {
+		return ""
+	}
+	defer windows.CloseHandle(snap)
+	type proc struct {
+		parent uint32
+		exe    string
+	}
+	procs := map[uint32]proc{}
+	var e windows.ProcessEntry32
+	e.Size = uint32(unsafe.Sizeof(e))
+	for err = windows.Process32First(snap, &e); err == nil; err = windows.Process32Next(snap, &e) {
+		procs[e.ProcessID] = proc{e.ParentProcessID, windows.UTF16ToString(e.ExeFile[:])}
+	}
+	started := func(pid uint32) (windows.Filetime, string, bool) {
+		h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
+		if err != nil {
+			return windows.Filetime{}, "", false
+		}
+		defer windows.CloseHandle(h)
+		var c, x, k, u windows.Filetime
+		if windows.GetProcessTimes(h, &c, &x, &k, &u) != nil {
+			return windows.Filetime{}, "", false
+		}
+		buf := make([]uint16, windows.MAX_LONG_PATH)
+		n := uint32(len(buf))
+		path := ""
+		if windows.QueryFullProcessImageName(h, 0, &buf[0], &n) == nil {
+			path = windows.UTF16ToString(buf[:n])
+		}
+		return c, path, true
+	}
+	pid := uint32(os.Getpid())
+	child, _, ok := started(pid)
+	for range 16 {
+		p, found := procs[pid]
+		if !found || !ok {
+			return ""
+		}
+		at, path, alive := started(p.parent)
+		if !alive || at.Nanoseconds() > child.Nanoseconds() {
+			return "" // the parent is gone, or a later process took its id
+		}
+		if strings.EqualFold(procs[p.parent].exe, "WindowsTerminal.exe") && path != "" {
+			return filepath.Dir(path)
+		}
+		pid, child = p.parent, at
+	}
+	return ""
+}
+
 // textFont is the first of textFaces GDI has, em pixels its character
 // height, selected into dc.
 func textFont(dc uintptr, em int) (uintptr, error) {
+	return faceFont(dc, em, fwNormal)
+}
+
+// faceFont is textFont at a weight, the terminal's font loaded first.
+func faceFont(dc uintptr, em, weight int) (uintptr, error) {
+	terminalFont()
 	for _, face := range textFaces {
 		name, _ := syscall.UTF16PtrFromString(face)
-		f, _, _ := procCreateFontW.Call(uintptr(-em), 0, 0, 0, fwNormal, 0, 0, 0, defaultCharset, outTTPrecis, clipDefault,
+		f, _, _ := procCreateFontW.Call(uintptr(-em), 0, 0, 0, uintptr(weight), 0, 0, 0, defaultCharset, outTTPrecis, clipDefault,
 			antialiasedQual, fixedPitchModern, uintptr(unsafe.Pointer(name)))
 		if f == 0 {
 			continue

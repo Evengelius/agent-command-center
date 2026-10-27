@@ -15,19 +15,20 @@ machine.
 
 It opens on a **startup screen** with two mandatory questions, the agent CLI
 and the project directory, validated before the dashboard opens; that directory
-becomes the agent's working directory (brief, amendment 4).
+becomes the agent's working directory (brief, amendment 4). Since plan 51 it is
+the owner's home screen image, drawn as Sixel images, with an animated banner
+(amendment 52).
 
 It **drives each CLI through its supported interfaces**, not by re-implementing
 its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-26, when the owner approved plan
-50, Source Control multi-selection (brief amendment 51).** Plans 1 to 50
-are closed, one entry each in `plan.md`, Closed plans; the MVP was approved
-on 2026-10-17. `plan.md` holds the active plan's progress and test
-evidence; each closed plan's results are in its evaluation file, and its
-full record in git.
+**Status: plan 51 active since 2026-10-26, the home screen redesign (brief
+amendment 52).** Plans 1 to 50 are closed, one entry each in `plan.md`,
+Closed plans; the MVP was approved on 2026-10-17. `plan.md` holds the
+active plan's progress and test evidence; each closed plan's results are
+in its evaluation file, and its full record in git.
 
 ## Delegation: highest priority
 

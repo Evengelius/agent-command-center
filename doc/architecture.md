@@ -131,8 +131,12 @@ Rules that keep them apart:
   approve) is handed to part 1, which writes to stdin from its own goroutine,
   so a slow pipe never freezes input.
 - **Timers**: one local tick for animation and value ages; one timeout per
-  handshake and per shutdown step (INT 1; CC-4). No timer polls a CLI (see
+  handshake and per shutdown step (INT 1; CC-4); the home screen's banner,
+  a frame every 100 ms while it is drawn and the window has the focus
+  ([The home screen](#the-home-screen)). No timer polls a CLI (see
   [events-and-state.md, Polling](events-and-state.md#polling)).
+- **The home screen's picture**, when drawn whole, encodes its images on a
+  goroutine each, joined before the loop goes on (plan 51).
 
 ## Provider interface
 
@@ -204,7 +208,7 @@ screen):
 | - | - |
 | Codex's slash commands held back once (`send`) | `internal/state/actions.go` |
 | the CLI's own resume command printed at the end (`ResumeCommand`) | `internal/app/run.go` |
-| the two supported CLIs, their flags and their startup rows | `internal/app/app.go`, `internal/render/startup.go` |
+| the two supported CLIs, their flags and their rows on the home screen | `internal/app/app.go`, `internal/render/startup.go`, `home.go`, `homegrid.go` |
 | the project bar: Codex's model, sandbox and policy; "(next turn)" for Codex's mode change | `internal/render/dashboard.go` |
 | zone B's speaker label, CLAUDE or CODEX (`providerLabel`) | `internal/render/dashboard.go` |
 | the Write and Edit sentence on a pending Claude Code request (`effect`) | `internal/render/approval.go` |
@@ -622,6 +626,21 @@ No provider or state change.
 | 5. Input | `SourceWrite.CheckSelection` and `CommitSelection`: a rebase, am, cherry-pick, revert or merge in progress (`merging`), a conflict, a selected file changed since it was shown, partly staged or deleted in the index beside its file on disk (`WholeRefusal`, which the panel asks too), a rename's source outside the project or back on disk, each a `Refusal` before any write, git's status read path by path (`--no-renames`) so that a file moved on disk, both its rows selected, stays two paths once staged; then `git -c user.useConfigOnly=true commit --only --file=-`, the files and a rename's source as literal pathspecs from a file, git building the commit from HEAD in its own transaction and leaving the rest of the index; after it, HEAD a new commit on the old one (`madeOn`, `Commit`'s too), holding exactly the selection, each blob the index's (`holds`, `blobsAt`), else an `Unexpected`, the commit made | `internal/input/sourcewrite.go`, `source.go` |
 | 4. Rendering | `SourceView.Selected` and `AskSel`; a selected file's row with "▎" on the sidebar's selected ground (`sourceRow`), "Commit N files" (`ButtonLabel`), the selection's question (`AskSelText`), the hints with a selection (`sourceSelHints`), the key list's Ctrl+click | `internal/render/source.go`, `commit.go`, `dashboard.go`, `keys.go` |
 | The application | Ctrl+click on a file row (`sourceCtrlClick`), a plain click on a file row clearing the selection (`sourceClick`), Esc's clearing, the selection kept to the changes at each status read (`stillChanged`); Commit with a selection (`commitSelected`): a file not whole refused at once, files not staged the question, then the steps check, stage and commit (`selectionSteps`, `stepCheck`); after a failed commit the question's staging said to stay (`stayStaged`), for plan 45's question too; the selection cleared by a commit made from it | `internal/app/source.go`, `commit.go`, `mouse.go` |
+
+## The home screen
+
+Plan 51 (brief amendment 52; ui-design.md, Startup screen; reference-design.md,
+The home screen). The startup screen redrawn as the owner's image: in picture
+mode its header, panels and footer are Sixel images of the design at a scale,
+its banner a moving scene; in grid mode the same structure in text. The
+startup machine gains the form's reset; the rest is the interface's.
+
+| Part | What it does | Where |
+| - | - | - |
+| 3. State | Ctrl+N's form reset, while `Detecting` or `Asking` (`ResetForm`; events-and-state.md, Startup machine) | `internal/state/actions.go` |
+| 4. Rendering | the mode and the banner's rows at a size (`HomeLayout`); the look (`homeLook`: the rows, the focus, the notes, the panels' growth); the picture's painter (`HomePaint`: rounded boxes, lines, icons, the glyphs a `Glyphs` gives), its cells a click acts on (panel 'H', `HomeItemOf`); its tiles, their changes and their Sixel, each tile's 32 commonest colours exact (`HomeRects`, `HomeChanges`, `BottomBlock`, `HomeSixel`); grid mode (`homeGrid`); the banner's scene, seeded (`Banner`), and its view over a copy of the background (`BannerView`): a frame's tiles of what moved, written in the view's fixed palette, the pixels it did not change transparent (`Frame`, `BannerSequence`), the sprites' images (`spriteImage`); the encoder reading each band once (`encodeSixel`) | `internal/render/home.go`, `homepaint.go`, `hometile.go`, `homegrid.go`, `banner.go`, `bannerview.go`, `bannerart.go`, `sixel.go`, `select.go` |
+| 5. Input | a glyph drawn by GDI in Cascadia Mono, from the hosting Windows Terminal's package, loaded privately, else installed, else Consolas; four times larger, averaged down (`Glyph`) | `internal/input/textmask_windows.go` |
+| The application | the picture drawn whole once the size has settled (`homeSettle`, 120 ms), then the cells a new look changes and the rows the frame wrote again, after the frame with the preview's images (`homeSequence`), its images encoded at once (`homePic.encode`); the banner's view kept with the picture (`homeBanner`), a frame every `render.BannerTick` while the window has the focus (`bannerMsg`, `tea.FocusMsg` and `tea.BlurMsg`, `View.ReportFocus`), none and no view when the banner is hidden; the clicks (`homeMouse`), F12, Ctrl+N (`resetForm`); the header's version constant and system | `internal/app/home.go`, `app.go`, `keys.go`, `mouse.go`, `preview.go` |
 
 ## Build order
 

@@ -114,17 +114,18 @@ func (m *Model) projectRows() []render.ProjectRow {
 	return rows
 }
 
-// age is how long ago a project's last session started.
+// age is how long ago a project's last session started, as the home screen
+// writes it (plan 51, design D7): "now", "8m ago", "2h ago", "1d ago".
 func age(d time.Duration, at time.Time) string {
 	switch {
 	case d < time.Minute:
-		return "just now"
+		return "now"
 	case d < time.Hour:
-		return fmt.Sprintf("%d min ago", int(d/time.Minute))
+		return fmt.Sprintf("%dm ago", int(d/time.Minute))
 	case d < 24*time.Hour:
-		return fmt.Sprintf("%d h ago", int(d/time.Hour))
+		return fmt.Sprintf("%dh ago", int(d/time.Hour))
 	case d < 30*24*time.Hour:
-		return fmt.Sprintf("%d d ago", int(d/(24*time.Hour)))
+		return fmt.Sprintf("%dd ago", int(d/(24*time.Hour)))
 	}
 	return at.Local().Format("2006-01-02")
 }

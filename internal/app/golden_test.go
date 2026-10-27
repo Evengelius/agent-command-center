@@ -461,11 +461,12 @@ func TestGoldenFrames(t *testing.T) {
 						t.Errorf("too-small message shown %v at %dx%d", small, w, hgt)
 					}
 					if strings.HasPrefix(sc.name, "startup") && !small {
-						// The Start button stays whole under the project list (plan 15, 1.4).
+						// START SESSION shows whatever the project list holds (plan 15,
+						// 1.4), above the footer (plan 51, design D8).
 						tl := strings.Split(text, "\n")
-						i := slices.IndexFunc(tl, func(l string) bool { return strings.Contains(l, "Start session") })
-						if i < 1 || i+1 >= len(tl) || !strings.Contains(tl[i-1], "╭") || !strings.Contains(tl[i+1], "╰") {
-							t.Errorf("the Start button is not whole above the footer")
+						i := slices.IndexFunc(tl, func(l string) bool { return strings.Contains(l, "START SESSION →") })
+						if i < 1 || i+1 >= len(tl) || !strings.Contains(tl[len(tl)-1], "Shortcuts:") {
+							t.Errorf("START SESSION is not shown above the footer")
 						}
 					}
 					// A mock session's every frame says it is mock data, full
@@ -570,10 +571,11 @@ func TestStartupMessageFrames(t *testing.T) {
 					}
 				}
 				text := plainText(frame)
-				if flat := strings.Join(strings.Fields(text), " "); !strings.Contains(flat, c.want) {
-					t.Errorf("frame lacks %q", c.want)
+				// In NEW SESSION, whole wherever it wraps (plan 51, grid mode).
+				if !homeSays(homePanel(frame, 0), c.want) {
+					t.Errorf("NEW SESSION lacks %q", c.want)
 				}
-				if strings.Contains(text, "…\n") {
+				if strings.Contains(text, "…\n") || strings.Contains(text, "… │") {
 					t.Error("a line is cut")
 				}
 				golden(t, "startup-msg-"+c.name, text)

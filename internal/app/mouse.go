@@ -41,8 +41,12 @@ type clickFold struct {
 	top, seen int
 }
 
-// mouse handles a mouse message on the dashboard.
+// mouse handles a mouse message on the dashboard, and on the home screen
+// (plan 51, design D11).
 func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
+	if m.s.Screen == state.ScreenStartup && m.wt == nil && m.browse == nil {
+		return m.homeMouse(msg)
+	}
 	if m.s.Screen != state.ScreenDashboard || m.screen == nil || m.wt != nil {
 		return nil // the Worktrees view takes no mouse: the terminal selects
 	}

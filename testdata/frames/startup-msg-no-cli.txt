@@ -1,24 +1,24 @@
- >_ AGENT COMMAND CENTER                                            New session
-────────────────────────────────────────────────────────────────────────────────
-    Configure your workspace
-    Select an agent CLI and the project to work on.
-    1. Agent CLI *
-       ( ) Claude Code     not installed: version unreadable: exit 1:
-                           error: the installation is damaged, reinstall
-                           Claude Code
-       ( ) OpenAI Codex    not installed: npm install found (codex.cmd),
-                           native codex.exe needed
-       ✗ No supported agent CLI found. Install Claude Code or Codex CLI,
-         then restart.
-    ────────────────────────────────────────────────────────────────────────
-    2. Project directory *
-       ╭────────────────────────────────────────────────────────────────╮
-       │ C:\work\demo-project                                           │
-       ╰────────────────────────────────────────────────────────────────╯
-       → C:\work\demo-project
-       Type a full path; ~ and /mnt/c/… are expanded. Default: current dir.
-    ────────────────────────────────────────────────────────────────────────
-                  ╭──────────────────────────────────────────╮
-                  │             Start session  →             │
-                  ╰──────────────────────────────────────────╯
- ↑↓ agent · Tab next field · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit
+ ⊞ AGENT COMMAND CENTER                │  v0.1.0  │  Windows  │  ● No agent CLI
+ ╭──────────────────────────────────╮ ╭───────────────────────────────────────╮
+ │ › NEW SESSION  ───────────────── │ │ › PROJECTS  ───────────────────────── │
+ │  1.  Agent CLI                   │ │                                       │
+ │   ○  Claude Code not             │ │  No projects yet                      │
+ │      installed: version          │ │                                       │
+ │      unreadable: exit 1:         │ │                                       │
+ │      error: the installation     │ │                                       │
+ │      is damaged, reinstall       │ │                                       │
+ │      Claude Code                 │ │                                       │
+ │   ○  OpenAI Codex not            │ │                                       │
+ │      installed: npm install      │ │                                       │
+ │      found (codex.cmd),          │ │                                       │
+ │      native codex.exe needed     │ │                                       │
+ │  2.  Project directory           │ │                                       │
+ │ ╭──────────────────────────┬───╮ │ │                                       │
+ │ │ C:\work\demo-project     │ 🗀 │ │ │                                       │
+ │ ╰──────────────────────────┴───╯ │ │                                       │
+ │  ✗ No supported agent CLI        │ │                                       │
+ │    found. Install Claude Code    │ │                                       │
+ │    or Codex CLI, then restart.   │ │                                       │
+ │         START SESSION →          │ │                                       │
+ ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯
+ › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit

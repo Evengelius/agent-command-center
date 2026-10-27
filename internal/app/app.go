@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"time"
 
@@ -256,6 +257,16 @@ type Model struct {
 		key  string
 		mask *image.Alpha
 	}
+	// The home screen's picture as last written, the glyphs it is drawn
+	// with, and whether the drawing under way is the second (plan 51,
+	// design D13).
+	home       homePic
+	glyphs     gdiGlyphs
+	homeSecond bool
+	resized    time.Time // the last size report: the picture waits for the size to settle (plan 51, design D13)
+	// The banner's frames (plan 51, design D12): one is pending; the
+	// terminal's window lacks the focus, which pauses them.
+	bannering, blurred bool
 
 	screen  *render.Screen // the last frame drawn: what the mouse points at
 	repaint bool           // the palette changed: the next frame draws every row
@@ -290,6 +301,7 @@ type (
 	clockMsg   struct{}
 	leaveMsg   struct{}
 	refreshMsg struct{ err error }
+	bannerMsg  struct{} // a frame of the home screen's banner, every render.BannerTick (plan 51)
 )
 
 // New builds the model.
@@ -329,11 +341,8 @@ func New(opt Options) *Model {
 	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache(), Memo: render.NewMemo(),
 		KeysProblem: opt.KeysProblem, CodexProxy: opt.CodexProxy, CodexProxyProblem: opt.CodexProxyProblem}
 	m.ui.SendKeys, m.ui.NewlineKeys = opt.Keys.Display()
-	project := opt.Project
-	if project == "" {
-		project = opt.Cwd
-	}
-	m.path.SetText(project)
+	m.ui.Version, m.ui.System = Version, systemName(runtime.GOOS) // the home screen's header (plan 51, design D5)
+	m.path.SetText(m.startProject())
 	// Launch now, not in Init's command: the first frame is drawn before any
 	// message, and a mock run must show its badge from that frame on.
 	m.pending = m.do(state.Launch{Mock: opt.Mock})
@@ -377,6 +386,12 @@ func (m *Model) View() tea.View {
 	v := tea.NewView(m.screen.StringAfter(prev))
 	m.previewFrame() // the thumbnails drawn again after a frame that changed their rows (plan 32)
 	v.AltScreen = true
+	if m.s.Screen == state.ScreenStartup && !m.ui.MouseOff && m.wt == nil && m.browse == nil {
+		v.MouseMode = tea.MouseModeCellMotion // the home screen's clicks (plan 51, design D11); F12 as on the dashboard
+	}
+	// The home screen's banner pauses while the window lacks the focus (plan
+	// 51, design D12).
+	v.ReportFocus = m.s.Screen == state.ScreenStartup
 	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
 		if m.screen.Layers.Top.Hover() || m.sideHoverable() || m.ui.Source.Open && m.screen.Panel.W > 0 {
@@ -406,8 +421,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.ui.Width, m.ui.Height = msg.Width, msg.Height
 		// Bubble Tea's renderer erases the screen on every size report, the
 		// same size too: the images are drawn again after the next frame
-		// (plan 43's review; previewFrame).
-		m.thumbSig = ""
+		// (plan 43's review; previewFrame), the home screen's picture whole
+		// (plan 51, design D13), its banner's scene going on where it fits.
+		m.thumbSig, m.home, m.resized = "", homePic{banner: m.home.banner}, m.opt.Now()
+	case tea.FocusMsg:
+		m.blurred = false // the banner's frames again (plan 51, design D12)
+	case tea.BlurMsg:
+		m.blurred = true
+	case bannerMsg:
+		cmds = append(cmds, m.bannerFrame()...)
 	case tea.ColorProfileMsg:
 		// The terminal's colours, at startup and on an RGB capability report
 		// (plan 5, item 13).
@@ -676,9 +698,10 @@ func (m *Model) animating() bool {
 }
 
 // timers schedules the spinner while something animates, a frame every 50 ms
-// while zone B's thinking card does (ASM-18, 20 frames a second; plan 22), and
-// the clock while the dashboard shows elapsed times; an idle dashboard or
-// startup screen schedules no frame.
+// while zone B's thinking card does (ASM-18, 20 frames a second; plan 22),
+// the clock while the dashboard shows elapsed times, and the home screen's
+// banner while it is drawn (plan 51, design D12); an idle dashboard, or a
+// startup screen without a banner, schedules no frame.
 func (m *Model) timers() []tea.Cmd {
 	var cmds []tea.Cmd
 	if !m.spinning && m.animating() {
@@ -696,6 +719,14 @@ func (m *Model) timers() []tea.Cmd {
 	if !m.clocking && m.s.Screen == state.ScreenDashboard && m.s.Session.Phase != state.Closed {
 		if c := m.opt.After(clockEvery, clockMsg{}); c != nil {
 			m.clocking = true
+			cmds = append(cmds, c)
+		}
+	}
+	if !m.bannering && m.home.banner != nil && !m.blurred {
+		// The home screen's banner while it is drawn and the window has the
+		// focus (plan 51, design D12).
+		if c := m.opt.After(render.BannerTick, bannerMsg{}); c != nil {
+			m.bannering = true
 			cmds = append(cmds, c)
 		}
 	}

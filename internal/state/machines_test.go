@@ -156,6 +156,19 @@ var transitions = []machineCase{
 		b.eq("phase", b.s.Startup.Phase, Validating)
 		b.eq("commands", b.kinds(), "validate")
 	}},
+	{"Startup", "`Detecting`, `Asking` | form reset", func(b *bench) {
+		b.validating().do(ValidationFailed{Field: "project", Message: "Not found"})
+		b.do(ResetForm{})
+		b.eq("phase", b.s.Startup.Phase, Asking)
+		b.eq("field", b.s.Startup.Field, "")
+		b.eq("message", b.s.Startup.Message, "")
+		b.eq("answer cleared", b.s.Startup.Project, "")
+		c := newBench(b.t)
+		c.do(Launch{})
+		c.do(ResetForm{})
+		c.eq("detecting", c.s.Startup.Phase, Detecting)
+		c.eq("commands", c.kinds(), "")
+	}},
 	{"Startup", "`Validating` | path or provider invalid", func(b *bench) {
 		b.validating().do(ValidationFailed{Field: "project", Message: "Not found"})
 		b.eq("phase", b.s.Startup.Phase, Asking)
@@ -958,6 +971,15 @@ var invalids = []machineCase{
 		c.do(Confirm{Provider: "codex", Project: `C:\other`})
 		c.eq("starting", c.s.Startup.Phase, Starting)
 		c.eq("commands", c.kinds(), "")
+	}},
+	{"Startup", "a form reset while `Validating` or `Starting` is ignored", func(b *bench) {
+		b.validating().do(ResetForm{})
+		b.eq("validating", b.s.Startup.Phase, Validating)
+		b.eq("answer kept", b.s.Startup.Project, project)
+		c := newBench(b.t).starting()
+		c.do(ResetForm{})
+		c.eq("starting", c.s.Startup.Phase, Starting)
+		c.eq("answer kept", c.s.Startup.Project, project)
 	}},
 	{"Startup", "choosing a provider shown \"not installed\" is impossible", func(b *bench) {
 		b.do(Launch{})

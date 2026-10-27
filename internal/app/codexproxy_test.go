@@ -136,32 +136,36 @@ func TestCodexProxyOnStartup(t *testing.T) {
 				for _, size := range [][2]int{{120, 40}, {80, 24}} {
 					w, h := size[0], size[1]
 					raw, text := startupAt(t, opt, w, h)
-					rows, flat := rowsOf(text), words(text)
-
-					if c.keysProblem && !strings.Contains(flat, opt.KeysProblem) {
+					rows := rowsOf(text)
+					// NEW SESSION holds the lines, wrapped in its width (plan 51,
+					// design D6): found whole whatever the wrap.
+					panel := homePanel(raw, 0)
+					inside := strings.Join(panel, "\n")
+					says := func(s string) bool { return homeSays(panel, s) }
+					if c.keysProblem && !says(opt.KeysProblem) {
 						t.Errorf("%dx%d: the screen lacks %q:\n%s", w, h, opt.KeysProblem, text)
 					}
 					// The screen hides the user's name in a path (plan 15), so a problem that
 					// quotes one is compared in its parts.
-					if c.codexProblem && c.hides == "" && !strings.Contains(flat, opt.CodexProxyProblem) {
+					if c.codexProblem && c.hides == "" && !says(opt.CodexProxyProblem) {
 						t.Errorf("%dx%d: the screen lacks %q:\n%s", w, h, opt.CodexProxyProblem, text)
 					}
 					if c.hides != "" {
 						if strings.Contains(text, c.hides) {
 							t.Errorf("%dx%d: the screen shows %q:\n%s", w, h, c.hides, text)
 						}
-						if !strings.Contains(flat, `codex.proxy "C:\Users\…\px.exe" must start with http:// or https://`) {
+						if !says(`codex.proxy "C:\Users\…\px.exe" must start with http:// or https://`) {
 							t.Errorf("%dx%d: the screen lacks the codex problem with the name hidden:\n%s", w, h, text)
 						}
 					}
-					if !c.codexProblem && strings.Contains(text, "no proxy for Codex") {
+					if !c.codexProblem && says("no proxy for Codex") {
 						t.Errorf("%dx%d: a codex problem is shown with none:\n%s", w, h, text)
 					}
-					if n := strings.Count(text, "Codex through the proxy"); (n == 1) != c.proxy || n > 1 {
+					if n := strings.Count(inside, "Codex through the proxy"); (n == 1) != c.proxy || n > 1 {
 						t.Errorf("%dx%d: the proxy line is shown %d times, want %v:\n%s", w, h, n, c.proxy, text)
 					}
-					if c.proxy && !strings.Contains(text, proxyLine) {
-						t.Errorf("%dx%d: the screen lacks %q on one row:\n%s", w, h, proxyLine, text)
+					if c.proxy && !says(proxyLine) {
+						t.Errorf("%dx%d: the screen lacks %q:\n%s", w, h, proxyLine, text)
 					}
 					want := 0
 					if c.keysProblem {
@@ -170,7 +174,7 @@ func TestCodexProxyOnStartup(t *testing.T) {
 					if c.codexProblem {
 						want++
 					}
-					if n := strings.Count(text, "✗ config.json"); n != want {
+					if n := strings.Count(inside, "✗ config.json"); n != want {
 						t.Errorf("%dx%d: %d ✗ config.json lines, want %d:\n%s", w, h, n, want, text)
 					}
 					if !c.keysProblem && !c.codexProblem && !c.proxy && strings.Contains(text, "config.json") {
@@ -181,50 +185,50 @@ func TestCodexProxyOnStartup(t *testing.T) {
 							t.Errorf("%dx%d: row of %d runes: %q", w, h, n, r)
 						}
 					}
-					// The project field's bottom border and the Start button's, and the
-					// footer: the blank spacing rows go first.
-					if n := strings.Count(text, "╰"); n != 2 {
-						t.Errorf("%dx%d: %d bottom borders, want the field's and the button's:\n%s", w, h, n, text)
+					// The project field's bottom border, START SESSION and the footer
+					// stay whole: the blank spacing rows go first.
+					if firstRow(panel, "╰") < 0 || firstRow(panel, "START SESSION →") < 0 {
+						t.Errorf("%dx%d: the field or START SESSION is gone:\n%s", w, h, text)
 					}
-					if !strings.Contains(rows[len(rows)-1], "Ctrl+Q quit") {
+					if !strings.Contains(rows[len(rows)-1], "Ctrl+Q  Quit") {
 						t.Errorf("%dx%d: the footer is gone:\n%s", w, h, text)
 					}
 
 					// The codex problem is directly under the keys' problem: the row above
-					// it ends the keys' words. The proxy line follows the problems.
+					// it ends the keys' words. The proxy line follows the problems, the
+					// field's when there is none.
 					if c.keysProblem && c.codexProblem {
-						k, x := firstRow(rows, `✗ config.json: "ctrl+s"`), firstRow(rows, "✗ config.json: codex.proxy")
-						if k < 0 || x <= k || !strings.HasSuffix(strings.TrimSpace(rows[x-1]), "default keys used") {
+						k, x := firstRow(panel, `✗ config.json: "ctrl+s"`), firstRow(panel, "✗ config.json: codex.proxy")
+						if k < 0 || x <= k || !strings.HasSuffix(strings.TrimSpace(panel[x-1]), "default keys used") {
 							t.Errorf("%dx%d: the codex problem is not directly under the keys' problem:\n%s", w, h, text)
 						}
 					}
 					if c.proxy {
-						p := firstRow(rows, "Codex through the proxy")
-						above := strings.TrimSpace(rows[p-1])
-						if c.keysProblem && !strings.HasSuffix(above, "default keys used") || !c.keysProblem && !strings.HasPrefix(above, "Type a full path") {
-							t.Errorf("%dx%d: the proxy line follows %q:\n%s", w, h, above, text)
+						above := firstRow(panel, "Codex through the proxy") - 1
+						for above > 0 && strings.TrimSpace(panel[above]) == "" {
+							above-- // the blank rows spare height gives
+						}
+						if a := strings.TrimSpace(panel[max(above, 0)]); c.keysProblem && !strings.HasSuffix(a, "default keys used") || !c.keysProblem && !strings.HasPrefix(a, "╰") {
+							t.Errorf("%dx%d: the proxy line follows %q:\n%s", w, h, a, text)
 						}
 					}
 
-					// Colours: a problem is red, as the required-field marks are; the proxy
-					// line is grey, as the hint under the project field is.
-					red, grey := sgrBefore(t, raw, "*"), sgrBefore(t, raw, "Type a full path")
-					if red == grey {
-						t.Fatalf("red and grey are the same sequence %q: the test cannot tell them apart", red)
-					}
+					// Colours: a problem in the palette's red, the proxy line in its
+					// grey (render's cFailed, #F87171, and cGrey, #6B7280).
+					const red, grey = "38;2;248;113;113", "38;2;107;114;128"
 					if c.codexProblem {
-						if got := sgrBefore(t, raw, "✗ config.json: codex.proxy"); got != red {
-							t.Errorf("%dx%d: the codex problem is styled %q, want red %q", w, h, got, red)
+						if got := sgrBefore(t, raw, "✗ config.json: codex.proxy"); !strings.Contains(got, red) {
+							t.Errorf("%dx%d: the codex problem is styled %q, want red", w, h, got)
 						}
 					}
 					if c.keysProblem { // the first ✗ line, the keys' problem
-						if got := sgrBefore(t, raw, "✗ config.json: "); got != red {
-							t.Errorf("%dx%d: the keys' problem is styled %q, want red %q", w, h, got, red)
+						if got := sgrBefore(t, raw, "✗ config.json: "); !strings.Contains(got, red) {
+							t.Errorf("%dx%d: the keys' problem is styled %q, want red", w, h, got)
 						}
 					}
 					if c.proxy {
-						if got := sgrBefore(t, raw, "Codex through the proxy"); got != grey {
-							t.Errorf("%dx%d: the proxy line is styled %q, want grey %q", w, h, got, grey)
+						if got := sgrBefore(t, raw, "Codex through the proxy"); !strings.Contains(got, grey) {
+							t.Errorf("%dx%d: the proxy line is styled %q, want grey", w, h, got)
 						}
 					}
 				}
@@ -240,9 +244,11 @@ func TestCodexProxyLinesTogether(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		keysP := `config.json: "ctrl+s" is not a send or newline key (use Enter with Ctrl, Alt or Shift, or Ctrl+J); default keys used`
 		codexP := `config.json: codex.proxy "socks5://127.0.0.1:1080" must start with http:// or https:// (such as http://127.0.0.1:3128); no proxy for Codex`
-		_, text := startupAt(t, Options{KeysProblem: keysP, CodexProxyProblem: codexP, CodexProxy: proxyAddr}, 120, 40)
-		flat := words(text)
-		k, x, p := strings.Index(flat, keysP), strings.Index(flat, codexP), strings.Index(flat, proxyLine)
+		raw, text := startupAt(t, Options{KeysProblem: keysP, CodexProxyProblem: codexP, CodexProxy: proxyAddr}, 120, 40)
+		// In NEW SESSION, wherever they wrap (plan 51, design D6).
+		strip := func(s string) string { return strings.Join(strings.Fields(s), "") }
+		flat := strip(strings.Join(homePanel(raw, 0), " "))
+		k, x, p := strings.Index(flat, strip(keysP)), strings.Index(flat, strip(codexP)), strings.Index(flat, strip(proxyLine))
 		if k < 0 || x < 0 || p < 0 || !(k < x && x < p) {
 			t.Errorf("positions %d, %d, %d: want the keys' problem, the codex problem and the proxy line in that order:\n%s", k, x, p, text)
 		}
@@ -265,8 +271,9 @@ func TestCodexProxyProblemKeepsTheKeys(t *testing.T) {
 		if k := h.m.opt.Keys; !k.IsSend("ctrl+enter") || !k.IsNewline("enter") || k.IsSend("enter") {
 			t.Errorf("keys in force %v, want the file's", k)
 		}
-		text := plainText(h.m.View().Content)
-		if n := strings.Count(text, "✗ config.json"); n != 1 || !strings.Contains(words(text), opt.CodexProxyProblem) {
+		raw := h.m.View().Content
+		text := plainText(raw)
+		if n := strings.Count(text, "✗ config.json"); n != 1 || !homeSays(homePanel(raw, 0), opt.CodexProxyProblem) {
 			t.Errorf("%d problem lines, want the codex problem alone:\n%s", n, text)
 		}
 	})

@@ -285,6 +285,7 @@ States: `Detecting`, `Asking`, `Validating`, `Starting`, `Ready`,
 | (launch) | application start with `--mock <file>` | `Starting` with the mock provider: detection and both questions skipped; the session context names provider "Mock data" and the file as project ([reliability.md, Mock mode](reliability.md#mock-mode)) | n/a | n/a |
 | `Detecting` | both detections returned or timed out | `Asking` | dash (CC-2) | dash (CX-2) |
 | `Asking` | Confirm pressed | `Validating` | dash | dash |
+| `Detecting`, `Asking` | form reset (Ctrl+N; plan 51, design D9) | the same, its message and answers cleared | dash | dash |
 | `Validating` | path or provider invalid | `Asking`, with the message on the field | dash (INT paths) | dash |
 | `Validating` | both valid | `Starting` (dashboard shown, session `Spawning`) | dash | dash |
 | `Starting` | handshake done (`session.ready`) | `Ready` | **P** P2 | **P** P6b |
@@ -296,9 +297,10 @@ States: `Detecting`, `Asking`, `Validating`, `Starting`, `Ready`,
 
 Invalid: Confirm while `Detecting` is ignored (the button is disabled until
 detection returns); a second Confirm while `Validating` or `Starting` is
-ignored; choosing a provider shown "not installed" is impossible (not
-selectable). No transition leads from `Ready` back to `Asking`: one provider
-and one project per session (AGENTS.md; AM4 X9).
+ignored; a form reset while `Validating` or `Starting` is ignored; choosing
+a provider shown "not installed" is impossible (not selectable). No
+transition leads from `Ready` back to `Asking`: one provider and one
+project per session (AGENTS.md; AM4 X9).
 
 ### Session machine (the CLI process)
 
@@ -480,5 +482,6 @@ The few reads it makes, each once and on a trigger:
 | Git branch | once at startup, from `.git/HEAD` | display only; no git events exist | architecture.md, Session context |
 | Detection (`claude -v`, `codex --version`; no status command, plan 21, item 5.2) | once at startup | no other source | CC-2; CX-2 |
 
-The only timer is the local clock tick, which advances animations and value
-ages and expires values past their reset time; it reads no external source.
+The only timers are the local clock tick, which advances animations and
+value ages and expires values past their reset time, and the home screen
+banner's frames (plan 51); they read no external source.

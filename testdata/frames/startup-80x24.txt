@@ -1,24 +1,24 @@
- >_ AGENT COMMAND CENTER                                            New session
-────────────────────────────────────────────────────────────────────────────────
+ ⊞ AGENT COMMAND CENTER                       │  v0.1.0  │  Windows  │  ● Ready
 
-    Configure your workspace
-    Select an agent CLI and the project to work on.
+ ╭──────────────────────────────────╮ ╭───────────────────────────────────────╮
+ │ › NEW SESSION  ───────────────── │ │ › PROJECTS  ───────────────────────── │
+ │                                  │ │                                       │
+ │  1.  Agent CLI                   │ │  No projects yet                      │
+ │ ▏ ◉  Claude Code (2.1.300)     ▕ │ │                                       │
+ │                                  │ │                                       │
+ │   ○  OpenAI Codex not            │ │                                       │
+ │      installed: not found on     │ │                                       │
+ │      the PATH                    │ │                                       │
+ │                                  │ │                                       │
+ │  2.  Project directory           │ │                                       │
+ │ ╭──────────────────────────┬───╮ │ │                                       │
+ │ │ C:\work\demo-project     │ 🗀 │ │ │                                       │
+ │ ╰──────────────────────────┴───╯ │ │                                       │
+ │                                  │ │                                       │
+ │                                  │ │                                       │
+ │         START SESSION →          │ │                                       │
+ │                                  │ │                                       │
+ │                                  │ │                                       │
+ ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯
 
-    1. Agent CLI *
-       (•) Claude Code     2.1.300   C:\Tools\claude.exe
-       ( ) OpenAI Codex    not installed: not found on the PATH
-    ────────────────────────────────────────────────────────────────────────
-    2. Project directory *
-       ╭────────────────────────────────────────────────────────────────╮
-       │ C:\work\demo-project                                           │
-       ╰────────────────────────────────────────────────────────────────╯
-       → C:\work\demo-project
-       Type a full path; ~ and /mnt/c/… are expanded. Default: current dir.
-    ────────────────────────────────────────────────────────────────────────
-                  ╭──────────────────────────────────────────╮
-                  │             Start session  →             │
-                  ╰──────────────────────────────────────────╯
-
-
-
- ↑↓ agent · Tab next field · Ctrl+O browse · Ctrl+W worktrees · Ctrl+Q quit
+ › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit

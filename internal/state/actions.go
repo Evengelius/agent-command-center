@@ -23,6 +23,7 @@ type (
 		CLIs      []CLI // what detection found, for the startup screen
 	}
 	Confirm          struct{ Provider, Project string }
+	ResetForm        struct{} // Ctrl+N on the startup screen: the form as it opened (plan 51, design D9)
 	ValidationFailed struct{ Field, Message string }
 	ValidationOK     struct{ Provider, ProviderName, Project, Branch string } // Project as validated
 	SpawnFailed      struct{ Message string }
@@ -72,6 +73,7 @@ type (
 func (Launch) action()           {}
 func (DetectionDone) action()    {}
 func (Confirm) action()          {}
+func (ResetForm) action()        {}
 func (ValidationFailed) action() {}
 func (ValidationOK) action()     {}
 func (SpawnFailed) action()      {}
@@ -124,6 +126,10 @@ func (s *State) Do(a Action) []Command {
 		}
 		s.Startup.Phase, s.Startup.Field, s.Startup.Message = Validating, "", ""
 		return []Command{{Kind: CmdValidate}}
+	case ResetForm:
+		if s.Startup.Phase == Asking || s.Startup.Phase == Detecting {
+			s.Startup.Provider, s.Startup.Project, s.Startup.Field, s.Startup.Message = "", "", "", ""
+		}
 	case ValidationFailed:
 		if s.Startup.Phase == Validating {
 			s.Startup.Phase, s.Startup.Field, s.Startup.Message = Asking, a.Field, a.Message

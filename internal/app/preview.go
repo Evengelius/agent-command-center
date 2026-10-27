@@ -139,7 +139,8 @@ func (m *Model) previewSignature() string {
 	ts, tg, sl := m.screen.Thumbs(), m.screen.Toggle, m.screen.Slider
 	md, mp, st := m.screen.Modes, m.screen.ModePill, m.screen.Tiles
 	cm, mn, mb := m.screen.Commit, m.screen.Menu, m.screen.MsgBox
-	if len(ts) == 0 && !tg.Shown && !sl.Shown && !md.Strips && !mp.Shown && !st[0].Shown && !st[1].Shown && !cm.Shown && !mn.Shown && !mb.Shown {
+	hs := m.screen.Home
+	if len(ts) == 0 && !tg.Shown && !sl.Shown && !md.Strips && !mp.Shown && !st[0].Shown && !st[1].Shown && !cm.Shown && !mn.Shown && !mb.Shown && !hs.Shown {
 		return ""
 	}
 	var b strings.Builder
@@ -188,6 +189,11 @@ func (m *Model) previewSignature() string {
 		fmt.Fprintf(&b, "msgbox %d %d %+v\n", mb.X, mb.Y, mb.Look)
 		addRows(mb.Y, mb.Look.Rows+2)
 	}
+	if hs.Shown {
+		// The home screen's picture, over every row (plan 51, design D13).
+		fmt.Fprintf(&b, "home %+v\n", hs.Look)
+		addRows(0, m.ui.Height)
+	}
 	for _, t := range ts {
 		key, pixels, sum := "", false, [32]byte{}
 		if t.Item < len(m.attach) {
@@ -211,7 +217,15 @@ func (m *Model) drawThumbs(msg thumbDrawMsg) []tea.Cmd {
 	if msg.gen != m.thumbGen || m.screen == nil {
 		return nil // a later frame changed them: its own drawing follows
 	}
+	if wait := m.homeSettle(); wait > 0 {
+		// A resize's reports come in a burst: the picture waits for the
+		// size to settle rather than drawing whole for each (plan 51,
+		// design D13).
+		return []tea.Cmd{m.opt.After(wait, thumbDrawMsg{gen: msg.gen, second: msg.second})}
+	}
+	m.homeSecond = msg.second
 	seq := m.thumbSequence()
+	m.homeSecond = false
 	if seq == "" {
 		return nil
 	}
@@ -396,6 +410,7 @@ func (m *Model) thumbSequence() string {
 			now = append(now, render.Thumb{Item: -6 - i, X: t.X, Y: t.Y, W: render.SideTileCells, H: render.SideTileRows})
 		}
 		now = append(now, m.commitSequence(&draw)...) // the commit controls (plan 45, design D5)
+		now = append(now, m.homeSequence(&draw)...)   // the home screen's picture (plan 51, design D13)
 	}
 	var clear strings.Builder
 	for _, old := range m.drawn {
