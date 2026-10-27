@@ -96,239 +96,12 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 55 - Nerd Font icons in the Explorer
+## No plan active
 
-Brief amendment 56 (2026-10-27): the docked Explorer's icons replaced by
-Nerd Font icons from Microsoft's Cascadia Mono NF, one per file type and
-notable folder, each in its colour, with today's glyphs as the fallback;
-the font installed for the owner. Approved on 2026-10-27 with three
-requirements, each carried below:
-
-- **R1.** No noticeable visual regression on plan 51's home screen from
-  the switch to Cascadia Mono NF (criterion 55.2).
-- **R2.** A reliable fallback when the dashboard runs in a terminal
-  without the font (D3, criterion 55.4).
-- **R3.** The scope strictly the Explorer's icons and the font's
-  configuration, no unrelated change to the interface (D5); functions and
-  performance kept (criterion 55.6).
-
-### What was found (2026-10-27, on 41ff147)
-
-- `render/explorer.go` draws every folder as "🗀" (blue, `cExpFolder`) and
-  every file as "🗎" (grey, `cExpFile`), after "›" or "⌄"; Cascadia Mono
-  has neither symbol, so Windows Terminal takes them from a fallback font,
-  thinner and off the text's baseline.
-- Windows Terminal 1.23 bundles Cascadia Code and Cascadia Mono only; no
-  Nerd Font is installed on this machine.
-- Since Cascadia Code 2404.23, Microsoft ships a Nerd Font variant of the
-  family, "the entire set of glyphs as of April 2024 (all 9209 of them)",
-  "metrics-compatible with the rest of Cascadia" (its release notes). The
-  latest release is 2407.24 (2024-11-27): one asset,
-  `CascadiaCode-2407.24.zip`, 150,454,761 bytes, licence SIL OFL 1.1,
-  no checksum published by GitHub.
-- The dashboard's tab is `acc.ps1`'s own Windows Terminal profile
-  (plan 23), a fragment that sets the font's size (9) and no face; each
-  tab carries its profile's id in `WT_PROFILE_ID`.
-
-### Design
-
-- **D1. The font**, installed for the owner's account only, no
-  administrator right: the release's zip downloaded once to a temporary
-  folder outside the repository, its SHA-256 recorded; only
-  `CascadiaMonoNF.ttf` and `CascadiaMonoNFItalic.ttf` (variable fonts,
-  every weight) taken from it, copied to
-  `%LOCALAPPDATA%\Microsoft\Windows\Fonts` and registered under
-  `HKCU\Software\Microsoft\Windows NT\CurrentVersion\Fonts`, the system
-  told of the change; the zip deleted. The registration made from a
-  Windows Terminal window, not from a shell of the Claude desktop app,
-  whose registry writes stay in the app's private copy (found at step 5).
-  The files' creation time stands for the install's in D2 and D3, so the
-  files and their registration go in together, as Windows' own installer
-  puts them. Windows Terminal reads fonts when it starts: its windows
-  closed and opened again, when the owner chooses. Undone, from a Windows
-  Terminal window, by deleting the two files and their two registry
-  values.
-- **D2. The acc tab's face:** `acc.ps1`'s fragment gives the profile
-  `"face": "Cascadia Mono NF"` when the font is registered and was
-  installed before the Windows Terminal it runs in started, else no face,
-  as today: Windows Terminal reads the fonts when it starts, and warns
-  about a face it cannot find.
-- **D3. When the icons are used (R2):** only when all hold: the dashboard
-  runs in Windows Terminal, in the acc tab (`WT_PROFILE_ID` the
-  fragment's profile), the font is registered for the user or the
-  machine, and its file is older than that Windows Terminal process
-  (found among the dashboard's ancestors, as plan 51 finds it).
-  Otherwise today's glyphs: another profile, another terminal (VS Code's,
-  the console host), no font, or a terminal started before the font was
-  installed never shows a missing-glyph box. Read once at start in
-  `input`, given to the renderer as a flag.
-- **D4. The icons**, Nerd Font v3 glyphs, each one cell wide, the two
-  spaces after today's glyphs kept (D5), the exact glyphs checked in the
-  installed font:
-  - chevrons: the codicons' `chevron_right` and `chevron_down`, as VS Code
-    draws them, in today's grey;
-  - folders: a closed and an open folder, in today's blue; a few notable
-    folders their own icon and colour: `.git` (git, orange), `.github`
-    (GitHub), `.vscode`, `.claude` (a sparkle, in Claude's orange: the
-    octicons' `sparkle_fill`, the codicons' not being in the font), `cmd`
-    and `scripts` (a terminal), `doc` and `docs` (a book), `internal` and
-    `src` (code), `test`, `tests` and `testdata` (a flask), `references`
-    (a bookmark), `third_party`, `vendor` and `node_modules` (a package);
-  - files by name, then by extension: Go (`.go`, `go.mod`, `go.sum`; Go's
-    cyan), Markdown (blue), PowerShell, batch and shell scripts, `.exe`,
-    JSON and JSONL (yellow), YAML and TOML, XML, HTML, CSS, JavaScript,
-    TypeScript, Java and the Maven and Gradle files (the owner's other
-    projects), Python, SQL, Dockerfile, Makefile, images (purple), PDF,
-    archives, lock files, `LICENSE` (a licence badge, yellow),
-    `.gitignore` and `.gitattributes` (git), `.env` and other
-    configuration; any other file, logs and text included (as VS Code's
-    Seti theme draws them), a plain file icon in today's grey;
-  - every colour with its 16-colour fallback, as the palette's; an
-    ignored row's icon in its name's grey and a deleted row's in its red
-    (today's glyphs keep their colours there, and still do without the
-    icons); the cursor row's ground unchanged.
-- **D5. The scope (R3):** the Explorer's rows' icons and chevrons, its
-  root row's included, and the acc tab's font face; nothing else. The
-  Explorer's rows, indents, git markers, keys, mouse and widths stay;
-  every other panel stays (Source Control's list included); the home
-  screen stays, its images drawing text with Windows Terminal's own
-  Cascadia Mono (plan 51, D3), only its field's path being terminal text
-  in the tab's face.
-
-### Criteria
-
-1. **55.1 The font:** Cascadia Mono NF from release 2407.24 installed for
-   the owner's account only (its two files and two registry values, the
-   zip's SHA-256 recorded, no administrator prompt), listed by Windows'
-   font registry; the uninstall written down.
-2. **55.2 The acc tab and R1:** its fragment names the face when the font
-   is registered and older than the terminal, none otherwise; after
-   Windows Terminal starts again, no font warning and the maximised tab
-   still 208x59. The home screen at 208x59 and a mock dashboard shot
-   before the switch and after it, in the acc tab: the home screen's
-   header, panels, field and footer the same pixels, within plan 51's
-   tolerances where the terminal's text is drawn (the banner's moving
-   rows left out), and the field's path the same text; the dashboard's
-   zones the same.
-3. **55.3 The icons:** a table test, each name and extension to its glyph
-   and colour; every glyph present in the installed font (a test reading
-   the font file's character map, skipped without the font); each one
-   cell wide by the renderer's widths.
-4. **55.4 The fallback (R2):** a table test of D3 with the terminal, the
-   profile, the font and the times given: no Windows Terminal, another
-   profile, no font, a font newer than the terminal each give today's
-   glyphs; in Windows Terminal, a terminal started before the install and
-   the default profile both draw today's glyphs; the Explorer's golden
-   frames unchanged; new golden frames with the icons, reviewed.
-5. **55.5 Windows Terminal** at 208x59 and 120x40: the Explorer on this
-   repository with the icons, no missing-glyph box, the colours of D4; the
-   owner's visual review before the plan closes.
-6. **55.6 The checks and R3:** build, vet, gofmt, the whole suite; the
-   timing step's Explorer test (`TestMotionToFrame`) within its target;
-   no golden frame outside the Explorer's changes; mutants on the new
-   logic.
-
-### Steps
-
-1. Amendment 56 and this plan; the owner's approval, with R1 to R3.
-2. The before shots for R1 (the acc tab as it is); then the font (D1).
-3. The fragment's face (D2) and the flag (D3).
-4. The icons (D4), their tests and golden frames.
-5. Windows Terminal started again when the owner chooses; the after
-   shots and their comparison (R1); the Explorer's shots for the owner's
-   visual review.
-6. The documents, then verification (55.1 to 55.6) and
-   `doc/plan55-evaluation.md`.
-
-### Progress
-
-- 2026-10-27: step 1 done: amendment 56, this plan, approved with R1 to
-  R3.
-- 2026-10-27: step 2 done. The before shots in the acc tab, as it was
-  (`term\p55shots.ps1 -tag before`: the home screen, a mock dashboard,
-  the Explorer on `%TEMP%\p55demo`). The font: `CascadiaCode-2407.24.zip`
-  downloaded (150,454,761 bytes, the size GitHub gives; SHA-256
-  E67A68EE3386DB63F48B9054BD196EA752BC6A4EBB4DF35ADCE6733DA50C8474), its
-  `ttf/CascadiaMonoNF.ttf` (2,526,924 bytes, SHA-256 5B12CBEF...D913A14E)
-  and `ttf/CascadiaMonoNFItalic.ttf` (2,336,432 bytes, 0D372925...4952F534)
-  copied to `%LOCALAPPDATA%\Microsoft\Windows\Fonts`, registered under
-  HKCU as "Cascadia Mono NF (TrueType)" and "Cascadia Mono NF Italic
-  (TrueType)", added to the session and announced; no administrator
-  prompt; the zip deleted (`term\p55install.ps1`). Undo: delete the two
-  files and the two values.
-- 2026-10-27: steps 3 and 4 done. `acc.ps1`'s `NerdFontReady` and the
-  fragment's face; `input.NerdIcons` (`nerdfont*.go`; `hostTerminal`, the
-  ancestor walk `terminalDir` was, now giving the terminal's start too),
-  `Options.NerdIcons`, `UI.NerdIcons`; `render/expicons.go` (the icons,
-  their colours in `palette.go`), `explorerRow` and `rootRow` with the
-  flag. Tests: `TestExpIconFor`, `TestExpIconWidths`,
-  `TestExplorerNerdRows`, `TestExpIconsInFont` (it found the codicons'
-  sparkle missing from the font: the octicons' instead),
-  `TestNerdIconsUsable`, `TestNerdIconsHere`; `explorer-nerd-*` golden
-  frames (four), differing from `explorer-*` only in the chevrons and the
-  icons (`plan55\goldiff.mjs`); no other frame changed.
-- 2026-10-27: step 5 begun. In the Windows Terminal started before the
-  install (11:12, the font's files made at 15:11), the new build in the
-  acc tab draws
-  the panel's own glyphs, as the old one (R2). Running `NerdFontReady`
-  in a new window was refused by the session's safety check (a script
-  evaluated with the execution policy bypassed); the face is checked
-  instead through the owner's own `.\acc` after Windows Terminal starts
-  again.
-- 2026-10-27: Windows Terminal started again (15:38) and `.\acc` run by
-  the owner: the Explorer kept today's glyphs and the fragment stayed
-  without a face. Found: this session's shells run under the Claude
-  desktop app, an MSIX package whose registry writes go to its private
-  hive (`Packages\Claude_pzs8sxrjxfjjc\SystemAppData\Helium`), even from
-  processes without its package identity; so the install's two HKCU
-  values reached no other program, while its files reached the real
-  folder. WMI's registry provider (`StdRegProv`, `HKEY_USERS\<SID>`) read
-  the real key without them, as did Terminal's tabs: `NerdFontReady` and
-  `input.NerdIcons` found no font and fell back (R2 held). Repaired: the
-  app's private values removed; from a Windows Terminal window
-  (`term\p55repair.ps1`), the files copied back with their hashes checked
-  and the two values written to the real HKCU (WMI reads them); the
-  files' creation time then set to 15:58:25, the registration's (a copy
-  back keeps the old time within 15 s, Windows' file name tunnelling).
-  In the Terminal of 15:38, the launcher's function, copied as it is
-  (`term\p55walk.ps1`), now answers False, the font being newer than the
-  terminal; `TestNerdIconsUsable` and `TestNerdIconsHere` pass. The app's
-  private copy of the key, which no longer follows the real one, now
-  holds the same values. Waiting for the owner to restart Windows
-  Terminal once more.
-- 2026-10-27: step 5 done. Windows Terminal started again at 16:01:29 and
-  the owner's `.\acc` wrote the fragment's `"face": "Cascadia Mono NF"`
-  (16:01:41). The after shots in the acc tab (`acc-p55b.exe`, the same
-  bytes as the build of steps 3 and 4), maximised at 208x59, no font
-  warning: against the before shots row by row on the measured grid (row
-  0 at y 58, 17 px; `plan55\shotcmp`), the home screen's 38 rows outside
-  the banner's 23 the same pixels, and the dashboard's 55, its 5 others
-  differing only in the run's folder name and the mock's clock times
-  (R1). Cascadia Mono NF adds 7 code points outside the private use area
-  to Cascadia Mono (U+23FB-23FE, U+2630, U+26A1, U+2B58), none in the
-  sources (`plan55\cmapdiff`, R3). The Explorer on a copy of this
-  repository (a clone with the working tree's changes, git's status the
-  same; `%TEMP%\p55repo`), at 208x59 and 120x40 (`--size 90,30` gives
-  120x40 at 9 pt): every icon present, none a missing-glyph box, each
-  glyph's pixels a blend of its D4 colour with the ground within 0.9 of a
-  level (`plan55\iconcolors`). In the default profile, today's glyphs
-  (R2). The review shots: `plan55\review-208x59-explorer-x3.png`,
-  `review-120x40-explorer-x3.png`.
-- 2026-10-27: step 6 begun. `TestMotionToFrame` now times the panel
-  without and with the icons; `TestExpIconFor` gained an upper-case
-  extension. The documents: ui-design.md (Explorer, the icons in the acc
-  tab), architecture.md (The Explorer's icons), evaluation.md (the timed
-  test). The timing step: `TestMotionToFrame` p95 1.02 to 2.02 ms, the
-  icons on or off; `TestBannerToFrame` p95 2.35 ms over its 2 ms target
-  (the CPU 16 to 22% busy), timed then in turn with the tree before the
-  plan: before 2.45, 1.62, 1.62 ms, after 1.66, 1.61, 1.63 ms.
-- 2026-10-27: step 6 done. 23 mutants through `-overlay`
-  (`scratchpad\plan55\mutants*.txt`): 22 killed by a failing test, U3
-  equivalent; the tree's hash the same around each run. go build, go vet
-  (Windows, Linux, the timing tag), gofmt and go test ./... pass after
-  the last code and document edit. `doc\plan55-evaluation.md`: 5 PASS,
-  0 FAIL; 55.5's last part, the owner's visual review, waiting. Nothing
-  committed.
+Plan 55 was approved and closed on 2026-10-27 (Closed plans, below). The
+next plan starts when the owner asks for one; the audit's roadmap
+([`doc/audit.md`](doc/audit.md), Part 2) is done, its phases 0 to 4
+implemented by plans 46 to 49.
 
 ## Closed plans
 
@@ -998,3 +771,16 @@ list the focus; the panel's other cells carry `HomeItemList`. Approved on
 2026-10-27: 4 of 4 PASS
 ([`doc/plan54-evaluation.md`](doc/plan54-evaluation.md)); commit
 38ee6d7, then the approval commit, both pushed.
+
+## Plan 55 - Nerd Font icons in the Explorer
+
+Brief amendment 56: in the acc tab, with Cascadia Mono NF installed for
+the owner (release 2407.24, per user, registered from Windows Terminal:
+the Claude app's shells write the registry into its private copy), the
+Explorer's rows draw Nerd Font icons in each kind's colour and the
+codicons' chevrons; anywhere else (another terminal or profile, no font,
+a terminal started before it) the panel's own glyphs. The launcher names
+the face in the acc tab's fragment by the same rule. Approved on
+2026-10-27: 5 PASS, 0 FAIL, and 55.5's visual review by the owner
+([`doc/plan55-evaluation.md`](doc/plan55-evaluation.md)); commit
+374c23e, then the approval commit, not pushed.
