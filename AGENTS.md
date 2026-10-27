@@ -24,10 +24,9 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-27, when the owner approved plan
-51, the home screen redesign (brief amendment 52).** Plans 1 to 51 are
-closed, one entry each in `plan.md`, Closed plans; the MVP was approved on
-2026-10-17. `plan.md` holds the active plan's progress and test evidence;
+**Status: plan 52 active since 2026-10-27, the system's folder dialog for
+the project (brief amendment 53).** Plans 1 to 51 are closed, one entry
+each in `plan.md`, Closed plans; the MVP was approved on 2026-10-17. `plan.md` holds the active plan's progress and test evidence;
 each closed plan's results are in its evaluation file, and its full
 record in git.
 
@@ -160,12 +159,13 @@ not in this list: it runs alone, with the exact command and conditions of
 - **MVP scope is fixed** by amendment 4: build none of the features it leaves
   out (model configuration, cross-provider collaboration, provider
   switching, session profiles, orchestration settings), except those the
-  owner has asked for since: recent projects, favourites and a project
-  browser; git worktree management; a file viewer in the terminal with an
-  Explorer of the project, in place of the editor integration; the session's
-  model, effort and Ultracode selection; the permission modes selector;
-  Source Control with a read-only Git diff viewer, its commit and push, and
-  a selection's commit (brief, amendments 9 to 12, 34, 40, 45, 46 and 51).
+  owner has asked for since: recent projects and favourites, the system's
+  folder dialog for the project; git worktree management; a file viewer in
+  the terminal with an Explorer of the project, in place of the editor
+  integration; the session's model, effort and Ultracode selection; the
+  permission modes selector; Source Control with a read-only Git diff
+  viewer, its commit and push, and a selection's commit (brief, amendments
+  9 to 12, 34, 40, 45, 46, 51 and 53).
   The ones left out are **[Nice to have]**: future improvements, never
   listed as remaining, built only if the owner asks for one in a new plan
   (`plan.md`, Nice to have).

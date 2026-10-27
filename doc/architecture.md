@@ -460,7 +460,9 @@ in a new plan.
 
 Recent project history, project favourites and a project browser (AM4 X1
 to X3) are built on the startup screen since plan 15 (amendment 9;
-ui-design.md, Startup screen).
+ui-design.md, Startup screen); since plan 52 the system's folder dialog
+takes the browser's place (amendment 53; [The folder
+dialog](#the-folder-dialog) below).
 Git worktree management (AM4 X4) is built since plan 16 (amendment 10;
 ui-design.md, Worktrees).
 The automatic VS Code integration (AM4 X5) is not built: the owner replaced
@@ -602,7 +604,7 @@ changes no part's role either.
 | 1. Execution | `provider.ErrNoPending`, wrapped by both adapters' "no pending request" errors, their text unchanged | `internal/provider/provider.go`, `claude/session.go`, `codex/session.go` |
 | 3. State | `Quit.GitRunning`: Ctrl+Q asks while a git operation runs, whatever the session's phase; `AnswerFailed.Gone`: an answer that a withdrawal beat expires its approval, the session going on, and a late withdrawal is no second answer; the Mode case returns; an unreadable request's word from `CLI()` | `internal/state/actions.go`, `reduce.go` |
 | 4. Rendering | the quit question names the git operation (`UI.GitRunning`) | `internal/render/dashboard.go`, `render.go` |
-| 5. Input | `realPath` gives a drive letter path, or `\\server\share\…`, without the final path's `\\?\` (`dosPath`) | `internal/input/browse_windows.go` |
+| 5. Input | `realPath` gives a drive letter path, or `\\server\share\…`, without the final path's `\\?\` (`dosPath`) | `internal/input/realpath_windows.go` (`browse_windows.go` until plan 52) |
 | The application | the quit key passes whether a git operation runs; `syncCommit` names its step; an answer error matching `ErrNoPending` is `Gone`; `dropSourcePopups`, called by `closeSource` and `openExplorer` | `internal/app/keys.go`, `commit.go`, `app.go`, `source.go`, `explorer.go` |
 
 Plan 48 (brief amendment 49; [audit.md](audit.md)'s phase 2, robustness
@@ -641,6 +643,20 @@ startup machine gains the form's reset; the rest is the interface's.
 | 4. Rendering | the mode and the banner's rows at a size (`HomeLayout`); the look (`homeLook`: the rows, the focus, the notes, the panels' growth); the picture's painter (`HomePaint`: rounded boxes, lines, icons, the glyphs a `Glyphs` gives), its cells a click acts on (panel 'H', `HomeItemOf`); its tiles, their changes and their Sixel, each tile's 32 commonest colours exact (`HomeRects`, `HomeChanges`, `BottomBlock`, `HomeSixel`); grid mode (`homeGrid`); the banner's scene, seeded (`Banner`), and its view over a copy of the background (`BannerView`): a frame's tiles of what moved, written in the view's fixed palette, the pixels it did not change transparent (`Frame`, `BannerSequence`), the sprites' images (`spriteImage`); the encoder reading each band once (`encodeSixel`) | `internal/render/home.go`, `homepaint.go`, `hometile.go`, `homegrid.go`, `banner.go`, `bannerview.go`, `bannerart.go`, `sixel.go`, `select.go` |
 | 5. Input | a glyph drawn by GDI in Cascadia Mono, from the hosting Windows Terminal's package, loaded privately, else installed, else Consolas; four times larger, averaged down (`Glyph`) | `internal/input/textmask_windows.go` |
 | The application | the picture drawn whole once the size has settled (`homeSettle`, 120 ms), then the cells a new look changes and the rows the frame wrote again, after the frame with the preview's images (`homeSequence`), its images encoded at once (`homePic.encode`); the banner's view kept with the picture (`homeBanner`), a frame every `render.BannerTick` while the window has the focus (`bannerMsg`, `tea.FocusMsg` and `tea.BlurMsg`, `View.ReportFocus`), none and no view when the banner is hidden; the clicks (`homeMouse`), F12, Ctrl+N (`resetForm`); the header's version constant and system | `internal/app/home.go`, `app.go`, `keys.go`, `mouse.go`, `preview.go` |
+
+## The folder dialog
+
+Plan 52 (brief amendment 53; ui-design.md, The folder dialog). The home
+screen's folder button and Ctrl+O open the system's dialog for choosing a
+folder, and its answer goes into the project field; plan 15's project
+browser is removed. No state changes: the dialog is input, its answer the
+field's text, its failure a note.
+
+| Part | What it does | Where |
+| - | - | - |
+| 4. Rendering | the dialog's failure as a "✗" note in NEW SESSION (`UI.FolderProblem`, `homeNotes`) | `internal/render/home.go`, `render.go` |
+| 5. Input | the common item dialog for folders (IFileOpenDialog with FOS_PICKFOLDERS, through COM by its method table, x/sys's LazyDLL), owned by the window in front, on its own locked OS thread with COM, opening at a start folder (`PickFolder`); none outside Windows; `realPath` and `dosPath` moved out of the browser's files | `internal/input/folder_windows.go`, `folder_other.go`, `realpath_windows.go`, `realpath_other.go` |
+| The application | the button's click and Ctrl+O open it in a command, one at a time, none while validating, at the field's directory, else its nearest existing parent, else the starting folder (`openFolder`, `folderStart`); the folder chosen in the field with the focus, a failure kept until the next dialog or Ctrl+N (`folderPicked`, `resetForm`); `Options.PickFolder`, `input.PickFolder` in the real run | `internal/app/folder.go`, `home.go`, `keys.go`, `app.go`, `cmd/agent-command-center/main.go` |
 
 ## Build order
 
@@ -855,7 +871,7 @@ ui-design.md, `REL` reliability.md.
 | AM4 S10 | Exists and accessible | same |
 | AM4 S11 | It becomes the working directory | ARCH Session context |
 | AM4 S12 | Current directory prefilled | ARCH How it starts |
-| AM4 S13 | No advanced project browser; amendment 9 adds one | UI Startup screen, Project browser |
+| AM4 S13 | No advanced project browser; amendment 9 added one, amendment 53 replaced it with the system's folder dialog | UI Startup screen, The folder dialog |
 | AM4 S14 | Dashboard only after both are validated | EVT Startup machine |
 | AM4 S15 | Startup follows image 1 | UI Startup screen, "Follows and departs" |
 | AM4 D1 | Transition to the dashboard | UI Transition |
@@ -869,7 +885,7 @@ ui-design.md, `REL` reliability.md.
 | AM4 W3 | The agent inspects, modifies with approval, runs tools, reports | EVT Approval machine; UI Approvals |
 | AM4 F1-F10 | The 10-step expected experience | UI Interaction flow |
 | AM4 F11 | One coherent application | UI Transition |
-| AM4 X1-X3 | Recent projects, favourites, a project browser: built by amendment 9 | UI Startup screen, Projects and Project browser |
+| AM4 X1-X3 | Recent projects, favourites, a project browser: built by amendment 9; the browser replaced by the system's folder dialog, amendment 53 | UI Startup screen, Projects and The folder dialog |
 | AM4 X4 | Worktree management: built by amendment 10 | UI Worktrees; ARCH Session context |
 | AM4 X5 | VS Code integration: replaced by a file viewer in the terminal, amendment 11 | UI File viewer; ARCH File viewer |
 | AM4 X6-X10 | The 5 excluded features left | ARCH Out of scope |

@@ -50,6 +50,7 @@ func main() {
 		Drafts:            &input.Drafts{},
 		Projects:          &input.Projects{},
 		PickImages:        input.PickImages,
+		PickFolder:        input.PickFolder,
 		Git:               input.GitCLI{},
 		Sessions:          &input.Sessions{},
 	})

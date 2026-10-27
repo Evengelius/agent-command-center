@@ -105,7 +105,7 @@ func (m *Model) starProject() tea.Cmd {
 func (m *Model) projectRows() []render.ProjectRow {
 	rows := make([]render.ProjectRow, len(m.projectList))
 	for i, e := range m.projectList {
-		a := "never" // starred in the browser, no session started yet
+		a := "never" // starred in plan 15's browser, no session started yet
 		if !e.Used.IsZero() {
 			a = age(m.ui.Now.Sub(e.Used), e.Used)
 		}

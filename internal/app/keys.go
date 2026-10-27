@@ -74,12 +74,9 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	}
 	// Ctrl+W, on both screens: the Worktrees view (plan 16); not while a
 	// start is validated or a quit question waits.
-	if k.String() == "ctrl+w" && m.browse == nil && !m.s.QuitAsked &&
+	if k.String() == "ctrl+w" && !m.s.QuitAsked &&
 		!(m.s.Screen == state.ScreenStartup && m.s.Startup.Phase == state.Validating) {
 		return m.openWorktrees()
-	}
-	if m.s.Screen == state.ScreenStartup && m.browse != nil {
-		return m.browseKey(k)
 	}
 	if m.s.Screen == state.ScreenStartup {
 		return m.startupKey(k)
@@ -105,10 +102,9 @@ func (m *Model) startupKey(k tea.KeyPressMsg) []tea.Cmd {
 		}
 		m.moveChoice(k.String() == "down")
 	case "ctrl+o":
-		// The project browser (plan 15), not while a start is validated.
-		if m.s.Startup.Phase != state.Validating {
-			return []tea.Cmd{m.openBrowser()}
-		}
+		// The system's folder dialog (plan 52), not while a start is
+		// validated.
+		return m.openFolder()
 	case "tab":
 		m.nextField(1)
 	case "shift+tab":

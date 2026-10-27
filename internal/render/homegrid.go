@@ -262,7 +262,8 @@ func homeSessionRows(s *state.State, ui UI, iw int) []gridRow {
 	}
 	rows = append(rows, blank(1), ask("2.", "Project directory", ui.Field == 1))
 	for _, l := range homeField(ui, iw) {
-		// The folder button's cells, from its divider, open the browser.
+		// The folder button's cells, from its divider, open the folder
+		// dialog (plan 52).
 		l = homeTag(l, HomeItemField)
 		for x, i := 0, 0; i < len(l); i++ {
 			if x >= iw-6 {

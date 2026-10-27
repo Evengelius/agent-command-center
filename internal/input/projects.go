@@ -150,7 +150,7 @@ func (p Projects) Record(list []Project, path string, at time.Time) []Project {
 }
 
 // Star stars path, or unstars it. A directory starred before any session
-// started in it (from the browser) is added; unstarred, it goes again.
+// started in it (from plan 15's browser) is added; unstarred, it goes again.
 func (p Projects) Star(list []Project, path string, on bool) []Project {
 	path = filepath.Clean(path)
 	var out []Project

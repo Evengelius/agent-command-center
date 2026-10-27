@@ -264,3 +264,11 @@ func diffRow(l string, w int) line {
 	// indentation.
 	return line{deco(" ", stNone), sp(strings.ReplaceAll(l, "\t", "    "), st)}.fit(w)
 }
+
+// plural is n and its noun.
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return "1 " + one
+	}
+	return fmt.Sprintf("%d %s", n, many)
+}

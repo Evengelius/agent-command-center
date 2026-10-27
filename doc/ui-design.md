@@ -29,8 +29,8 @@ child, cost N/A, an observed plan). Colours are described in
 
 The first screen, the home screen (AM4 S1-S15; amendment 52, plan 51): two
 mandatory questions, validated before the dashboard opens, the recent and
-favourite projects beside them and a project browser (amendment 9), under
-an animated banner. It follows the owner's image
+favourite projects beside them (amendment 9) and the system's folder
+dialog for the project (amendment 53, plan 52), under an animated banner. It follows the owner's image
 `references/16-home-screen.webp`, measured in
 [reference-design.md, The home screen](reference-design.md#the-home-screen):
 a header, the banner, two panels, NEW SESSION and PROJECTS, and a footer.
@@ -152,8 +152,8 @@ NEW SESSION holds them (D6):
    first installed CLI (ASM-8).
 2. **Project directory**: the field, prefilled with the current directory
    or `--project` (AM4 S7, S12; ASM-8), its folder button opening the
-   [project browser](#project-browser). The path the agent will receive,
-   recomputed on every keystroke without any I/O (steps 1 to 3 of INT
+   system's [folder dialog](#the-folder-dialog). The path the agent will
+   receive, recomputed on every keystroke without any I/O (steps 1 to 3 of INT
    paths, "Validation, in order": trim, expand `~`, translate WSL forms,
    classify, make absolute), is shown under it only when it differs from
    what is typed (`~`, `/mnt/c/…`); `Stat` and the read check (steps 4 and
@@ -240,8 +240,8 @@ written and the screen is unchanged.
 PROJECTS lists FAVORITES (★) then RECENT PROJECTS (☆), each by its last
 start, at the design's row spacing in picture mode, separators between
 the rows: the directory's name, its path and its age ("now", "8m ago",
-"2h ago", "1d ago", "never" for a directory starred from the browser
-before any session) (D7). It is a Tab stop after the project field, its
+"2h ago", "1d ago", "never" for a directory starred from plan 15's
+browser before any session) (D7). It is a Tab stop after the project field, its
 selected row on a band. A section with no row is hidden; with no project,
 "No projects yet". When the rows do not all fit, the list follows the
 selection, a slim mark at its right showing where it is. A store that
@@ -249,51 +249,22 @@ cannot be read shows "Recent projects unavailable:" and the reason in the
 panel, never an empty list; one that cannot be written, "Recent projects
 not saved:" and the reason.
 
-### Project browser
+### The folder dialog
 
-Ctrl+O on the startup screen (not while validating), or a click on the
-field's folder button, opens the browser full screen at the project
-field's resolved directory, else its nearest existing parent, else the
-home directory. It lists directories only, sorted without case, with ★
-for a favourite, "git" for a directory holding `.git` (a directory or a
-file) and "link" for a link or junction to a directory. Hidden and system
-directories are left out and counted until Ctrl+H. The first row, "Use
-this directory", chooses the directory shown; then `..`; then the
-subdirectories. A directory is read off the update loop, with "reading…"
-until it is listed; one that cannot be listed shows its error in red with
-✗, worded as validation words it, and stays browsable upwards. On
-Windows, `..` at a drive's root lists the drives. The rows are windowed
-around the selection, their window on the right of the count line.
-
-```text
- >_ AGENT COMMAND CENTER                                        Project browser
-────────────────────────────────────────────────────────────────────────────────
-
-    Choose a project directory
-    In      C:\javadev\projets
-    Filter  █ type to filter
-    ────────────────────────────────────────────────────────────────────────
-        Use this directory                            start the session here
-        ..                                                            parent
-      ★ agent-command-center                                             git
-    ›   billing-service                                                  git
-        docs-site
-        legacy-portal                                                   link
-        tools                                                      link  git
-    ────────────────────────────────────────────────────────────────────────
-    5 directories · 1 hidden, Ctrl+H shows them
- Enter open · ↑↓ move · ← up · Ctrl+F star · Ctrl+H hidden · Esc back
-```
-
-| Key | Action |
-| - | - |
-| Typing, paste | filter by name, without case (a paste's first line); the first match is selected |
-| ↑ ↓ PgUp PgDn Home End | move |
-| Enter / → | open the directory; on "Use this directory" (Enter only), fill the project field and start, validated as a typed path |
-| ← / Backspace | with an empty filter, go up with the directory left selected; Backspace otherwise edits the filter |
-| Ctrl+F | star or unstar the selected directory (with a store) |
-| Ctrl+H | show or hide the hidden directories |
-| Esc | clear the filter, then close with the project field unchanged |
+A click on the field's folder button, or Ctrl+O, opens the system's dialog
+for choosing a folder (amendment 53, plan 52), the one Explorer's
+applications show, titled "Choose a project directory", over the terminal,
+which it keeps until it closes: file system folders only, kept out of the
+recent items. It opens at the project field's directory as Start resolves
+it, else its nearest existing parent, else the folder the screen opened
+with. A folder chosen goes into the field, which takes the focus, its
+resolved path and warning as when typed; Start then validates it as any
+typed path. Cancel or Esc leaves the field as it was. A dialog that fails
+shows why between the field and START SESSION, in red with ✗ ("Folder
+dialog: …"), until the dialog opens again or Ctrl+N. One dialog at a time,
+none while a start is validated; the screen keeps drawing behind it, the
+banner paused while the dialog has the focus. It replaces plan 15's
+project browser, removed by amendment 53.
 
 ### Keys and the mouse
 
@@ -304,7 +275,7 @@ around the selection, their window on the right of the count line.
 | Enter | Start: validate both answers, then start; in Projects, with that project's path |
 | f / Del | in Projects: star or unstar / forget that project |
 | Ctrl+N | the form as the screen opened it: the default agent CLI, the starting project folder, the focus on question 1, the list's first row, no message; not while validating (D9) |
-| Ctrl+O | open the project browser |
+| Ctrl+O | open the system's [folder dialog](#the-folder-dialog) |
 | Ctrl+W | open the [Worktrees](#worktrees) view on the project field's repository |
 | F12 | give the mouse back to the terminal, and take it again |
 | Editing keys | as in the [Input editor](#input-editor), on one line |
@@ -314,9 +285,9 @@ The footer shows Ctrl+N, Ctrl+O and Ctrl+Q, as the design (D8); the other
 keys work as above, unshown.
 
 The mouse (D11), as on the dashboard, F12 giving it back to the terminal
-(not in the browser or Worktrees): a left click on an option chooses that
-agent CLI; on the field, gives it the focus; on its folder button, opens
-the browser; on a project's row, selects it; on its star, stars or unstars
+(not in Worktrees): a left click on an option chooses that agent CLI; on
+the field, gives it the focus; on its folder button, opens the folder
+dialog; on a project's row, selects it; on its star, stars or unstars
 it; on START SESSION, starts as Enter does. No double click, wheel or
 footer click. The terminal's own selection then takes Shift and a drag,
 or F12.

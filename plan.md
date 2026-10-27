@@ -75,7 +75,8 @@ none is listed as remaining, until the owner asks for one in a new plan
 (the owner, 2026-10-18). Amendment 4 names ten "future improvements"
 (`doc/brief.md`, Amendment 4, "For this phase, do NOT implement"). Five
 remain below. Recent projects, favourites and a project browser were plan 15
-(amendment 9); git worktree management was plan 16 (amendment 10). The
+(amendment 9), the browser replaced by the system's folder dialog in plan
+52 (amendment 53); git worktree management was plan 16 (amendment 10). The
 automatic VS Code integration was replaced by the owner with a file viewer in
 the terminal, plan 17 (amendment 11). The session's model, effort and
 Ultracode selection was plan 34 (amendment 34); configuring models beyond the
@@ -95,12 +96,101 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 52 - The system's folder dialog for the project
 
-Plan 51 was approved and closed on 2026-10-27 (Closed plans, below). The
-next plan starts when the owner asks for one; the audit's roadmap
-([`doc/audit.md`](doc/audit.md), Part 2) is done, its phases 0 to 4
-implemented by plans 46 to 49.
+Brief amendment 53 (2026-10-27): the home screen's folder button opens the
+system's dialog for choosing a folder, as the owner's example shows, and
+Ctrl+O the same; the project browser of plan 15 goes (the owner's choice).
+
+### What was found (2026-10-27, on 2756efa)
+
+- The folder button (plan 51, D11), in picture and grid mode, and Ctrl+O
+  open the project browser: `app/browse.go`, `render/browse.go`,
+  `input/browse*.go`, their tests and 12 golden frames, about 1,200 lines,
+  used nowhere else. `input`'s `realPath` and `dosPath`, in
+  `browse_windows.go` and `browse_other.go`, serve the Explorer, the file
+  viewer and Source Control.
+- Plan 31's Open dialog (`input/dialog_windows.go`) runs on its own locked
+  OS thread with COM, owned by the window in front, in a command;
+  GetOpenFileNameW picks files only.
+- The field's live checks (the resolved path, its problem and warning) are
+  computed from its text after every update.
+
+### Design
+
+- **D1. The dialog** is the system's common item dialog for folders
+  (IFileOpenDialog with FOS_PICKFOLDERS, file system folders only, kept
+  out of the recent items), titled "Choose a project directory", owned by
+  the window in front, on its own locked OS thread with COM, in a
+  command, as plan 31's; called through x/sys's LazyDLL, no new
+  dependency. Outside Windows there is none.
+- **D2. Where it opens:** the field's directory as Start resolves it, else
+  its nearest existing parent, else the folder the screen opened with.
+- **D3. Its answer:** a folder chosen goes into the field, which takes the
+  focus, its live checks as when typed; Cancel changes nothing; a failure
+  is a "✗" note in NEW SESSION until the dialog opens again or Ctrl+N.
+  One dialog at a time; none while a start is validated.
+- **D4. The folder button and Ctrl+O** open it, in picture and grid mode;
+  the footer's "Ctrl+O Open Project" stays.
+- **D5. The browser goes:** its code, tests, golden frames and documents.
+  `realPath` and `dosPath` move, unchanged, to `input/realpath_*.go`. The
+  list's stars and the project store stay as they are.
+
+### Criteria
+
+1. **52.1 Opening:** the folder button's click and Ctrl+O open the dialog
+   at D2's folder, by state tests with a stand-in dialog, in picture and
+   grid mode; a second while one is open, or any while validating, opens
+   none.
+2. **52.2 The answer:** a folder chosen is in the field, the field
+   focused, its live checks run; Cancel changes nothing; a failure shows
+   its note, gone at the next dialog or Ctrl+N.
+3. **52.3 The real dialog:** a Windows test creates and sets it up (folders
+   only, the title, the start folder) without showing it; in Windows
+   Terminal at 208x59, the folder button opens it over the terminal, a
+   folder typed into it with Enter puts that folder in the field, Esc
+   cancels it, and the home screen is whole after it closes.
+4. **52.4 The browser gone:** no code, test, golden frame or document
+   describing it as present; the startup screen's golden frames
+   unchanged.
+5. **52.5 The checks:** build, vet, gofmt, the whole suite, `-race` on
+   `internal/app` and `internal/input`, mutants on the new logic through
+   `go test -overlay`.
+
+### Steps
+
+1. Amendment 53 and this plan.
+2. The dialog in `input`, with its Windows test.
+3. The application: the button, Ctrl+O, the answer, the note; the browser
+   removed.
+4. The documents.
+5. Verification (52.1 to 52.5), then `doc/plan52-evaluation.md`.
+
+### Progress
+
+- 2026-10-27: step 1 done: amendment 53, this plan.
+- 2026-10-27: steps 2 to 4 done. `input.PickFolder` (`folder_windows.go`,
+  COM by the interfaces' method tables, `//go:uintptrescapes` as
+  LazyProc.Call; `folder_other.go`); `app/folder.go` (`openFolder`,
+  `folderStart`, `folderPicked`, `Options.PickFolder`); the note
+  (`UI.FolderProblem`); the browser's files, its 12 golden frames and
+  `Options.Lister` removed; `realPath` and `dosPath` in
+  `input/realpath_*.go`; `plural`, `mkdirs` and `ctrl` kept where still
+  used. Tests: `TestFolderDialog` (input: the dialog set up, not shown),
+  `TestFolderStart`, `TestFolderDialog` (app), TestHomeMouse's folder
+  button. Documents: ui-design.md (The folder dialog, keys, mouse),
+  architecture.md (The folder dialog, AM4 rows), evaluation.md and
+  reference-design.md (MVP scope), AGENTS.md.
+- 2026-10-27: in Windows Terminal at 208x59 (`term\p52dialog.ps1`): the
+  folder button opened "Choose a project directory" over the terminal at
+  `%TEMP%\p52\start`; a folder's path typed and Enter opens that folder
+  in the dialog, Enter again (Select Folder) put it in the field,
+  focused; Esc on a second dialog left the field as it was; no frame
+  while either dialog was open (the banner paused by the focus reports),
+  the screen whole after.
+- 2026-10-27: step 5 done, [doc/plan52-evaluation.md](doc/plan52-evaluation.md):
+  5 of 5 PASS. Mutants: 17 of 17 caught. `-race` on `internal/app` and
+  `internal/input` ok. Waiting for the owner's review.
 
 ## Closed plans
 

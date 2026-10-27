@@ -7577,3 +7577,25 @@ on screen, which an image would lose. So in picture mode the field's text
 stays terminal text, its outline, ground and folder button images around
 it, as the commit message box's (plan 45): the path at the terminal's text
 size, not the design's. Taken as plan 51 (plan.md, Plan 51).
+
+## Amendment 53, 2026-10-27: the system's folder dialog for the project, for plan 52
+
+After plan 51 was approved and committed, the owner sent three images: the
+home screen's "2. Project directory" field with its folder button; a
+Windows dialog for choosing a folder, as another application opens it (a
+folder view, a "Folder:" box and a "Select Folder" button, in French on
+this machine); and the project browser that the folder button opened
+("Choose a project directory", the directories of `C:\`). The owner wrote,
+word for word:
+
+````text
+Clicking on that folder should simply open the explorer window, like in my image as an example
+
+No need to implement the complexity you added in "projet browser"
+````
+
+Asked what should become of the in-terminal project browser, the owner
+chose "Replace it everywhere": the folder button and Ctrl+O ("Open
+Project") both open the Windows dialog, and the browser is removed with
+its code, tests, golden frames and documents (it stays in git's history).
+Taken as plan 52 (plan.md, Plan 52).

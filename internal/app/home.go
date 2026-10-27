@@ -256,7 +256,8 @@ func (m *Model) homeGlyphs() render.Glyphs { return &m.glyphs }
 
 // homeMouse is a click on the home screen (plan 51, design D11): an option
 // chooses its agent CLI, the field takes the focus, the folder button
-// opens the browser as Ctrl+O does, a project's row is selected, its star
+// opens the folder dialog as Ctrl+O does (plan 52), a project's row is
+// selected, its star
 // toggles the favourite as f does, START SESSION starts as Enter does.
 // Only a left click acts: no double click, wheel or footer click.
 func (m *Model) homeMouse(msg tea.MouseMsg) []tea.Cmd {
@@ -277,9 +278,7 @@ func (m *Model) homeMouse(msg tea.MouseMsg) []tea.Cmd {
 	case render.HomeItemField:
 		m.ui.Field = 1
 	case render.HomeItemFolder:
-		if m.s.Startup.Phase != state.Validating {
-			return []tea.Cmd{m.openBrowser()}
-		}
+		return m.openFolder()
 	case render.HomeItemStart:
 		return m.confirmStart()
 	case render.HomeItemRow, render.HomeItemStar:
@@ -310,6 +309,7 @@ func (m *Model) resetForm() []tea.Cmd {
 	}
 	m.path.SetText(m.startProject())
 	m.ui.Field, m.ui.ProjectSel = 0, 0
+	m.ui.FolderProblem = "" // the folder dialog's failure too (plan 52, design D3)
 	return m.do(state.ResetForm{})
 }
 

@@ -167,6 +167,9 @@ func homeNotes(s *state.State, ui UI) []HomeNote {
 	case ui.Resolved != "" && ui.Resolved != strings.TrimSpace(ui.Path):
 		out = append(out, HomeNote{"→ ", hideUser(ui.Resolved), 'g'})
 	}
+	if ui.FolderProblem != "" {
+		out = append(out, HomeNote{"✗ ", hideUser(ui.FolderProblem), 'f'}) // plan 52, design D3
+	}
 	if ui.PathProblem == "" && ui.PathWarning != "" && !projectFailed {
 		out = append(out, HomeNote{"! ", ui.PathWarning, 'a'})
 	}

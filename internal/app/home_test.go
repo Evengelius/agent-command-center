@@ -231,8 +231,9 @@ func homeCell(t *testing.T, h *harness, item int) (int, int) {
 // TestHomeMouse is plan 51's design D11, in picture mode and in grid mode:
 // the home screen takes the mouse, F12 gives it back; an option chooses its
 // agent CLI, the field takes the focus, a project's row is selected, its
-// star toggles the favourite, the folder button opens the browser, START
-// SESSION starts as Enter does; a right click does nothing.
+// star toggles the favourite, the folder button opens the folder dialog
+// (plan 52, criterion 52.1), START SESSION starts as Enter does; a right
+// click does nothing.
 func TestHomeMouse(t *testing.T) {
 	for _, c := range []struct {
 		name  string
@@ -282,17 +283,13 @@ func TestHomeMouse(t *testing.T) {
 					t.Errorf("F12: mouse mode %v", v.MouseMode)
 				}
 				h.send(key(tea.KeyF12, 0))
+				fp := &folderPicker{answers: []string{`C:\work\chosen`}}
+				h.m.opt.PickFolder = fp.pick
+				h.m.ui.Field = 0
 				x, y = homeCell(t, h, render.HomeItemFolder)
 				h.send(click(x, y))
-				if h.m.browse == nil {
-					t.Fatal("the folder button: no browser")
-				}
-				if v := h.m.View(); v.MouseMode != tea.MouseModeNone {
-					t.Errorf("the browser takes no mouse: mode %v", v.MouseMode)
-				}
-				h.send(key(tea.KeyEscape, 0))
-				if h.m.browse != nil {
-					t.Fatal("the browser still open")
+				if len(fp.opened()) != 1 || h.m.path.Text() != `C:\work\chosen` || h.m.ui.Field != 1 {
+					t.Fatalf("the folder button: dialogs %q, field %q, focus %d", fp.opened(), h.m.path.Text(), h.m.ui.Field)
 				}
 				x, y = homeCell(t, h, render.HomeItemField)
 				h.send(click(x, y))

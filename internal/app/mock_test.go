@@ -126,6 +126,8 @@ func (h *harness) settle() {
 
 func key(code rune, mod tea.KeyMod) tea.KeyPressMsg { return tea.KeyPressMsg{Code: code, Mod: mod} }
 
+func ctrl(r rune) tea.KeyPressMsg { return key(r, tea.ModCtrl) }
+
 // spawnTrap is an agent CLI adapter that fails the test if anything reaches
 // it: a mock run must not detect or start a CLI.
 type spawnTrap struct{ t *testing.T }

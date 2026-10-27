@@ -40,7 +40,7 @@ type UI struct {
 	Projects        []ProjectRow
 	ProjectSel      int           // the selected row
 	ProjectsProblem string        // the list cannot be read or written
-	Browser         BrowserView   // the project browser, over the screen while Open
+	FolderProblem   string        // why the folder dialog failed (plan 52, design D3)
 	Worktrees       WorktreesView // the Worktrees view, over either screen while Open (plan 16)
 	// Version and System are the header's application version and operating
 	// system (plan 51, design D5): "0.1.0", "Windows".

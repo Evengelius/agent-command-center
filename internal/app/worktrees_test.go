@@ -145,6 +145,15 @@ func repoRows(main string) []input.Worktree {
 	}
 }
 
+func mkdirs(t *testing.T, root string, dirs ...string) {
+	t.Helper()
+	for _, d := range dirs {
+		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 // wtStartup is the startup screen with a fake git on a repository at a
 // temporary directory, which is also the current one; both worktree
 // directories exist, so Enter can start in either.

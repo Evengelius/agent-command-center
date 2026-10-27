@@ -87,8 +87,6 @@ type Options struct {
 	// Projects keeps the startup screen's project list (plan 15); nil reads
 	// and writes nothing, and the screen has no list.
 	Projects *input.Projects
-	// Lister reads directories for the project browser; nil is the disk.
-	Lister input.Lister
 	// Highlight colours a file's lines for the file viewer (plan 17); nil is
 	// render.Highlight.
 	Highlight func(name string, lines []string, from, to int) render.Highlighted
@@ -118,6 +116,10 @@ type Options struct {
 	// files chosen, none when cancelled (plan 31); nil has no dialog: a click
 	// on "Upload from computer" says so.
 	PickImages func() ([]string, error)
+	// PickFolder opens the system's folder dialog at start and gives the
+	// folder chosen, "" when cancelled (plan 52); nil has no dialog: the
+	// folder button and Ctrl+O say so on the startup screen.
+	PickFolder func(start string) (string, error)
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -175,8 +177,8 @@ type Model struct {
 	projectList  []input.Project
 	projectsGen  int // the last read or change asked for
 	projectsSeen int // the last one shown
-	// The project browser (browse.go): nil when closed.
-	browse *browser
+	// The folder dialog is open (folder.go; plan 52).
+	folderOpen bool
 	// The Worktrees view (worktrees.go): nil when closed.
 	wt    *worktrees
 	wtGen int // the last git result asked for
@@ -329,9 +331,6 @@ func New(opt Options) *Model {
 	if opt.Getenv == nil {
 		opt.Getenv = os.Getenv
 	}
-	if opt.Lister == nil {
-		opt.Lister = input.Disk{}
-	}
 	if opt.Highlight == nil {
 		opt.Highlight = render.Highlight
 	}
@@ -386,7 +385,7 @@ func (m *Model) View() tea.View {
 	v := tea.NewView(m.screen.StringAfter(prev))
 	m.previewFrame() // the thumbnails drawn again after a frame that changed their rows (plan 32)
 	v.AltScreen = true
-	if m.s.Screen == state.ScreenStartup && !m.ui.MouseOff && m.wt == nil && m.browse == nil {
+	if m.s.Screen == state.ScreenStartup && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // the home screen's clicks (plan 51, design D11); F12 as on the dashboard
 	}
 	// The home screen's banner pauses while the window lacks the focus (plan
@@ -450,8 +449,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case projectsMsg:
 		cmds = append(cmds, m.projectsDone(msg)...)
-	case browseMsg:
-		m.browseDone(msg)
+	case chosenFolderMsg:
+		m.folderPicked(msg)
 	case wtListMsg:
 		m.worktreesListed(msg)
 	case wtOpMsg:
@@ -636,7 +635,6 @@ func (m *Model) syncUI() {
 		if m.ui.Field == 3 && len(m.projectList) == 0 {
 			m.ui.Field = 1
 		}
-		m.ui.Browser = m.browserView()
 	}
 	m.ui.Worktrees = m.worktreesView()
 }
@@ -1033,8 +1031,6 @@ func (m *Model) paste(text string) {
 		if m.wt.mode == 'n' && m.wt.busy == "" {
 			m.wt.branch.Insert(firstLine(text)) // a branch name is one line
 		}
-	case m.s.Screen == state.ScreenStartup && m.browse != nil:
-		m.browse.paste(text)
 	case m.s.Screen == state.ScreenStartup && m.ui.Field == 1:
 		m.path.Insert(input.CleanPath(text))
 	case top == render.LayerKeys:

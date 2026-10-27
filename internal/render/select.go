@@ -152,8 +152,6 @@ func Draw(s *state.State, ui UI) *Screen {
 		ls = tooSmall(s, ui)
 	case st.Shown(LayerWorktrees):
 		ls = worktreesScreen(s, ui)
-	case s.Screen == state.ScreenStartup && ui.Browser.Open:
-		ls = browserScreen(s, ui)
 	case st.Shown(LayerKeys):
 		ls = keysOverlay(s, ui, sc)
 	case s.Screen == state.ScreenDashboard && ui.View != "" && s.Approvals[ui.View] != nil:
