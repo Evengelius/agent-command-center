@@ -96,71 +96,12 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 53 - A project chosen in the list fills the field
+## No plan active
 
-Brief amendment 54 (2026-10-27): choosing a project in the PROJECTS list
-also puts its path into the Project directory field, so that the field
-shows what Start will use.
-
-### What was found (2026-10-27, on a544350)
-
-- The list's selection moves by ↑/↓ while the list has the focus
-  (`startupKey`) and by a click on a row or its star (`homeMouse`, which
-  also gives the list the focus); neither touches the field. Start
-  (`confirmStart`) puts the selected row's path in the field when the list
-  has the focus, so Enter there already starts in that project.
-- Six golden frames move the selection by ↓ (`projectsRig`):
-  `startup-favourites` and `startup-projects-focused`, at three sizes
-  each.
-
-### Design
-
-- **D1. Choosing:** ↑/↓ in the list and a click on a row or its star put
-  the selected project's stored path into the field, replacing its text,
-  its live checks as when typed; the focus stays on the list, so Enter
-  starts there, f stars and Del forgets as before.
-- **D2. Not choosing:** Tab or Shift+Tab onto the list, Del (the selection
-  then on the next row), a star by f, the list read again, and Ctrl+N
-  leave the field as it is. Enter on the list chooses the selected row and
-  starts, as before.
-- **D3. Unchanged:** the store, the list's drawing, the keys and the
-  mouse's mapping, the folder dialog.
-
-### Criteria
-
-1. **53.1 Choosing:** after ↑ or ↓ in the list, and after a click on a
-   row or on its star, the field holds that row's path and the list has
-   the focus, by state tests in picture and grid mode.
-2. **53.2 Not choosing:** Tab onto the list, Del and f leave the field's
-   text; Enter on the list starts with the selected row's path.
-3. **53.3 Golden frames:** the six that move the selection show the
-   chosen path in the field, each reviewed as a diff; no other frame
-   changes.
-4. **53.4 Windows Terminal** at 208x59: a click on a project's row puts
-   its path in the field (terminal text), ↓ the next row's.
-5. **53.5 The checks:** build, vet, gofmt, the whole suite, mutants on the
-   change through `go test -overlay`.
-
-### Steps
-
-1. Amendment 54 and this plan.
-2. The change, its tests and the golden frames.
-3. The documents.
-4. Verification (53.1 to 53.5), then `doc/plan53-evaluation.md`.
-
-### Progress
-
-- 2026-10-27: step 1 done: amendment 54, this plan.
-- 2026-10-27: steps 2 and 3 done. `chooseProject` (`app/projects.go`),
-  called by ↑/↓ in the list (`startupKey`), the click on a row or its star
-  (`homeMouse`) and Start (`confirmStart`, as before). Tests:
-  `TestProjectChosen`, TestHomeMouse's row and star. The six golden
-  frames rewritten, one line each, reviewed. Documents: ui-design.md
-  (Projects, keys, mouse), architecture.md (The home screen).
-- 2026-10-27: step 4 done, [doc/plan53-evaluation.md](doc/plan53-evaluation.md):
-  5 of 5 PASS. Windows Terminal at 208x59 (`term\p53list.ps1`): a click on
-  a row and ↓ put the project's path in the field. Mutants: 8 of 8
-  caught. Waiting for the owner's review.
+Plan 53 was approved and closed on 2026-10-27 (Closed plans, below). The
+next plan starts when the owner asks for one; the audit's roadmap
+([`doc/audit.md`](doc/audit.md), Part 2) is done, its phases 0 to 4
+implemented by plans 46 to 49.
 
 ## Closed plans
 
@@ -810,3 +751,13 @@ which takes the focus, Cancel changes nothing, a failure is a note. Plan
 `dosPath` kept in `input/realpath_*.go`. Approved on 2026-10-27: 5 of 5
 PASS ([`doc/plan52-evaluation.md`](doc/plan52-evaluation.md)); commit
 9b8b6e5, then the approval commit.
+
+## Plan 53 - A project chosen in the list fills the field
+
+Brief amendment 54: choosing a project in the home screen's PROJECTS
+list, by up and down or a click on its row or star, puts its path into
+the Project directory field, so that the field shows what Start uses;
+Tab onto the list, f and Del leave the field as it is. Approved on
+2026-10-27: 5 of 5 PASS
+([`doc/plan53-evaluation.md`](doc/plan53-evaluation.md)); commit
+1818367, then the approval commit, both pushed.
