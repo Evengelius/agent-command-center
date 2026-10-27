@@ -209,3 +209,10 @@ added), then the approval commit; the working tree is clean, and the
 author is `Evengelius <molimoabel@gmail.com>`, with no attribution line:
 PASS. Not pushed: the owner asked for the commit. The blocks above stay
 as they were reported.
+
+**The push (2026-10-27), at the owner's request.** Plans 51 and 52's four
+commits (7e60f73, 2756efa, then plan 52's 9b8b6e5 and 4148baa) were pushed
+to `origin` together: `main` fast-forwarded from dc26ad4 to 4148baa,
+nothing forced; `origin/main` equals `main` (read back by `git fetch` and
+`git ls-remote`), the working tree clean: PASS. The commit recording this
+was pushed after it.
