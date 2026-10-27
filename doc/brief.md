@@ -7802,4 +7802,8 @@ the owner that day and passed (the font uninstalled through Windows'
 Settings, reinstalled by acc on the first run, the icons after
 Terminal's next start); repeating it would need Terminal closed twice
 and would test the same code again; asked whether to repeat it before
-the commit.
+the commit. The owner chose, word for word:
+
+````text
+Plan 56 is approved without repeating the end-to-end test: review git status and the diff, then commit it.
+````

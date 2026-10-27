@@ -96,371 +96,13 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 56 - The Explorer's font installed by acc
+## No plan active
 
-**Withdrawn by the owner on 2026-10-28, before its commit (amendment
-58), and reinstated the same day (amendment 59):** the active plan again,
-as built and evaluated on 2026-10-27; plan 57, proposed in between to
-replace plan 55's Nerd Font icons with Segoe Fluent Icons, withdrawn
-without being implemented (its section below, kept until this plan
-closes). The results are in `doc/plan56-evaluation.md`.
-
-Brief amendment 57 (2026-10-27): plan 55's icons need Cascadia Mono NF,
-installed on this computer by hand; the font versioned in the repository
-and installed by acc when it is missing, so that a clone shows the icons
-on any Windows computer. Approved by the owner on 2026-10-27.
-
-### What was found (2026-10-27, on 5f6f974)
-
-- The repository holds no font. Plan 55 installed Cascadia Mono NF here
-  from release 2407.24 of microsoft/cascadia-code, whose only asset is
-  `CascadiaCode-2407.24.zip` (150,454,761 bytes, SHA-256
-  E67A68EE3386DB63F48B9054BD196EA752BC6A4EBB4DF35ADCE6733DA50C8474):
-  `CascadiaMonoNF.ttf` (2,526,924 bytes, SHA-256 5B12CBEF...D913A14E) and
-  `CascadiaMonoNFItalic.ttf` (2,336,432 bytes, 0D372925...4952F534),
-  4,863,356 bytes together.
-- Their licence (`LICENSE` at tag v2407.24): the SIL Open Font License
-  1.1, "Copyright (c) 2019 - Present, Microsoft Corporation, with Reserved
-  Font Name Cascadia Code": the font may be bundled and redistributed with
-  any software, proprietary included, each copy with its copyright notice
-  and the licence, never sold by itself; the reserved name binds modified
-  versions only. The README at that tag calls the NF variants "a version
-  of Cascadia that has Nerd Font symbols" and gives them no other licence.
-- The symbols' licences (ryanoasis/nerd-fonts v3.2.1, `license-audit.md`):
-  Seti-UI, Devicons, Octicons, Font Awesome Extension, IEC Power Symbols
-  and Powerline Extra Symbols MIT; Codicons and Font Awesome CC BY 4.0,
-  which asks for attribution; Material Design Icons Apache-2.0; Pomicons
-  and Weather Icons SIL OFL 1.1; Powerline Symbols a free licence; Font
-  Logos "Unlicensed" in the audit and The Unlicense, a public-domain
-  dedication, in its own repository (Lukas-W/font-logos, `LICENSE`). The
-  Explorer's icons are Codicons', Seti-UI's and Octicons'.
-- AGENTS.md lets third-party code be copied under MIT, BSD or Apache-2.0
-  only: a font under the OFL, its symbols under the licences above, is a
-  new kind of third-party asset, the owner's to approve.
-- `.gitattributes` gives every file `text=auto eol=lf` and names `*.png`
-  and `*.mp4` binary; git would find a TTF binary by its bytes.
-- `THIRD_PARTY.md` lists the Go modules; `internal/licenses` parses its
-  five-column table only and checks the patched `third_party/ultraviolet`
-  by its `PATCHES.md`; nothing else reads `third_party/`.
-- acc.ps1 decides the acc tab's face (`NerdFontReady`) under Windows
-  Terminal, where it reads the real registry (plan 55, step 5), and runs
-  the dashboard in place elsewhere. The acc tab it opens takes the focus
-  from the tab acc ran in. Plan 55 assumed, never probed, that Terminal
-  reads fonts only when it starts.
-
-### Design
-
-- **D1. The bundle:** `third_party/fonts/cascadia-code-2407.24/` holds
-  `CascadiaMonoNF.ttf` and `CascadiaMonoNFItalic.ttf`, taken from this
-  computer's install once their SHA-256 match those plan 55 recorded on
-  extracting them from the release zip; `LICENSE`, the tag's file byte for
-  byte (its CRLF kept: `-text` in `.gitattributes`); `SHA256SUMS`, the
-  three hashes in `sha256sum`'s format; `NOTICE.md`: the source, the zip's
-  and the files' SHA-256, and each symbol set with its licence and author,
-  the CC BY 4.0 attribution among them. `*.ttf binary` in
-  `.gitattributes`. `THIRD_PARTY.md` gains a
-  "Bundled font" section (a table of four columns, which the licence test
-  does not read) and names the font beside the patched module; AGENTS.md's
-  licence rule names it as the exception the owner approved. The
-  repository grows by about 4.9 MB, once.
-- **D2. acc installs it when missing:** a script of its own,
-  `scripts\install-font.ps1` (ASCII, its folder, fonts folder and registry
-  key as parameters, so that it can be run on temporary ones), called by
-  acc.ps1 under Windows Terminal before `NerdFontReady`. When no value of
-  HKCU's or HKLM's Fonts key starting with "Cascadia Mono NF " leads to a
-  file that is there (as `NerdFontReady` counts them): each bundled file's
-  SHA-256 checked against `SHA256SUMS`; copied to
-  `%LOCALAPPDATA%\Microsoft\Windows\Fonts` (a file already there with the
-  same bytes reused, one with other bytes left as it is and the install
-  stopped); the two HKCU values written as Windows' own installer writes
-  them ("Cascadia Mono NF (TrueType)", "Cascadia Mono NF Italic
-  (TrueType)", the full paths); the files' creation time set to the
-  registration's, since plan 55's rule takes it for the install's and a
-  reused file, or one made again under its name within 15 s (Windows'
-  file name tunnelling), keeps an older one; the fonts loaded into the
-  session and announced (AddFontResourceW, WM_FONTCHANGE), as the
-  installer does; one
-  line in the tab acc ran in, "Agent Command Center: Cascadia Mono NF
-  installed for this account; the Explorer's icons appear once Windows
-  Terminal starts again.", left 3 s before the acc tab opens over it, on
-  that run only. Registered already, by acc, by hand or for the machine:
-  one registry read, nothing done, nothing printed. Only under the Windows
-  Terminal the launcher finds among its ancestors, so that the values go
-  to the real registry (never from a packaged app's shell, plan 55's
-  finding) and only where the icons are used. No administrator right.
-- **D3. Failures never block the launch:** a hash that differs, a file in
-  use, a value that cannot be written: one line naming it, the install
-  stopped where it was, the dashboard opened with the panel's own glyphs,
-  as today.
-- **D4. Plan 55's rule unchanged:** a font installed on this run is newer
-  than the running Terminal, so the tab opens without the face and the
-  Explorer with its own glyphs; from Terminal's next start, the face and
-  the icons. Step 5 probes whether a running Terminal uses a font
-  installed after its start once its settings reload; the answer is
-  recorded, any change from it a later decision.
-- **D5. The glyph test on the bundle:** `TestExpIconsInFont` reads the
-  repository's `CascadiaMonoNF.ttf`, so it runs on every computer instead
-  of skipping where the font is not installed; `TestNerdIconsHere` stays.
-- **D6. The scope:** the bundle and its notices, the install script and
-  acc.ps1's call, the test's source, the documents (architecture.md,
-  ui-design.md, THIRD_PARTY.md, AGENTS.md); no change to the dashboard's
-  code, plan 55's rule or icons; this computer's install left as it is,
-  acc finding it registered.
-
-### Criteria
-
-1. **56.1 The bundle:** the two files byte-identical to the release's
-   (their SHA-256 above); `LICENSE` the tag's file; `NOTICE.md` naming
-   every symbol set with its licence; `git check-attr` reporting the TTFs
-   binary; THIRD_PARTY.md and AGENTS.md naming the font; the licence test
-   passing.
-2. **56.2 Installed when missing:** the install script run in a Windows
-   Terminal window on a temporary fonts folder and a temporary key under
-   `HKCU\Software\AgentCommandCenterTest` (the real ones untouched, the
-   key removed after): both files copied with the bundled bytes, both
-   values written, the line printed; run again: nothing done, nothing
-   printed.
-3. **56.3 Failures:** the same with a copy one byte changed, with a
-   destination file of other bytes, and with a key that cannot be written
-   (one under HKLM, without an administrator's right): each gives one line
-   naming it, nothing more installed, and the script returns so that acc
-   goes on.
-4. **56.4 Installed already, here:** with the font registered, the script
-   reads the registry and does nothing else, under 20 ms (median of 20
-   runs); `.\acc` opens the acc tab with the face, as after plan 55.
-5. **56.5 End to end here, with the owner's go-ahead:** the font's two
-   HKCU values removed from a Windows Terminal window, Terminal started
-   again by the owner, `.\acc` run: the values back in the real registry
-   (read through WMI), the files the bundled bytes, the line shown, the
-   tab without the face and the Explorer with its own glyphs; the probe's
-   answer recorded; Terminal started again: the face and the icons.
-6. **56.6 The checks:** `TestExpIconsInFont` on the bundle with no skip;
-   build, vet, gofmt and the whole suite; no golden frame changed.
-
-### Steps
-
-1. Amendment 57 and this plan; the owner's approval, the bundled font's
-   licences included.
-2. The bundle (D1).
-3. The install script and acc.ps1's call (D2, D3); their runs (56.2 to
-   56.4).
-4. The glyph test on the bundle (D5); the documents.
-5. End to end here (56.5), when the owner chooses: the registration
-   removed, Terminal started again twice.
-6. The checks and `doc/plan56-evaluation.md`.
-
-### Progress
-
-- 2026-10-27: step 1 done: amendment 57 and this plan, approved by the
-  owner, the bundled font's licences included.
-- 2026-10-27: step 2 done. The two fonts taken from this computer's
-  install, their SHA-256 those plan 55 recorded; `LICENSE` downloaded from
-  the tag (4,489 bytes, CRLF, SHA-256 51882cd3...4f958238); `SHA256SUMS`
-  (`sha256sum -c` passes); `NOTICE.md`, the CC BY 4.0 holders read at
-  their sources (microsoft/vscode-codicons `LICENSE`: CC BY 4.0, its Git
-  logo by Jason Long CC BY 3.0; FortAwesome/Font-Awesome `LICENSE.txt`:
-  icons CC BY 4.0, Fonticons, Inc.), each set's source from Nerd Fonts'
-  readme (v3.2.1); `.gitattributes`, `THIRD_PARTY.md` (Bundled font),
-  AGENTS.md (the approved exception); the licence test passes.
-- 2026-10-27: step 3 done. `scripts\install-font.ps1`; acc.ps1's
-  `TerminalStart`, read once and given to `NerdFontReady` (its answers
-  unchanged) and to the install call. Three refinements of D2 met while
-  writing it: the hashes in `SHA256SUMS` rather than read from
-  `NOTICE.md`'s table; a registration counting only when its file is
-  there; the files' creation time set to the registration's. The runs
-  (`term\p56install.ps1`, in a Windows Terminal window, temporary folders
-  and keys): installed when missing, both files the bundled bytes, both
-  values, the line, the files' creation time the run's; nothing the
-  second time; a damaged copy, another file of the name and an HKLM key
-  each one line and nothing more; with the real keys and the font
-  registered here, nothing done, median 9.8 ms of 20 runs (max 34.7 ms);
-  the real Fonts key and folder unchanged, the temporary ones removed.
-- 2026-10-27: step 4 done. `TestExpIconsInFont` reads the bundle, no
-  skip; architecture.md (The Explorer's icons), ui-design.md (the icons'
-  paragraph and the line acc prints). go build, go vet (Windows, Linux),
-  gofmt and go test ./... (16 packages) pass. Waiting for the owner's
-  go-ahead for step 5: Windows Terminal closed and the font uninstalled
-  through Windows' Settings by the owner, as on a computer without it.
-- 2026-10-27: step 5, the first run. The owner closed Windows Terminal and
-  uninstalled the font through Windows' Settings: both values and both
-  files gone (WMI), a computer without the font in full, more than the
-  two values 56.5 had me remove. Terminal started again (23:37:07) and
-  `.\acc` run by the owner: the line in the tab acc ran in (read through
-  UI Automation); the two values back in the real registry (WMI); the two
-  files the bundled bytes, created 23:37:29.855, after Terminal's start;
-  the fragment written 23:37:33 without the face. In a window of that
-  Terminal (`term\p55shots.ps1`), the Explorer's rows the same pixels as
-  plan 55's before shots wherever their text was the same (e1 to e3; the
-  mock's clocks alone differ): its own glyphs. The probe
-  (`term\p56probe.ps1`, D4), in that Terminal after a settings reload: a
-  window of a throwaway profile naming Cascadia Mono NF drew the
-  Explorer's glyphs as icons, with no font warning, where a control window
-  of the acc profile drew missing-glyph marks (397 pixels of the glyphs'
-  cells differing, "PROBE" and "END" the same). So a running Terminal does
-  use a font installed after its start, for a window opened after a
-  settings reload, here 8 minutes after the install (how soon after is not
-  measured): plan 55's assumption does not hold. Plan 55's rule kept, as
-  D4 says; relaxing it is a later decision. The probe's fragment removed;
-  settings.json's bytes and state.json's generated profiles unchanged (the
-  probe reused plan 23's test GUID).
-- 2026-10-27: step 5 done. Terminal started again by the owner (23:47:53)
-  and `.\acc` run: the fragment written at 23:48:14 with the face, no font
-  warning, the font's files and values as the first run left them; in a
-  window of that Terminal, the Explorer's rows the same pixels as plan
-  55's approved after shots wherever their text was the same: the icons.
-  The one path of D2 the runs had left out, run as G in a Terminal window
-  on temporary places (`term\p56reuse.ps1`): the two files already there,
-  not registered, reused and given the run's creation time.
-- 2026-10-27: step 6 done. go build, go vet (Windows, Linux), gofmt and
-  go test ./... (16 packages) pass, `TestExpIconsInFont` on the bundle
-  with no skip, no golden frame changed; `doc/plan56-evaluation.md`: 6
-  PASS, 0 FAIL, DONE. Waiting for the owner's approval.
-- 2026-10-28: withdrawn for plan 57 (amendment 58), then reinstated by
-  the owner (amendment 59), plan 57 withdrawn without being implemented.
-  Nothing of this plan's code, scripts or bundle changed in between; the
-  checks run again on the reinstated tree pass (go build, go vet on
-  Windows and Linux, gofmt, go test ./... with 16 packages, no golden
-  frame changed, `sha256sum -c` OK); this computer as step 5 left it
-  (WMI: the two values, the files the bundled bytes, the face named). The
-  owner's amendment asks to proceed with the end-to-end test: it ran and
-  passed with the owner on 2026-10-27 (step 5); asked whether to repeat it
-  before the approval and the commit.
-
-## Plan 57 - Segoe Fluent Icons in the Explorer
-
-**Withdrawn by the owner on 2026-10-28 without being implemented
-(amendment 59):** plan 56 reinstated, plan 55 unchanged. This section
-stays as proposed, for the record, until plan 56 closes.
-
-Brief amendment 58 (2026-10-28): the Explorer's icons from Segoe Fluent
-Icons, a font that comes with Windows 11, in place of plan 55's Nerd Font
-icons, so that they show with nothing to install and no restart; plan
-56's font bundle and install dropped. Proposed on 2026-10-28, waiting for
-the owner's approval.
-
-### What was found (2026-10-28, on 5f6f974 and plan 56's working tree)
-
-- Windows Terminal takes a list in a profile's face: a window of the
-  owner's running Terminal (1.23.20211.0) whose face was "Cascadia Mono,
-  Segoe Fluent Icons" drew 15 of Fluent's icons, with no font warning and
-  its text in Cascadia Mono (`term\p56alt.ps1`); nothing installed, no
-  restart.
-- Segoe Fluent Icons comes with Windows 11; Windows 10 lacks it unless
-  downloaded, and it "may not" be shipped to another platform (Microsoft
-  Learn, Segoe Fluent Icons font, read 2026-10-28). Here
-  `C:\Windows\Fonts\SegoeIcons.ttf`, 463,656 bytes. The dashboard ships
-  none of it: the acc profile only names it.
-- Against Terminal's own Cascadia Mono (its package's `CascadiaMono.ttf`),
-  its character map adds one code point outside the private use area,
-  U+0000, never drawn (`plan55\cmapdiff`): the list changes no glyph but
-  the Explorer's icons, every other character drawn as today.
-- Microsoft's list has glyphs for most of plan 55's kinds: Folder U+E8B7,
-  FolderOpen U+E838, Code U+E943, Document U+E8A5, Page U+E7C3, Settings
-  U+E713, CommandPrompt U+E756, Beaker U+F196, Bookmarks U+E8A4, Library
-  U+E8F1, Package U+E7B8, Lock U+E72E, Certificate U+EB95, Picture
-  U+E8B9, PDF U+EA90, ZipFolder U+F012, Globe U+E774, Filter U+E71C,
-  Robot U+E99A, ChevronRightSmall U+E970, ChevronDownSmall U+E96E; none
-  for the languages' logos, a database, a table or git.
-- Widths: the dashboard counts each of Fluent's icons one cell, as the
-  Nerd Font icons (an overlay test, the tree untouched); Terminal draws
-  them wider than a cell, within the two spaces after them, the names in
-  the Nerd icons' columns (`term\p56rows.ps1`), as it draws the panel's
-  own 🗀 and 🗎 today (ui-design.md, Explorer).
-- Plan 56 was never committed: its bundle (`third_party/fonts`), its
-  install script and acc.ps1's call, and its changes to `.gitattributes`,
-  `THIRD_PARTY.md`, AGENTS.md, architecture.md, ui-design.md and the
-  glyph test are in the working tree only. Cascadia Mono NF stays
-  installed for the owner here, from plan 56's end-to-end run.
-
-### Design
-
-- **D1. The icons:** one Segoe Fluent Icons glyph for each kind of plan
-  55's table (the same names, kinds of name and extensions), chosen from
-  Microsoft's list and checked in `SegoeIcons.ttf`'s character map, in
-  plan 55's colours, which carry the languages now that the shapes are
-  generic (Go's cyan, Java's orange, Python's blue); the chevrons
-  Fluent's small ones (U+E970, U+E96E). The table goes to the owner as a
-  picture in the acc tab before the code.
-- **D2. The rule:** the icons in the acc tab (`WT_PROFILE_ID`, as plan
-  55) where Segoe Fluent Icons is installed for the machine or the user (a
-  Fonts value starting "Segoe Fluent Icons " whose file is there);
-  anywhere else the panel's own glyphs, as today. No Terminal start time:
-  the font comes with Windows. `input.NerdIcons` becomes
-  `input.FluentIcons` and `UI.NerdIcons` `UI.FluentIcons`;
-  `hostTerminal` gives the folder alone again, its start having served
-  plan 55's rule only.
-- **D3. The launcher:** acc.ps1 names "Cascadia Mono, Segoe Fluent
-  Icons" in the fragment's face where the font is (the same check), no
-  face otherwise; plan 56's install call and `TerminalStart`, and plan
-  55's start-time condition, gone. The fragment changes once, Terminal
-  reloads it, and the next acc tab has the face: no restart.
-- **D4. Plan 56 dropped:** `third_party/fonts` and
-  `scripts/install-font.ps1` deleted; `.gitattributes` and
-  `THIRD_PARTY.md` as on 5f6f974; AGENTS.md without the font's exception.
-  Its record kept: amendment 57, `doc/plan56-evaluation.md` (a note of
-  the withdrawal added, the block as reported) and its section below until
-  this plan closes. Cascadia Mono NF left installed here, the owner's to
-  remove in Windows' Settings.
-- **D5. The tests:** `TestExpIconFor`'s 57 cases with Fluent's code
-  points and the same colours; `TestExpIconWidths`; the rows' test;
-  `TestExpIconsInFont` on `%WINDIR%\Fonts\SegoeIcons.ttf`, skipped where
-  Windows has no such file; the rule's cases (no profile, another one, the
-  acc profile without and with the font, its id in either case); the rule
-  on this computer; golden frames `explorer-fluent` (the four
-  `explorer-nerd` renamed and redrawn), reviewed as a diff, the
-  `explorer` frames unchanged.
-- **D6. The scope:** render's table, the rule, the launcher, the tests
-  and frames, the documents (ui-design.md's icons paragraph and table,
-  architecture.md's section, AGENTS.md, THIRD_PARTY.md); the panel's
-  layout, keys, colours and fallback unchanged.
-
-### Criteria
-
-1. **57.1 The icons:** `TestExpIconFor` maps each of plan 55's 57 names
-   to its Fluent code point and plan 55's colour; every glyph the Explorer
-   draws, the chevrons included, in `SegoeIcons.ttf`'s character map; each
-   one cell by the width table.
-2. **57.2 The rule:** the rule's cases (the icons only in the acc tab
-   with the font; the panel's own glyphs anywhere else); acc's fragment
-   with "face": "Cascadia Mono, Segoe Fluent Icons" where the font is,
-   none otherwise.
-3. **57.3 Nothing to install, no restart:** on this computer, in the
-   running Terminal, `.\acc` rewrites the fragment and opens the acc tab
-   with that face, no font warning; the Explorer draws Fluent's icons,
-   shot at 208x59 and 120x40, Terminal never restarted.
-4. **57.4 Nothing else moves:** the home screen and the mock dashboard
-   the same pixels as plan 55's after shots on every row whose text is the
-   same (`shotcmp`); the Explorer's names in the same columns.
-5. **57.5 Plan 56 dropped:** no `third_party/fonts`, no
-   `install-font.ps1`, acc.ps1 without an install; `.gitattributes` and
-   `THIRD_PARTY.md` byte for byte as on 5f6f974; no document naming the
-   bundled font as present; the licence test passing.
-6. **57.6 The owner's review:** the icon table's picture (step 2) and the
-   Explorer in the acc tab, approved by the owner.
-7. **57.7 The checks:** build, vet (Windows, Linux), gofmt and the whole
-   suite; only the four `explorer-fluent` frames new, the others
-   unchanged; the rule's changes broken on purpose through `go test
-   -overlay`, each caught.
-
-### Steps
-
-1. Amendment 58 and this plan; the owner's approval.
-2. The table (D1): a Fluent glyph for each kind, each in the character
-   map; a picture of every row in the acc tab for the owner's review.
-3. Plan 56 dropped (D4).
-4. The table, the rule and the launcher (D1 to D3); the tests and frames
-   (D5); the documents.
-5. Windows Terminal: `.\acc` in the running Terminal, the shots and the
-   row-by-row comparisons; the owner's review of the Explorer.
-6. The checks and `doc/plan57-evaluation.md`.
-
-### Progress
-
-- 2026-10-28: step 1: amendment 58 and this plan, waiting for the owner's
-  approval.
-- 2026-10-28: withdrawn by the owner before its approval (amendment 59):
-  nothing of it implemented; plan 56's bundle, install and documents left
-  as they were.
+Plan 56 was approved and closed on 2026-10-28, and plan 57 withdrawn
+without being implemented (Closed plans, below). The next plan starts when
+the owner asks for one; the audit's roadmap
+([`doc/audit.md`](doc/audit.md), Part 2) is done, its phases 0 to 4
+implemented by plans 46 to 49.
 
 ## Closed plans
 
@@ -1143,3 +785,27 @@ the face in the acc tab's fragment by the same rule. Approved on
 2026-10-27: 5 PASS, 0 FAIL, and 55.5's visual review by the owner
 ([`doc/plan55-evaluation.md`](doc/plan55-evaluation.md)); commit
 374c23e, then the approval commit, both pushed.
+
+## Plan 56 - The Explorer's font installed by acc
+
+Brief amendments 57 and 59: Cascadia Mono NF bundled in the repository as
+released (`third_party/fonts`, the SIL OFL 1.1 with its symbols'
+notices) and installed by acc for the user, under Windows Terminal, when
+Windows has no font of that name: the files checked against
+`SHA256SUMS`, registered under HKCU, one line printed; a failure one
+line, the launch going on; plan 55's rule unchanged, the icons from
+Terminal's next start. Withdrawn on 2026-10-28 for plan 57 and reinstated
+the same day. Approved on 2026-10-28 without repeating its end-to-end
+test, run with the owner on 2026-10-27: 6 PASS, 0 FAIL
+([`doc/plan56-evaluation.md`](doc/plan56-evaluation.md)); commit
+d88c392, then the approval commit; its full text in git (`git show
+d88c392:plan.md`).
+
+## Plan 57 - Segoe Fluent Icons in the Explorer
+
+Brief amendment 58: the Explorer's icons from Segoe Fluent Icons, a font
+that comes with Windows 11, named after Cascadia Mono in the acc tab's
+face, nothing to install. Proposed on 2026-10-28 and withdrawn by the
+owner the same day without being implemented (amendment 59), for plan
+56's Nerd Font icons and the same look on any Windows version; its
+proposal in git (`git show d88c392:plan.md`).
