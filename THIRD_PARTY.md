@@ -27,6 +27,22 @@ from, and the licence is read from the copy's own licence file:
 `internal/licenses` fails if a replaced module has no `PATCHES.md` or is not
 named here. No other third-party source code is copied into this repository.
 
+## Bundled font
+
+One third-party asset that is not code: Cascadia Mono NF, two font files of
+Microsoft's Cascadia Code release 2407.24, kept as released with their
+licence in `third_party/fonts/cascadia-code-2407.24/`, which `acc` installs
+for the user when Windows has no font of that name (plan 56, brief
+amendment 57; the owner approved bundling them under these licences on
+2026-10-27). Its `NOTICE.md` gives the source, the hashes and the licences
+of the Nerd Font symbols inside the fonts; `SHA256SUMS` holds the hashes
+in `sha256sum`'s format.
+
+| File | Release | Bytes | Licence |
+| - | - | - | - |
+| `CascadiaMonoNF.ttf` | 2407.24 | 2,526,924 | SIL OFL 1.1; its symbols' licences in NOTICE.md |
+| `CascadiaMonoNFItalic.ttf` | 2407.24 | 2,336,432 | SIL OFL 1.1; its symbols' licences in NOTICE.md |
+
 ## Modules
 
 | Module | Version | Direct | Built | Licence |

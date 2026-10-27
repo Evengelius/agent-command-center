@@ -661,9 +661,13 @@ field's text, its failure a note.
 ## The Explorer's icons
 
 Plan 55 (brief amendment 56; ui-design.md, Explorer). In the acc tab, with
-Cascadia Mono NF installed for the owner (`%LOCALAPPDATA%\Microsoft\Windows\Fonts`,
+Cascadia Mono NF installed for the user (`%LOCALAPPDATA%\Microsoft\Windows\Fonts`,
 `HKCU\...\Fonts`), the Explorer's rows draw Nerd Font icons and chevrons;
-anywhere else, today's glyphs. Whether the terminal has the font is decided
+anywhere else, today's glyphs. Since plan 56 (amendment 57) the font is
+bundled in the repository (`third_party/fonts`, `THIRD_PARTY.md`) and the
+launcher installs it for the user when Windows has no font of that name,
+under Windows Terminal only, so that a clone shows the icons from
+Terminal's next start. Whether the terminal has the font is decided
 twice, by the same rule: by the launcher, which names the face in the acc
 tab's fragment before the tab opens, and by the dashboard, which draws the
 icons. The rule: the acc profile (`WT_PROFILE_ID`), the font registered for
@@ -681,7 +685,7 @@ rendered.
 | 4. Rendering | the icons by name, kind of name and extension, their colours with 16-colour fallbacks painted with the palette (`expIconFor`, `expIcons`, `paintExpIcons`); the rows' chevrons and icons when `UI.NerdIcons`, an ignored or deleted row's icon in its name's style, widths unchanged (`explorerRow`, `rootRow`) | `internal/render/expicons.go`, `explorer.go`, `palette.go`, `render.go` |
 | 5. Input | the rule (`nerdIconsUsable`); the font's registry values and its files' creation time (`nerdFontInstalled`), the hosting Windows Terminal and its start (`hostTerminal`, the walk `terminalDir` uses since plan 51); false outside Windows (`NerdIcons`) | `internal/input/nerdfont.go`, `nerdfont_windows.go`, `nerdfont_other.go`, `textmask_windows.go` |
 | The application | `Options.NerdIcons` into `UI.NerdIcons`; `input.NerdIcons(os.Getenv)` in the real run | `internal/app/app.go`, `cmd/agent-command-center/main.go` |
-| The launcher | the same rule in PowerShell (`NerdFontReady`), the fragment's `"face": "Cascadia Mono NF"` when it holds, none otherwise | `scripts/acc.ps1` |
+| The launcher | the same rule in PowerShell (`NerdFontReady`, the hosting Terminal's start from `TerminalStart`), the fragment's `"face": "Cascadia Mono NF"` when it holds, none otherwise; before it, since plan 56, the bundled font installed when missing: its files checked against `SHA256SUMS`, copied (the same bytes already there reused, other bytes left and the install stopped), registered under HKCU, their creation time the registration's, loaded and announced, one line printed and left 3 s; a failure one line, the launch going on | `scripts/acc.ps1`, `install-font.ps1`; `third_party/fonts/cascadia-code-2407.24` |
 
 ## Build order
 

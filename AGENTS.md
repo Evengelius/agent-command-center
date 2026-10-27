@@ -24,8 +24,9 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-27, when the owner approved plan
-55, Nerd Font icons in the Explorer (brief amendment 56).** Plans 1 to 55
+**Status: plan 56 active since 2026-10-27, the Explorer's font installed
+by acc (brief amendment 57); withdrawn and reinstated on 2026-10-28
+(amendments 58 and 59), plan 57 withdrawn unimplemented.** Plans 1 to 55
 are closed, one entry each in `plan.md`, Closed plans; the MVP was
 approved on 2026-10-17. `plan.md` holds the active plan's progress and
 test evidence; each closed plan's results are in its evaluation file, and
@@ -181,6 +182,9 @@ not in this list: it runs alone, with the exact command and conditions of
   third-party code only under a permissive license (MIT, BSD, Apache-2.0),
   keeping its notice, and record the source, commit and license next to what
   was taken. Never copy GPL, AGPL or unlicensed code; those can only be studied.
+  The one other third-party asset, approved by the owner (amendment 57):
+  Cascadia Mono NF, bundled as released under the SIL OFL 1.1 with its
+  symbols' notices (`third_party/fonts`, `THIRD_PARTY.md`).
 
 ## Environment
 

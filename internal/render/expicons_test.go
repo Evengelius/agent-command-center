@@ -145,14 +145,15 @@ func nameColumn(l line, name string) int {
 	return -1
 }
 
-// Plan 55, criterion 55.3: every glyph the Explorer draws is in the
-// installed Cascadia Mono NF, read from the font file's character map
-// (format 4); skipped where the font is not installed for the user.
+// Plan 55, criterion 55.3: every glyph the Explorer draws is in Cascadia
+// Mono NF, read from the font file's character map (format 4); since plan
+// 56 (design D5) the copy bundled in this repository, which acc installs,
+// so that the test runs on every computer.
 func TestExpIconsInFont(t *testing.T) {
-	file := filepath.Join(os.Getenv("LOCALAPPDATA"), `Microsoft\Windows\Fonts\CascadiaMonoNF.ttf`)
+	file := filepath.Join("..", "..", "third_party", "fonts", "cascadia-code-2407.24", "CascadiaMonoNF.ttf")
 	data, err := os.ReadFile(file)
 	if err != nil {
-		t.Skipf("Cascadia Mono NF not installed for the user: %v", err)
+		t.Fatal(err)
 	}
 	has := cmapFormat4(t, data)
 	glyphs := []rune{[]rune(nfClosed)[0], []rune(nfOpen)[0]}

@@ -1943,9 +1943,13 @@ a cell, so two spaces follow each, as after the "+" menu's (plan 30).
 **The icons in the acc tab (plan 55, brief amendment 56).** Where the
 dashboard runs in Windows Terminal's acc tab and Cascadia Mono NF was
 installed before that Windows Terminal started (`input.NerdIcons`, plan
-55's D3), the tree draws Nerd Font v3 glyphs from that face instead: the
-codicons' `chevron_right` and `chevron_down` (U+EAB6, U+EAB4) in the same
-grey, and before each name an icon in its kind's colour
+55's D3; since plan 56, acc installs the copy bundled in the repository
+when Windows has none, with one line in the tab it ran in: "Agent Command
+Center: Cascadia Mono NF installed for this account; the Explorer's icons
+appear once Windows Terminal starts again."), the tree draws Nerd Font v3
+glyphs from that face instead: the codicons' `chevron_right` and
+`chevron_down` (U+EAB6, U+EAB4) in the same grey, and before each name an
+icon in its kind's colour
 (`render/expicons.go`), one cell wide with the same two spaces after it, so
 no row, indent, mark or width moves. A folder's icon comes from its name,
 else a closed or open folder; a file's from its whole name, then its kind

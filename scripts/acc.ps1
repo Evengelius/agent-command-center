@@ -9,8 +9,10 @@
 # size; Cascadia Mono NF when it can, plan 55); the tab closes when the
 # dashboard exits cleanly. The profile is a Terminal fragment, the extension
 # Windows Terminal documents for apps, written below when missing or
-# different; Terminal's own settings.json is never edited. Outside Windows
-# Terminal the dashboard runs in place.
+# different; Terminal's own settings.json is never edited. Where Windows has
+# no Cascadia Mono NF, the copy bundled in this repository is installed for
+# the user first (install-font.ps1, plan 56). Outside Windows Terminal the
+# dashboard runs in place.
 #
 # No param block: the program's arguments (--provider, --mock...) stay in
 # $args unbound. ASCII only: Windows PowerShell 5.1 reads a BOM-less script
@@ -21,12 +23,28 @@ $here = (Get-Location).ProviderPath
 $profileName = 'Agent Command Center'
 $profileGuid = '{27195de0-7daf-4340-8ef6-2c640982bd39}'
 
+# TerminalStart is when the Windows Terminal among this script's ancestors
+# started, $null when there is none: each parent older than its child, so
+# that a reused process id is not taken for one (plan 55, design D2).
+function TerminalStart {
+    $child = Get-CimInstance Win32_Process -Filter "ProcessId=$PID"
+    for ($i = 0; $i -lt 16 -and $child; $i++) {
+        $parent = Get-CimInstance Win32_Process -Filter "ProcessId=$($child.ParentProcessId)"
+        if (-not $parent -or $parent.CreationDate -gt $child.CreationDate) { return $null }
+        if ($parent.Name -eq 'WindowsTerminal.exe') { return $parent.CreationDate }
+        $child = $parent
+    }
+    return $null
+}
+
 # NerdFontReady says whether the tab can name Cascadia Mono NF, whose icons
 # the Explorer draws (plan 55, design D2): the font registered for the user
 # or the machine, and installed before the Windows Terminal this script runs
-# in started, as Terminal reads the fonts when it starts and warns about a
-# face it cannot find. The dashboard checks the same (input.NerdIcons).
-function NerdFontReady {
+# in started ($started, TerminalStart's), as Terminal reads the fonts when
+# it starts and warns about a face it cannot find. The dashboard checks the
+# same (input.NerdIcons).
+function NerdFontReady($started) {
+    if ($null -eq $started) { return $false }
     $installed = $null
     foreach ($key in 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts', 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts') {
         if (-not (Test-Path $key)) { continue }
@@ -39,21 +57,16 @@ function NerdFontReady {
             if ($null -eq $installed -or $at -gt $installed) { $installed = $at }
         }
     }
-    if ($null -eq $installed) { return $false }
-    # The Windows Terminal among this script's ancestors, each parent older
-    # than its child, so that a reused process id is not taken for one.
-    $child = Get-CimInstance Win32_Process -Filter "ProcessId=$PID"
-    for ($i = 0; $i -lt 16 -and $child; $i++) {
-        $parent = Get-CimInstance Win32_Process -Filter "ProcessId=$($child.ParentProcessId)"
-        if (-not $parent -or $parent.CreationDate -gt $child.CreationDate) { return $false }
-        if ($parent.Name -eq 'WindowsTerminal.exe') { return $installed -lt $parent.CreationDate }
-        $child = $parent
-    }
-    return $false
+    return ($null -ne $installed -and $installed -lt $started)
 }
 
 if ($env:WT_SESSION -and -not $env:ACC_IN_TAB -and $env:WT_PROFILE_ID -ne $profileGuid) {
-    $font = if (NerdFontReady) { '"font": { "face": "Cascadia Mono NF", "size": 9 },' } else { '"font": { "size": 9 },' }
+    $started = TerminalStart
+    # Plan 56: under this Windows Terminal only, the bundled Cascadia Mono NF
+    # installed for the user when Windows has no font of that name; the line
+    # it prints is left 3 s before the acc tab opens over it.
+    if ($null -ne $started -and (& (Join-Path $PSScriptRoot 'install-font.ps1'))) { Start-Sleep -Seconds 3 }
+    $font = if (NerdFontReady $started) { '"font": { "face": "Cascadia Mono NF", "size": 9 },' } else { '"font": { "size": 9 },' }
     $fragmentDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows Terminal\Fragments\AgentCommandCenter'
     $fragmentFile = Join-Path $fragmentDir 'agent-command-center.json'
     # Its commandline is one no other command starts with: Terminal gives a

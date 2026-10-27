@@ -7671,3 +7671,135 @@ Once these points are reflected in Plan 55, proceed sequentially with implementa
 
 Taken into plan 55 (plan.md, Plan 55: requirements R1 to R3, D2, D3 and
 D5 sharpened, criteria 55.2, 55.4 and 55.6 extended).
+
+## Amendment 57, 2026-10-27: the Explorer's font installed by acc, for plan 56
+
+After plan 55 was approved, committed and pushed, the owner wrote, word for
+word:
+
+````text
+Now what will happen if say I get a new windows computer and clone the project, the icon will  be there on my new terminal when I'll run the app?
+````
+
+Told: no; the font is installed on this computer only and the repository
+holds none; on a new computer the Explorer keeps the panel's own glyphs, no
+warning and no missing-glyph box, until Cascadia Mono NF is installed there
+(Windows' own Install, not a shell of the Claude desktop app) and Windows
+Terminal starts again. The owner wrote, word for word:
+
+````text
+Is there a way by simply running the project from a new computer, after cloning in locally from github repo, to make the icons show? Like we save the info in the project and it is versioned, and then it gets install through a command automatically when we type "acc"
+
+Like by typing "acc", we do check that if we have that package, if not it install it
+````
+
+Told: yes; the two font files (4.9 MB, SIL Open Font License) versioned in
+the repository, and acc, in Windows Terminal, installing them for the
+account when the font is missing, with one line saying so; Terminal reads
+fonts when it starts, so on a new computer's first run the icons appear
+from Terminal's next start; the bundled font a third-party asset for the
+owner to approve. The owner wrote, word for word:
+
+````text
+Ok and I guess you will remove something to use this instead? before approving your plan answer me
+````
+
+Told: nothing removed; plan 55's rule, icons and fallback stay, acc gains
+the install step; on this computer nothing changes, its installed font
+being the same bytes; the repository's copy is the source acc installs
+from, Windows Terminal using installed fonts only; the icon test reads the
+repository's copy; the end-to-end check removes the font's registration
+here for a while, only with the owner's go-ahead. The owner chose, word for
+word:
+
+````text
+Propose it as plan 56: the font versioned in the repository and installed by acc when it is missing.
+````
+
+Proposed as plan 56 (plan.md, Plan 56). The owner approved it, word for
+word:
+
+````text
+Plan 56 is approved, including bundling Cascadia Mono NF under its licences: proceed with the implementation.
+````
+
+## Amendment 58, 2026-10-28: Segoe Fluent Icons in the Explorer, for plan 57
+
+Plan 56 was evaluated (6 PASS, nothing committed) and the owner asked
+whether it was approved for its commit. The owner wrote, word for word:
+
+````text
+I have a question, is there a good alternative that doesn't all this process of installing another font then restarting the terminal, etc.
+````
+
+Told: icons such as the languages' logos need an icon font installed,
+since Windows Terminal takes a font's name, never a file; the restart
+could go, plan 56's probe having found a running Terminal drawing a font
+installed after it started (how soon after, not measured); symbols or
+emoji that come with Windows need no install but lose the logos; images
+(Sixel) cost too much for a list that scrolls. The owner wrote, word for
+word:
+
+````text
+No, I am asking if there is an alternative icons package that don't require all these steps
+````
+
+Told, with a picture of each set drawn in the owner's running Terminal (a
+throwaway profile, removed after): two need nothing installed. Segoe
+Fluent Icons, a font that comes with Windows 11, through a list in the
+profile's face ("Cascadia Mono, Segoe Fluent Icons"), which Terminal
+takes: generic shapes (folder, document, code, settings, lock, picture,
+archive, terminal...) that can take the Explorer's colours, no logos,
+drawn wider than a cell. Emoji: colour, two cells, a few stand-ins
+(Python's snake, Java's coffee, Docker's whale), none for Go. Every other
+icon set is a font to install. The owner wrote, word for word:
+
+````text
+You said there could be alignment problem? Really?
+````
+
+Told, with a picture of Explorer-like rows in each set: no; the dashboard
+counts every Nerd Font and Fluent icon one cell and every emoji two (the
+two with a variation selector included), and Terminal draws them so;
+Fluent's names stand in the Nerd icons' columns, each icon drawn within
+the two spaces after it, and emoji's one column further right, every row
+alike; a row moves only where the dashboard and the terminal count a
+character differently. The owner chose, word for word:
+
+````text
+Switch to Segoe Fluent Icons: propose plan 57 to replace the Nerd Font icons and drop plan 56's font bundle and install.
+````
+
+Proposed as plan 57 (plan.md, Plan 57).
+
+## Amendment 59, 2026-10-28: plan 56 reinstated, plan 57 withdrawn
+
+Before approving plan 57, the owner wrote, word for word:
+
+````text
+After reconsidering, I've decided to stick with Nerd Fonts and Plan 56.
+The main objective is to ensure that ACC provides the same visual experience when cloned and launched on a new computer, without requiring manual setup.
+Plan 56 already addresses this through automatic font installation.
+My final decision:
+
+1. Keep Plan 55 unchanged, including its existing Nerd Font icons, colours and functionality.
+2. Reinstate Plan 56 as the active implementation plan.
+3. Withdraw Plan 57 without implementing it.
+4. Preserve the automatic installation mechanism proposed in Plan 56, including the versioned font files, integrity checks and fallback behavior.
+5. Proceed with the previously approved end-to-end test, including temporarily unregistering and automatically reinstalling the font on my Windows machine. Ensure the existing setup can be restored if anything fails.
+
+I prefer retaining language-specific icons and a consistent visual experience across different Windows versions rather than relying on Segoe Fluent Icons, which is only included by default in Windows 11.
+Please update the relevant planning documents accordingly, preserving the historical record of our decisions.
+Once Plan 56 is reinstated, proceed with its implementation sequentially, following the repository's engineering and evaluation standards.
+No additional features or unrelated modifications.
+````
+
+Done: plan 56 the active plan again, as built and evaluated on 2026-10-27,
+nothing of it changed in between; plan 57 withdrawn, nothing of it
+implemented; plan 55 unchanged. Told: plan 56's implementation was
+complete, and its end-to-end test, approved on 2026-10-27, had run with
+the owner that day and passed (the font uninstalled through Windows'
+Settings, reinstalled by acc on the first run, the icons after
+Terminal's next start); repeating it would need Terminal closed twice
+and would test the same code again; asked whether to repeat it before
+the commit.
