@@ -783,4 +783,4 @@ a terminal started before it) the panel's own glyphs. The launcher names
 the face in the acc tab's fragment by the same rule. Approved on
 2026-10-27: 5 PASS, 0 FAIL, and 55.5's visual review by the owner
 ([`doc/plan55-evaluation.md`](doc/plan55-evaluation.md)); commit
-374c23e, then the approval commit, not pushed.
+374c23e, then the approval commit, both pushed.
