@@ -65,3 +65,11 @@ cell for a row), and mutant W8 puts it back.
 | W9 | up and down the same way | TestHomeWheel |
 | W10 | the list's item over the rows' and stars' | TestHomeTargets |
 | W11 | no list item in the stacked layout | TestHomeTargetsStacked |
+
+**The commit and the push (2026-10-27), after the owner's approval.** The
+owner approved plan 54 on 2026-10-27 and asked for the push. Commit
+38ee6d7 (13 files: 12 modified, 1 added) was pushed to `origin`, `main`
+fast-forwarded from efe42ca, nothing forced; the approval commit
+recording this was pushed after it. The author is `Evengelius
+<molimoabel@gmail.com>`, with no attribution line, and the working tree is
+clean: PASS. The block above stays as it was reported.
