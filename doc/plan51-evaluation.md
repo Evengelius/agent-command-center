@@ -202,3 +202,10 @@ selection on Enter).
 - The antivirus quarantined the harness script when it gained the
   clipboard's save and restore beside its simulated input; the owner may
   see its notice. The script was rebuilt without them, from `p50.ps1`.
+
+**The commit (2026-10-27), after the owner's approval.** The owner
+approved plan 51 on 2026-10-27. Commit 7e60f73 (60 files: 46 modified, 14
+added), then the approval commit; the working tree is clean, and the
+author is `Evengelius <molimoabel@gmail.com>`, with no attribution line:
+PASS. Not pushed: the owner asked for the commit. The blocks above stay
+as they were reported.
