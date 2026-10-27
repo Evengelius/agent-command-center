@@ -798,8 +798,8 @@ Terminal's next start. Withdrawn on 2026-10-28 for plan 57 and reinstated
 the same day. Approved on 2026-10-28 without repeating its end-to-end
 test, run with the owner on 2026-10-27: 6 PASS, 0 FAIL
 ([`doc/plan56-evaluation.md`](doc/plan56-evaluation.md)); commit
-d88c392, then the approval commit; its full text in git (`git show
-d88c392:plan.md`).
+d88c392, then the approval commit, both pushed; its full text in git
+(`git show d88c392:plan.md`).
 
 ## Plan 57 - Segoe Fluent Icons in the Explorer
 
