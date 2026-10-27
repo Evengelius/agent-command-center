@@ -70,3 +70,10 @@ one.
 The first run's hashes of the tree differ by an edit of `plan.md` made
 during it; the tree held none of the mutants' text after it, and N14b's
 run left the hash as it was.
+
+**The commit (2026-10-27), after the owner's approval.** The owner
+approved plan 52 on 2026-10-27. Commit 9b8b6e5 (51 files: 23 modified, 19
+deleted, 8 added, 1 renamed), then the approval commit; the working tree
+is clean, and the author is `Evengelius <molimoabel@gmail.com>`, with no
+attribution line: PASS. Not pushed: the owner asked for the commit. The
+block above stays as it was reported.
