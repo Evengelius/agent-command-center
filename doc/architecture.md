@@ -343,7 +343,7 @@ part (AM4 "Project awareness"; AGENTS.md "One agent CLI per session").
 | Field | Value | Used by |
 | - | - | - |
 | `Provider` | the adapter id and display name; the detected version and executable path | part 1 spawns it; the project bar shows it |
-| `ProjectName` | the last element of the resolved path | the project bar and window title |
+| `ProjectName` | the last element of the resolved path | the project bar |
 | `ProjectPath` | the resolved absolute path (INT paths, "Validation, in order", step 6) | `cmd.Dir` of the CLI; the project bar |
 | `Branch` | the current git branch when the directory is a git work tree, read at validation from `.git/HEAD`, and again when that file changes or the branches popup switches (plan 59); otherwise absent | display only (RD "Where the images and amendment 4's text differ"); the branches popup's anchor |
 | `Mock` | true only for the mock provider | every screen's mock label |
@@ -736,6 +736,20 @@ rendered.
 | 5. Input | the rule (`nerdIconsUsable`); the font's registry values and its files' creation time (`nerdFontInstalled`), the hosting Windows Terminal and its start (`hostTerminal`, the walk `terminalDir` uses since plan 51); false outside Windows (`NerdIcons`) | `internal/input/nerdfont.go`, `nerdfont_windows.go`, `nerdfont_other.go`, `textmask_windows.go` |
 | The application | `Options.NerdIcons` into `UI.NerdIcons`; `input.NerdIcons(os.Getenv)` in the real run | `internal/app/app.go`, `cmd/agent-command-center/main.go` |
 | The launcher | the same rule in PowerShell (`NerdFontReady`, the hosting Terminal's start from `TerminalStart`), the fragment's `"face": "Cascadia Mono NF"` when it holds, none otherwise; before it, since plan 56, the bundled font installed when missing: its files checked against `SHA256SUMS`, copied (the same bytes already there reused, other bytes left and the install stopped), registered under HKCU, their creation time the registration's, loaded and announced, one line printed and left 3 s; a failure one line, the launch going on | `scripts/acc.ps1`, `install-font.ps1`; `third_party/fonts/cascadia-code-2407.24` |
+
+## The ping
+
+Plan 63 (brief amendment 65; ui-design.md, The ping). When the agent needs
+the owner while the window lacks the focus, a BEL in ACC's own Windows
+Terminal profile, whose fragment's `bellStyle` makes it a flash of the
+taskbar button, and the reason in the window's title. No state changes:
+the application reads the needs from the state and keeps what it rang;
+nothing is drawn in the frame.
+
+| Part | What it does | Where |
+| - | - | - |
+| The application | focus reports on every screen (`View.ReportFocus`; `tea.FocusMsg`, `tea.BlurMsg`, `blurred`); after each message, the needs that came while the window lacked the focus (`pings`: an approval or a question added to `State.Queue` and pending, a turn closed in `State.Stages` completed or failed, the session `Crashed`, each looked at once), those that no longer wait dropped (`waits`), the focus back (`pingFocused`); one BEL through `tea.Raw` where `WT_PROFILE_ID` is `input.AccProfile`, read through `Options.Getenv` (`ring`, `bellHere`), at most one in `pingEvery`, 5 s, a need within it rung at its end (`pingMsg` through `Options.After`); the window's title from the most urgent need (`title`, `View.WindowTitle`), cleared by Bubble Tea when the program ends | `internal/app/ping.go`, `app.go` |
+| The launcher | the fragment's `"bellStyle": "taskbar"` | `scripts/acc.ps1` |
 
 ## Build order
 

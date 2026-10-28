@@ -7,7 +7,8 @@
 # In Windows Terminal the dashboard opens in a tab of its own, in the same
 # window, with the profile "Agent Command Center" (font size 9, the owner's
 # size; Cascadia Mono NF when it can, plan 55); the tab closes when the
-# dashboard exits cleanly. The profile is a Terminal fragment, the extension
+# dashboard exits cleanly, and a bell flashes its taskbar button with no
+# sound (plan 63). The profile is a Terminal fragment, the extension
 # Windows Terminal documents for apps, written below when missing or
 # different; Terminal's own settings.json is never edited. Where Windows has
 # no Cascadia Mono NF, the copy bundled in this repository is installed for
@@ -72,7 +73,10 @@ if ($env:WT_SESSION -and -not $env:ACC_IN_TAB -and $env:WT_PROFILE_ID -ne $profi
     # Its commandline is one no other command starts with: Terminal gives a
     # tab opened with a commandline and no profile the profile whose
     # commandline begins it, so "powershell.exe -NoLogo" would have made any
-    # such PowerShell tab small too (found by plan 23's tests).
+    # such PowerShell tab small too (found by plan 23's tests). Its bellStyle
+    # "taskbar" is for the BEL the dashboard writes when the agent needs the
+    # owner in another window (plan 63, design D2): the taskbar button
+    # flashes, no sound plays; Terminal's own settings can change it.
     $fragment = @"
 {
   "profiles": [
@@ -82,6 +86,7 @@ if ($env:WT_SESSION -and -not $env:ACC_IN_TAB -and $env:WT_PROFILE_ID -ne $profi
       "commandline": "powershell.exe -NoLogo -NoExit -Command \"Write-Host 'Agent Command Center: type acc in a project folder to start the dashboard.'\"",
       $font
       "closeOnExit": "graceful",
+      "bellStyle": "taskbar",
       "tabTitle": "$profileName"
     }
   ]

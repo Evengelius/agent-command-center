@@ -8244,3 +8244,87 @@ Take that in account and let's fold in and start.
 
 Taken as the approval of plan 62 with the review's corrections and points
 folded in (plan.md, Plan 62).
+
+## Amendment 65, 2026-10-28: a ping when the agent needs the owner, for plan 63
+
+After plan 62 was closed and pushed, the owner wrote, word for word:
+
+````text
+I noticed that even after doing git pull, say from the main branch, I get the latest history, this very good
+````
+
+Told: the Git Graph's watch at work (plan 62, design D4b): while the panel
+shows, the references its scope follows are read again every 2 s, and when
+they moved the history is read again from them, the cursor, the unfolded
+commits and the first row kept by hash; nothing while it is hidden; it
+never fetches. The owner wrote, word for word:
+
+````text
+So you telling me that every 2sec it checks for changes?
+````
+
+Told: yes, while the panel shows: one `git for-each-ref`, read only, off
+the frames' path, about 0.1 to 0.15 s of CPU each on this machine, about
+6 % of one core, nothing while hidden; a cheaper watch of the reference
+files' times offered. The owner wrote, word for word:
+
+````text
+Keep it as is
+````
+
+The owner then wrote, word for word:
+
+````text
+What else do you think could be added ? If you have suggestions, let me know
+````
+
+Told, four suggestions: a turn-by-turn review of what the agent changed,
+each file's change of the turn in the diff viewer; a ping when the agent
+needs the owner while they are in another window, Windows Terminal
+flashing the dashboard's taskbar button, by a bell character and the
+dashboard's own Terminal profile, with no new dependency; continuing the
+last session from the home screen through each CLI's own documented
+resume option, after a probe of both; a search of the conversation, the
+file viewer's search reused. The owner wrote, word for word:
+
+````text
+I really like all four of your suggestions. I think they all fit ACC's philosophy and would bring genuine value.
+
+I'd like to keep all four on the roadmap, but let's start with **the ping**. It's a relatively small improvement that should make a noticeable difference in daily use.
+
+Please propose a focused plan first, and we'll review it before implementation.
+
+We can tackle the turn-by-turn review next, followed by conversation search and session resumption.
+````
+
+Plan 63, the ping, proposed for the owner's review (plan.md, Plan 63);
+the other three on the roadmap in the owner's order (plan.md, Roadmap).
+
+The owner shared another agent's review of plan 63, in French, and wrote,
+word for word:
+
+````text
+The other AI reviewed what you did :
+````
+
+The review favoured the plan (a discreet notification, no new visual
+component, no new dependency) and asked for two precisions: no sound
+where ACC does not control the terminal's setup, so no bell there by
+default, only in ACC's own profile, silent; and the 5-second limit never
+silently dropping a ping that matters, approvals and questions first. It
+kept the rest as proposed, the temporary title among it, asking that the
+initial title be restored correctly. Told: the bell only where Windows
+Terminal's `WT_PROFILE_ID` is ACC's own profile, which `acc` already
+relies on, the title alone anywhere else; a need within 5 s of the last
+ping rung once those 5 s are up, if it still waits and the window still
+has no focus, several sharing that ping; the title showing the most
+urgent reason first (an approval, a question, the session's end, a turn's
+end); the plain title back once answered, with the focus back, and when
+the dashboard quits. The owner wrote, word for word:
+
+````text
+Fold in and start
+````
+
+Taken as the approval of plan 63 with the two corrections folded in
+(plan.md, Plan 63).

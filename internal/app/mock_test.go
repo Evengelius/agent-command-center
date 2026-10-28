@@ -35,6 +35,9 @@ type harness struct {
 	msgs  chan tea.Msg
 	quit  bool
 	check func(frame string) // called on every frame
+	// raw, when set, sees each text a command gives the terminal (tea.Raw),
+	// as the program writes it before Update has the message.
+	raw func(text string)
 }
 
 func newHarness(t *testing.T, opt Options) *harness {
@@ -97,6 +100,10 @@ func (h *harness) deliver(msg tea.Msg) {
 	case tea.QuitMsg:
 		h.quit = true
 		return
+	case tea.RawMsg:
+		if text, ok := msg.Msg.(string); ok && h.raw != nil {
+			h.raw(text)
+		}
 	}
 	if msg = motionFilter(h.m, msg); msg == nil {
 		return // the program's filter drops it before Update and View (plan 43, design D4)

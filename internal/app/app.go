@@ -299,8 +299,12 @@ type Model struct {
 	homeSecond bool
 	resized    time.Time // the last size report: the picture waits for the size to settle (plan 51, design D13)
 	// The banner's frames (plan 51, design D12): one is pending; the
-	// terminal's window lacks the focus, which pauses them.
+	// terminal's window lacks the focus, which pauses them and lets the
+	// ping ring (plan 63).
 	bannering, blurred bool
+	// The ping (ping.go, plan 63): what the agent needs the owner for while
+	// the window lacks the focus, and the bell's limit.
+	ping pingState
 
 	screen  *render.Screen // the last frame drawn: what the mouse points at
 	repaint bool           // the palette changed: the next frame draws every row
@@ -421,8 +425,9 @@ func (m *Model) View() tea.View {
 		v.MouseMode = tea.MouseModeCellMotion // the home screen's clicks (plan 51, design D11); F12 as on the dashboard
 	}
 	// The home screen's banner pauses while the window lacks the focus (plan
-	// 51, design D12).
-	v.ReportFocus = m.s.Screen == state.ScreenStartup
+	// 51, design D12); on the dashboard, the ping waits for it (plan 63,
+	// design D1).
+	v.ReportFocus = true
 	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
 		if m.screen.Layers.Top.Hover() || m.sideHoverable() || (m.ui.Source.Open || m.ui.Graph.Open) && m.screen.Panel.W > 0 {
@@ -434,7 +439,7 @@ func (m *Model) View() tea.View {
 			v.MouseMode = tea.MouseModeAllMotion
 		}
 	}
-	v.WindowTitle = "Agent Command Center"
+	v.WindowTitle = m.title() // what waits for the owner first (plan 63, design D4)
 	return v
 }
 
@@ -458,8 +463,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.thumbSig, m.home, m.resized = "", homePic{banner: m.home.banner}, m.opt.Now()
 	case tea.FocusMsg:
 		m.blurred = false // the banner's frames again (plan 51, design D12)
+		m.pingFocused()   // and the ping's reasons seen (plan 63, design D4)
 	case tea.BlurMsg:
 		m.blurred = true
+	case pingMsg:
+		m.ping.due = false // pings rings what still waits (plan 63, design D3)
 	case bannerMsg:
 		cmds = append(cmds, m.bannerFrame()...)
 	case tea.ColorProfileMsg:
@@ -643,6 +651,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.syncUI()
 	m.markLive()
 	m.markActivity()
+	cmds = append(cmds, m.pings()...)
 	cmds = append(cmds, m.timers()...)
 	cmds = append(cmds, m.draftChanged()...)
 	return m, tea.Batch(cmds...)

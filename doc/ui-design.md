@@ -129,7 +129,8 @@ what moved touches: the pixels it changed, in the scene's fixed palette,
 the others transparent (Windows Terminal keeps what lies under them); the
 banner's rows of the picture are written in the same palette, so the two
 meet without a seam. The frames stop while the terminal's window lacks
-the focus (focus reports, `?1004`) and come back with it; a hidden banner
+the focus (focus reports, `?1004`, which the dashboard asks for too, for
+[the ping](#the-ping)) and come back with it; a hidden banner
 keeps no scene and asks for no frame. The scene goes on across a resize
 at the same scale and when NEW SESSION's notes grow the panels into it.
 At 208x59 a frame takes 0.69 ms in the application (p95 1.76 ms) and
@@ -3035,6 +3036,54 @@ the agent that asked, and marks that agent "!" in A and a pink "●" in C.
   your next message", for an answer the options do not hold; `c` (or
   Ctrl+C, or quitting) cancels it with the usual deny message and card line
   (plan 5, item 10).
+
+## The ping
+
+When the agent needs the owner while the dashboard's window, or its tab,
+lacks the focus, Windows Terminal is told (plan 63, brief amendment 65).
+Nothing is drawn in the frame.
+
+- **When:** the dashboard asks for focus reports (`?1004`) on every screen
+  and takes its window as focused until Terminal says otherwise. Without
+  the focus, a need is an approval or a question becoming pending, a turn
+  ending completed or failed, or the session ending on its own (Crashed);
+  never an interrupted turn, which is the owner's doing, a subagent, a
+  tool, streamed text or a notice of the dashboard's. A need that comes
+  while the window has the focus is seen: nothing rings or changes for
+  it. A mock session pings the same way.
+- **The bell, in ACC's profile only:** one BEL (0x07) between frames, only
+  where `WT_PROFILE_ID` is ACC's own profile,
+  `{27195de0-7daf-4340-8ef6-2c640982bd39}`, compared without case. Its
+  fragment, which `acc` writes (plan 23), sets `"bellStyle": "taskbar"`:
+  the taskbar button flashes, no sound plays, unless the owner changes it
+  in Terminal's settings, which override a fragment's; Terminal 1.23 also
+  marks the tab with a bell until it has the focus (seen in plan 63's
+  check). Anywhere else, no BEL: the title alone says it, so the dashboard
+  never makes an unexpected sound.
+- **The limit:** at most one BEL in any 5 s. A need within 5 s of the last
+  BEL rings when the 5 s are up, if it still waits and the window still
+  lacks the focus; the needs that come meanwhile share that BEL. Answered,
+  or the focus back, before then: none. A need rings once: the focus coming
+  and going again does not ring it a second time.
+- **The title:** while a need waits, the window's title, and the tab's
+  where Terminal shows the application's, names the most urgent before the
+  dashboard's name:
+
+  | Need | Title | Until |
+  | - | - | - |
+  | an approval | ◆ Approval waiting · Agent Command Center | answered, or no longer pending (expired with its turn) |
+  | a question | ◆ Question waiting · Agent Command Center | the same |
+  | the session's end | ✗ Session ended · Agent Command Center | the focus back |
+  | a turn failed | ✗ Turn failed · Agent Command Center | the focus back, or another turn started |
+  | a turn completed | ✓ Turn done · Agent Command Center | the focus back, or another turn started |
+
+  Otherwise "Agent Command Center", as before. When the program ends,
+  Bubble Tea clears the title it set, after a recovered panic too, so the
+  tab's own title comes back.
+- **Never:** no sound or flash of the dashboard's own, no Windows
+  notification API, no new dependency; no change to an agent CLI's
+  configuration or notification settings, nor to Terminal's settings.json
+  (the fragment only, as plan 23).
 
 ## States
 
