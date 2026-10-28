@@ -98,7 +98,7 @@ func fixedKeyTable() []keyGroup {
 			{"F3", "the file a tool entry read or changed"},
 		}},
 		{"THE FILE VIEWER (F3)", [][2]string{
-			{"↑ ↓ PgUp PgDn Home End", "move the cursor line; the wheel scrolls"},
+			{"↑ ↓ PgUp PgDn Home End", "move the cursor line; the wheel scrolls, a click on a line moves it there"},
 			{"← →", "shift the code sideways"},
 			{"/", "search, case ignored without a capital; Enter finds"},
 			{"n N", "next / previous match"},
@@ -112,7 +112,7 @@ func fixedKeyTable() []keyGroup {
 			{"↑ ↓ PgUp PgDn Home End", "move; the wheel over it too, a click on a row"},
 			{"→ ←", "open a folder, or its first entry; close it, or go to its folder"},
 			{"Enter", "open or close a folder; show a file in the file viewer"},
-			{"/", "the quick open: type to narrow, Enter opens, Esc back"},
+			{"/", "the quick open: type to narrow, a click selects a file, Enter or a click on the selected one opens it, Esc back"},
 			{"Esc", "close the folder the cursor is in; at the top, back to the input, the Explorer kept beside it (hidden where it takes the conversation's place)"},
 			{"F3", "hide the Explorer"},
 		}},

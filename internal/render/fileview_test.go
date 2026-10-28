@@ -181,7 +181,7 @@ func TestFileFooters(t *testing.T) {
 				t.Errorf("file footer at %d columns: %d cells of %d: %q", w, n, inner, text)
 			}
 		}
-		fw := finderWindow(UI{Width: w, Height: 24, Finder: FinderView{Open: true, Files: []string{"a.go"}, Total: 100_000, Truncated: true}}, ww, 22)
+		fw, _, _ := finderWindow(UI{Width: w, Height: 24, Finder: FinderView{Open: true, Files: []string{"a.go"}, Total: 100_000, Truncated: true}}, ww, 22)
 		if text := texts(fw[len(fw)-2 : len(fw)-1]); strings.Contains(text, "…") || !strings.Contains(text, "Esc back · F3 close") {
 			t.Errorf("quick open footer at %d columns: %q", w, text)
 		}

@@ -7986,3 +7986,57 @@ Fold in and start
 
 Taken as the approval of plan 60 with the three folded in (plan.md, Plan
 60).
+
+## Amendment 63, 2026-10-28: a click on a line in the file viewer, and on a file in the quick open, for plan 61
+
+After plan 60 was closed and pushed, the owner wrote, word for word (the
+first paragraph sent alone first, then again with the second):
+
+````text
+This is all great, however I have noticed that we can only navigate on the file once opened with keyboard keys, we should also be able to navigate on click with the mouse, what do you think?
+
+=> By this I mean clicking on a particular line, we should be on that line
+````
+
+Told: yes. A click on the code only starts a selection today, the cursor
+staying where it was, while zone A's tree and the Explorer put their
+cursor on the row clicked; with the blame on, a click would show a line's
+commit in the footer. Proposed: a left click anywhere on a line's row (the
+code, its number or the blame column) puts the cursor on that line, the
+view not scrolling, full screen too; the selection as it is (the click
+still starts one, a drag copies the code alone, a double click a word, a
+triple click the line, Shift+click extends), the cursor going to the line
+pressed; a click on the title row, the footer or below the last line doing
+nothing; a click on the blame column only moving the cursor, a commit's
+opening left for later as in amendment 62. Not included: the quick open's
+file list, keyboard and wheel only too, unless the owner wanted it in the
+same plan. A small change where the viewer already handles clicks, an
+amendment and a plan first. The owner wrote, word for word:
+
+````text
+Not included: the quick open’s file list has the same gap (keyboard and wheel only). I’d leave it out unless you want it in the same plan.
+
+what do you mean
+````
+
+Told: the quick open is the window `/` opens in the Explorer's panel: a
+field where part of a file name is typed, the matching files under it,
+one highlighted with "▸"; ↑↓ move the highlight, Enter opens the file in
+the viewer, the wheel moves the highlight too, and a click on a name does
+nothing. Included, it would follow the Explorer: a first click on a file
+highlights it, a click on the highlighted file opens it; a window other
+than the one asked about, so not added without asking. Asked whether plan
+61 should cover the quick open's list too, the owner wrote, word for word:
+
+````text
+Include it
+````
+
+Plan 61 (plan.md, Plan 61) was proposed on 2026-10-28. The owner wrote,
+word for word:
+
+````text
+Approve and start
+````
+
+Taken as the approval of plan 61 (plan.md, Plan 61).

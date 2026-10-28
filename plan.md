@@ -96,12 +96,162 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## No plan active
+## Plan 61 - Clicks in the file viewer and the quick open
 
-Plan 60 was approved and closed on 2026-10-28 (Closed plans, below). The
-next plan starts when the owner asks for one; the audit's roadmap
-([`doc/audit.md`](doc/audit.md), Part 2) is done, its phases 0 to 4
-implemented by plans 46 to 49.
+Brief amendment 63 (2026-10-28): in the file viewer, a click on a line
+puts the cursor on it, the keys being the only way so far; in the quick
+open, a click on a file selects it and a click on the selected one opens
+it, as in the Explorer. Approved by the owner on 2026-10-28 ("Approve
+and start").
+
+### What was found (2026-10-28, on 3e9ec79)
+
+- The viewer's mouse (`fileMouse`, `internal/app/file.go`): with the
+  quick open closed, a left click inside the window calls `press`, which
+  starts a selection at the cell (plan 17: a drag copies the code alone,
+  a double click a word, a triple click the line, Shift+click extends);
+  the cursor stays where it was. The keys move it (↑↓ PgUp PgDn Home End,
+  `g`, a search), and the wheel scrolls 3 lines, keeping it in view
+  (`scrollFile`).
+- The quick open (`/` in the Explorer's panel): while it shows, a click
+  inside the window does nothing; the wheel moves its selection 3 files,
+  ↑↓ PgUp PgDn Home End move it, Enter opens the selected file in the
+  viewer ("· quick open"; `finderKey`).
+- Both windows are panel F throughout (`frameIn`): the top border on the
+  window's row y, the path or field row on y+1, the lines or files from
+  y+2, `FileRows` (hh−4) of them, the footer on y+hh−2. The first line
+  shown is `FileTop(f, rows)`, the first file `ListTop(v.Top, v.Sel,
+  rows, n)`, both worked out as the frame is drawn. The frame keeps the
+  window's rectangle (`Screen.Window`, plan 58), not what its rows hold.
+- Precedents: a click on a node of zone A's tree puts the cursor on it
+  and may still start a selection (plan 24, design D6; `press`); in the
+  Explorer a click on a row puts the cursor there and a click on the
+  cursor's row is Enter (plan 43, design D7; `explorerClick`).
+- `n` and `N` go on from the current match, not from the cursor; `/` and
+  `g` are typed in the path row's field, which takes every key while
+  open. No golden frame shows the key overlay.
+
+### Design
+
+- **D1. The viewer's click:** a left click on a line's row, any cell of
+  it (the blame column, the number, the edit mark, the code, the blank
+  after it), puts the cursor on that line: the row's band, "line N/M",
+  and with the blame on the footer's commit (plan 60, design D4). The
+  view and the sideways shift stay; full screen the same. A row past the
+  file's end, the path row, the footer and the frame, and a file still
+  read, empty, binary or failed: the cursor stays.
+- **D2. The selection as it is:** the click still starts one where it
+  lands (a drag copies the code alone, a double click selects a word, a
+  triple click the line, Shift+click extends), the cursor going to the
+  line pressed, on the press; a drag that scrolls the file keeps the
+  cursor in view as before.
+- **D3. A field typed:** with `/` or `g` open, a click on a line moves the
+  cursor and leaves the field open with its text, as an editor's find
+  bar does; Enter and Esc then act as before.
+- **D4. The quick open's click:** a left click on a file of its list
+  selects it ("▸", "N of M"); a click on the selected file opens it in
+  the viewer, as Enter does, so a double click opens it too, as in the
+  Explorer. The field row, the footer, a row past the list's end, and
+  "listing…", "no file matches" or "no files in the project": nothing.
+- **D5. What was drawn:** the frame records, beside the window's
+  rectangle (plan 58), the index of the line or file on the window's
+  first list row and how many it drew (`Screen`); a click maps its row
+  through them, as zone A's rows do (plan 24): judged against what was on
+  screen.
+- **D6. Unchanged:** a click outside the window closes it (plan 58);
+  right and middle clicks, motion and a release outside change nothing;
+  the wheel; the keys and the footers' hints; the Explorer's clicks; a
+  click on the blame column opens no commit (amendment 62 left that for
+  later); `n` `N` go on from the current match. The key overlay and
+  ui-design.md's tables name the two clicks, as the Explorer's row does
+  ("a click on a row").
+- **D7. The budget:** a click costs a key's frame, and the frame records
+  two numbers more: no timing test, as in plan 58.
+
+### Criteria
+
+1. **61.1 The viewer's click:** at 120x40, 80x24 and full screen, a click
+   on the first, a middle and the last line in view puts the cursor there
+   ("line N/M", the band), on the code, the number and the blank after a
+   short line, and with the blame on on its column, the footer then
+   naming that line's commit; the view and the shift unchanged.
+2. **61.2 Not a line:** a click on the path row, the footer, the frame, a
+   row past a short file's end, and in the window while the file is read,
+   empty or binary: the cursor where it was.
+3. **61.3 The selection:** a drag from a line copies the code alone, the
+   cursor on the line pressed; a double click selects a word and a triple
+   click the line, the cursor there; Shift+click extends; plan 58's click
+   outside, and right and middle clicks, as before.
+4. **61.4 A field typed:** with `/` or `g` open, a click on a line moves
+   the cursor, the field open with its text; Enter then acts as before.
+5. **61.5 The quick open:** a click on a file selects it ("N of M"); a
+   click on the selected file opens it in the viewer ("· quick open"); a
+   double click opens it; on a scrolled list, the file under the pointer;
+   the field row, the footer, a row past the list and its states:
+   nothing; the wheel and the keys as before.
+6. **61.6 Windows Terminal:** real clicks in the acc tab at 208x59 and
+   120x40: a line clicked in the viewer with the blame on, its commit in
+   the footer; a file clicked, then clicked again, in the quick open,
+   opened; shots; the owner's visual review.
+7. **61.7 The checks:** build, vet (Windows, Linux), gofmt and the whole
+   suite; no golden frame or mock file changed; the key overlay's rows
+   and ui-design.md's tables alike (`TestKeyOverlayRows`); the changes
+   broken on purpose through `go test -overlay`, each caught.
+
+### Steps
+
+1. Amendment 63 and this plan.
+2. Rendering: what the window drew (D5). The application: the viewer's
+   click (D1 to D3), the quick open's (D4); tests.
+3. The documents: ui-design.md (the viewer's mouse, the quick open, the
+   keys' tables), the key overlay, architecture.md.
+4. Windows Terminal (61.6); the owner's visual review.
+5. The checks, the mutants and `doc/plan61-evaluation.md`.
+
+### Progress
+
+- 2026-10-28: step 1: amendment 63 and this plan, proposed, then approved
+  by the owner ("Approve and start").
+- 2026-10-28: step 2 done. Rendering: `fileWindow` and `finderWindow`
+  give the first line or file their rows show and how many; `floatWindow`
+  records them as `Screen.WindowList` (`ListShown`: the first row under
+  the path or field row, the columns between the side borders), and `At`
+  maps a cell to its line or file (D5). The application: in `fileMouse` a
+  left click on a line puts the cursor on it, the view anchored on the
+  rows drawn, before `press` starts the selection as before (D1 to D3); a
+  click in the quick open goes to `finderClick`, which selects a file or
+  opens the selected one (D4). Tests (`app/fileclick_test.go`, 5;
+  `render/windowlist_test.go`): `TestFileClickLine` (three sizes, four
+  places on a row, a key moving the view after the frame, the blame's
+  footer), `TestFileClickNotALine`, `TestFileClickSelection`,
+  `TestFileClickField`, `TestFinderClick` (a key after the frame too),
+  `TestWindowList`. No golden frame changed.
+- 2026-10-28: step 3 done. ui-design.md: the viewer's mouse paragraph
+  (the click on a line, the quick open's clicks, judged by the rows
+  drawn), the viewer's two key tables and the Explorer's `/` row, the
+  selection rules; the key overlay's two rows alike (`TestKeyOverlayRows`
+  passing, every row within 78 columns); architecture.md, File viewer:
+  plan 61's parts.
+- 2026-10-28: step 4, its measured part done. `scratchpad\term\p61run.ps1`
+  on `p51.ps1`: the real application in the acc tab at 208x59 and 120x40,
+  a mock dashboard (no CLI), a temporary home and app data, over plan 60's
+  demo repository; real clicks. F3, two clicks on viewer.go, `b`; a click
+  on line 27's code put the cursor there ("line 27/62", Maximilian
+  Oberhausen's commit in the footer), on line 18's Bo Li's, on line 11 "Not
+  committed yet", on "Bo Li" in the blame's column of line 15 that line;
+  Esc, `/`: a click on notes.txt selected it ("2 of 3"), a second one
+  opened it ("notes.txt · quick open", "not in git yet: no history"). The
+  owner's visual review is outstanding. Two guards tested since: a click
+  on rows drawn for a file another has replaced, and on a list a query
+  narrowed, neither drawn yet.
+- 2026-10-28: step 5 done. 16 mutants through `go test -overlay`, each
+  caught by a failing test in one round, none by a build failure, the
+  tree's hash 95515e21 before and after. Build, vet (Windows, Linux),
+  gofmt, the whole suite (16 packages); no golden frame or mock file
+  changed. `doc/plan61-evaluation.md`: 6 PASS, 0 FAIL, 61.6's last part,
+  the owner's visual review, not verified.
+- 2026-10-28: 61.6's visual review done by the owner ("Looks right"): 7
+  PASS, 0 FAIL. Not committed: the commit waits for the owner's approval.
 
 ## Closed plans
 

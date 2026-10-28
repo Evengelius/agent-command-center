@@ -95,6 +95,9 @@ type Screen struct {
 	// quick open: a left click outside it closes it (plan 58, design D1);
 	// zero when none.
 	Window Box
+	// WindowList is what the window's rows showed of its lines or files: a
+	// click on one picks it (plan 61, design D5); zero when none.
+	WindowList ListShown
 	// Branches is what the frame showed of the branches popup (plan 59),
 	// zero when it is closed.
 	Branches BranchesShown
@@ -129,6 +132,19 @@ type Box struct{ X, Y, W, H int }
 
 // Holds says the cell (x, y) lies in the box.
 func (b Box) Holds(x, y int) bool { return x >= b.X && x < b.X+b.W && y >= b.Y && y < b.Y+b.H }
+
+// ListShown is what a window drew of its list (plan 61, design D5): line
+// or file First on screen row Y, the next ones below it, N rows in all,
+// each from column X, W cells wide, the side borders left out.
+type ListShown struct{ X, Y, W, First, N int }
+
+// At is the line or file on the cell (x, y), -1 when none.
+func (l ListShown) At(x, y int) int {
+	if x < l.X || x >= l.X+l.W || y < l.Y || y >= l.Y+l.N {
+		return -1
+	}
+	return l.First + y - l.Y
+}
 
 // bRight is the column after zone B's right edge, where the popups over it
 // end at the latest (plan 43, design D9); the screen's width when the frame

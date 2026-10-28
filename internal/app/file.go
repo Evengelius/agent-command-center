@@ -536,6 +536,22 @@ func (m *Model) finderKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	return nil, true
 }
 
+// finderClick is a left click in the quick open (plan 61, design D4): on a
+// file of its list it selects it, on the selected one it opens it as Enter
+// does; elsewhere it does nothing.
+func (m *Model) finderClick(x, y int) []tea.Cmd {
+	v, l := &m.ui.Finder, m.screen.WindowList
+	i := l.At(x, y)
+	if i < 0 || i >= len(v.Files) {
+		return nil
+	}
+	if i == v.Sel {
+		return m.openFile(render.FileTarget{Path: v.Files[i], Opened: "quick open"})
+	}
+	v.Sel, v.Top = i, l.First // the rows where the frame drew them
+	return nil
+}
+
 // filePaste puts a paste in the quick open's query or the viewer's field;
 // with neither, the window drops it.
 func (m *Model) filePaste(text string) {
@@ -549,8 +565,10 @@ func (m *Model) filePaste(text string) {
 }
 
 // fileMouse handles the mouse while a window is open: the wheel scrolls it,
-// a press in the file starts a selection, a left click outside it closes it
-// as Esc's last step does and does nothing else (plan 58, design D1).
+// a press in the file puts the cursor on the line clicked and starts a
+// selection, a click in the quick open picks a file (plan 61), a left click
+// outside it closes it as Esc's last step does and does nothing else (plan
+// 58, design D1).
 func (m *Model) fileMouse(msg tea.MouseMsg) []tea.Cmd {
 	mo := msg.Mouse()
 	switch msg.(type) {
@@ -579,7 +597,16 @@ func (m *Model) fileMouse(msg tea.MouseMsg) []tea.Cmd {
 			}
 			return m.backToExplorer()
 		}
-		if !m.ui.Finder.Open && m.screen.PanelAt(mo.X, mo.Y) == 'F' {
+		if m.ui.Finder.Open {
+			return m.finderClick(mo.X, mo.Y)
+		}
+		if m.screen.PanelAt(mo.X, mo.Y) == 'F' {
+			// A click on a line puts the cursor on it and may still start a
+			// selection (plan 61, designs D1 and D2).
+			l := m.screen.WindowList
+			if i := l.At(mo.X, mo.Y); i >= 0 && i < len(m.ui.File.Lines) {
+				m.ui.File.Cursor, m.ui.File.Top = i, l.First // the rows where the frame drew them
+			}
 			m.press(mo)
 		}
 	case tea.MouseMotionMsg, tea.MouseReleaseMsg:

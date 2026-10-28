@@ -510,6 +510,13 @@ the viewer, read only, nothing written:
 | 4. Rendering | `FileView.Blame` (`FileBlame`, `BlameCommit` with its texts made once); the column left of the numbers, 25 cells or 14 where the code would keep fewer than 60 (`blameCols`, `blameCell`), `FileCodeWidth` without it; the footer's commit or note after a toast, the mouse capture's note and a waiting approval (`blameFooter`, `windowNotice`); the key hints and the key overlay's `b` | `internal/render/blame.go`, `file.go`, `keys.go` |
 | The application | `b` in the viewer, on for the session (`toggleBlame`: on a file shown, a second read compared with the lines shown before git is asked); the blame of a file just shown from its read's bytes (`blameFile`); an answer kept only for the same file and the latest read, by the file's generation and the read's number (`blameMsg`, `blameRead`); the commits' texts in `Options.Location`, nil the machine's zone (`blameCommits`, `initials`) | `internal/app/blame.go`, `file.go`, `app.go` |
 
+Plan 61 (brief amendment 63; ui-design.md, File viewer) adds the clicks:
+
+| Part | What it does | Where |
+| - | - | - |
+| 4. Rendering | `fileWindow` and `finderWindow` give the first line or file their rows show and how many; `floatWindow` records them as `Screen.WindowList` (`ListShown`: from the row under the path or field row, between the side borders), beside plan 58's `Screen.Window`; `ListShown.At` maps a cell to its line or file, -1 off the list | `internal/render/file.go`, `select.go` |
+| The application | in `fileMouse`, a left click on a line puts the viewer's cursor on it, the view anchored on the rows drawn, before `press` starts the selection as before; in the quick open, `finderClick` selects the file clicked or opens the selected one as Enter does; both judge the click by the frame drawn last | `internal/app/file.go` |
+
 ## Images attached to a message
 
 Plan 31 (brief amendment 31; ui-design.md, Input editor; the research in

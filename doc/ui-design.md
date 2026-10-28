@@ -1758,7 +1758,7 @@ the quick open and shows or hides the panel (plan 43, design D5).
 
 | Key | Action |
 | - | - |
-| ↑ ↓ PgUp PgDn Home End | the cursor line, a line, a page, the first or last |
+| ↑ ↓ PgUp PgDn Home End | the cursor line, a line, a page, the first or last; a click on a line puts the cursor there (plan 61) |
 | ← → | shift the code sideways by 8 columns |
 | / | type a search, case ignored unless it has a capital; Enter finds the next match; at most 10,000 |
 | n / N | the next / previous match |
@@ -1773,13 +1773,23 @@ the quick open and shows or hides the panel (plan 43, design D5).
 Every other key is the window's: none reaches the draft. The mouse stays
 captured: a drag selects in the window only and its release copies the
 file's text it covers, as in the other panels; the wheel over the window
-scrolls it. A left click outside the window, full screen its first row,
-closes it as Esc's last step does, the viewer back to the Explorer's
-panel, the quick open closed and the viewer behind it in front again, and
-does nothing else: the dashboard behind takes no click (plan 58, brief
-amendment 60). Reading, listing, colouring and searching each run in a
-command with a generation number, so a result for an older open is
-dropped and keys stay handled.
+scrolls it. A left click on a line, any cell of its row between the side
+borders (the blame's column, the number, the code, the blank after it),
+puts the cursor on that line, the view where it was, a field being typed
+left open with its text, and still starts a selection where it lands: a
+drag, a double or a triple click and Shift+click copy as before, the
+cursor on the line pressed (plan 61, brief amendment 63). In the quick
+open a click on a file selects it and a click on the selected file opens
+it, as Enter does, so a double click opens it too; the field row, the
+footer and the rows past the list take no click. Both judge a click by
+the rows the frame drew (`Screen.WindowList`), the view going back to
+them if a key moved it since. A left click outside the window, full
+screen its first row, closes it as Esc's last step does, the viewer back
+to the Explorer's panel, the quick open closed and the viewer behind it in
+front again, and does nothing else: the dashboard behind takes no click
+(plan 58, brief amendment 60). Reading, listing, colouring and searching
+each run in a command with a generation number, so a result for an older
+open is dropped and keys stay handled.
 
 ### Git blame
 
@@ -3243,7 +3253,7 @@ the console reads plain VT input after Ctrl+Q.
 
 | Key | Action |
 | - | - |
-| ↑ ↓ PgUp PgDn Home End | move the cursor line; the wheel scrolls |
+| ↑ ↓ PgUp PgDn Home End | move the cursor line; the wheel scrolls, a click on a line moves it there |
 | ← → | shift the code sideways |
 | / | search, case ignored without a capital; Enter finds |
 | n N | next / previous match |
@@ -3260,7 +3270,7 @@ the console reads plain VT input after Ctrl+Q.
 | ↑ ↓ PgUp PgDn Home End | move; the wheel over it too, a click on a row |
 | → ← | open a folder, or its first entry; close it, or go to its folder |
 | Enter | open or close a folder; show a file in the file viewer |
-| / | the quick open: type to narrow, Enter opens, Esc back |
+| / | the quick open: type to narrow, a click selects a file, Enter or a click on the selected one opens it, Esc back |
 | Esc | close the folder the cursor is in; at the top, back to the input, the panel kept beside it (hidden where it takes zone B's place) |
 | F3 | hide the panel, back to the input |
 
@@ -4002,8 +4012,9 @@ Mouse selection in any panel, with clean text (AM3 M3; TI 6.3):
 - A plain click focuses the panel and selects nothing; double-click selects
   a word, triple-click a line, except on a row of an entry zone B shows
   whole on Enter, which a double click opens (plan 42; a drag still
-  selects it); Shift+click extends. In the editor the mouse
-  sets the editor's own selection, and Shift+arrows extend it.
+  selects it); Shift+click extends. In the file viewer the click also
+  puts the cursor on its line (plan 61). In the editor the mouse sets the
+  editor's own selection, and Shift+arrows extend it.
 - Copy on release by default (configurable; ASM-22), or Ctrl+Shift+C, or Ctrl+C
   while a selection exists. Without a selection, Ctrl+C keeps its interrupt
   meaning (WT passes Ctrl+C through when WT itself has no selection, TI

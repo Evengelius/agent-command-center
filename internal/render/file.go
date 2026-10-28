@@ -106,13 +106,19 @@ func fileFull(ui UI) bool { return ui.File.Open && ui.File.Full && !ui.Finder.Op
 func floatWindow(s *state.State, ui UI, sc *Screen) {
 	x, y, ww, hh := FileRect(ui.Width, ui.Height, fileFull(ui))
 	sc.Window = Box{x, y, ww, hh}
-	var win []line
+	var (
+		win      []line
+		first, n int
+	)
 	if ui.Finder.Open {
-		win = finderWindow(ui, ww, hh)
+		win, first, n = finderWindow(ui, ww, hh)
 	} else {
-		win = fileWindow(s, ui, ww, hh)
+		win, first, n = fileWindow(s, ui, ww, hh)
 		sc.fileLines = ui.File.Lines
 	}
+	// The list's rows start under the top edge and the path or field row
+	// (plan 61, design D5).
+	sc.WindowList = ListShown{X: x + 1, Y: y + 2, W: ww - 2, First: first, N: n}
 	sc.place(win, x, y, ww)
 }
 
@@ -222,8 +228,9 @@ func frameIn(ls []line) []line {
 	return in('F', ls)
 }
 
-// fileWindow is the file viewer's window, ww by hh.
-func fileWindow(s *state.State, ui UI, ww, hh int) []line {
+// fileWindow is the file viewer's window, ww by hh, and the lines its rows
+// show: the first and how many (plan 61, design D5).
+func fileWindow(s *state.State, ui UI, ww, hh int) (win []line, first, n int) {
 	f := ui.File
 	inner := ww - 4
 	title := line{deco(baseName(f.Path), stTitle)}
@@ -273,12 +280,13 @@ func fileWindow(s *state.State, ui UI, ww, hh int) []line {
 		for i := top; i < top+rows && i < len(f.Lines); i++ {
 			body = append(body, codeRow(f, i, nw, bw, inner))
 		}
+		first, n = top, len(body)-1
 	}
 	for len(body) < rows+1 {
 		body = append(body, nil)
 	}
 	body = append(body[:rows+1], fileFooter(s, ui, inner))
-	return frameIn(frameBox(title, right, body, ww, hh, stFileFrame))
+	return frameIn(frameBox(title, right, body, ww, hh, stFileFrame)), first, n
 }
 
 // baseName is the last element of a path, Windows or slash form.
@@ -502,8 +510,9 @@ var finderKeys = []string{
 }
 
 // finderWindow is the quick open's window, ww by hh: the field, the files
-// the query keeps, the footer.
-func finderWindow(ui UI, ww, hh int) []line {
+// the query keeps, the footer; and the files its rows show, the first and
+// how many (plan 61, design D5).
+func finderWindow(ui UI, ww, hh int) (win []line, first, n int) {
 	v := ui.Finder
 	inner := ww - 4
 	var right line
@@ -532,6 +541,7 @@ func finderWindow(ui UI, ww, hh int) []line {
 		for i := top; i < top+rows && i < len(v.Files); i++ {
 			body = append(body, finderRow(v.Files[i], i == v.Sel, inner))
 		}
+		first, n = top, len(body)-1
 	}
 	for len(body) < rows+1 {
 		body = append(body, nil)
@@ -542,7 +552,7 @@ func finderWindow(ui UI, ww, hh int) []line {
 	}
 	footer := spread(windowLeft(state.New(), ui, finderKeys, inner-count.width()-1), count, inner)
 	body = append(body[:rows+1], footer)
-	return frameIn(frameBox(line{deco("Quick open", stTitle)}, right, body, ww, hh, stFileFrame))
+	return frameIn(frameBox(line{deco("Quick open", stTitle)}, right, body, ww, hh, stFileFrame)), first, n
 }
 
 // finderRow is a file of the quick open, w cells: its folder grey, its name
