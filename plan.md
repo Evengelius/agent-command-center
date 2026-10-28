@@ -910,5 +910,5 @@ shortcut the dashboard makes when missing, pointing at Windows Terminal's
 alias with ACC's profile; a feasibility probe first. Approved on
 2026-10-28: 7 PASS, 0 FAIL after the owner's review ("Looks right", "No
 sound") ([`doc/plan64-evaluation.md`](doc/plan64-evaluation.md)); commit
-0111dbd, then the approval commit; its full text in git (`git show
-0111dbd:plan.md`).
+0111dbd, then the approval commit, both pushed; its full text in git
+(`git show 0111dbd:plan.md`).

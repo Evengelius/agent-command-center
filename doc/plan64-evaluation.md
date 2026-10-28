@@ -75,6 +75,11 @@ line, and the working tree was clean after it: PASS. Not pushed: the
 owner asked for the commit only. The block above stays as it was
 reported.
 
+**Pushed (2026-10-28).** The owner wrote "Push them": commits d057bd9,
+0111dbd and 2ecd5ff fast-forwarded origin's main from 9cdf1ae to
+2ecd5ff, nothing forced, origin/main read back equal to main. The commit
+record above, which says "Not pushed" as written, stays as it was.
+
 ## Details
 
 ### What the build found and changed
