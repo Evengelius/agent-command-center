@@ -623,10 +623,11 @@ func (m *Model) commitKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 }
 
 // globalKey is a key the panel passes on to the dashboard: the function
-// keys, the zones', the selectors' and the window's.
+// keys, the zones', the selectors' and the branches popup's (plan 59), and
+// the window's.
 func globalKey(k tea.KeyPressMsg) bool {
 	switch k.String() {
-	case "f1", "f2", "f3", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "f12", "ctrl+o", "ctrl+r",
+	case "f1", "f2", "f3", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "alt+b", "f12", "ctrl+o", "ctrl+r",
 		"shift+pgup", "shift+pgdown", "ctrl+q":
 		return true
 	}

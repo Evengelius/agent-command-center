@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   branch main               Mock data 2.1.300
+ A ✓ Turn 2     ╭─ Branches ───────────────────────────────────────────────────╮
+╭─ B · CONVERSAT│ › fe▌                                               F5 fetch │
+│ ▎  ✓ general-p│ main → origin/main ↑2 ↓1                                     │
+│ ▎  ▸ ✓ Thought│ ⌄ Recent                                                     │
+│               │     feat                                         origin/feat │
+│ ╭─────────────│ ⌄ Local                                                      │
+│ │ RESULT  11:3│     feat                                         origin/feat │
+│ │ The subagent│ ⌄ Remote                                                     │
+│ │ `beta.md`, a│     origin/feat                                              │
+│ │             │ ↑↓ move · Enter switch · Ctrl+C copy · F5 fetch · Esc close  │
+│ │ Found 2 file╰──────────────────────────────────────────────────────────────╯
+│ ╰──────────────────────────────────────────────────────────────────────────╯ │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ >  Ask Mock data anything…                                                   │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   +     Haiku 5.5    turn started by the CLI                     ✋ Manual   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

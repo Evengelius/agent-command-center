@@ -121,7 +121,7 @@ State
   Applied, FirstAt count, time         the events applied and the first one's time
   Unrecognised     count, and the last 20 lines as UnknownEntry {At, Type, Reason, Line} (plan 25)
 
-Entry        {Seq, Role: user|assistant|tool|notice|approval, Agent, Text,
+Entry        {Seq, Role: user|assistant|tool|notice|dashboard|approval, Agent, Text,
               Origin, Streaming bool, At}
 Agent        {Key, Parent, Label, Kind (subagent|workflow|bash|thread),
               Model (value or N/A), Status, StatusOrigin, Task, Files,
@@ -151,7 +151,11 @@ item 1).
 - The record is built only from CLI events: the user's own messages as sent
   (byte for byte, `Origin: observed` once written to the CLI), `ai` text,
   tool calls and results, approvals and their answers, and notices
-  (interrupted, error, reconnected) marked as dashboard notices.
+  (interrupted, error, reconnected) marked as dashboard notices. The
+  dashboard's own notes are entries of their own, `Role: "dashboard"`,
+  drawn grey and never sent to the CLI: a Codex slash command held back,
+  and since plan 59 a branch switched by the branches popup
+  (`state.BranchSwitched`).
 - Deltas append to the open `Streaming` entry of the same message id; the
   `completed` event replaces its text with the complete content (the
   complete message wins if they differ, and the difference is logged).
@@ -479,9 +483,10 @@ The few reads it makes, each once and on a trigger:
 | Codex `account/rateLimits/read` | after the handshake, and after each `turn/completed` | quota before the first model call has no push; pushes follow model calls only | TEL CX; P6 line 7 |
 | Claude Code `get_context_usage` | after each `result` | context is not pushed; the derived value from `usage` lacks the auto-compact threshold | TEL CC; P2 lines 4-6; no model call: answered in 914 ms with no `assistant` message, `result` or `rate_limit_event` after it (P14a, CC-10 q10) |
 | Claude Code `/usage` | **used** since plan 24 (amendment 23): a user message written right after the handshake's answer, before the owner can write, and after each `result` with `get_context_usage` (`Refresh`, through the application's write queue); the CLI answers it locally, with no model call (P24u; live in the dashboard on 2026-10-22: the init, the report and the result 1.9 s after the write, between a `session_state_changed` running and an idle), and its `usage_report` gives `quota.5h`, `quota.7d` and `quota.7d.<model>` (`telemetry.updated`, documented, source `usage_report (<kind>)`, with the reset times) | the exchange is in the stream as a running state, streamed parts, an assistant message and a result: the mapper maps them to `status.changed` ("usage report: reading", "streaming", "read"), never to a turn or an entry, and a result with no report before it to one `error` ("usage report not read: <reason>"); the endpoint can rate-limit, so the last values stay with their age | TEL CC; P24u |
-| Git branch | once at startup, from `.git/HEAD` | display only; no git events exist | architecture.md, Session context |
+| Git branch | at validation, from `.git/HEAD`; then the HEAD file's modification time every 2 s (one `os.Stat`, no git process), the branch read again when it changed (`state.BranchRead`; plan 59, design D9) | git has no events: a switch made in another terminal or by the agent changes only the file | architecture.md, Session context |
 | Detection (`claude -v`, `codex --version`; no status command, plan 21, item 5.2) | once at startup | no other source | CC-2; CX-2 |
 
 The only timers are the local clock tick, which advances animations and
 value ages and expires values past their reset time, and the home screen
-banner's frames (plan 51); they read no external source.
+banner's frames (plan 51), which read no external source; and the HEAD
+watch's checks (plan 59), which read one file's modification time.

@@ -75,8 +75,22 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 				return m.answer(false)
 			}
 		}
+		if mo.Button == tea.MouseLeft && top == render.LayerBranches {
+			// The branches popup (plan 59, designs D1 and D10): a click in it
+			// is its own; anywhere else, the branch name too, it closes it
+			// and does nothing else, as plan 58's window.
+			if p, item := m.screen.ItemAt(mo.X, mo.Y); p == render.BranchesPanel {
+				return m.branchesClick(item, mo.X, mo.Y)
+			}
+			m.closeBranches()
+			return nil
+		}
 		if mo.Button == tea.MouseLeft && top != render.LayerDraft {
 			switch p, item := m.screen.ItemAt(mo.X, mo.Y); {
+			case p == render.BranchPanel:
+				// The project bar's branch name opens the branches popup (plan
+				// 59, design D1).
+				return m.toggleBranches()
 			case p == render.SidePanel:
 				// The sidebar (plan 43, design D5): the Explorer's tile shows or
 				// hides its panel as F3 does, Source Control's its own (plan 44,
@@ -204,6 +218,10 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 		}
 		if top == render.LayerModes && m.screen.PanelAt(mo.X, mo.Y) == render.ModesPanel {
 			return nil // the modes box has nothing to scroll, and zone B under it stays (plan 39)
+		}
+		if top == render.LayerBranches && m.screen.PanelAt(mo.X, mo.Y) == render.BranchesPanel {
+			m.branchesWheel(mo.Button) // the popup's list (plan 59, design D10)
+			return nil
 		}
 		if top == render.LayerDraft {
 			if m.screen.PanelAt(mo.X, mo.Y) == 'E' && (mo.Button == tea.MouseWheelUp || mo.Button == tea.MouseWheelDown) {

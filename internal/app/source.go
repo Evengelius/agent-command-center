@@ -311,7 +311,7 @@ func (m *Model) sourceKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	}
 	s := k.String()
 	switch s {
-	case "f1", "f3", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
+	case "f1", "f3", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "alt+b", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
 		"shift+pgup", "shift+pgdown", "ctrl+q", "F":
 		return nil, false
 	}
@@ -777,7 +777,7 @@ func (m *Model) clampDiff() {
 func (m *Model) diffViewKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	s := k.String()
 	switch s {
-	case "f1", "f2", "f3", "f4", "f6", "shift+f6", "shift+tab", "alt+p", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
+	case "f1", "f2", "f3", "f4", "f6", "shift+f6", "shift+tab", "alt+p", "alt+b", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
 		"shift+pgup", "shift+pgdown", "ctrl+q", "F":
 		return nil, false
 	}

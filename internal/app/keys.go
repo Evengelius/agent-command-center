@@ -38,8 +38,9 @@ func (m *Model) zonesWith() []string {
 func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	if k.String() == "ctrl+q" {
 		m.wt = nil // a quit question shows on the screen under it
-		// A git operation asks to confirm too (plan 47, design D1).
-		return m.do(state.Quit{GitRunning: m.op != nil})
+		// A git operation asks to confirm too (plan 47, design D1), the
+		// branches popup's switch and fetch with them (plan 59).
+		return m.do(state.Quit{GitRunning: m.op != nil || m.branchOpRunning()})
 	}
 	if m.s.QuitAsked && k.String() == "esc" {
 		return m.do(state.Stay{})
@@ -65,6 +66,12 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	case render.LayerModes:
 		// The modes selector, the same way (plan 39, design D8).
 		if cmds, done := m.modesKey(k); done {
+			return cmds
+		}
+		top = render.LayerNone
+	case render.LayerBranches:
+		// The branches popup, the same way (plan 59, design D10).
+		if cmds, done := m.branchesKey(k); done {
 			return cmds
 		}
 		top = render.LayerNone
@@ -236,6 +243,10 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
 	// model picker (plan 34, design D9).
 	if k.String() == "alt+p" && !windowed(top) {
 		return m.toggleModels()
+	}
+	// Alt+B from any zone: the branches popup (plan 59, design D1).
+	if k.String() == "alt+b" && !windowed(top) {
+		return m.toggleBranches()
 	}
 	// F3: the file the entry or request on screen names, else the Explorer
 	// shown or hidden (plan 17, Opening; plan 43, design D5).

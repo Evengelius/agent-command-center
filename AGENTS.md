@@ -24,12 +24,11 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-28, when the owner approved plan
-58, a click outside the window closes it (brief amendment 60).** Plans 1
-to 58 are closed, one entry each in `plan.md`, Closed plans; the MVP was
-approved on 2026-10-17. `plan.md` holds the active plan's progress and
-test evidence; each closed plan's results are in its evaluation file, and
-its full record in git.
+**Status: plan 59 active since 2026-10-28, the branches popup (brief
+amendment 61).** Plans 1 to 58 are closed, one entry each in `plan.md`,
+Closed plans; the MVP was approved on 2026-10-17. `plan.md` holds the
+active plan's progress and test evidence; each closed plan's results are
+in its evaluation file, and its full record in git.
 
 ## Delegation: highest priority
 
@@ -156,7 +155,10 @@ not in this list: it runs alone, with the exact command and conditions of
   worktree becomes the working directory only by starting a session on it.
   Source Control commits the index, or the staged content of the selected
   files alone (amendment 51), and pushes to the upstream only, never
-  forcing, amending or rewriting history (amendment 46).
+  forcing, amending or rewriting history (amendment 46). The branches
+  popup switches with `git switch` and fetches with `git fetch --all`,
+  never forcing, stashing, resetting or pruning, and switches nothing
+  while the agent works (amendment 61).
 - **MVP scope is fixed** by amendment 4: build none of the features it leaves
   out (model configuration, cross-provider collaboration, provider
   switching, session profiles, orchestration settings), except those the
@@ -165,8 +167,9 @@ not in this list: it runs alone, with the exact command and conditions of
   the terminal with an Explorer of the project, in place of the editor
   integration; the session's model, effort and Ultracode selection; the
   permission modes selector; Source Control with a read-only Git diff
-  viewer, its commit and push, and a selection's commit (brief, amendments
-  9 to 12, 34, 40, 45, 46, 51 and 53).
+  viewer, its commit and push, and a selection's commit; the branches
+  popup, its switch and fetch (brief, amendments 9 to 12, 34, 40, 45, 46,
+  51, 53 and 61).
   The ones left out are **[Nice to have]**: future improvements, never
   listed as remaining, built only if the owner asks for one in a new plan
   (`plan.md`, Nice to have).

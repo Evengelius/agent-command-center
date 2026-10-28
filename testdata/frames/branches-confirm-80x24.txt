@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   branch main               Mock data 2.1.300
+ A ✓ Turn 2     ╭─ Branches ───────────────────────────────────────────────────╮
+╭─ B · CONVERSAT│ › ▌Search branches and tags                         F5 fetch │
+│ ▎  ✓ general-p│ main → origin/main ↑2 ↓1                                     │
+│ ▎  ▸ ✓ Thought│ ⌄ Recent                                                     │
+│               │     feat                                         origin/feat │
+│ ╭─────────────│     fix/login                                                │
+│ │ RESULT  11:3│ ⌄ Local                                                      │
+│ │ The subagent│     feat                                         origin/feat │
+│ │ `beta.md`, a│     fix/login                                                │
+│ │             │   ✓ main                                   origin/main ↑2 ↓1 │
+│ │ Found 2 file│     wtb                                  in another worktree │
+│ ╰─────────────│ › Remote                                                     │
+│               │ › Tags                                                       │
+│ ──────────────│ 3 uncommitted changes. Git keeps them on fix/login unless    │
+│ >  Ask Mock da│ they touch files that differ there; then it refuses and      │
+│ ──────────────│ nothing changes.                                             │
+│   +     Haiku │ Enter switch · Esc cancel                                    │
+╰───────────────╰──────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

@@ -72,10 +72,11 @@ func (m *Model) clipImages() input.ClipboardImages {
 
 // editorTakesPaste says a paste goes to the draft: the dashboard, B
 // focused or the Explorer's panel docked beside it (draftBeside), no window
-// over it (app.go, paste).
+// over it, nor the branches popup, whose search takes it (app.go, paste).
 func (m *Model) editorTakesPaste() bool {
 	top := render.Layers(m.s, m.ui).Top // the draft on top, or the dashboard itself (plan 49, design D7)
-	return m.s.Screen == state.ScreenDashboard && m.draftBeside() && m.wt == nil && (top == render.LayerDraft || top == render.LayerNone || top.Popup())
+	return m.s.Screen == state.ScreenDashboard && m.draftBeside() && m.wt == nil &&
+		(top == render.LayerDraft || top == render.LayerNone || top.Popup() && top != render.LayerBranches)
 }
 
 // pasteImages reads the clipboard's images in a command (design D1): its

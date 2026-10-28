@@ -95,6 +95,9 @@ type Screen struct {
 	// quick open: a left click outside it closes it (plan 58, design D1);
 	// zero when none.
 	Window Box
+	// Branches is what the frame showed of the branches popup (plan 59),
+	// zero when it is closed.
+	Branches BranchesShown
 	// Tiles are where the frame left the sidebar's tiles' images to be
 	// drawn, the Explorer's then Source Control's, and their looks (plan 43, design
 	// D2), zero when none.
@@ -208,6 +211,8 @@ func Draw(s *state.State, ui UI) *Screen {
 		modesBox(sc, s, ui) // the modes selector over zone B (plan 39)
 	case st.Shown(LayerCommit):
 		commitMenu(sc, ui) // the commit button's dropdown over the panel (plan 45)
+	case st.Shown(LayerBranches):
+		branchesPopup(sc, ui) // the branches popup under the project bar (plan 59)
 	}
 	if st.Shown(LayerWindow) {
 		floatWindow(s, ui, sc)

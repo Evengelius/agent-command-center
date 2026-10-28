@@ -7833,3 +7833,78 @@ Plan 58). The owner approved it, word for word:
 ````text
 Plan 58 is approved: proceed with the implementation.
 ````
+
+## Amendment 61, 2026-10-28: the branches popup, for plan 59
+
+After plan 58 was closed and pushed, the owner sent two images: the
+dashboard's project bar ("agent-command-center branch main ...") and an
+IDE's branch popup (a search field; actions; then Recent, Local, Remote and
+Tags groups with chevrons, a branch's remote and incoming commits on its
+right), and wrote, word for word:
+
+````text
+Now what I want is that by clicking on the branch name, like here for instance "main", that it shows something similar to what you see on second image on the right => A popup containing only relevant information like : the search, "Recent" dropdown, "Local" dropdown, "Remote" dropdown, "Tags" dropdown, and if nothing, then a default msg must be displayed.
+
+What do you think? What options should it contain? Tell me first
+````
+
+Told: the header's branch is read once when the project is validated, so
+it goes stale; the popup opens on a click on the branch name or Alt+B,
+under the header, Esc or a click outside closing it; a search; the current
+branch, its remote and ↑↓ counts; Recent (the last 5 branches switched to,
+from the reflog), Local (each with its remote and ↑↓), Remote and Tags,
+the first two open; a message for each empty section and for each failure;
+Enter or a double click switches to a branch, never during an agent's
+turn, never forced or stashed, a remote branch becoming a local one that
+tracks it; Ctrl+C copies a name; left out: Update Project, Commit, Push,
+Rebase, Delete, Rename, Merge, checking out a tag, the gear; New branch
+and Fetch possible later. The owner shared another agent's review of that
+answer and wrote, word for word:
+
+````text
+I reviewed what you said to another Agent, it said this :
+````
+
+The review, in French, kept most of the proposal; added New branch and
+Fetch to the first version; and asked for three corrections: a switch
+safe with local changes (none during an agent's run, an explicit warning
+when changes exist, no force, stash or reset, git's worktree protections
+kept), the agent's context after a switch (a warning, the views
+refreshed, how to tell the agent looked into, no automatic reset), and the
+stale branch name fixed in this plan on its own. The owner wrote, word for
+word:
+
+````text
+What do you think?
+````
+
+Told: agreed with the three; the confirmation with uncommitted changes;
+the header's branch kept current by watching git's HEAD file; Fetch with
+Push's safeguards; ACC never invents or sends a message by itself, so
+after a switch a dashboard notice in zone B and, when the draft is empty,
+a prepared note the owner sends, edits or clears; no automatic reset. The
+owner shared the other agent's second review: approve, with three details
+(the warning promising nothing, git possibly carrying the changes or
+refusing; the HEAD file's path from `git rev-parse --git-path HEAD`, a
+worktree having its own; the notice kept out of the conversation's
+history) and the design ready for a plan; and wrote, word for word:
+
+````text
+What do you think?
+
+Btw I don't want the "New branch", so you won't implement it
+````
+
+Told: New branch dropped; the warning states git's rule ("Git keeps them
+on feature-B unless they touch files that differ there; then it refuses
+and nothing changes") and the result is reported after; the HEAD path from
+`git rev-parse --git-path HEAD`, resolved once per session, then a cheap
+check of its time; the notice a dashboard notice, drawn apart from
+messages, never sent to the CLI, the CLI's transcript untouched; the scope
+for plan 59. The owner wrote, word for word:
+
+````text
+Ok you can start
+````
+
+Taken as the approval of that scope: plan 59 (plan.md, Plan 59).

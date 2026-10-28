@@ -534,9 +534,12 @@ how:
 One line under the title (AM4 W1; architecture.md, Session context):
 
 - **left**: ▣ the project name (last element of the path), then "branch
-  `<name>`" when the project is a git work tree, read once from
-  `.git/HEAD` (a detached head shows the short commit; no git command is
-  run);
+  `<name>`" when the project is a git work tree, read from `.git/HEAD`
+  when the project is validated (a detached head shows the short commit;
+  no git command is run), then kept current: read again when the HEAD
+  file changes, a switch made in another terminal or by the agent (plan
+  59, design D9). A click on "branch `<name>`" opens the
+  [branches popup](#branches);
 - **middle**: the resolved absolute path, shortened from the left with "…"
   when it does not fit, and dropped below 100 columns;
 - **right**: the provider's name and version, followed by "newer than
@@ -2519,6 +2522,162 @@ terminal's own selection copy from it.
 | F2 | the oldest pending approval's card: the diff closes, zone B and its card back in its place (from the panel beside it too); a waiting approval is said first in the footer |
 | F1, F3, F4, F6, Alt+P, Ctrl+Q, … | as on the dashboard; F3 shows the Explorer in the panel's place, the diff staying beside it |
 
+## Branches
+
+Plan 59 (brief amendment 61; the owner's image of an IDE's branch popup,
+with only what is relevant). A click on the project bar's "branch
+`<name>`", or Alt+B, opens a popup of the repository's branches and tags.
+The same again, Esc with the search empty, or a left click anywhere
+outside it closes it, that click doing nothing else, as plan 58's window
+(design D1). It is a popup layer (plan 49, design D7): opening it closes
+another popup, and it opens over no window and no full view. Where it
+cannot show, a toast says "the branches popup needs the project bar's
+branch on screen"; outside a repository the header names no branch and
+Alt+B's toast says "no branches: the project is not in a git repository".
+New branch is left out by the owner.
+
+At 120x40, the mock's dashboard on a repository on main (golden frame
+`branches-120x40`):
+
+```text
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   branch main   …\..\testdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300
+╭──────────────────────────────────╭─ Branches ───────────────────────────────────────────────────╮───── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 │ › ▌Search branches and tags                         F5 fetch │            ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED │ main → origin/main ↑2 ↓1                                     │     mock   ││  ≡   │
+│ ──────────────────────────────── │ ⌄ Recent                                                     │            ││      │
+│ STAGES · inferred from activity  │     feat                                         origin/feat │rectory     ││      │
+│ ✓ TURN 1                      0s │     fix/login                                                │hes.        ││      │
+│   Use the Agent tool to launch … │ ⌄ Local                                                      │            ││  ⑂   │
+│   Agent · agent general-purpose  │     feat                                         origin/feat │     mock   ││      │
+│                                  │     fix/login                                                │     mock   ││      │
+│ ✓ TURN 2                      0s │   ✓ main                                   origin/main ↑2 ↓1 │     mock   ││      │
+│   started by the CLI             │     wtb                                  in another worktree │            ││      │
+│ ──────────────────────────────── │ › Remote                                                     │──────────╮ ││      │
+│ ✦ TELEMETRY        Enter details │ › Tags                                                       │          │ ││      │
+│ ▾ SESSION USAGE                  │ ↑↓ move · Enter switch · Ctrl+C copy · F5 fetch · Esc close  │and       │ ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ╰──────────────────────────────────────────────────────────────╯          │ ││      │
+```
+
+**The box** (design D2). Under the branch name, its left edge one cell
+left of "branch", pushed left by the screen's right edge; 64 cells wide
+at least, so that the keys' second hint fits, as wide as its widest row up
+to 84; its list as high as its rows, 20 at most and what the screen leaves,
+scrolling with the model selector's bar ("┃"). The model selector's frame
+and title colours. From the top:
+
+- the search row: "›", the query and its caret, or "Search branches and
+  tags" in grey while empty; on its right "F5 fetch", "⟳ fetch" with the
+  Nerd Font's `cod-refresh` in the acc tab, "fetching…" while a fetch runs;
+- the current state: "main → origin/main ↑2 ↓1" (↑ in the done colour, ↓ in
+  the attention colour, "gone" in the failure colour), "detached at
+  a1b2c3d", "main, no commits yet";
+- the groups, the Explorer's chevrons (`⌄` open, `›` folded, Nerd Fonts'
+  in the acc tab): Recent and Local open, Remote and Tags folded. A row: ✓
+  on the current branch; in the acc tab `oct-git_branch` or `cod-tag`
+  (plan 55's rule; Windows Terminal's Cascadia Mono has none of ⟳, ↻, ⎇
+  or ★); the name, its part up to a "/" in grey; on a local branch's right
+  its upstream and ↑ahead ↓behind when not zero, or "in another worktree"
+  in grey, the name grey too: that branch is not offered (design D5). The
+  cursor's row on the selectors' ground;
+- the footer: the keys, the longest hint that fits; or what runs
+  ("switching to feat…", "fetching… Esc stops"); or the last result, a
+  failure in the failure colour; or the confirmation. A text takes three
+  rows at most, the last cut with "…".
+
+**Messages** (design D3). An empty group shows "No recent branches", "No
+local branches", "No remote branches" or "No tags" under its heading; a
+search matching nothing, "No branch or tag matches “…”", every group
+hidden; "reading…" until git answers; "git not found", "not a git
+repository", or git's own error, in the attention colour, in the list's
+place; a group past 1,000 rows (`input.BranchCap`), "first 1,000 shown".
+
+**The data** (design D4). Read when the popup opens and after a fetch, in a
+command, through `runRead` (no file system monitor): `git for-each-ref`
+over `refs/heads`, `refs/remotes` and `refs/tags` (each ref's name, the
+worktree that has it checked out, its upstream and tracking, its date),
+branches by name and tags newest first, a remote's `HEAD` left out; Recent
+from HEAD's reflog, "checkout: moving from A to B", newest first, the
+local branches that still exist, the current one left out, five at most,
+each row Local's with its upstream; the head as Source Control reads it.
+
+**Switching** (design D5). Enter on a branch, or a double click. Refused,
+in a note, while the agent works in the folder ("the agent is working in
+this folder: switch once its turn ends", a turn or an agent running) or
+Source Control's git runs; a branch in another worktree says where it is;
+the current branch, a tag, a heading's double click: nothing. Git counts
+the uncommitted changes first (`git status --porcelain`); with some, the
+footer asks:
+
+```text
+│ ✦ TELEMETRY        Enter details │ › Tags                                                       │          │ ││      │
+│ ▾ SESSION USAGE                  │ 3 uncommitted changes. Git keeps them on fix/login unless    │and       │ ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ │ they touch files that differ there; then it refuses and      │          │ ││      │
+│   Tokens 159.4k session total    │ nothing changes.                                             │          │ ││      │
+│   Est. cost $0.01 API-equiv.     │ Enter switch · Esc cancel                                    │          │ ││      │
+│ ▾ QUOTA WINDOWS                  ╰──────────────────────────────────────────────────────────────╯          │ ││      │
+```
+
+Enter switches, Esc or any other key cancels. Then `git switch <branch>`;
+a remote branch `git switch --track <remote>/<branch>`, refused when a
+local branch of that name exists ("A local branch main exists already:
+switch to it in Local."). Never `--force`, `--discard-changes` or
+`--merge`, no stash, no reset. Git's refusal shows in its words in the
+footer, nothing changed; the guards are checked again when Enter confirms.
+
+**After a switch** (design D6). The popup closes; the header names the new
+branch; the Explorer, while shown, reads its folders and git's markers
+again, else Source Control or the diff while shown. Zone B gets the
+dashboard's notice, grey, never sent to the CLI: "Switched from main to
+feat", with "· 3 uncommitted changes came along" when some did and "· the
+agent's conversation still reflects main" while a session runs. When the
+draft is empty, with no image attached, it gets a note the owner sends,
+edits or clears, Ctrl+Z removing it: "I switched the project from main to
+feat; check the files you rely on before going on." Nothing is sent; the
+session goes on.
+
+**Fetch** (design D7). F5 or a click on "fetch": `git fetch --all
+--no-prune` through Push's runner: no terminal prompt, ssh's askpass
+refused, URLs' credentials scrubbed from messages. Esc stops it: a stop
+waits while git holds one of its lock files, the footer saying why
+("fetching… git is updating the repository: try again in a moment."), and
+"fetching… stopping" once asked; after 2 minutes (`input.FetchLimit`) the
+application stops it itself ("The fetch ran past its 2 minutes and was
+stopped."). Then the lists are read again, after a failure too; the result
+in the footer: "Fetched every remote.", "The fetch was stopped.", or git's
+words. A fetch outlives the popup: opened again it shows it running, and
+its end with the popup closed is a toast.
+
+**Copy** (design D8). Ctrl+C copies the cursor's name, a branch, a remote
+branch or a tag, through the clipboard the dashboard uses; on a heading
+nothing; never an interrupt.
+
+**The header kept current** (design D9). When a project is validated in a
+repository, the HEAD file's path is resolved once (`git rev-parse
+--git-path HEAD`, a linked worktree's own); then every 2 s a command
+checks its modification time, no git process, and reads the branch again
+as the validation did when it changed (`state.BranchRead`): a switch made
+in another terminal or by the agent shows within 2 s, and the popup's
+lists, while it is open, are read again. No repository, no git, a mock
+run: no watch.
+
+**Keys and the mouse** (design D10): the [table](#focus-and-keys). A
+printable key types in the search, a paste too; the global keys keep
+their meaning once a key the popup does not take has closed it. Alt+B
+opens it from any focus: the docked Explorer and Source Control, Source
+Control's commit field and button, and a file's diff pass it on, as they
+pass Alt+P. A click on a heading folds or opens it, a second click adding nothing; on a row it
+puts the cursor there; a double click on a branch switches; a click on
+"fetch" fetches; the frame and the messages do nothing. The wheel over the
+popup moves the cursor three rows; elsewhere it scrolls what is under it.
+No hover: the mouse's all-motion mode stays off.
+
+**Budget.** The list is built each frame from the view (`BranchRows`),
+only its rows in view drawn, the widths counted without drawing them and
+the cursor's keys made when asked: with 3,000 refs, every group open, a key
+to its frame takes p50 0.6 ms, p95 1.5 ms (`TestBranchesFrameCost`, judged
+in the timing step against the keystroke's 16 ms).
+
 ## Approvals
 
 The CLI's native approvals, relayed (AM2 B6, I7; AM4 W3; events-and-state.md,
@@ -2937,15 +3096,16 @@ The same file can name Codex's proxy (plan 22, amendment 19).
 | F3 | the file the entry, full view or request in front names, in the [file viewer](#file-viewer); else the [Explorer](#explorer)'s panel shown or hidden, the focus with it, as a click on its tile in the [right sidebar](#right-sidebar), [Source Control](#source-control) giving it the docked place; from the viewer or the quick open, close them and show or hide the panel; from a full view naming no file, the inspection, the details view or a zoomed zone, close them and show the panel | plan 17; plan 43; plan 44; brief amendments 11, 12, 44 and 45 |
 | F4 | open or close the [modes selector](#input-editor), from any focus; the mode pill's click does the same; Manual (Ask for approval) at every launch, never saved | plan 12; plan 39; brief amendments 8 and 40 |
 | Alt+P | open or close the [model selector](#input-editor), from any focus (Claude Code's own key for its model picker); the pill's click does the same | plan 34; brief amendment 34 |
+| Alt+B | open or close the [branches popup](#branches), from any focus; a click on the project bar's branch name does the same; outside a repository a toast says there are no branches | plan 59; brief amendment 61 |
 | F6 / Shift+F6 | next / previous zone (B, or the diff in its place, the docked panel, the Explorer's or Source Control's, while shown, C, A) | ASM-9; plan 43; plan 44 |
 | Tab / Shift+Tab | next / previous zone, outside the editor (in the editor Tab inserts a tab) | ASM-9 |
-| Esc | close the "+" menu (plan 30), the model selector (plan 34), the modes selector (plan 39; from its Full access confirmation, back to the modes), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
+| Esc | close the "+" menu (plan 30), the model selector (plan 34), the modes selector (plan 39; from its Full access confirmation, back to the modes), the branches popup (plan 59; a fetch stopped, a confirmation cancelled or the search cleared first), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
 | Shift+PgUp / Shift+PgDn | scroll the conversation from any focus | ASM-9 |
 | F12 | toggle mouse capture (native terminal selection when off) | TI 6.3 item 6 |
 | Ctrl+W | the [Worktrees](#worktrees) view of the session's repository: list, diff, merge, remove | plan 16; brief amendment 10 |
 | F1, `?` | key overlay | ASM-9 |
 | Ctrl+R | after a crash only: resume the same CLI session in a new process ([reliability.md, Resumption](reliability.md#resumption)) | ASM-9 |
-| Ctrl+Q | quit; asks to confirm while a turn or an agent runs, or Source Control's staging, commit or push, whatever the session's phase, naming what runs ("quit? the commit is still running · Ctrl+Q again to quit · Esc to stay"); a second Ctrl+Q quits, git left to finish on its own | ASM-9; plan 47 |
+| Ctrl+Q | quit; asks to confirm while a turn or an agent runs, or Source Control's staging, commit or push, or the branches popup's switch or fetch, whatever the session's phase, naming what runs ("quit? the commit is still running · Ctrl+Q again to quit · Esc to stay"); a second Ctrl+Q quits, git left to finish on its own | ASM-9; plan 47; plan 59 |
 
 **Shift+Enter in Windows Terminal.** In VT input mode the console reports
 Shift+Enter as a plain carriage return, the same as Enter (measured, plan 4,
@@ -3040,6 +3200,20 @@ the console reads plain VT input after Ctrl+Q.
 | Esc | close the selector |
 | Alt+P | close the selector |
 | any other key | close the selector, then act as usual (Ctrl+Q quits) |
+
+**The branches popup** (Alt+B or a click on the branch name, [Branches](#branches))
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | move the cursor over the groups' headings, the branches and the tags; the wheel moves it three rows, as the Explorer's |
+| → ← | open or fold a group; ← on a row, to its group's heading |
+| Enter | on a branch, switch to it, confirmed first when uncommitted changes would come along (a double click does the same); on a heading, fold or open its group; on a tag or the current branch, nothing |
+| typing, Backspace | search the branches and tags, case ignored; a paste goes into the search, its first line |
+| Ctrl+C | copy the name of the branch, remote branch or tag under the cursor; never an interrupt |
+| F5 | fetch every remote, as a click on "fetch" does |
+| Esc | stop a running fetch; else cancel the confirmation; else clear the search; else close the popup |
+| Alt+B | close the popup |
+| any other key | close the popup, then act as usual (Ctrl+Q quits) |
 
 **The editor**: see [Input editor](#input-editor).
 

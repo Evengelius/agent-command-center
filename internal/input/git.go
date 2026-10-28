@@ -94,7 +94,7 @@ func (g GitCLI) run(limit time.Duration, dir string, args ...string) (string, er
 // runRead is run for the Source Control's reads (plan 44, design D10): the
 // same, with the file system monitor off, so that a read never starts its
 // daemon. Only reads are called through it: rev-parse, status, cat-file,
-// diff-tree, symbolic-ref, for-each-ref and remote.
+// diff-tree, symbolic-ref, for-each-ref, remote and reflog show (plan 59).
 func (g GitCLI) runRead(limit time.Duration, dir string, args ...string) (string, error) {
 	return g.call(limit, dir, true, args)
 }

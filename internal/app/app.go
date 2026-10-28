@@ -124,6 +124,9 @@ type Options struct {
 	// input.NerdIcons in the real run (plan 55, design D3); false keeps the
 	// panel's own glyphs.
 	NerdIcons bool
+	// BranchWatch is how often the project's HEAD file is checked for a
+	// switch made elsewhere (plan 59, design D9); 0 watches nothing.
+	BranchWatch time.Duration
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -218,6 +221,19 @@ type Model struct {
 	// This session's registration (plan 16, Sessions): nil when none.
 	lock    *input.SessionLock
 	locking bool
+	// The branches popup (branches.go, plan 59): its reads' generation and
+	// its search; the switch asked, nil when none; the fetch running, nil
+	// when none, its stop asked, why a stop was refused, FetchLimit reached;
+	// the HEAD watch's generation, file and time (design D9).
+	branchGen                int
+	branchFind               input.Editor
+	sw                       *branchSwitch
+	fetch                    *input.GitStop
+	fetchStopping, fetchLate bool
+	fetchHint                string
+	headGen                  int
+	headPath                 string
+	headTime                 time.Time
 
 	spinning, clocking bool
 	framing            bool // an animMsg is pending (plan 22)
@@ -450,6 +466,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if ok, isOK := msg.a.(state.ValidationOK); isOK && validating && !m.s.Context.Mock {
 			cmds = append(cmds, m.recordProject(ok.Project)) // the validated path (plan 15)
+			cmds = append(cmds, m.watchHead()...)            // its branch kept current (plan 59, design D9)
 		}
 	case projectsMsg:
 		cmds = append(cmds, m.projectsDone(msg)...)
@@ -485,6 +502,22 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.opTicked(msg)...)
 	case wtDiffMsg:
 		m.worktreeDiffed(msg)
+	case branchesMsg:
+		m.branchesRead(msg)
+	case branchChangesMsg:
+		cmds = append(cmds, m.branchChanges(msg)...)
+	case branchSwitchedMsg:
+		cmds = append(cmds, m.branchSwitched(msg)...)
+	case fetchedMsg:
+		cmds = append(cmds, m.fetched(msg)...)
+	case fetchLimitMsg:
+		cmds = append(cmds, m.fetchLimit(msg)...)
+	case headFileMsg:
+		cmds = append(cmds, m.headFound(msg)...)
+	case headTickMsg:
+		cmds = append(cmds, m.headTick(msg)...)
+	case headCheckMsg:
+		cmds = append(cmds, m.headChecked(msg)...)
 	case lockMsg:
 		cmds = append(cmds, m.locked(msg)...)
 	case detectedMsg:
@@ -625,13 +658,16 @@ func (m *Model) syncUI() {
 	}
 	m.ui.Draft = m.edit.Text()
 	m.ui.Editor = m.editorView()
-	m.syncCommit() // the commit controls (plan 45)
+	m.syncCommit()   // the commit controls (plan 45)
+	m.syncBranches() // the branches popup's git (plan 59)
 	m.ui.Path = m.path.Text()
 	r := input.ResolvePath(m.path.Text(), m.env)
 	m.ui.Resolved, m.ui.PathProblem, m.ui.PathWarning = r.Path, r.Problem, r.Warning
 	m.ui.Branch = ""
-	if c := m.s.Context; c.Project != "" && c.Project == r.Path {
-		m.ui.Branch = c.Branch // read on validation, for the path validated
+	if c := m.s.Context; c.Project != "" && (c.Project == r.Path || m.s.Screen == state.ScreenDashboard) {
+		// Read on validation, for the path validated; on the dashboard the
+		// session's, kept current by the HEAD watch (plan 59, design D9).
+		m.ui.Branch = c.Branch
 	}
 	if m.s.Screen == state.ScreenStartup {
 		m.ui.Projects = m.projectRows()
@@ -1040,6 +1076,8 @@ func (m *Model) paste(text string) {
 	case top == render.LayerKeys:
 	case top == render.LayerWindow:
 		m.filePaste(text) // the window takes it, or drops it
+	case top == render.LayerBranches:
+		m.branchPaste(text) // the search (plan 59, design D10)
 	case m.s.Screen == state.ScreenDashboard && m.msgFocused():
 		m.msg.Paste(text) // the commit message (plan 45, design D2): never commits
 	case m.s.Screen == state.ScreenDashboard && m.draftBeside():

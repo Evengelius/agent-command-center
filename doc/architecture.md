@@ -345,16 +345,20 @@ part (AM4 "Project awareness"; AGENTS.md "One agent CLI per session").
 | `Provider` | the adapter id and display name; the detected version and executable path | part 1 spawns it; the project bar shows it |
 | `ProjectName` | the last element of the resolved path | the project bar and window title |
 | `ProjectPath` | the resolved absolute path (INT paths, "Validation, in order", step 6) | `cmd.Dir` of the CLI; the project bar |
-| `Branch` | the current git branch when the directory is a git work tree, read once at startup from `.git/HEAD`; otherwise absent | display only (RD "Where the images and amendment 4's text differ") |
+| `Branch` | the current git branch when the directory is a git work tree, read at validation from `.git/HEAD`, and again when that file changes or the branches popup switches (plan 59); otherwise absent | display only (RD "Where the images and amendment 4's text differ"); the branches popup's anchor |
 | `Mock` | true only for the mock provider | every screen's mock label |
 | `StartedAt` | the dashboard's clock at spawn | the session wall time (TEL CC "Duration") |
 
-The branch is read from the file, not by running git, and never changed.
-Git runs only in the Worktrees view (plan 16, amendment 10; ui-design.md,
-Worktrees): `internal/input/git.go` runs the `git` on the PATH inside a
-Bubble Tea command, never in the reducer or the view, and never with
-`--force`, `-f` or `-D`. A worktree chosen there is validated as a typed
-path is, and the session context stays immutable (ASM-25).
+The branch is read from the file, not by running git. Since plan 59 it is
+the one field that changes during a session: a switch made elsewhere,
+seen by the HEAD file's watch (`state.BranchRead`), or by the branches
+popup (`state.BranchSwitched`); the project does not change. Git runs only
+in the Worktrees view (plan 16, amendment 10; ui-design.md, Worktrees),
+Source Control (plan 44) and the branches popup (plan 59):
+`internal/input/git.go` runs the `git` on the PATH inside a Bubble Tea
+command, never in the reducer or the view, and never with `--force`, `-f`
+or `-D`. A worktree chosen there is validated as a typed path is, and the
+session context's project stays immutable (ASM-25).
 
 ## Integration strategy
 
@@ -628,6 +632,21 @@ No provider or state change.
 | 5. Input | `SourceWrite.CheckSelection` and `CommitSelection`: a rebase, am, cherry-pick, revert or merge in progress (`merging`), a conflict, a selected file changed since it was shown, partly staged or deleted in the index beside its file on disk (`WholeRefusal`, which the panel asks too), a rename's source outside the project or back on disk, each a `Refusal` before any write, git's status read path by path (`--no-renames`) so that a file moved on disk, both its rows selected, stays two paths once staged; then `git -c user.useConfigOnly=true commit --only --file=-`, the files and a rename's source as literal pathspecs from a file, git building the commit from HEAD in its own transaction and leaving the rest of the index; after it, HEAD a new commit on the old one (`madeOn`, `Commit`'s too), holding exactly the selection, each blob the index's (`holds`, `blobsAt`), else an `Unexpected`, the commit made | `internal/input/sourcewrite.go`, `source.go` |
 | 4. Rendering | `SourceView.Selected` and `AskSel`; a selected file's row with "▎" on the sidebar's selected ground (`sourceRow`), "Commit N files" (`ButtonLabel`), the selection's question (`AskSelText`), the hints with a selection (`sourceSelHints`), the key list's Ctrl+click | `internal/render/source.go`, `commit.go`, `dashboard.go`, `keys.go` |
 | The application | Ctrl+click on a file row (`sourceCtrlClick`), a plain click on a file row clearing the selection (`sourceClick`), Esc's clearing, the selection kept to the changes at each status read (`stillChanged`); Commit with a selection (`commitSelected`): a file not whole refused at once, files not staged the question, then the steps check, stage and commit (`selectionSteps`, `stepCheck`); after a failed commit the question's staging said to stay (`stayStaged`), for plan 45's question too; the selection cleared by a commit made from it | `internal/app/source.go`, `commit.go`, `mouse.go` |
+
+## The branches popup
+
+Plan 59 (brief amendment 61; ui-design.md, Branches). Under the project
+bar's branch name, the repository's branches and tags, searched and
+folded; a switch, a fetch, a name copied; the header's branch kept
+current. The view is the interface's (`render.UI.Branches`); the state
+holds only the branch and the switch's notice; git is the input part's.
+
+| Part | What it does | Where |
+| - | - | - |
+| 3. State | `BranchRead`, the project's branch read again (`Context.Branch`); `BranchSwitched`, the branch and the dashboard's notice in zone B (`Role: "dashboard"`, never sent to the CLI): "Switched from A to B", the changes that came along, "the agent's conversation still reflects A" while a session runs | `internal/state/branches.go`, `actions.go` |
+| 4. Rendering | the project bar's "branch `<name>`" as panel L; the popup, panel J, a popup layer (`LayerBranches`, closed by `Stack.only` when not shown): `BranchesView`, the list (`BranchRows`: the groups, their folds, the search, the messages, the cap's note; `BranchItem.Key` made when asked, `BranchCursor` comparing fields), the box under the name (`branchesPopup`: the rows in view only, `BranchesShown` for the clicks and the wheel), its width counted without drawing (`branchAsideWidth`), its footer (`branchesFoot`, a text three rows at most), the Nerd Font icons where plan 55's rule draws them (`nfBranch`, `nfTag`, `nfRefresh`, registered as the Explorer's); `Screen.BranchShown`; the key overlay's rows | `internal/render/branches.go`, `dashboard.go`, `layers.go`, `select.go`, `render.go`, `keys.go` |
+| 5. Input | `BranchGit`, implemented by `GitCLI`: `Branches` (`rev-parse --show-toplevel`; `for-each-ref` over `refs/heads`, `refs/remotes` and `refs/tags`, each ref's name, HEAD mark, worktree path, upstream and tracking, date, a remote's `HEAD` left out, tags newest first; the head by `symbolic-ref` and `rev-parse`; Recent from `reflog show`'s "checkout: moving from A to B", local branches only, `RecentMax` 5; `BranchCap` 1,000 rows a group), `Changes` (`status --porcelain`'s lines), `Switch` (`git switch`, or `git switch --track` for a remote branch, refused when its local name exists; the branch checked out given back), `Fetch` (`fetch --all --no-prune` through `exec`: no prompt, ssh's askpass refused, a `GitStop` waiting out the lock files of `packed-refs`, `shallow` and each remote branch, URLs' user info removed; `FetchLimit` 2 minutes, kept by the application), `HeadFile` (`rev-parse --git-path HEAD`); the reads through `runRead`; never `--force`, `-f`, `--discard-changes`, `--merge`, a stash, a reset or a prune | `internal/input/branches.go`, `git.go`, `gitstop.go`, `sourcewrite.go` |
+| The application | Alt+B and the name's click (`toggleBranches`: a toast outside a repository and where `render.Layers` would not show it), Alt+B passed on by the docked panels, their commit controls and the diff as Alt+P is (`explorerKey`, `sourceKey`, `globalKey`, `diffViewKey`), the keys (`branchesKey`: any other key closes it and goes on, a send key is Enter), the clicks, the wheel and a paste (`branchesClick`, `branchesWheel`, `branchPaste`; `editorTakesPaste` leaves the popup out); the switch (`askSwitch`, `branchChanges`, `runSwitch`, `branchSwitched`): refused while the agent works (`State.Running`) or Source Control's git runs, the changes counted and confirmed, then the state's notice, the empty draft's note, the Explorer or Source Control read again; the fetch (`fetchBranches`, `stopFetch`, `fetchLimit`, `fetched`), outliving the popup; the quit question's "the switch" and "the fetch" (`branchOpRunning`, `syncBranches`); the HEAD watch from the validation (`watchHead`, `headFound`, `headTick`, `headChecked`: one `os.Stat` every `Options.BranchWatch`, 2 s in the real run, and `readBranch` when the time changed); the header showing the session's branch on the dashboard | `internal/app/branches.go`, `app.go`, `keys.go`, `mouse.go`, `layers.go`, `paste.go`, `explorer.go`, `source.go`, `commit.go`, `cmd/agent-command-center/main.go` |
 
 ## The home screen
 

@@ -309,7 +309,12 @@ func projectBar(s *state.State, ui UI) line {
 		if branch == "" {
 			return left
 		}
-		return append(append(line{}, left...), sp("   branch ", stGrey), sp(branch, stText))
+		// "branch" and the name are panel L: a click opens the branches popup
+		// (plan 59, design D1).
+		label, name := sp("branch ", stGrey), sp(branch, stText)
+		label.ref = ref{panel: BranchPanel, kind: refDeco, item: 1}
+		name.ref = label.ref
+		return append(append(line{}, left...), sp("   ", stGrey), label, name)
 	}
 	name := s.Context.ProviderName
 	if s.Session.Version != "" {

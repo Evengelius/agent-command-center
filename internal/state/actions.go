@@ -220,6 +220,10 @@ func (s *State) Do(a Action) []Command {
 		return s.answerFailed(a)
 	case Panicked:
 		return s.fatal(event.Event{}, a.Message)
+	case BranchRead:
+		s.Context.Branch = a.Branch // the header's (plan 59, design D9)
+	case BranchSwitched:
+		s.branchSwitched(a)
 	case CloseTimeout:
 		if s.Session.Phase == Closing {
 			return []Command{{Kind: CmdKill}}

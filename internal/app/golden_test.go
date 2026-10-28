@@ -424,6 +424,25 @@ func TestGoldenFrames(t *testing.T) {
 			return h
 		}
 	}
+	// The branches popup (plan 59, amendment 61): opened by a click on the
+	// project bar's branch name, the lists read, Recent and Local open,
+	// Remote and Tags folded, the cursor on the current branch; a search
+	// typed; the confirmation of a switch with uncommitted changes.
+	branches := func(keys ...tea.KeyPressMsg) func(*testing.T) *harness {
+		return func(t *testing.T) *harness {
+			h := dashGit(t, &fakeBranches{fakeGit: &fakeGit{}, b: sampleBranches(), changes: 3})
+			h.send(actionMsg{state.BranchRead{Branch: "main"}})
+			x, y := at(t, h, "branch main", 0)
+			mouseClick(t, h, x+len("branch "), y)
+			for _, k := range keys {
+				h.send(k)
+			}
+			if v := h.m.ui.Branches; !v.Open || v.Reading {
+				t.Fatalf("the popup: open %v, reading %v", v.Open, v.Reading)
+			}
+			return h
+		}
+	}
 	down := func(n int, last tea.KeyPressMsg) []tea.KeyPressMsg {
 		var ks []tea.KeyPressMsg
 		for range n {
@@ -439,7 +458,8 @@ func TestGoldenFrames(t *testing.T) {
 		{"models-codex-more", selector("codex-models.jsonl", down(3, key(tea.KeyEnter, 0))...)},
 		{"startup", startup}, {"dashboard", dash}, {"plus-menu", plusMenu}, {"attachments", attached}, {"attachments-sent", sent}, {"attachments-preview", preview}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"explorer-nerd", explorerRig(true)}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))},
 		{"source", source()}, {"source-none", sourceNone}, {"source-diff", source(key(tea.KeyEnter, 0))}, {"source-diff-wide", source(key(tea.KeyEnter, 0), typed('f'))},
-		{"commit-menu", commitMenu}, {"commit-sixel", commitSixel}, {"commit-push", commitPush}, {"source-selection", sourceSelection}} {
+		{"commit-menu", commitMenu}, {"commit-sixel", commitSixel}, {"commit-push", commitPush}, {"source-selection", sourceSelection},
+		{"branches", branches()}, {"branches-search", branches(typedText("fe")...)}, {"branches-confirm", branches(key(tea.KeyUp, 0), key(tea.KeyEnter, 0))}} {
 		szs := sizes
 		if sc.name == "source-selection" {
 			szs = append(slices.Clone(sizes), [2]int{208, 59}) // the acc tab maximised (plan 50, criterion 50.10)

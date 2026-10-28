@@ -212,11 +212,12 @@ func (m *Model) backToExplorer() []tea.Cmd {
 
 // explorerKey handles a key while the Explorer's panel has the focus: its
 // keys as in plan 17, the global ones passed on, F6 and Tab to the next
-// zone, Alt+P and F4 to the selectors (plan 43, designs D7 and D8).
+// zone, Alt+P and F4 to the selectors (plan 43, designs D7 and D8), Alt+B
+// to the branches popup (plan 59).
 func (m *Model) explorerKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	s := k.String()
 	switch s {
-	case "f1", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
+	case "f1", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "alt+b", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
 		"shift+pgup", "shift+pgdown", "ctrl+q", "F":
 		return nil, false
 	}

@@ -14,6 +14,7 @@ const (
 	LayerNone      Layer = iota // the dashboard itself, its zones, panels and full views
 	LayerCommit                 // the commit button's dropdown (plan 45)
 	LayerAsk                    // the staging question (plan 45)
+	LayerBranches               // the branches popup (plan 59)
 	LayerModes                  // the modes selector (plan 39)
 	LayerModels                 // the model selector (plan 34)
 	LayerPlus                   // the "+" menu (plan 30)
@@ -54,8 +55,8 @@ func (k *Stack) show(l Layer) { k.shown |= 1 << l; k.Top = l }
 //   - on the dashboard only, at a size it draws: the key overlay, alone;
 //   - else one popup at most, over the dashboard itself (no full view) and
 //     under no window: the "+" menu, the model selector, the modes
-//     selector, the staging question, the commit dropdown, the first open
-//     of these;
+//     selector, the branches popup, the staging question, the commit
+//     dropdown, the first open of these;
 //   - the file window, then the draft window over it.
 func Layers(s *state.State, ui UI) Stack {
 	var k Stack
@@ -79,6 +80,8 @@ func Layers(s *state.State, ui UI) Stack {
 			k.show(LayerModels)
 		case ui.Modes.Open:
 			k.show(LayerModes)
+		case ui.Branches.Open:
+			k.show(LayerBranches)
 		case ui.Source.Open && ui.Source.Ask > 0:
 			k.show(LayerAsk)
 		case ui.Source.Open && ui.Source.Menu:
@@ -113,6 +116,9 @@ func (k Stack) only(ui UI) UI {
 	}
 	if ui.Modes.Open && !k.Shown(LayerModes) {
 		ui.Modes = ModesView{}
+	}
+	if ui.Branches.Open && !k.Shown(LayerBranches) {
+		ui.Branches = BranchesView{}
 	}
 	if ui.Source.Ask > 0 && !k.Shown(LayerAsk) {
 		ui.Source.Ask = 0

@@ -78,6 +78,9 @@ type UI struct {
 	// Modes is the modes selector the mode pill opens (plan 39, the
 	// owner's images; reference-design.md, The modes selector).
 	Modes ModesView
+	// Branches is the popup the project bar's branch name opens (plan 59,
+	// brief amendment 61).
+	Branches BranchesView
 	// Sixel says the terminal draws Sixel images, by its answer to the
 	// device attributes request: the attached images then show as
 	// thumbnails above their chips (plan 32, design D4).

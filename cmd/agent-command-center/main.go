@@ -52,6 +52,7 @@ func main() {
 		PickImages:        input.PickImages,
 		PickFolder:        input.PickFolder,
 		NerdIcons:         input.NerdIcons(os.Getenv),
+		BranchWatch:       2 * time.Second, // the header's branch kept current (plan 59, design D9)
 		Git:               input.GitCLI{},
 		Sessions:          &input.Sessions{},
 	})
