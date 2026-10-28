@@ -107,3 +107,9 @@ test reads. The author is `Evengelius <molimoabel@gmail.com>`, with no
 attribution line, and the working tree was clean after it: PASS. Not
 pushed: the owner asked for the commit only. The block above stays as it
 was reported.
+
+**The push (2026-10-28), at the owner's request.** Commit 0408228 and the
+approval commit, 916a1e3, were pushed to `origin`: `main` fast-forwarded
+from 585a485 to 916a1e3, nothing forced; `origin/main` equals `main`
+(read back by `git ls-remote`), the working tree clean: PASS. The commit
+recording this was pushed after it.

@@ -817,5 +817,5 @@ does and does nothing else, the click judged against the frame drawn last
 (`Screen.Window`); full screen, its first row is outside; the draft
 window keeps its rule. Approved on 2026-10-28: 5 PASS, 0 FAIL
 ([`doc/plan58-evaluation.md`](doc/plan58-evaluation.md)); commit
-0408228, then the approval commit; its full text in git (`git show
-0408228:plan.md`).
+0408228, then the approval commit, both pushed; its full text in git
+(`git show 0408228:plan.md`).
