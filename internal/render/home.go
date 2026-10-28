@@ -179,6 +179,9 @@ func homeNotes(s *state.State, ui UI) []HomeNote {
 	if ui.CodexProxyProblem != "" {
 		out = append(out, HomeNote{"✗ ", hideUser(ui.CodexProxyProblem), 'f'}) // plan 22, amendment 19: no proxy
 	}
+	if ui.NotifyProblem != "" {
+		out = append(out, HomeNote{"✗ ", hideUser(ui.NotifyProblem), 'f'}) // plan 64, design D5: no notifications
+	}
 	if ui.CodexProxy != "" {
 		out = append(out, HomeNote{"", "Codex through the proxy " + ui.CodexProxy + " (config.json)", 'g'})
 	}

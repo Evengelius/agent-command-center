@@ -106,6 +106,9 @@ type UI struct {
 	// was not used, "" when there is none: the startup screen shows it, under
 	// KeysProblem, as a red line.
 	CodexProxy, CodexProxyProblem string
+	// NotifyProblem is why the dashboard shows no Windows notification, ""
+	// when nothing is wrong (plan 64, design D5): a red line under them.
+	NotifyProblem string
 
 	// Zone A's tree and agent inspection (ui-design.md, Zone A; Agent
 	// inspection).

@@ -748,3 +748,34 @@ func TestHomeScrollMark(t *testing.T) {
 		t.Errorf("the mark from %d to %d, the rows %v high, %d of 20 shown", top, bottom, rows, shown)
 	}
 }
+
+// Plan 64, design D5: when the dashboard shows no Windows notification for
+// a reason, the startup screen says why, a red line under the keys' and
+// the proxy's.
+func TestHomeNotifyNote(t *testing.T) {
+	s, ui := homeTestUI()
+	ui.KeysProblem = "config.json: default keys used"
+	ui.NotifyProblem = `notifications off: the Start menu's "Agent Command Center" shortcut is not ACC's (its app ID is "Someone.Else"); left as it is`
+	notes := homeNotes(s, ui)
+	keys, notify := -1, -1
+	for i, n := range notes {
+		switch n.Text {
+		case ui.KeysProblem:
+			keys = i
+		case ui.NotifyProblem:
+			notify = i
+			if n.Mark != "✗ " || n.Kind != 'f' {
+				t.Errorf("the note %+v: want a red ✗ line", n)
+			}
+		}
+	}
+	if notify < 0 || notify < keys {
+		t.Errorf("notes %+v: the notifications' note missing or above the keys'", notes)
+	}
+	ui.NotifyProblem = ""
+	for _, n := range homeNotes(s, ui) {
+		if strings.Contains(n.Text, "notifications") {
+			t.Errorf("no problem, yet %+v", n)
+		}
+	}
+}

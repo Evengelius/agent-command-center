@@ -133,6 +133,16 @@ type Options struct {
 	// GraphWatch is how often the Git Graph reads the references it follows
 	// again while it shows (plan 62, design D4b); 0 watches nothing.
 	GraphWatch time.Duration
+	// NotifySetUp makes Windows' notifications ready for the ping and gives
+	// their calls, or none and why, which the startup screen shows (plan 64,
+	// design D5): input.Notifications in the real run, run in a command at
+	// the start, off the first frame's path; nil for none. Notify puts up a
+	// notification, its title over its text, in the place of the
+	// dashboard's last one, and Unnotify takes it out of Windows' list
+	// (designs D2 to D4): NotifySetUp's calls once ready; a test sets them.
+	NotifySetUp func() (notify func(title, text string) error, unnotify func() error, problem string)
+	Notify      func(title, text string) error
+	Unnotify    func() error
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -172,8 +182,9 @@ type Model struct {
 	sess     provider.Session
 	cancel   context.CancelFunc // ends the session's context: the forced kill
 	once     sync.Once
-	pending  []tea.Cmd     // the launch's commands, for Init
-	writes   chan writeJob // the session's writes, in order (writer.go)
+	pending  []tea.Cmd      // the launch's commands, for Init
+	writes   chan writeJob  // the session's writes, in order (writer.go)
+	notifies chan notifyJob // the notification calls, in order (notify.go, plan 64)
 
 	// The stored draft (draft.go): nil when drafts are off.
 	draft      *draftStore
@@ -398,6 +409,12 @@ func (m *Model) State() *state.State { return m.s }
 // Init starts the application: detection, or the mock replay.
 func (m *Model) Init() tea.Cmd {
 	cmds := append(m.pending, m.timers()...)
+	if setUp := m.opt.NotifySetUp; setUp != nil {
+		cmds = append(cmds, func() tea.Msg { // about a second at its first call (plan 64)
+			n, u, problem := setUp()
+			return notifySetUpMsg{n, u, problem}
+		})
+	}
 	if win32Input {
 		// win32-input-mode, then the device attributes request: the answer
 		// says whether the terminal draws Sixel images (plan 32, design D4).
@@ -468,6 +485,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.blurred = true
 	case pingMsg:
 		m.ping.due = false // pings rings what still waits (plan 63, design D3)
+	case notifySetUpMsg:
+		m.opt.Notify, m.opt.Unnotify, m.ui.NotifyProblem = msg.notify, msg.unnotify, msg.problem
+	case notifiedMsg:
+		if msg.err != nil {
+			cmds = append(cmds, m.toast("the Windows notification failed: "+msg.err.Error())...)
+		}
 	case bannerMsg:
 		cmds = append(cmds, m.bannerFrame()...)
 	case tea.ColorProfileMsg:
@@ -1080,6 +1103,7 @@ func (m *Model) close() tea.Cmd {
 // than the reducer's exit (an error, a signal). Safe to call twice.
 func (m *Model) Shutdown() {
 	m.once.Do(func() {
+		m.stopNotifying() // the notification still up taken out (plan 64, design D4)
 		m.stopGraphRead() // the Git Graph's git process too (plan 62, design D4)
 		if m.lock != nil {
 			_ = m.lock.Release() // the program ends: its registration with it

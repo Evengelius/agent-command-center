@@ -32,7 +32,13 @@ type pingRig struct {
 
 func newPingRig(t *testing.T, profile string) pingRig {
 	t.Helper()
-	r := scriptRig(t, "claude-code")
+	return newPingRigFor(t, "claude-code", profile)
+}
+
+// newPingRigFor is newPingRig on the given CLI's scripted session.
+func newPingRigFor(t *testing.T, id, profile string) pingRig {
+	t.Helper()
+	r := scriptRig(t, id)
 	now, bells, timers := testNow, 0, []time.Duration{}
 	r.h.m.opt.Getenv = profileEnv(profile)
 	r.h.m.opt.Now = func() time.Time { return now }

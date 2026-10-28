@@ -3040,8 +3040,9 @@ the agent that asked, and marks that agent "!" in A and a pink "●" in C.
 ## The ping
 
 When the agent needs the owner while the dashboard's window, or its tab,
-lacks the focus, Windows Terminal is told (plan 63, brief amendment 65).
-Nothing is drawn in the frame.
+lacks the focus, Windows Terminal is told (plan 63, brief amendment 65),
+and Windows shows a notification (plan 64, brief amendment 66). Nothing
+is drawn in the frame.
 
 - **When:** the dashboard asks for focus reports (`?1004`) on every screen
   and takes its window as focused until Terminal says otherwise. Without
@@ -3058,13 +3059,48 @@ Nothing is drawn in the frame.
   the taskbar button flashes, no sound plays, unless the owner changes it
   in Terminal's settings, which override a fragment's; Terminal 1.23 also
   marks the tab with a bell until it has the focus (seen in plan 63's
-  check). Anywhere else, no BEL: the title alone says it, so the dashboard
-  never makes an unexpected sound.
-- **The limit:** at most one BEL in any 5 s. A need within 5 s of the last
-  BEL rings when the 5 s are up, if it still waits and the window still
-  lacks the focus; the needs that come meanwhile share that BEL. Answered,
-  or the focus back, before then: none. A need rings once: the focus coming
-  and going again does not ring it a second time.
+  check). Anywhere else, no BEL: the notification and the title say it,
+  so the dashboard never makes an unexpected sound.
+- **The notification:** with each ring, in ACC's tab and elsewhere, a
+  Windows notification of the most urgent need rung, silent, under the name
+  Agent Command Center, its text generic: the CLI's name as the startup
+  screen shows it ("The mock session" for a mock) and nothing of the
+  session, no command, path, question or project.
+
+  | Need | Title | Text |
+  | - | - | - |
+  | an approval | Approval required | Claude Code is waiting for your approval. |
+  | a question | Question waiting | Claude Code has a question for you. |
+  | the session's end | Session ended | Claude Code stopped unexpectedly. |
+  | a turn failed | Turn failed | Claude Code's turn ended with an error. |
+  | a turn completed | Turn completed | Claude Code has finished its task. |
+
+  One at a time: a newer replaces the older in Windows' list, and it is
+  taken out once nothing waits any more, as the title clears, and when the
+  dashboard quits. A failure is said in the toast. A click does what
+  Windows does with it: bringing the dashboard forward is not built (plan
+  64, design D6).
+- **The shortcut:** Windows shows a desktop program's notifications under
+  an app ID a Start menu shortcut carries. At its start, in a command,
+  the dashboard makes `Agent Command Center.lnk` in the user's Start menu
+  (`%APPDATA%\Microsoft\Windows\Start Menu\Programs`, from Windows' known
+  folders) when missing: app ID `Evengelius.AgentCommandCenter`, target
+  Windows Terminal's alias, `%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe`,
+  with `-p "Agent Command Center"`, a tab in ACC's profile, no dashboard
+  started. It is never rewritten. One of that name that is not ACC's
+  (another app ID) is left as it is, and the startup screen says the
+  notifications are off and why, as it does when Windows Terminal's alias
+  is missing. A newly made shortcut's app ID takes some seconds before
+  Windows shows its notifications (about 15 s in plan 64's probe). Windows
+  lists ACC in its notification settings, where its notifications can be
+  turned off; the shortcut goes with ACC (delete it; the dashboard makes it
+  again at its next start).
+- **The limit:** at most one ring in any 5 s, a ring being the BEL in
+  ACC's profile and the notification where there is one. A need within 5
+  s of the last ring rings when the 5 s are up, if it still waits and the
+  window still lacks the focus; the needs that come meanwhile share that
+  ring. Answered, or the focus back, before then: none. A need rings once:
+  the focus coming and going again does not ring it a second time.
 - **The title:** while a need waits, the window's title, and the tab's
   where Terminal shows the application's, names the most urgent before the
   dashboard's name:
@@ -3080,10 +3116,10 @@ Nothing is drawn in the frame.
   Otherwise "Agent Command Center", as before. When the program ends,
   Bubble Tea clears the title it set, after a recovered panic too, so the
   tab's own title comes back.
-- **Never:** no sound or flash of the dashboard's own, no Windows
-  notification API, no new dependency; no change to an agent CLI's
-  configuration or notification settings, nor to Terminal's settings.json
-  (the fragment only, as plan 23).
+- **Never:** no sound or flash of the dashboard's own, no Windows App SDK,
+  no new dependency; no change to an agent CLI's configuration or
+  notification settings, nor to Terminal's settings.json (the fragment
+  only, as plan 23); nothing of the session in a notification.
 
 ## States
 

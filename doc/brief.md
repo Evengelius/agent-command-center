@@ -8328,3 +8328,99 @@ Fold in and start
 
 Taken as the approval of plan 63 with the two corrections folded in
 (plan.md, Plan 63).
+
+## Amendment 66, 2026-10-28: Windows notifications for the ping, for plan 64
+
+After plan 63 was approved and committed, before its push, the owner sent
+an image, a Windows notification of the Claude desktop app (its name
+"Claude", a session "Acc", its question "Approve plan 63 and commit it?"),
+and wrote, word for word:
+
+````text
+Before pushing, I have another remark, I also want a notification just like claude code does, when we are not on the screen but it finishes, check image
+
+I want something similar, is it possible?
+````
+
+Told: yes, two ways. Windows Terminal Preview 1.26 shows a notification
+for an application's OSC 777 or for a bell, both off by default, but the
+stable 1.25 does not and the owner's Terminal is 1.23; or the dashboard
+shows a Windows notification itself, through Windows' notification API
+called as the folder dialog calls Windows, with no new dependency: silent,
+under the name Agent Command Center, the reason and a line of detail,
+`acc` registering the name once; whether a click can bring the acc tab
+forward unknown until probed. Recommended the second, on the ping's
+rules, as plan 64, ahead of the turn-by-turn review. The owner wrote, word
+for word:
+
+````text
+The other agent said this :
+````
+
+and shared another agent's review, in French. It favoured Windows
+notifications as plan 63's next step and held the technique not yet
+proved: Microsoft requires a desktop app to have an identity and a Start
+menu shortcut for its notifications, which matters with `go run`'s
+temporary program; no detail that could show a command, a path or a
+question on a shared screen, only a generic line ("Approval required",
+"Claude Code is waiting for your approval."); the click a secondary
+feature; plan 63 pushed first; no Windows App SDK or other heavy
+dependency without the owner's approval; plan 64's writing approved, not
+yet its implementation. Told: Microsoft's guide says so ("Without a valid
+shortcut installed in the Start screen or in All Programs, you cannot
+raise a toast notification from a desktop app"), and its console-app
+guide uses the Windows App SDK, which does not fit; plan 64 with a probe
+first, as a go/no-go (a shortcut with ACC's app ID in the owner's Start
+menu, one silent test notification from `go run` and from the built
+program, its name, no sound, the machine's policies, what a click does),
+then the notification on the ping's rules with generic text only, a newer
+replacing the older and Windows' list cleared once answered; no new
+dependency. The owner wrote, word for word:
+
+````text
+The other agent said this :
+````
+
+and shared the other agent's second review, in French. It agreed, with a
+nuance and four conditions for the probe: the click never a blocking
+criterion; no change to Claude Code's or Codex's configuration; no further
+dependency; the test shortcuts removed after the trials unless the owner
+explicitly agrees to keep them; a stop if native notifications prove too
+complex to integrate cleanly. It advised pushing plan 63 first, then
+writing plan 64, the probe's protocol reviewed and approved before any
+implementation. The owner wrote, word for word:
+
+````text
+Let's go : push plan 63 first then I guess
+````
+
+Plan 63's two commits pushed (doc/plan63-evaluation.md); plan 64 proposed
+for the owner's review with both reviews folded in (plan.md, Plan 64), its
+implementation waiting for the probe's go and the owner's approval.
+
+The owner then wrote, word for word:
+
+````text
+Plan 64 looks good to me. I have one final point I'd like you to clarify before implementation.
+Since ACC currently runs through `go run`, which uses a temporary executable, what exactly will the permanent Start menu shortcut point to?
+Please make sure that:
+
+* The shortcut points to a stable target, not a temporary executable.
+* Its Windows AppUserModelID matches the identity used for notifications.
+* It doesn't interfere with existing shortcuts or Terminal settings.
+* Any temporary shortcuts created during the probe are properly removed.
+
+Also, clicking a notification to bring ACC into focus should remain optional, not a go/no-go criterion.
+Once you've clarified these points and incorporated them into plan 64, you can proceed with the approved feasibility probe. No full implementation until the probe has passed and I've reviewed its results.
+````
+
+Answered in plan 64 (plan.md, designs D1 and D5): the shortcut points to
+Windows Terminal's own alias, `wt.exe`, with `-p "Agent Command Center"`,
+a stable target that opens a tab in ACC's profile and starts no dashboard
+by itself; its app ID, `Evengelius.AgentCommandCenter`, is the one the
+dashboard gives Windows for its notifications; a shortcut of that name
+that is not ACC's is left as it is; Terminal's settings and the profile's
+fragment are not touched; the probe's own shortcut, under a test name and
+app ID, is removed after it and checked gone; the click stays optional.
+Taken as the approval of plan 64's probe; the implementation waits for its
+results and the owner's review.

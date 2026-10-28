@@ -742,13 +742,17 @@ rendered.
 Plan 63 (brief amendment 65; ui-design.md, The ping). When the agent needs
 the owner while the window lacks the focus, a BEL in ACC's own Windows
 Terminal profile, whose fragment's `bellStyle` makes it a flash of the
-taskbar button, and the reason in the window's title. No state changes:
-the application reads the needs from the state and keeps what it rang;
+taskbar button, and the reason in the window's title; since plan 64
+(amendment 66), a Windows notification at each ring, under the app ID of a
+Start menu shortcut the dashboard makes. No state changes: the
+application reads the needs from the state and keeps what it rang;
 nothing is drawn in the frame.
 
 | Part | What it does | Where |
 | - | - | - |
-| The application | focus reports on every screen (`View.ReportFocus`; `tea.FocusMsg`, `tea.BlurMsg`, `blurred`); after each message, the needs that came while the window lacked the focus (`pings`: an approval or a question added to `State.Queue` and pending, a turn closed in `State.Stages` completed or failed, the session `Crashed`, each looked at once), those that no longer wait dropped (`waits`), the focus back (`pingFocused`); one BEL through `tea.Raw` where `WT_PROFILE_ID` is `input.AccProfile`, read through `Options.Getenv` (`ring`, `bellHere`), at most one in `pingEvery`, 5 s, a need within it rung at its end (`pingMsg` through `Options.After`); the window's title from the most urgent need (`title`, `View.WindowTitle`), cleared by Bubble Tea when the program ends | `internal/app/ping.go`, `app.go` |
+| 4. Rendering | the startup screen's red note when there are no notifications, and why (`UI.NotifyProblem`, `homeNotes`) | `internal/render/home.go`, `render.go` |
+| 5. Input | the user's Start menu and Windows Terminal's alias from Windows' known folders (`NotifyPaths`); ACC's shortcut made when missing, with its app ID, `NotifyAppID`, and never rewritten, one of that name with another app ID left as it is (`SetUpNotifications`, `makeShortcut`, `readShortcut`: IShellLinkW, its property store, IPersistFile); `Notifier.Show` and `Clear` through the Windows Runtime's ToastNotificationManager (combase.dll, method tables, each call on its locked thread with the runtime initialised: `withRuntime`), one tag and group, the content silent (`toastXML`); `Notifications` gives the calls or why there are none; nothing outside Windows | `internal/input/notify.go`, `notify_windows.go`, `notify_other.go` |
+| The application | focus reports on every screen (`View.ReportFocus`; `tea.FocusMsg`, `tea.BlurMsg`, `blurred`); after each message, the needs that came while the window lacked the focus (`pings`: an approval or a question added to `State.Queue` and pending, a turn closed in `State.Stages` completed or failed, the session `Crashed`, each looked at once), those that no longer wait dropped (`waits`), the focus back (`pingFocused`); a ring at most every `pingEvery`, 5 s, a need within it rung at its end (`pingMsg` through `Options.After`): one BEL through `tea.Raw` where `WT_PROFILE_ID` is `input.AccProfile`, read through `Options.Getenv` (`ring`, `bellHere`), and, where `Options.Notify` is set, the notification of the most urgent need rung, its generic text (`notify`, `notification`), the calls one at a time in Update's order (`notifyCall`, as the write queue), taken out once nothing waits (`unnotify`) and at the end (`stopNotifying`, in `Shutdown`); `Options.NotifySetUp`, `input.Notifications` in the real run, made in a command at the start, off the first frame's path (`notifySetUpMsg`); the window's title from the most urgent need (`title`, `View.WindowTitle`), cleared by Bubble Tea when the program ends | `internal/app/ping.go`, `notify.go`, `app.go`, `cmd/agent-command-center/main.go` |
 | The launcher | the fragment's `"bellStyle": "taskbar"` | `scripts/acc.ps1` |
 
 ## Build order

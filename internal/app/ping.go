@@ -14,8 +14,9 @@ import (
 // The ping (plan 63, brief amendment 65; ui-design.md, The ping): when the
 // agent needs the owner while the dashboard's window, or its tab, lacks the
 // focus, a BEL between frames in ACC's own Windows Terminal profile, whose
-// bellStyle "taskbar" flashes the taskbar button, and the reason in the
-// window's title. Nothing is drawn in the frame.
+// bellStyle "taskbar" flashes the taskbar button, a Windows notification
+// where the dashboard has a notifier (plan 64, notify.go), and the reason in
+// the window's title. Nothing is drawn in the frame.
 
 // windowTitle is the window's title while nothing waits.
 const windowTitle = "Agent Command Center"
@@ -60,14 +61,15 @@ type need struct {
 
 // pingState is the ping's part of the model: how far the approvals and the
 // turns' ends were looked at (s.Queue and s.Stages only grow), whether the
-// session's end was, the needs that wait, the last BEL's time, and whether
-// a pingMsg is pending.
+// session's end was, the needs that wait, the last ring's time, whether a
+// pingMsg is pending, and whether a notification is up (plan 64).
 type pingState struct {
 	queued, stages int
 	crashed        bool
 	needs          []need
 	last           time.Time
 	due            bool
+	notified       bool
 }
 
 // pingMsg says the 5 s since the last BEL are up (design D3).
@@ -106,7 +108,15 @@ func (m *Model) pings() []tea.Cmd {
 		}
 	}
 	p.needs = slices.DeleteFunc(p.needs, func(n need) bool { return !m.waits(n) })
-	return m.ring()
+	var cmds []tea.Cmd
+	if len(p.needs) == 0 && p.notified {
+		// Nothing waits: the notification leaves Windows' list as the title
+		// clears (plan 64, design D4).
+		if c := m.unnotify(); c != nil {
+			cmds = append(cmds, c)
+		}
+	}
+	return append(cmds, m.ring()...)
 }
 
 // waits says whether what a need is for still waits for the owner: an
@@ -133,16 +143,19 @@ func (m *Model) pingFocused() {
 	p.rungAll()
 }
 
-// ring writes one BEL for the needs not yet rung while the window lacks the
-// focus, in ACC's profile only (design D2): at once when the last BEL is
-// 5 s old or more, else when those 5 s are up, the needs noticed meanwhile
-// sharing it (design D3).
+// ring rings once for the needs not yet rung while the window lacks the
+// focus: a BEL in ACC's profile only (design D2), and a notification of the
+// most urgent of them where the dashboard has a notifier, in that profile
+// or not (plan 64, design D2). At once when the last ring is 5 s old or
+// more, else when those 5 s are up, the needs noticed meanwhile sharing it
+// (design D3).
 func (m *Model) ring() []tea.Cmd {
 	p := &m.ping
 	if !m.blurred || !slices.ContainsFunc(p.needs, func(n need) bool { return !n.rung }) {
 		return nil
 	}
-	if !m.bellHere() {
+	bell, notify := m.bellHere(), m.opt.Notify != nil
+	if !bell && !notify {
 		p.rungAll() // the title alone says it
 		return nil
 	}
@@ -155,9 +168,22 @@ func (m *Model) ring() []tea.Cmd {
 		}
 		return nil
 	}
+	kind := -1
+	for _, n := range p.needs {
+		if !n.rung && (kind < 0 || n.kind < kind) {
+			kind = n.kind
+		}
+	}
 	p.last = m.ui.Now
 	p.rungAll()
-	return []tea.Cmd{tea.Raw(bel)}
+	var cmds []tea.Cmd
+	if bell {
+		cmds = append(cmds, tea.Raw(bel))
+	}
+	if notify {
+		cmds = append(cmds, m.notify(kind))
+	}
+	return cmds
 }
 
 // rungAll says no need that waits now rings any more.

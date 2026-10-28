@@ -42,6 +42,7 @@ func main() {
 		KeysProblem:       problem,
 		CodexProxy:        proxy,
 		CodexProxyProblem: proxyProblem,
+		NotifySetUp:       input.Notifications, // Windows' notifications for the ping (plan 64, design D5)
 		Config:            cfg,
 		Providers:         []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host, Proxy: proxy}},
 		Now:               time.Now,
