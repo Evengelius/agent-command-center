@@ -107,193 +107,11 @@ turn-by-turn review of what the agent changed, then a search of the
 conversation, then the session's resumption from the home screen. Each
 starts as a plan for the owner's review when the one before is closed.
 
-## Plan 63 - The ping
+## No plan active
 
-Brief amendment 65 (2026-10-28): when the agent needs the owner and the
-owner is in another window, Windows Terminal flashes the dashboard's
-taskbar button, through a bell character and the dashboard's own
-Terminal profile, with no new dependency; nowhere else a sound. Approved
-on 2026-10-28 with another agent's review folded in ("Fold in and
-start").
-
-### What was found (2026-10-28, on a0ff573)
-
-- Nothing reaches the owner in another window today: the footer's "◆
-  approval waiting · F2 to answer" and zone B's cards show only on the
-  dashboard. Neither CLI's own notifications get out: the dashboard runs
-  Claude Code over stream-json and Codex over its app server, with no
-  terminal of their own.
-- Windows Terminal ("Windows Terminal Advanced Profile Settings", Microsoft
-  Learn, updated 2025-08-21, MicrosoftDocs/terminal commit 904b39a, read
-  2026-10-28): the profile setting `bellStyle` "Controls what happens when
-  the application emits a BEL character", accepting `"all"`, `"audible"`,
-  `"window"`, `"taskbar"` and `"none"`, `"audible"` by default; `"all"`
-  plays a sound and flashes the taskbar icon, only the icon when the
-  terminal is not in focus. The page says nothing of a mark on the tab.
-- The acc tab's profile is a Terminal fragment that `scripts/acc.ps1`
-  writes when missing or different (plan 23), Terminal's settings.json
-  never edited: its guid, name, commandline, font, `closeOnExit` and
-  `tabTitle`, no `bellStyle`: a bell there would play Terminal's default
-  sound. A dashboard started otherwise (`go run` in a PowerShell tab) has
-  that tab's profile.
-- The dashboard writes sequences between frames (`tea.Raw`: Sixel images,
-  win32-input-mode); it asks for focus reports on the home screen only
-  (`View.ReportFocus`, `tea.FocusMsg` and `tea.BlurMsg`, `m.blurred`, plan
-  51, design D12, for the banner); its window title is "Agent Command
-  Center" (`View.WindowTitle`).
-- What needs the owner is in the state: `Approvals`, each `Pending` until
-  answered, a question when `Question`; the turn's `Phase` and its
-  `Outcome`, completed, failed or interrupted; the session's `Phase`,
-  `Crashed` when the CLI ended on its own.
-- The mock replays a recording at its pace (`mock.Session.Speed`):
-  `claude-subagent-approval.jsonl` ends a turn at 7.8 s and another at
-  19.1 s, its approvals answered within 3 ms, so a ping can be checked in
-  Windows Terminal with no quota.
-
-### Design
-
-- **D1. When:** only while the dashboard's window, or its tab, does not
-  have the focus: focus reports asked for on the dashboard too, the window
-  taken as focused until Terminal says otherwise. Then a ping when the
-  agent needs the owner: an approval or a question becoming pending, each
-  request once; the turn ending, completed or failed (an interrupted one
-  is the owner's own doing); the session ending on its own (`Crashed`).
-  Nothing else: no ping for a subagent, a tool, streamed text or a
-  dashboard notice. A mock session pings the same way.
-- **D2. The bell, in ACC's profile only:** a ping writes one BEL (0x07)
-  between frames only where Windows Terminal's `WT_PROFILE_ID` is ACC's
-  own profile, `{27195de0-7daf-4340-8ef6-2c640982bd39}`, which `acc.ps1`
-  already relies on (plan 23); its fragment gets `"bellStyle": "taskbar"`,
-  so the taskbar button flashes with no sound, and the owner can change it
-  in Terminal's settings, which override a fragment's. Anywhere else, a
-  terminal or a profile ACC does not set up, no BEL: the title alone (D4)
-  says it, so ACC never makes an unexpected sound.
-- **D3. Never a ping lost to the limit:** at most one BEL in any 5 s. A
-  need that comes within 5 s of the last BEL rings when those 5 s are up,
-  if it still waits and the window still has no focus; several needs
-  there share that one BEL. Answered, or the window focused, before then:
-  no BEL.
-- **D4. The reason in the title:** while what pinged waits, the window's
-  title, and the tab's where Terminal shows application titles, names the
-  most urgent of it before the dashboard's name, in this order: "◆
-  Approval waiting · Agent Command Center", "◆ Question waiting · …", "✗
-  Session ended · …", "✗ Turn failed · …", "✓ Turn done · …". An
-  approval's and a question's until answered, a session's end and a
-  turn's end until the window has the focus again, a turn's end also until
-  another turn starts. Otherwise "Agent Command Center" alone, as now; when
-  the dashboard quits, Bubble Tea clears the title it set, so the tab's own
-  comes back.
-- **D5. Never:** no sound or flash of the dashboard's own, no Windows
-  notification API, no new dependency; no change to an agent CLI's
-  configuration or notification settings, nor to Terminal's settings.json
-  (the fragment only, as plan 23); nothing while the window has the focus;
-  nothing drawn in the frame.
-
-### Criteria
-
-1. **63.1 When:** application tests, the window blurred, in ACC's profile:
-   one BEL for an approval becoming pending, a question, a turn completed,
-   a turn failed, the session crashed; none for an interrupted turn, a
-   subagent's end, a tool, streamed text, an approval already pinged, nor
-   for any of them while the window has the focus; focus reports asked for
-   on the dashboard and the home screen.
-2. **63.2 The bell's place and its limit:** application tests: no BEL
-   outside ACC's profile (`WT_PROFILE_ID` unset or another profile's), the
-   title changing all the same; `WT_PROFILE_ID` compared without case; a
-   need within 5 s of a BEL rung at the 5 s mark, two there sharing one
-   BEL, none if answered or focused before it.
-3. **63.3 The title:** application tests: each reason's title while it
-   waits, the most urgent shown when several wait, "Agent Command Center"
-   once answered, with the focus back and once another turn starts; the
-   title cleared when the program ends (Bubble Tea's own, held by a test).
-4. **63.4 The acc profile:** the fragment `acc.ps1` writes carries
-   `"bellStyle": "taskbar"`, an existing one rewritten once and not again,
-   Terminal's settings.json not edited (its time touched, as plan 23 does).
-5. **63.5 Windows Terminal:** in the acc tab, `claude-subagent-approval`'s
-   mock, the focus moved to another window before its turn ends: the
-   taskbar button flashing (a shot of the taskbar), the tab's title "✓
-   Turn done · Agent Command Center", no sound, one BEL in the
-   application's trace; the focus back, the title plain; a waiting
-   approval the same way; outside the acc tab, no BEL in the trace and the
-   title changing all the same; the owner's look at the shots.
-6. **63.6 The checks:** build, vet (Windows, Linux), gofmt and the whole
-   suite; no golden frame changed; the changes broken on purpose through
-   `go test -overlay`, each caught; the timing step.
-
-### Steps
-
-1. Amendment 65 and this plan.
-2. The focus reports on the dashboard, the needs, the bell and its limit,
-   the title (`internal/app`); their tests.
-3. The acc profile's `bellStyle` (`scripts/acc.ps1`).
-4. The documents: ui-design.md, architecture.md.
-5. Windows Terminal (63.5).
-6. The checks, the mutants, the timing and `doc/plan63-evaluation.md`;
-   the commit after the owner's review.
-
-### Progress
-
-- 2026-10-28: step 1: amendment 65 and this plan, proposed; another
-  agent's review folded in (D2 the bell in ACC's profile only, D3 a ping
-  delayed, never dropped, by the limit, D4 the most urgent reason first
-  and the plain title when quitting; 63.2, 63.3, 63.5); approved by the
-  owner ("Fold in and start").
-- 2026-10-28: steps 2 to 4: `internal/app/ping.go` (the needs, the bell
-  and its limit, the title), focus reports on every screen, the test
-  harness's `raw` hook; seven tests, `TestPing*`, pass. Found while
-  building, and folded into D4: a failed turn is titled "✗ Turn failed",
-  never with a check mark; a turn's end leaves the title once another
-  turn starts (a turn started and interrupted within one batch had left
-  the failed turn's, caught by TestPingNeeds); the plain title at the
-  end is Bubble Tea's own, `cursedRenderer.close` clearing the title it
-  set, a recovered panic's end too, held by TestPingTitleCleared, so no
-  flag of the dashboard's. acc.ps1's fragment has `"bellStyle":
-  "taskbar"`. ui-design.md and architecture.md, The ping; the session
-  context's `ProjectName` no longer said to be in the window's title,
-  which never showed it.
-- 2026-10-28: step 5, Windows Terminal 1.23.20211.0 (`scratchpad\term\
-  p63frag.ps1`, `p63.ps1`, `p63bells.mjs`): two `acc --mock` runs, the
-  fragment rewritten by the first with `"bellStyle": "taskbar"`, the face
-  kept, settings.json's time set and its bytes the same, nothing rewritten
-  by the second (63.4). The application built from this tree in ACC's tab,
-  the focus moved to the desktop's window: at the mock's turn end one lone
-  BEL in Bubble Tea's trace, the tab "✓ Turn done · Agent Command Center"
-  with Terminal's own bell mark, the auto-hidden taskbar come up with the
-  Terminal button flagged; the focus back, the title plain and the mark
-  gone; at 208x59 and 120x40. The mock cut after its first approval: the
-  turn's BEL, then the approval's 5 s after it, "◆ Approval waiting" kept
-  with the focus back, plain after F2, a. In Command Prompt's profile no
-  BEL, the title changing all the same, the taskbar left hidden. The owner's
-  Terminal settings hold no entry, bell style or default for ACC's profile:
-  the fragment's "taskbar" applies; the sound, which the harness cannot
-  hear, is the owner's to confirm. Harness lessons: this shell's
-  `NoDefaultCurrentDirectoryInExePath` reaches a Terminal started from it
-  (acc.cmd by its full path); `Term.Focus`'s SW_RESTORE un-maximises a
-  window brought back to the front (`P63.Front` restores only a minimised
-  one); `GetWindowText`'s ANSI form turns "✓" into "?".
-- 2026-10-28: step 6: go build, go vet (Windows, Linux), gofmt and go test
-  ./... ok (16 packages) after the last code and document edit; no golden
-  frame or mock file changed; 24 mutants through `go test -overlay`, each
-  caught by a failing test (the runner matches whole lines: three mutants
-  that ended mid-line and two that failed to build were rewritten and run
-  again); `go test -race ./internal/app`: no race (418.7 s). The timing
-  step not run: the laptop on battery at 18:59 and 19:07, which its
-  conditions exclude; it runs once on mains power. `doc/plan63-evaluation.md`:
-  4 PASS, 0 FAIL, NOT DONE until the owner's look at the shots, a listen
-  and the timing step. Nothing committed.
-- 2026-10-28: the timing step on mains power, the owner having plugged the
-  laptop in, run alone from 19:30 to 19:31 once the VPN client's system
-  scan had gone quiet: all nineteen tests within their targets
-  (TestBannerToFrame p95 1.58 ms, TestHomePictureTime worst 190.4 ms,
-  TestStreamToFrame p95 4.36 ms, the others' p95 2.58 ms at most); an
-  addendum to `doc/plan63-evaluation.md` gives 63.6 PASS. Outstanding: the
-  owner's look at the shots and a listen to a ping in the acc tab (63.5).
-  Nothing committed.
-- 2026-10-28: the owner's review: their own shot of the taskbar's Terminal
-  button flagged after a ping in the acc tab, "I like it", then "No
-  sound": 63.5 PASS, recorded beside the blocks of
-  `doc/plan63-evaluation.md`; 6 criteria, 6 PASS, 0 FAIL. Waiting for the
-  owner's approval to close the plan and commit.
+Plan 63 was approved and closed on 2026-10-28 (Closed plans, below). The
+next, the turn-by-turn review of what the agent changed, starts as a plan
+for the owner's review (Roadmap, above).
 
 ## Closed plans
 
@@ -1067,3 +885,16 @@ footer and a card beside a row. Read only, nothing fetched. Approved on
 commit, not about 100) ([`doc/plan62-evaluation.md`](doc/plan62-evaluation.md));
 commit e906b73, then the approval commit, both pushed; its full text in
 git (`git show e906b73:plan.md`).
+
+## Plan 63 - The ping
+
+Brief amendment 65: when the agent needs the owner while the dashboard's
+window, or its tab, lacks the focus (an approval or a question waiting, a
+turn completed or failed, the session ended on its own), one BEL in ACC's
+own Windows Terminal profile, whose fragment sets `"bellStyle":
+"taskbar"`, at most one in 5 s and none lost to that limit, and the most
+urgent reason in the window's title; nowhere else a BEL. Approved on
+2026-10-28: 6 PASS, 0 FAIL after the owner's review ("I like it", "No
+sound") ([`doc/plan63-evaluation.md`](doc/plan63-evaluation.md)); commit
+4a049f3, then the approval commit; its full text in git (`git show
+4a049f3:plan.md`).
