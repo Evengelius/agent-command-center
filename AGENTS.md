@@ -24,9 +24,9 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: plan 64 active since 2026-10-28, Windows notifications for
-the ping (brief amendment 66), its feasibility probe first.** Plans 1 to
-63 are closed, one entry each in `plan.md`, Closed plans; the MVP was
+**Status: no plan active since 2026-10-28, when the owner approved plan
+64, Windows notifications for the ping (brief amendment 66).** Plans 1
+to 64 are closed, one entry each in `plan.md`, Closed plans; the MVP was
 approved on 2026-10-17. `plan.md` holds the active plan's
 progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.

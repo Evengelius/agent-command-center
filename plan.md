@@ -102,270 +102,17 @@ session stays below.
 
 ## Roadmap
 
-The owner's order (amendment 65, 2026-10-28), with amendment 66's
-notifications first: plan 64, Windows notifications for the ping, then a
-turn-by-turn review of what the agent changed, a search of the
-conversation, and the session's resumption from the home screen. Each
-starts as a plan for the owner's review when the one before is closed.
+The owner's order (amendment 65, 2026-10-28), plan 64 put first by
+amendment 66 and now closed: a turn-by-turn review of what the agent
+changed, then a search of the conversation, then the session's
+resumption from the home screen. Each starts as a plan for the owner's
+review when the one before is closed.
 
-## Plan 64 - Windows notifications
+## No plan active
 
-Brief amendment 66 (2026-10-28): when the dashboard pings the owner (plan
-63), a Windows notification as well, as the Claude desktop app shows one:
-silent, generic, under the name Agent Command Center. A probe first
-decides whether Windows takes ACC's notifications cleanly; nothing more is
-built unless it does. Proposed for the owner's review, with another
-agent's two reviews folded in.
-
-### What was found (2026-10-28, on 9cdf1ae)
-
-- Windows Terminal ("microsoft/terminal releases", GitHub, read
-  2026-10-28): Preview 1.26.2734.0 (2026-10-02) shows a notification for an
-  application's OSC 777, or for a bell (`bellStyle` "notification"), both
-  off by default (`compatibility.allowOSC777`); the latest stable,
-  1.25.2733.0, has neither, and the owner's Terminal is 1.23.20211.0.
-  Terminal's own notifications are not available here; they could replace
-  this plan's once they reach the owner's stable Terminal.
-- Microsoft's guide for desktop apps ("How to enable desktop toast
-  notifications through an AppUserModelID", Microsoft Learn, archived,
-  2018-04-30, read 2026-10-28): "Without a valid shortcut installed in the
-  Start screen or in All Programs, you cannot raise a toast notification
-  from a desktop app"; the shortcut carries `System.AppUserModel.ID` and
-  may be the user's own (`%APPDATA%\Microsoft\Windows\Start
-  Menu\Programs`); Microsoft recommends the installer make it rather than
-  the app. Its newer guide for console apps ("Use app notifications with a
-  console app", Microsoft Learn, 2026-04-08) uses the Windows App SDK, a
-  NuGet runtime this project does not take.
-- The notification's content (Microsoft Learn, toast schema, `audio`,
-  2020-02-11): `<audio silent="true"/>` mutes its sound. A notification's
-  tag and group let a newer one replace an older, and
-  `ToastNotificationHistory.Remove(tag, group, applicationId)` takes one
-  out of Windows' notification list (Windows.UI.Notifications reference,
-  read 2026-10-28).
-- Windows' notification API is WinRT: reachable from Go through
-  combase.dll (`RoInitialize`, `RoGetActivationFactory`,
-  `WindowsCreateString`) and method tables, as the folder dialog reaches
-  COM (plan 52), with x/sys only.
-- The dashboard runs from `go run` through `acc`, a temporary program, or
-  as a built one: the shortcut gives Windows the name and the app ID; what
-  it points to should matter only to a click that has to start the program
-  (to confirm).
-- Plan 63's ping already decides when the owner is needed (`pings`,
-  `ring`); outside ACC's profile it marks the needs rung at once, with no
-  limit, as it writes no BEL there.
-
-### Design (proposed)
-
-- **D1. The probe first, a go/no-go:** a probe program outside the
-  repository (`scratchpad`), run in a Windows Terminal tab on this machine,
-  x/sys its only dependency. It makes a test shortcut, "ACC notification
-  probe", in the owner's Start menu (`%APPDATA%\Microsoft\Windows\Start
-  Menu\Programs`), its app ID `Evengelius.AgentCommandCenter.Probe` and its
-  target D5's, so that a click on its notification is the real one's;
-  shows one notification under that app ID, silent, "Approval required"
-  over "Claude Code is waiting for your approval."; takes it out of
-  Windows' list; and removes the shortcut. Checked: the notification
-  shows, under the test shortcut's name, with no sound, from a `go run`
-  build and from a built program; nothing blocked by the machine's
-  policies; what a click does is recorded, never a go/no-go criterion. Go:
-  all of these hold with x/sys only. No-go: Windows refuses it, it needs
-  another dependency or the Windows App SDK, or it cannot be done cleanly;
-  the plan then stops with its findings and nothing of it enters the code.
-  The test shortcut is gone after the probe, checked, and no other file of
-  the Start menu changes (listed before and after); the record Windows
-  itself keeps of the test app ID (its notification settings) is
-  reported, and removed if the owner wishes.
-- **D2. When, if go:** a notification at each ring of the ping, in ACC's
-  tab and elsewhere: the same needs, only while the window lacks the
-  focus, at most one ring in 5 s, a need within them notified when they
-  are up (plan 63, designs D1 and D3). The BEL stays as it is, in ACC's
-  profile only; outside it the 5 s limit now applies to the notification.
-- **D3. Generic text only,** for the most urgent need rung, the CLI's name
-  as the startup screen shows it, nothing else: no command, path,
-  question, answer or project name.
-
-  | Need | Title | Text |
-  | - | - | - |
-  | an approval | Approval required | <CLI> is waiting for your approval. |
-  | a question | Question waiting | <CLI> has a question for you. |
-  | the session's end | Session ended | <CLI> stopped unexpectedly. |
-  | a turn failed | Turn failed | <CLI>'s turn ended with an error. |
-  | a turn completed | Turn completed | <CLI> has finished its task. |
-
-- **D4. One at a time, silent:** `<audio silent="true"/>`; one tag for all,
-  so a newer replaces the older; taken out of Windows' list once nothing
-  waits any more (answered, or the focus back, as the title clears: plan
-  63, design D4) and when the dashboard quits.
-- **D5. The identity:** one shortcut, `Agent Command Center.lnk` in the
-  owner's Start menu (`%APPDATA%\Microsoft\Windows\Start Menu\Programs`),
-  its app ID `Evengelius.AgentCommandCenter`, the very string the
-  dashboard gives Windows for its notifications. Its target is stable,
-  never `go run`'s temporary program: Windows Terminal's own alias,
-  `%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe`, with `-p "Agent Command
-  Center"`, which opens a tab in ACC's profile, where `acc` starts the
-  dashboard; it starts no dashboard by itself, so the [Nice to have]
-  "Starting it like an app" stays unbuilt. Made when missing, by `acc` as
-  it writes the profile's fragment, or by the dashboard at its start if
-  the probe shows that cleaner; never rewritten otherwise. A shortcut of
-  that name that is not ACC's (another app ID or target) is left as it
-  is, and the notifications stay off with a note. Terminal's settings and
-  the profile's fragment are not touched. Windows then lists ACC in its
-  notification settings, where the owner can turn ACC's notifications
-  off; ui-design.md says how to remove the shortcut. Only after the
-  probe's go and the owner's approval.
-- **D6. The click, optional:** added only if the probe shows a click can
-  bring the dashboard's tab to the front reliably while the dashboard
-  runs; otherwise a click does what Windows does, and the notification
-  stands on its own.
-- **D7. Never:** no Windows App SDK, no new dependency (x/sys, as the
-  folder dialog); no change to an agent CLI's configuration, nor to
-  Terminal's settings.json; no text beyond D3's; the probe's shortcut
-  removed after it; outside Windows, nothing.
-
-### Criteria (proposed)
-
-1. **64.1 The probe:** in Windows Terminal on this machine, the probe's
-   notification shown under the test shortcut's name, no sound, from a
-   `go run` build and from a built program, x/sys its only dependency; the
-   test shortcut's app ID and target as D1 says; the click's behaviour
-   recorded, not judged; the test shortcut gone after (its absence
-   checked) and the Start menu's other files unchanged (listed before and
-   after); the owner's go or no-go from the shots and the log. A no-go
-   closes the plan with its findings.
-2. **64.2 When (if go):** application tests on a fake notifier: one
-   notification at each ring, in ACC's profile and outside it; none while
-   the window has the focus; the 5 s limit shared with the BEL, a need
-   within it notified at its end; none for what plan 63 does not ping.
-3. **64.3 The text:** tests: each need's title and text as D3 says, for
-   Claude Code and Codex, and no other text (no command, path, question or
-   project name in any notification); the content silent; one tag.
-4. **64.4 Replace and remove:** tests: a newer notification replaces the
-   older (the same tag); taken out once nothing waits, with the focus
-   back, and when the dashboard quits.
-5. **64.5 The identity:** the shortcut made when missing, not again; its
-   app ID the notifications' own and its target `wt.exe -p "Agent Command
-   Center"`; a shortcut of that name that is not ACC's left as it is (the
-   notifications off, with a note); nothing else written, Terminal's
-   settings and the fragment unchanged; its removal as ui-design.md says
-   it, checked once.
-6. **64.6 Windows Terminal:** in the acc tab, `claude-subagent-approval`'s
-   mock, the focus moved away: the notification shown under "Agent Command
-   Center" with its reason, no sound; replaced by a newer one; gone from
-   Windows' list after the focus came back; outside the acc tab the same
-   notification and no BEL; the owner's look at the shots.
-7. **64.7 The checks:** build, vet (Windows, Linux), gofmt and the whole
-   suite; no golden frame changed; the changes broken on purpose through
-   `go test -overlay`, each caught; `-race` on the changed packages; the
-   timing step on mains power.
-
-### Steps
-
-1. Amendment 66 and this plan.
-2. The probe (64.1): the owner's go or no-go.
-3. If go: the notifier (the input part, Windows only, x/sys) and its fake;
-   the app's use of it with the ping; the text; the identity.
-4. The documents: ui-design.md, architecture.md.
-5. Windows Terminal (64.6).
-6. The checks, the mutants, the timing and `doc/plan64-evaluation.md`;
-   the commit after the owner's review.
-
-### Progress
-
-- 2026-10-28: step 1: amendment 66 and this plan, proposed for the owner's
-  review, the other agent's two reviews folded in (the probe first as a
-  go/no-go, generic text only, the click never a condition, no CLI
-  configuration changed, no new dependency, the probe's shortcut removed
-  after it, a stop if it cannot be done cleanly).
-- 2026-10-28: the owner's clarifications folded in (the permanent
-  shortcut's stable target, its app ID the notifications' own, no other
-  shortcut or Terminal setting touched, the probe's shortcut removed, the
-  click optional): D1, D5, 64.1 and 64.5. Read first: no shortcut of that
-  name in the owner's Start menu (25 shortcuts, none ACC's), no
-  notification policy (HKCU's and HKLM's `Policies\Microsoft\Windows\
-  CurrentVersion\PushNotifications` absent), Terminal's alias at
-  `%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe`. The probe approved by the
-  owner ("you can proceed with the approved feasibility probe"); the
-  implementation waits for its results and the owner's review.
-- 2026-10-28: step 2, the probe (`scratchpad\plan64\probe`, x/sys v0.49.0
-  its only module; run by `scratchpad\term\p64probe.ps1` in Windows
-  Terminal 1.23, five runs):
-  - The test shortcut, made in each run with the app ID
-    `Evengelius.AgentCommandCenter.Probe`, read back with its target
-    `%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe` and its arguments `-p
-    "Agent Command Center"`, removed at each run's end and checked gone;
-    the Start menu's 47 entries the same before and after every run.
-  - Shown 2 s after the shortcut was made (two runs): Windows took the
-    notification into its list (1, then 0 once taken out) but showed no
-    banner, its notification centre did not list it, and Windows kept no
-    record of the app ID. Shown 15 s after (three runs): the banner "ACC
-    notification probe", "Approval required" over "Claude Code is waiting
-    for your approval.", from the built program and from `go run` (its
-    program in Go's temporary build folder); Windows' setting for the app
-    ID 0, enabled; 1 in Windows' list, 0 after `RemoveGroupedTagWithId`. A
-    new shortcut's app ID takes some seconds before Windows shows its
-    notifications: the permanent shortcut is to be made ahead of them, by
-    `acc` before it starts the dashboard.
-  - No notification policy set. Silent by its content
-    (`<audio silent="true"/>`); hearing nothing is the owner's to confirm.
-  - The click, not recorded: the banner has no window of its own (Explorer
-    draws it in a full-screen layer reported hidden and cloaked), and a
-    click by its place could land on another application's window under
-    it. The Activated handler registered (S_OK), no event without a
-    click. Optional, as designed.
-  - Left behind: only the record Windows itself keeps of the test app ID,
-    `HKCU\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings\
-    Evengelius.AgentCommandCenter.Probe` (`LastNotificationAddedTime`,
-    `PeriodicNotificationCount`), from the third run on, to be removed if
-    the owner wishes; no CLI configuration, Terminal setting or repository
-    file touched.
-  - 64.1's checks hold but the owner's go: waiting for the owner's review
-    of the shots and this log.
-- 2026-10-28: the owner's go ("Go"); steps 3 to 6. The notifier
-  (`internal/input/notify.go`, `notify_windows.go`, `notify_other.go`: the
-  probe's calls; `toastXML`; one tag and group), the app's use of it
-  (`internal/app/notify.go`: the calls one at a time in Update's order, as
-  the write queue; `ping.go`: a notification at each ring, the 5 s limit
-  now applying wherever there is a notifier, a clear once nothing waits;
-  `Shutdown`'s clear), the startup screen's note (`UI.NotifyProblem`),
-  `cmd/agent-command-center/main.go`'s `NotifySetUp: input.Notifications`.
-  Two changes from the probe's notes, both inside D5: the dashboard makes
-  the shortcut at its start, in a command, not `acc`, so that one Go
-  implementation, the probe's, does it and `acc.ps1` gets no COM code; and
-  the set-up runs off the first frame's path, as its first call in a
-  process took 1.01 s (the shell's libraries loading; 42 ms after).
-  Windows' known folders follow the process's APPDATA and LOCALAPPDATA:
-  under the terminal harness's temporary home the dashboard found no
-  Terminal alias and made no shortcut, so the check ran with the user's
-  own home, as `acc` runs. Tests: `TestToastXML`, `TestNotifyShortcut`
-  (in temporary folders, no notification shown), `TestNotifyWhen`,
-  `TestNotifyText`, `TestNotifyClear`, `TestNotifyFailure`,
-  `TestNotifySetUp`, `TestHomeNotifyNote`. Windows Terminal 1.23
-  (`scratchpad\term\p64run.ps1`, the probe's `-count` for Windows' list):
-  the dashboard's first start made `Agent Command Center.lnk` at 21:46:05,
-  its target `%LOCALAPPDATA%\Microsoft\WindowsApps\wt.exe`, arguments `-p
-  "Agent Command Center"`, the Start menu's other 47 entries unchanged; in
-  ACC's tab the banners "Agent Command Center", "Turn completed" over "The
-  mock session has finished its task.", then "Approval required" over "The
-  mock session is waiting for your approval.", 1 in Windows' list after
-  each, 0 once answered, with the BEL; in Command Prompt's profile the
-  same notifications and no BEL, 0 after the dashboard quit with the
-  approval waiting; a turn's end cleared by the focus back (0); at 208x59
-  and 120x40.
-- 2026-10-28: step 7: go build, go vet (Windows, Linux), gofmt and go test
-  ./... ok (16 packages) after the last code and document edit; no golden
-  frame or mock file changed; 20 mutants through `go test -overlay`, each
-  caught by a failing test (N7 by Go's timeout: a clear never marked done
-  makes every message queue another), `TestNotifyMostUrgentRung` added for
-  N3; `go test -race` on internal/app and internal/input: no race; the
-  timing step alone on mains power, all nineteen within their targets.
-  `doc/plan64-evaluation.md`: 6 PASS, 0 FAIL, NOT DONE until the owner's
-  look at the shots and a listen (64.6). Nothing committed; plan 63's push
-  record is in the tree too, uncommitted.
-- 2026-10-28: the owner's review of the shots: "Looks right" (64.6's
-  look, PASS, recorded beside the block of `doc/plan64-evaluation.md`); the
-  sound, muted by the content, still the owner's to confirm.
-- 2026-10-28: "No sound": 64.6 PASS; 7 criteria, 7 PASS, 0 FAIL. Waiting
-  for the owner's approval to close the plan and commit.
+Plan 64 was approved and closed on 2026-10-28 (Closed plans, below). The
+next, the turn-by-turn review of what the agent changed, starts as a plan
+for the owner's review (Roadmap, above).
 
 ## Closed plans
 
@@ -1152,3 +899,16 @@ urgent reason in the window's title; nowhere else a BEL. Approved on
 sound") ([`doc/plan63-evaluation.md`](doc/plan63-evaluation.md)); commit
 4a049f3, then the approval commit, both pushed; its full text in git
 (`git show 4a049f3:plan.md`).
+
+## Plan 64 - Windows notifications
+
+Brief amendment 66: with each ring of plan 63's ping, a silent Windows
+notification of the most urgent need rung, under the name Agent Command
+Center, its text generic (the CLI's name only), one at a time and taken
+out of Windows' list once nothing waits; its app ID that of a Start menu
+shortcut the dashboard makes when missing, pointing at Windows Terminal's
+alias with ACC's profile; a feasibility probe first. Approved on
+2026-10-28: 7 PASS, 0 FAIL after the owner's review ("Looks right", "No
+sound") ([`doc/plan64-evaluation.md`](doc/plan64-evaluation.md)); commit
+0111dbd, then the approval commit; its full text in git (`git show
+0111dbd:plan.md`).
