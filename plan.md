@@ -832,5 +832,5 @@ never pruning, Esc and a two-minute limit stopping it; a name copied; the
 header's branch following the HEAD file, checked every 2 s. New branch
 left out by the owner. Approved on 2026-10-28: 10 PASS, 0 FAIL after the
 owner's visual review ([`doc/plan59-evaluation.md`](doc/plan59-evaluation.md));
-commit 5c8c9be, then the approval commit; its full text in git
-(`git show 5c8c9be:plan.md`).
+commit 5c8c9be, then the approval commit, both pushed; its full text in
+git (`git show 5c8c9be:plan.md`).
