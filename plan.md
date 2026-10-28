@@ -896,5 +896,5 @@ own Windows Terminal profile, whose fragment sets `"bellStyle":
 urgent reason in the window's title; nowhere else a BEL. Approved on
 2026-10-28: 6 PASS, 0 FAIL after the owner's review ("I like it", "No
 sound") ([`doc/plan63-evaluation.md`](doc/plan63-evaluation.md)); commit
-4a049f3, then the approval commit; its full text in git (`git show
-4a049f3:plan.md`).
+4a049f3, then the approval commit, both pushed; its full text in git
+(`git show 4a049f3:plan.md`).
