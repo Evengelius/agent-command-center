@@ -96,122 +96,12 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 58 - A click outside the window closes it
+## No plan active
 
-Brief amendment 60 (2026-10-28): the window floating over the dashboard,
-the file viewer or the quick open, closes on a click outside it, as it
-does on Esc. Approved by the owner on 2026-10-28.
-
-### What was found (2026-10-28, on 585a485)
-
-- While the window is open (`render.LayerWindow`, plan 17) it takes every
-  mouse event (`app.fileMouse`): the wheel scrolls it wherever the pointer
-  is, a left press on the file's text starts a selection, and a click
-  anywhere else does nothing: "the dashboard behind takes no click"
-  (ui-design.md, File viewer).
-- Esc closes it one step at a time: in the viewer the search or go-to
-  field, else the selection, else back to the Explorer's panel with the
-  focus, its cursor on the file and the folders above it open
-  (`backToExplorer`); in the quick open, the quick open (`closeFinder`),
-  the viewer behind it, if any, in front again.
-- The popups already close on a click outside: the "+" menu and the two
-  selectors close and the click goes on (plans 30, 34, 39); Source
-  Control's dropdown and staging question close and the click does
-  nothing else (plan 45, designs D4 and D6).
-- The window's rectangle is `render.FileRect`, its frame included:
-  centred, about four fifths of the screen; in full screen every row but
-  the first. The file's text is panel 'F'; the rest of the window is
-  marked by no panel.
-- The draft window (Ctrl+G, amendment 13) is the one other window over the
-  dashboard; its rule is the file window's today ("a click outside the
-  window does nothing while it is open", ui-design.md, Draft window).
-
-### Design
-
-- **D1. The click:** a left click outside the window's rectangle closes
-  the window as Esc's last step does, and does nothing else. The viewer:
-  back to the Explorer's panel with the focus, its cursor on the file
-  (`backToExplorer`), its field and its selection dropped with it. The
-  quick open: closed (`closeFinder`), the viewer behind it, if any, in
-  front again. The click is not passed to what lies under it, as with
-  Source Control's popups: the dashboard behind the window is mostly
-  hidden, and `backToExplorer` already moves the Explorer's cursor.
-- **D2. Inside, and the rest unchanged:** a click on the window's frame,
-  title, path row, text or footer changes nothing new (on the text a
-  selection starts, as today); right and middle clicks, the wheel, motions
-  and releases outside change nothing; only the press decides, so a drag
-  begun inside and released outside still selects and copies.
-- **D3. Full screen:** the window leaves the first row; a click there
-  closes it, by the same rule.
-- **D4. The scope:** the file window only; the draft window, the key
-  overlay over the window and the popups keep their rules. No visual
-  change.
-- **D5. The documents:** ui-design.md's File viewer paragraph (the mouse)
-  and its quick open's where it names the mouse; architecture.md where it
-  describes the window's mouse.
-- **D6. The tests:** in `internal/app`, a click outside the viewer (zone
-  A, the Explorer's panel beside it, the header, zone C) closes it with
-  Esc's result and nothing else (no selection, no fold, no cursor moved
-  beyond `backToExplorer`'s); a click on the frame, the footer and the
-  text leaves it open; a right click outside, the wheel outside, a drag
-  from inside released outside; full screen, the first row and the
-  second; the quick open alone and over the viewer. Each new condition
-  broken on purpose through `go test -overlay`.
-
-### Criteria
-
-1. **58.1 The viewer:** a left click outside the window's rectangle
-   closes the viewer as Esc does (the Explorer's panel with the focus, its
-   cursor on the file), in the window and in full screen (its first row);
-   the click does nothing else.
-2. **58.2 Inside, and the rest:** a click on the frame, the footer or the
-   text leaves the window open (on the text a selection starts); a right
-   click, the wheel, motions and releases outside change nothing; a drag
-   from inside still copies.
-3. **58.3 The quick open:** a click outside closes it; over the viewer,
-   the viewer is in front again.
-4. **58.4 Windows Terminal:** in the acc tab at 208x59 and at 120x40, the
-   viewer opened from the Explorer on a mock dashboard; a click on zone
-   A's visible part closes it, the Explorer's panel focused on the file
-   (read through UI Automation, with shots).
-5. **58.5 The checks:** build, vet (Windows, Linux), gofmt and the whole
-   suite; no golden frame changed; the new conditions' mutants caught;
-   ui-design.md's frames test passing.
-
-### Steps
-
-1. Amendment 60 and this plan; the owner's approval.
-2. The click (D1 to D4) and its tests (D6).
-3. The documents (D5).
-4. Windows Terminal (58.4).
-5. The checks, the mutants and `doc/plan58-evaluation.md`.
-
-### Progress
-
-- 2026-10-28: step 1 done: amendment 60 and this plan, approved by the
-  owner, the draft window left out.
-- 2026-10-28: step 2 done. `fileMouse`: a left click outside the window
-  closes it, the quick open by `closeFinder`, else the viewer by
-  `backToExplorer`, and goes no further. The rectangle is the frame's,
-  `Screen.Window` (a `render.Box`), set where the window is drawn, so the
-  click is judged by what was on screen (plan 49, design D7).
-  `TestFileClickOutside` closes each window twice, in two rigs, with Esc
-  and with a click at four cells around it, and requires the same
-  interface, the rig's project folder put aside; `TestFileMouse`'s click
-  behind the window is a right click now; `TestLayerMatrix`'s 19 cells the
-  rule moves recorded, reviewed and written again (16 clicks on the window
-  now closing it, three openers whose click outside the viewer closes it).
-  12 mutants through `-overlay`, 12 killed by a failing test; the tree's
-  hash the same around the run.
-- 2026-10-28: step 3 done: ui-design.md (File viewer, the mouse) and
-  architecture.md (File viewer: `Screen.Window`, the click).
-- 2026-10-28: step 4 done: Windows Terminal at 208x59 and 120x40
-  (`term\p58click.ps1`): the viewer opened from the Explorer, a click on
-  zone A's title closes it, the Explorer's panel focused on the file.
-- 2026-10-28: step 5 done. go build, go vet (Windows, Linux), gofmt and
-  go test ./... (16 packages) pass, no golden frame changed;
-  `doc/plan58-evaluation.md`: 5 PASS, 0 FAIL, DONE. Waiting for the
-  owner's approval.
+Plan 58 was approved and closed on 2026-10-28 (Closed plans, below). The
+next plan starts when the owner asks for one; the audit's roadmap
+([`doc/audit.md`](doc/audit.md), Part 2) is done, its phases 0 to 4
+implemented by plans 46 to 49.
 
 ## Closed plans
 
@@ -918,3 +808,14 @@ face, nothing to install. Proposed on 2026-10-28 and withdrawn by the
 owner the same day without being implemented (amendment 59), for plan
 56's Nerd Font icons and the same look on any Windows version; its
 proposal in git (`git show d88c392:plan.md`).
+
+## Plan 58 - A click outside the window closes it
+
+Brief amendment 60: a left click outside the window floating over the
+dashboard, the file viewer or the quick open, closes it as Esc's last step
+does and does nothing else, the click judged against the frame drawn last
+(`Screen.Window`); full screen, its first row is outside; the draft
+window keeps its rule. Approved on 2026-10-28: 5 PASS, 0 FAIL
+([`doc/plan58-evaluation.md`](doc/plan58-evaluation.md)); commit
+0408228, then the approval commit; its full text in git (`git show
+0408228:plan.md`).

@@ -98,3 +98,12 @@ was, the runs being mock-only on a temporary home and app data. The
 dashboard's footer shows the Explorer's keys before the click as after it,
 the viewer opened from the Explorer keeping the panel's focus; the
 window's own path row and footer tell open from closed.
+
+**Approved and committed (2026-10-28).** The owner wrote "Plan 58 is
+approved: review git status and the diff, then commit it." Commit 0408228
+(11 files: 10 modified, 1 added), from the files reviewed in `git diff`;
+the whole suite had passed after the last code and document edit that a
+test reads. The author is `Evengelius <molimoabel@gmail.com>`, with no
+attribution line, and the working tree was clean after it: PASS. Not
+pushed: the owner asked for the commit only. The block above stays as it
+was reported.
