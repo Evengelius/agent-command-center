@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 	"testing/synctest"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -188,6 +189,30 @@ func TestGoldenFrames(t *testing.T) {
 			}
 			return h
 		}
+	}
+	// Plan 60 (amendment 62): the viewer's git blame, `b` on the file the
+	// agent's edit names, its lines not committed (sampleBlame, blame_test.go);
+	// the cursor three lines up, on Bo Li's commit, which the footer names.
+	fileBlame := func(t *testing.T) *harness {
+		answer := func(path string, content []byte, n int) (input.Blame, error) {
+			b, err := sampleBlame(path, content, n)
+			b.Commits[1].Summary = "Rework " + path // no read's number, which TestBlameAnswers needs
+			return b, err
+		}
+		h := dashGit(t, &fakeBlame{fakeGit: &fakeGit{}, answer: answer})
+		h.m.opt.Location = time.FixedZone("+0100", 3600)
+		in, _ := json.Marshal(map[string]string{"file_path": "sample/viewer.go", "old_string": "x",
+			"new_string": "func (c Colour) Hex() string {\n\treturn fmt.Sprintf(\"#%06x\", c.RGB)\n}"})
+		pushEvents(h, "claude-code", evOf(event.ToolStarted, event.Tool{ToolID: "golden-edit", Name: "Edit", Input: in}))
+		h.send(key(tea.KeyUp, 0))
+		h.send(key(tea.KeyF3, 0))
+		for _, k := range []tea.KeyPressMsg{typed('b'), key(tea.KeyUp, 0), key(tea.KeyUp, 0), key(tea.KeyUp, 0)} {
+			h.send(k)
+		}
+		if f := h.m.ui.File; !f.Blame.On || f.Blame.Lines == nil || f.Cursor != 31 {
+			t.Fatalf("the blame: on %v, %d lines, cursor %d, note %q", f.Blame.On, len(f.Blame.Lines), f.Cursor, f.Blame.Note)
+		}
+		return h
 	}
 	explorerGit := &fakeGit{marks: input.GitMarks{
 		Files: map[string]byte{"sample/viewer.go": 'M', "codex-api-key.jsonl": 'U', "codex-spawn-request.jsonl": 'A', "codex-plan6-limits.jsonl": '!',
@@ -459,7 +484,8 @@ func TestGoldenFrames(t *testing.T) {
 		{"startup", startup}, {"dashboard", dash}, {"plus-menu", plusMenu}, {"attachments", attached}, {"attachments-sent", sent}, {"attachments-preview", preview}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"explorer-nerd", explorerRig(true)}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))},
 		{"source", source()}, {"source-none", sourceNone}, {"source-diff", source(key(tea.KeyEnter, 0))}, {"source-diff-wide", source(key(tea.KeyEnter, 0), typed('f'))},
 		{"commit-menu", commitMenu}, {"commit-sixel", commitSixel}, {"commit-push", commitPush}, {"source-selection", sourceSelection},
-		{"branches", branches()}, {"branches-search", branches(typedText("fe")...)}, {"branches-confirm", branches(key(tea.KeyUp, 0), key(tea.KeyEnter, 0))}} {
+		{"branches", branches()}, {"branches-search", branches(typedText("fe")...)}, {"branches-confirm", branches(key(tea.KeyUp, 0), key(tea.KeyEnter, 0))},
+		{"file-blame", fileBlame}} {
 		szs := sizes
 		if sc.name == "source-selection" {
 			szs = append(slices.Clone(sizes), [2]int{208, 59}) // the acc tab maximised (plan 50, criterion 50.10)

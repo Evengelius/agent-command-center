@@ -33,6 +33,7 @@ type FileView struct {
 	Top        int         // the first line shown, before FileTop keeps the cursor in view
 	Left       int         // the columns the code is shifted by
 	Mark       [2]int      // the lines the agent edited, [from, to), 0-based
+	Blame      FileBlame   // git blame beside the lines (plan 60)
 	Field      byte        // '/' or 'g' while the owner types it; 0 none
 	Typed      string      // the field's text
 	Query      string      // the search Matches are of; "" none
@@ -268,8 +269,9 @@ func fileWindow(s *state.State, ui UI, ww, hh int) []line {
 	default:
 		top := FileTop(f, rows)
 		nw := len(strconv.Itoa(len(f.Lines)))
+		bw := blameCols(f, inner, nw)
 		for i := top; i < top+rows && i < len(f.Lines); i++ {
-			body = append(body, codeRow(f, i, nw, inner))
+			body = append(body, codeRow(f, i, nw, bw, inner))
 		}
 	}
 	for len(body) < rows+1 {
@@ -287,9 +289,10 @@ func baseName(p string) string {
 	return p
 }
 
-// codeRow is line i of the file w cells wide: its number right-aligned in nw
-// cells, the edit mark, then the code shifted by f.Left.
-func codeRow(f FileView, i, nw, w int) line {
+// codeRow is line i of the file w cells wide: the blame's bw cells when it
+// shows (plan 60), its number right-aligned in nw cells, the edit mark,
+// then the code shifted by f.Left.
+func codeRow(f FileView, i, nw, bw, w int) line {
 	cur := i == f.Cursor
 	marked := i >= f.Mark[0] && i < f.Mark[1]
 	numSt, markSt, padSt := stGrey, stAttention, stNone
@@ -306,8 +309,12 @@ func codeRow(f FileView, i, nw, w int) line {
 	if marked {
 		bar = "▌"
 	}
-	l := line{deco(fmt.Sprintf("%*d", nw, i+1), numSt), deco(bar, markSt), deco(" ", padSt)}
-	cw := max(w-nw-2, 1)
+	var l line
+	if bw > 0 {
+		l = blameCell(f.Blame, i, bw, cur)
+	}
+	l = append(l, deco(fmt.Sprintf("%*d", nw, i+1), numSt), deco(bar, markSt), deco(" ", padSt))
+	cw := max(w-bw-nw-2, 1)
 	code := codeSpans(f, i, cur, cw)
 	if code.width() > cw {
 		code = code.fit(cw)
@@ -402,12 +409,13 @@ func codeSpans(f FileView, i int, cur bool, cw int) line {
 // fileKeys are the window's key hints, the longest first; the footer shows
 // the first that fits.
 var fileKeys = []string{
-	"↑↓ PgUp PgDn Home End move · ←→ shift · / search · n N next, previous · g go to line · f full screen · F1 keys · Esc back · F3 close",
-	"↑↓ PgUp PgDn · ←→ shift · / search · n N · g line · f full screen · Esc back · F3 close",
-	"↑↓ PgUp PgDn · ←→ shift · / search · n N · g line · f full · Esc back · F3 close",
-	"↑↓ PgUp PgDn · / search · n N · g line · f full · Esc back · F3 close",
-	"↑↓ · / search · n N · g line · f full · Esc back · F3 close",
-	"/ search · g line · f full · Esc back · F3 close",
+	"↑↓ PgUp PgDn Home End move · ←→ shift · / search · n N next, previous · g go to line · f full screen · b blame · F1 keys · Esc back · F3 close",
+	"↑↓ PgUp PgDn · ←→ shift · / search · n N · g line · f full screen · b blame · Esc back · F3 close",
+	"↑↓ PgUp PgDn · ←→ shift · / search · n N · g line · f full · b blame · Esc back · F3 close",
+	"↑↓ PgUp PgDn · / search · n N · g line · f full · b blame · Esc back · F3 close",
+	"↑↓ · / search · n N · g line · f full · b blame · Esc back · F3 close",
+	"/ search · g line · f full · b blame · Esc back · F3 close",
+	"/ search · g line · f full · Esc back · F3 close", // the narrowest, beside a long count
 }
 
 // fileFooter is the window's footer, w cells: the keys, or a toast, the
@@ -437,12 +445,20 @@ func fileFooter(s *state.State, ui UI, w int) line {
 	case f.State == "" && len(f.Lines) > 0:
 		right = decoLine(fmt.Sprintf("line %s/%s", grouped(f.Cursor+1), grouped(len(f.Lines))), stGrey)
 	}
-	return spread(windowLeft(s, ui, keys, w-right.width()-1), right, w)
+	room := w - right.width() - 1
+	left := windowNotice(s, ui)
+	if left == nil && f.Blame.On && f.Field == 0 && f.State == "" {
+		left = blameFooter(f.Blame, f.Cursor, room) // the cursor line's commit (plan 60, design D4)
+	}
+	if left == nil {
+		left = windowLeft(s, ui, keys, room)
+	}
+	return spread(left, right, w)
 }
 
-// windowLeft is a window footer's left side in room cells: a toast, the
-// mouse capture off, a waiting approval, else the first keys that fit.
-func windowLeft(s *state.State, ui UI, keys []string, room int) line {
+// windowNotice is what a window footer's left shows before anything else:
+// a toast, the mouse capture off, a waiting approval; nil when none.
+func windowNotice(s *state.State, ui UI) line {
 	switch {
 	case ui.Toast != "":
 		return decoLine(ui.Toast, stProgress)
@@ -450,6 +466,15 @@ func windowLeft(s *state.State, ui UI, keys []string, room int) line {
 		return decoLine("mouse capture off · F12 back on", stProgress)
 	case anyPending(s):
 		return decoLine("◆ approval waiting · Esc, then F2", stAttentionBold)
+	}
+	return nil
+}
+
+// windowLeft is a window footer's left side in room cells: a notice
+// (windowNotice), else the first keys that fit.
+func windowLeft(s *state.State, ui UI, keys []string, room int) line {
+	if l := windowNotice(s, ui); l != nil {
+		return l
 	}
 	for _, k := range keys {
 		if textWidth(k) <= room {
@@ -721,10 +746,12 @@ func (t FileTarget) Resolve(lines []string) (int, [2]int) {
 	return min(max(t.Line-1, 0), last), [2]int{}
 }
 
-// FileCodeWidth is how many cells of code a row of the file window shows.
+// FileCodeWidth is how many cells of code a row of the file window shows:
+// less the blame's column while it shows (plan 60, design D7).
 func FileCodeWidth(ui UI) int {
 	_, _, ww, _ := FileRect(ui.Width, ui.Height, fileFull(ui))
-	return max(ww-4-len(strconv.Itoa(len(ui.File.Lines)))-2, 1)
+	nw := len(strconv.Itoa(len(ui.File.Lines)))
+	return max(ww-4-nw-2-blameCols(ui.File, ww-4, nw), 1)
 }
 
 // FileColumn is the cell column byte off of text starts at, as the window

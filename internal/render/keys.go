@@ -104,6 +104,7 @@ func fixedKeyTable() []keyGroup {
 			{"n N", "next / previous match"},
 			{"g", "go to a line number"},
 			{"f", "full screen or the window"},
+			{"b", "git blame: each line's commit date and author beside it, the cursor's commit in the footer; b again hides it"},
 			{"Esc", "clear the selection, else back to the Explorer, on the file"},
 			{"F3", "close it, and show or hide the Explorer"},
 		}},

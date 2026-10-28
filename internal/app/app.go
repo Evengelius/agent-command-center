@@ -127,6 +127,9 @@ type Options struct {
 	// BranchWatch is how often the project's HEAD file is checked for a
 	// switch made elsewhere (plan 59, design D9); 0 watches nothing.
 	BranchWatch time.Duration
+	// Location is the time zone the file viewer's blame shows dates in (plan
+	// 60, design D2); nil is the machine's.
+	Location *time.Location
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -195,6 +198,10 @@ type Model struct {
 	explorerGen                   int      // the Explorer's (explorer.go), its reads and git
 	fileBytes                     int64    // the file shown, its size on disk
 	finderAll                     []string // the project's files, as listed
+	// The viewer's git blame (blame.go, plan 60): on for the session, and
+	// the number of its latest read.
+	blameOn  bool
+	blameSeq int
 	// Source Control (source.go, plan 44): git's status reads, one at a time
 	// (statusBusy; statusAgain asks one more), their generation and the last
 	// one's time, the poll timed last; the snapshot read last, nil before one
@@ -480,6 +487,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.fileRead(msg)...)
 	case hlMsg:
 		cmds = append(cmds, m.coloured(msg)...)
+	case blameMsg:
+		m.blameRead(msg)
 	case searchMsg:
 		cmds = append(cmds, m.searched(msg)...)
 	case filesMsg:

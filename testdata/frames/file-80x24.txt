@@ -19,6 +19,6 @@
 │ │ 44      }                                                                │ │
 ╰─│ 45      return out                                                       │─╯
 ╭─│ 46  }                                                                    │─╮
-│ │ ↑↓ · / search · n N · g line · f full · Esc back · F3 close   line 35/58 │ │
+│ │ / search · g line · f full · b blame · Esc back · F3 close    line 35/58 │ │
 ╰─╰──────────────────────────────────────────────────────────────────────────╯─╯
  Enter full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys

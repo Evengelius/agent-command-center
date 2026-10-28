@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣╭─ viewer.go ────────────────────────────────────────────── Go · 58 lines ─╮0
+ A│ sample/viewer.go · edited by Edit                                        │e
+╭─│ 02/03/23 BL   29          }                                              │─╮
+│ │ 02/03/23 BL   30      }                                                  │ │
+│ │ 02/03/23 BL   31      return Colour{}, false                             │ │
+│ │ 02/03/23 BL   32  }                                                      │ │
+│ │ 02/03/23 BL   33                                                         │ │
+│ │ 02/03/23 BL   34  // Hex is the colour as "#rrggbb".                     │ │
+│ │ uncommitted   35▌ func (c Colour) Hex() string {                         │ │
+│ │ uncommitted   36▌     return fmt.Sprintf("#%06x", c.RGB)                 │ │
+│ │ uncommitted   37▌ }                                                      │ │
+│ │ 15/11/22 AH   38                                                         │ │
+│ │ 15/11/22 AH   39  // Names lists the palette's colour names, in order.   │ │
+│ │ 15/11/22 AH   40  func Names() []string {                                │ │
+│ │ 15/11/22 AH   41      out := make([]string, 0, len(palette))             │ │
+│ │ 15/11/22 AH   42      for _, c := range palette {                        │ │
+│ │ 15/11/22 AH   43          out = append(out, c.Name)                      │ │
+│ │ 15/11/22 AH   44      }                                                  │ │
+╰─│ 15/11/22 AH   45      return out                                         │─╯
+╭─│ 15/11/22 AH   46  }                                                      │─╮
+│ │ 9a1b2c3 · Bo Li · 02/03/2023 14:30 · Rework sample/viewer.go  line 32/58 │ │
+╰─╰──────────────────────────────────────────────────────────────────────────╯─╯
+ Enter full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys

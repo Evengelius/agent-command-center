@@ -501,6 +501,15 @@ It only reads; nothing is written anywhere.
   (`internal/app/main_test.go`).
 - **The search** runs in a command too, at most 10,000 matches.
 
+Plan 60 (brief amendment 62; ui-design.md, Git blame) adds git blame to
+the viewer, read only, nothing written:
+
+| Part | What it does | Where |
+| - | - | - |
+| 5. Input | `BlameGit`, implemented by `GitCLI.Blame`: `git blame --porcelain --contents - -- <path>` through `stream`, the file's bytes on its standard input, the file system monitor off, no optional lock, within `blameLimit` (15 s); `parseBlame` reads a commit's fields once and its later lines by hash, a line not committed by git's all-zero hash; an untracked file, no commits, a folder outside git and the time limit named (`Refusal`, `NotRepoError`; `timeoutError`, `call`'s and `stream`'s, `context.DeadlineExceeded` to `errors.Is`); `FileText.Raw`, the bytes `ReadFile` read, CRs kept | `internal/input/blame.go`, `git.go`, `file.go` |
+| 4. Rendering | `FileView.Blame` (`FileBlame`, `BlameCommit` with its texts made once); the column left of the numbers, 25 cells or 14 where the code would keep fewer than 60 (`blameCols`, `blameCell`), `FileCodeWidth` without it; the footer's commit or note after a toast, the mouse capture's note and a waiting approval (`blameFooter`, `windowNotice`); the key hints and the key overlay's `b` | `internal/render/blame.go`, `file.go`, `keys.go` |
+| The application | `b` in the viewer, on for the session (`toggleBlame`: on a file shown, a second read compared with the lines shown before git is asked); the blame of a file just shown from its read's bytes (`blameFile`); an answer kept only for the same file and the latest read, by the file's generation and the read's number (`blameMsg`, `blameRead`); the commits' texts in `Options.Location`, nil the machine's zone (`blameCommits`, `initials`) | `internal/app/blame.go`, `file.go`, `app.go` |
+
 ## Images attached to a message
 
 Plan 31 (brief amendment 31; ui-design.md, Input editor; the research in

@@ -1764,6 +1764,7 @@ the quick open and shows or hides the panel (plan 43, design D5).
 | n / N | the next / previous match |
 | g | type a line number; Enter goes there |
 | f | full screen or the window |
+| b | git blame: each line's commit date and author left of its number, the cursor line's commit in the footer, for the rest of the session; `b` again hides it (plan 60, [Git blame](#git-blame)) |
 | F2 | close the window and go to the oldest pending approval; the Explorer's panel stays (plan 43) |
 | Esc | cancel the field, else clear the selection, else back to the Explorer's panel with the focus, its cursor on the file and the folders above it open, a file opened from an entry too |
 | F3 | close the viewer and show or hide the Explorer's panel: hidden when the viewer was opened from it, shown otherwise (plan 43, design D5) |
@@ -1779,6 +1780,101 @@ does nothing else: the dashboard behind takes no click (plan 58, brief
 amendment 60). Reading, listing, colouring and searching each run in a
 command with a generation number, so a result for an older open is
 dropped and keys stay handled.
+
+### Git blame
+
+Plan 60 (brief amendment 62; the owner's image of an IDE's blame, "15/11/2022
+Hubaut" left of each line number). `b` in the viewer shows, beside each line,
+the date and author of the commit that last changed it, and in the footer
+the cursor line's commit; `b` again hides them. It is off when the dashboard
+starts; on, it holds for every file shown until `b` again, for the rest of
+the session. With it off, git is never asked.
+
+At 120x40, the file the agent's edit names, blamed (golden frame
+`file-blame-120x40`, its window):
+
+```text
+╭─ viewer.go ────────────────────────────────────────────────────────────────── Go · 58 lines ─╮
+│ sample/viewer.go · edited by Edit                                                            │
+│ 02/03/2023 Bo Li         29          }                                                       │
+│ 02/03/2023 Bo Li         30      }                                                           │
+│ 02/03/2023 Bo Li         31      return Colour{}, false                                      │
+│ 02/03/2023 Bo Li         32  }                                                               │
+│ 02/03/2023 Bo Li         33                                                                  │
+│ 02/03/2023 Bo Li         34  // Hex is the colour as "#rrggbb".                              │
+│ Not committed            35▌ func (c Colour) Hex() string {                                  │
+│ Not committed            36▌     return fmt.Sprintf("#%06x", c.RGB)                          │
+│ Not committed            37▌ }                                                               │
+│ 15/11/2022 Ana Hubaut    38                                                                  │
+│ 15/11/2022 Ana Hubaut    39  // Names lists the palette's colour names, in order.            │
+│ 15/11/2022 Ana Hubaut    40  func Names() []string {                                         │
+│ 15/11/2022 Ana Hubaut    41      out := make([]string, 0, len(palette))                      │
+│ 15/11/2022 Ana Hubaut    42      for _, c := range palette {                                 │
+│ 15/11/2022 Ana Hubaut    43          out = append(out, c.Name)                               │
+│ 15/11/2022 Ana Hubaut    44      }                                                           │
+│ 15/11/2022 Ana Hubaut    45      return out                                                  │
+│ 15/11/2022 Ana Hubaut    46  }                                                               │
+│ 15/11/2022 Ana Hubaut    47                                                                  │
+│ 15/11/2022 Ana Hubaut    48  // Brighter is the colour with each channel raised by step, at… │
+│ 15/11/2022 Ana Hubaut    49  func (c Colour) Brighter(step uint32) Colour {                  │
+│ 15/11/2022 Ana Hubaut    50      r, g, b := c.RGB>>16&0xff, c.RGB>>8&0xff, c.RGB&0xff        │
+│ 15/11/2022 Ana Hubaut    51      up := func(v uint32) uint32 { return min(v+step, 255) }     │
+│ 15/11/2022 Ana Hubaut    52      return Colour{c.Name, up(r)<<16 | up(g)<<8 | up(b)}         │
+│ 15/11/2022 Ana Hubaut    53  }                                                               │
+│ 15/11/2022 Ana Hubaut    54                                                                  │
+│ 15/11/2022 Ana Hubaut    55  // Describe is one line about the colour, for the details view. │
+│ 15/11/2022 Ana Hubaut    56  func Describe(c Colour) string {                                │
+│ 9a1b2c3 · Bo Li · 02/03/2023 14:30 · Rework sample/viewer.go                      line 32/58 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+**The column** (designs D2 and D3), left of the line numbers, on every line:
+the commit's author date, `dd/mm/yyyy` in the machine's time zone, and the
+author's name as git records it, cut to 12 cells with "…", grey; a line not
+committed "Not committed" in the attention colour; padded so that the
+numbers align, the cursor row's band under it. 25 cells; where they would
+leave the code fewer than 60, a compact form of 14, `dd/mm/yy` and the
+name's initials, three at most, "uncommitted" for a line not committed: the
+full form at 120x40 and maximised, the compact one at 80x24, full screen by
+the same rule. Sideways scrolling moves the code alone, and a drag copies
+the code alone: the column carries no text.
+
+**What it claims** is git's only. "Not committed" is a line that differs
+from the last commit, whoever changed it: the agent, the owner or a tool;
+the agent's own edits keep their mark, `▌`, from its tool call. A committed
+line's author is the author of its commit, not necessarily who wrote it.
+Git names a line not committed "External file (--contents)" or "Not
+Committed Yet"; neither is shown.
+
+**The footer** (design D4) shows, in place of the key hints, the cursor
+line's commit, `9a1b2c3 · Bo Li · 02/03/2023 14:30 · Rework
+sample/viewer.go`, the subject cut to fit, or "Not committed yet: changed
+in the working tree"; it follows the cursor (the arrows, `g`, a search). A
+toast, the mouse capture's note and a waiting approval come first, and a
+search or go-to field being typed shows its own hints.
+
+**The read** (design D5): in a command, `git blame --porcelain --contents -
+-- <path>` in the project, the file system monitor off, no optional lock,
+15 s at most, given on its standard input the very bytes the viewer shows,
+as read, CRs kept, so that git converts line endings as it does from the
+disk. With the blame on, the read that shows a file hands its bytes on; `b`
+on a file already shown reads it again and asks git only if its lines are
+still the ones shown. Each read carries the file's generation and a number
+of its own: an answer for a file since closed, or shown in its place, or
+for a read `b` has since replaced, is dropped.
+
+**The messages** (design D6), in the footer, the column blank: "blame…"
+while git reads, the file shown meanwhile; "not in git yet: no history"
+for an untracked file; "not a git repository"; "git not found"; "no
+commits yet"; "blame stopped after 15 s"; git's own words for any other
+failure; "the file changed after it was read: show it again" when `b`'s
+second read differs from the lines shown, or git's lines and the viewer's
+differ in number.
+
+**Budget** (design D8): the column drawn for the rows in view only, from
+texts made once when git answers; a key to its frame with 10,000 lines
+blamed, a commit every ten, p50 0.5 ms, p95 1.5 ms in the timing step
+(`TestBlameFrameCost`).
 
 ## Right sidebar
 
@@ -3153,6 +3249,7 @@ the console reads plain VT input after Ctrl+Q.
 | n N | next / previous match |
 | g | go to a line number |
 | f | full screen or the window |
+| b | git blame: each line's commit date and author beside it, the cursor line's commit in the footer; `b` again hides it |
 | Esc | clear the selection, else back to the Explorer's panel, on the file |
 | F3 | close it, and show or hide the Explorer's panel |
 

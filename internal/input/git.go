@@ -143,7 +143,7 @@ func (g GitCLI) call(limit time.Duration, dir string, read bool, args []string) 
 		err = nil // see gitWaitDelay
 	}
 	if ctx.Err() == context.DeadlineExceeded {
-		return "", fmt.Errorf("git %s took more than %s", args[0], limit)
+		return "", &timeoutError{args[0], limit}
 	}
 	var ee *exec.ExitError
 	if errors.As(err, &ee) {
@@ -154,6 +154,17 @@ func (g GitCLI) call(limit time.Duration, dir string, read bool, args []string) 
 	}
 	return out.String(), nil
 }
+
+// timeoutError is a git call stopped at its time limit; it is
+// context.DeadlineExceeded to errors.Is, so that a caller can tell it from
+// git's own refusals (plan 60, design D6).
+type timeoutError struct {
+	sub   string
+	limit time.Duration
+}
+
+func (e *timeoutError) Error() string { return fmt.Sprintf("git %s took more than %s", e.sub, e.limit) }
+func (e *timeoutError) Unwrap() error { return context.DeadlineExceeded }
 
 // failure is git's refusal as an error: what it said, or its exit code.
 func failure(args []string, stderr string, ee *exec.ExitError) *gitError {
@@ -166,7 +177,8 @@ func failure(args []string, stderr string, ee *exec.ExitError) *gitError {
 
 // stream is a read call fed by stdin whose standard output is read by read
 // as git writes it, so that an object over the limit never sits in memory
-// (plan 44, design D6). A failure of read stops git and is returned.
+// (plan 44, design D6); git blame takes the file's bytes so too (plan 60).
+// A failure of read stops git and is returned.
 func (g GitCLI) stream(limit time.Duration, dir string, stdin io.Reader, read func(*bufio.Reader) error, args ...string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), limit)
 	defer cancel()
@@ -200,7 +212,7 @@ func (g GitCLI) stream(limit time.Duration, dir string, stdin io.Reader, read fu
 		err = nil // see gitWaitDelay
 	}
 	if ctx.Err() == context.DeadlineExceeded {
-		return fmt.Errorf("git %s took more than %s", args[0], limit)
+		return &timeoutError{args[0], limit}
 	}
 	if rerr != nil {
 		return rerr

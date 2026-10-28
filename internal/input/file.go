@@ -23,6 +23,9 @@ type FileText struct {
 	Size   int64    // bytes on disk
 	Binary bool     // a NUL in the first BinaryProbe bytes: Lines is empty
 	Lines  []string // split at LF, a CR before it dropped, valid UTF-8
+	// Raw is the bytes read, CRs kept, for git blame (plan 60, design D5);
+	// nil for a binary file.
+	Raw []byte
 }
 
 // Limits (plan 17, Reading a file and Listing). Variables so tests can
@@ -108,7 +111,7 @@ func ReadFile(root, path string) (FileText, error) {
 		ft.Binary = true
 		return ft, nil
 	}
-	ft.Lines = SplitLines(string(data))
+	ft.Lines, ft.Raw = SplitLines(string(data)), data
 	return ft, nil
 }
 

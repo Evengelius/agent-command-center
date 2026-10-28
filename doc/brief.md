@@ -7908,3 +7908,81 @@ Ok you can start
 ````
 
 Taken as the approval of that scope: plan 59 (plan.md, Plan 59).
+
+## Amendment 62, 2026-10-28: git blame in the file viewer, for plan 60
+
+After plan 59 was closed and pushed, the owner sent two images: the
+dashboard's file viewer showing AGENTS.md opened from the Explorer, in the
+acc tab, and an IDE's editor annotated with git blame: left of each line
+number, the date of the line's commit and its author ("15/11/2022
+Hubaut"). The owner wrote, word for word:
+
+````text
+Now look at my image,
+
+A file is opened, I would like to also see who did the commit next to the line, so basically like the other image I sent you
+
+Do you think it's a good idea?
+````
+
+Told: yes, and more useful here than in an IDE for the lines not committed
+yet, mostly the agent's latest edits, shown in the code around them. Off
+by default, `b` turns it on for the rest of the session; a column like the
+image's, "15/11/2022 Hubaut", left of the line numbers, grey, the name cut
+to fit, "Not committed" in the attention colour for uncommitted lines; the
+cursor line's commit in the footer (short hash, author, date, subject);
+read in the background with one read-only `git blame --porcelain` per
+file, "blame…" until it answers, a time limit, cached until the file
+changes, a message for an untracked file or a folder that is not a
+repository. The column takes about 22 cells: fine maximised (the window
+166 cells) and at 120x40 (96), a shorter form at 80x24 (76: the date and
+initials), or full screen with `f`. Sideways scrolling moves the code
+only, a copy leaves the column out, search and go-to-line unchanged. It
+extends the file viewer: a brief amendment and a plan of its own; git only
+read, no dependency added. Left for later: a click opening a line's
+commit, colours by age. The owner wrote, word for word:
+
+````text
+Propose plan 60
+````
+
+Plan 60 (plan.md, Plan 60) was proposed on 2026-10-28. The owner shared
+another agent's review of it and wrote, word for word:
+
+````text
+The other agent said this :
+````
+
+The review, in French, favoured the plan (9/10) and asked for three
+precisions, guardrails rather than a new design: the blame computed on the
+very content the viewer loaded, with `git blame --porcelain --contents -`,
+its alignment then checked; tests that an answer for one file never shows
+on another opened meanwhile, nor once the viewer is closed; "Not
+committed" meaning a line changed and not committed, by Claude, Codex or a
+person, git naming only the author of the commit a line comes from. It
+approved the rest without reserve. The owner wrote, word for word:
+
+````text
+What do you think?
+````
+
+Told: agreed with the three. `--contents -` checked on a probe: the file's
+own bytes on stdin give the blame the disk gives, other bytes are
+annotated as given. With the blame on, the read that shows a file hands its
+bytes to git; `b` on a file already shown reads it again and blames it only
+if it still matches; the raw bytes, CRs kept, so that git converts line
+endings as it does from the disk; the dashboard's git reads take no input
+yet, one small extension. The tests named: another file opened during a
+read, the viewer closed during one, `b` off and on during one, only the
+latest read counting. "Not committed" claims no author: the footer says
+"Not committed yet: changed in the working tree", and a committed line's
+author is its commit's, not necessarily who wrote it; the viewer's edit
+mark stays the one sign of the agent's own edits, from its tool call. The
+owner wrote, word for word:
+
+````text
+Fold in and start
+````
+
+Taken as the approval of plan 60 with the three folded in (plan.md, Plan
+60).

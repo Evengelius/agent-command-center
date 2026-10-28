@@ -36,5 +36,5 @@
 │ 56  func Describe(c Colour) string {                                                                                 │
 │ 57      return fmt.Sprintf("%-10s %s", c.Name, c.Hex())                                                              │
 │ 58  }                                                                                                                │
-│ ↑↓ PgUp PgDn · ←→ shift · / search · n N · g line · f full screen · Esc back · F3 close                   line 35/58 │
+│ ↑↓ PgUp PgDn · ←→ shift · / search · n N · g line · f full screen · b blame · Esc back · F3 close         line 35/58 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯

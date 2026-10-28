@@ -52,6 +52,10 @@ func TestReadFile(t *testing.T) {
 		if ft.Rel != "src/main.go" || ft.Path != abs || ft.Size != 32 || ft.Binary {
 			t.Errorf("ReadFile(%q) = rel %q path %q size %d binary %v", p, ft.Rel, ft.Path, ft.Size, ft.Binary)
 		}
+		// The bytes read, CRs kept, for git blame (plan 60, design D5).
+		if want := "package main\r\n\r\nfunc main() {}\r\n"; string(ft.Raw) != want {
+			t.Errorf("ReadFile(%q) raw %q, want the bytes on disk %q", p, ft.Raw, want)
+		}
 	}
 	ft, err := ReadFile(root, "bad.txt")
 	if err != nil || !reflect.DeepEqual(ft.Lines, []string{"ok � end", "last"}) {
@@ -62,8 +66,8 @@ func TestReadFile(t *testing.T) {
 	}
 
 	// 1.4: a NUL in the first 8 KiB is binary; after them it is not.
-	if ft, err := ReadFile(root, "img.bin"); err != nil || !ft.Binary || ft.Lines != nil || ft.Size != BinaryProbe {
-		t.Errorf("img.bin: binary %v, %d lines, size %d, %v", ft.Binary, len(ft.Lines), ft.Size, err)
+	if ft, err := ReadFile(root, "img.bin"); err != nil || !ft.Binary || ft.Lines != nil || ft.Raw != nil || ft.Size != BinaryProbe {
+		t.Errorf("img.bin: binary %v, %d lines, %d bytes kept, size %d, %v", ft.Binary, len(ft.Lines), len(ft.Raw), ft.Size, err)
 	}
 	if ft, err := ReadFile(root, "late.bin"); err != nil || ft.Binary {
 		t.Errorf("late.bin: binary %v, %v", ft.Binary, err)

@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ ▎                                                                        ││      │
+│ ✿ Claude H╭─ viewer.go ────────────────────────────────────────────────────────────────── Go · 58 lines ─╮   ││  ≡   │
+│ ──────────│ sample/viewer.go · edited by Edit                                                            │   ││      │
+│ STAGES · i│ 02/03/2023 Bo Li         29          }                                                       │   ││      │
+│   Use the │ 02/03/2023 Bo Li         30      }                                                           │   ││      │
+│   Agent · │ 02/03/2023 Bo Li         31      return Colour{}, false                                      │   ││  ⑂   │
+│           │ 02/03/2023 Bo Li         32  }                                                               │   ││      │
+│ ✓ TURN 2  │ 02/03/2023 Bo Li         33                                                                  │   ││      │
+│   started │ 02/03/2023 Bo Li         34  // Hex is the colour as "#rrggbb".                              │─╮ ││      │
+│   Edit    │ Not committed            35▌ func (c Colour) Hex() string {                                  │ │ ││      │
+│ ──────────│ Not committed            36▌     return fmt.Sprintf("#%06x", c.RGB)                          │ │ ││      │
+│ ✦ TELEMETR│ Not committed            37▌ }                                                               │ │ ││      │
+│ ▾ SESSION │ 15/11/2022 Ana Hubaut    38                                                                  │ │ ││      │
+│   Context │ 15/11/2022 Ana Hubaut    39  // Names lists the palette's colour names, in order.            │ │ ││      │
+│   Tokens 1│ 15/11/2022 Ana Hubaut    40  func Names() []string {                                         │ │ ││      │
+│   Est. cos│ 15/11/2022 Ana Hubaut    41      out := make([]string, 0, len(palette))                      │─╯ ││      │
+│ ▾ QUOTA WI│ 15/11/2022 Ana Hubaut    42      for _, c := range palette {                                 │   ││      │
+│   Session │ 15/11/2022 Ana Hubaut    43          out = append(out, c.Name)                               │k  ││      │
+│   ████████│ 15/11/2022 Ana Hubaut    44      }                                                           │   ││      │
+│   Resets i│ 15/11/2022 Ana Hubaut    45      return out                                                  │── ││      │
+│   Weekly (│ 15/11/2022 Ana Hubaut    46  }                                                               │   ││      │
+│   ████████│ 15/11/2022 Ana Hubaut    47                                                                  │── ││      │
+│   Resets i│ 15/11/2022 Ana Hubaut    48  // Brighter is the colour with each channel raised by step, at… │   ││      │
+╰───────────│ 15/11/2022 Ana Hubaut    49  func (c Colour) Brighter(step uint32) Colour {                  │───╯╰──────╯
+╭───────────│ 15/11/2022 Ana Hubaut    50      r, g, b := c.RGB>>16&0xff, c.RGB>>8&0xff, c.RGB&0xff        │───────────╮
+│ C · LIVE A│ 15/11/2022 Ana Hubaut    51      up := func(v uint32) uint32 { return min(v+step, 255) }     │E · 1 DONE │
+│ ──────────│ 15/11/2022 Ana Hubaut    52      return Colour{c.Name, up(r)<<16 | up(g)<<8 | up(b)}         │────────── │
+│ AGENTS    │ 15/11/2022 Ana Hubaut    53  }                                                               │ COMPLETED │
+│  ✓  genera│ 15/11/2022 Ana Hubaut    54                                                                  │ beta.md   │
+│     00:00 │ 15/11/2022 Ana Hubaut    55  // Describe is one line about the colour, for the details view. │           │
+│           │ 15/11/2022 Ana Hubaut    56  func Describe(c Colour) string {                                │           │
+│           │ 9a1b2c3 · Bo Li · 02/03/2023 14:30 · Rework sample/viewer.go                      line 32/58 │           │
+│           ╰──────────────────────────────────────────────────────────────────────────────────────────────╯           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys

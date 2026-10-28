@@ -32,7 +32,7 @@
 │  ✓  genera│ 54                                                                                           │ beta.md   │
 │     00:00 │ 55  // Describe is one line about the colour, for the details view.                          │           │
 │           │ 56  func Describe(c Colour) string {                                                         │           │
-│           │ ↑↓ PgUp PgDn · / search · n N · g line · f full · Esc back · F3 close         match 10 of 17 │           │
+│           │ ↑↓ · / search · n N · g line · f full · b blame · Esc back · F3 close         match 10 of 17 │           │
 │           ╰──────────────────────────────────────────────────────────────────────────────────────────────╯           │
 │                                          │                                                                           │
 │                                          │                                                                           │

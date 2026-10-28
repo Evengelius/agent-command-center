@@ -111,7 +111,8 @@ func (m *Model) openFile(t render.FileTarget) []tea.Cmd {
 	m.closePopups() // nothing stays open under the window (plan 49, design D7)
 	m.fileGen++
 	m.closeFinder()
-	m.ui.File = render.FileView{Open: true, Full: m.ui.File.Full, Path: t.Path, Opened: t.Opened, State: "reading…", Match: -1}
+	m.ui.File = render.FileView{Open: true, Full: m.ui.File.Full, Path: t.Path, Opened: t.Opened, State: "reading…", Match: -1,
+		Blame: render.FileBlame{On: m.blameOn}}
 	m.dropFileSelection()
 	gen, root := m.fileGen, m.fileRoot()
 	return []tea.Cmd{func() tea.Msg {
@@ -143,7 +144,11 @@ func (m *Model) fileRead(msg fileMsg) []tea.Cmd {
 	m.fileBytes = msg.ft.Size
 	f.Top = max(f.Cursor-render.FileRows(m.ui)/3, 0) // some context above the place shown
 	f.Windowed = m.fileBytes > wholeColour
-	return m.colour()
+	cmds := m.colour()
+	if m.blameOn && len(f.Lines) > 0 {
+		cmds = append(cmds, m.blameFile(msg.ft.Raw)...) // the very bytes shown (plan 60, design D5)
+	}
+	return cmds
 }
 
 // colour asks for the colours the view lacks: the whole file once, or a
@@ -229,6 +234,8 @@ func (m *Model) fileKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		return m.toggleExplorer(), true
 	case "f":
 		f.Full = !f.Full
+	case "b":
+		return m.toggleBlame(), true // git blame (plan 60, design D1)
 	case "/":
 		f.Field, f.Typed = '/', f.Query
 	case "g":
