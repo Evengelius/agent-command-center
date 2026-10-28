@@ -96,256 +96,12 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 60 - Git blame in the file viewer
+## No plan active
 
-Brief amendment 62 (2026-10-28): in the file viewer, beside each line, the
-date and author of the commit that last changed it, after the owner's
-image of an IDE's git blame ("15/11/2022 Hubaut" left of the line
-numbers), the lines not committed yet shown apart. Approved by the owner
-on 2026-10-28 ("Fold in and start"), with the three precisions of another
-agent's review folded in: the blame of the very bytes shown, answers
-never shown on another file, "Not committed" claiming no author.
-
-### What was found (2026-10-28, on 191117f)
-
-- The viewer (plan 17; ui-design.md, File viewer) reads a file once, in a
-  command, when it is shown (`input.ReadFile`: 32 MiB at most, split at
-  LF, a CR before it dropped), and never again while it is shown; showing
-  it again reads it again. `SplitLines` drops the empty line after a
-  final LF, so `Lines` counts lines as git does (AGENTS.md's 348; at
-  step 2 this bullet, first written "348 lines for 347", was corrected).
-- A row (`render.codeRow`) is the line number right-aligned, the agent's
-  edit mark (`▌`, `FileView.Mark`, from the tool call that edited the
-  file), a space, then the code shifted by `Left`; only the code's spans
-  carry text references, so a drag copies the code alone. `FileCodeWidth`
-  gives the code's cells to the shift. Above the rows, the path row (the
-  path · what opened it; "colouring…" or "coloured around the view" on its
-  right); under them the footer (the first key hint that fits, or a toast,
-  the mouse capture's note, a waiting approval; on its right the cursor's
-  line or the search).
-- The window is 76 cells wide at 80x24, 96 at 120x40 and 166 maximised
-  (208x59); full screen (`f`) the screen's width. Keys taken in the
-  viewer: Esc, F2, F3, `f`, `/`, `g`, `n` `N`, the arrows, PgUp, PgDn,
-  Home, End; `b` is free.
-- No git blame anywhere yet. Git's reads go through `GitCLI.runRead` (the
-  file system monitor off, no optional lock, no prompt, English), 15 s at
-  most (`readLimit`), and take no standard input.
-- Probes, git 2.56.0 (`scratchpad\plan60`, temporary repositories, and
-  this repository read only): `git blame --porcelain -- <path>` gives each
-  run of lines as `<hash> <orig> <final> <count>`, a commit's `author`,
-  `author-time`, `author-tz` and `summary` the first time it appears, then
-  each line's text after a tab; a line changed or added in the working
-  tree has the all-zero hash and "Not Committed Yet". With `--contents -`
-  the file's own bytes on standard input give the same blame as the disk,
-  and other bytes are annotated as given. An untracked file fails with
-  "fatal: no such path 'u.txt' in HEAD", a repository with no commit with
-  "fatal: no such ref: HEAD", a folder outside git with "fatal: not a git
-  repository", each exit 128; a project that is a subfolder of its
-  repository takes the path relative to it. On this repository's
-  longest-lived files: `doc/brief.md` (7,910 lines, 56 commits) 526 ms,
-  `doc/ui-design.md` 514 ms, `plan.md` (134 commits) 453 ms,
-  `internal/app/app.go` 362 ms.
-- The owner was told "cached until the file changes": the viewer's own
-  single read gives that, the blame read with the file holding for as long
-  as it is shown. A cache across showings would need HEAD's commit in its
-  key, a commit changing an unchanged file's blame, for about half a second
-  saved: none.
-
-### Design
-
-- **D1. The switch:** `b` in the viewer shows the blame, `b` again hides
-  it; off when the dashboard starts, it then holds for every file shown
-  until `b` again, for the rest of the session. The key overlay and the
-  viewer's key hints name `b`.
-- **D2. The column:** left of the line numbers, as the owner's image, on
-  every line: the commit's author date, `dd/mm/yyyy` in the machine's time
-  zone (`Options.Location`, nil the machine's; the tests a fixed one), and
-  the author's name as git records it, cut to 12 cells with "…", grey; a
-  line not committed yet "Not committed" in the attention colour (git's own
-  placeholder author for such a line never shown); the column padded so
-  that the line numbers align, the cursor row's band under it. 25 cells: the date, a space, the
-  name, two spaces. What it claims is git's only: "Not committed" a line
-  that differs from the last commit, whoever changed it (an agent, the
-  owner, a tool); a committed line's author the author of its commit, not
-  necessarily who wrote it. The edit mark stays the one sign of the
-  agent's own edits.
-- **D3. The narrow form:** where the full column would leave the code
-  fewer than 60 cells, a compact one, 14 cells: `dd/mm/yy`, a space, the
-  name's initials (three at most), two spaces; "uncommitted" for a line
-  not committed. At 120x40 and 208x59 the full form, at 80x24 the compact
-  one; full screen follows the same rule.
-- **D4. The cursor line's commit:** in the footer's left, in place of the
-  key hints while the blame shows: `f52c343 · Ana Hubaut · 15/11/2022
-  10:00 · Add a.txt with three lines`, the subject cut to fit; "Not
-  committed yet: changed in the working tree" for such a line; a toast,
-  the mouse capture's note and a waiting approval before it, as today. It
-  follows the cursor (the arrows, `g`, a search).
-- **D5. The read:** in a command, `git blame --porcelain --contents - --
-  <path>` in the project through `runRead`, within `readLimit`, given on
-  its standard input the very bytes the viewer shows, as read, CRs kept,
-  so that git converts line endings as it does from the disk. With the
-  blame on, the read that shows a file hands its bytes on; `b` on a file
-  already shown reads it again and blames it only if its lines are still
-  the ones shown. Parsed into one entry a line and one record a commit
-  (its short hash, author, time and zone, subject); never a write. Each
-  read carries the file's generation and a number of its own: an answer
-  for a file closed, or shown in its place, or for a read `b` has since
-  replaced, is dropped; only the latest counts.
-- **D6. The messages**, in the footer's left while the blame shows, the
-  column empty: "blame…" while git reads, the file shown meanwhile; "not
-  in git yet: no history" for an untracked file; "not a git repository";
-  "git not found"; "no commits yet"; "blame stopped after 15 s"; git's own
-  words for any other failure; "the file changed after it was read: show
-  it again" when `b`'s second read differs from the lines shown, or git's
-  lines and the viewer's differ in number.
-- **D7. Unchanged:** ← → shift the code alone (`FileCodeWidth` less the
-  column); a drag copies the code alone; the search, go-to-line, full
-  screen, the agent's edit mark, the Explorer and the quick open, plan
-  58's click outside; with the blame off nothing is drawn or read.
-- **D8. The budget:** the column drawn for the rows in view only, from the
-  parsed entries; a key to its frame within the keystroke's 16 ms with the
-  blame on, on a 10,000-line file.
-
-### Criteria
-
-1. **60.1 The switch:** `b` shows the column and the footer's commit, `b`
-   again hides them; off at start; on, it holds for the next file shown;
-   the key overlay and the viewer's hints name `b`.
-2. **60.2 The column:** on a real repository, each line's date
-   (`dd/mm/yyyy`, the zone given) and author cut to 12 cells, grey; a line
-   changed and a line added in the working tree "Not committed" in the
-   attention colour; left of the line numbers, aligned; golden frames at
-   80x24, 120x40, 200x60 and 79x24.
-3. **60.3 The narrow form:** the full form where the code keeps 60 cells,
-   the compact one below (`15/11/22 AH`, "uncommitted"), by the window's
-   width, full screen included.
-4. **60.4 The footer:** the cursor line's short hash, author, date and
-   time and subject, following the cursor; "Not committed yet: changed in
-   the working tree"; a toast and a waiting approval first.
-5. **60.5 The messages:** each of D6's, the file shown meanwhile.
-6. **60.6 Unchanged:** the shift moves the code alone, its limit the
-   code's width; a drag copies the code alone; the search, go-to-line,
-   full screen, the edit mark, plan 58's click outside; the blame off, no
-   git call.
-7. **60.7 Git and the answers:** one `blame --porcelain --contents -` per
-   file shown with the blame on and per `b` turning it on, through
-   `runRead`, its arguments traced: no write, no optional lock; the bytes
-   given its input the bytes shown, CRs kept (a CRLF file committed so
-   blamed as committed, not as changed); the porcelain parsed with a
-   commit's headers once and its later lines by hash; an answer dropped
-   when another file was opened during its read, when the viewer was
-   closed during it, and when `b` went off and on during it, only the
-   latest read drawn.
-8. **60.8 Windows Terminal:** in the acc tab at 208x59 and 120x40, and
-   80x24's compact form: `b` on a file of a repository's history; shots;
-   the owner's visual review.
-9. **60.9 The checks:** build, vet (Windows, Linux), gofmt and the whole
-   suite; the new golden frames reviewed, the others unchanged; the
-   changes broken on purpose through `go test -overlay`, each caught; the
-   timing step with the viewer's keys and the blame on within 16 ms.
-
-### Steps
-
-1. Amendment 62 and this plan.
-2. Input: the read with a standard input, `GitCLI.Blame` and its parse
-   (D5); tests on real repositories: committed, changed and added lines,
-   the bytes given against the disk, an untracked file, no commits, not a
-   repository, a CRLF file, many commits.
-3. Rendering: the column, full and compact, the footer's commit and
-   messages, the keys, `FileCodeWidth` (D2 to D4, D6, D7); golden frames.
-4. The application: `b`, the reads on showing and on `b`, the generation
-   and the read's number, the second read's check (D1, D5, D6); tests.
-5. The documents.
-6. Windows Terminal (60.8); the owner's visual review.
-7. The checks, the mutants, the timing and `doc/plan60-evaluation.md`.
-
-### Progress
-
-- 2026-10-28: step 1: amendment 62 and this plan, proposed, then the
-  review's three precisions folded in; approved by the owner ("Fold in
-  and start").
-- 2026-10-28: step 2 done. `input/blame.go`: `BlameGit`, `GitCLI.Blame`
-  (`git blame --porcelain --contents - -- <path>`, the bytes on its
-  standard input through `stream`, the file system monitor off, within
-  `blameLimit`, 15 s), `parseBlame`, git's refusals named (untracked, no
-  commits, outside git, the time limit: `timeoutError`, now `call`'s and
-  `stream`'s, its text unchanged, `context.DeadlineExceeded` to
-  `errors.Is`); `FileText.Raw`, the bytes read. Found: with `--contents`
-  git names a line not committed "External file (--contents)", its hash
-  all zeros as before, so the viewer goes by the hash; and the viewer
-  counts lines as git does (`SplitLines` drops the empty line after a
-  final LF): What was found's first bullet corrected, D2, D6 and 60.2 with
-  it. Tests on real repositories (`blame_test.go`, 4): commits, authors,
-  times and zones, a commit read once and its later lines by hash, the
-  changed and added lines; the bytes given, not the disk's; a CRLF file
-  blamed as committed from its raw bytes and as changed without its CRs;
-  untracked, no commits, outside git, the time limit; the porcelain's
-  parse.
-- 2026-10-28: step 3 done. `render/blame.go`: `FileBlame` (in
-  `FileView.Blame`), `BlameCommit` with its texts made once, the column
-  (`blameCols`, `blameCell`: 25 cells, or 14 where the code would keep
-  fewer than 60) and the footer's commit or note (`blameFooter`, after a
-  toast, the mouse capture's note and a waiting approval, split out as
-  `windowNotice`; the field's hints while one is typed). `codeRow` draws
-  the column first, `FileCodeWidth` leaves it out. The key hints name `b
-  blame`, the narrowest kept without it beside a long count
-  (`TestFileFooters`); the key overlay's and ui-design.md's rows
-  (`TestKeyOverlayRows`: 78). Tests: `TestBlameColumn`, `TestBlameWidth`,
-  `TestBlameFooter`.
-- 2026-10-28: step 4 done. `app/blame.go`: `b` in the viewer
-  (`toggleBlame`: on a file shown, a second read compared with the lines
-  shown before git is asked), the blame of the file just shown from its
-  read's bytes (`blameFile`, `fileRead`), the answer kept only for the
-  same file and the latest read (`blameMsg`'s generation and number,
-  `blameRead`), the refusals as the footer says them (`blameProblem`), the
-  commits' texts in `Options.Location` (`blameCommits`, `initials`). Tests
-  (`app/blame_test.go`, a fake that can hold each call): `TestBlameSwitch`,
-  `TestBlameAnswers` (another file shown during a read, the viewer closed
-  during one, `b` off and on during one), `TestBlameMessages`,
-  `TestBlameUnchanged` (no git with the blame off, `b` typed in the search,
-  a drag copying the code alone, full screen, plan 58's click),
-  `TestBlameCommits`, `TestBlameGit` (git itself: the column, the line
-  changed, one call with the bytes), `TestBlameFrameCost` (10,000 lines, a
-  commit every ten: p50 0.52 ms, p95 1.13 ms). Golden frames `file-blame`
-  at the four sizes; the eight viewer frames whose hints row names `b
-  blame` now (D1) changed in that row alone, reviewed.
-- 2026-10-28: step 5 done. ui-design.md: `b` in the viewer's two key
-  tables and a Git blame section (the 120x40 golden's window, the column,
-  what it claims, the footer, the read, the messages, the budget);
-  architecture.md, File viewer: plan 60's parts; evaluation.md: the timing
-  step runs `TestBlameFrameCost` too (eighteen); AGENTS.md: the status and
-  the MVP scope's git blame (amendment 62). events-and-state.md unchanged:
-  the blame is a read on the owner's key, as Source Control's, not a poll.
-- 2026-10-28: step 6, its measured part done. `scratchpad\term\p60run.ps1`
-  on `p51.ps1`: the real application in the acc tab at 208x59, 120x40 and
-  80x24, a mock dashboard (no CLI), a temporary home and app data, over a
-  demo repository (`p60demo.ps1`: three authors, line 11 changed and three
-  lines added in the working tree, notes.txt untracked). F3, two clicks on
-  viewer.go, `b`: the full column at 208x59 and 120x40 ("15/11/2022 Ana
-  Hubaut", "07/06/2024 Maximilian …", "Not committed" on lines 11 and 24 to
-  26), the compact one at 80x24 ("15/11/22 AH", "uncommitted"), full
-  screen too; the footer's commit following `g` to Bo Li's line, a line
-  not committed and Maximilian Oberhausen's, cut with "…" at 80x24; `b`
-  off and on; notes.txt opened next with the blame still on: "not in git
-  yet: no history". Found: the harness's digit keys give "&", "é"… on the
-  owner's AZERTY layout, so the line numbers are typed. The owner's visual
-  review is outstanding.
-- 2026-10-28: step 7 done. 46 mutants through `go test -overlay` in three
-  runs, each caught by a failing test in the end: the first left nine
-  (the bytes read without their CRs, the full form's boundary, three
-  drawing details, the answer arriving while the next file is read, the
-  open and on checks, "blame…" on the next file) and A5 caught only by a
-  build failure; the tests strengthened (`TestReadFile`'s `Raw`,
-  `TestBlameColumn`'s boundary, `TestBlameRead`, …) and A5 rewritten, the
-  second round caught the ten; a third, I14, the optional locks of the
-  read's environment, which `TestBlame` now checks (the read goes through
-  `stream`, `runRead` taking no standard input). The timing step alone:
-  the eighteen within their targets, `TestBlameFrameCost` p50 0.53 ms, p95
-  1.52 ms. Build, vet (Windows, Linux), gofmt, the whole suite.
-  `doc/plan60-evaluation.md`: 8 PASS, 0 FAIL, 60.8's last part, the
-  owner's visual review, not verified.
-- 2026-10-28: 60.8's visual review done by the owner ("Looks right"): 9
-  PASS, 0 FAIL. Not committed: the commit waits for the owner's approval.
+Plan 60 was approved and closed on 2026-10-28 (Closed plans, below). The
+next plan starts when the owner asks for one; the audit's roadmap
+([`doc/audit.md`](doc/audit.md), Part 2) is done, its phases 0 to 4
+implemented by plans 46 to 49.
 
 ## Closed plans
 
@@ -1078,3 +834,17 @@ left out by the owner. Approved on 2026-10-28: 10 PASS, 0 FAIL after the
 owner's visual review ([`doc/plan59-evaluation.md`](doc/plan59-evaluation.md));
 commit 5c8c9be, then the approval commit, both pushed; its full text in
 git (`git show 5c8c9be:plan.md`).
+
+## Plan 60 - Git blame in the file viewer
+
+Brief amendment 62: `b` in the file viewer shows, left of the line
+numbers, the date and author of the commit that last changed each line,
+after the owner's image of an IDE's blame, and in the footer the cursor
+line's commit; a line not committed shows "Not committed" and claims no
+author; a compact form where the code would keep fewer than 60 cells. Git
+is given the very bytes shown (`git blame --porcelain --contents -`), an
+answer is kept only for the same file and the latest read, and git's
+refusals are named. Approved on 2026-10-28: 9 PASS, 0 FAIL after the
+owner's visual review ([`doc/plan60-evaluation.md`](doc/plan60-evaluation.md));
+commit 0050409, then the approval commit; its full text in git
+(`git show 0050409:plan.md`).
