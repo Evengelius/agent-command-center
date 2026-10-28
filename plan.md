@@ -858,5 +858,5 @@ a file selects it and a click on the selected one opens it, as in the
 Explorer. A click is judged by the rows the frame drew
 (`Screen.WindowList`). Approved on 2026-10-28: 7 PASS, 0 FAIL after the
 owner's visual review ([`doc/plan61-evaluation.md`](doc/plan61-evaluation.md));
-commit b452ade, then the approval commit; its full text in git
-(`git show b452ade:plan.md`).
+commit b452ade, then the approval commit, both pushed; its full text in
+git (`git show b452ade:plan.md`).
