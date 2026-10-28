@@ -873,5 +873,5 @@ footer and a card beside a row. Read only, nothing fetched. Approved on
 2026-10-28 after the owner's visual review of its three stages: 11 PASS,
 1 FAIL accepted as a documented exception (62.10, 209 bytes kept a
 commit, not about 100) ([`doc/plan62-evaluation.md`](doc/plan62-evaluation.md));
-commit e906b73, then the approval commit; its full text in git (`git
-show e906b73:plan.md`).
+commit e906b73, then the approval commit, both pushed; its full text in
+git (`git show e906b73:plan.md`).
