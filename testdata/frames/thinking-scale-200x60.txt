@@ -10,7 +10,7 @@
 │                                                      ││                                                                                                                                      ││      │
 │ ◉ TURN 2 · running                               13s ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                                                           ││      │
 │   This is a test of the permission reviewer, which … ││ ▎  ▸ ✓ Thought for 3.5s · 717 thinking tokens                                                                   02:00:05  observed   ││      │
-│   •─ ○ (more as events arrive)                       ││ ▎                                                                                                                                    ││      │
+│   •─ ○ (more as events arrive)                       ││ ▎                                                                                                                                    ││  ◉   │
 │                                                      ││ ▎ Understood. For the rest of this session I won't create any file whose name starts with `b` (I'll treat uppercase `B` the same     ││      │
 │                                                      ││ ▎ way), and I won't run anything that would write one. That covers the Write tool, shell redirects, scripts, and build or package    ││      │
 │                                                      ││ ▎ tools that emit files. Scratch files will get names that don't start with `b`, and I'll check the names of any output a command    ││      │

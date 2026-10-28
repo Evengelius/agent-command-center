@@ -10,7 +10,7 @@
 │   Agent · agent ge│                                                                                                                                                              │els.jsonl  ││      │
 │                   │                                                                                                                                                              │ows.jsonl  ││      │
 │ ✓ TURN 2          │                                                                                                                                                              │val.jsonl  ││      │
-│   started by the C│                                                                                                                                                              │ent.jsonl  ││      │
+│   started by the C│                                                                                                                                                              │ent.jsonl  ││  ◉   │
 │                   │                                                                                                                                                              │ing.jsonl  ││      │
 │                   │                                                                                                                                                              │y.jsonl U  ││      │
 │                   │                                                                                                                                                              │urn.jsonl  ││      │

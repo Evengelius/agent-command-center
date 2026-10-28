@@ -1893,10 +1893,11 @@ zone B, and of the Explorer's panel while it shows (plan 43, brief
 amendment 44;
 [reference-design.md, The right sidebar](reference-design.md#the-right-sidebar)):
 a box of its own, 8 columns wide, with the zones' thin grey border and no
-title, as high as zones A and B, zone C full width under it. Two tiles near
-its top, 6 cells by 3 rows, centred: the Explorer's on the box's rows 1 to
-3, [Source Control](#source-control)'s on rows 5 to 7 (Skills', a
-placeholder, until plan 44, brief amendment 45); no text label. Under 100
+title, as high as zones A and B, zone C full width under it. Three tiles
+near its top, 6 cells by 3 rows, centred: the Explorer's on the box's rows
+1 to 3, [Source Control](#source-control)'s on rows 5 to 7 (Skills', a
+placeholder, until plan 44, brief amendment 45), the
+[Git Graph](#git-graph)'s on rows 9 to 11 (plan 62); no text label. Under 100
 columns there is no sidebar; F3 still shows the Explorer, in zone B's place,
 and Source Control, shown wider, stays in it.
 
@@ -1912,18 +1913,19 @@ references' pixels):
 
 The Explorer's icon is a tree, a trunk with a crossbar and a foot and two
 folders at its right; Source Control's is three nodes, the left two linked
-by a line, the top right one by a branch, git's own figure; both on one
-24-unit grid, the same stroke. With Sixel each tile is a 60x60 image over
+by a line, the top right one by a branch, git's own figure; the Git
+Graph's two lines of history from a fork to a merge, a commit on each, four
+commits in all; all on one 24-unit grid, the same stroke. With Sixel each tile is a 60x60 image over
 its 18 blank cells, which never change, drawn after the frame as the mode
 pill is (plan 39), then again after any frame that changes the rows it lies
 on and after every size report ([Rendering](#rendering)). Without Sixel the
-text form draws the Explorer as "≡" and Source Control as "⑂", centred in
+text form draws the Explorer as "≡", Source Control as "⑂" and the Git Graph as "◉", centred in
 the tile's middle row, as in the golden frames. Selected stays selected
 after the pointer leaves; hover and selected are separate, a hovered Source
 Control leaving the Explorer selected.
 
 **Tooltip** (plan 44, design D1). While the pointer is on a tile, its name,
-" Explorer " or " Source Control ", shows left of the sidebar on the tile's
+" Explorer ", " Source Control " or " Git Graph ", shows left of the sidebar on the tile's
 middle row, in the text colour on the selectors' hover ground (`#342B47`),
 over the cells of the panel or zone B there; it goes when the pointer leaves
 the tile, and a click on the tile hides it until the pointer leaves. Its
@@ -1944,9 +1946,11 @@ nothing on its way.
 **Clicks.** A click on the Explorer's tile shows or hides the panel, as F3
 does: one state, the same focus either way. A click on Source Control's
 shows or hides its panel the same way, with the focus (plan 44, design D1).
-The two panels share the docked place, one at a time: showing one hides the
-other, which keeps its state (the Explorer's folders and cursor, Source
-Control's sections and cursor) for its next showing. F3 stays the
+The panels share the docked place, one at a time: showing one hides the
+others, which keep their state (the Explorer's folders and cursor, Source
+Control's sections and cursor, the Git Graph's scope, cursor and unfolded
+commits) for their next showing. The Git Graph's tile does the same for it,
+as Alt+G does (plan 62, design D1). F3 stays the
 Explorer's: with Source Control shown, F3 shows the Explorer in its place.
 
 ## Explorer
@@ -2784,6 +2788,143 @@ the cursor's keys made when asked: with 3,000 refs, every group open, a key
 to its frame takes p50 0.6 ms, p95 1.5 ms (`TestBranchesFrameCost`, judged
 in the timing step against the keystroke's 16 ms).
 
+## Git Graph
+
+Plan 62 (brief amendment 64; the owner's images of an IDE's git graph and
+of its history scope picker, with only what is relevant). The sidebar's
+third tile, or Alt+G, shows the Git Graph in the docked place with the
+focus; the same again hides it. The Explorer, Source Control and the Git
+Graph share the place, one at a time, each keeping its state; under 100
+columns Alt+G shows it in zone B's place (design D1). It reads git and
+writes nothing: no checkout, switch, cherry-pick, revert, reset, branch or
+tag made, fetch, pull or push (design D14).
+
+At 120x40, the panel in zone B's place, the newest commit unfolded (golden
+frame `graph-120x40`):
+
+```text
+╭──────────────────────────────────╮╭──────────────────────────────────────────────────────────────────────────╮╭──────╮
+│ A · ORCHESTRATOR                 ││ GIT GRAPH                                                              ⌄ ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ──────────────────────────────────────────────────────────────────────── ││  ≡   │
+│ ──────────────────────────────── ││ ◎ Auto ⌄ · main → origin/main                                            ││      │
+│ STAGES · inferred from activity  ││ ●   ◎ main Name the footer's parts  Ana Hubaut                           ││      │
+│ ✓ TURN 1                      0s ││ │     M  graph.go internal/render/                                 +2 −1 ││      │
+│   Use the Agent tool to launch … ││ │     A  graph_test.go internal/render/                          +120 −0 ││  ⑂   │
+│   Agent · agent general-purpose  ││ │     R  graph.md ← doc/history.md doc/                            +3 −1 ││      │
+│                                  ││ │     D  old.txt                                                   +0 −3 ││      │
+│ ✓ TURN 2                      0s ││ │     A  logo.png                                                 binary ││▎     │
+│   started by the CLI             ││ ●   Fold the rows on ←  Bo Li                                            ││▎ ◉   │
+│ ──────────────────────────────── ││ ◉─╮ origin/main Merge branch 'rows'  Ana Hubaut                          ││▎     │
+│ ✦ TELEMETRY        Enter details ││ ● │ Rework the rows: no CR, no last empty line  Ana Hubaut               ││      │
+│ ▾ SESSION USAGE                  ││ ● │ Read the history in pages of 200  Bo Li                              ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││ ● │ Keep the cursor on its commit  Ana Hubaut                            ││      │
+│   Tokens 159.4k session total    ││ ● │ Watch the followed references  Ana Hubaut                            ││      │
+│   Est. cost $0.01 API-equiv.     ││ ●─╯ Add the scope popup  Bo Li                                           ││      │
+│ ▾ QUOTA WINDOWS                  ││ ●   Count each file's lines  Ana Hubaut                                  ││      │
+```
+
+**The panel** (design D2). "GIT GRAPH" and its "⌄", which hides it; a
+rule; the scope row, "◎ Auto ⌄" and what Auto follows ("main →
+origin/main", "main, no upstream", "detached at 1a2b3c4"), a note in the
+attention colour ("1 reference gone"), a click on it opening the scope
+popup; then the history, or in its place "reading…", "no commits yet" or
+git's failure. Its frame in the title colour while it has the focus.
+
+**The history** (designs D4 and D4b). The scope's references made hashes
+once, then one `git log --topo-order` process from them for the whole
+read, 200 commits a page: the first at once, the next when the cursor or
+the view comes within 50 rows of the last read, "reading…" under it
+meanwhile. Children always before their parents, each line of history
+together; never the date order. No limit on how far back: every commit
+read is kept compact (about 150 bytes); a guard at 1,000,000 commits, then
+"first 1,000,000 commits". The process ends with its last commit, the
+scope's change, a read again, the panel hidden, the session's end and the
+dashboard's quit. Before each next page, when the panel shows, after the
+dashboard's own commit, push, switch or fetch, and every 2 s while it
+shows, the references the scope follows are read again: moved, the
+history is read again from them, the cursor, the unfolded commits and the
+first row in view kept by hash (design D7), as they are when the panel is
+hidden and shown again or the scope changes, where those commits remain.
+
+**A row** (designs D9 to D11). The lanes, then the commit's labels, its
+branches in blue, remote branches in the title colour and tags in amber,
+HEAD's branch first and marked "◎"; the subject, cut with "…" only where
+the row ends, the labels giving way whole, the last first, before it is;
+the author dimmed where room remains. The cursor's row on the band.
+
+**The lanes** (designs D9 and D10). Two cells a lane at each row's left,
+as wide as the rows in view need, the subjects aligned after them: the
+commit's dot in its lane, "●", a merge's "◉"; the lanes passing it, "│";
+the curves from the lanes of its children that end on it, "╯" and "╰",
+"┴" where two meet, and down to the new lanes of a merge's other parents,
+"╮" and "╭", "┬"; a curve passing a lane leaves that lane's "│" whole. The
+figure of `git log --graph` without its rows in between. Each lane keeps
+one of eight colours down its line. Laid out from each commit's parents as
+its page comes, the rows already drawn never moving; a merge's other
+parents always get lanes of their own, and the lanes that end on a commit
+and those it starts are on either side of its dot, so that no line joins
+two commits git does not join. As many lanes as leave the subject 12
+cells, two at least; beyond them one overflow column, "┆" where hidden
+lanes pass, "◆" for a commit in one, no curve to or from them; the footer
+then says "lanes hidden: f widens the graph". f gives the panel zone A's
+columns, and zone B's between, while it has the focus: more lanes, the
+author and the date ("02/01/2006 15:04", the machine's zone) in columns
+of their own; f again gives them back, and Esc too with the focus. Under
+100 columns, where the panel spans the width already, f gives the columns
+alone.
+
+**A commit's files** (design D5). → or Enter on a commit, or a click on the
+cursor's commit, unfolds it into its files, read once with `git diff-tree
+-r -z --raw --numstat -M`, a merge against its first parent, the first
+commit against nothing; ← folds it. Each file under the lanes going on:
+its letter in Source Control's colours, A, M, D, R or T; its name, its
+folder dimmed; a rename's source after "←"; "+12 −3" at its right where
+room remains, "binary" for a binary file. "reading…" while git reads, its
+failure in the attention colour; "no file changed", or "no change against
+its first parent" for a merge; past 100,000 files, "first 100,000 of N
+files".
+
+**The historical diff** (design D6). Enter or a click on the cursor's file
+shows what the commit changed in it, in the [Diff view](#diff-view), read
+only: the first parent's version against the commit's, both through one
+`git cat-file --batch`, an added file nothing against the commit's, a
+deleted one the parent's against nothing, a rename from its old path. Its
+path row says "Commit 1a2b3c4", "Root commit 1a2b3c4" or "Merge 1a2b3c4,
+against its first parent 9f8e7d6", the sides named by their short hashes.
+It writes no file, adds nothing to zone B and sends nothing to the CLI;
+Source Control's own diff, open when the panel showed, waits for Source
+Control. Esc closes it, the cursor back on the file.
+
+**The history scope** (design D3). s or a click on the scope row opens the
+popup under it, "History scope" in its top edge: the search row; All
+("every branch, remote branch and tag") and Auto ("the current branch and
+its upstream"), "◉" on the mode in force; then Local branches, Remote
+branches and Tags, each heading with its count, folded but the group of
+the first reference ticked; a reference's "☐" or "☑", its name and its
+commit's short hash, "Remote branch at" a remote one's. All and Auto are
+exclusive; ticking references makes a selection of them, the last box
+cleared giving Auto. The search keeps the matching references' groups
+open, "No reference matches “…”" when none. Enter applies: the history of
+what is ticked, the scope row naming it ("All", "main", "3 references");
+Esc clears the search, else closes the popup, the scope as it was, as a
+click outside does. It never switches, fetches or writes: it filters what
+the history shows. The scope is kept for the session.
+
+**The footer and the card** (designs D12 and D13). While the panel has the
+focus, the footer sums up the cursor's row before the keys: a commit's
+short hash, author and when ("f52c343 · Ana Hubaut · 2 days ago"), or a
+file's full path and its status in words ("Modified", "Added", "Deleted",
+"Renamed from <old>", "Type changed"). The pointer on a row, or i for the
+cursor's, shows its card beside it: left of the docked panel, or in the
+panel under the row or over it, never over the row itself; its short hash
+in its top edge, then a commit's author, when relative and exact ("2 days
+ago (26/10/2026 09:41)"), its whole message wrapped, 20 lines at most,
+then "…", its files summed up ("3 files changed, +12 −3", a merge's
+"against its first parent"), its labels; a file's full path and status.
+The message is read once with `git log -1 --format=%B`; the pointer
+leaving the row takes the card away, as i again does. The pointer's
+motions within a row draw nothing (the motion filter, plan 43, design D4).
+
 ## Approvals
 
 The CLI's native approvals, relayed (AM2 B6, I7; AM4 W3; events-and-state.md,
@@ -3203,6 +3344,7 @@ The same file can name Codex's proxy (plan 22, amendment 19).
 | F4 | open or close the [modes selector](#input-editor), from any focus; the mode pill's click does the same; Manual (Ask for approval) at every launch, never saved | plan 12; plan 39; brief amendments 8 and 40 |
 | Alt+P | open or close the [model selector](#input-editor), from any focus (Claude Code's own key for its model picker); the pill's click does the same | plan 34; brief amendment 34 |
 | Alt+B | open or close the [branches popup](#branches), from any focus; a click on the project bar's branch name does the same; outside a repository a toast says there are no branches | plan 59; brief amendment 61 |
+| Alt+G | show or hide the [Git Graph](#git-graph) with the focus, from any focus; its tile's click does the same; under 100 columns in zone B's place | plan 62; brief amendment 64 |
 | F6 / Shift+F6 | next / previous zone (B, or the diff in its place, the docked panel, the Explorer's or Source Control's, while shown, C, A) | ASM-9; plan 43; plan 44 |
 | Tab / Shift+Tab | next / previous zone, outside the editor (in the editor Tab inserts a tab) | ASM-9 |
 | Esc | close the "+" menu (plan 30), the model selector (plan 34), the modes selector (plan 39; from its Full access confirmation, back to the modes), the branches popup (plan 59; a fetch stopped, a confirmation cancelled or the search cleared first), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
@@ -3320,6 +3462,32 @@ the console reads plain VT input after Ctrl+Q.
 | F5 | fetch every remote, as a click on "fetch" does |
 | Esc | stop a running fetch; else cancel the confirmation; else clear the search; else close the popup |
 | Alt+B | close the popup |
+| any other key | close the popup, then act as usual (Ctrl+Q quits) |
+
+**The Git Graph** (its tile shows or hides it, Alt+G too, with the focus, [Git Graph](#git-graph))
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | move; the wheel over it moves three rows; a click on a row puts the cursor there |
+| → ← | unfold a commit into its files, fold it; ← on a file, to its commit |
+| Enter | on a commit, unfold or fold it (a click on the cursor's commit too); on a file, its diff in that commit, in the conversation's place (a click on the cursor's file too) |
+| s | the history scope popup, as a click on the scope row |
+| f | wide, over zone A, more lanes, the author and the date in columns; and back |
+| i | the cursor's card; i again takes it away (the pointer on a row shows its card) |
+| Ctrl+C | copy the commit's full hash, or the file's path; never an interrupt |
+| Esc | back to the input, the Git Graph kept beside it (hidden where it takes the conversation's place) |
+| Alt+G | hide the Git Graph |
+
+**The history scope popup** (s or a click on the scope row, [Git Graph](#git-graph))
+
+| Key | Action |
+| - | - |
+| ↑ ↓ PgUp PgDn Home End | move over All, Auto, the groups' headings and the references; the wheel moves three rows |
+| → ← | open or fold a group |
+| Space | tick or clear a reference; on All or Auto, make it the scope; on a heading, fold or open its group (a click does the same) |
+| Enter | apply: the history of what is ticked |
+| typing, Backspace | search the references, case ignored; a paste goes into the search, its first line |
+| Esc | clear the search; else close the popup, the scope as it was |
 | any other key | close the popup, then act as usual (Ctrl+Q quits) |
 
 **The editor**: see [Input editor](#input-editor).

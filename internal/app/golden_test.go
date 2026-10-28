@@ -468,6 +468,23 @@ func TestGoldenFrames(t *testing.T) {
 			return h
 		}
 	}
+	// Plan 62 (amendment 64): the Git Graph by Alt+G on sampleGraph's twelve
+	// commits (graph_test.go), the keys after.
+	graphOf := func(fake func() *fakeGraph, n int, keys ...tea.KeyPressMsg) func(*testing.T) *harness {
+		return func(t *testing.T) *harness {
+			h := dashGit(t, fake())
+			h.m.opt.Location = time.UTC // the wide view's dates (design D10)
+			h.send(key('g', tea.ModAlt))
+			for _, k := range keys {
+				h.send(k)
+			}
+			if v := h.m.ui.Graph; !v.Open || len(v.Commits) != n {
+				t.Fatalf("the Git Graph: open %v, %d commits", v.Open, len(v.Commits))
+			}
+			return h
+		}
+	}
+	graph := func(keys ...tea.KeyPressMsg) func(*testing.T) *harness { return graphOf(sampleGraph, 12, keys...) }
 	down := func(n int, last tea.KeyPressMsg) []tea.KeyPressMsg {
 		var ks []tea.KeyPressMsg
 		for range n {
@@ -485,10 +502,14 @@ func TestGoldenFrames(t *testing.T) {
 		{"source", source()}, {"source-none", sourceNone}, {"source-diff", source(key(tea.KeyEnter, 0))}, {"source-diff-wide", source(key(tea.KeyEnter, 0), typed('f'))},
 		{"commit-menu", commitMenu}, {"commit-sixel", commitSixel}, {"commit-push", commitPush}, {"source-selection", sourceSelection},
 		{"branches", branches()}, {"branches-search", branches(typedText("fe")...)}, {"branches-confirm", branches(key(tea.KeyUp, 0), key(tea.KeyEnter, 0))},
-		{"file-blame", fileBlame}} {
+		{"file-blame", fileBlame}, {"graph", graph(key(tea.KeyRight, 0))}, {"graph-scope", graph(typed('s'))},
+		{"graph-diff", graph(key(tea.KeyRight, 0), key(tea.KeyDown, 0), key(tea.KeyEnter, 0))}, {"graph-wide", graph(typed('f'))}, {"graph-card", graph(key(tea.KeyDown, 0), key(tea.KeyDown, 0), typed('i'))},
+		{"graph-lanes", graphOf(lanesGraph, 13)}, {"graph-lanes-wide", graphOf(lanesGraph, 13, typed('f'))}} {
 		szs := sizes
-		if sc.name == "source-selection" {
-			szs = append(slices.Clone(sizes), [2]int{208, 59}) // the acc tab maximised (plan 50, criterion 50.10)
+		if sc.name == "source-selection" || strings.HasPrefix(sc.name, "graph") {
+			// The acc tab maximised (plan 50, criterion 50.10; plan 62, criterion
+			// 62.7).
+			szs = append(slices.Clone(sizes), [2]int{208, 59})
 		}
 		for _, size := range szs {
 			w, hgt := size[0], size[1]

@@ -10,7 +10,7 @@
 │   Agent · │                                                                                              │   ││      │
 │           │                                                                                              │   ││      │
 │ ✓ TURN 2  │                                                                                              │   ││      │
-│   started │                                                                                              │   ││      │
+│   started │                                                                                              │   ││  ◉   │
 │ ──────────│                                                                                              │   ││      │
 │ ✦ TELEMETR│                                                                                              │U  ││      │
 │ ▾ SESSION │                                                                                              │   ││      │

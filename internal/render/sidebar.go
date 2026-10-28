@@ -19,12 +19,13 @@ import (
 // (UI.SideHover, design D4), which never changes what is selected.
 
 // SidePanel is the sidebar's panel letter; its tiles' cells carry their
-// tile, SideExplorer or SideSource (Skills' until plan 44), its frame's and
-// blank cells 0.
+// tile, SideExplorer, SideSource (Skills' until plan 44) or SideGraph (plan
+// 62, design D1), its frame's and blank cells 0.
 const (
 	SidePanel    = 'K'
 	SideExplorer = 1
 	SideSource   = 2
+	SideGraph    = 3
 )
 
 // The sidebar's width, its frame included, and a tile's cells and rows:
@@ -36,7 +37,7 @@ const (
 )
 
 // sideTiles are the tiles in order with the box row each starts on.
-var sideTiles = []struct{ tile, row int }{{SideExplorer, 1}, {SideSource, 5}}
+var sideTiles = []struct{ tile, row int }{{SideExplorer, 1}, {SideSource, 5}, {SideGraph, 9}}
 
 // SideLook is a tile's look (plan 43, design D3).
 type SideLook int
@@ -55,7 +56,7 @@ const (
 // while the pointer is over it; a hover never takes the selection away
 // (design D4).
 func sideLook(ui UI, tile int) SideLook {
-	sel := tile == SideExplorer && ui.Explorer.Open || tile == SideSource && ui.Source.Open
+	sel := tile == SideExplorer && ui.Explorer.Open || tile == SideSource && ui.Source.Open || tile == SideGraph && ui.Graph.Open
 	hover := ui.SideHover == tile
 	switch {
 	case sel && hover:
@@ -71,8 +72,9 @@ func sideLook(ui UI, tile int) SideLook {
 // sideGlyph is each tile's icon in text, one cell wide: "≡" from Cascadia
 // Mono for the Explorer, "⑂" for Source Control, which Cascadia Mono lacks and
 // Windows Terminal takes from Segoe UI Symbol, narrower than a cell there
-// (plan 43, design D2; measured from the fonts' tables).
-var sideGlyph = map[int]string{SideExplorer: "≡", SideSource: "⑂"}
+// (plan 43, design D2; measured from the fonts' tables); "◉" for the Git
+// Graph, a merge's ring (plan 62, design D1).
+var sideGlyph = map[int]string{SideExplorer: "≡", SideSource: "⑂", SideGraph: "◉"}
 
 // sideKey is what the sidebar's rows depend on: its size, its tiles' looks
 // in text (with Sixel the images carry them, the cells the same in every
@@ -80,7 +82,7 @@ var sideGlyph = map[int]string{SideExplorer: "≡", SideSource: "⑂"}
 // only).
 type sideKey struct {
 	w, h           int
-	looks          [2]SideLook
+	looks          [3]SideLook
 	sixel, sixteen bool
 }
 
@@ -98,7 +100,7 @@ var sideRows = struct {
 func sidebar(ui UI, w, h int) []line {
 	k := sideKey{w: w, h: h, sixel: ui.Sixel, sixteen: sixteen}
 	if !ui.Sixel {
-		k.looks = [2]SideLook{sideLook(ui, SideExplorer), sideLook(ui, SideSource)}
+		k.looks = [3]SideLook{sideLook(ui, SideExplorer), sideLook(ui, SideSource), sideLook(ui, SideGraph)}
 	}
 	sideRows.Lock()
 	defer sideRows.Unlock()
@@ -201,7 +203,7 @@ func sideTile(tile int, look SideLook, sixel bool) []line {
 }
 
 // sideLabels name the tiles in their tooltip (plan 44, design D1).
-var sideLabels = map[int]string{SideExplorer: "Explorer", SideSource: "Source Control"}
+var sideLabels = map[int]string{SideExplorer: "Explorer", SideSource: "Source Control", SideGraph: "Git Graph"}
 
 // sideTooltip draws the hovered tile's name left of the sidebar, beside the
 // tile's middle row, on the selectors' hover ground, over the cells of the

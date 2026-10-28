@@ -10,7 +10,7 @@
 │           │ 32  }                                                                                        │   ││      │
 │ ✓ TURN 2  │ 33                                                                                           │   ││      │
 │   started │ 34  // Hex is the colour as "#rrggbb".                                                       │─╮ ││      │
-│   Edit    │ 35▌ func (c Colour) Hex() string {                                                           │ │ ││      │
+│   Edit    │ 35▌ func (c Colour) Hex() string {                                                           │ │ ││  ◉   │
 │ ──────────│ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                   │ │ ││      │
 │ ✦ TELEMETR│ 37▌ }                                                                                        │ │ ││      │
 │ ▾ SESSION │ 38                                                                                           │ │ ││      │

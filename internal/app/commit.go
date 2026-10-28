@@ -627,7 +627,7 @@ func (m *Model) commitKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 // the window's.
 func globalKey(k tea.KeyPressMsg) bool {
 	switch k.String() {
-	case "f1", "f2", "f3", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "alt+b", "f12", "ctrl+o", "ctrl+r",
+	case "f1", "f2", "f3", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "alt+b", "alt+g", "f12", "ctrl+o", "ctrl+r",
 		"shift+pgup", "shift+pgdown", "ctrl+q":
 		return true
 	}

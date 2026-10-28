@@ -489,8 +489,8 @@ func withoutFixed(t *testing.T, h *harness, raw string) string {
 
 // fixedItems are the images left on a Sixel dashboard of 100 columns and
 // more once the others are gone: the mode pill's (plan 39) and the
-// sidebar's two tiles' (plan 43), in the drawing's order.
-var fixedItems = []int{-5, -6, -7}
+// sidebar's three tiles' (plans 43 and 62), in the drawing's order.
+var fixedItems = []int{-5, -6, -7, -8}
 
 // drawnItems are the items of the images m drew last, in order.
 func drawnItems(m *Model) []int {
@@ -569,7 +569,7 @@ func TestWin32PasteRelease(t *testing.T) {
 	}
 	// The thumbnail, the mode pill (plan 39) and the sidebar's tiles (plan
 	// 43).
-	if items := drawnItems(m); len(m.drawn) != 4 || m.drawn[0].W != 10 || m.drawn[0].H != 5 || !slices.Equal(items[1:], fixedItems) {
+	if items := drawnItems(m); len(m.drawn) != 5 || m.drawn[0].W != 10 || m.drawn[0].H != 5 || !slices.Equal(items[1:], fixedItems) {
 		t.Errorf("drawn %+v, want one thumbnail of 10x5 cells, the mode pill and the sidebar's tiles", m.drawn)
 	}
 }

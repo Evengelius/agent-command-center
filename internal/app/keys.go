@@ -75,6 +75,12 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 			return cmds
 		}
 		top = render.LayerNone
+	case render.LayerScope:
+		// The Git Graph's scope popup, the same way (plan 62, design D3).
+		if cmds, done := m.scopeKey(k); done {
+			return cmds
+		}
+		top = render.LayerNone
 	}
 	if m.wt != nil {
 		return m.worktreesKey(k)
@@ -223,6 +229,10 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
 		if cmds, done := m.sourceKey(k); done {
 			return cmds
 		}
+	case m.ui.Graph.Open && m.ui.Focus == "R":
+		if cmds, done := m.graphKey(k); done {
+			return append(cmds, m.graphCardShow()...) // a card pinned follows the cursor (plan 62, design D13)
+		}
 	case m.ui.Explorer.Open && m.ui.Focus == "R":
 		if cmds, done := m.explorerKey(k); done {
 			return cmds
@@ -247,6 +257,11 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
 	// Alt+B from any zone: the branches popup (plan 59, design D1).
 	if k.String() == "alt+b" && !windowed(top) {
 		return m.toggleBranches()
+	}
+	// Alt+G from any zone: the Git Graph shown or hidden (plan 62, design D1).
+	if k.String() == "alt+g" && !windowed(top) {
+		m.closePopups()
+		return m.toggleGraph()
 	}
 	// F3: the file the entry or request on screen names, else the Explorer
 	// shown or hidden (plan 17, Opening; plan 43, design D5).

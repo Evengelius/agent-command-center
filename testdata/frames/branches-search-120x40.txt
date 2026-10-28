@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose  │ ⌄ Remote                                                     │     mock   ││      │
 │                                  │     origin/feat                                              │     mock   ││      │
 │ ✓ TURN 2                      0s │ ↑↓ move · Enter switch · Ctrl+C copy · F5 fetch · Esc close  │     mock   ││      │
-│   started by the CLI             ╰──────────────────────────────────────────────────────────────╯            ││      │
+│   started by the CLI             ╰──────────────────────────────────────────────────────────────╯            ││  ◉   │
 │ ──────────────────────────────── ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
 │ ✦ TELEMETRY        Enter details ││ │ RESULT  11:30                                                        │ ││      │
 │ ▾ SESSION USAGE                  ││ │ The subagent found two files in the directory, `alpha.txt` and       │ ││      │

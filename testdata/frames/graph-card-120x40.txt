@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
+╭──────────────────────────────────╮╭──────────────────────────────────────────────────────────────────────────╮╭──────╮
+│ A · ORCHESTRATOR                 ││ GIT GRAPH                                                              ⌄ ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ──────────────────────────────────────────────────────────────────────── ││  ≡   │
+│ ──────────────────────────────── ││ ◎ Auto ⌄ · main → origin/main                                            ││      │
+│ STAGES · inferred from activity  ││ ●   ◎ main Name the footer's parts  Ana Hubaut                           ││      │
+│ ✓ TURN 1                      0s ││ ●   Fold the rows on ←  Bo Li                                            ││      │
+│   Use the Agent tool to launch … ││ ◉─╮ origin/main Merge branch 'rows'  Ana Hubaut                          ││  ⑂   │
+│   Agent · agent general-purpose  ││ ● │ Rework the row╭─ 0000000 ────────────────────────────────────────────╮│      │
+│                                  ││ ● │ Read the histo│ Ana Hubaut                                           ││      │
+│ ✓ TURN 2                      0s ││ ● │ Keep the curso│ 2 years ago (14/11/2023 22:13)                       ││▎     │
+│   started by the CLI             ││ ● │ Watch the foll│                                                      ││▎ ◉   │
+│ ──────────────────────────────── ││ ●─╯ Add the scope │ Merge branch 'rows'                                  ││▎     │
+│ ✦ TELEMETRY        Enter details ││ ●   Count each fil│                                                      ││      │
+│ ▾ SESSION USAGE                  ││ ●   Show a rename'│ no change against its first parent                   ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││ ●   v1 Add the pan│ origin/main                                          ││      │
+│   Tokens 159.4k session total    ││ ●   Initial commit╰──────────────────────────────────────────────────────╯│      │
+│   Est. cost $0.01 API-equiv.     ││                                                                          ││      │
+│ ▾ QUOTA WINDOWS                  ││                                                                          ││      │
+│   Session (5hr)             35%† ││                                                                          ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Resets in 14h 40m              ││                                                                          ││      │
+│   Weekly (7 day)            47%† ││                                                                          ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Resets in 1d 20h               ││                                                                          ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                            ✓ COMPLETED │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md   │
+│     00:00   21.5k tok   │  tool: Write   │                     │ found.txt path:…                                    │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ 0000000 · Ana Hubaut · 2 years ago · ↑↓ move · ←→ fold · Enter diff · s scope · f wide · Esc back · F1 keys

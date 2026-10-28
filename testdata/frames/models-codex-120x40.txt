@@ -10,7 +10,7 @@
 │                                  ││       │ CODEX MODELS                                  Current session │  ││      │
 │                                  ││       │                                                               │  ││      │
 │                                  ││       │    GPT-6.1-Sol (default)                                      │  ││      │
-│                                  ││       │    Latest workhorse model for coding and everyday work.       │  ││      │
+│                                  ││       │    Latest workhorse model for coding and everyday work.       │  ││  ◉   │
 │                                  ││       │                                                               │  ││      │
 │                                  ││       │    GPT-6-Astra                                                │  ││      │
 │                                  ││       │    Frontier intelligence for the most demanding work.         │  ││      │

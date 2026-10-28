@@ -10,7 +10,7 @@
 │   •─ ⠋ Agent  List dir… observed ││                                                                          ││      │
 │   ├─ ◉ agent  general-… observed ││ ──────────────────────────────────────────────────────────────────────── ││      │
 │   │  └─ ⠋ Bash                   ││                                                                          ││      │
-│   └─ ○ (more as events arrive)   ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
+│   └─ ○ (more as events arrive)   ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││  ◉   │
 │ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for 2.8s · 719 thinking tokens       02:00:05  observed   ││      │
 │ ✦ TELEMETRY        Enter details ││ ▎  ⠋ Agent  general-purpose · List directory fi…  running 5s  observed   ││      │
 │ ▾ SESSION USAGE                  ││ ▎                                                                        ││      │

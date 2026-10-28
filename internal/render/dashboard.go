@@ -94,17 +94,27 @@ func PanelCompact(s *state.State, ui UI) bool {
 	return g.pw > 0 && g.bw == 0
 }
 
-// PanelShown says a panel is in the docked place: the Explorer's or Source
-// Control's, one at a time (plan 44, design D1).
-func PanelShown(ui UI) bool { return ui.Explorer.Open || ui.Source.Open }
+// PanelShown says a panel is in the docked place: the Explorer's, Source
+// Control's or the Git Graph's, one at a time (plan 44, design D1; plan 62,
+// design D1).
+func PanelShown(ui UI) bool { return ui.Explorer.Open || ui.Source.Open || ui.Graph.Open }
 
-// dockPanel is the docked panel w by h: Source Control's while shown, else
-// the Explorer's.
-func dockPanel(ui UI, w, h int) []line {
-	if ui.Source.Open {
+// dockPanel is the docked panel w by h: Source Control's or the Git
+// Graph's while shown, else the Explorer's.
+func dockPanel(ui UI, w, h int, sc *Screen) []line {
+	switch {
+	case ui.Source.Open:
 		return sourcePanel(ui, w, h)
+	case ui.Graph.Open:
+		return graphPanel(ui, w, h, sc)
 	}
 	return explorerPanel(ui, w, h)
+}
+
+// GraphWide says the Git Graph is drawn wide (design D10): asked with f,
+// the panel shown and with the focus, no diff open, from 100 columns.
+func GraphWide(ui UI) bool {
+	return ui.Graph.Open && ui.Graph.Wide && ui.Focus == "R" && !ui.Diff.Open && ui.Width >= standardWidth
 }
 
 // dashboard draws the working screen at the layout the width selects.
@@ -156,11 +166,12 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 			sc.B, sc.Panel, sc.Diff = Cols{}, Cols{}, Cols{0, w}
 			ls = append(ls, diffView(ui, w, g.upper)...)
 		case g.pw > 0:
-			ls = append(ls, dockPanel(ui, w, g.upper)...) // no sidebar: the panel in zone B's place
+			ls = append(ls, dockPanel(ui, w, g.upper, sc)...) // no sidebar: the panel in zone B's place
 		default:
 			ls = append(ls, zoneB(s, ui, w, g.upper, editorMinRows, sc)...)
 		}
 		ls = append(ls, zoneC(s, ui, w, g.ch, sc)...)
+		ui.Graph.hidden = sc.GraphHidden // the panel's note for the footer (plan 62, design D10)
 		return append(ls, keyFooter(s, ui, w, g.pw > 0 || ui.Diff.Open, sendNewline(ui)+" · F6 zone · F2 approve · F3 Explorer · F1 keys"))
 	}
 
@@ -180,17 +191,23 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		upper = append(upper, diffView(ui, d.W, g.upper))
 		if pw := g.aw + g.bw + g.pw - d.X - d.W; pw > 0 {
 			sc.Panel = Cols{d.X + d.W, pw}
-			upper = append(upper, dockPanel(ui, pw, g.upper))
+			upper = append(upper, dockPanel(ui, pw, g.upper, sc))
 		} else {
 			sc.Panel = Cols{}
 		}
+	} else if GraphWide(ui) {
+		// The Git Graph's wide view (plan 62, design D10): zone A's columns
+		// too, and zone B's between them.
+		pw := g.aw + g.bw + g.pw
+		sc.B, sc.Panel = Cols{}, Cols{0, pw}
+		upper = append(upper, dockPanel(ui, pw, g.upper, sc))
 	} else {
 		upper = append(upper, zoneA(s, ui, g.aw, g.upper, sc))
 		if g.bw > 0 {
 			upper = append(upper, zoneB(s, ui, g.bw, g.upper, editorMinRows, sc))
 		}
 		if g.pw > 0 {
-			upper = append(upper, dockPanel(ui, g.pw, g.upper))
+			upper = append(upper, dockPanel(ui, g.pw, g.upper, sc))
 		}
 	}
 	upper = append(upper, sidebar(ui, g.sw, g.upper))
@@ -205,7 +222,8 @@ func dashboard(s *state.State, ui UI, sc *Screen) []line {
 		// of the line, Ctrl+Q quit (plan 17, F3 in the footer; plan 29).
 		hints = strings.Replace(hints, ui.newlineKeys()[0]+" newline · ", "", 1)
 	}
-	return append(ls, keyFooter(s, ui, w, g.bw == 0 || ui.Diff.Open, hints))
+	ui.Graph.hidden = sc.GraphHidden // the panel's note for the footer (plan 62, design D10)
+	return append(ls, keyFooter(s, ui, w, g.bw == 0 || ui.Diff.Open || GraphWide(ui), hints))
 }
 
 // editorMinRows is the input's least height: one row under the rule, then
@@ -232,6 +250,8 @@ func footer(s *state.State, ui UI, hints string) string {
 			return fitHint(h, ui.Width) // the commit controls' (plan 45, design D12)
 		}
 		return sourceKeys(ui.Width, len(ui.Source.Selected) > 0)
+	case ui.Focus == "R" && ui.Graph.Open:
+		return graphKeys(ui.Width, ui.Graph.hidden, GraphWide(ui))
 	case ui.Focus == "R" && ui.Explorer.Open:
 		return explorerHints(ui.Width)
 	}
@@ -257,6 +277,8 @@ func keyFooter(s *state.State, ui UI, w int, noB bool, hints string) line {
 			return plain(" "+editorStatus(s, ui), stAttentionBold).fit(w)
 		case (noB || ui.Focus == "R" && PanelShown(ui) || ui.Focus == "D" && ui.Diff.Open) && anyPending(s):
 			return plain(" ◆ approval waiting · F2 to answer", stAttentionBold).fit(w)
+		case ui.Focus == "R" && ui.Graph.Open:
+			return graphFooter(ui, w) // the cursor's row summed up (plan 62, design D12)
 		}
 	}
 	return keyHints(w, ui, footer(s, ui, hints))

@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose  │ ⌄ Remote                                                     │                                                                                            ││      │
 │                                  │     origin/feat                                              │                                                                                            ││      │
 │ ✓ TURN 2                         │ ↑↓ move · Enter switch · Ctrl+C copy · F5 fetch · Esc close  │ory and write found.txt                                                11:30:00      mock   ││      │
-│   started by the CLI             ╰──────────────────────────────────────────────────────────────╯                                                                                            ││      │
+│   started by the CLI             ╰──────────────────────────────────────────────────────────────╯                                                                                            ││  ◉   │
 │                                                      ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it           ││      │
 │                                                      ││ ▎ finishes.                                                                                                                          ││      │
 │                                                      ││ ▎                                                                                                                                    ││      │

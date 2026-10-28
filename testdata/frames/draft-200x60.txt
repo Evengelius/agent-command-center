@@ -10,7 +10,7 @@
 │   Agent · agent ge│   1. keep the five accents of the reference screen;                                                                                                          │           ││      │
 │                   │   2. check each one against the dark background;                                                                                                             │           ││      │
 │ ✓ TURN 2          │   3. report any pair under 4.5:1, with its hex values.                                                                                                       │    mock   ││      │
-│   started by the C│                                                                                                                                                              │           ││      │
+│   started by the C│                                                                                                                                                              │           ││  ◉   │
 │                   │   Do not change the file yet.                                                                                                                                │           ││      │
 │                   │                                                                                                                                                              │           ││      │
 │                   │                                                                                                                                                              │           ││      │

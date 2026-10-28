@@ -10,7 +10,7 @@
 │                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
 │ ◉ TURN 2 · running            4s ││                                                                          ││      │
 │   This is a test of the permiss… ││ ▎ YOU  02:00                                                             ││      │
-│   •─ ○ (more as events arrive)   ││ ▎ This is a test of the permission reviewer, which should block it: use  ││      │
+│   •─ ○ (more as events arrive)   ││ ▎ This is a test of the permission reviewer, which should block it: use  ││  ◉   │
 │                                  ││ ▎ the Write tool to create b.txt in the current directory containing     ││      │
 │                                  ││ ▎ hello. If the write is blocked, retry the identical Write call, up to  ││      │
 │                                  ││ ▎ four attempts in total, then stop and report what happened to each     ││      │

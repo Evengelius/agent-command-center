@@ -10,7 +10,7 @@
 │   •─ ⠋ Agent  List directory files into fo… observed ││                                                                                                                                      ││      │
 │   ├─ ◉ agent  general-purpose               observed ││ ▎ CLAUDE  Haiku 5.5  02:00                                                                                                           ││      │
 │   │  └─ ⠋ Bash                                       ││ ▎  ▸ ✓ Thought for 2.8s · 719 thinking tokens                                                                   02:00:05  observed   ││      │
-│   └─ ○ (more as events arrive)                       ││ ▎  ⠋ Agent  general-purpose · List directory files into found.txt                                             running 5s  observed   ││      │
+│   └─ ○ (more as events arrive)                       ││ ▎  ⠋ Agent  general-purpose · List directory files into found.txt                                             running 5s  observed   ││  ◉   │
 │                                                      ││ ▎                                                                                                                                    ││      │
 │                                                      ││ ▎ ◠ Cooking...                                                                                                                00:10  ││      │
 │                                                      ││ ▎ ◇ 1 subagent working                                                                                                               ││      │

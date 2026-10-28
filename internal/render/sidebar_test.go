@@ -198,15 +198,16 @@ func TestSidebarTiles(t *testing.T) {
 	for _, size := range [][2]int{{120, 40}, {200, 60}} {
 		w, h := size[0], size[1]
 		for _, c := range []struct {
-			open             bool
-			hover            int
-			explorer, skills SideLook
+			open                    bool
+			hover                   int
+			explorer, skills, graph SideLook
 		}{
-			{false, 0, SideInactive, SideInactive},
-			{true, 0, SideSelected, SideInactive},
-			{true, SideSource, SideSelected, SideHover},
-			{true, SideExplorer, SideSelectedHover, SideInactive},
-			{false, SideExplorer, SideHover, SideInactive},
+			{false, 0, SideInactive, SideInactive, SideInactive},
+			{true, 0, SideSelected, SideInactive, SideInactive},
+			{true, SideSource, SideSelected, SideHover, SideInactive},
+			{true, SideExplorer, SideSelectedHover, SideInactive, SideInactive},
+			{false, SideExplorer, SideHover, SideInactive, SideInactive},
+			{false, SideGraph, SideInactive, SideInactive, SideHover}, // the Git Graph's (plan 62, design D1)
 		} {
 			ui := UI{Width: w, Height: h, Focus: "B", SideHover: c.hover}
 			if c.open {
@@ -215,22 +216,23 @@ func TestSidebarTiles(t *testing.T) {
 			name := fmt.Sprintf("%dx%d, shown %v, hover %d", w, h, c.open, c.hover)
 			sc := Draw(s, ui)
 			cells := map[int]int{}
+			tops := map[int]int{SideExplorer: 3, SideSource: 7, SideGraph: 11} // under the box's top edge on row 2
 			for y := range sc.lines {
 				for x := range w {
 					if p, it := sc.ItemAt(x, y); p == SidePanel && it != 0 {
 						cells[it]++
-						top := map[int]int{SideExplorer: 3, SideSource: 7}[it] // under the box's top edge on row 2
+						top := tops[it]
 						if x < w-7 || x > w-2 || y < top || y > top+2 {
 							t.Errorf("%s: tile %d's cell at %d,%d, outside columns %d to %d and rows %d to %d", name, it, x, y, w-7, w-2, top, top+2)
 						}
 					}
 				}
 			}
-			if len(cells) != 2 || cells[SideExplorer] != 18 || cells[SideSource] != 18 {
-				t.Errorf("%s: tiles' cells %v, want two of 18", name, cells)
+			if len(cells) != 3 || cells[SideExplorer] != 18 || cells[SideSource] != 18 || cells[SideGraph] != 18 {
+				t.Errorf("%s: tiles' cells %v, want three of 18", name, cells)
 			}
-			for tile, want := range map[int]SideLook{SideExplorer: c.explorer, SideSource: c.skills} {
-				top := map[int]int{SideExplorer: 3, SideSource: 7}[tile]
+			for tile, want := range map[int]SideLook{SideExplorer: c.explorer, SideSource: c.skills, SideGraph: c.graph} {
+				top := tops[tile]
 				lk := looks[want]
 				for r := range 3 {
 					l := sc.lines[top+r]

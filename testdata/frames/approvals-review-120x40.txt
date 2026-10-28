@@ -10,7 +10,7 @@
 │   child /root/list_files · chil… ││ ▎  ▸ ✓ Thought for up to 0.0s · 8 reasoning tokens  11:30:00      mock   ││      │
 │                                  ││ ▎  ✓ collabAgent:wait                               11:30:00      mock   ││      │
 │                                  ││ ▎  ✓ /root/create_found · fileChange  allowed by you 11:30:00      moc…  ││      │
-│                                  ││ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens  11:30:00      mock   ││      │
+│                                  ││ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens  11:30:00      mock   ││  ◉   │
 │ ──────────────────────────────── ││ ▎  ✓ collabAgent:wait                               11:30:00      mock   ││      │
 │ ✦ TELEMETRY        Enter details ││                                                                          ││      │
 │ ▾ SESSION USAGE                  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │

@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose  ││      tools                                                          D  ││      │
 │                                  ││       claude-api-key-context-refused.jsonl                              ││      │
 │ ✓ TURN 2                      0s ││       claude-models.jsonl                                               ││      │
-│   started by the CLI             ││       claude-quota-windows.jsonl                                        ││      │
+│   started by the CLI             ││       claude-quota-windows.jsonl                                        ││  ◉   │
 │ ──────────────────────────────── ││       claude-subagent-approval.jsonl                                    ││      │
 │ ✦ TELEMETRY        Enter details ││       claude-thinking-subagent.jsonl                                    ││      │
 │ ▾ SESSION USAGE                  ││       claude-thinking.jsonl                                             ││      │

@@ -3,16 +3,17 @@ package app
 import "github.com/Evengelius/agent-command-center/internal/render"
 
 // closePopups closes every popup: the "+" menu, the model and modes
-// selectors, the branches popup, the commit dropdown and the staging
-// question, as a click outside each of them does. At most one popup is
-// open, and opening any layer, a popup, a window, the key overlay or the
-// Worktrees view, calls it first: a popup never stays open under what
-// opened over it (plan 49, design D7; audit finding 4).
+// selectors, the branches popup, the Git Graph's scope popup, the commit
+// dropdown and the staging question, as a click outside each of them does.
+// At most one popup is open, and opening any layer, a popup, a window, the
+// key overlay or the Worktrees view, calls it first: a popup never stays
+// open under what opened over it (plan 49, design D7; audit finding 4).
 func (m *Model) closePopups() {
 	m.ui.Plus, m.ui.PlusHover = false, false
 	m.closeModels()
 	m.closeModes()
 	m.closeBranches()
+	m.closeScope()
 	m.dropSourcePopups()
 }
 
@@ -29,6 +30,9 @@ func (m *Model) closeUnshown(sc *render.Screen) {
 	}
 	if m.ui.Branches.Open && !sc.Branches.Shown {
 		m.closeBranches() // no room under the project bar, or a view over it (plan 59)
+	}
+	if m.ui.Scope.Open && !sc.Scope.Shown {
+		m.closeScope() // no room under the scope row, or a view over it (plan 62)
 	}
 	if m.ui.Plus && !sc.Plus {
 		m.ui.Plus, m.ui.PlusHover = false, false

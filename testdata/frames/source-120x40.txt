@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││▎     │
 │                                  ││ │                             ✓ Commit                             │ ⌄ │ ││      │
 │ ✓ TURN 2                      0s ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
-│   started by the CLI             ││                                                                          ││      │
+│   started by the CLI             ││                                                                          ││  ◉   │
 │ ──────────────────────────────── ││ ▾ MERGE CHANGES                                                        1 ││      │
 │ ✦ TELEMETRY        Enter details ││                                                                          ││      │
 │ ▾ SESSION USAGE                  ││    !  sample/merge.go                                                    ││      │

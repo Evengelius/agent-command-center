@@ -10,7 +10,7 @@
 │           │ 02/03/2023 Bo Li         32  }                                                               │   ││      │
 │ ✓ TURN 2  │ 02/03/2023 Bo Li         33                                                                  │   ││      │
 │   started │ 02/03/2023 Bo Li         34  // Hex is the colour as "#rrggbb".                              │─╮ ││      │
-│   Edit    │ Not committed            35▌ func (c Colour) Hex() string {                                  │ │ ││      │
+│   Edit    │ Not committed            35▌ func (c Colour) Hex() string {                                  │ │ ││  ◉   │
 │ ──────────│ Not committed            36▌     return fmt.Sprintf("#%06x", c.RGB)                          │ │ ││      │
 │ ✦ TELEMETR│ Not committed            37▌ }                                                               │ │ ││      │
 │ ▾ SESSION │ 15/11/2022 Ana Hubaut    38                                                                  │ │ ││      │

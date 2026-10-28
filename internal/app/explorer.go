@@ -44,6 +44,7 @@ func (m *Model) openExplorer() []tea.Cmd {
 	m.explorerGen++
 	m.ui.Source.Open = false
 	m.dropSourcePopups()
+	m.closeGraph() // the Git Graph's state kept (plan 62, design D1)
 	v := &m.ui.Explorer
 	root := m.fileRoot()
 	v.Open, v.Name = true, filepath.Base(root)
@@ -217,7 +218,7 @@ func (m *Model) backToExplorer() []tea.Cmd {
 func (m *Model) explorerKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	s := k.String()
 	switch s {
-	case "f1", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "alt+b", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
+	case "f1", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "alt+b", "alt+g", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
 		"shift+pgup", "shift+pgdown", "ctrl+q", "F":
 		return nil, false
 	}

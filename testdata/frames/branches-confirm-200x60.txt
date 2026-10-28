@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose  │     feat                                         origin/feat │                                                                                            ││      │
 │                                  │     fix/login                                                │                                                                                            ││      │
 │ ✓ TURN 2                         │   ✓ main                                   origin/main ↑2 ↓1 │ory and write found.txt                                                11:30:00      mock   ││      │
-│   started by the CLI             │     wtb                                  in another worktree │                                                                                            ││      │
+│   started by the CLI             │     wtb                                  in another worktree │                                                                                            ││  ◉   │
 │                                  │ › Remote                                                     │round to list the directory and write `found.txt`. I'll report its result when it           ││      │
 │                                  │ › Tags                                                       │                                                                                            ││      │
 │                                  │ 3 uncommitted changes. Git keeps them on fix/login unless    │                                                                                            ││      │

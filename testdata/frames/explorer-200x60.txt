@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose                      ││ ────────────────────────────────────────────────────────────────────────────────────────────────────── ││   › 🗀  tools            D  ││      │
 │                                                      ││                                                                                                        ││     🗎  …ext-refused.jsonl  ││      │
 │ ✓ TURN 2                                          0s ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                             ││     🗎  …aude-models.jsonl  ││      │
-│   started by the CLI                                 ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                  11:30:00      mock   ││     🗎  …ota-windows.jsonl  ││      │
+│   started by the CLI                                 ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                  11:30:00      mock   ││     🗎  …ota-windows.jsonl  ││  ◉   │
 │                                                      ││ ▎                                                                                                      ││     🗎  …nt-approval.jsonl  ││      │
 │                                                      ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll       ││     🗎  …ng-subagent.jsonl  ││      │
 │                                                      ││ ▎ report its result when it finishes.                                                                  ││     🗎  …de-thinking.jsonl  ││      │

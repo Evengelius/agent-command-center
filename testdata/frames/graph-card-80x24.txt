@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
+ A ✓ Turn 2                                               (inferred)   F6: tree
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ GIT GRAPH                                                                  ⌄ │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ ◎ Auto ⌄ · main → origin/main                                                │
+│ ●   ◎ main Name the footer's parts  Ana Hubaut                               │
+│ ●   Fold the rows on ←  Bo Li                                                │
+│ ◉─╮ origin/main Merge branch 'rows'  Ana Hubaut                              │
+│ ● │ Rework the rows: n╭─ 0000000 ────────────────────────────────────────────╮
+│ ● │ Read the history i│ Ana Hubaut                                           │
+│ ● │ Keep the cursor on│ 2 years ago (14/11/2023 22:13)                       │
+│ ● │ Watch the followed│                                                      │
+│ ●─╯ Add the scope popu│ Merge branch 'rows'                                  │
+│ ●   Count each file's │                                                      │
+│ ●   Show a rename's so│ no change against its first parent                   │
+│ ●   v1 Add the panel  │ origin/main                                          │
+│ ●   Initial commit  An╰──────────────────────────────────────────────────────╯
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ 0000000 · Ana Hubaut · 2 years ago · ↑↓ · Enter diff · s scope · Esc back

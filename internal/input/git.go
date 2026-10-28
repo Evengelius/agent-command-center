@@ -75,6 +75,9 @@ const (
 // git's own refusals stand (brief, amendment 10).
 type GitCLI struct {
 	Trace func(args []string) // sees every call's arguments; for tests
+	// noFetch keeps a partial clone's missing objects from being fetched on
+	// demand: the Git Graph's reads (plan 62, design D14).
+	noFetch bool
 }
 
 // gitError is git's failure: its exit code and what it said.
@@ -117,6 +120,9 @@ func (g GitCLI) command(ctx context.Context, dir string, read bool, args []strin
 	cmd := exec.CommandContext(ctx, exe, full...)
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0",
 		"GIT_MERGE_AUTOEDIT=no", "LC_ALL=C", "LANGUAGE=C")
+	if g.noFetch {
+		cmd.Env = append(cmd.Env, "GIT_NO_LAZY_FETCH=1")
+	}
 	// A hook or helper that keeps git's pipes once git has ended never keeps
 	// the call waiting (plan 48, design D4; audit finding 3c).
 	cmd.WaitDelay = gitWaitDelay

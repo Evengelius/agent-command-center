@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││▎     │
 │                                  ││ │                               Push                               │ ⌄ │ ││      │
 │ ✓ TURN 2                      0s ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
-│   started by the CLI             ││ Committed abc0001.                                                       ││      │
+│   started by the CLI             ││ Committed abc0001.                                                       ││  ◉   │
 │ ──────────────────────────────── ││                                                                          ││      │
 │ ✦ TELEMETRY        Enter details ││ ▾ CHANGES                                                              5 ││      │
 │ ▾ SESSION USAGE                  ││                                                                          ││      │

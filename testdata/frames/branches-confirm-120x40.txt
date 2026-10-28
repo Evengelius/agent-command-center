@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose  │     feat                                         origin/feat │     mock   ││      │
 │                                  │     fix/login                                                │     mock   ││      │
 │ ✓ TURN 2                      0s │   ✓ main                                   origin/main ↑2 ↓1 │     mock   ││      │
-│   started by the CLI             │     wtb                                  in another worktree │            ││      │
+│   started by the CLI             │     wtb                                  in another worktree │            ││  ◉   │
 │ ──────────────────────────────── │ › Remote                                                     │──────────╮ ││      │
 │ ✦ TELEMETRY        Enter details │ › Tags                                                       │          │ ││      │
 │ ▾ SESSION USAGE                  │ 3 uncommitted changes. Git keeps them on fix/login unless    │and       │ ││      │

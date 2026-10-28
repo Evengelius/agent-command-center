@@ -15,6 +15,7 @@ const (
 	LayerCommit                 // the commit button's dropdown (plan 45)
 	LayerAsk                    // the staging question (plan 45)
 	LayerBranches               // the branches popup (plan 59)
+	LayerScope                  // the Git Graph's scope popup (plan 62)
 	LayerModes                  // the modes selector (plan 39)
 	LayerModels                 // the model selector (plan 34)
 	LayerPlus                   // the "+" menu (plan 30)
@@ -39,8 +40,9 @@ type Stack struct {
 	Top   Layer
 	shown uint16
 	// Tip is the sidebar's tooltip: shown under no window, taking no input
-	// (plan 44, design D1).
-	Tip bool
+	// (plan 44, design D1). Card is the Git Graph's card: shown under no
+	// popup, window or full view, taking no input (plan 62, design D13).
+	Tip, Card bool
 }
 
 // Shown says the frame shows layer l.
@@ -55,8 +57,9 @@ func (k *Stack) show(l Layer) { k.shown |= 1 << l; k.Top = l }
 //   - on the dashboard only, at a size it draws: the key overlay, alone;
 //   - else one popup at most, over the dashboard itself (no full view) and
 //     under no window: the "+" menu, the model selector, the modes
-//     selector, the branches popup, the staging question, the commit
-//     dropdown, the first open of these;
+//     selector, the branches popup, the Git Graph's scope popup while its
+//     panel shows, the staging question, the commit dropdown, the first
+//     open of these;
 //   - the file window, then the draft window over it.
 func Layers(s *state.State, ui UI) Stack {
 	var k Stack
@@ -82,11 +85,14 @@ func Layers(s *state.State, ui UI) Stack {
 			k.show(LayerModes)
 		case ui.Branches.Open:
 			k.show(LayerBranches)
+		case ui.Graph.Open && ui.Scope.Open:
+			k.show(LayerScope)
 		case ui.Source.Open && ui.Source.Ask > 0:
 			k.show(LayerAsk)
 		case ui.Source.Open && ui.Source.Menu:
 			k.show(LayerCommit)
 		}
+		k.Card = ui.Graph.Open && ui.Graph.Card != nil && k.Top == LayerNone
 	}
 	if WindowOpen(ui) {
 		k.show(LayerWindow)
@@ -119,6 +125,9 @@ func (k Stack) only(ui UI) UI {
 	}
 	if ui.Branches.Open && !k.Shown(LayerBranches) {
 		ui.Branches = BranchesView{}
+	}
+	if ui.Scope.Open && !k.Shown(LayerScope) {
+		ui.Scope = ScopeView{}
 	}
 	if ui.Source.Ask > 0 && !k.Shown(LayerAsk) {
 		ui.Source.Ask = 0

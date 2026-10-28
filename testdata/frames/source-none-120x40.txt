@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose  ││                                                                          ││▎     │
 │                                  ││                                                                          ││      │
 │ ✓ TURN 2                      0s ││                                                                          ││      │
-│   started by the CLI             ││                                                                          ││      │
+│   started by the CLI             ││                                                                          ││  ◉   │
 │ ──────────────────────────────── ││                                                                          ││      │
 │ ✦ TELEMETRY        Enter details ││                                                                          ││      │
 │ ▾ SESSION USAGE                  ││                                                                          ││      │

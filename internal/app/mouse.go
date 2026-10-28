@@ -85,6 +85,15 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			m.closeBranches()
 			return nil
 		}
+		if mo.Button == tea.MouseLeft && top == render.LayerScope {
+			// The Git Graph's scope popup (plan 62, design D3), the same way:
+			// a click outside keeps the scope there was.
+			if p, item := m.screen.ItemAt(mo.X, mo.Y); p == render.ScopePanel {
+				return m.scopeClick(item)
+			}
+			m.closeScope()
+			return nil
+		}
 		if mo.Button == tea.MouseLeft && top != render.LayerDraft {
 			switch p, item := m.screen.ItemAt(mo.X, mo.Y); {
 			case p == render.BranchPanel:
@@ -97,13 +106,16 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 				// design D1), each closing a popup as a click outside it does;
 				// the sidebar's frame changes nothing at all, no state, focus or
 				// selection.
-				if item != render.SideExplorer && item != render.SideSource {
+				if item != render.SideExplorer && item != render.SideSource && item != render.SideGraph {
 					return nil
 				}
 				m.closePopups()
 				m.ui.SideHover, m.ui.SideTipOff = item, true // the click answers the tooltip, until the pointer leaves the tile
-				if item == render.SideSource {
+				switch item {
+				case render.SideSource:
 					return m.toggleSource()
+				case render.SideGraph:
+					return m.toggleGraph() // the Git Graph's (plan 62, design D1)
 				}
 				return m.toggleExplorer()
 			case p == render.PillPanel:
@@ -161,18 +173,22 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 				return m.explorerClick(item) // the panel's own, no selection (plan 43, design D7)
 			case render.SourcePanel:
 				return m.sourceClick(item, mo.X, mo.Y, mo.Mod&tea.ModCtrl != 0) // the same for Source Control's (plan 44, design D5; plan 50, D2)
+			case render.GraphPanel:
+				return m.graphClick(item) // the Git Graph's, the Explorer's rule (plan 62, design D8)
 			}
 			m.press(mo)
 		}
 	case tea.MouseMotionMsg:
+		var hover []tea.Cmd
 		if !m.drag.on {
 			// The sidebar's hover (plan 43, design D4): the tile under the
 			// pointer, 0 off the tiles, a button held or not (a press on a
 			// tile starts no drag); a report wandering within a tile leaves
 			// it as it is, and it never changes what is selected.
 			m.sideHover(m.sideTileAt(mo.X, mo.Y))
-			m.ui.Source.Hover = m.sourceHoverAt(mo.X, mo.Y) // Source Control's row (plan 44, design D5)
-			m.ui.Source.MenuHot = m.menuHotAt(mo.X, mo.Y)   // the dropdown's item (plan 45, design D4)
+			m.ui.Source.Hover = m.sourceHoverAt(mo.X, mo.Y)  // Source Control's row (plan 44, design D5)
+			m.ui.Source.MenuHot = m.menuHotAt(mo.X, mo.Y)    // the dropdown's item (plan 45, design D4)
+			hover = m.graphHover(m.graphHoverAt(mo.X, mo.Y)) // the Git Graph's card (plan 62, design D13)
 		}
 		if top == render.LayerPlus && !m.drag.on {
 			m.ui.PlusHover = m.screen.PanelAt(mo.X, mo.Y) == 'U' // the hover (plan 30, design D3)
@@ -195,6 +211,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			m.drag.moved = m.drag.moved || mo.X != m.drag.x || mo.Y != m.drag.y
 			m.extend(mo)
 		}
+		return hover
 	case tea.MouseReleaseMsg:
 		m.sideHover(m.sideTileAt(mo.X, mo.Y)) // where the button came up
 		m.ui.Source.Hover = m.sourceHoverAt(mo.X, mo.Y)
@@ -221,6 +238,10 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 		}
 		if top == render.LayerBranches && m.screen.PanelAt(mo.X, mo.Y) == render.BranchesPanel {
 			m.branchesWheel(mo.Button) // the popup's list (plan 59, design D10)
+			return nil
+		}
+		if top == render.LayerScope && m.screen.PanelAt(mo.X, mo.Y) == render.ScopePanel {
+			m.scopeWheel(mo.Button) // the scope popup's list (plan 62, design D3)
 			return nil
 		}
 		if top == render.LayerDraft {
@@ -262,6 +283,8 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			m.explorerWheel(mo.Button) // over the panel only (plan 43, design D7)
 		} else if p == render.SourcePanel {
 			m.sourceWheel(mo.Button) // the same for Source Control's (plan 44, design D5)
+		} else if p == render.GraphPanel {
+			return m.graphWheel(mo.Button) // the Git Graph's cursor (plan 62, design D8)
 		} else if p == render.DiffPanel {
 			m.diffWheel(mo.Button) // the diff under the pointer (plan 44, design D9)
 		}
@@ -311,7 +334,8 @@ func motionFilter(tm tea.Model, msg tea.Msg) tea.Msg {
 	}
 	m, ok := tm.(*Model)
 	if !ok || render.Layers(m.s, m.ui).Top.Hover() || m.drag.on || m.sideTileAt(mo.X, mo.Y) != m.ui.SideHover ||
-		m.sourceHoverAt(mo.X, mo.Y) != m.ui.Source.Hover || m.ui.Source.Menu && m.menuHotAt(mo.X, mo.Y) != m.ui.Source.MenuHot {
+		m.sourceHoverAt(mo.X, mo.Y) != m.ui.Source.Hover || m.ui.Source.Menu && m.menuHotAt(mo.X, mo.Y) != m.ui.Source.MenuHot ||
+		m.graphHoverAt(mo.X, mo.Y) != m.ui.Graph.Hover {
 		return msg
 	}
 	m.motionDropped++

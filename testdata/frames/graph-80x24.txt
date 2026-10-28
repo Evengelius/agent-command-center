@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
+ A ✓ Turn 2                                               (inferred)   F6: tree
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ GIT GRAPH                                                                  ⌄ │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ ◎ Auto ⌄ · main → origin/main                                                │
+│ ●   ◎ main Name the footer's parts  Ana Hubaut                               │
+│ │     M  graph.go internal/render/                                     +2 −1 │
+│ │     A  graph_test.go internal/render/                              +120 −0 │
+│ │     R  graph.md ← doc/history.md doc/                                +3 −1 │
+│ │     D  old.txt                                                       +0 −3 │
+│ │     A  logo.png                                                     binary │
+│ ●   Fold the rows on ←  Bo Li                                                │
+│ ◉─╮ origin/main Merge branch 'rows'  Ana Hubaut                              │
+│ ● │ Rework the rows: no CR, no last empty line  Ana Hubaut                   │
+│ ● │ Read the history in pages of 200  Bo Li                                  │
+│ ● │ Keep the cursor on its commit  Ana Hubaut                                │
+│ ● │ Watch the followed references  Ana Hubaut                                │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ 0000000 · Ana Hubaut · 2 years ago · ↑↓ · Enter diff · s scope · Esc back

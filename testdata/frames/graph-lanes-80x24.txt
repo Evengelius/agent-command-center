@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
+ A ✓ Turn 2                                               (inferred)   F6: tree
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ GIT GRAPH                                                                  ⌄ │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ ◎ Auto ⌄ · main → origin/main                                                │
+│ ◉─┬─┬─┬─┬─┬─┬─┬─┬─╮ ◎ main commit 12  Ana Hubaut                             │
+│ ● │ │ │ │ │ │ │ │ │ commit 11  Ana Hubaut                                    │
+│ │ ● │ │ │ │ │ │ │ │ origin/main commit 10  Ana Hubaut                        │
+│ │ │ ● │ │ │ │ │ │ │ commit 9  Ana Hubaut                                     │
+│ │ │ │ ● │ │ │ │ │ │ commit 8  Ana Hubaut                                     │
+│ │ │ │ │ ● │ │ │ │ │ commit 7  Ana Hubaut                                     │
+│ │ │ │ │ │ ● │ │ │ │ commit 6  Ana Hubaut                                     │
+│ │ │ │ │ │ │ ● │ │ │ commit 5  Ana Hubaut                                     │
+│ │ │ │ │ │ │ │ ● │ │ commit 4  Ana Hubaut                                     │
+│ │ │ │ │ │ │ │ │ ● │ commit 3  Ana Hubaut                                     │
+│ │ │ │ │ │ │ │ │ │ ● commit 2  Ana Hubaut                                     │
+│ ●─┴─┴─┴─┴─┴─┴─┴─┴─╯ v1 commit 1  Ana Hubaut                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ 0000000 · Ana Hubaut · 2 years ago · ↑↓ · Enter diff · s scope · Esc back

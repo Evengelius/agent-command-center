@@ -47,6 +47,11 @@ type DiffView struct {
 	// by, Wide the view over zone A too ("f").
 	Top, Left int
 	Wide      bool
+	// Commit is a historical diff's comparison, from the Git Graph (plan 62,
+	// design D6): "Commit 9cd6692", "Merge 9cd6692, against its first
+	// parent", "Root commit 9cd6692"; "" for Source Control's diffs. Its
+	// sides are named by their short hashes.
+	Commit string
 }
 
 // DiffHunk is a hunk, as "@@ -OldStart,OldLines +NewStart,NewLines @@".
@@ -325,7 +330,10 @@ func diffPathRow(v DiffView, w int) line {
 	dir, name := splitPath(v.Path)
 	l = append(l, deco(dir, stGrey), deco(name, stExpFileName))
 	what := "Working tree"
-	if v.Staged {
+	switch {
+	case v.Commit != "":
+		what = v.Commit // a historical diff (plan 62, design D6)
+	case v.Staged:
 		what = "Staged"
 	}
 	if v.Conflict != "" {

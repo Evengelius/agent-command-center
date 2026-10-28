@@ -99,12 +99,17 @@ type Screen struct {
 	// click on one picks it (plan 61, design D5); zero when none.
 	WindowList ListShown
 	// Branches is what the frame showed of the branches popup (plan 59),
-	// zero when it is closed.
+	// zero when it is closed; Scope of the Git Graph's scope popup (plan
+	// 62).
 	Branches BranchesShown
+	Scope    ScopeShown
+	// GraphHidden says the Git Graph's panel hid lanes in view (plan 62,
+	// design D10), for the footer's note.
+	GraphHidden bool
 	// Tiles are where the frame left the sidebar's tiles' images to be
 	// drawn, the Explorer's then Source Control's, and their looks (plan 43, design
 	// D2), zero when none.
-	Tiles [2]SideTileShown
+	Tiles [3]SideTileShown
 	// Layers is what the frame showed of the interaction layers, and the top
 	// one (plan 49, design D7); Plus and Dropdown say it drew the "+" menu
 	// (plan 30) and the commit dropdown (plan 45); rule is the row of the
@@ -229,6 +234,10 @@ func Draw(s *state.State, ui UI) *Screen {
 		commitMenu(sc, ui) // the commit button's dropdown over the panel (plan 45)
 	case st.Shown(LayerBranches):
 		branchesPopup(sc, ui) // the branches popup under the project bar (plan 59)
+	case st.Shown(LayerScope):
+		scopePopup(sc, ui) // the Git Graph's scope popup under its scope row (plan 62)
+	case st.Card:
+		graphCard(sc, ui) // the Git Graph's card beside its row (plan 62, design D13)
 	}
 	if st.Shown(LayerWindow) {
 		floatWindow(s, ui, sc)

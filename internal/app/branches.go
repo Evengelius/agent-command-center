@@ -602,6 +602,7 @@ func (m *Model) branchSwitched(msg branchSwitchedMsg) []tea.Cmd {
 	if m.edit.Text() == "" && len(m.attach) == 0 && m.s.Session.Phase == state.Ready {
 		m.edit.Insert("I switched the project from " + msg.from + " to " + msg.to + "; check the files you rely on before going on.")
 	}
+	cmds = append(cmds, m.graphRecheck()...) // the Git Graph's references (plan 62, design D4b)
 	if m.ui.Explorer.Open {
 		return append(cmds, m.openExplorer()...) // its folders and git's markers
 	}
@@ -669,11 +670,12 @@ func (m *Model) fetched(msg fetchedMsg) []tea.Cmd {
 	case msg.err != nil:
 		note, bad = gitProblem(msg.err), true
 	}
+	recheck := m.graphRecheck() // the Git Graph's references (plan 62, design D4b)
 	if !m.ui.Branches.Open {
-		return m.toast(note)
+		return append(recheck, m.toast(note)...)
 	}
 	m.ui.Branches.Note, m.ui.Branches.NoteBad = note, bad
-	return m.readBranches()
+	return append(recheck, m.readBranches()...)
 }
 
 // syncBranches shows what the popup's git does (syncUI): the quit

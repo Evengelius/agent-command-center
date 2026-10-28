@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose  ││ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   ││      │
 │                                  ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   ││      │
 │ ✓ TURN 2                      0s ││                                                                          ││      │
-│   started by the CLI             ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│   started by the CLI             ││ ╭──────────────────────────────────────────────────────────────────────╮ ││  ◉   │
 │ ──────────────────────────────── ││ │ RESULT  11:30                                                        │ ││      │
 │ ✦ TELEMETRY        Enter details ││ │ The subagent found two files in the directory, `alpha.txt` and       │ ││      │
 │ ▾ SESSION USAGE                  ││ │ `beta.md`, and wrote them into                                       │ ││      │

@@ -53,6 +53,7 @@ func main() {
 		PickFolder:        input.PickFolder,
 		NerdIcons:         input.NerdIcons(os.Getenv),
 		BranchWatch:       2 * time.Second, // the header's branch kept current (plan 59, design D9)
+		GraphWatch:        2 * time.Second, // the Git Graph's references watched while it shows (plan 62, design D4b)
 		Git:               input.GitCLI{},
 		Sessions:          &input.Sessions{},
 	})

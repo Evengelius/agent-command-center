@@ -10,7 +10,7 @@
 │   Agent · agent ge│ 15/11/2022 Ana Hubaut    16  // palette holds the colours the dashboard draws with.                                                                          │           ││      │
 │                   │ 15/11/2022 Ana Hubaut    17  var palette = []Colour{                                                                                                         │           ││      │
 │ ✓ TURN 2          │ 15/11/2022 Ana Hubaut    18      {"title", 0x7aa2f7},                                                                                                        │    mock   ││      │
-│   started by the C│ 15/11/2022 Ana Hubaut    19      {"text", 0xc0caf5},                                                                                                         │           ││      │
+│   started by the C│ 15/11/2022 Ana Hubaut    19      {"text", 0xc0caf5},                                                                                                         │           ││  ◉   │
 │   Edit            │ 15/11/2022 Ana Hubaut    20      {"grey", 0x565f89},                                                                                                         │           ││      │
 │                   │ 02/03/2023 Bo Li         21      {"attention", 0xe0af68},                                                                                                    │           ││      │
 │                   │ 02/03/2023 Bo Li         22  }                                                                                                                               │           ││      │

@@ -10,7 +10,7 @@
 │   Write                          ││                                                                          ││      │
 │                                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
 │ ✓ TURN 2                      1s ││ ▎  ✓ Write  <probe-root>\probe-work\p2\hello.txt    02:00:09  observed   ││      │
-│   Reply with the single word: a… ││ ▎  ✓ orchestrator · Write  …llo.txt  allowed by you 02:00:09  observed   ││      │
+│   Reply with the single word: a… ││ ▎  ✓ orchestrator · Write  …llo.txt  allowed by you 02:00:09  observed   ││  ◉   │
 │                                  ││                                                                          ││      │
 │                                  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
 │                                  ││ │ RESULT  02:00                                                        │ ││      │

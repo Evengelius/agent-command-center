@@ -10,7 +10,7 @@
 │   •─ ✓ Write  …ello.txt observed ││                                                                          ││      │
 │   └─ ○ (more as events arrive)   ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
 │                                  ││ ▎  ✓ Write  <probe-root>\probe-work\p2\hello.txt    02:00:09  observed   ││      │
-│                                  ││ ▎  ✓ orchestrator · Write  …llo.txt  allowed by you 02:00:09  observed   ││      │
+│                                  ││ ▎  ✓ orchestrator · Write  …llo.txt  allowed by you 02:00:09  observed   ││  ◉   │
 │                                  ││ ▎                                                                        ││      │
 │                                  ││ ▎ done▌                                                                  ││      │
 │                                  ││                                                                          ││      │

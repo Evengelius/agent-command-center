@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
+╭──────────────────────────────────╮╭─ DIFF · graph.go ────────────────────── +2 −1 ─╮╭────────────────────────╮╭──────╮
+│ A · ORCHESTRATOR                 ││ internal/render/graph.go · Commit 0000000: 00… ││ GIT GRAPH            ⌄ ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ────────────────────────────────────────────── ││ ────────────────────── ││  ≡   │
+│ ──────────────────────────────── ││ @@ -1,3 +1,4 @@                                ││ ◎ Auto ⌄ · main → ori… ││      │
+│ STAGES · inferred from activity  ││   1   1   package render                       ││ ●   Name the footer's… ││      │
+│ ✓ TURN 1                      0s ││   2   2                                        ││ │     M  graph.go int… ││      │
+│   Use the Agent tool to launch … ││   3     − const graphFixed = 4                 ││ │     A  graph_test.go ││  ⑂   │
+│   Agent · agent general-purpose  ││       3 + // graphFixed are the rows outside … ││ │     R  graph.md doc/ ││      │
+│                                  ││       4 + const graphFixed = 5                 ││ │     D  old.txt +0 −3 ││      │
+│ ✓ TURN 2                      0s ││                                                ││ │     A  logo.png      ││▎     │
+│   started by the CLI             ││                                                ││ ●   Fold the rows on ← ││▎ ◉   │
+│ ──────────────────────────────── ││                                                ││ ◉─╮ Merge branch 'row… ││▎     │
+│ ✦ TELEMETRY        Enter details ││                                                ││ ● │ Rework the rows: … ││      │
+│ ▾ SESSION USAGE                  ││                                                ││ ● │ Read the history … ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││                                                ││ ● │ Keep the cursor o… ││      │
+│   Tokens 159.4k session total    ││                                                ││ ● │ Watch the followe… ││      │
+│   Est. cost $0.01 API-equiv.     ││                                                ││ ●─╯ Add the scope pop… ││      │
+│ ▾ QUOTA WINDOWS                  ││                                                ││ ●   Count each file's… ││      │
+│   Session (5hr)             35%† ││                                                ││ ●   Show a rename's s… ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││                                                ││ ●   v1 Add the panel   ││      │
+│   Resets in 14h 40m              ││                                                ││ ●   Initial commit     ││      │
+│   Weekly (7 day)            47%† ││                                                ││                        ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││                                                ││                        ││      │
+│   Resets in 1d 20h               ││                                                ││                        ││      │
+╰──────────────────────────────────╯╰────────────────────────────────────────────────╯╰────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                            ✓ COMPLETED │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md   │
+│     00:00   21.5k tok   │  tool: Write   │                     │ found.txt path:…                                    │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ↑↓ PgUp PgDn Home End scroll · ←→ shift · n N change · f wide · r compare again · Esc back · F1 keys

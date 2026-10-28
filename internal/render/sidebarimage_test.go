@@ -37,7 +37,7 @@ func TestSideImages(t *testing.T) {
 		t.Error("the hovered icon is not brighter than the inactive one")
 	}
 	bar := hexColour("#A272F1")
-	for _, tile := range []int{SideExplorer, SideSource} {
+	for _, tile := range []int{SideExplorer, SideSource, SideGraph} {
 		for lk, want := range looks {
 			name := fmt.Sprintf("tile %d, look %d", tile, lk)
 			img := SideImage(SideTileLook{Tile: tile, Look: lk})
@@ -131,6 +131,24 @@ func TestSideImages(t *testing.T) {
 						t.Errorf("%s: (%d, %d) %s, want the ground between the nodes", name, p[0], p[1], hexOf(at(p[0], p[1])))
 					}
 				}
+			case SideGraph:
+				// The merge, a commit on each line, the fork, each wider than a
+				// link (plan 62, design D1).
+				for _, c := range [][2]int{{31, 21}, {24, 30}, {38, 30}, {31, 39}} {
+					if n := countNear(img, image.Rect(c[0]-3, c[1]-3, c[0]+4, c[1]+4), want.icon, 6); n < 20 {
+						t.Errorf("%s: the commit at (%d, %d): %d pixels of the icon", name, c[0], c[1], n)
+					}
+				}
+				for _, p := range [][2]int{{27, 25}, {34, 25}, {27, 34}, {34, 34}} { // the two lines, each from the fork to the merge
+					if !icon(p[0], p[1]) {
+						t.Errorf("%s: a link at (%d, %d): %s", name, p[0], p[1], hexOf(at(p[0], p[1])))
+					}
+				}
+				for _, p := range [][2]int{{31, 30}, {19, 30}, {43, 30}} { // the ground between the lines and beside them
+					if !off(p[0], p[1]) {
+						t.Errorf("%s: (%d, %d) %s, want the ground", name, p[0], p[1], hexOf(at(p[0], p[1])))
+					}
+				}
 			}
 			// Every pixel opaque or unset, as Sixel draws them; with no tile,
 			// each pixel drawn the icon's colour itself, none blended into a
@@ -152,10 +170,10 @@ func TestSideImages(t *testing.T) {
 }
 
 // TestSideSixel: each tile's look encoded once, its unset pixels left
-// unset (P2 = 1) and its raster 60x60; the eight images differ.
+// unset (P2 = 1) and its raster 60x60; the twelve images differ.
 func TestSideSixel(t *testing.T) {
 	seen := map[string]SideTileLook{}
-	for _, tile := range []int{SideExplorer, SideSource} {
+	for _, tile := range []int{SideExplorer, SideSource, SideGraph} {
 		for _, lk := range []SideLook{SideInactive, SideHover, SideSelected, SideSelectedHover} {
 			k := SideTileLook{Tile: tile, Look: lk}
 			s := SideSixel(k)
@@ -185,7 +203,7 @@ func TestSideTileCells(t *testing.T) {
 		for _, open := range []bool{false, true} {
 			var frame string
 			var base *Screen
-			for _, hover := range []int{0, SideExplorer, SideSource} {
+			for _, hover := range []int{0, SideExplorer, SideSource, SideGraph} {
 				ui := UI{Width: w, Height: h, Focus: "B", Sixel: true, SideHover: hover}
 				if open {
 					ui.Explorer = shownExplorer()
@@ -196,7 +214,7 @@ func TestSideTileCells(t *testing.T) {
 				if frame == "" {
 					frame, base = f, sc
 				} else {
-					ty := map[int]int{SideExplorer: 3, SideSource: 7}[hover] + 1
+					ty := map[int]int{SideExplorer: 3, SideSource: 7, SideGraph: 11}[hover] + 1
 					label := " " + sideLabels[hover] + " "
 					lx := w - 8 - textWidth(label)
 					fl, hl := strings.Split(frame, "\n"), strings.Split(f, "\n")
@@ -212,8 +230,8 @@ func TestSideTileCells(t *testing.T) {
 						t.Errorf("%s: the tooltip's row changed outside the tooltip", name)
 					}
 				}
-				for i, tile := range []int{SideExplorer, SideSource} {
-					y := map[int]int{SideExplorer: 3, SideSource: 7}[tile]
+				for i, tile := range []int{SideExplorer, SideSource, SideGraph} {
+					y := map[int]int{SideExplorer: 3, SideSource: 7, SideGraph: 11}[tile]
 					want := SideTileShown{Shown: true, X: w - 7, Y: y, Look: SideTileLook{Tile: tile, Look: sideLook(ui, tile)}}
 					if sc.Tiles[i] != want {
 						t.Errorf("%s: tile %d shown %+v, want %+v", name, tile, sc.Tiles[i], want)
@@ -246,7 +264,7 @@ func TestSideTileCells(t *testing.T) {
 		{"the draft window", UI{Width: 200, Height: 60, Focus: "B", Sixel: true, DraftWin: DraftWindow{Open: true}}, true},
 	} {
 		sc := Draw(s, c.ui)
-		if sc.Tiles[0].Shown != c.shown || sc.Tiles[1].Shown != c.shown {
+		if sc.Tiles[0].Shown != c.shown || sc.Tiles[1].Shown != c.shown || sc.Tiles[2].Shown != c.shown {
 			t.Errorf("%s: tiles %+v, want shown %v", c.name, sc.Tiles, c.shown)
 		}
 	}

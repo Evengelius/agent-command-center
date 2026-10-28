@@ -10,7 +10,7 @@
 │                                  ││       │ CODEX MODELS                                  Current session │  ││      │
 │                                  ││       │                                                               │  ││      │
 │                                  ││       │    GPT-6-Sol                                              ✓   │  ││      │
-│                                  ││       │    Previous generation workhorse model.                       │  ││      │
+│                                  ││       │    Previous generation workhorse model.                       │  ││  ◉   │
 │                                  ││       │                                                               │  ││      │
 │                                  ││       │    GPT-6-Luna                                                 │  ││      │
 │                                  ││       │    Fast and affordable model for easier tasks.                │  ││      │

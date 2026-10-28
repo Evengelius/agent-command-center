@@ -261,6 +261,8 @@ func (m *Model) showSource() []tea.Cmd {
 		m.explorerGen++ // its reads under way are dropped
 		m.ui.Explorer.Open = false
 	}
+	m.closeGraph()        // the Git Graph's state kept, its diff closed (plan 62, design D6)
+	m.restoreSourceDiff() // Source Control's own diff, kept while the graph showed
 	v := &m.ui.Source
 	v.Open = true
 	if v.Folded == nil {
@@ -297,6 +299,7 @@ func (m *Model) dropSourcePopups() {
 func (m *Model) closePanels() {
 	m.closeExplorer()
 	m.closeSource()
+	m.closeGraph()
 }
 
 // sourceKey handles a key while Source Control has the focus (design D5):
@@ -311,7 +314,7 @@ func (m *Model) sourceKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	}
 	s := k.String()
 	switch s {
-	case "f1", "f3", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "alt+b", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
+	case "f1", "f3", "f4", "f6", "shift+f6", "tab", "shift+tab", "alt+p", "alt+b", "alt+g", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
 		"shift+pgup", "shift+pgdown", "ctrl+q", "F":
 		return nil, false
 	}
@@ -621,8 +624,8 @@ func (m *Model) openDiff(r render.SourceRow) []tea.Cmd {
 // (design D3).
 func (m *Model) compareOpen(refresh bool) tea.Cmd {
 	sg, ok := m.sourceGit()
-	if !ok || m.snap == nil {
-		return nil
+	if !ok || m.snap == nil || m.ui.Diff.Commit != "" {
+		return nil // a historical diff is the Git Graph's: Source Control compares nothing over it (plan 62, design D6)
 	}
 	m.diffGen++
 	gen, root, snap, e, staged, now := m.diffGen, m.fileRoot(), *m.snap, m.diffEntryOpen, m.ui.Diff.Staged, m.opt.Now
@@ -672,7 +675,7 @@ func (m *Model) diffRead(msg diffMsg) {
 	}
 	top, left, wide := v.Top, v.Left, v.Wide
 	nv := render.DiffView{Open: true, Path: v.Path, Orig: v.Orig, Staged: v.Staged, Both: v.Both, Wide: wide,
-		OldName: msg.pair.Old.Name, NewName: msg.pair.New.Name, Conflict: msg.pair.Conflict}
+		OldName: msg.pair.Old.Name, NewName: msg.pair.New.Name, Conflict: msg.pair.Conflict, Commit: v.Commit}
 	if nv.Conflict == "" {
 		nv.Conflict = v.Conflict
 	}
@@ -777,7 +780,7 @@ func (m *Model) clampDiff() {
 func (m *Model) diffViewKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	s := k.String()
 	switch s {
-	case "f1", "f2", "f3", "f4", "f6", "shift+f6", "shift+tab", "alt+p", "alt+b", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
+	case "f1", "f2", "f3", "f4", "f6", "shift+f6", "shift+tab", "alt+p", "alt+b", "alt+g", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "ctrl+r",
 		"shift+pgup", "shift+pgdown", "ctrl+q", "F":
 		return nil, false
 	}

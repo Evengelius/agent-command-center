@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
+ A ✓ Turn 2                                               (inferred)   F6: tree
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ GIT GRAPH                                                                  ⌄ │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ ◎ Auto ⌄ · main → origin/main                                                │
+│╭─ History scope ──────────────────────────────────╮                          │
+││ ⌕ type to search the references                  │                          │
+││ ○ All · every branch, remote branch and tag      │                          │
+││ ◉ Auto · the current branch and its upstream     │ Hubaut                   │
+││ ▾ Local branches 1                               │                          │
+││   ☐ main  0000000                                │                          │
+││ ▸ Remote branches 1                              │                          │
+││ ▸ Tags 1                                         │                          │
+││ Space tick · Enter apply · Esc cancel            │                          │
+│╰──────────────────────────────────────────────────╯                          │
+│ ●   v1 Add the panel  Bo Li                                                  │
+│ ●   Initial commit  Ana Hubaut                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ 0000000 · Ana Hubaut · 2 years ago · ↑↓ · Enter diff · s scope · Esc back

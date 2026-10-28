@@ -10,7 +10,7 @@
 │   Agent · │   3. report any pair under 4.5:1, with its hex values.                                       │ │ ││      │
 │           │                                                                                              │ │ ││      │
 │ ✓ TURN 2  │   Do not change the file yet.                                                                │ │ ││      │
-│   started │                                                                                              │ │ ││      │
+│   started │                                                                                              │ │ ││  ◉   │
 │ ──────────│                                                                                              │ │ ││      │
 │ ✦ TELEMETR│                                                                                              │─╯ ││      │
 │ ▾ SESSION │                                                                                              │   ││      │

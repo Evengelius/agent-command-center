@@ -10,7 +10,7 @@
 │                                  ││ ▎  ▾ ✓ Thought for 2.2s · 354 thinking tokens       02:00:25  observed   ││      │
 │ ✓ TURN 2                     20s ││ ▎     from 02:00:23.816 to 02:00:25.977 · a thinking block, observed     ││      │
 │   This is a test of the permiss… ││ ▎     354 thinking tokens · exact, for this phase · message_delta        ││      │
-│   Glob · Write                   ││ ▎     usage.output_tokens_details.thinking_tokens                        ││      │
+│   Glob · Write                   ││ ▎     usage.output_tokens_details.thinking_tokens                        ││  ◉   │
 │                                  ││ ▎     live estimate 447 at its last update · system/thinking_tokens,     ││      │
 │                                  ││ ▎     estimated by the CLI                                               ││      │
 │                                  ││ ▎     no thinking text: the CLI sends none                               ││      │

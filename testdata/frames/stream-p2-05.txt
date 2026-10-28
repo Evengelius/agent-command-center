@@ -10,7 +10,7 @@
 │   Write                          ││ ▎ YOU  02:00                                                             ││      │
 │                                  ││ ▎ Reply with the single word: again                                      ││      │
 │ ✓ TURN 2                      1s ││                                                                          ││      │
-│   Reply with the single word: a… ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Reply with the single word: a… ││ ──────────────────────────────────────────────────────────────────────── ││  ◉   │
 │                                  ││                                                                          ││      │
 │ ◉ TURN 3 · interrupting   9h 29m ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
 │   Count from 1 to 300, one numb… ││ ▎ again                                                                  ││      │

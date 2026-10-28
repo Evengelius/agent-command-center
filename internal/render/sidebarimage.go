@@ -123,7 +123,9 @@ func sideGround(img *image.NRGBA, fill, outline color.NRGBA, bar bool) {
 // sideIcon draws tile's icon in c over img (design D3): the Explorer's a
 // tree, its trunk with a crossbar to the upper folder and a foot to the
 // lower one, both folders filled, each with its tab; Source Control's three filled
-// nodes and their links, a branch from the left line up to the right node.
+// nodes and their links, a branch from the left line up to the right node;
+// the Git Graph's two lines of history from a fork to a merge, a commit on
+// each, four filled commits in all (plan 62, design D1).
 func sideIcon(img *image.NRGBA, tile int, c color.NRGBA) {
 	const s = sideUnit
 	ox, oy := sideIconX-12*s, sideIconY-12*s
@@ -147,6 +149,10 @@ func sideIcon(img *image.NRGBA, tile int, c color.NRGBA) {
 		strokePaths(img, [][]pt{p(6, 5, 6, 19), p(6, 13.2, 14.5, 13.2, 17.5, 10.6, 17.5, 5)}, nil, sideStroke*s, c)
 		r := 2.7 * s
 		strokePaths(img, nil, [][3]float64{{ox + 6*s, oy + 5*s, r}, {ox + 17.5*s, oy + 5*s, r}, {ox + 6*s, oy + 19*s, r}}, 0, c)
+	case SideGraph:
+		strokePaths(img, [][]pt{p(12, 4.5, 6.5, 12, 12, 19.5), p(12, 4.5, 17.5, 12, 12, 19.5)}, nil, sideStroke*s, c)
+		r := 2.4 * s
+		strokePaths(img, nil, [][3]float64{{ox + 12*s, oy + 4.5*s, r}, {ox + 6.5*s, oy + 12*s, r}, {ox + 17.5*s, oy + 12*s, r}, {ox + 12*s, oy + 19.5*s, r}}, 0, c)
 	}
 }
 

@@ -257,6 +257,12 @@ var (
 	cHomeBandFocusTop  = colour{"#3A3A4C", "8"}
 )
 
+// laneColour is the Git Graph's lanes' colours, taken in turn (plan 62,
+// design D9): the families of the palette's others, each apart from the
+// next on the dark ground and on 16 colours.
+var laneColour = [laneColours]colour{{"#60A5FA", "12"}, {"#F472B6", "13"}, {"#4ADE80", "10"}, {"#FBBF24", "11"},
+	{"#A78BFA", "5"}, {"#2DD4BF", "14"}, {"#FB923C", "3"}, {"#F87171", "9"}}
+
 // modelColours colours a model by its family; any other model is text.
 var modelColours = []struct {
 	family string
@@ -360,6 +366,13 @@ var (
 	stBtnSep, stBtnSepDim, stMenuOutline, stMenuText                     = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 	// The home screen's project path in its field (plan 51, design D4).
 	stHomePath = new(lipgloss.Style)
+	// The Git Graph's lanes, each in its colour (plan 62, design D9).
+	stLane = func() (out [laneColours]*lipgloss.Style) {
+		for i := range out {
+			out[i] = new(lipgloss.Style)
+		}
+		return out
+	}()
 
 	stMdHeading = stTitle
 	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
@@ -487,6 +500,9 @@ func paint() {
 	paintStyle(stInfo, fg(cLink))
 	paintStyle(stDiffAdd, fg(cDiffAdd))
 	paintStyle(stDiffDel, fg(cDiffDel))
+	for i, c := range laneColour {
+		paintStyle(stLane[i], fg(c))
+	}
 	paintStyle(stMsgOutline, fg(cMsgOutline))
 	paintStyle(stMsgFocus, fg(cMsgFocus))
 	paintStyle(stMsgHolder, fg(cMsgHolder))

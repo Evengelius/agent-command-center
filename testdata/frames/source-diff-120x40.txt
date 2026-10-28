@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose  ││  10     −     return fmt.Sprintf("#%06X", c.R… ││ ╭────────────────────╮ ││▎     │
 │                                  ││      10 +     return fmt.Sprintf("#%06x", c.R… ││ │    ✓ Commit    │ ⌄ │ ││      │
 │ ✓ TURN 2                      0s ││  11  11   }                                    ││ ╰────────────────────╯ ││      │
-│   started by the CLI             ││  12  12                                        ││                        ││      │
+│   started by the CLI             ││  12  12                                        ││                        ││  ◉   │
 │ ──────────────────────────────── ││  13  13   // Dark says the colour is dark.     ││ ▾ MERGE CHANGES      1 ││      │
 │ ✦ TELEMETRY        Enter details ││  14     − func (c Colour) Dark() bool { retur… ││                        ││      │
 │ ▾ SESSION USAGE                  ││      14 + func (c Colour) Dark() bool {        ││    !  sample/merge.go  ││      │

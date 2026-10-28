@@ -67,6 +67,21 @@ func (sc *Screen) find(p byte) (x, y int, ok bool) {
 	return 0, 0, false
 }
 
+// findItem is the cell of the first span of panel p carrying item, from the
+// top down.
+func (sc *Screen) findItem(p byte, item int) (x, y int, ok bool) {
+	for y := range sc.lines {
+		x := 0
+		for _, s := range sc.lines[y] {
+			if s.ref.panel == p && s.ref.item == item {
+				return x, y, true
+			}
+			x += textWidth(s.text)
+		}
+	}
+	return 0, 0, false
+}
+
 // editorRule is the row of the editor's rule above the band's row, as zone
 // B recorded it when it drew the editor (plan 49, design D7); -1 when it
 // drew none above that row.

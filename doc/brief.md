@@ -8040,3 +8040,207 @@ Approve and start
 ````
 
 Taken as the approval of plan 61 (plan.md, Plan 61).
+
+## Amendment 64, 2026-10-28: a Git Graph, for plan 62
+
+After plan 61 was closed and pushed, the owner sent four images of an
+IDE's git graph on another of their repositories: the commits' list,
+newest first, with coloured lanes, merge commits as rings and branch
+labels on their commits; the card shown with the pointer on a commit (its
+author, the date, the message, the files changed with the lines added and
+removed, its branches and tag, the short hash with a copy button); a
+commit unfolded into its files, the pointer on one showing its full path
+and "Modified"; and, the file clicked, its diff in that commit side by
+side. The owner wrote, word for word:
+
+````text
+Ok maintenant autre chose,
+
+J'aimerais mettre en place ce que tu vois en image, je crois qu'on appelle ça : git graph => la possibilité de voir l'historique de tous les commits, ainsi que les fichiers commités (modifié, supprimé, etc selon le status "M", etc.), et les "diff" quand on clique sur le fichier en question
+
+La première image montre le git graph
+La second montre ce qu'il se passe lorsqu'on "hover" sur élément, (effectif sur tous les éléments)
+La troisième montre ce qu'il se passe lorsuqu'on "hover" sur le fichier commité en question
+La quatrième image montre ce qu'il se passe lorsqu'on clique sur ce fichier : on voit bien l'historique du diff avec  ce qui a été ajouté/modifé/supprimé, etc.
+
+J'aimerais quelque chose de similaire
+
+Peut-être il n'y a pas besoin de tout garder, what would you keep?
+
+Let me know first your point of view
+````
+
+Told: worth doing, the agent committing on its own; a "Graph" section of
+Source Control under Changes, read only, a commit's file diffs in the
+existing diff viewer. Kept: the history of the current branch and its
+upstream, newest first, read as one scrolls, each row the graph, the
+subject and the author dimmed, labels on their commits, merges as rings;
+lanes drawn with the terminal's characters, one row per commit, capped to
+leave the subject room; a commit unfolded into its files with their
+status letters, the full path and the status in words in the footer; a
+file's diff in that commit, parent against commit; the card on hover, the
+cursor's commit summed up in the footer for the keyboard, Ctrl+C copying
+the hash. Left out: every write (checkout, cherry-pick, revert, reset, a
+branch or tag made from a commit, pull, push), the scope picker, the
+toolbar's buttons, avatars and the IDE's exact curves, a search of the
+history. Bigger than plans 60 and 61, the lanes' layout its hard part; one
+plan in three steps. The owner wrote, word for word:
+
+````text
+Quick question before, how about adding it in a new sidebar category, what do you think?
+````
+
+Told: better here: the docked panel does not resize and Source Control's
+already holds Changes, the commit field and its button, leaving a graph
+under them a few rows, where a tile of its own gives it the panel's
+height; one list for the keys; Source Control left as tested; the sidebar
+made for it, its panels sharing the docked place and keeping their state.
+Its cost: a third tile's icon in the others' style, with its four looks,
+text glyph and tooltip, for the owner's review; Changes and the history
+not side by side; a key for it under 100 columns, where no sidebar is.
+The owner then sent an image of the IDE's history scope picker (All and
+Auto, Auto ticked, then the local branches and the remote branches, each
+with a check box and its commit's short hash, "Remote branch at" for a
+remote one), and wrote, word for word:
+
+````text
+I agree with your recommendation to give Git Graph its own dedicated sidebar tile.
+I'm also attaching an additional screenshot showing something I'd like to include: a history scope selector, similar to VS Code's Git Graph.
+Before writing the implementation plan, I'd like to refine the original proposal with the following requirements.
+1. Add a Git history scope selector.
+At the top of the Git Graph panel, display the currently selected scope, such as "Auto".
+Clicking it should open a popup containing:
+
+* All: Show the history reachable from all available Git references.
+* Auto: Show the current branch and its upstream.
+* Local branches: Select specific local branches.
+* Remote branches: Select specific remote-tracking branches.
+* Tags: Select specific tags, where applicable.
+
+I want to be able to select one or multiple references, as illustrated in the screenshot.
+The expected behaviour:
+
+* Auto should be the initial default.
+* All and Auto are mutually exclusive modes.
+* Selecting individual references switches to a custom selection.
+* Multiple references can be selected simultaneously in custom mode.
+* The graph updates to show commits reachable from the selected references.
+* Display a clear indicator of the active scope.
+* Preserve the selected scope when navigating away from Git Graph and returning.
+* Support keyboard and mouse interaction.
+* Provide scrolling and preferably search when the reference list is long.
+* Handle missing upstreams, empty repositories, and unavailable references gracefully.
+
+The selector is strictly for filtering the displayed history. It must never switch branches, modify the working tree, or automatically fetch from remotes.
+2. Keep the graph readable.
+The dedicated sidebar tile provides more vertical space, but the docked panel remains approximately 30 cells wide.
+I'd like:
+
+* Compact, coloured graph lanes showing branches and merges.
+* Commit subjects truncated only when necessary.
+* Full commit information accessible through hover or keyboard selection.
+* A way to expand the view when the graph becomes difficult to read.
+* A lane limit that never misrepresents the actual Git topology.
+
+3. Define merge commit diffs explicitly.
+For the first version, I recommend comparing merge commits against their first parent.
+Please also cover:
+
+* Added, modified, deleted, and renamed files.
+* Initial commits.
+* Binary files.
+* Merge commits.
+* Commits containing many changed files.
+
+4. Preserve navigation state.
+When switching away from Git Graph and returning:
+
+* Refresh the available history.
+* Preserve expanded commits using their hashes.
+* Restore the scroll position whenever possible.
+* Avoid resetting the user's selection simply because new commits were added.
+
+When changing the history scope, preserve the selected commit and expanded state when those commits remain visible.
+5. Keep the core functionality.
+
+* Paginated commit history.
+* Expandable commits showing changed files and their statuses (M, A, D, R).
+* Historical diffs using ACC's existing Diff Viewer.
+* Commit details: author, date, message, hash, and change statistics.
+* Compact hover information for commits and files.
+* Copy commit hash.
+* Read-only Git operations.
+
+The historical diff viewer must not modify working-tree files, Source Control state, or the agent's conversation.
+6. Leave out unnecessary features.
+No checkout, cherry-pick, revert, reset, branch creation, avatars, or attempts to reproduce VS Code's exact animations.
+I also don't need a separate commit-message search feature for the first version. The search inside the reference-selection popup is a different feature and should remain in scope.
+7. Validation.
+Please include:
+
+* Keyboard and mouse interaction tests.
+* Scope selection tests: Auto, All, single reference, and multiple references.
+* Small-terminal testing, including 80×24 and 120×40.
+* Large-repository performance and pagination tests.
+* Graph topology tests covering branches, merges, and multiple parents.
+* Historical diff tests covering all relevant file statuses.
+* Existing build, test, mutation, and timing checks.
+* Windows Terminal screenshots for my visual approval.
+
+I agree with implementing this in three stages:
+
+1. Commit history, changed files, historical diffs, and scope selection.
+2. Graph lanes and branch visualization.
+3. Commit details and hover interactions.
+
+Please incorporate these decisions into the proposed plan for my review before implementation.
+Do not start coding yet.
+````
+
+Plan 62 (plan.md, Plan 62) was proposed on 2026-10-28, its stages and
+checks as the owner set them. The owner shared another agent's review of
+it and wrote, word for word:
+
+````text
+This is what the other agent said :
+````
+
+The review, in French, favoured the plan and asked for three corrections:
+the topological order kept always, with no switch to the commits' date
+order, which mixes lines of history; no ceiling on how far back the
+history and a commit's files can be browsed, read page by page, the
+memory and the drawing bounded; pages kept consistent while an agent
+commits, the references a read starts from fixed for it and the history
+rebuilt when they move, the selection kept. It pointed at git's own
+`--graph` and `--graph-lane-limit` as a possible check. Told: agreed with
+the three, both its claims checked on git 2.56. The order always
+topological, a slow first page answered by reading one `git log` process
+page by page rather than running it again with `--skip`, which walks the
+history again for every page; no limit on how far back, every commit read
+kept in a compact form (about 100 bytes, 100,000 commits about 10 MB),
+only the rows on screen drawn, a guard at 1,000,000 commits and at
+100,000 files of a commit; each read started from the scope's references
+turned into hashes once, its pages from that one process, a check by hash
+besides, a change noticed before reading on, after the dashboard's own
+git operations and by the 2-second watch, the history then rebuilt, the
+cursor, the unfolded commits and the first row kept by hash; git's
+`--graph` a check in the tests, our own drawing on screen, git's lane
+limit too recent to rely on while running; the measured targets reported
+as they come out, never lowered. The owner shared the agent's second
+reading, which approved the answer and named two points for the
+implementation: the open `git log` process ended when the dashboard quits,
+the project changes, the scope changes and the history is rebuilt; the
+watch covering every reference the graph follows, not HEAD alone; and it
+kept the visual review of the three stages and the measured results as
+conditions before the commit. The owner wrote, word for word:
+
+````text
+The other agent said this :
+
+---
+
+Take that in account and let's fold in and start.
+````
+
+Taken as the approval of plan 62 with the review's corrections and points
+folded in (plan.md, Plan 62).

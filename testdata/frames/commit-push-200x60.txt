@@ -10,7 +10,7 @@
 │   Agent · agent general-purpose                      ││ ────────────────────────────────────────────────────────────────────────────────────────────────────── ││ ╭────────────────────────╮ ││▎     │
 │                                                      ││                                                                                                        ││ │        Push        │ ⌄ │ ││      │
 │ ✓ TURN 2                                          0s ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                             ││ ╰────────────────────────╯ ││      │
-│   started by the CLI                                 ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                  11:30:00      mock   ││ Committed abc0001.         ││      │
+│   started by the CLI                                 ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                  11:30:00      mock   ││ Committed abc0001.         ││  ◉   │
 │                                                      ││ ▎                                                                                                      ││                            ││      │
 │                                                      ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll       ││ ▾ CHANGES                5 ││      │
 │                                                      ││ ▎ report its result when it finishes.                                                                  ││                            ││      │

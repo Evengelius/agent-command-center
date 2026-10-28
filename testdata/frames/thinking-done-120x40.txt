@@ -10,7 +10,7 @@
 │                                  ││ ▎  ▸ ✓ Thought for 0.1s · 17 thinking tokens        02:00:22  observed   ││      │
 │ ✓ TURN 2                     20s ││ ▎                                                                        ││      │
 │   This is a test of the permiss… ││ ▎ `b.txt` doesn't exist yet, so the Write won't overwrite anything.      ││      │
-│   Glob · Write                   ││ ▎ Starting attempt 1.                                                    ││      │
+│   Glob · Write                   ││ ▎ Starting attempt 1.                                                    ││  ◉   │
 │                                  ││ ▎                                                                        ││      │
 │                                  ││ ▎  ✓ Write  …\AppData\Local\Temp\acc-p12\cb\b.txt   02:00:23  observed   ││      │
 │                                  ││ ▎  ▸ ✓ Thought for 2.2s · 354 thinking tokens       02:00:25  observed   ││      │

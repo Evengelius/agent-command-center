@@ -130,6 +130,9 @@ type Options struct {
 	// Location is the time zone the file viewer's blame shows dates in (plan
 	// 60, design D2); nil is the machine's.
 	Location *time.Location
+	// GraphWatch is how often the Git Graph reads the references it follows
+	// again while it shows (plan 62, design D4b); 0 watches nothing.
+	GraphWatch time.Duration
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -202,6 +205,8 @@ type Model struct {
 	// the number of its latest read.
 	blameOn  bool
 	blameSeq int
+	// The Git Graph (graph.go, plan 62): its scope, its read and its places.
+	graph graphState
 	// Source Control (source.go, plan 44): git's status reads, one at a time
 	// (statusBusy; statusAgain asks one more), their generation and the last
 	// one's time, the poll timed last; the snapshot read last, nil before one
@@ -420,10 +425,11 @@ func (m *Model) View() tea.View {
 	v.ReportFocus = m.s.Screen == state.ScreenStartup
 	if m.s.Screen == state.ScreenDashboard && !m.ui.MouseOff && m.wt == nil {
 		v.MouseMode = tea.MouseModeCellMotion // F12 gives the mouse back to the terminal
-		if m.screen.Layers.Top.Hover() || m.sideHoverable() || m.ui.Source.Open && m.screen.Panel.W > 0 {
+		if m.screen.Layers.Top.Hover() || m.sideHoverable() || (m.ui.Source.Open || m.ui.Graph.Open) && m.screen.Panel.W > 0 {
 			// The menu's or a selector's hover follows the pointer (plans 30, 34,
 			// 39), the sidebar's tiles' too while the frame shows them (plan
-			// 43, design D4), and Source Control's rows (plan 44, design D5);
+			// 43, design D4), Source Control's rows (plan 44, design D5) and
+			// the Git Graph's, for their card (plan 62, design D13);
 			// motionFilter drops the reports that change none.
 			v.MouseMode = tea.MouseModeAllMotion
 		}
@@ -489,6 +495,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.coloured(msg)...)
 	case blameMsg:
 		m.blameRead(msg)
+	case graphRefsMsg:
+		cmds = append(cmds, m.graphRefsRead(msg)...)
+	case graphPageMsg:
+		cmds = append(cmds, m.graphPaged(msg)...)
+	case graphFilesMsg:
+		m.graphFilesRead(msg)
+	case graphMessageMsg:
+		m.graphMessageRead(msg)
+	case graphTickMsg:
+		cmds = append(cmds, m.graphTick(msg)...)
 	case searchMsg:
 		cmds = append(cmds, m.searched(msg)...)
 	case filesMsg:
@@ -616,6 +632,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case inspectedMsg:
 		cmds = append(cmds, m.inspected(msg)...)
 	case leaveMsg:
+		m.stopGraphRead() // no git process left behind (plan 62, design D4)
 		return m, tea.Quit
 	case refreshMsg:
 		// Refresh reads telemetry after a turn; a failed read leaves the
@@ -1054,6 +1071,7 @@ func (m *Model) close() tea.Cmd {
 // than the reducer's exit (an error, a signal). Safe to call twice.
 func (m *Model) Shutdown() {
 	m.once.Do(func() {
+		m.stopGraphRead() // the Git Graph's git process too (plan 62, design D4)
 		if m.lock != nil {
 			_ = m.lock.Release() // the program ends: its registration with it
 			m.lock = nil
@@ -1087,6 +1105,8 @@ func (m *Model) paste(text string) {
 		m.filePaste(text) // the window takes it, or drops it
 	case top == render.LayerBranches:
 		m.branchPaste(text) // the search (plan 59, design D10)
+	case top == render.LayerScope:
+		m.scopePaste(text) // the scope popup's search (plan 62, design D3)
 	case m.s.Screen == state.ScreenDashboard && m.msgFocused():
 		m.msg.Paste(text) // the commit message (plan 45, design D2): never commits
 	case m.s.Screen == state.ScreenDashboard && m.draftBeside():

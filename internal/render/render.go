@@ -146,8 +146,14 @@ type UI struct {
 	// it, in zone B's place while Diff.Open (plan 44, designs D1 and D8).
 	Source SourceView
 	Diff   DiffView
+	// Graph is the Git Graph, docked in the same place while Graph.Open, one
+	// of the three at a time; Scope its scope popup (plan 62, designs D1 to
+	// D3).
+	Graph GraphView
+	Scope ScopeView
 	// SideHover is the sidebar's tile under the pointer: 0 none,
-	// SideExplorer or SideSource (plan 43, design D4; plan 44, design D1);
+	// SideExplorer, SideSource or SideGraph (plan 43, design D4; plan 44,
+	// design D1; plan 62, design D1);
 	// hover never changes what is selected. SideTipOff hides its tooltip
 	// after a click on it, until the pointer leaves it (plan 44, design D1).
 	SideHover  int

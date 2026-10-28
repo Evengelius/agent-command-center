@@ -24,12 +24,11 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-28, when the owner approved plan
-61, clicks in the file viewer and the quick open (brief amendment 63).**
-Plans 1 to 61 are closed, one entry each in `plan.md`, Closed plans; the
-MVP was approved on 2026-10-17. `plan.md` holds the active plan's
-progress and test evidence; each closed plan's results are in its
-evaluation file, and its full record in git.
+**Status: plan 62 active since 2026-10-28, a Git Graph in a sidebar tile
+of its own (brief amendment 64).** Plans 1 to 61 are closed, one entry
+each in `plan.md`, Closed plans; the MVP was approved on 2026-10-17.
+`plan.md` holds the active plan's progress and test evidence; each closed
+plan's results are in its evaluation file, and its full record in git.
 
 ## Delegation: highest priority
 
@@ -169,8 +168,9 @@ not in this list: it runs alone, with the exact command and conditions of
   integration, and its git blame; the session's model, effort and
   Ultracode selection; the permission modes selector; Source Control with
   a read-only Git diff viewer, its commit and push, and a selection's
-  commit; the branches popup, its switch and fetch (brief, amendments 9 to
-  12, 34, 40, 45, 46, 51, 53, 61 and 62).
+  commit; the branches popup, its switch and fetch; the Git Graph, read
+  only, with its scope selector (brief, amendments 9 to 12, 34, 40, 45,
+  46, 51, 53, 61, 62 and 64).
   The ones left out are **[Nice to have]**: future improvements, never
   listed as remaining, built only if the owner asks for one in a new plan
   (`plan.md`, Nice to have).
