@@ -846,5 +846,5 @@ is given the very bytes shown (`git blame --porcelain --contents -`), an
 answer is kept only for the same file and the latest read, and git's
 refusals are named. Approved on 2026-10-28: 9 PASS, 0 FAIL after the
 owner's visual review ([`doc/plan60-evaluation.md`](doc/plan60-evaluation.md));
-commit 0050409, then the approval commit; its full text in git
-(`git show 0050409:plan.md`).
+commit 0050409, then the approval commit, both pushed; its full text in
+git (`git show 0050409:plan.md`).
