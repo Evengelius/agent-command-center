@@ -7807,3 +7807,29 @@ the commit. The owner chose, word for word:
 ````text
 Plan 56 is approved without repeating the end-to-end test: review git status and the diff, then commit it.
 ````
+
+## Amendment 60, 2026-10-28: a click outside the window closes it, for plan 58
+
+After plan 56 was closed and pushed, the owner sent a screenshot of the
+acc tab, the file viewer open over the dashboard
+(`internal/provider/codex/alive_other_test.go`, opened from the
+Explorer), and wrote, word for word:
+
+````text
+Look at here, all works fine, but I want a new functionality, as you can see there is a popup window on the front => and it closes with "esc".
+
+It should also be closed whenever we click elsewhere, outside that window
+````
+
+Told: the window that holds the file viewer or the quick open ignores a
+click outside it by design (plan 17: the dashboard behind takes no
+click), while the popups (the "+" menu, the selectors, Source Control's
+dropdown and question) already close on one; proposed: a left click
+outside the window closes it as Esc does and does nothing else; the
+draft window (Ctrl+G) has the same rule as the file window today and is
+left as it is unless the owner adds it. Proposed as plan 58 (plan.md,
+Plan 58). The owner approved it, word for word:
+
+````text
+Plan 58 is approved: proceed with the implementation.
+````

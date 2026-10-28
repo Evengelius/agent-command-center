@@ -91,6 +91,10 @@ type Screen struct {
 	B, Panel, Side Cols
 	// Diff is the diff box's columns while it shows (plan 44, design D8).
 	Diff Cols
+	// Window is where the frame drew the window, the file viewer or the
+	// quick open: a left click outside it closes it (plan 58, design D1);
+	// zero when none.
+	Window Box
 	// Tiles are where the frame left the sidebar's tiles' images to be
 	// drawn, the Explorer's then Source Control's, and their looks (plan 43, design
 	// D2), zero when none.
@@ -116,6 +120,12 @@ type Screen struct {
 
 // Cols are a zone's columns on the screen: the first and how many.
 type Cols struct{ X, W int }
+
+// Box is a rectangle of cells on the screen: its top-left cell and its size.
+type Box struct{ X, Y, W, H int }
+
+// Holds says the cell (x, y) lies in the box.
+func (b Box) Holds(x, y int) bool { return x >= b.X && x < b.X+b.W && y >= b.Y && y < b.Y+b.H }
 
 // bRight is the column after zone B's right edge, where the popups over it
 // end at the latest (plan 43, design D9); the screen's width when the frame

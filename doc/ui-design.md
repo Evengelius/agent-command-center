@@ -1769,9 +1769,13 @@ the quick open and shows or hides the panel (plan 43, design D5).
 Every other key is the window's: none reaches the draft. The mouse stays
 captured: a drag selects in the window only and its release copies the
 file's text it covers, as in the other panels; the wheel over the window
-scrolls it; the dashboard behind takes no click. Reading, listing,
-colouring and searching each run in a command with a generation number, so
-a result for an older open is dropped and keys stay handled.
+scrolls it. A left click outside the window, full screen its first row,
+closes it as Esc's last step does, the viewer back to the Explorer's
+panel, the quick open closed and the viewer behind it in front again, and
+does nothing else: the dashboard behind takes no click (plan 58, brief
+amendment 60). Reading, listing, colouring and searching each run in a
+command with a generation number, so a result for an older open is
+dropped and keys stay handled.
 
 ## Right sidebar
 

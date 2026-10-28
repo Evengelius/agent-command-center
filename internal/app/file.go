@@ -542,7 +542,8 @@ func (m *Model) filePaste(text string) {
 }
 
 // fileMouse handles the mouse while a window is open: the wheel scrolls it,
-// a press in the file starts a selection, nothing outside it.
+// a press in the file starts a selection, a left click outside it closes it
+// as Esc's last step does and does nothing else (plan 58, design D1).
 func (m *Model) fileMouse(msg tea.MouseMsg) []tea.Cmd {
 	mo := msg.Mouse()
 	switch msg.(type) {
@@ -561,7 +562,17 @@ func (m *Model) fileMouse(msg tea.MouseMsg) []tea.Cmd {
 		m.scrollFile(d)
 		return m.colour()
 	case tea.MouseClickMsg:
-		if mo.Button == tea.MouseLeft && !m.ui.Finder.Open && m.screen.PanelAt(mo.X, mo.Y) == 'F' {
+		if mo.Button != tea.MouseLeft {
+			return nil
+		}
+		if !m.screen.Window.Holds(mo.X, mo.Y) {
+			if m.ui.Finder.Open {
+				m.closeFinder() // the viewer behind it, if any, in front again
+				return nil
+			}
+			return m.backToExplorer()
+		}
+		if !m.ui.Finder.Open && m.screen.PanelAt(mo.X, mo.Y) == 'F' {
 			m.press(mo)
 		}
 	case tea.MouseMotionMsg, tea.MouseReleaseMsg:

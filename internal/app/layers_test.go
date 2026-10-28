@@ -269,11 +269,17 @@ func TestLayerMatrix(t *testing.T) {
 // keys and the clicks; a popup closes when another layer opens over it; a
 // popup closes on a key it does not take or a click outside it (the commit
 // dropdown and the staging question doing nothing else with that click); a
-// window or a full view keeps its keys and clicks; Esc closes the top layer.
-// Five cells failed before design D7 (plan 49, progress), a popup left open
-// under the layer opened over it and taking the next click there:
-// dropdown>worktrees, question>worktrees, question>keys, question>models and
-// question>modes.
+// full view and the draft window keep their keys and clicks; the file
+// window, the viewer or the quick open, keeps its keys and closes on a left
+// click outside it as Esc does, doing nothing else with that click (plan
+// 58); Esc closes the top layer. Five cells failed before design D7 (plan
+// 49, progress), a popup left open under the layer opened over it and
+// taking the next click there: dropdown>worktrees, question>worktrees,
+// question>keys, question>models and question>modes. Plan 58 moved 19 cells:
+// the 16 whose click at the top-left cell met the window, closed now, and
+// three whose second layer's opener clicks outside the viewer, closing it
+// instead (viewer>dropdown, viewer>question; viewer>finder's '/' then
+// typed in the Explorer, which opens the quick open).
 var layerWant = map[string]string{
 	"draft":              "open=draft drawn=draft esc= focus=B click=draft",
 	"draft>dropdown":     "open=draft drawn=draft esc= focus=B click=draft",
@@ -295,14 +301,14 @@ var layerWant = map[string]string{
 	"dropdown>question":  "open= drawn= esc= focus=B click=",
 	"dropdown>viewer":    "open= drawn= esc= focus=B click=",
 	"dropdown>worktrees": "open=worktrees drawn=worktrees esc= focus=R click=worktrees",
-	"finder":             "open=finder drawn=finder esc= focus=R click=finder",
-	"finder>draft":       "open=finder drawn=finder esc= focus=R click=finder",
-	"finder>dropdown":    "open=finder drawn=finder esc= focus=R click=finder",
+	"finder":             "open=finder drawn=finder esc= focus=R click=",
+	"finder>draft":       "open=finder drawn=finder esc= focus=R click=",
+	"finder>dropdown":    "open=finder drawn=finder esc= focus=R click=",
 	"finder>keys":        "open=finder,keys drawn=keys esc=finder focus=R click=finder,keys",
-	"finder>models":      "open=finder drawn=finder esc= focus=R click=finder",
-	"finder>modes":       "open=finder drawn=finder esc= focus=R click=finder",
-	"finder>plus":        "open=finder drawn=finder esc= focus=R click=finder",
-	"finder>question":    "open=finder drawn=finder esc= focus=R click=finder",
+	"finder>models":      "open=finder drawn=finder esc= focus=R click=",
+	"finder>modes":       "open=finder drawn=finder esc= focus=R click=",
+	"finder>plus":        "open=finder drawn=finder esc= focus=R click=",
+	"finder>question":    "open=finder drawn=finder esc= focus=R click=",
 	"finder>viewer":      "open= drawn= esc= focus=B click=",
 	"finder>worktrees":   "open=finder,worktrees drawn=worktrees esc=finder focus=R click=finder,worktrees",
 	"keys":               "open=keys drawn=keys esc= focus=B click=keys",
@@ -318,7 +324,7 @@ var layerWant = map[string]string{
 	"models":             "open=models drawn=models esc= focus=B click=",
 	"models>draft":       "open=draft drawn=draft esc= focus=B click=draft",
 	"models>dropdown":    "open=dropdown drawn=dropdown esc= focus=R click=",
-	"models>finder":      "open=finder drawn=finder esc= focus=R click=finder",
+	"models>finder":      "open=finder drawn=finder esc= focus=R click=",
 	"models>keys":        "open=keys drawn=keys esc= focus=B click=keys",
 	"models>modes":       "open=modes drawn=modes esc= focus=B click=",
 	"models>plus":        "open=plus drawn=plus esc= focus=B click=",
@@ -328,7 +334,7 @@ var layerWant = map[string]string{
 	"modes":              "open=modes drawn=modes esc= focus=B click=",
 	"modes>draft":        "open=draft drawn=draft esc= focus=B click=draft",
 	"modes>dropdown":     "open=dropdown drawn=dropdown esc= focus=R click=",
-	"modes>finder":       "open=finder drawn=finder esc= focus=R click=finder",
+	"modes>finder":       "open=finder drawn=finder esc= focus=R click=",
 	"modes>keys":         "open=keys drawn=keys esc= focus=B click=keys",
 	"modes>models":       "open=models drawn=models esc= focus=B click=",
 	"modes>plus":         "open=plus drawn=plus esc= focus=B click=",
@@ -338,12 +344,12 @@ var layerWant = map[string]string{
 	"plus":               "open=plus drawn=plus esc= focus=B click=",
 	"plus>draft":         "open=draft drawn=draft esc= focus=B click=draft",
 	"plus>dropdown":      "open=dropdown drawn=dropdown esc= focus=R click=",
-	"plus>finder":        "open=finder drawn=finder esc= focus=R click=finder",
+	"plus>finder":        "open=finder drawn=finder esc= focus=R click=",
 	"plus>keys":          "open=keys drawn=keys esc= focus=B click=keys",
 	"plus>models":        "open=models drawn=models esc= focus=B click=",
 	"plus>modes":         "open=modes drawn=modes esc= focus=B click=",
 	"plus>question":      "open=question drawn=question esc= focus=R click=",
-	"plus>viewer":        "open=viewer drawn=viewer esc= focus=R click=viewer",
+	"plus>viewer":        "open=viewer drawn=viewer esc= focus=R click=",
 	"plus>worktrees":     "open=worktrees drawn=worktrees esc= focus=B click=worktrees",
 	"question":           "open=question drawn=question esc= focus=R click=",
 	"question>draft":     "open=question drawn=question esc= focus=R click=",
@@ -355,15 +361,15 @@ var layerWant = map[string]string{
 	"question>plus":      "open= drawn= esc= focus=B click=",
 	"question>viewer":    "open= drawn= esc= focus=B click=",
 	"question>worktrees": "open=worktrees drawn=worktrees esc= focus=R click=worktrees",
-	"viewer":             "open=viewer drawn=viewer esc= focus=R click=viewer",
-	"viewer>draft":       "open=viewer drawn=viewer esc= focus=R click=viewer",
-	"viewer>dropdown":    "open=viewer drawn=viewer esc= focus=R click=viewer",
-	"viewer>finder":      "open=viewer drawn=viewer esc=viewer focus=B click=viewer",
+	"viewer":             "open=viewer drawn=viewer esc= focus=R click=",
+	"viewer>draft":       "open=viewer drawn=viewer esc= focus=R click=",
+	"viewer>dropdown":    "open= drawn= esc= focus=B click=",
+	"viewer>finder":      "open=finder drawn=finder esc= focus=R click=",
 	"viewer>keys":        "open=viewer,keys drawn=keys esc=viewer focus=B click=viewer,keys",
-	"viewer>models":      "open=viewer drawn=viewer esc= focus=R click=viewer",
-	"viewer>modes":       "open=viewer drawn=viewer esc= focus=R click=viewer",
-	"viewer>plus":        "open=viewer drawn=viewer esc= focus=R click=viewer",
-	"viewer>question":    "open=viewer drawn=viewer esc= focus=R click=viewer",
+	"viewer>models":      "open=viewer drawn=viewer esc= focus=R click=",
+	"viewer>modes":       "open=viewer drawn=viewer esc= focus=R click=",
+	"viewer>plus":        "open=viewer drawn=viewer esc= focus=R click=",
+	"viewer>question":    "open= drawn= esc= focus=B click=",
 	"viewer>worktrees":   "open=viewer,worktrees drawn=worktrees esc=viewer focus=B click=viewer,worktrees",
 	"worktrees":          "open=worktrees drawn=worktrees esc= focus=B click=worktrees",
 	"worktrees>draft":    "open=worktrees drawn=worktrees esc= focus=B click=worktrees",

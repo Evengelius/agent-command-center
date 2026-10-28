@@ -104,6 +104,7 @@ func fileFull(ui UI) bool { return ui.File.Open && ui.File.Full && !ui.Finder.Op
 // design D8).
 func floatWindow(s *state.State, ui UI, sc *Screen) {
 	x, y, ww, hh := FileRect(ui.Width, ui.Height, fileFull(ui))
+	sc.Window = Box{x, y, ww, hh}
 	var win []line
 	if ui.Finder.Open {
 		win = finderWindow(ui, ww, hh)

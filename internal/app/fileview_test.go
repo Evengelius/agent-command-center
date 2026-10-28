@@ -441,7 +441,8 @@ func TestFileStale(t *testing.T) {
 }
 
 // TestFileMouse is plan 17, criterion 3.7: a drag in the window copies the
-// file's text exactly; a click behind it does nothing; the wheel scrolls it.
+// file's text exactly; a right click behind it does nothing (a left click
+// closes it since plan 58: TestFileClickOutside); the wheel scrolls it.
 func TestFileMouse(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		r, clip, _ := fileRig(t)
@@ -458,10 +459,10 @@ func TestFileMouse(t *testing.T) {
 			t.Fatalf("Esc: selection %v, viewer %v", h.m.ui.Sel, h.m.ui.File.Open)
 		}
 		focus := h.m.ui.Focus
-		mouseAt(t, h, click(0, 0))
-		mouseAt(t, h, tea.MouseReleaseMsg{X: 0, Y: 0, Button: tea.MouseLeft})
+		mouseAt(t, h, tea.MouseClickMsg{X: 0, Y: 0, Button: tea.MouseRight})
+		mouseAt(t, h, tea.MouseReleaseMsg{X: 0, Y: 0, Button: tea.MouseRight})
 		if !h.m.ui.Sel.Empty() || h.m.ui.Focus != focus || !h.m.ui.File.Open {
-			t.Errorf("a click behind: selection %v, focus %q, viewer %v", h.m.ui.Sel, h.m.ui.Focus, h.m.ui.File.Open)
+			t.Errorf("a right click behind: selection %v, focus %q, viewer %v", h.m.ui.Sel, h.m.ui.Focus, h.m.ui.File.Open)
 		}
 		rows := render.FileRows(h.m.ui)
 		top := render.FileTop(h.m.ui.File, rows)
@@ -470,5 +471,193 @@ func TestFileMouse(t *testing.T) {
 		if got := render.FileTop(h.m.ui.File, rows); got != top+wheelRows {
 			t.Errorf("the wheel: top %d, want %d", got, top+wheelRows)
 		}
+	})
+}
+
+// uiDiff names the fields of two interfaces that differ, with their values,
+// "" when none does.
+func uiDiff(a, b render.UI) string {
+	va, vb := reflect.ValueOf(a), reflect.ValueOf(b)
+	var out []string
+	for i := range va.NumField() {
+		if fa, fb := va.Field(i).Interface(), vb.Field(i).Interface(); !reflect.DeepEqual(fa, fb) {
+			out = append(out, fmt.Sprintf("%s %+v, not %+v", va.Type().Field(i).Name, fa, fb))
+		}
+	}
+	return strings.Join(out, "; ")
+}
+
+// TestFileClickOutside is plan 58 (brief amendment 60): a left click outside
+// the window closes it as Esc's last step does and does nothing else, the
+// interface it leaves the one Esc leaves: the viewer back to the Explorer's
+// panel with the focus, its cursor on the file (criterion 58.1); the quick
+// open closed, the viewer behind it in front again (58.3). A click on the
+// frame, the footer or the text, a right or middle click, a motion or a
+// release outside, the wheel and a drag released outside leave it open
+// (58.2); full screen, the first row is outside it and the second inside
+// (design D3).
+func TestFileClickOutside(t *testing.T) {
+	// shut opens a window as open does in a rig of its own, then closes it
+	// with Esc when cell is nil, else with a left click on the cell outside
+	// the window cell picks, and gives the interface left. What is the rig's
+	// own is left out: its project folder, a placeholder wherever the
+	// interface names it, and the frames' memo, never a source of what is
+	// drawn.
+	shut := func(t *testing.T, open func(h *harness), cell func(w render.Box) (int, int)) render.UI {
+		r, _, root := fileRig(t)
+		h := r.h
+		open(h)
+		h.m.View()
+		if cell == nil {
+			h.send(key(tea.KeyEscape, 0))
+		} else {
+			x, y := cell(h.m.screen.Window)
+			if h.m.screen.Window.Holds(x, y) || x < 0 || y < 0 || x >= h.m.ui.Width || y >= h.m.ui.Height {
+				t.Fatalf("(%d, %d) is not on the screen outside the window %+v", x, y, h.m.screen.Window)
+			}
+			mouseAt(t, h, click(x, y))
+			mouseAt(t, h, tea.MouseReleaseMsg{X: x, Y: y, Button: tea.MouseLeft})
+		}
+		ui := h.m.ui
+		ui.Path = strings.Replace(ui.Path, root, "<root>", 1)
+		ui.Resolved = strings.Replace(ui.Resolved, root, "<root>", 1)
+		ui.File.Path = strings.Replace(ui.File.Path, root, "<root>", 1)
+		if ui.Explorer.Name == filepath.Base(root) {
+			ui.Explorer.Name = "<root>"
+		}
+		ui.Memo = nil
+		return ui
+	}
+	viewer := func(h *harness) { openPath(h, "src/Main.java") }
+	finder := func(h *harness) {
+		for _, c := range h.m.openFinder() {
+			h.exec(c)
+		}
+		h.settle()
+	}
+	cells := map[string]func(w render.Box) (int, int){
+		"the title bar": func(render.Box) (int, int) { return 0, 0 },
+		"left of it":    func(w render.Box) (int, int) { return w.X - 1, w.Y + w.H/2 },
+		"right of it":   func(w render.Box) (int, int) { return w.X + w.W, w.Y + w.H/2 },
+		"under it":      func(w render.Box) (int, int) { return w.X + w.W/2, w.Y + w.H },
+	}
+	for _, o := range []struct {
+		name  string
+		open  func(h *harness)
+		check func(ui render.UI) string // "" when the window closed as it should
+	}{
+		{"the viewer", viewer, func(ui render.UI) string {
+			if v := ui.Explorer; ui.File.Open || !v.Open || v.Cursor != "src/Main.java" || !v.Opened["src"] || ui.Focus != "R" {
+				return fmt.Sprintf("viewer %v, Explorer %v, cursor %q, src open %v, focus %q", ui.File.Open, v.Open, v.Cursor, v.Opened["src"], ui.Focus)
+			}
+			return ""
+		}},
+		{"the quick open", finder, func(ui render.UI) string {
+			if render.WindowOpen(ui) {
+				return fmt.Sprintf("viewer %v, quick open %v", ui.File.Open, ui.Finder.Open)
+			}
+			return ""
+		}},
+		{"the quick open over the viewer", func(h *harness) { viewer(h); finder(h) }, func(ui render.UI) string {
+			if ui.Finder.Open || !ui.File.Open || ui.File.Rel != "src/Main.java" {
+				return fmt.Sprintf("quick open %v, viewer %v %q", ui.Finder.Open, ui.File.Open, ui.File.Rel)
+			}
+			return ""
+		}},
+	} {
+		for name, cell := range cells {
+			t.Run(o.name+", "+name, func(t *testing.T) {
+				synctest.Test(t, func(t *testing.T) {
+					esc := shut(t, o.open, nil)
+					got := shut(t, o.open, cell)
+					if why := o.check(got); why != "" {
+						t.Errorf("after the click: %s", why)
+					}
+					if d := uiDiff(got, esc); d != "" {
+						t.Errorf("the click left another interface than Esc: %s", d)
+					}
+				})
+			})
+		}
+	}
+
+	t.Run("inside, and the rest", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			r, clip, _ := fileRig(t)
+			h := r.h
+			openPath(h, "main.go")
+			h.m.View()
+			w := h.m.screen.Window
+			// The place recorded is the window drawn: its title's corner, and
+			// the corner opposite.
+			if rows := strings.Split(h.frame(), "\n"); !windowTitled(h, w.X, w.Y, "main.go") || len(rows) <= w.Y+w.H-1 ||
+				len([]rune(rows[w.Y+w.H-1])) <= w.X+w.W-1 || []rune(rows[w.Y+w.H-1])[w.X+w.W-1] != '╯' {
+				t.Fatalf("the window recorded, %+v, is not the one drawn:\n%s", w, h.frame())
+			}
+			x3, y3 := at(t, h, "// line 3", 0)
+			x5, y5 := at(t, h, "// line 5", 0)
+			// A drag on the text released outside, left of the window, copies:
+			// the release clamps the selection to the window, as before.
+			mouseAt(t, h, click(x3, y3))
+			mouseAt(t, h, tea.MouseMotionMsg{X: x5 + len("// line 5") - 1, Y: y5, Button: tea.MouseLeft})
+			if _, ok := mouseAt(t, h, tea.MouseReleaseMsg{X: w.X - 1, Y: y5, Button: tea.MouseLeft}); !ok || !h.m.ui.File.Open {
+				t.Fatalf("a drag released outside: copied %v, viewer %v", ok, h.m.ui.File.Open)
+			}
+			if got := clip.last(); !strings.HasPrefix(got, "// line 3\n// line 4\n") {
+				t.Errorf("copied %q, want lines 3 and 4 at least", got)
+			}
+			h.send(key(tea.KeyEscape, 0)) // the selection cleared, the viewer kept
+			focus := h.m.ui.Focus
+			release := func(x, y int, b tea.MouseButton) tea.Msg { return tea.MouseReleaseMsg{X: x, Y: y, Button: b} }
+			for _, c := range []struct {
+				name string
+				msgs []tea.Msg
+			}{
+				{"a click on the frame", []tea.Msg{click(w.X, w.Y), release(w.X, w.Y, tea.MouseLeft)}},
+				{"a click on the footer", []tea.Msg{click(w.X+w.W/2, w.Y+w.H-1), release(w.X+w.W/2, w.Y+w.H-1, tea.MouseLeft)}},
+				{"a click on the text", []tea.Msg{click(x3, y3), release(x3, y3, tea.MouseLeft)}},
+				{"a right click outside", []tea.Msg{tea.MouseClickMsg{Button: tea.MouseRight}, release(0, 0, tea.MouseRight)}},
+				{"a middle click outside", []tea.Msg{tea.MouseClickMsg{Button: tea.MouseMiddle}, release(0, 0, tea.MouseMiddle)}},
+				{"a motion outside", []tea.Msg{tea.MouseMotionMsg{}}},
+				{"a release outside", []tea.Msg{release(0, 0, tea.MouseLeft)}},
+			} {
+				for _, msg := range c.msgs {
+					mouseAt(t, h, msg)
+				}
+				if !h.m.ui.File.Open || h.m.ui.Focus != focus || !h.m.ui.Sel.Empty() {
+					t.Errorf("%s: viewer %v, focus %q, selection %v", c.name, h.m.ui.File.Open, h.m.ui.Focus, h.m.ui.Sel)
+				}
+			}
+			rows := render.FileRows(h.m.ui)
+			top := render.FileTop(h.m.ui.File, rows)
+			mouseAt(t, h, tea.MouseWheelMsg{Button: tea.MouseWheelDown})
+			if got := render.FileTop(h.m.ui.File, rows); !h.m.ui.File.Open || got != top+wheelRows {
+				t.Errorf("the wheel outside: viewer %v, top %d, want %d", h.m.ui.File.Open, got, top+wheelRows)
+			}
+		})
+	})
+
+	t.Run("full screen", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			r, _, _ := fileRig(t)
+			h := r.h
+			openPath(h, "main.go")
+			h.send(typed('f'))
+			h.m.View()
+			if w := h.m.screen.Window; !h.m.ui.File.Full || w != (render.Box{X: 0, Y: 1, W: h.m.ui.Width, H: h.m.ui.Height - 1}) {
+				t.Fatalf("full screen %v, the window %+v", h.m.ui.File.Full, w)
+			}
+			mouseAt(t, h, click(5, 1))
+			mouseAt(t, h, tea.MouseReleaseMsg{X: 5, Y: 1, Button: tea.MouseLeft})
+			if !h.m.ui.File.Open {
+				t.Fatal("a click on the window's top row closed it")
+			}
+			mouseAt(t, h, click(5, 0))
+			mouseAt(t, h, tea.MouseReleaseMsg{X: 5, Y: 0, Button: tea.MouseLeft})
+			if h.m.ui.File.Open || !h.m.ui.Explorer.Open || h.m.ui.Explorer.Cursor != "main.go" || h.m.ui.Focus != "R" {
+				t.Errorf("a click on the first row: viewer %v, Explorer %v, cursor %q, focus %q",
+					h.m.ui.File.Open, h.m.ui.Explorer.Open, h.m.ui.Explorer.Cursor, h.m.ui.Focus)
+			}
+		})
 	})
 }
