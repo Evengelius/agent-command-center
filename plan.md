@@ -96,263 +96,12 @@ session stays below.
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
 
-## Plan 59 - The branches popup
+## No plan active
 
-Brief amendment 61 (2026-10-28): a click on the header's branch name, or
-Alt+B, opens a popup of the repository's branches and tags, after the
-owner's image of an IDE's branch popup and with only what is relevant: a
-search, Recent, Local, Remote and Tags, a message where a section is
-empty; switching to a branch, Fetch, copying a name. The header's branch
-is kept current. New branch is left out by the owner. Approved by the
-owner on 2026-10-28 ("Ok you can start").
-
-### What was found (2026-10-28, on 36eceb5)
-
-- The header's "branch main" is `ui.Branch`, read once when the project
-  is validated (`app.go`): a switch made afterwards, in another terminal
-  or by the agent, leaves it stale.
-- The dashboard runs git through `input.GitCLI`: reads with the file
-  system monitor off (`runRead`: rev-parse, status, for-each-ref...),
-  writes through `exec` with an environment, a stop and locks (Commit,
-  Push; `GitStop`, plan 45). `gitPaths` resolves `git rev-parse
-  --git-path`, which gives a worktree its own HEAD. Source Control's
-  snapshot (`GitBranch`) holds the branch, its upstream and ahead and
-  behind. Nothing switches branches today.
-- The popups are layers (`render.Layers`, plan 49, design D7): at most one
-  is open, opening one closes the others, Esc and a click outside close
-  it. The model selector (plan 34) is the anchored popup closest to this
-  one: a box, a list, a cursor, a scrollbar.
-- Zone B has the dashboard's own notes (`Role: "dashboard"`, a Codex
-  slash command held back), drawn grey apart from the messages and never
-  sent to the CLI.
-- Alt+B and F5 are bound nowhere in the dashboard or its editor; Ctrl+R
-  resumes a crashed session.
-
-### Design
-
-- **D1. Opening:** a left click on the header's branch name (a panel of
-  its own) or Alt+B opens the popup, and again closes it; Esc, with the
-  search empty, or a click outside closes it, the click doing nothing else
-  (as plan 58's window). It is a popup layer: opening it closes another
-  popup; it does not open over a window or a full view; outside a
-  repository the header shows no branch and Alt+B says so in a notice.
-- **D2. The box:** anchored under the branch name, as wide as its longest
-  row within the screen, as high as its rows within the screen, its list
-  scrolling with a scrollbar as the model selector's. From the top: the
-  search row ("Search branches and tags" in grey while empty, "⟳ fetch"
-  on its right); the current state ("main → origin/main ↑2 ↓1",
-  "detached at a1b2c3d", "main, no commits yet"); the groups with the
-  Explorer's chevrons: Recent and Local open, Remote and Tags folded. A
-  row: an icon, the name (the part before a "/" dimmed), on a local
-  branch's right its upstream and ↑ahead ↓behind when not zero; the
-  current branch marked; a branch checked out in another worktree marked
-  "in another worktree" in grey. The keys in a footer row, cut to fit.
-  The dashboard's palette and the cursor row's ground; Nerd Font icons
-  where plan 55's rule draws them, the panel's own glyphs elsewhere.
-- **D3. The messages:** an empty group "No recent branches", "No remote
-  branches", "No tags" (and the like); a search that matches nothing "No
-  branch or tag matches “…”", its groups hidden; "reading…" while git
-  reads; "git not found"; git's own error in the attention colour; a group
-  over 1,000 rows "first 1,000 shown".
-- **D4. The data:** read when the popup opens, in a command, through
-  `runRead`: `git for-each-ref` over `refs/heads`, `refs/remotes` and
-  `refs/tags` (name, upstream, ahead and behind, the worktree holding it,
-  the tag's date); Recent from the reflog (`checkout: moving from A to B`,
-  newest first, local branches that still exist, the current one left
-  out, five at most); the current state as Source Control reads it.
-  Remote rows leave out `<remote>/HEAD`. Names sorted, tags newest first.
-- **D5. Switching:** Enter or a double click on a branch row. Refused
-  while a turn runs ("the agent is working in this folder: switch once its
-  turn ends"). With uncommitted changes, a confirmation row first: "3
-  uncommitted changes. Git keeps them on feature-B unless they touch files
-  that differ there; then it refuses and nothing changes. Enter switch ·
-  Esc cancel". Then `git switch <branch>`; a remote branch `git switch
-  --track <remote>/<branch>`, refused with a note when a local branch of
-  that name exists; a branch in another worktree not offered. Never
-  `--force`, `--discard-changes` or `--merge`, no stash, no reset. Git's
-  refusal shown in the popup in its words, nothing changed. Tags and the
-  current branch: nothing to switch to.
-- **D6. After a switch:** the popup closes; the header's branch, Source
-  Control while shown and the Explorer (its folders and git's markers)
-  read again; a dashboard notice in zone B, "Switched from feature-A to
-  feature-B", with "· 3 uncommitted changes came along" when they did and
-  "· the agent's conversation still reflects feature-A" while a session
-  runs; when the draft is empty, a note the owner sends, edits or clears:
-  "I switched the project from feature-A to feature-B; check the files you
-  rely on before going on." Nothing is sent to the agent; the session goes
-  on.
-- **D7. Fetch:** F5 or a click on "⟳ fetch": `git fetch --all`, never
-  pruning or merging, through Push's runner: no terminal prompt, a time
-  limit, Esc stops it ("fetching… Esc stops"); then the lists read again;
-  a failure in git's words, URLs' credentials scrubbed as Push does.
-- **D8. Copy:** Ctrl+C copies the cursor row's name (a branch, a remote
-  branch or a tag) through the clipboard the dashboard uses.
-- **D9. The header kept current:** the HEAD file's path resolved once per
-  session (`git rev-parse --git-path HEAD`, a worktree's own), its
-  modification time checked every 2 s in a command, no git process; when
-  it changes the branch is read again. No repository or no git: no watch,
-  the header as today.
-- **D10. Keys and mouse:** while the popup is open, a printable key types
-  in the search, Backspace deletes, ↑ ↓ PgUp PgDn Home End move the
-  cursor, → opens a group, ← folds it (or goes to its header), Enter on a
-  group header folds or opens it, on a branch switches, Ctrl+C copies, F5
-  fetches, Esc clears the search, then closes; the global keys stay. A
-  click on a group header folds or opens it, on a row puts the cursor
-  there, a double click on a branch switches; the wheel scrolls the list.
-  No hover: the mouse's all-motion mode stays off.
-
-### Criteria
-
-1. **59.1 Opening and closing:** a click on the branch name and Alt+B open
-   the popup and close it again; Esc with an empty search closes it; a
-   click outside closes it and does nothing else; it closes another popup;
-   it never opens over a window or a full view.
-2. **59.2 The lists:** on a repository with local branches (one in
-   another worktree), two remotes, tags and a reflog: Recent (at most 5,
-   newest first, without the current branch), Local (the current one
-   marked, upstreams and ↑↓), Remote (no `HEAD`), Tags (newest first); the
-   groups' first folding; the rows' order.
-3. **59.3 The search:** it filters every group, case ignored; a group with
-   no match is hidden; nothing matching gives its message; Esc clears it
-   before closing.
-4. **59.4 Messages:** each empty group's; "reading…"; "git not found";
-   git's error; a detached HEAD; a branch with no commits; the cap's note.
-5. **59.5 Switching:** refused during a turn; the confirmation's exact
-   words with uncommitted changes; a local branch switched; a remote one a
-   new tracking branch, or refused when the local name exists; a branch in
-   another worktree not offered; git's refusal of conflicting changes
-   shown, nothing changed; the commands' arguments never holding a force,
-   a stash or a reset.
-6. **59.6 After a switch:** the header, Source Control and the Explorer
-   read again; the notice in zone B, a dashboard notice never sent to the
-   CLI; the draft's note only when the draft was empty.
-7. **59.7 Fetch:** `git fetch --all` with no prompt and a time limit; Esc
-   stops it; the lists read again; a failure shown.
-8. **59.8 The header kept current:** a switch made in another terminal,
-   in the project and in a worktree of it, shows in the header within the
-   watch's period; without a repository nothing is watched.
-9. **59.9 Windows Terminal:** Alt+B reaches the dashboard; the popup at
-   208x59 and 120x40 (shots); a switch in a demo repository; the owner's
-   visual review.
-10. **59.10 The checks:** build, vet (Windows, Linux), gofmt and the whole
-    suite; the new golden frames reviewed, the others unchanged; the
-    changes broken on purpose through `go test -overlay`, each caught; the
-    popup's frame with 3,000 refs within the frame budget.
-
-### Steps
-
-1. Amendment 61 and this plan.
-2. Input: the reads, the switch, the fetch, the HEAD file (D4, D5, D7,
-   D9); tests on real repositories.
-3. Rendering: the popup, the header's panel, the icons (D2, D3); golden
-   frames.
-4. The application: opening and closing, keys and mouse, the guards and
-   the confirmation, the commands, the refreshes, the notice and the note,
-   the watch (D1, D5 to D10); tests.
-5. The documents.
-6. Windows Terminal (59.9); the owner's visual review.
-7. The checks, the mutants, the timing and `doc/plan59-evaluation.md`.
-
-### Progress
-
-- 2026-10-28: step 1: amendment 61 and this plan, approved by the owner
-  before it was written ("Ok you can start").
-- 2026-10-28: step 2 done. `input/branches.go`: `BranchGit` (Branches,
-  Changes, Switch, Fetch, HeadFile) on `GitCLI`. Found on a probe repository
-  (git 2.56): `%(worktreepath)` names every worktree holding a branch, the
-  current one's included, so "another worktree" is a path other than
-  `--show-toplevel`'s; each switch logs "checkout: moving from A to B";
-  `--git-path HEAD` gives a linked worktree its own file. Fetch has no
-  limit of its own: the application asks its `GitStop` on Esc and at
-  `FetchLimit` (2 minutes), a stop waiting out the lock files of the remote
-  branches, as Push's does. Tests on real repositories (`branches_test.go`,
-  6): the groups, the head, Recent, the worktree's branch, the remotes'
-  HEAD left out, tags newest first; detached and no commits; the cap; the
-  switches (local, tracking, a local name taken, git's two refusals, changes
-  carried); fetch without pruning, a failing remote; each worktree's HEAD;
-  no call holding a force, a stash, a reset, a merge or a prune.
-- 2026-10-28: step 3 done. `render/branches.go`: `BranchesView`,
-  `BranchRows` (the groups, folds, search, messages, cap) and the box,
-  under the project bar's "branch <name>", now panel L; the popup panel J,
-  `LayerBranches` a popup layer. Windows Terminal's Cascadia Mono has ✓, ↑,
-  ↓, →, ›, ▌, • and · but no ⟳, ↻, ⎇ or ★ (plan 55's `cmapcheck`), so
-  outside the acc tab the rows have no icon and the search row says "F5
-  fetch"; in it Nerd Fonts 3.2.1's `oct-git_branch` (U+F418), `cod-tag`
-  (U+EA66) and `cod-refresh` (U+EB37), registered as the Explorer's icons
-  are, so that `TestExpIconsInFont` and `TestExpIconWidths` check them.
-  The box is 64 cells wide at least, so that the second keys' hint fits.
-  Tests: `TestBranchRows`, `TestBranchesPopup`, `TestBranchesPopupStates`.
-- 2026-10-28: step 4 done. `app/branches.go`: Alt+B and the name's click
-  (`toggleBranches`, refused with a toast outside a repository and where
-  `render.Layers` would not show it, a full view drawn or not yet), the keys
-  (`branchesKey`; any other key closes it and goes on, a send key is
-  Enter), the clicks and the wheel (the Explorer's: three rows), a paste
-  into the search (`editorTakesPaste` leaves it out); the switch
-  (`askSwitch`: the changes counted, the confirmation, `runSwitch` checking
-  the guards again) and its end (`state.BranchSwitched`: the header, the
-  dashboard's notice; the draft's note; the Explorer or Source Control read
-  again); the fetch, which outlives the popup (Esc, `fetchLimitMsg`, a
-  refused stop's hint, a toast once closed), and the quit question naming
-  "the switch" or "the fetch"; the HEAD watch from the validation
-  (`Options.BranchWatch`, 2 s in `main.go`; `state.BranchRead`). `Switch`
-  now gives the branch checked out, a remote branch's local name. The
-  header shows the session's branch on the dashboard whatever the startup
-  field holds (the same path there in a real run), so that a mock run's
-  golden frames can show it. The 3,000-ref frame cost first measured p95
-  15 ms: the list copied each group every frame, built every row's line
-  and every row's key; now only the rows in view are drawn, widths counted
-  without drawing (`branchAsideWidth`, tested against the drawing), keys
-  made when asked: p50 0.57 ms, p95 1.3 to 1.5 ms. Tests
-  (`app/branches_test.go`): `TestBranchesOpenClose`, `TestBranchesKeys`,
-  `TestBranchesProblems`, `TestBranchesSwitch`, `TestBranchesFetch`,
-  `TestBranchesHeadWatch` (real git: the project and a linked worktree),
-  `TestBranchesFrameCost`; golden frames `branches`, `branches-search`,
-  `branches-confirm` at the four sizes, the others unchanged.
-- 2026-10-28: step 5 done. `ui-design.md`: Branches (the box from the
-  golden frame, the messages, the data, the switch and its confirmation,
-  after a switch, fetch, copy, the header kept current, keys and mouse,
-  budget), the project bar's branch, the Anywhere rows (Alt+B; Esc and
-  Ctrl+Q naming the popup) and the popup's key table, the overlay's rows
-  with them (`TestKeyOverlayRows`: 77 rows); `architecture.md`: the
-  Session context's branch and the popup's parts; `events-and-state.md`:
-  the branch's watch in Polling and the timers, the dashboard's notes in
-  the conversation record; `AGENTS.md`: the scope and the git constraint.
-- 2026-10-28: step 6, Windows Terminal (`scratchpad\term\p59run.ps1`,
-  over `p51.ps1`): the acc tab maximised (208x59) and at 120x40, the real
-  application with a temporary home and app data on a demo repository
-  (`p59demo.ps1`), its Claude Code 2.1.303 session started with no message
-  sent. Alt+B opens the popup (Nerd Font icons; Recent old, fix/login,
-  feat from the reflog; wtb in another worktree); ↑ ↑ Enter asks to switch
-  to feat, the confirmation naming the one change (its words in the
-  singular, a fix found here); Enter switches: the header on feat, zone B's
-  notice, the draft's note; a click on the name opens it on feat ("feat →
-  origin/feat"); a switch made outside shows in the header 1.9 s later; a
-  search for "fix". confcheck PASS (the owner's desktop and VS Code
-  sessions ran meanwhile); no process left. The owner's visual review
-  waits.
-- 2026-10-28: step 7. Mutants through `go test -overlay`
-  (`scratchpad\plan59\mkmutants.mjs`, `mkmutants2.mjs` on plan 51's
-  `mutrun`), the tree's hashes the same around each run: 35 in two rounds,
-  each caught by a failing test in the end. In the first, R3 failed to
-  build (rewritten), and R5 and A10 survived: no test checked which rows a
-  scrolled list draws, and the Ctrl+V release check could not fail, the
-  frozen clock putting the search's paste just before it; both tests
-  strengthened. Found on the way: Alt+B did nothing with the focus in the
-  docked Explorer, Source Control, its commit field or button, or a file's
-  diff, whose lists of the keys they pass on had Alt+P but not Alt+B; added
-  to the four (`TestBranchesFromPanels`). Tests added too: the footer's
-  three rows, a capitalised name found by a lowercase search, the notice's
-  singular (`state.TestBranchSwitched`), the wheel, a heading's click,
-  Source Control read again after a switch. `doc/evaluation.md`'s timing
-  step names `TestBranchesFrameCost`. After the last code edit: build, vet
-  (Windows, Linux), gofmt and `go test ./...` (16 packages) ok. The timing
-  step alone (mains power, CPU 17 %, the owner's usual applications open):
-  the seventeen within their targets, the popup's 3,000 refs p50 0.55 ms,
-  p95 1.51 ms (16 ms). `doc/plan59-evaluation.md`: 9 PASS, 0 FAIL, 59.9's
-  visual review by the owner not verified yet; waiting for it.
-- 2026-10-28: 59.9's visual review done by the owner ("The branches popup
-  looks right: plan 59's visual review is done."): 10 PASS, 0 FAIL. Not
-  committed: the commit waits for the owner's approval.
+Plan 59 was approved and closed on 2026-10-28 (Closed plans, below). The
+next plan starts when the owner asks for one; the audit's roadmap
+([`doc/audit.md`](doc/audit.md), Part 2) is done, its phases 0 to 4
+implemented by plans 46 to 49.
 
 ## Closed plans
 
@@ -1070,3 +819,18 @@ window keeps its rule. Approved on 2026-10-28: 5 PASS, 0 FAIL
 ([`doc/plan58-evaluation.md`](doc/plan58-evaluation.md)); commit
 0408228, then the approval commit, both pushed; its full text in git
 (`git show 0408228:plan.md`).
+
+## Plan 59 - The branches popup
+
+Brief amendment 61: a click on the project bar's branch name, or Alt+B,
+opens a popup of the repository's branches and tags: a search, Recent,
+Local, Remote and Tags, a message where a group is empty; a switch (git
+switch, a remote branch as a tracking one), confirmed when uncommitted
+changes would come along and refused while the agent works, a notice in
+zone B and a note in an empty draft after it; a fetch of every remote,
+never pruning, Esc and a two-minute limit stopping it; a name copied; the
+header's branch following the HEAD file, checked every 2 s. New branch
+left out by the owner. Approved on 2026-10-28: 10 PASS, 0 FAIL after the
+owner's visual review ([`doc/plan59-evaluation.md`](doc/plan59-evaluation.md));
+commit 5c8c9be, then the approval commit; its full text in git
+(`git show 5c8c9be:plan.md`).

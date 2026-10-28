@@ -205,3 +205,19 @@ branches popup looks right: plan 59's visual review is done": 59.9's last
 part, PASS, so 10 criteria, 10 PASS, 0 FAIL. The popup is kept as the
 shots show it. Not committed: the commit waits for the owner's approval.
 The block above stays as it was reported.
+
+**Approved and committed (2026-10-28).** The owner wrote "Plan 59 is
+approved: review git status and the diff, then commit it." Commit 5c8c9be
+(46 files: 25 modified, 21 added), from the files reviewed in `git diff`;
+the whole suite had passed after the last code edit and after the last
+edit of a document a test reads. The review found `doc/evaluation.md`
+damaged by a script of this plan: adding `TestBranchesFrameCost` to the
+timing step's command, a JavaScript `String.replace` read the command's
+`$'` as "the text after the match" and copied the rest of the document
+into the command line. The file was taken back from the last commit, it
+had no other change, and its two intended edits were made again, its diff
+checked to hold only them; the timing step itself had run its own command
+line, not the document's. The author is `Evengelius
+<molimoabel@gmail.com>`, with no attribution line, and the working tree
+was clean after it: PASS. Not pushed: the owner asked for the commit only.
+The block above stays as it was reported.
