@@ -102,13 +102,10 @@ session stays below.
 
 ## Roadmap
 
-The owner's order (amendment 65, 2026-10-28), plans 64 to 66 now closed:
-the session's resumption from the home screen. Before it, the owner
-(2026-10-29): "Keep the pre-existing AltGr issue separate for the next
-plan.": the characters typed with AltGr, which the input's editor and
-the other fields drop (`doc/plan66-evaluation.md`, Details, AltGr): plan
-67, below. Each starts as a plan for the owner's review when the one
-before is closed.
+The owner's order (amendment 65, 2026-10-28), plans 64 to 66 now closed,
+and plan 67, the characters typed with AltGr, which the owner put before
+it, closed too: the session's resumption from the home screen. Each
+starts as a plan for the owner's review when the one before is closed.
 
 A high-priority candidate for the next plan, from the review of plan 67's
 results the owner shared (2026-10-29): the race in the vendored keyboard
@@ -117,289 +114,12 @@ and left unchanged (`doc/plan67-evaluation.md`, Details, The reader race's
 evidence). Its place before or after the session's resumption is the
 owner's to set.
 
-## Plan 67 - The characters typed with AltGr
+## No plan active
 
-Brief amendment 69 (2026-10-29): every field of the dashboard types the
-characters AltGr types, as plan 66's search bar does. Proposed for the
-owner's review, clarified after another agent's review the owner shared,
-and approved by the owner on 2026-10-29 (Progress).
-
-### What was found (2026-10-29, on 3d3289b)
-
-- **What arrives.** The dashboard asks Windows Terminal for
-  win32-input-mode (`internal/app/run.go`), which sends each key as its
-  console record. Measured in the acc tab on the owner's Belgian AZERTY
-  layout (fr-BE, `0000080C`), the dashboard on a mock, TEA_TRACE recording
-  the records (`scratchpad\term\p66run.ps1`'s altgr step: the right Alt
-  as an extended key, Windows adding the left Ctrl, as a physical AltGr
-  press does):
-
-| Keys | Records | Typed in the draft |
-| - | - | - |
-| AltGr+2, AltGr+<, AltGr+3 | `@`, `\`, `#`, control state 41 (left Ctrl, right Alt, Num Lock) | nothing |
-| AltGr+= then Space | a dead key (no character, 41), then `~` (32, Num Lock alone) | `~` |
-| ^ then E | a dead key (no character, 32), then `ê` (32) | `ê` |
-| AltGr+µ then A | a dead key (no character, 41), then `à` (32) | `à` |
-
-  The keys behind each character, from Windows' `VkKeyScanExW` on that
-  layout: `@` 2, `#` 3, `\` <, `|` 1, `{` 4, `}` 0, `[` 5, `]` $, all
-  with AltGr; `~`, `` ` `` and `´` are dead keys (=, µ and ù with AltGr).
-  Only the characters AltGr types at once are lost; a dead key's composed
-  character comes on the next key, with no Ctrl or Alt, and is typed.
-- **The decoder.** ultraviolet's `parseWin32InputKeyEvent`
-  (`third_party/ultraviolet/decoder.go`) gives a key its text when it is
-  printable with no modifier but Shift and Caps Lock (Num Lock and Scroll
-  Lock set aside first), or with AltGr (left Ctrl and right Alt), whose
-  Mod is then Ctrl|Alt. No other Ctrl or Alt chord gets any text, neither
-  in that path nor in its CSI and kitty paths (any modifier but Shift
-  clears the text) nor for an Esc-prefixed Alt. Ctrl with the left Alt is
-  no AltGr to it.
-- **AltGr or Ctrl with the left Alt** (the review's question, measured
-  the same way; the search bar's `keyText` already applies the rule):
-
-| Keys | Record | The event ACC receives | Typed in the search bar |
-| - | - | - | - |
-| AltGr+2 | `@`, 0x29 (right Alt, left Ctrl, Num Lock) | Code `@`, Text `@`, Mod Ctrl\|Alt | `@` |
-| AltGr+< | `\`, 0x29 | Code `\`, Text `\`, Mod Ctrl\|Alt | `\` |
-| Ctrl+left Alt+< | `\`, 0x2A (left Alt, left Ctrl, Num Lock) | Code `\`, no text, Mod Ctrl\|Alt | nothing |
-| Ctrl+left Alt+2 | none: Windows Terminal keeps it (its own Ctrl+Alt+2, a switch to tab 2) | none | nothing |
-
-  The record tells the right Alt (0x01) from the left (0x02); the event
-  does not. Bubble Tea's `KeyPressMsg` is the decoder's event as it is
-  (Code, Text, Mod, ShiftedCode, BaseCode), its Mod one Ctrl bit and one
-  Alt bit, Num Lock set aside: Ctrl|Alt for both Alts. The distinction
-  survives in the text alone, which the decoder gives to AltGr's state,
-  left Ctrl with right Alt, and to no other Ctrl and Alt state. The events
-  are as ACC's copy of the decoder makes them from those records (a
-  scratch test overlaid in `third_party/ultraviolet`, never in the tree):
-  right Ctrl with AltGr gives the text as well; Alt alone or Ctrl alone
-  with 2 gives none.
-- **The application.** Three tests, `k.Text != "" &&
-  k.Mod&(tea.ModCtrl|tea.ModAlt) == 0`, refuse AltGr's text:
-  - `editKey` (`internal/app/keys.go`), through which the draft types
-    (`editorKey`), the draft window (`draftWinKey`), the startup screen's
-    project field (`startupKey`), Source Control's message box (`msgKey`,
-    `commit.go`) and the Worktrees view's new branch (`newBranchKey`,
-    `worktrees.go`);
-  - the branches popup's search (`branchesKey`, `branches.go`);
-  - the approval card (`cardKey`), where typed letters go nowhere. An
-    AltGr character goes on instead: the card keeps the focus "B", so the
-    key reaches `editorKey`, where `editKey` drops it today, and where it
-    would be typed into the draft once `editKey` takes it.
-  The search bar takes them since plan 66 (`keyText`,
-  `internal/app/search.go`: a key's text with no Ctrl and no Alt, or with
-  both). The file viewer's search and go-to fields (`fieldKey`,
-  `typeField`, the go-to keeping digits alone), the quick open
-  (`finderKey`) and the history scope popup's search (`scopeKey`) type any
-  key's text, AltGr's with it.
-- **No conflict.** No key binding is a Ctrl+Alt chord, and an AltGr key's
-  name is its text, Bubble Tea naming a key that has a text by it ("@",
-  "["; corrected in step 3, where this said "ctrl+alt+@"): it matches none
-  of the Alt shortcuts (Alt+P, Alt+B, Alt+G, Alt+V, Alt+Enter,
-  Alt+Backspace) or the Ctrl ones, and the bindings on those characters,
-  zone C's and the inspection's `[` and `]` (previous and next agent),
-  take AltGr's as they do today. The word motions take Ctrl or Alt with an
-  arrow (`motion`), AltGr with an arrow too, as they do today.
-
-### Design (proposed)
-
-- **D1. The rule.** A key types its text when it has text and either no
-  Ctrl and no Alt, or both; Shift, Caps Lock, Num Lock and Scroll Lock do
-  not matter. The event cannot say which Alt was pressed; its text says
-  whether the key was AltGr's: the decoder gives a text to the AltGr state
-  alone among the Ctrl and Alt chords. So a key with Ctrl, Alt and a text
-  is AltGr's and types, and Ctrl with the left Alt, which comes with no
-  text, types nothing. The rule reads the text and the two modifier bits
-  alone, no left or right Alt, and leaves the decoder as it is (D3). One
-  function, plan 66's `keyText`, moved beside `editKey` in
-  `internal/app/keys.go`, its caller in the search bar unchanged.
-- **D2. Where.** `editKey` types `keyText`'s text: the draft, the draft
-  window, the startup screen's project field, Source Control's message box
-  and the Worktrees view's new branch. The branches popup's search takes
-  it, its printable test kept. The approval card swallows it as it
-  swallows letters, so that nothing the card does not take reaches the
-  draft. The fields that already type any key's text keep their code: the
-  decoder gives text to no Ctrl or Alt chord but AltGr, so they type what
-  `keyText` would; tests pin them. **Changed in step 2:** those three
-  fields take `keyText` too, 67.2's Ctrl+K and Alt+K carrying a text
-  typing "k" there. **Extended in step 3:** Windows Terminal sends a
-  modifier's own press before the key it comes with, AltGr's left Ctrl and
-  right Alt before its character; the branches popup, which closes on a
-  key it does not take, keeps such a press (`modifierKey`), as the scope
-  popup keeps the keys it has no use for. The other fields do nothing with
-  a key that has no text.
-- **D3. Nothing else.** No shortcut changes, the key overlay's table as
-  it is; Ctrl or Alt alone types nothing, as today, whatever text a key
-  carries; Ctrl with the left Alt types nothing, its event having no text,
-  and Ctrl+Alt with a digit is Windows Terminal's own, never reaching the
-  dashboard, as today; the dead keys compose as today; the paste, the
-  clipboard, the draft's recovery and the undo are unchanged. The decoder
-  is not patched: the rule is the application's, and it relies on the
-  decoder's text, which AltGr alone gets. The application's tests feed the
-  events as that decoder makes them; the whole path, from the key pressed
-  to the field, is checked in Windows Terminal (67.4).
-- **D4. Parts.** The application alone (`internal/app`): no state,
-  rendering or input change, nothing sent to a CLI; the same with Claude
-  Code and Codex, the fields being the dashboard's own.
-
-### Criteria (proposed)
-
-1. **67.1 The rule** (an application test of `keyText`, on the events as
-   ACC's decoder makes them, What was found): AltGr's `@` and `\`, their
-   text with Mod Ctrl|Alt, typed, a Caps Lock or Num Lock bit with them
-   too; Ctrl with the left Alt's `\`, no text with Mod Ctrl|Alt, typing
-   nothing; "a" with no modifier, with Shift and with Caps Lock typed; "k"
-   with Ctrl alone or Alt alone typing nothing, whatever its text; a key
-   without text typing nothing.
-2. **67.2 Every field** (application tests, AltGr+2 as ACC receives it,
-   `tea.KeyPressMsg{Code: '@', Text: "@", Mod: tea.ModCtrl | tea.ModAlt}`):
-   "@" typed in the draft, the draft window, the startup screen's project
-   field, Source Control's message box, the Worktrees view's new branch,
-   the branches popup's search, the conversation's search bar, the file
-   viewer's search field, the quick open and the history scope popup's
-   search; nothing in the file viewer's go-to field (digits alone, as
-   now). In each field, Ctrl with the left Alt's `\` (no text, Mod
-   Ctrl|Alt) and Ctrl+K and Alt+K carrying the text "k" type nothing. With
-   the approval card focused, AltGr's `@` typed nowhere: the draft as it
-   was, the request still pending, nothing written to the CLI.
-3. **67.3 Nothing else, the shortcuts kept:** no key binding a Ctrl+Alt
-   chord (the key overlay's table read by a test); each of `@`, `\`, `#`,
-   `|`, `{`, `}`, `[` and `]` typed with AltGr in the draft adding itself
-   and changing nothing else (no popup, window, overlay, toast or focus
-   change); Ctrl with the left Alt's events changing nothing at all; every
-   existing test passing unchanged, the shortcuts' among them, the key
-   overlay's rows and the golden frames unchanged; a dead key's composed
-   character, with no modifier, typed as before.
-4. **67.4 Windows Terminal** (the acc tab, maximised and at 120x40, the
-   owner's layout, the records traced): real AltGr presses typing `@`,
-   `\`, `#`, `|`, `{`, `}`, `[` and `]` in the draft; `@` in the draft
-   window, the startup screen's project field, the branches popup's
-   search and Source Control's message box (a demo repository), the
-   Worktrees view's new branch and the search bar; `~`, `ê` and `à`
-   composed in the draft as before; Ctrl with the left Alt and < typing
-   nothing, its record reaching the dashboard with the left Alt (0x2A);
-   Ctrl with the left Alt and 2 not reaching it, Windows Terminal's own.
-5. **67.5 The checks:** build, vet (Windows, Linux), gofmt and the whole
-   suite; the change broken on purpose through `go test -overlay`, each
-   mutant caught; `-race` on internal/app's changed tests; the timing step
-   alone, on mains power.
-6. **67.6 The documents:** ui-design.md (Input editor, and Focus and keys:
-   AltGr's characters typed in every field), architecture.md (`keyText`
-   beside `editKey`), brief amendment 69, AGENTS.md's status at the
-   approval.
-
-### Steps
-
-1. Amendment 69 and this plan, for the owner's review.
-2. The rule and every field (application): 67.1 to 67.3.
-3. Windows Terminal: 67.4.
-4. The checks, the mutants, the timing and `doc/plan67-evaluation.md`
-   (67.5, 67.6); the commit after the owner's review.
-
-No live run: the fields are the dashboard's own, and mocks show what they
-do; no CLI configuration touched, no quota used.
-
-### Progress
-
-- 2026-10-29: step 1: amendment 69 and this plan, proposed for the
-  owner's review, with the findings above (the probe's records and shots
-  in the scratchpad, `term\out-p66run\p67probe-90x30`, nothing of it in
-  the repository).
-- 2026-10-29: another agent's review, shared by the owner: "APPROVED WITH
-  ONE CLARIFICATION REQUIRED". The approach accepted (one rule in the
-  application, every field, the approval card isolated, the shortcuts,
-  dead keys, clipboard, undo and recovery kept, no decoder change); it
-  asked whether the event ACC receives tells AltGr from Ctrl with the left
-  Alt, and that the plan's guarantee be corrected if not, with tests on
-  the observable behaviour. Answered by measuring (What was found, AltGr
-  or Ctrl with the left Alt: `term\out-p66run\p67altgr2-90x30`, the
-  decoder's events from `scratchpad\plan67\zz_altgr_test.go`, overlaid):
-  the event does not tell the Alts apart, Mod Ctrl|Alt for both, but its
-  text does, the decoder giving it to AltGr alone, so the guarantee holds
-  and D1 and D3 say how it rests on the decoder's text. Ctrl with the left
-  Alt and a digit never reaches the dashboard, Windows Terminal switching
-  tabs. Criteria 67.1 to 67.4 tightened: the events as the decoder makes
-  them (Num Lock set aside: Mod Ctrl|Alt, where 67.2 said Ctrl, Alt and
-  Num Lock), Ctrl with the left Alt typing nothing in every field, the
-  shortcuts kept, the approval card isolated. The review approves plan 67
-  for implementation once this is in.
-- 2026-10-29: the owner, word for word: "Plan 67 approved. You can
-  proceed with implementation.", the revised design and criteria
-  followed, the change kept to the AltGr issue, the shortcuts kept and
-  the approval card kept from letting characters into the draft; the
-  evaluation and the final diff's summary for the owner's review before
-  the plan closes. AGENTS.md's status updated. Step 2 begins.
-- 2026-10-29: step 2: `keyText` beside `editKey` (`internal/app/keys.go`),
-  the search bar's caller unchanged; `editKey` types its text, the
-  branches popup's search takes it, the approval card swallows it. D2
-  changed for three fields: the file viewer's fields, the quick open and
-  the scope popup's search typed any key's text, Ctrl+K and Alt+K carrying
-  "k" among them (67.2), and take `keyText` too. Tests:
-  `internal/app/altgr_test.go`, `internal/render/altgr_test.go`.
-- 2026-10-29: step 3: Windows Terminal, the acc tab maximised and at
-  120x40, the records traced, on a demo repository (`scratchpad\term`,
-  `p67runs.ps1`, `p67rerun.ps1`, `p67runc.ps1`). Run A, the mock
-  dashboard: AltGr's eight characters in the draft, `~`, `ê` and `à`
-  composed, Ctrl with the left Alt and < typing nothing (0x2A); `@` in the
-  draft window, the search bar and Source Control's message box. Run B,
-  the startup screen (no CLI found): `@` in the project field and the
-  Worktrees view's new branch. Run C, the branches popup: a mock reads no
-  branch and the plan has no live run, so a stand-in `claude.exe`
-  (`scratchpad\plan67\standin`) answers the detection's `-v` and then
-  writes nothing; the dashboard validates the repository, reads its branch
-  and waits for a handshake; no CLI ran. Run C found `@` in the draft, the
-  popup closed: Windows Terminal sends the left Ctrl's own press, the right
-  Alt's, then the character, and the popup closed on the first, a key it
-  does not take (the trace's frame after it). The same press came before
-  Shift's capitals, Ctrl+C (which then reached the dashboard, where it
-  interrupts) and Alt+B; the tests had sent the character alone. Fixed
-  (D2, extended): the popup keeps a modifier's own press; the tests send
-  each key as Windows Terminal does; TestBranchesModifierPress. Run C again
-  on the fixed build, both sizes: `@`, then `@F`, in the search, Alt+B
-  closing and opening it, Ctrl with the left Alt and < closing it and
-  typing nothing, the draft empty throughout. At 120x40 a Ctrl+F of run A
-  never reached the dashboard (the reader race, next entry); run A again,
-  all passed.
-- 2026-10-29: found outside plan 67, for the owner: (1) a race in
-  ultraviolet's Windows reader (`terminal_reader_windows.go`,
-  `streamData`): it sends `buf.Bytes()`, then resets and refills that
-  buffer with the next records, which `StreamEvents` may not have copied
-  yet. The lost Ctrl+F's trace (17 bytes of 33 processed, none of the next
-  read) is what the next read's bytes give the scanner, not the logged
-  ones (`scratchpad\plan67\zz_alias_test.go`, overlaid); three such events
-  in 17 traced runs, at both sizes, the trace's logging widening the
-  window; the same code on upstream main (2026-10-29). (2) The model and
-  modes selectors, the "+" menu and the commit menu close on a modifier's
-  own press as the branches popup did, so a chord of theirs, Alt+P, may
-  close and reopen the model selector in Windows Terminal; not checked
-  there. Neither is changed by plan 67.
-- 2026-10-29: step 4, after the last code edit: build, vet (Windows,
-  Linux) and gofmt ok; `go test ./...` ok (16 packages); 23 mutants
-  through `-overlay` on the final code, each caught by a failing test, the
-  code's hash the same before and after; `-race` on internal/app's 97
-  tests of the changed code and on `TestKeyTableNoCtrlAlt`: no race; the
-  timing step alone, on mains power, at 17:52:58: its 21 tests within
-  their targets. Windows Terminal again on the final build, runs A, B and
-  C at both sizes: each step as 67.4 says. `doc/plan67-evaluation.md`: 6
-  PASS; not verified, a physical AltGr press and a Codex session in
-  Windows Terminal. For the owner's review with the diff; nothing
-  committed.
-- 2026-10-29: another agent's review of the results, shared by the owner:
-  "Implementation: APPROVED. Final closure: PENDING the two verification
-  clarifications above." Answered in `doc/plan67-evaluation.md`, after the
-  block, which stays as reported. 67.4 split into its injected presses,
-  measured, and its physical ones, not verified until the owner's keyboard
-  check there or the owner's acceptance of the injected presses: plan 67
-  at 5 PASS and 67.4 pending, NOT DONE. The concurrent runs: the final
-  mutants and the suite overlapped, and `-race` the mutants' last 53 s;
-  evaluation.md's "no other `go` build or test at the same time" is the
-  timing step's condition, and it ran alone, so nothing was run again. The
-  reader race kept apart, its reproduction in the evaluation's Details and
-  in the Roadmap.
-- 2026-10-29: the owner ran the keyboard check (`doc/plan67-evaluation.md`,
-  The owner's keyboard check) and wrote, word for word: "All steps
-  passed". 67.4's physical presses verified: plan 67 at 6 PASS, DONE, for
-  the owner's final approval before the commit.
+Plan 67 was approved and closed on 2026-10-29 (Closed plans, below). The
+next starts as a plan for the owner's review (Roadmap, above): the
+session's resumption from the home screen, or first the keyboard
+reader's race, as the owner sets.
 
 ## Closed plans
 
@@ -1227,3 +947,16 @@ exception: 11 PASS and 1 accepted with a documented exception, 66.9
 ([`doc/plan66-evaluation.md`](doc/plan66-evaluation.md)); commit
 a5116aa, then the approval commit, both pushed; its full text in git
 (`git show a5116aa:plan.md`).
+
+## Plan 67 - The characters typed with AltGr
+
+Brief amendment 69: every field of the dashboard types the characters
+AltGr types, one rule for all (`keyText`: a key's text with no Ctrl and
+no Alt, or with both), Ctrl or Alt alone and Ctrl with the left Alt
+typing nothing; the approval card lets no character into the draft; the
+branches popup keeps a modifier's own press, which Windows Terminal sends
+before AltGr's character; no shortcut changed. Approved on 2026-10-29
+through the review the owner shared and the owner's keyboard check: 6
+PASS ([`doc/plan67-evaluation.md`](doc/plan67-evaluation.md)); commit
+e888947, then the approval commit; its full text in git (`git show
+e888947:plan.md`).

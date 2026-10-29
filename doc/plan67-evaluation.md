@@ -123,6 +123,20 @@ presses are verified with it, so 67.4 passes in both its parts and plan 67
 stands at 6 PASS: DONE, for the owner's final approval before the commit.
 The block above stays as it was reported.
 
+**Approved and committed (2026-10-29).** The owner wrote, word for word:
+"Approve, commit". Commit e888947 (13 files: 10 modified, 3 added), from
+the files reviewed in `git status` and `git diff`, each of them plan 67's;
+`git diff --cached --check` reported nothing. No file holds a CR or a BOM,
+read from the bytes, and a scan of the change found no placeholder,
+leftover or private path. No code file, and no document a test reads,
+changed after the final suite began (17:44:09): only plan.md and this
+file, which no test reads. The author is `Evengelius
+<molimoabel@gmail.com>`, with no attribution line, and the working tree
+was clean after it. Then the approval commit: plan.md and AGENTS.md close
+plan 67, and this record; `go test ./internal/arch`, which reads
+AGENTS.md, ok after its edit. Not pushed: the owner has not asked for it.
+The block above stays as it was reported.
+
 ## Details
 
 ### What the build found and changed
