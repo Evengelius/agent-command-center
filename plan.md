@@ -103,268 +103,16 @@ session stays below.
 ## Roadmap
 
 The owner's order (amendment 65, 2026-10-28), plans 64 to 66 now closed,
-and plan 67, the characters typed with AltGr, which the owner put before
-it, closed too: the session's resumption from the home screen. Each
-starts as a plan for the owner's review when the one before is closed.
+and plans 67 and 68, which the owner put before it, closed too (the
+characters typed with AltGr; the keyboard reader's races): the session's
+resumption from the home screen. Each starts as a plan for the owner's
+review when the one before is closed.
 
-Before it, the owner (2026-10-29, amendment 70): the keyboard reader's
-race, the high-priority candidate the review of plan 67's results named
-(`doc/plan67-evaluation.md`, Details, The reader race's evidence): plan
-68, below.
+## No plan active
 
-## Plan 68 - The keyboard reader's races
-
-Brief amendment 70 (2026-10-29): the race plan 67's checks found in the
-Windows reader of the vendored ultraviolet, which can lose keys in
-Windows Terminal, fixed, with tests that show no keyboard event lost.
-Proposed for the owner's review; the owner submits it to an independent
-review before authorizing the implementation.
-
-### What was found (2026-10-29, on 0316a30)
-
-- **The reader's two goroutines.** On Windows, ultraviolet's
-  `TerminalReader.StreamEvents` (`terminal_reader.go`) starts
-  `streamData` (`terminal_reader_windows.go`) in a goroutine of its own,
-  the sender: it reads the console's input records, writes each batch
-  into one `bytes.Buffer` and sends its bytes on an unbuffered channel.
-  StreamEvents, the receiver, logs each batch, copies it into a buffer of
-  its own and scans it into events. The dashboard's console is in VT
-  input mode (`NewCancelReader`, `cancelreader_windows.go`, sets
-  `ENABLE_VIRTUAL_TERMINAL_INPUT`), so the sender writes each key record's
-  character: the win32-input-mode sequences Windows Terminal sends, as
-  plan 67's traces show them.
-- **Race 1: a batch's bytes reused**, the loss plan 67 found. The sender
-  sends `buf.Bytes()`, then resets `buf` and writes the next batch into
-  the same array (`terminal_reader_windows.go`, lines 62, 67 and 70),
-  while the receiver may not have copied what it received: it logs it
-  first, then copies it (`terminal_reader.go`, lines 199 to 201). A copy
-  made once the next batch has begun holds that batch's bytes in place of
-  its own: the lost Ctrl+F of plan 67's run A, its evidence kept as it was
-  recorded (`doc/plan67-evaluation.md`, Details, The reader race's
-  evidence).
-- **Race 2: the grapheme state shared**, found reading the same code. The
-  sender's end of batch, `buf.Write(d.eventScanner.encodeGraphemeBufs())`
-  (line 203), and its other branch's `storeGraphemeRune` and flush (lines
-  111 and 113, VT input mode off) use the receiver's scanner,
-  `d.eventScanner`, whose `deserializeWin32Input` stores there the two
-  halves of an emoji sent with virtual key 255 (patch 2's case), then
-  flushes them. Nothing orders the two goroutines' reads and writes of
-  `graphemeBuf`: a sender's flush at the wrong moment would carry the
-  receiver's emoji into the next batch, out of its place.
-- **Measured on the real path** (`scratchpad\plan68\zz_console_test.go`,
-  overlaid in `third_party/ultraviolet`, never in the tree). The test runs
-  itself again in a child process created with `CREATE_NO_WINDOW`, which
-  gets a console of its own and no window (`GetConsoleWindow` 0). The
-  child sets the console mode `NewCancelReader` sets, writes key records
-  into its console with `WriteConsoleInputW` and reads them back through
-  `conInputReader`, `streamData` and `StreamEvents`, in two scenarios:
-  Ctrl+F's records in plan 67's two reads, the receiver held in its log
-  of the first until the second has been read (the trace's own condition:
-  a log before the copy); an emoji's two halves, then a, b, c and d. On
-  the copy as it is, and with each candidate fix overlaid:
-
-| Version | Ctrl+F | The emoji, then a to d | `go test -race` |
-| - | - | - | - |
-| as it is | `release ctrl+f`, unknown `\x1b[17;29;0;0;32;1`, `release ctrl+f`, `release leftctrl`: both presses lost, as in plan 67's trace | in order | 3 races: race 1 twice (`terminal_reader.go:201`, the receiver's copy, against `terminal_reader_windows.go:106`, the next batch's write), race 2 once (`encodeGraphemeBufs`, `terminal_reader.go:393`, from line 203, against `storeGraphemeRune`, `terminal_reader.go:439`) |
-| the batch copied (D1) | `press leftctrl`, `press ctrl+f`, `release ctrl+f`, `release leftctrl` | in order | 1 race: race 2 |
-| D1 and the sender's own scanner (D2) | the four in order | in order | none |
-
-  Race 2 shows under the race detector alone: its window lies inside the
-  receiver's scan, where no log can hold it. The detector needs no luck
-  for either race: nothing orders the two accesses, so it reports them
-  whenever both happen.
-- **Upstream**
-  (https://raw.githubusercontent.com/charmbracelet/ultraviolet/main/terminal_reader_windows.go,
-  fetched 2026-10-29): the same lines, both races.
-- **Nothing else shared.** Bubble Tea never sets the reader's `MouseMode`
-  (`charm.land/bubbletea/v2@v2.1.0`, `tty.go`), so the sender skips the
-  console's mouse records; the VT branch's UTF-16 halves are the
-  TerminalReader's own fields, which the sender alone uses; once race 2
-  is gone the receiver's scanner and buffer are the receiver's alone.
-- **What runs the copy's tests.** The copy is a module of its own, which
-  `go test ./...` skips; `internal/licenses` runs `go test .` in it
-  (`TestThirdPartyTable`), so a test there runs with the suite, without
-  `-race`.
-
-### Design (proposed)
-
-- **D1. The batch copied** (PATCHES.md, patch 4). `streamData` sends
-  `bytes.Clone(buf.Bytes())`: the receiver owns what it receives, and the
-  sender reuses its buffer at once. One line, and one allocation per
-  console read, a few hundred bytes at most while typing. Not chosen: the
-  receiver copying before it logs, which narrows the window and does not
-  close it (the sender may write the next batch before the receiver runs
-  at all); a buffer allocated for each batch, the same with more lines;
-  a buffered channel or a pool, more change for the same ownership.
-- **D2. The sender's own grapheme state** (patch 5). `streamData` makes a
-  scanner of its own (`newEventScanner()`) and passes it to
-  `serializeWin32InputRecords`, whose three grapheme calls use it in place
-  of `d.eventScanner`; the receiver's scanner is the receiver's alone. In
-  the VT branch the sender stores nothing, so its end of batch writes
-  nothing, and an emoji stays where the receiver decodes it; with VT
-  input mode off, the sender's characters stay with the sender. Included,
-  the review's decision.
-- **D3. Nothing else.** The decoder, the scanner, the renderer, Bubble Tea
-  and the application unchanged; patches 1 to 3 unchanged; no update of
-  the module (upstream has both races); plan 67's evidence as it was
-  recorded. Reporting the races upstream is the owner's decision, outside
-  this plan.
-- **D4. The tests** (`third_party/ultraviolet/patch_windows_test.go`, this
-  project's, Windows only, on the module's own dependencies): the probe's
-  harness, the real path in a child process with a console of its own and
-  no window, each expected list of events asserted whole and in order.
-  - The loss: Ctrl+F in plan 67's two reads, the receiver held in its log
-    of the first until the second has been read.
-  - A burst: 200 letters written one read at a time, the receiver held
-    2 ms in every fifth log (20 ms since step 2: longer than the 10 ms the
-    sender sleeps when it finds no input, so that it reads the next letter
-    while the receiver is held).
-  - The characters (the review's first detail). VT input mode on: an
-    emoji's two vk-255 sequences in one read; split between two reads;
-    cut inside the second sequence across two reads; its two halves as
-    surrogate key records without a virtual key, in two reads; each
-    between two letters. VT input mode off, the sender's own scanner's
-    path: letters with their virtual keys, then characters without one,
-    `é` and an emoji whose halves are split between two reads.
-  - The harness (the review's third detail). Each test runs itself again
-    as a child, its name and an environment variable telling it so,
-    created with `CREATE_NO_WINDOW` and killed at a 60 s deadline
-    (`exec.CommandContext`, and the child's own `-test.timeout`). A setup
-    failure is a failure with its reason, never a skip; the child's whole
-    output goes into the parent's failure; each scenario's events are
-    awaited with a deadline, so a slow machine makes nothing right fail;
-    the reader is cancelled and its goroutines waited for before the child
-    returns. The hold changes nothing once D1 is in.
-  They run in `go test ./...` through `internal/licenses`, and under
-  `go test -race` in the copy, race 2's evidence.
-- **D5. Parts.** The patched copy and its tests, with `internal/licenses`'
-  check of them (D6): no application change, nothing sent to a CLI, the
-  same with Claude Code and Codex.
-- **D6. The copy's tests shown to run** (the review's second detail).
-  `internal/licenses` runs the copy's tests verbosely and fails unless
-  each test it expects there reports PASS, the Windows ones on Windows:
-  no skip, and no file left out by a build constraint or the nested
-  module's boundary. `doc/evaluation.md`'s race detector section names
-  the copy's own `-race` run, which `go test -race ./...` skips.
-
-### Criteria (proposed)
-
-1. **68.1 No key lost** (the loss and burst tests): with the fixes,
-   Ctrl+F's events are `press leftctrl`, `press ctrl+f`, `release ctrl+f`
-   and `release leftctrl`, in that order, and the burst's 200 presses
-   arrive in order, none lost or doubled. On the copy as it is (through
-   `-overlay`), the loss test shows both presses lost and the burst a key
-   lost or doubled.
-2. **68.2 The characters and their order** (the grapheme tests): with
-   the fixes, each VT form gives `press x`, `press 🙂` and `press y`, the
-   emoji once, and VT input mode off gives the letters, `é` and `🙂` once
-   each, in the order written. The same lists on the copy as it is and
-   with D1 alone: D2 changes no character delivered and no order.
-3. **68.3 No race** (`go test -race .` in `third_party/ultraviolet`): with
-   the fixes, the console tests and the module's others, 0 races. Each
-   version's evidence kept: the copy as it is, race 1 (the loss and burst
-   tests) and race 2 (the grapheme tests) reported, their stacks naming
-   the lines of What was found; D1 alone, race 2 only.
-4. **68.4 The harness**: no window (the child's `GetConsoleWindow` 0) and
-   nothing typed into the owner's terminal; a hung child, forced through
-   `-overlay`, killed at its deadline and its test failed with the child's
-   output; no child process or console left after a run; 50 runs in a row
-   with no failure (`-count=50`), and 20 under `-race`.
-5. **68.5 The tests run**: `go test ./...`'s `internal/licenses` reports
-   each of the copy's tests passed, the console tests among them; one
-   removed, or its file's build constraint broken (through `-overlay`),
-   fails it.
-6. **68.6 Nothing else**: the copy's diff is patches 4 and 5, each marked
-   `PATCHED (agent-command-center, PATCHES.md, patch N)`, the test file and
-   PATCHES.md; outside the copy, `internal/licenses`' check alone; every
-   existing test passing unchanged (`patch_test.go`, `TestWin32InputKeys`,
-   `TestWideRowsKept`, the suite).
-7. **68.7 Windows Terminal** (the acc tab, maximised and at 120x40, a
-   mock, TEA_TRACE on): plan 67's runs A, B and C on the fixed build, each
-   step as plan 67 recorded it; a burst run, 300 letters typed into the
-   draft about 1 ms apart (a new harness step), the draft holding exactly
-   the 300; no trace with a read left partly processed but a quit's last.
-   The same burst on the build before, recorded beside it: a lost key or
-   a read left partly processed expected, as plan 67's traces showed
-   under lighter input; none there would leave 68.1 and 68.3 the proof.
-8. **68.8 The checks**: build, vet (Windows, Linux), gofmt and the whole
-   suite; each patch broken on purpose through `go test -overlay`, each
-   mutant caught (D2's under `-race`, which mutrun does not run, by
-   hand); the timing step alone, on mains power.
-9. **68.9 The documents**: PATCHES.md (patches 4 and 5: why, the changes,
-   the checks), THIRD_PARTY.md's patched copy, reliability.md's row on
-   Windows' console reader, architecture.md (the copy's row),
-   evaluation.md's race detector section, brief amendment 70, AGENTS.md's
-   status at the approval.
-
-### Steps
-
-1. Amendment 70 and this plan, for the owner's review.
-2. The tests, first on the copy as it is (failing as 68.1 and 68.3
-   expect), then D1, then D2, and `internal/licenses`' check: 68.1 to
-   68.6.
-3. Windows Terminal, the build before and the fixed one: 68.7.
-4. The checks, the mutants, the timing and `doc/plan68-evaluation.md`
-   (68.8, 68.9); the commit after the owner's review.
-
-No live run: no CLI; the tests' console is their own, and the terminal
-runs use a mock.
-
-### Progress
-
-- 2026-10-29: step 1: amendment 70 and this plan, proposed for the
-  owner's review, with the findings above (the probe and its logs in the
-  scratchpad, `plan68\`, nothing of it in the repository).
-- 2026-10-29: the plan's independent design review, sent by the owner:
-  "Verdict: APPROVED — 9.5/10", both fixes included ("Decision: Include
-  both fixes"). Its three acceptance details taken in: the characters and
-  their order asserted, a sequence crossing a read's boundary among them
-  (D4, 68.2); the copy's tests shown to run in the suite, each version's
-  evidence kept (D6, 68.3, 68.5); a bounded, cleaned-up hidden-console
-  harness with clear failures (D4, 68.4). The owner, word for word:
-  "Please incorporate the three acceptance details above and proceed with
-  implementing Plan 68, including both fixes, within the agreed scope. I
-  approve the implementation." AGENTS.md's status updated. Step 2
-  begins.
-- 2026-10-29: step 2. The build before the fixes kept for step 3
-  (`scratchpad\term\acc-p68-before.exe`, the code as 0316a30 has it), the
-  reader as it was kept beside it (`scratchpad\plan68\before\`).
-  `third_party/ultraviolet/patch_windows_test.go`, `TestConsoleReader`,
-  seven scenarios, written first and run on the reader as it was: the
-  loss and the burst fail (`release ctrl+f`, unknown
-  `\x1b[17;29;0;0;32;1`, `release ctrl+f`, `release leftctrl`; every fifth
-  letter lost and the next doubled), the five of the characters pass;
-  under `-race` all seven fail, 12 reports: race 1 in each, race 2 in the
-  three vk-255 emoji forms and twice with VT input mode off. Patch 4: all
-  seven pass; under `-race` race 2 alone, in those four. Patch 5: all
-  seven pass, under `-race` too, 0 reports; the copy's other tests too.
-  The module's own tests on a scratch copy with the patched files, plain
-  and under `-race`: ok. `internal/licenses` requires each of the copy's
-  tests to report PASS, none skipped (D6). PATCHES.md, THIRD_PARTY.md,
-  reliability.md, architecture.md and evaluation.md updated. The logs in
-  `scratchpad\plan68\evidence\`.
-- 2026-10-29: steps 3 and 4. 9 mutants through `-overlay`, the code's hash
-  the same before and after: 8 caught (patch 4 reverted, plain; patch 5
-  reverted in whole and in part, under `-race`; a hung child, by its own
-  timeout and by the parent's kill; the console test left out and
-  skipped, by `internal/licenses`), and the control L3, D6's check
-  removed, letting the exclusion pass as before. 50 runs of the console
-  test in a row and 20 under `-race`, no failure, no process left. The
-  suite ok (16 packages). Windows Terminal, both sizes: the burst of 300
-  letters exact on the fixed build; on the build before, a letter wrong
-  at each size and, maximised, two records' text typed into the draft,
-  all 300 presses delivered in both; plan 67's runs A, B and C on the
-  fixed build as plan 67 recorded them. The timing step alone, on mains
-  power, at 19:56:52: 21 within their targets. `doc/plan68-evaluation.md`:
-  9 PASS. For the owner's review with the diff; nothing committed.
-- 2026-10-29: the plan's independent implementation review, shared by the
-  owner: "Verdict: APPROVED — 9.8/10", "Plan 68 is approved for closure."
-  Its one clarification of wording made in the evaluation: the reader as
-  it was loses and corrupts events, and 68.2's same lists are the five
-  character scenarios', patch 5 keeping the characters and their order
-  while it removes the remaining race; 68.2's text here stays as it was
-  approved. The final commits and the push allowed once the final checks
-  pass.
+Plan 68 was approved and closed on 2026-10-29 (Closed plans, below). The
+next starts as a plan for the owner's review (Roadmap, above): the
+session's resumption from the home screen.
 
 ## Closed plans
 
@@ -1205,3 +953,17 @@ through the review the owner shared and the owner's keyboard check: 6
 PASS ([`doc/plan67-evaluation.md`](doc/plan67-evaluation.md)); commit
 e888947, then the approval commit, both pushed; its full text in git
 (`git show e888947:plan.md`).
+
+## Plan 68 - The keyboard reader's races
+
+Brief amendment 70: the Windows reader of the vendored ultraviolet sent a
+console read's bytes and wrote the next read into the same array before
+the receiver had copied them, a key lost and the next doubled, and its two
+goroutines shared the grapheme state; patch 4 sends each read as a copy,
+patch 5 gives the sender a grapheme state of its own, tested on the real
+console path in a console of the test's own, the suite requiring the
+copy's tests to run. Approved on 2026-10-29 through the design and
+implementation reviews the owner shared: 9 PASS
+([`doc/plan68-evaluation.md`](doc/plan68-evaluation.md)); commit 61dd8ad,
+then the approval commit; its full text in git (`git show
+61dd8ad:plan.md`).

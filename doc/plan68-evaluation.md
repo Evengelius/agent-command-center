@@ -75,6 +75,20 @@ block above stays as it was reported. The review closes, word for word:
 commits and push once those checks pass, following the established
 project workflow."
 
+**Approved and committed (2026-10-29).** Commit 61dd8ad (12 files: 10
+modified, 2 added), from the files reviewed in `git status` and `git
+diff`, each of them plan 68's; `git diff --cached --check` reported
+nothing. No file holds a CR or a BOM, read from the bytes, and a scan of
+the change found no placeholder, leftover or private path. No code file,
+and no document a test reads, changed after the suite began (19:44:26):
+only plan.md and this file, which no test reads, and the wording the
+review asked for. The author is `Evengelius <molimoabel@gmail.com>`, with
+no attribution line, and the working tree was clean after it. Then the
+approval commit: plan.md and AGENTS.md close plan 68, and this record;
+`go test ./internal/arch`, which reads AGENTS.md, ok after its edit. Not
+pushed yet: the final repository checks come first, then the push the
+review allowed. The block above stays as it was reported.
+
 ## Details
 
 ### Each version, the evidence the review asked to keep
