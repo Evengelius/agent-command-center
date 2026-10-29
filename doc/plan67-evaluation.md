@@ -137,6 +137,15 @@ plan 67, and this record; `go test ./internal/arch`, which reads
 AGENTS.md, ok after its edit. Not pushed: the owner has not asked for it.
 The block above stays as it was reported.
 
+**Pushed (2026-10-29).** The owner then wrote, word for word: "Push them".
+The checks on the committed tree, 9d1c5f7, the working tree clean before
+and after: go build ok, go vet ok (Windows and Linux), gofmt -l . empty,
+go test ./... ok (16 packages, 274 s). Then commits e888947 and 9d1c5f7
+fast-forwarded origin's main from 3d3289b to 9d1c5f7, nothing forced,
+origin's main read back equal to main (`git ls-remote`). The commit
+record above, which says "Not pushed" as written, stays as it was, the
+push following it.
+
 ## Details
 
 ### What the build found and changed

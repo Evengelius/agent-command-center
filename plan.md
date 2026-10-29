@@ -958,5 +958,5 @@ branches popup keeps a modifier's own press, which Windows Terminal sends
 before AltGr's character; no shortcut changed. Approved on 2026-10-29
 through the review the owner shared and the owner's keyboard check: 6
 PASS ([`doc/plan67-evaluation.md`](doc/plan67-evaluation.md)); commit
-e888947, then the approval commit; its full text in git (`git show
-e888947:plan.md`).
+e888947, then the approval commit, both pushed; its full text in git
+(`git show e888947:plan.md`).
