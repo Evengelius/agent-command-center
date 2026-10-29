@@ -244,6 +244,10 @@ digest; the zip is not signed.
 - Timing targets are not judged under `-race`, which slows code several times
   over: in a `-race` build, `raceBuild` (`internal/app/race_on_test.go`,
   `race_off_test.go`) makes `overTarget` log the timing instead of failing.
+- `go test -race ./...` skips the patched copy, a module of its own; a plan
+  that changes it also runs `go test -race -count=1 -v .` in
+  `third_party/ultraviolet`, whose console test checks the Windows reader's
+  two goroutines (plan 68).
 
 ## After a CLI update
 

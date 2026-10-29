@@ -798,6 +798,18 @@ CLI, the decoder as it is.
 | - | - | - |
 | The application | the one rule of the fields (`keyText`, beside `editKey`: a key's text with no Ctrl and no Alt, or with both, the decoder giving a text to AltGr's state alone among the Ctrl and Alt chords); the fields typing through it (`editKey`: the draft, the draft window, the startup screen's project field, Source Control's message box, the Worktrees view's new branch; `branchesKey`, its printable test kept; `searchKey`; `fieldKey`, the go-to field keeping digits; `finderKey`; `scopeKey`); the approval card swallowing a key's text (`cardKey`); a modifier's own press, which Windows Terminal sends before the key it comes with, kept by the branches popup (`modifierKey`) | `internal/app/keys.go`, `branches.go`, `search.go`, `file.go`, `graphscope.go` |
 
+## The keyboard reader's races
+
+Plan 68 (brief amendment 70; reliability.md, Not verified). On Windows,
+ultraviolet's reader runs two goroutines, one reading the console's input
+records and one scanning them into events; the patched copy keeps what
+each one owns apart. The application is unchanged.
+
+| Part | What it does | Where |
+| - | - | - |
+| Third party | ultraviolet's Windows reader, patched (`third_party/ultraviolet/PATCHES.md`, patches 4 and 5): each console read's batch sent as a copy, the receiver's to keep; the sender's grapheme state a scanner of its own; tested on the real console path, in a child process with a console of its own and no window (`patch_windows_test.go`, `TestConsoleReader`) | `third_party/ultraviolet/terminal_reader_windows.go`, `patch_windows_test.go` |
+| Checks | the copy's tests shown to run in `go test ./...`, each reporting PASS and none skipped (`copyTests`, `TestThirdPartyTable`) | `internal/licenses/third_party_test.go` |
+
 ## Build order
 
 Input to plan 3's roadmap, from AM4's priorities (P1 to P6) and AGENTS.md

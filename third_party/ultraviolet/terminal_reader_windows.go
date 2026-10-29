@@ -31,6 +31,11 @@ func (d *TerminalReader) streamData(ctx context.Context, readc chan []byte) erro
 	var buf bytes.Buffer
 	var records []xwindows.InputRecord
 	var err error
+	// PATCHED (agent-command-center, PATCHES.md, patch 5): the sender's
+	// grapheme state is its own. It used the receiver's scanner,
+	// d.eventScanner, which StreamEvents's goroutine fills and flushes at the
+	// same time (an emoji's two halves): nothing ordered the two.
+	ser := newEventScanner()
 	for {
 		for {
 			records, err = peekNConsoleInputs(cc.conin, readBufSize)
@@ -59,12 +64,17 @@ func (d *TerminalReader) streamData(ctx context.Context, readc chan []byte) erro
 		// We convert Windows Input Records to VT input sequences for easier
 		// processing especially when dealing with UTF-16 decoding and
 		// Win32-Input-Mode processing.
-		d.serializeWin32InputRecords(records, &buf)
+		d.serializeWin32InputRecords(records, &buf, ser) // PATCHED, patch 5
 
+		// PATCHED (agent-command-center, PATCHES.md, patch 4): the batch is
+		// sent as a copy, the receiver's to keep. The buffer is reset and
+		// written with the next batch at once, while the receiver may not
+		// have copied what it received yet: it then kept the next batch's
+		// bytes in place of its own, a key lost and the next one doubled.
 		select {
 		case <-ctx.Done():
 			return nil
-		case readc <- buf.Bytes():
+		case readc <- bytes.Clone(buf.Bytes()):
 		}
 
 		buf.Reset()
@@ -74,8 +84,8 @@ func (d *TerminalReader) streamData(ctx context.Context, readc chan []byte) erro
 // serializeWin32InputRecords serializes the Win32 input events converting them
 // to valid VT input sequences. It will also encode any UTF-16 pairs that might
 // be present in the input buffer. The resulting byte slice can be sent to the
-// terminal as input.
-func (d *TerminalReader) serializeWin32InputRecords(records []xwindows.InputRecord, buf *bytes.Buffer) {
+// terminal as input. PATCHED, patch 5: ser is the sender's own grapheme state.
+func (d *TerminalReader) serializeWin32InputRecords(records []xwindows.InputRecord, buf *bytes.Buffer, ser *eventScanner) {
 	for _, record := range records {
 		switch record.EventType {
 		case xwindows.KEY_EVENT:
@@ -108,9 +118,9 @@ func (d *TerminalReader) serializeWin32InputRecords(records []xwindows.InputReco
 			} else {
 				// We encode the key to Win32 Input Mode if it is a known key.
 				if kevent.VirtualKeyCode == 0 {
-					d.eventScanner.storeGraphemeRune(kd, kevent.Char)
+					ser.storeGraphemeRune(kd, kevent.Char) // PATCHED, patch 5
 				} else {
-					buf.Write(d.eventScanner.encodeGraphemeBufs())
+					buf.Write(ser.encodeGraphemeBufs()) // PATCHED, patch 5
 					fmt.Fprintf(buf,
 						"\x1b[%d;%d;%d;%d;%d;%d_",
 						kevent.VirtualKeyCode,
@@ -200,7 +210,7 @@ func (d *TerminalReader) serializeWin32InputRecords(records []xwindows.InputReco
 	}
 
 	// Flush any remaining grapheme buffers.
-	buf.Write(d.eventScanner.encodeGraphemeBufs())
+	buf.Write(ser.encodeGraphemeBufs()) // PATCHED, patch 5
 }
 
 func mouseEventButton(p, s uint32) (MouseButton, bool) {

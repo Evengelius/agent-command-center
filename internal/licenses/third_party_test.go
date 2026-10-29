@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -18,6 +19,22 @@ const root = "../.."
 
 // permissive are the licences AGENTS.md allows.
 var permissive = map[string]bool{"MIT": true, "BSD-2-Clause": true, "BSD-3-Clause": true, "Apache-2.0": true, "ISC": true}
+
+// copyTests are the tests of a patched copy that must run and pass in
+// TestThirdPartyTable (PATCHES.md, Checks): go test ./... skips the copy, a
+// module of its own, and a test file left out by a build constraint, or a
+// test skipped, would pass unseen there (plan 68, design D6). The console
+// test is Windows only.
+func copyTests(path string) []string {
+	if path != "github.com/charmbracelet/ultraviolet" {
+		return nil
+	}
+	names := []string{"TestPatchedWin32Input", "TestPatchedDriftRows"}
+	if runtime.GOOS == "windows" {
+		names = append(names, "TestConsoleReader")
+	}
+	return names
+}
 
 type module struct {
 	Path, Version, Dir string
@@ -167,12 +184,22 @@ func TestThirdPartyTable(t *testing.T) {
 				t.Errorf("THIRD_PARTY.md: %s is replaced by %s, which it does not name", m.Path, m.Replace.Path)
 			}
 			// The copy is a module of its own, which go test ./... skips:
-			// its tests of the patches (PATCHES.md, Checks) run here.
-			cmd := exec.Command("go", "test", "-count=1", ".")
+			// its tests of the patches (PATCHES.md, Checks) run here, each
+			// shown to have passed and none skipped (plan 68, design D6).
+			cmd := exec.Command("go", "test", "-count=1", "-v", ".")
 			cmd.Dir = m.Dir
 			cmd.Env = append(os.Environ(), "GOPROXY=off", "GOFLAGS=-mod=readonly")
-			if out, err := cmd.CombinedOutput(); err != nil {
+			out, err := cmd.CombinedOutput()
+			if err != nil {
 				t.Errorf("%s: the patched copy's tests fail: %v\n%s", m.Replace.Path, err, out)
+			}
+			for _, name := range copyTests(m.Path) {
+				if !bytes.Contains(out, []byte("--- PASS: "+name+" (")) {
+					t.Errorf("%s: %s did not run and pass\n%s", m.Replace.Path, name, out)
+				}
+			}
+			if bytes.Contains(out, []byte("--- SKIP: ")) {
+				t.Errorf("%s: the patched copy skipped a test\n%s", m.Replace.Path, out)
 			}
 		}
 		found := licenceOf(t, m.Dir)

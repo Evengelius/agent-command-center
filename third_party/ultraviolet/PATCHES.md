@@ -10,8 +10,9 @@
 - Copied: the module's `LICENSE`, `go.mod`, `go.sum` and the non-test `.go`
   files of its root package, the only one this application builds
   (`go list -deps ./...`). The subpackages and the module's tests are left
-  out. Every file is byte for byte the module's, except the three changes
-  below and `patch_test.go`, which is this project's (Checks).
+  out. Every file is byte for byte the module's, except the five changes
+  below and `patch_test.go` and `patch_windows_test.go`, which are this
+  project's (Checks).
 
 ## Why
 
@@ -38,6 +39,20 @@ the next frame and came back only when a frame changed the row's text: plan
 ✅ in zone B, and by each spinner frame of a running turn. Upstream's `main`
 repaints these rows the same way (read 2026-10-24).
 
+Patches 4 and 5 (plan 68, 2026-10-29): on Windows the reader runs two
+goroutines, `streamData`, which reads the console's input records, and
+`StreamEvents`, which scans them into events. `streamData` sent a batch's
+bytes, then reset its buffer and wrote the next batch into the same array,
+while `StreamEvents` might not have copied the first yet (it logs a read
+before it copies it): its copy then held the next batch's bytes, a key
+lost and the next doubled. Plan 67's Windows Terminal runs lost a Ctrl+F
+that way (`doc\plan67-evaluation.md`, Details, The reader race's
+evidence). `streamData` also used the receiver's grapheme state, flushing
+it at each batch's end and, with VT input mode off, filling it, while
+`StreamEvents` fills and flushes it with an emoji's two halves: the race
+detector reports both. Upstream's `main` has the same code (read
+2026-10-29).
+
 ## Changes
 
 1. `decoder.go`, `parseWin32InputKeyEvent`: the call to `ensureKeyCase` and
@@ -62,9 +77,18 @@ repaints these rows the same way (read 2026-10-24).
    place instead of shifting them; Windows Terminal reports Unicode core mode
    (2027) permanently set, so Bubble Tea's cell buffer measures grapheme
    widths, as Windows Terminal does.
+4. `terminal_reader_windows.go`, `streamData`: each batch is sent as a copy
+   (`bytes.Clone`), the receiver's to keep, and the buffer is the sender's
+   again at once.
+5. `terminal_reader_windows.go`, `streamData` and
+   `serializeWin32InputRecords`: the sender's grapheme state is a scanner
+   of its own (`newEventScanner()`, passed to
+   `serializeWin32InputRecords`), in place of the receiver's
+   `d.eventScanner`, for its three grapheme calls.
 
 Each change is marked `PATCHED (agent-command-center, PATCHES.md, patch N)`,
-or `PATCHED, patch N` in the comment of a function patch 3 adds.
+or `PATCHED, patch N` in the comment of a function patch 3 adds and on the
+lines patch 5 changes.
 
 ## Checks
 
@@ -96,14 +120,33 @@ or `PATCHED, patch N` in the comment of a function patch 3 adds.
   tiles: a key typed once the turn is over, and the spinner's frames while
   it runs, write none of those rows. With the unpatched file (`go test
   -overlay`), the key's frame and 24 spinner frames rewrote them.
-- The module's own tests, run on a scratch copy with the three patched
-  files: all pass (patches 1 and 2 on 2026-10-16, patch 3 on 2026-10-24),
-  after removing the one subtest of the deleted `ensureKeyCase`
-  (`TestWin32Functions/ensureKeyCase`).
+- `patch_windows_test.go`, `TestConsoleReader` (Windows only): the reader's
+  real console path. Each scenario runs in a child process the test starts
+  with `CREATE_NO_WINDOW`, which has a console of its own and no window,
+  killed at 60 s; the child writes key records into that console with
+  `WriteConsoleInputW`, reads them back through `conInputReader`,
+  `streamData` and `StreamEvents`, and the parent compares the events
+  whole. The scenarios: Ctrl+F in plan 67's two reads, the receiver held
+  in its log of the first; 200 letters one read at a time, the receiver
+  held 20 ms in every fifth log; an emoji between two letters in one read,
+  split between two reads, cut inside a sequence, and as two surrogate
+  records; with VT input mode off, letters, `é` and an emoji split between
+  two reads. On the unpatched file the first two fail as plan 67's trace
+  showed (`release ctrl+f`, an unknown sequence, `release ctrl+f`, `release
+  leftctrl`; every fifth letter lost and the next doubled). Under `-race`
+  every scenario reports patch 4's race, and the four that reach the
+  grapheme state patch 5's; with patch 4 alone, patch 5's alone.
+- `internal\licenses` requires each of this module's tests to report PASS,
+  none skipped (`copyTests`), so that a test file left out by a build
+  constraint fails it.
+- The module's own tests, run on a scratch copy with the patched files:
+  all pass (patches 1 and 2 on 2026-10-16, patch 3 on 2026-10-24, patches 4
+  and 5 on 2026-10-29, those also under `-race`), after removing the one
+  subtest of the deleted `ensureKeyCase` (`TestWin32Functions/ensureKeyCase`).
 - The Windows Terminal run of `doc\evaluation.md` (keys K1 to K5, O2).
 
 ## Updating
 
 When Bubble Tea moves to another ultraviolet version, check whether upstream
-fixed the three cases; if so, drop the `replace` and this folder, otherwise
+fixed the five cases; if so, drop the `replace` and this folder, otherwise
 copy the new version's files and reapply the changes it still needs.

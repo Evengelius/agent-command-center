@@ -8675,3 +8675,51 @@ Once implementation and verification are complete, provide the evaluation result
 ````
 
 Taken as the owner's approval of plan 67 (plan.md, Plan 67).
+
+## Amendment 70, 2026-10-29: the keyboard reader's race, for plan 68
+
+Plan 67's checks found a race in the Windows reader of the vendored
+ultraviolet that can lose keys in Windows Terminal, and left it unchanged
+(`doc/plan67-evaluation.md`, Details, The reader race's evidence).
+Another agent's review of plan 67's results, shared by the owner, asked
+that its evidence be kept and that it be recorded as a high-priority
+candidate for the next plan (plan.md, Roadmap). Once plan 67 was closed
+and pushed (0316a30), the owner wrote, word for word:
+
+````text
+You can start drafting the next plan for the keyboard reader race.
+
+Planning only for now. Please investigate the root cause, the safest minimal fix, and the regression tests needed to demonstrate that keyboard events are no longer lost.
+
+Preserve the existing reproduction evidence and avoid unrelated changes.
+
+Once the plan is ready, I'll submit it for independent review before authorizing implementation.
+````
+
+Plan 68: the Windows reader's races fixed in the patched copy, with tests
+on its real console path. Proposed for the owner's review (plan.md, Plan
+68). No implementation before the owner approves the plan.
+
+The owner then sent the plan's independent design review, "Verdict:
+APPROVED — 9.5/10", which decided to include both fixes ("Decision:
+Include both fixes"), the batch's ownership and the grapheme state's,
+and named three acceptance details to preserve: the characters delivered
+and their order unchanged by the separate grapheme state, a sequence
+crossing an input-batch boundary covered beside the emoji scenario, the
+expected output asserted and not only the absence of a race report; the
+new Windows tests explicitly executed by the project's verification
+workflow, not excluded by the nested module's boundary, with the evidence
+before and after each fix kept; a hidden-console child process with a
+bounded execution time, a deterministic cleanup and clear failure
+reports, not a flaky integration test. Its scope: the vendored Windows
+reader, its focused regression tests, the existing third-party patch
+records and the relevant documentation; neither the keyboard decoder,
+the application's logic nor the other patches changed; plan 67's
+reproduction evidence kept. It ended, word for word:
+
+````text
+Please incorporate the three acceptance details above and proceed with implementing Plan 68, including both fixes, within the agreed scope. I approve the implementation.
+````
+
+Taken as the owner's approval of plan 68 with both fixes (plan.md, Plan
+68).
