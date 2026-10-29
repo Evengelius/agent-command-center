@@ -201,6 +201,45 @@ refresh its index while answering, and writes nothing in the repository.
 The quick open lists the files git ignores, as the Explorer shows them
 dimmed: ignoring is git's, not a reason to hide a file.
 
+### The turn review
+
+Plan 65 (brief amendment 67; ui-design.md, Turn review). The snapshots go
+to a store of the dashboard's own, never to the project or its `.git`
+(plan 65, What was found: every file of `.git`, path, size and time,
+unchanged in a main and a linked worktree and a repository of 20,000
+files), one time aside: a split index's shared file, which git refreshes
+when it reads it (the table below). They run in an ordered queue of their
+own, off the loop: a turn's end is always taken before the next turn's
+start.
+
+| Failure | What happens |
+| - | - |
+| the project outside a git repository, or git not on the PATH | no store, no snapshot, no row; Source Control says why |
+| the store cannot be made | each turn's row: "No review of turn N: the review's store could not be made: …" |
+| a start's snapshot past 5 s from the send | the message goes at 5 s; the snapshot, running, is stopped, or, still queued, never taken; the turn's row says so |
+| an end's snapshot past 30 s | stopped; the turn's row says so; no message waits for it |
+| a snapshot stopped midway | its `index.lock` in the store removed, so the next one works |
+| the store would pass 256 MiB on disk (its size and the files to take in), or has | that snapshot not taken, and none after; the turns without both snapshots say so; what was taken stays readable |
+| a file over 32 MiB, outside the project once its links and junctions are resolved, or a credential file | never read; listed as left out when its size or time changed |
+| a file with more than one name, a hard link (the review of 2026-10-29) | left out, "a hard link": the checks see the link's name alone, and its other names, which no path shows, may be a credential file's or outside the project; opened for its attributes alone, never read; a project's own hard-linked files are left out with them |
+| a file written while a snapshot is taken | caught before or after; the listing after the end marks the turn "still changing" |
+| a `git gc --prune=now` removing an object only the store's index named | that side shows git's error, never another content |
+| the dashboard quits | the snapshot running stopped, waited for 3 s, the store removed |
+| the dashboard crashes or is killed | the store stays on this machine, readable by the user alone, until a dashboard starts again and removes every store no running dashboard holds |
+| a turn that takes in many files at once | git writes about 7 ms a new file here (2,000 small files 13.9 s, plan 65's store tests): past about 700 the start's 5 s pass, the message going and the turn without a review; past about 4,000 the end's 30 s; once a snapshot has taken them, the next is quick again |
+| a repository with Git LFS | the filters off, every checked-out LFS file differs from its pointer in the seeded index: the first snapshot takes each in as its bytes, 32 MiB at most each, so that with over 256 MiB of them the store is full from the first snapshot and the session has no review |
+| a repository whose index is split already (`core.splitIndex`) | the store writes nothing in `.git`, but git itself refreshes the time of the shared index file each time it reads it, so that no git deletes a shared index in use (git's documentation of `core.splitIndex`), Source Control's reads as much as the store's: the store's first snapshot reads it through its copy of the index. A time alone, a documented exception (plan65-evaluation.md): the file's bytes, the index, the references and every other file of `.git` and of the project stay as they were; the store writes its own index whole (`core.splitIndex=false`), so no later call reads the shared one (TestTurnSplitIndex) |
+| an untracked folder holding a repository of its own | left out, "a nested repository": git would refuse it, and the whole snapshot with it |
+| a panic in a snapshot | that turn's problem, said in its row, never the session's or the program's end; its gate opened, the message going |
+| more than 16 snapshots waiting | the one more refused, its turn without a review, saying so |
+
+Every git call of the store runs with its index and its object folder, its
+hooks at an empty folder, every filter driver of git's configuration given
+empty commands, the file system monitor off; the repository's objects
+behind the store's only to read. Git's own walk enters a junction to a
+folder outside the project: each file it lists passes the file viewer's
+checks before git reads it.
+
 ## Telemetry sources
 
 Every source of [TEL](research/telemetry-sources.md), with its fallback (AM2

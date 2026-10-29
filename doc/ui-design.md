@@ -1148,6 +1148,9 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   - approval cards ([Approvals](#approvals)): a pending one in its pink
     box, Template 2's; an answered one is one row among the tool rows, on
     their ground, who asked kept, its outcome in its colour;
+  - a turn's review (plan 65): under the turn's last row, the files it
+    changed in the project, the dashboard's own rows, never the CLI's
+    ([Turn review](#turn-review));
   - what the code shows around a turn (plan 21, item 5.6c): a failed
     turn, the error as received, "✗ turn failed: " and its first line, in
     red (`internal/render/cards.go`; the details view lists it whole); an
@@ -2633,6 +2636,119 @@ terminal's own selection copy from it.
 | F2 | the oldest pending approval's card: the diff closes, zone B and its card back in its place (from the panel beside it too); a waiting approval is said first in the footer |
 | F1, F3, F4, F6, Alt+P, Ctrl+Q, … | as on the dashboard; F3 shows the Explorer in the panel's place, the diff staying beside it |
 
+## Turn review
+
+Plan 65 (brief amendment 67). Under each turn in zone B, the files the turn
+changed in the project, and each file's change of that turn in the [Diff
+view](#diff-view): the files that changed while the turn ran, whoever
+changed them, the agent, a command it ran or another program; the review
+never says who. The rows are the dashboard's own, drawn from its state:
+never a message of the conversation, never sent to the CLI, never in the
+CLI's session or its history (design D7). At 120x40, the mock's two turns,
+the CLI's report's review unfolded and the entry cursor on it (golden frame
+`review-open`, zone B):
+
+```text
+╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮
+│ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   │
+│ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   │
+│ ▎  ▸ 3 files changed in turn 1 · +12 −4 · Review                    git  │
+│ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   │
+│                                                                          │
+│ ╭──────────────────────────────────────────────────────────────────────╮ │
+│ │ RESULT  11:30                                                        │ │
+│ │ Found 2 files: alpha.txt and beta.md.                                │ │
+│ ╰──────────────────────────────────────────────────────────────────────╯ │
+│  ▸ ▾ 3 files changed in turn 2 · +… Enter folds · ↑↓ entries · Esc back  │
+│      M  viewer.go internal/render/                                 +8 −2 │
+│      A  viewer_test.go internal/render/                            +4 −0 │
+│      D  old.txt                                                    +0 −2 │
+```
+
+**Where** (design D7). Under a turn's last row: its RESULT box, with no
+block, or else its block's last row, with the block's bar. Folded, one row
+on the tool rows' ground, as a run's fold row: "▸ 3 files changed in turn
+2 · +12 −4 · Review", the count muted, its lines added in green and removed
+in red, "· still changing" in the attention colour when the listing after
+its end found a file written meanwhile (design D5), "git" at its right,
+what read it. Unfolded, "▾ … · Fold" and the files under it as the [Git
+Graph](#git-graph) lists a commit's: the letter in Source Control's colours,
+the name, its folder dimmed, a rename's source after "←", "+8 −2" or
+"binary"; a file left out with why ("over 32.0 MiB, not compared",
+"outside the project, not compared", "a credential file, not compared",
+"a hard link, not compared"); past 1,000 files, "first 1,000 of 2,345
+files", the summary's count grouped the same, "2,345 files changed". A
+turn that changed nothing has no row; a turn without a review has one row,
+"✗ No review of turn 2:" and why, in the failure colour: its start's or
+its end's snapshot that failed or took too long, the store's limit
+reached, the store that could not be made. Folded at first; the owner's
+choice holds for the session.
+
+**Keys and the mouse** (design D8), through zone B's entry cursor
+([Zone B](#zone-b), Expanding): ↑ ↓ stop on the summary row and, unfolded,
+on each file; Enter or → on the summary unfolds the files, Enter or ← folds
+them; Enter on a file opens its diff, ← there folds the list, the cursor
+back on the summary; a file left out opens nothing; a row without a review
+is no stop. A click on the summary folds or unfolds it; a double click on
+a file opens its diff. The cursor's row shows its keys at its right, the
+bottom row says the same.
+
+**The diff** (design D9). In zone B's place, as Source Control's: "DIFF ·
+viewer.go", its path row "internal/render/viewer.go · Turn 2: start → end",
+an added file's old side "nothing"; unified or side by side, with every key
+of the diff view, "r" reading the two sides again; the store's two versions
+through one `git cat-file --batch`, the viewer's refusals and its 32 MiB
+kept. Esc goes back to zone B as it was, the cursor on the file. It writes
+nothing and sends nothing to the CLI.
+
+**What it compares** (designs D2, D5 and D6). The project's files at the
+turn's start and at its end, each as git would store it in this repository:
+its line-ending rules applied (`core.autocrlf`, the `text` and `eol`
+attributes), so that a change of line endings alone that git would
+normalise away does not show; no filter run, so that a Git LFS file
+compares as its bytes against its pointer, which the diff view says, and
+the first snapshot takes every checked-out LFS file in, over 256 MiB of
+them filling the store at once. Every
+file of the project folder that git does not ignore, changed while the turn
+ran, by the agent's file tools, its commands or its subagents, or by
+anything else that wrote there meanwhile: the rows never say who changed a
+file. Never in it: a file git ignores; a credential file by the file
+viewer's names, `.env`'s three examples too; a file outside the project,
+behind a link or a junction or not; a file over 32 MiB, listed without its
+content; a submodule's files, its commit only; what changed between two
+turns, which Source Control shows. A secret in a file with an ordinary name
+that git does not ignore is taken in, as `git add` would take it, into the
+store on this machine. A snapshot is not atomic: git reads the files one
+after another, and one written meanwhile may be caught before or after;
+"still changing" says when the listing after the end found one. No review
+outside a git repository or without git: no row, Source Control saying why.
+
+**When** (design D4). A turn's start, for the owner's message: the
+project's snapshot first, the message written once it is taken, at most 5 s
+after the send, the editor's row saying "the turn's snapshot…" meanwhile;
+past 5 s the message goes without it and the turn has no review. About 0.1
+s here when nothing changed since the last snapshot, the listing alone, and
+0.3 s with ten files changed; 0.45 and 0.7 s in a repository of 20,000
+files (plan 65's evaluation); git writes about 7 ms for each file a snapshot
+takes in, so that a start taking in more than about 700 passes its 5 s
+([reliability.md, The turn review](reliability.md#the-turn-review)). For a turn the CLI opens, where the turn before
+ended, so that a background agent's work shows with its report; with no
+turn before, and for a mock file's replayed prompt, when the turn opens. A
+turn's end: a snapshot when it ends, completed, failed or interrupted, or
+when the session ends during it, at most 30 s; then the listing once more,
+and the files between the two.
+
+**The store** (design D3). One a session, in
+`%LOCALAPPDATA%\agent-command-center\turns\`, readable by the user alone
+(its folder's access list its own, not inherited), held while the dashboard
+runs: an index seeded from the repository's, an object folder where git
+keeps each version once, compressed. At most 32 MiB a file and 256 MiB on
+disk; past them, no more snapshots, the turns without a review saying why,
+what was taken still readable. Removed when the dashboard quits; one a
+crash left stays until a dashboard starts again, which removes it, and can
+be deleted by hand meanwhile. It is not a backup: no history, nothing
+restored.
+
 ## Branches
 
 Plan 59 (brief amendment 61; the owner's image of an IDE's branch popup,
@@ -3469,10 +3585,10 @@ the console reads plain VT input after Ctrl+Q.
 
 | Key | Action |
 | - | - |
-| ↑ ↓ | previous / next folded message, tool or failure; ↓ past the last, the input |
-| Enter | the whole entry, full screen; Esc back to the cursor; on a run of tool events, expand it |
-| → | on a run of tool events, expand it; it opens nothing |
-| ← | on a call of an expanded run, fold the run again |
+| ↑ ↓ | previous / next folded message, tool, failure, or [turn review](#turn-review) row; ↓ past the last, the input |
+| Enter | the whole entry, full screen; Esc back to the cursor; on a run of tool events, expand it; on a turn review's summary, unfold or fold its files; on its file, the file's change of the turn |
+| → | on a run of tool events or a turn review's summary, expand it; it opens nothing |
+| ← | on a call of an expanded run, fold the run again; on a turn review's file or its unfolded summary, fold its files |
 | Esc, or typing | back to the input |
 | F3 | the file a tool entry read or changed, in the [file viewer](#file-viewer) |
 

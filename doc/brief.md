@@ -8424,3 +8424,139 @@ fragment are not touched; the probe's own shortcut, under a test name and
 app ID, is removed after it and checked gone; the click stays optional.
 Taken as the approval of plan 64's probe; the implementation waits for its
 results and the owner's review.
+
+## Amendment 67, 2026-10-28: the turn-by-turn review, for plan 65
+
+After plan 64's push was recorded (2af203a), the session offered to draft
+plan 65, the next on the roadmap (amendment 65: "We can tackle the
+turn-by-turn review next, followed by conversation search and session
+resumption."), in a session of its own. The owner had it drafted in this
+one; the app's message for that choice reads, word for word:
+
+````text
+Effectuez cette tâche ici : « Plan 65: the turn-by-turn review ».
+````
+
+Plan 65 proposed for the owner's review (plan.md, Plan 65): after each
+turn, the files it changed in the project, from git snapshots of the
+project at the turn's start and at its end, taken in a store of the
+dashboard's own with nothing written in the project or its `.git`; each
+file's change of the turn in plan 44's diff view; no live run.
+
+The owner then wrote, word for word:
+
+````text
+The other agent said :
+````
+
+and shared another agent's review of plan 65, in French. It agreed with
+git's snapshots over the CLIs' reports (a `gofmt -w` caught that a file
+tool's report would miss) and approved the row under each turn, its list
+of files, the diff view, the keys and the mouse, the changes made by
+anything else included with a careful attribution, the snapshot before
+the message within its 5 s, no review without git, and mocks in place of
+live runs; it asked that the row stay the dashboard's own, never a
+message added to the agent's history. It held the plan pending three
+clarifications: the snapshots' storage (how much disk, how many kept,
+when removed, a crash, an old snapshot removed while a diff reads it),
+with an explicit limit and a cleanup, ACC never becoming a backup of the
+project; the exclusion of sensitive files and of files outside the
+project, tested (ignored files, symbolic links out of the project,
+credential files, binary and large files) under the file viewer's
+restrictions at least; and what is compared, the bytes on disk or git's
+representation of them, a snapshot not claimed atomic while a command
+still writes after the turn's end. Told, in plan 65 (plan.md, designs D2
+to D7, criteria 65.1 to 65.4), after a second probe: one store a session,
+at most 32 MiB a file and 256 MiB a session taken in, every snapshot kept
+until the dashboard quits and then removed, one a crash left removed at
+the next start; a listing first, each file listed passing the file
+viewer's checks before git reads it, because git's walk was found to
+enter a junction to a folder outside the project, and markers in every
+file that must stay out found in no object of the store; git's view of
+each file compared, its line-ending rules applied and no filter run; the
+snapshot not atomic, a listing after the end saying when the folder was
+still changing; the rows the dashboard's own, never the conversation's.
+The plan still waits for the owner's approval.
+
+The owner then wrote, word for word:
+
+````text
+The other agent said :
+````
+
+and shared the other agent's second review of plan 65, in English. It
+held its three points answered and the safeguards satisfactory (the
+repository's `.git` kept, ignored files, Windows junctions, known
+credential files, large files, writes during a snapshot detected, the
+store's removal at the end and after a crash, no change attributed to
+the agent by itself, the row apart from the CLI's conversation); it asked
+that the snapshots stay where only authorized users can read them, never
+in a log or a commit, and took the wait before the message as acceptable
+for a first version, to be judged in real use. It asked one question
+before recommending the plan's approval: whether the 256 MiB count every
+snapshot's whole files, which with 20 MiB of tracked files would stop
+the review at the seventh turn, or the room the store's objects take,
+identical content counted once. Told, in plan 65 (plan.md, design D3,
+criterion 65.3), after measuring it: the room the store takes on disk,
+checked before each snapshot with the sizes of the files it is about to
+take in; a file whose content did not change is never listed, read or
+counted, a merely touched one either, and a tracked one's version stays
+in the repository's own objects; with 200 tracked files of 21.0 MiB,
+eight turns that each changed one file left the store at 108 KiB. The
+store's folder made readable by the user alone, where `%LOCALAPPDATA%`
+also lets SYSTEM, the administrators and a local group of this machine
+in; nothing of it in a log, a commit or another git call of the
+dashboard's. The plan still waits for the owner's approval.
+
+The owner then wrote, word for word:
+
+````text
+The other agent said :
+````
+
+and shared the other agent's final review of plan 65, in English. It
+approved the design for implementation ("Plan 65 is approved for
+implementation"): the storage question answered by the measurement, the
+store's own access list a meaningful improvement, the snapshot's
+semantics accepted, the limit on secrets in ordinarily named files to
+stay explicit. It asked for focused tests within the design: a working
+tree already changed before the first turn, a tracked file and an
+untracked one changed again by the turn, its review showing the turn's
+change alone; repeated turns with no change, one file changed and files
+touched, the store not growing as whole copies; the limit reached on a
+simulated store without a large fixture, the message sent, the turn's
+review saying its snapshot was unavailable, the earlier reviews
+readable, nothing shown in part, the store removed as documented; the
+store's real size checked after each snapshot as well as projected
+before; the folder's access checked (the user making, reading and
+removing it, the local group's read access absent, the removal at the end
+and after a crash, another running instance untouched). It asked for no
+file watcher, background snapshot or extra cache before real use calls
+for one, and for the implementation's evidence to be kept for an
+independent review before the final commit. Folded into plan 65
+(plan.md, designs D3 and D10, criteria 65.1 and 65.3). The owner's own
+approval of the plan is still to come.
+
+The owner then wrote, word for word:
+
+````text
+Approve and start
+````
+
+Taken as the approval of plan 65 (plan.md, Plan 65).
+
+After the evaluation (`doc/plan65-evaluation.md`), the owner shared
+another agent's review of the implementation and of the eight Windows
+Terminal shots, in English. It approved the shots ("I approve criterion
+65.8 — the human visual review") and asked for two points before the
+final commit: a file with more than one name, a hard link, left out of
+the snapshots, since a hard link under an ordinary name can stand for a
+credential file or a file outside the project, with a focused Windows
+test of that case; and the refresh of a split index's shared file by
+git's reads documented and verified as an exception, nothing but that
+file's time changing. It asked that the cursor reaching a file below the
+view be covered by a test, recorded the counts the keys cut on a narrow
+row and the count without a thousands separator as optional polish, and
+asked that the review keep saying which files changed during a turn,
+never who changed them. Folded into plan 65 (plan.md, Progress;
+plan65-evaluation.md, after the evaluation).

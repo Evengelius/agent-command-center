@@ -51,6 +51,9 @@ type ConvView struct {
 	// their row from Top, with the entry, 1-based: a double click on one
 	// opens it as Enter does when Enter can (plan 42).
 	Entries map[int]int
+	// Files are a turn review's file rows in view, by their row from Top: a
+	// double click on one opens its diff (plan 65, design D8).
+	Files map[int]TurnFile
 }
 
 // Screen is a drawn frame that still knows what each cell shows, so a mouse

@@ -205,6 +205,9 @@ type TurnState struct {
 	ForceStopOffered bool
 	Notice           string
 	SlashHeld        string // a Codex slash command held back once: the same text again is sent
+	// ReviewAsked says the send asked for the start's snapshot of the stage
+	// it opens (plan 65, design D4).
+	ReviewAsked bool
 }
 
 // Entry is one item of a conversation record.
@@ -401,6 +404,7 @@ type Stage struct {
 	EndedAt   time.Time
 	Plan      []event.PlanStep // the last turn/plan/updated of the turn, observed
 	Prompt    string           // the owner's message that opened it; "" when the CLI opened it
+	Review    TurnReview       // what it changed in the project (plan 65)
 }
 
 // Value is one telemetry value. Present false renders "N/A" with Reason.
@@ -454,7 +458,8 @@ type State struct {
 	Session      SessionState
 	Models       Models // the session's models and their settings (plan 34)
 	Turn         TurnState
-	Stages       []Stage // one per turn, in order
+	Stages       []Stage     // one per turn, in order
+	Reviewing    ReviewState // whether the turns are reviewed (plan 65, design D2)
 	Conversation []Entry
 	Agents       map[string]*Agent
 	Order        []string // agents in the order they appeared
@@ -593,6 +598,8 @@ const (
 	CmdExit          CommandKind = "exit"           // leave the application
 	CmdSetApprovals  CommandKind = "set-approvals"  // ask for Mode, one of the session's CLI's modes (plan 39)
 	CmdModels        CommandKind = "models"         // ask for the model settings of Change (plan 34)
+	CmdTurnSnapshot  CommandKind = "turn-snapshot"  // take the project's snapshot for turn Turn's start or End (plan 65)
+	CmdTurnFiles     CommandKind = "turn-files"     // read the files between the trees From and To of turn Turn (plan 65)
 )
 
 // The approval modes (plan 12, item 2; plan 39, modes.go).
@@ -611,6 +618,11 @@ type Command struct {
 	Answers  map[string]string // CmdAnswer of a question: question text to answer
 	Images   []Attachment      // CmdWrite and CmdRestoreDraft: the message's images (plan 31)
 	Change   ModelChange       // CmdModels: the model settings asked for (plan 34)
+	// CmdTurnSnapshot and CmdTurnFiles: the stage, its End's snapshot or its
+	// start's, and the two trees whose files are read (plan 65).
+	Turn     int
+	End      bool
+	From, To string
 }
 
 // Mode is the approval mode in force; Manual until the CLI reports another.

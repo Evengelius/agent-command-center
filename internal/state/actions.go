@@ -220,6 +220,12 @@ func (s *State) Do(a Action) []Command {
 		return s.answerFailed(a)
 	case Panicked:
 		return s.fatal(event.Event{}, a.Message)
+	case ReviewStore:
+		s.reviewStore(a)
+	case TurnSnapshot:
+		return s.turnSnapshot(a)
+	case TurnFiles:
+		s.turnFiles(a)
 	case BranchRead:
 		s.Context.Branch = a.Branch // the header's (plan 59, design D9)
 	case BranchSwitched:
@@ -364,7 +370,15 @@ func (s *State) send(a Send) []Command {
 	// (plan 22, correction C3).
 	s.endThoughts(time.Time{}, "")
 	s.Turn.Phase, s.Turn.Count, s.Turn.Outcome, s.Turn.Notice, s.Turn.ByCLI = Submitted, s.Turn.Count+1, "", "", false
-	return []Command{{Kind: CmdWrite, Text: a.Text, Images: a.Images}}
+	write := Command{Kind: CmdWrite, Text: a.Text, Images: a.Images}
+	if !s.Reviewing.On {
+		return []Command{write}
+	}
+	// The project's snapshot first, in the write queue before the message, so
+	// that the turn's review starts where the turn does (plan 65, design D4);
+	// the stage it opens is the next one. The editor's row says so meanwhile.
+	s.Turn.ReviewAsked, s.Turn.Notice = true, reviewNotice
+	return []Command{{Kind: CmdTurnSnapshot, Turn: len(s.Stages) + 1}, write}
 }
 
 func (s *State) interrupt() []Command {

@@ -271,6 +271,32 @@ prompt, as a replay can start, every agent counts. An agent still running
 when the owner sends a prompt stays in play through that turn, also once it
 ends; the next prompt resets the count.
 
+### Turn review
+
+Plan 65 (brief amendment 67; ui-design.md, Turn review). Each stage holds
+its review (`Stage.Review`, `state.TurnReview`): the trees of the project's
+snapshots at its start and at its end, the files each left out, then the
+files between the trees, or why it has none. The reducer asks for the
+snapshots and the files with commands; the application takes them off the
+loop and answers with actions; nothing of it is a message of the
+conversation, an entry, or a write to the CLI. `State.Reviewing` says
+whether the session's turns are reviewed: the application's store made
+(`ReviewStore`).
+
+| When | The state | It asks for |
+| - | - | - |
+| the owner's send, the review on | the next stage's start asked for; the editor's notice "the turn's snapshot…" | `CmdTurnSnapshot` of its start, before `CmdWrite` |
+| a stage opens the send did not open: a mock file's replayed prompt, or the CLI's turn with no stage before | its start asked for | `CmdTurnSnapshot` of its start |
+| a stage the CLI opens after another | its start is that stage's end (`Prev`), given when that end comes | nothing |
+| the orchestrator's turn ends (completed, failed, interrupted), or the session crashes during it | its end asked for | `CmdTurnSnapshot` of its end |
+| a start's or an end's snapshot (`TurnSnapshot`) | its tree and the files left out kept; for an end, "still changing"; a problem ends its review | `CmdTurnFiles` once both trees are known and differ |
+| the files (`TurnFiles`) | the first `ReviewFileCap` (1,000) kept, all counted; done | nothing |
+| a turn ends with the store that could not be made | its review done with that reason | nothing |
+
+Two equal trees changed nothing: done with no file, and no row unless a
+file left out changed size or time. A snapshot or files for no stage are
+noted and ignored; a stage's review once done changes no more.
+
 ## State machines
 
 For each machine: its states, every transition with its trigger and which

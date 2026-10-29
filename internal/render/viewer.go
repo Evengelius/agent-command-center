@@ -264,6 +264,9 @@ func toolView(s *state.State, ui UI, e state.Entry, back span, w int) (line, []l
 // entryFooter is the key hints while B's entry cursor is on: F3 among them
 // when the entry names a file (plan 17, Opening).
 func entryFooter(s *state.State, ui UI) string {
+	if ui.EntryReview > 0 {
+		return reviewFooter(s, ui) // on a turn's review rows (plan 65, design D8)
+	}
 	// On a run of calls: its row expands it, the calls of an expanded one
 	// fold it (plan 19).
 	_, _, open, folded, ok := FoldOf(s, ui, ui.Entry)

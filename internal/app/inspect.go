@@ -363,8 +363,11 @@ func (m *Model) closeView() {
 // leaves the cursor and reaches the input, so typing types.
 func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	if m.ui.Entry > len(m.s.Conversation) || m.ui.Focus != "B" || m.ui.Card != "" {
-		m.ui.Entry = 0
+		m.ui.Entry, m.ui.EntryReview = 0, 0
 		return nil, false
+	}
+	if m.ui.EntryReview > 0 {
+		return m.reviewKey(k) // on a turn's review rows (plan 65, design D8)
 	}
 	// On a folded call, the cursor is its run's row: the run's first entry,
 	// also when the call was folded after the cursor came to it (plan 19).
@@ -380,9 +383,9 @@ func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	}
 	switch k.String() {
 	case "up":
-		m.moveEntry(m.ui.Entry-1, -1)
+		m.stepCursor(-1)
 	case "down":
-		if !m.moveEntry(m.ui.Entry+1, 1) {
+		if !m.stepCursor(1) {
 			m.ui.Entry = 0 // past the newest: the input
 		}
 	case "enter":
@@ -423,6 +426,145 @@ func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		return nil, false
 	default:
 		m.ui.Entry = 0
+		return nil, false
+	}
+	return nil, true
+}
+
+// stepCursor moves the entry cursor to its next stop (d 1) or its previous
+// one (d -1) and scrolls B to it; false, the cursor where it was, when
+// there is none. An entry's stops are the entry when the cursor stops on it
+// (moveEntry's), then its turn's review rows, in that order (plan 65,
+// design D8).
+func (m *Model) stepCursor(d int) bool {
+	n, k := m.ui.Entry, m.ui.EntryReview
+	targets := render.Targets(m.s, m.ui)
+	reviews := render.ReviewStopsAll(m.s, m.ui)
+	switch {
+	case d > 0 && k < reviews[n]:
+		return m.putCursor(n, k+1)
+	case d < 0 && k > 1:
+		return m.putCursor(n, k-1)
+	case d < 0 && k == 1 && targets[n-1]:
+		return m.putCursor(n, 0)
+	}
+	for n += d; n >= 1 && n <= len(m.s.Conversation); n += d {
+		switch {
+		case d > 0 && targets[n-1]:
+			return m.putCursor(n, 0)
+		case reviews[n] > 0 && d > 0:
+			return m.putCursor(n, 1)
+		case reviews[n] > 0:
+			return m.putCursor(n, reviews[n])
+		case targets[n-1]:
+			return m.putCursor(n, 0)
+		}
+	}
+	return false
+}
+
+// lastStop puts the entry cursor on zone B's newest stop: ↑ from an empty
+// input (ui-design.md, Zone B, Expanding); false for none.
+func (m *Model) lastStop() bool {
+	m.ui.Entry, m.ui.EntryReview = len(m.s.Conversation)+1, 0
+	if !m.stepCursor(-1) {
+		m.ui.Entry = 0
+		return false
+	}
+	return true
+}
+
+// putCursor puts the entry cursor on entry n's stop k and scrolls B to it:
+// the entry whole, or the review's row.
+func (m *Model) putCursor(n, k int) bool {
+	m.ui.Entry, m.ui.EntryReview = n, k
+	if k == 0 {
+		m.reveal(n)
+		return true
+	}
+	if m.screen != nil && n < len(m.screen.Conv.Starts) {
+		m.revealRow(m.screen.Conv.Starts[n] - 1 - render.ReviewRowsAfter(m.s, m.ui, n, k))
+	}
+	return true
+}
+
+// revealRow scrolls B the least that shows its row r.
+func (m *Model) revealRow(r int) {
+	c := m.screen.Conv
+	top := c.Top
+	if m.ui.ConvHold {
+		top = min(max(m.ui.ConvTop, 0), max(c.Rows-c.Room, 0))
+	}
+	room := c.Room
+	if m.ui.ConvHold && render.NewShown(m.s, m.ui.ConvSeen) > 0 {
+		room = max(room-1, 1) // the "↓ N new" badge covers the last row (reveal)
+	}
+	to := top
+	switch {
+	case r < top:
+		to = r
+	case r >= top+room:
+		to = r - room + 1
+	}
+	if to != top {
+		m.scroll(to - top)
+	}
+}
+
+// reviewKey handles a key while the entry cursor is on a turn's review rows
+// (plan 65, design D8): ↑ ↓ move it; Enter or → on the summary unfolds the
+// files, Enter or ← folds them; Enter on a file opens its diff, ← there
+// folds the list, the cursor back on the summary; Esc returns to the input.
+func (m *Model) reviewKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
+	t := render.ReviewOf(m.s, m.ui.Entry)
+	if t == 0 || m.ui.EntryReview > render.ReviewStops(m.s, m.ui, m.ui.Entry) {
+		m.ui.EntryReview = 0 // its review gone or folded under it: the entry's own stop
+		if t == 0 || !render.Targets(m.s, m.ui)[m.ui.Entry-1] {
+			m.ui.Entry = 0
+		}
+		return nil, false
+	}
+	key := render.ReviewKey(t)
+	switch k.String() {
+	case "up":
+		m.stepCursor(-1)
+	case "down":
+		if !m.stepCursor(1) {
+			m.ui.Entry, m.ui.EntryReview = 0, 0 // past the newest: the input
+		}
+	case "enter":
+		if m.ui.EntryReview == 1 {
+			m.unfold(key, !m.ui.Unfolded[key])
+			break
+		}
+		if f := render.ReviewFile(m.s, m.ui.Entry, m.ui.EntryReview); f >= 0 {
+			return m.openTurnDiff(t, f), true
+		}
+	case "right":
+		if m.ui.EntryReview == 1 {
+			m.unfold(key, true)
+		}
+	case "left":
+		switch {
+		case m.ui.EntryReview > 1:
+			m.unfold(key, false)
+			m.putCursor(m.ui.Entry, 1)
+		case m.ui.Unfolded[key]:
+			m.unfold(key, false)
+		default:
+			m.ui.Entry, m.ui.EntryReview = 0, 0
+			return nil, false
+		}
+	case "esc":
+		if !m.ui.Sel.Empty() {
+			m.ui.Sel = render.Selection{} // Esc clears a selection first
+			return nil, true
+		}
+		m.ui.Entry, m.ui.EntryReview = 0, 0
+	case "pgup", "pgdown", "shift+pgup", "shift+pgdown", "ctrl+c", "ctrl+shift+c", "f12", "ctrl+o", "ctrl+r":
+		return nil, false
+	default:
+		m.ui.Entry, m.ui.EntryReview = 0, 0
 		return nil, false
 	}
 	return nil, true

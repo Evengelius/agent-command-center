@@ -339,6 +339,9 @@ type crow struct {
 	fr     *frame      // the card it is drawn in; nil for none (plan 20)
 	cursor bool        // the entry cursor's row: ▸ in the card's margin
 	sep    bool        // the rule between two messages (amendment 17)
+	// turn and file are a review's file row: a double click opens its diff
+	// (plan 65, design D8); 0 for any other row.
+	turn, file int
 }
 
 // solid says the row shows something: text, a block's bar, a rule; not a

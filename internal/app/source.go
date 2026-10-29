@@ -675,7 +675,7 @@ func (m *Model) diffRead(msg diffMsg) {
 	}
 	top, left, wide := v.Top, v.Left, v.Wide
 	nv := render.DiffView{Open: true, Path: v.Path, Orig: v.Orig, Staged: v.Staged, Both: v.Both, Wide: wide,
-		OldName: msg.pair.Old.Name, NewName: msg.pair.New.Name, Conflict: msg.pair.Conflict, Commit: v.Commit}
+		OldName: msg.pair.Old.Name, NewName: msg.pair.New.Name, Conflict: msg.pair.Conflict, Commit: v.Commit, Turn: v.Turn}
 	if nv.Conflict == "" {
 		nv.Conflict = v.Conflict
 	}
@@ -844,6 +844,14 @@ func (m *Model) diffViewKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	case "f":
 		v.Wide = !v.Wide
 	case "r":
+		if v.Turn > 0 {
+			// A turn review's file: its two sides read again from the store
+			// (plan 65, design D9).
+			wide := v.Wide
+			cmds := m.openTurnDiff(m.turnDiff.turn, m.turnDiff.file)
+			m.ui.Diff.Wide = wide
+			return cmds, true
+		}
 		// Git's status read again, and the file compared again with it
 		// (design D9).
 		m.diffStamp = ""
@@ -867,12 +875,13 @@ func (m *Model) diffWheel(b tea.MouseButton) {
 // closeDiff closes the diff: zone B comes back as it was, the focus to the
 // docked panel, its cursor on the file, or to zone B with no panel.
 func (m *Model) closeDiff() {
+	turn := m.ui.Diff.Turn
 	m.ui.Diff = render.DiffView{}
 	m.diffGen++
 	if m.ui.Focus == "D" {
 		m.ui.Focus = "B"
-		if render.PanelShown(m.ui) {
-			m.ui.Focus = "R"
+		if turn == 0 && render.PanelShown(m.ui) {
+			m.ui.Focus = "R" // a turn review's diff goes back to zone B, its cursor on the file (plan 65, design D9)
 		}
 	}
 }

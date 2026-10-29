@@ -178,7 +178,7 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 	wc := ui.Wrap
 	// Its row shows the entry cursor, its rows as many as without it.
 	cursor := ui.Card == "" && (ui.Focus == "B" || ui.Focus == "")
-	focused := cursor && ui.Entry == i+1
+	focused := cursor && ui.Entry == i+1 && ui.EntryReview == 0 // not on its turn's review rows (plan 65)
 	cw := cardContent(k.card, w)
 	if k.result {
 		out = append(out, crow{l: resultEdge(w, true)})
@@ -188,7 +188,7 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 	}
 	if k.fold > 0 {
 		// A folded run's row takes the cursor of any call it folds.
-		on := cursor && k.hidden && ui.Entry > i && ui.Entry <= k.end
+		on := cursor && k.hidden && ui.Entry > i && ui.Entry <= k.end && ui.EntryReview == 0
 		out = append(out, crow{fn: func() line { return foldRow(s, i, k, cw, on) }, fold: k.run, fr: fr, cursor: on})
 		if k.hidden {
 			return out

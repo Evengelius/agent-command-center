@@ -176,7 +176,7 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 			case render.GraphPanel:
 				return m.graphClick(item) // the Git Graph's, the Explorer's rule (plan 62, design D8)
 			}
-			m.press(mo)
+			return m.press(mo)
 		}
 	case tea.MouseMotionMsg:
 		var hover []tea.Cmd
@@ -344,11 +344,12 @@ func motionFilter(tm tea.Model, msg tea.Msg) tea.Msg {
 
 // press focuses the panel under the pointer and starts a selection there:
 // a character, a word on a double click, a line on a triple click; Shift
-// extends the current one.
-func (m *Model) press(mo tea.Mouse) {
+// extends the current one. Its commands are a double click's on a turn
+// review's file, which opens its diff (plan 65, design D8).
+func (m *Model) press(mo tea.Mouse) []tea.Cmd {
 	p := m.screen.PanelAt(mo.X, mo.Y)
 	if p == 0 {
-		return
+		return nil
 	}
 	switch p {
 	case 'P':
@@ -364,7 +365,7 @@ func (m *Model) press(mo tea.Mouse) {
 	if mo.Mod&tea.ModShift != 0 && m.drag.panel == p {
 		m.drag.on, m.drag.moved = true, true
 		m.extend(mo)
-		return
+		return nil
 	}
 	now := m.opt.Now()
 	if m.click.n > 0 && now.Sub(m.click.at) <= multiClick && mo.X == m.click.x && mo.Y == m.click.y {
@@ -375,10 +376,16 @@ func (m *Model) press(mo tea.Mouse) {
 	m.click.at, m.click.x, m.click.y = now, mo.X, mo.Y
 
 	// Zone B's clicks on its foldable items and double clicks on its entries
-	// (plan 19; plan 42).
-	if c := m.screen.Conv; p == 'B' && m.convClick(c, mo.Y-c.Y) {
-		m.ui.Sel = render.Selection{}
-		return
+	// (plan 19; plan 42), and on a turn review's files (plan 65).
+	if c := m.screen.Conv; p == 'B' {
+		if f, ok := c.Files[mo.Y-c.Y]; ok && m.click.n == 2 {
+			m.ui.Sel, m.ui.Entry, m.ui.EntryReview, m.click.n = render.Selection{}, 0, 0, 0
+			return m.openTurnDiff(f.Turn, f.File-1)
+		}
+		if m.convClick(c, mo.Y-c.Y) {
+			m.ui.Sel = render.Selection{}
+			return nil
+		}
 	}
 	// A click on a row of zone A with a node puts the cursor on it; on
 	// TELEMETRY it opens the details, on a section's heading it folds or
@@ -398,14 +405,14 @@ func (m *Model) press(mo tea.Mouse) {
 		}
 		if render.IsTelemetryNode(id) {
 			m.ui.Sel = render.Selection{}
-			return
+			return nil
 		}
 	}
 
 	start, end, ok := m.screen.HitIn(p, mo.X, mo.Y, false)
 	if !ok {
 		m.ui.Sel = render.Selection{}
-		return
+		return nil
 	}
 	switch m.click.n {
 	case 1:
@@ -418,6 +425,7 @@ func (m *Model) press(mo tea.Mouse) {
 	}
 	m.drag = drag{on: true, panel: p, a0: start, a1: end, x: mo.X, y: mo.Y, moved: m.click.n > 1}
 	m.setSelection(start, end, true)
+	return nil
 }
 
 // convClick handles a press on zone B's conversation row r, counted from

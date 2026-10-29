@@ -50,8 +50,12 @@ type DiffView struct {
 	// Commit is a historical diff's comparison, from the Git Graph (plan 62,
 	// design D6): "Commit 9cd6692", "Merge 9cd6692, against its first
 	// parent", "Root commit 9cd6692"; "" for Source Control's diffs. Its
-	// sides are named by their short hashes.
+	// sides are named by their short hashes. A turn review's diff says
+	// "Turn 2", its sides "start" and "end" (plan 65, design D9).
 	Commit string
+	// Turn is the turn of a review's diff, 0 for any other: Esc goes back to
+	// zone B, its cursor on the file (plan 65, design D9).
+	Turn int
 }
 
 // DiffHunk is a hunk, as "@@ -OldStart,OldLines +NewStart,NewLines @@".

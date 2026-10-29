@@ -78,6 +78,39 @@ func TestGoldenFrames(t *testing.T) {
 		}
 		return h
 	}
+	// Plan 65: the turn review under the mock's two turns, the owner's and
+	// the CLI's report: its snapshots given as the state's own actions once
+	// the mock is replayed, so that the frame never depends on when the
+	// store's command came; then keys.
+	reviewed := func(keys ...tea.KeyPressMsg) func(*testing.T) *harness {
+		return func(t *testing.T) *harness {
+			h := dash(t)
+			store := &fakeTurns{files: input.CommitFiles{Total: 3, Files: []input.CommitFile{
+				{Status: 'M', Path: "internal/render/viewer.go", Added: 8, Removed: 2},
+				{Status: 'A', Path: "internal/render/viewer_test.go", Added: 4},
+				{Status: 'D', Path: "old.txt", Removed: 2},
+			}}, sides: input.DiffPair{Old: input.DiffSide{Path: "internal/render/viewer.go", Size: 22, Data: []byte("func a() {}\nfunc b() {}\n")},
+				New: input.DiffSide{Path: "internal/render/viewer.go", Size: 34, Data: []byte("func a() {}\nfunc c() {}\nfunc d() {}\n")}}}
+			h.m.turns = store
+			if len(h.m.State().Stages) != 2 {
+				t.Fatalf("%d stages, want 2", len(h.m.State().Stages))
+			}
+			for _, a := range []state.Action{
+				state.TurnSnapshot{Turn: 1, Tree: "t1"}, state.TurnSnapshot{Turn: 1, End: true, Tree: "t2"},
+				state.TurnSnapshot{Turn: 2, Tree: "t2"}, state.TurnSnapshot{Turn: 2, End: true, Tree: "t3", Changing: true},
+			} {
+				for _, c := range h.m.do(a) {
+					h.exec(c)
+				}
+				h.settle()
+			}
+			for _, k := range keys {
+				h.send(k)
+			}
+			return h
+		}
+	}
+
 	// The inspection: the Claude mock's subagent, on its Tools tab.
 	inspected := func(t *testing.T) *harness {
 		h := dash(t)
@@ -504,7 +537,10 @@ func TestGoldenFrames(t *testing.T) {
 		{"branches", branches()}, {"branches-search", branches(typedText("fe")...)}, {"branches-confirm", branches(key(tea.KeyUp, 0), key(tea.KeyEnter, 0))},
 		{"file-blame", fileBlame}, {"graph", graph(key(tea.KeyRight, 0))}, {"graph-scope", graph(typed('s'))},
 		{"graph-diff", graph(key(tea.KeyRight, 0), key(tea.KeyDown, 0), key(tea.KeyEnter, 0))}, {"graph-wide", graph(typed('f'))}, {"graph-card", graph(key(tea.KeyDown, 0), key(tea.KeyDown, 0), typed('i'))},
-		{"graph-lanes", graphOf(lanesGraph, 13)}, {"graph-lanes-wide", graphOf(lanesGraph, 13, typed('f'))}} {
+		{"graph-lanes", graphOf(lanesGraph, 13)}, {"graph-lanes-wide", graphOf(lanesGraph, 13, typed('f'))},
+		{"review", reviewed()}, {"review-open", reviewed(key(tea.KeyUp, 0), key(tea.KeyEnter, 0))},
+		{"review-diff", reviewed(key(tea.KeyUp, 0), key(tea.KeyEnter, 0), key(tea.KeyDown, 0), key(tea.KeyEnter, 0))},
+		{"review-diff-wide", reviewed(key(tea.KeyUp, 0), key(tea.KeyEnter, 0), key(tea.KeyDown, 0), key(tea.KeyEnter, 0), typed('f'))}} {
 		szs := sizes
 		if sc.name == "source-selection" || strings.HasPrefix(sc.name, "graph") {
 			// The acc tab maximised (plan 50, criterion 50.10; plan 62, criterion

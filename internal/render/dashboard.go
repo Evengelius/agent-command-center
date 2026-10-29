@@ -516,6 +516,7 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	var shown []line // only the rows shown are drawn
 	var folds map[int]string
 	var entries map[int]int
+	var files map[int]TurnFile
 	for j, c := range conv {
 		shown = append(shown, c.draw())
 		if c.fold != "" {
@@ -530,6 +531,12 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 			}
 			entries[j] = c.entry
 		}
+		if c.file > 0 {
+			if files == nil {
+				files = map[int]TurnFile{}
+			}
+			files[j] = TurnFile{Turn: c.turn, File: c.file}
+		}
 	}
 	if len(shown) < room {
 		shown = append(shown, blank(0, room-len(shown))...)
@@ -540,7 +547,7 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 		shown[room-1] = spread(trimTail(shown[room-1]), decoLine(fmt.Sprintf("↓ %d new", n), stProgress), inner)
 	}
 	if sc != nil {
-		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold, Starts: starts, Folds: folds, Entries: entries}
+		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold, Starts: starts, Folds: folds, Entries: entries, Files: files}
 		sc.rule = sc.Conv.Y + room // the editor's first row is its rule (plan 49, design D7)
 	}
 	body := append(shown, editor...)
@@ -571,6 +578,10 @@ func NewShown(s *state.State, seen int) int {
 func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top int, starts []int) {
 	lk, act := lookAll(s, ui)
 	size := cardSize(room)
+	// A turn's review rows count with its last entry's, so that the cursor
+	// and the scroll keep them with it; the entry's own count stays cached
+	// (plan 65, design D7).
+	anchors := reviewAnchors(s)
 	starts = make([]int, len(s.Conversation)+1)
 	for i := range s.Conversation {
 		e := &s.Conversation[i] // by reference, and no closure an entry: every frame counts all (plan 49, design D5)
@@ -579,6 +590,9 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 		if !ok {
 			n = len(entryRows(s, ui, nil, i, *e, w, lk[i]))
 			ui.Wrap.keepCount(i, e, w, lk[i].shape(), n)
+		}
+		if t, ok := anchors[i]; ok {
+			n += reviewCount(s, ui, t)
 		}
 		rows += n
 		starts[i+1] = rows
@@ -601,6 +615,9 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 		}
 		if at+counts(i) > top {
 			rs := entryRows(s, ui, nil, i, s.Conversation[i], w, lk[i])
+			if t, ok := anchors[i]; ok {
+				rs = withReview(rs, reviewRows(s, ui, t, i, lk[i], w), lk[i].tail)
+			}
 			view = append(view, rs[min(max(top-at, 0), len(rs)):min(end-at, len(rs))]...)
 		}
 		at += counts(i)

@@ -143,6 +143,10 @@ type Options struct {
 	NotifySetUp func() (notify func(title, text string) error, unnotify func() error, problem string)
 	Notify      func(title, text string) error
 	Unnotify    func() error
+	// TurnStore makes the turn review's store for the project dir (plan 65,
+	// design D2): input.OpenTurnStore in the real run, called in a command
+	// when the session starts; nil reviews no turn.
+	TurnStore func(dir string) (TurnStore, error)
 }
 
 // Timeouts (events-and-state.md, timers).
@@ -185,6 +189,19 @@ type Model struct {
 	pending  []tea.Cmd      // the launch's commands, for Init
 	writes   chan writeJob  // the session's writes, in order (writer.go)
 	notifies chan notifyJob // the notification calls, in order (notify.go, plan 64)
+
+	// The turn review (review.go, plan 65): the session's store; its
+	// snapshots, in order, under turnsCtx; the gate the next message waits
+	// behind; the file its diff shows.
+	turns        TurnStore
+	turnsOpening bool
+	turnsClosed  bool
+	turnsCtx     context.Context
+	turnsStop    context.CancelFunc
+	turnJobs     chan turnJob
+	turnsDone    chan struct{}
+	turnGate     *turnGate
+	turnDiff     turnDiffOpen
 
 	// The stored draft (draft.go): nil when drafts are off.
 	draft      *draftStore
@@ -487,6 +504,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.ping.due = false // pings rings what still waits (plan 63, design D3)
 	case notifySetUpMsg:
 		m.opt.Notify, m.opt.Unnotify, m.ui.NotifyProblem = msg.notify, msg.unnotify, msg.problem
+	case turnStoreMsg:
+		cmds = append(cmds, m.turnStoreRead(msg)...)
 	case notifiedMsg:
 		if msg.err != nil {
 			cmds = append(cmds, m.toast("the Windows notification failed: "+msg.err.Error())...)
@@ -847,15 +866,22 @@ func (m *Model) command(c state.Command) tea.Cmd {
 		return m.validate()
 	case state.CmdStartSession:
 		if c.ID == "" {
-			return tea.Batch(m.start(""), m.loadDraft())
+			return tea.Batch(m.start(""), m.loadDraft(), m.openTurns())
 		}
-		return m.start(c.ID)
+		return tea.Batch(m.start(c.ID), m.openTurns())
+	case state.CmdTurnSnapshot:
+		return m.turnSnapshot(c)
+	case state.CmdTurnFiles:
+		return m.turnFiles(c)
 	case state.CmdWrite:
 		m.edit.Clear()
 		m.attach = nil
 		sess, text, imgs, lim := m.sess, c.Text, c.Images, m.limits()
 		pasted := m.pastedFor(imgs)
+		gate := m.turnGate // the turn's start, taken first (plan 65, design D4)
+		m.turnGate = nil
 		return tea.Batch(m.draftWrite(), m.write(func() tea.Msg {
+			gate.wait()
 			if sess == nil {
 				return actionMsg{state.WriteFailed{Message: "no session"}}
 			}
@@ -1105,6 +1131,7 @@ func (m *Model) Shutdown() {
 	m.once.Do(func() {
 		m.stopNotifying() // the notification still up taken out (plan 64, design D4)
 		m.stopGraphRead() // the Git Graph's git process too (plan 62, design D4)
+		m.closeTurns()    // the turn review's store removed (plan 65, design D3)
 		if m.lock != nil {
 			_ = m.lock.Release() // the program ends: its registration with it
 			m.lock = nil

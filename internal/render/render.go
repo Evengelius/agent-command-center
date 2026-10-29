@@ -123,6 +123,7 @@ type UI struct {
 	Keys        bool            // the key overlay (F1); it scrolls with InspectTop and InspectHold
 	View        string          // the approval shown whole, full screen (Enter on its card); "" none; it scrolls with InspectTop and InspectHold
 	Entry       int             // zone B's entry cursor, Conversation[Entry-1]; 0 none (ui-design.md, Zone B, Expanding)
+	EntryReview int             // the cursor on the review rows under Entry: 1 their summary, 2 on their files; 0 the entry itself (plan 65, design D8)
 	ViewEntry   int             // the entry shown whole, full screen (Enter on it), as Entry; 0 none; it scrolls with InspectTop and InspectHold
 	Unfolded    map[string]bool // zone B's runs of tool calls the owner expanded, by their first call's id (plan 19)
 	Tree        Pane            // zone A's tree as the owner scrolled it (plan 5, item 5)

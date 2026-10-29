@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ ▎                                                                        ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎ I've launched the subagent in the background to list the directory     ││  ≡   │
+│ ──────────────────────────────── ││ ▎ and write `found.txt`. I'll report its result when it finishes.        ││      │
+│ STAGES · inferred from activity  ││ ▎                                                                        ││      │
+│ ✓ TURN 1                      0s ││ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   ││      │
+│   Use the Agent tool to launch … ││ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   ││  ⑂   │
+│   Agent · agent general-purpose  ││ ▎  ▸ 3 files changed in turn 1 · +12 −4 · Review                    git  ││      │
+│                                  ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   ││      │
+│ ✓ TURN 2                      0s ││                                                                          ││      │
+│   started by the CLI             ││ ╭──────────────────────────────────────────────────────────────────────╮ ││  ◉   │
+│ ──────────────────────────────── ││ │ RESULT  11:30                                                        │ ││      │
+│ ✦ TELEMETRY        Enter details ││ │ The subagent found two files in the directory, `alpha.txt` and       │ ││      │
+│ ▾ SESSION USAGE                  ││ │ `beta.md`, and wrote them into                                       │ ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││ │ `<probe-root>\probe-work\p3b\found.txt`.                             │ ││      │
+│   Tokens 159.4k session total    ││ │                                                                      │ ││      │
+│   Est. cost $0.01 API-equiv.     ││ │ Found 2 files: alpha.txt and beta.md.                                │ ││      │
+│ ▾ QUOTA WINDOWS                  ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
+│   Session (5hr)             35%† ││    ▸ 3 files changed in turn 2 · +12 −4 · still changing · Review    git ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Resets in 14h 40m              ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)            47%† ││ >  Ask Mock data anything…                                               ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 1d 20h               ││   +     Haiku 5.5    turn started by the CLI                 ✋ Manual   ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                            ✓ COMPLETED │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md   │
+│     00:00   21.5k tok   │  tool: Write   │                     │ found.txt path:…                                    │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

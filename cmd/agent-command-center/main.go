@@ -43,6 +43,7 @@ func main() {
 		CodexProxy:        proxy,
 		CodexProxyProblem: proxyProblem,
 		NotifySetUp:       input.Notifications, // Windows' notifications for the ping (plan 64, design D5)
+		TurnStore:         openTurnStore,       // the turn review's store (plan 65, design D2)
 		Config:            cfg,
 		Providers:         []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host, Proxy: proxy}},
 		Now:               time.Now,
@@ -63,4 +64,14 @@ func main() {
 		fmt.Fprintln(os.Stderr, l)
 	}
 	os.Exit(code)
+}
+
+// openTurnStore is input.OpenTurnStore as the application takes it: no
+// store, an interface holding nothing, when it could not be made.
+func openTurnStore(dir string) (app.TurnStore, error) {
+	st, err := input.OpenTurnStore(dir)
+	if err != nil {
+		return nil, err
+	}
+	return st, nil
 }

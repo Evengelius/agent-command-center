@@ -78,6 +78,12 @@ type GitCLI struct {
 	// noFetch keeps a partial clone's missing objects from being fetched on
 	// demand: the Git Graph's reads (plan 62, design D14).
 	noFetch bool
+	// env is appended to every call's environment, and opts are "-c" pairs
+	// right after "-C": the turn review's store gives its own index and
+	// object folder and turns off hooks and filters (plan 65, designs D2 and
+	// D3). Both are empty for every other caller.
+	env  []string
+	opts []string
 }
 
 // gitError is git's failure: its exit code and what it said.
@@ -109,7 +115,11 @@ func (g GitCLI) command(ctx context.Context, dir string, read bool, args []strin
 	if err != nil {
 		return nil, ErrNoGit
 	}
-	full := []string{"-C", dir, "-c", "core.quotepath=off"}
+	full := []string{"-C", dir}
+	for _, o := range g.opts {
+		full = append(full, "-c", o)
+	}
+	full = append(full, "-c", "core.quotepath=off")
 	if read {
 		full = append(full, "-c", "core.fsmonitor=false")
 	}
@@ -123,6 +133,8 @@ func (g GitCLI) command(ctx context.Context, dir string, read bool, args []strin
 	if g.noFetch {
 		cmd.Env = append(cmd.Env, "GIT_NO_LAZY_FETCH=1")
 	}
+	// The last value of a name wins (os/exec).
+	cmd.Env = append(cmd.Env, g.env...)
 	// A hook or helper that keeps git's pipes once git has ended never keeps
 	// the call waiting (plan 48, design D4; audit finding 3c).
 	cmd.WaitDelay = gitWaitDelay

@@ -372,7 +372,7 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
 		case "up":
 			// ↑ from an empty input: the cursor on the newest entry B shows
 			// in part (ui-design.md, Zone B, Expanding).
-			if m.ui.Card == "" && m.edit.Text() == "" && m.moveEntry(len(m.s.Conversation), -1) {
+			if m.ui.Card == "" && m.edit.Text() == "" && m.lastStop() {
 				return nil
 			}
 		}

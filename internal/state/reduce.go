@@ -38,6 +38,7 @@ func (s *State) Apply(ev event.Event) []Command {
 	s.syncStage(ev.At)
 	cmds = append(cmds, s.apply(ev)...)
 	s.syncStage(ev.At)
+	cmds = append(cmds, s.reviewStart()...) // a stage nothing asked a snapshot for (plan 65, design D4)
 	// After the stage the event may open: a prompt belongs to the turn it
 	// opens (Entry.Stage).
 	for i := n; i < len(s.Conversation); i++ {
@@ -55,7 +56,9 @@ func (s *State) syncStage(at time.Time) {
 	open := n > 0 && s.Stages[n-1].Open
 	switch {
 	case s.Turn.Phase != Idle && !open:
-		s.Stages = append(s.Stages, Stage{N: n + 1, ByCLI: s.Turn.ByCLI, Open: true, StartedAt: at, Prompt: s.prompt()})
+		st := Stage{N: n + 1, ByCLI: s.Turn.ByCLI, Open: true, StartedAt: at, Prompt: s.prompt()}
+		s.reviewOpen(&st)
+		s.Stages = append(s.Stages, st)
 	case s.Turn.Phase == Idle && open:
 		st := &s.Stages[n-1]
 		st.Open, st.Outcome, st.EndedAt = false, s.Turn.Outcome, at
@@ -108,6 +111,7 @@ func turnActivity(k event.Kind) bool {
 func (s *State) toRunning() []Command {
 	s.Turn.Phase = Running
 	s.Turn.Draft, s.Turn.DraftImages = "", nil
+	s.reviewNoticeDone() // the turn runs: its start's snapshot is behind it (plan 65)
 	return []Command{{Kind: CmdDraftAccepted}}
 }
 
@@ -360,6 +364,7 @@ func (s *State) crash(ev event.Event, reason string, close bool) []Command {
 	s.dropModelChange(ev)
 	if s.Turn.Phase != Idle {
 		s.Turn.Phase, s.Turn.Outcome = Idle, "failed"
+		cmds = append(cmds, s.reviewEnd()...) // the session ended during the turn (plan 65, design D4)
 	}
 	s.endAll(ev, "failed")
 	if close {
@@ -899,7 +904,8 @@ func (s *State) turnEnd(ev event.Event, p event.TurnEnd) []Command {
 			t.Status, t.Origin, t.EndedAt = ToolUnfinished, event.Inferred, ev.At
 		}
 	}
-	return []Command{{Kind: CmdRefresh}}
+	// The stage is still open: syncStage closes it after (plan 65, design D4).
+	return append([]Command{{Kind: CmdRefresh}}, s.reviewEnd()...)
 }
 
 // expireFor expires the pending approvals of one agent key ("" is the

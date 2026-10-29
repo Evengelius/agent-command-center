@@ -57,39 +57,11 @@ func ReadFile(root, path string) (FileText, error) {
 		p = filepath.Join(root, p)
 	}
 	p = filepath.Clean(p)
-	if CredentialName(filepath.Base(p)) {
-		return FileText{}, ErrCredential
-	}
-	realRoot, err := realPath(root)
+	cf, _, err := checkFile(root, "", path, p)
 	if err != nil {
-		return FileText{}, &FileError{"the project cannot be read: " + root}
+		return FileText{}, err
 	}
-	if !inside(realRoot, filepath.Clean(root), p) {
-		return FileText{}, &FileError{"outside the project: " + path}
-	}
-	real, err := realPath(p)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return FileText{}, &FileError{"not found: " + path}
-		}
-		return FileText{}, &FileError{"cannot be read: " + path}
-	}
-	if CredentialName(filepath.Base(real)) {
-		return FileText{}, ErrCredential
-	}
-	if !inside(realRoot, realRoot, real) {
-		return FileText{}, &FileError{"outside the project: " + path}
-	}
-	info, err := os.Stat(real)
-	if err != nil {
-		return FileText{}, &FileError{"cannot be read: " + path}
-	}
-	if info.IsDir() {
-		return FileText{}, &FileError{"a directory, not a file"}
-	}
-	if info.Size() > MaxFileSize {
-		return FileText{}, &FileError{fmt.Sprintf("too large to show: %s (%s at most)", SizeText(info.Size()), SizeText(MaxFileSize))}
-	}
+	real, realRoot := cf.real, cf.realRoot
 	f, err := os.Open(real)
 	if err != nil {
 		return FileText{}, &FileError{"cannot be read: " + path}
@@ -113,6 +85,71 @@ func ReadFile(root, path string) (FileText, error) {
 	}
 	ft.Lines, ft.Raw = SplitLines(string(data)), data
 	return ft, nil
+}
+
+// checkedFile is a file that passed the viewer's checks.
+type checkedFile struct {
+	real     string      // its path, every link and junction resolved
+	realRoot string      // the project's, resolved
+	info     fs.FileInfo // of real
+}
+
+// What a file the viewer's checks refuse is called in a few words, in the
+// turn review's list of the files it left out (plan 65, design D2); a file
+// over MaxFileSize is whyLarge's.
+const (
+	whyCredential = "a credential file"
+	whyOutside    = "outside the project"
+	whyDirectory  = "a directory"
+	whyUnreadable = "cannot be read"
+)
+
+// whyLarge is why a file over MaxFileSize is left out: "over 32.0 MiB".
+func whyLarge() string { return "over " + SizeText(MaxFileSize) }
+
+// checkFile is the file viewer's checks (plan 17, Reading a file), made
+// before a file is opened and in order: a credential name, the path and its
+// links' target inside root, not a directory, not over MaxFileSize. p is the
+// file's absolute, cleaned path and path what the refusals call it. realRoot
+// is root with its links resolved, "" to resolve it here: ReadFile does, the
+// turn review resolves it once for all its files (plan 65, design D2). A
+// refusal is the viewer's error and, in a few words, why.
+func checkFile(root, realRoot, path, p string) (cf checkedFile, why string, err error) {
+	if CredentialName(filepath.Base(p)) {
+		return cf, whyCredential, ErrCredential
+	}
+	if realRoot == "" {
+		if realRoot, err = realPath(root); err != nil {
+			return cf, whyUnreadable, &FileError{"the project cannot be read: " + root}
+		}
+	}
+	if !inside(realRoot, filepath.Clean(root), p) {
+		return cf, whyOutside, &FileError{"outside the project: " + path}
+	}
+	real, err := realPath(p)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return cf, whyUnreadable, &FileError{"not found: " + path}
+		}
+		return cf, whyUnreadable, &FileError{"cannot be read: " + path}
+	}
+	if CredentialName(filepath.Base(real)) {
+		return cf, whyCredential, ErrCredential
+	}
+	if !inside(realRoot, realRoot, real) {
+		return cf, whyOutside, &FileError{"outside the project: " + path}
+	}
+	info, err := os.Stat(real)
+	if err != nil {
+		return cf, whyUnreadable, &FileError{"cannot be read: " + path}
+	}
+	if info.IsDir() {
+		return cf, whyDirectory, &FileError{"a directory, not a file"}
+	}
+	if info.Size() > MaxFileSize {
+		return cf, whyLarge(), &FileError{fmt.Sprintf("too large to show: %s (%s at most)", SizeText(info.Size()), SizeText(MaxFileSize))}
+	}
+	return checkedFile{real: real, realRoot: realRoot, info: info}, "", nil
 }
 
 // SplitLines splits text at LF, drops a CR before it and the empty line

@@ -87,25 +87,27 @@ included.
 the timing step, built with the `timing` tag. Thirteen timed tests carry the
 tag, so `go test ./...` never runs them; plan 51's three
 (`hometiming_test.go`) are built on Windows only, for its performance
-counter. Six more, `TestPasteToFrame`,
+counter. Seven more, `TestPasteToFrame`,
 `TestStreamToFrame` (`internal/app/perf_test.go`), `TestOutputToFrame`
 (`outputtiming_test.go`), `TestBranchesFrameCost` (`branches_test.go`,
-plan 59), `TestBlameFrameCost` (`blame_test.go`, plan 60) and
-`TestGraphFrameCost` (`graph_test.go`, plan 62), run in
+plan 59), `TestBlameFrameCost` (`blame_test.go`, plan 60),
+`TestGraphFrameCost` (`graph_test.go`, plan 62) and `TestTurnReviewFrameCost`
+(`review_test.go`, plan 65), run in
 `go test ./...` too, for their other checks: a 50,000-line paste kept byte
 for byte, a 2,000-line streamed answer kept as one entry and drawn to its
 end, a command's streamed output kept as the call's, the branches popup's
 3,000 refs listed with their cap's note, a 10,000-line file's blame kept
 whole, its 1,000 commits with it, a history of 50,000 commits read to its
-first commit a page at a time, none missing or twice. There
+first commit a page at a time, none missing or twice, a turn of 1,000 files
+unfolded under the cursor. There
 `overTarget` logs their time as "not judged outside the timing step", as it
 does under `-race` (`timingBuild`, `timing_on_test.go` and
-`timing_off_test.go`; plan 21, item 2). The step runs the nineteen,
+`timing_off_test.go`; plan 21, item 2). The step runs the twenty,
 under the owner's normal working conditions (owner, 2026-10-16), since the
 target is about real use:
 
 ```text
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame|TestOutputToFrame|TestToolsToFrame|TestBannerToFrame|TestHomeKeysToFrame|TestHomePictureTime|TestBranchesFrameCost|TestBlameFrameCost|TestGraphFrameCost)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame|TestOutputToFrame|TestToolsToFrame|TestBannerToFrame|TestHomeKeysToFrame|TestHomePictureTime|TestBranchesFrameCost|TestBlameFrameCost|TestGraphFrameCost|TestTurnReviewFrameCost)$' -count=1 -v
 ```
 
 - Allowed: the owner's usual applications open and idle (VS Code, browsers,
