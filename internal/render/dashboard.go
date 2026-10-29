@@ -237,6 +237,8 @@ const editorMinRows = 1
 // dashboard's.
 func footer(s *state.State, ui UI, hints string) string {
 	switch {
+	case ui.Search.Open:
+		return searchFooter // the bar's keys, their directions spelled out (plan 66, design D1)
 	case ui.Entry > 0 && ui.Focus == "B" && ui.Card == "":
 		return entryFooter(s, ui)
 	case ui.Focus == "C":
@@ -512,6 +514,10 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	// (plan 29).
 	editor := editorLines(s, ui, inner, editorRows, (h-2)/2-3)
 	room := max(h-2-len(editor), 0)
+	bar := ui.Search.Open && room > 1 // the search's row over the input's rule (plan 66, design D1)
+	if bar {
+		room--
+	}
 	conv, rows, top, starts := conversation(s, ui, inner, room)
 	var shown []line // only the rows shown are drawn
 	var folds map[int]string
@@ -547,10 +553,24 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 		shown[room-1] = spread(trimTail(shown[room-1]), decoLine(fmt.Sprintf("↓ %d new", n), stProgress), inner)
 	}
 	if sc != nil {
-		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, Held: ui.ConvHold, Starts: starts, Folds: folds, Entries: entries, Files: files}
+		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, W: inner, Held: ui.ConvHold, Starts: starts, Folds: folds, Entries: entries, Files: files}
+		// Where a search starts: the last row shown that shows some of its
+		// entry (plan 66, design D5).
+		for j := len(conv) - 1; j >= 0 && !sc.Conv.HasBottom; j-- {
+			if c := conv[j]; c.entry > 0 && c.entry <= len(s.Conversation) {
+				sc.Conv.Bottom, sc.Conv.HasBottom = rowEnd(c, s.Conversation[c.entry-1].Role)
+			}
+		}
 		sc.rule = sc.Conv.Y + room // the editor's first row is its rule (plan 49, design D7)
+		if bar {
+			sc.rule++
+		}
 	}
-	body := append(shown, editor...)
+	body := shown
+	if bar {
+		body = append(body, searchBar(ui.Search, inner))
+	}
+	body = append(body, editor...)
 	focused := ui.Focus == "B" || ui.Focus == ""
 	return box('B', zoneTitle("B · CONVERSATION", focused), right, body, w, h, borderFor(focused))
 }
@@ -577,26 +597,8 @@ func NewShown(s *state.State, seen int) int {
 // card's size follows room (plan 22, design 2).
 func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top int, starts []int) {
 	lk, act := lookAll(s, ui)
-	size := cardSize(room)
-	// A turn's review rows count with its last entry's, so that the cursor
-	// and the scroll keep them with it; the entry's own count stays cached
-	// (plan 65, design D7).
+	starts, rows = convStarts(s, ui, w, room, lk)
 	anchors := reviewAnchors(s)
-	starts = make([]int, len(s.Conversation)+1)
-	for i := range s.Conversation {
-		e := &s.Conversation[i] // by reference, and no closure an entry: every frame counts all (plan 49, design D5)
-		lk[i].size = size
-		n, ok := ui.Wrap.counted(i, e, w, lk[i].shape())
-		if !ok {
-			n = len(entryRows(s, ui, nil, i, *e, w, lk[i]))
-			ui.Wrap.keepCount(i, e, w, lk[i].shape(), n)
-		}
-		if t, ok := anchors[i]; ok {
-			n += reviewCount(s, ui, t)
-		}
-		rows += n
-		starts[i+1] = rows
-	}
 	counts := func(i int) int { return starts[i+1] - starts[i] }
 	var activity []crow
 	if act {
@@ -644,6 +646,32 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 		}
 	}
 	return view, rows, top, starts
+}
+
+// convStarts is each entry's first row of the conversation, w cells wide
+// in room rows, then the end of the entries, and so its rows, counted from
+// the cache once finished (test 11), lk's sizes set. A turn's review rows
+// count with its last entry's, so that the cursor and the scroll keep them
+// with it; the entry's own count stays cached (plan 65, design D7).
+func convStarts(s *state.State, ui UI, w, room int, lk []look) (starts []int, rows int) {
+	size := cardSize(room)
+	anchors := reviewAnchors(s)
+	starts = make([]int, len(s.Conversation)+1)
+	for i := range s.Conversation {
+		e := &s.Conversation[i] // by reference, and no closure an entry: every frame counts all (plan 49, design D5)
+		lk[i].size = size
+		n, ok := ui.Wrap.counted(i, e, w, lk[i].shape())
+		if !ok {
+			n = len(entryRows(s, ui, nil, i, *e, w, lk[i]))
+			ui.Wrap.keepCount(i, e, w, lk[i].shape(), n)
+		}
+		if t, ok := anchors[i]; ok {
+			n += reviewCount(s, ui, t)
+		}
+		rows += n
+		starts[i+1] = rows
+	}
+	return starts, rows
 }
 
 // firstSolid is the index of the first row of view that shows something,

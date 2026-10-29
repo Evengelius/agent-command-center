@@ -78,6 +78,18 @@ func TestGoldenFrames(t *testing.T) {
 		}
 		return h
 	}
+	// Plan 66: the conversation's search, its bar open over a mock's
+	// conversation and a query typed: its matches lit, the newest current.
+	searched := func(rig func(*testing.T) *harness, q string) func(*testing.T) *harness {
+		return func(t *testing.T) *harness {
+			h := rig(t)
+			h.send(key('f', tea.ModCtrl))
+			for _, k := range typedText(q) {
+				h.send(k)
+			}
+			return h
+		}
+	}
 	// Plan 65: the turn review under the mock's two turns, the owner's and
 	// the CLI's report: its snapshots given as the state's own actions once
 	// the mock is replayed, so that the frame never depends on when the
@@ -540,7 +552,8 @@ func TestGoldenFrames(t *testing.T) {
 		{"graph-lanes", graphOf(lanesGraph, 13)}, {"graph-lanes-wide", graphOf(lanesGraph, 13, typed('f'))},
 		{"review", reviewed()}, {"review-open", reviewed(key(tea.KeyUp, 0), key(tea.KeyEnter, 0))},
 		{"review-diff", reviewed(key(tea.KeyUp, 0), key(tea.KeyEnter, 0), key(tea.KeyDown, 0), key(tea.KeyEnter, 0))},
-		{"review-diff-wide", reviewed(key(tea.KeyUp, 0), key(tea.KeyEnter, 0), key(tea.KeyDown, 0), key(tea.KeyEnter, 0), typed('f'))}} {
+		{"review-diff-wide", reviewed(key(tea.KeyUp, 0), key(tea.KeyEnter, 0), key(tea.KeyDown, 0), key(tea.KeyEnter, 0), typed('f'))},
+		{"search", searched(dash, "found")}, {"search-none", searched(dash, "zzqx")}, {"search-codex", searched(codexDash, "reasoning")}} {
 		szs := sizes
 		if sc.name == "source-selection" || strings.HasPrefix(sc.name, "graph") {
 			// The acc tab maximised (plan 50, criterion 50.10; plan 62, criterion

@@ -1433,6 +1433,158 @@ label and syntax highlighting.
   12). A phase is its summary row, whose details unfold ([Thinking](#thinking);
   ASM-22).
 
+### Search
+
+Plan 66 (brief amendment 68). Ctrl+F searches the conversation zone B
+holds: a bar at its foot, the matches lit, stepped through from the newest,
+and the current one's entry whole on Tab. It is the dashboard's own, the
+same with Claude Code and Codex; the reducer, the CLI and its session are
+untouched (design D10). At 120x40, the mock's dashboard, "found" typed
+(golden frame `search`, zone B):
+
+```text
+╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮
+│ ▎  ✓ Agent  general-purpose · List directory and …  11:30:00      mock   │
+│ ▎                                                                        │
+│ ▎ I've launched the subagent in the background to list the directory     │
+│ ▎ and write `found.txt`. I'll report its result when it finishes.        │
+│ ▎                                                                        │
+│ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   │
+│ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   │
+│ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   │
+│                                                                          │
+│ ╭──────────────────────────────────────────────────────────────────────╮ │
+│ │ RESULT  11:30                                                        │ │
+│ │ The subagent found two files in the directory, `alpha.txt` and       │ │
+│ │ `beta.md`, and wrote them into                                       │ │
+│ │ `<probe-root>\probe-work\p3b\found.txt`.                             │ │
+│ │                                                                      │ │
+│ │ Found 2 files: alpha.txt and beta.md.                                │ │
+│ ╰──────────────────────────────────────────────────────────────────────╯ │
+│                                                                          │
+│  / found▌                                                  match 1 of 8  │
+│ ──────────────────────────────────────────────────────────────────────── │
+│ > Ask Mock data anything…                                                │
+│ ──────────────────────────────────────────────────────────────────────── │
+│   +     Haiku 5.5    turn started by the CLI                 ✋ Manual   │
+╰──────────────────────────────────────────────────────────────────────────╯
+```
+
+The eight: three in the RESULT box ("Found" among them, the query having
+no capital), the current one its last; one in the answer above it; the
+Write request's target and the Agent call's description, both in what
+their cut hides, so that their "…" is lit; two in the prompt, above the
+rows shown. The bottom row reads "↑ Enter older · ↓ Shift+Enter newer ·
+Tab whole · Esc close · F1 keys".
+
+**The bar** (design D1). One row at the bottom of zone B, over the input's
+rule, on B's ground: "/ " in the title colour, the query and its cursor;
+at its right "match 1 of 8" in the progress colour, past the cap "match 3
+of the newest 10,000", so that the count never reads as all there are;
+with none, "no match" in the attention colour and "· calls' inputs and
+outputs not searched" in grey; the query empty, "type to search the
+conversation" in grey. B's conversation ends a row higher while it shows:
+its scroll, the entry cursor's reveal and "↓ N new" count with that row.
+The field is the input's own editor, as the branches popup's is; it takes
+a key's text with no Ctrl or Alt, or with both, as Windows reports AltGr
+(left Ctrl and right Alt: "@" is AltGr+2 on a Belgian AZERTY keyboard,
+measured in Windows Terminal 1.23); its keys are in [Focus and
+keys](#focus-and-keys), The search bar. The query is kept
+in memory alone: never in a file or a log, never in the draft's recovery,
+never sent to the CLI (design D2).
+
+**Where Ctrl+F opens it** (design D2). The bar is a layer of
+`render.Layers` over the dashboard and under the windows. From any focus
+of the dashboard (the input, B's entries, zone A, zone C, a panel docked
+beside B), Ctrl+F opens it, the focus in B, the entry cursor off. The diff
+view in B's place closes first, as Esc closes it; a docked panel or the
+Git Graph in B's place (under 100 columns, or where B would keep fewer
+than 64 columns beside it, as at 120x40) gives way, as it does whenever B
+has the focus. A window or a full view in front keeps its own Ctrl+F:
+the draft window its full screen; the file viewer, the quick open, the key
+overlay, an entry's full view, the inspection and the Worktrees view do
+what they did. The draft, its cursor and its selection stay as they were.
+
+**What it searches** (design D3). What B holds as text: the owner's
+messages whole, a long paste's folded lines among them; the CLI's
+messages, the RESULT box's among them; each tool row's name, its target as
+the row writes it before the cut (the user's folder hidden, `C:\Users\…\`,
+so never matched) and its error; a request's row, its target with it,
+answered or waiting; a thinking phase's summary and details; notices,
+errors and the dashboard's notes; the calls a run folds. Not searched: a
+call's input and output (the full view's and the inspection's), what a
+request would write or run, the [turn review](#turn-review)'s rows, the
+labels and times, zones A and C, the draft.
+
+**Matching** (design D4). The query as typed, no pattern: `a.b`, `(x)`,
+`\d` and `*` are found as typed. The case is ignored unless the query has a
+capital, as in the file viewer: an ASCII letter in either case, and every
+letter whose two cases begin with the same byte in UTF-8 (é and É, д and
+Д, α and Α). The scan finds the query's first byte in either case and
+compares the window without case, in Update, from the state as it is, at
+each keystroke: 1 ms or less on two hours of conversation, 2 to 5.6 ms on
+answers ten times longer (plan 66, What was found). Each call's and each
+request's target is read once while the bar is open and forgotten when it
+closes: read afresh, 4,800 targets cost 4.8 to 8.5 ms a search. At most
+10,000 matches, found from the newest back (`render.MaxMatches`).
+
+**The matches in turn** (design D5). Numbered from the newest: "match 1 of
+8" is the newest of all. At first the current match is the newest at or
+above B's last row shown, what the owner sees. ↑ or Enter goes to the
+older, its number one more, ↓ or Shift+Enter to the newer; past either end,
+round to the other. B scrolls the least that shows the current match's
+row, a wrapped line's later rows too, and is held from then on: follow
+stops, "↓ N new" counting what comes. A match in a folded run or in a
+phase's folded details unfolds them, as a click does, and they stay so,
+the owner's to fold again; one in a long paste's folded lines is shown on
+the paste's "… N more lines" row. Typing keeps the current match while it
+still matches, else takes the newest at or above it.
+
+**While the turn goes on** (design D6). With the bar open, the matches are
+found again whenever events were applied since the last search
+(`State.Applied`). An answer streaming in adds its matches, the count and
+the current match's number growing when they come below it; the current
+match stays the one it was, kept by its entry, line, offset and part, and
+B does not move. Only when its text is gone (a phase's summary rewritten, a
+call's error replaced) does the nearest match at or above its place become
+current.
+
+**Lit** (design D7). Every match in view on the file viewer's amber, the
+current one in its current-match style, restyled over B's rows from their
+sources as the selection is, and before it, so that a selection shows over
+a match; across Markdown markup, the characters drawn. A target, a tool
+row's or a request's, carries its offsets in the target, of a kind no
+selection takes and no copy copies: a match in its visible part lights its
+characters, one wholly in what the cut hides lights the "…", and a target
+the row has no room to draw leaves the name to light. A long paste's "… N
+more lines" row lights for a match in its folded lines. A selection copies
+what it copied before the plan, a tool row's included.
+
+**The whole entry** (design D8). Tab shows the current match's entry whole
+in its full view, as Enter does from the entry cursor: an owner's message
+over 20 lines, a long paste among them, scrolled so that the match's row
+is in view, two rows from the top unless the view's end comes first; a
+failure the same; a tool call or a thinking
+phase at its top. The view's matches are lit from the same matches, a
+match its wrap splits on both rows. Its own keys hold (↑ ↓ PgUp PgDn Home
+End, the wheel, a selection); Esc comes back to B and the bar, the current
+match as it was. On a match in the CLI's messages, a short message or a
+request, Tab does nothing: B shows the first two whole, and a request's
+own view opens from its card or by a double click.
+
+**Closing** (design D9). Esc closes the bar and clears the matches; B
+stays where the search left it, held. The focus goes back where Ctrl+F
+found it (the input; B's entries, their cursor on its entry again; zone
+A, zone C or a docked panel) while that place is on screen, else to the
+input. F2, F3, F4, F6, Shift+F6,
+Alt+P, Alt+B, Alt+G and Ctrl+W close the bar as Esc does, then do what
+they do; F1, F12, Ctrl+C, Ctrl+O, Shift+PgUp and Shift+PgDn act as on the
+dashboard, the bar kept, and Ctrl+Q quits as anywhere. Any other key is the
+bar's: none reaches the draft. The mouse in B works as before (the wheel, a
+selection, a fold's click), the bar kept; a click that gives another zone
+the focus, or opens a popup or a window, closes it, the focus where the
+click put it.
+
 ## Zone C
 
 The live subagents (AM2 C1-C11; AM4 D3), the whole width under A and B
@@ -3540,6 +3692,7 @@ The same file can name Codex's proxy (plan 22, amendment 19).
 | Ctrl+Shift+C | copy the selection | TI 6.3 |
 | Ctrl+O | copy the orchestrator's last message (as Codex does) | TI 6.2; ASM-9 |
 | Ctrl+G | open the draft in the [draft window](#draft-window), in the terminal; in it Ctrl+F full screen, Esc back | TI 8 (both CLIs use Ctrl+G); brief amendment 13 |
+| Ctrl+F | the conversation's [search](#search), a bar at the foot of zone B, from any focus of the dashboard; a window or a full view in front keeps its own (the draft window's full screen) | plan 66; brief amendment 68 |
 | F2 | go to the oldest pending approval; the docked panel stays (plan 43), the diff closes (plan 44) | ASM-9 |
 | F3 | the file the entry, full view or request in front names, in the [file viewer](#file-viewer); else the [Explorer](#explorer)'s panel shown or hidden, the focus with it, as a click on its tile in the [right sidebar](#right-sidebar), [Source Control](#source-control) giving it the docked place; from the viewer or the quick open, close them and show or hide the panel; from a full view naming no file, the inspection, the details view or a zoomed zone, close them and show the panel | plan 17; plan 43; plan 44; brief amendments 11, 12, 44 and 45 |
 | F4 | open or close the [modes selector](#input-editor), from any focus; the mode pill's click does the same; Manual (Ask for approval) at every launch, never saved | plan 12; plan 39; brief amendments 8 and 40 |
@@ -3591,6 +3744,20 @@ the console reads plain VT input after Ctrl+Q.
 | ← | on a call of an expanded run, fold the run again; on a turn review's file or its unfolded summary, fold its files |
 | Esc, or typing | back to the input |
 | F3 | the file a tool entry read or changed, in the [file viewer](#file-viewer) |
+
+**The search bar** (Ctrl+F, [Search](#search)); any key it does not name
+is the bar's, none reaching the draft
+
+| Key | Action |
+| - | - |
+| typing, Backspace | the query as typed, no pattern; the case ignored without a capital; a paste's first line too |
+| ← → Home End | move in the query |
+| ↑ Enter | the older match, its number one more; past the oldest, the newest |
+| ↓ Shift+Enter | the newer match; past the newest, the oldest |
+| Tab | the current match's entry whole, in its full view at the match; Esc back to the bar |
+| Esc | close the bar, the matches cleared, B where the search left it; the focus back where Ctrl+F found it while that place is on screen, else the input's |
+| F2 F3 F4 F6 Ctrl+W | close the bar as Esc does, then act as usual; Shift+F6, Alt+P, Alt+B and Alt+G too, and a click that gives another zone the focus or opens a popup or a window |
+| F1 F12 Ctrl+C Ctrl+O | act as usual, the bar kept; Shift+PgUp, Shift+PgDn and Ctrl+Q too; the mouse in B as usual (the wheel, a selection, a fold's click) |
 
 **The file viewer** ([File viewer](#file-viewer))
 

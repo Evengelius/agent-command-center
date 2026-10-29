@@ -125,8 +125,12 @@ func TestConfiguredKeysShown(t *testing.T) {
 			}
 		}
 		for _, bad := range []string{"Ctrl+J", "Shift+Enter", "Alt+Enter", `\ then Enter`} {
-			if strings.Contains(f, bad) {
-				t.Errorf("the F1 page still shows %q:\n%s", bad, f)
+			for _, l := range strings.Split(f, "\n") {
+				// The search bar's own ↓ Shift+Enter, its newer match, is no
+				// newline key (plan 66, design D5): the one row it may name.
+				if strings.Contains(l, bad) && (bad != "Shift+Enter" || !strings.HasPrefix(strings.TrimSpace(l), "↓ Shift+Enter ")) {
+					t.Errorf("the F1 page still shows %q: %q", bad, l)
+				}
 			}
 		}
 		var newline string

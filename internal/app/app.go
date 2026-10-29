@@ -275,6 +275,10 @@ type Model struct {
 	headPath                 string
 	headTime                 time.Time
 
+	// The conversation's search bar (search.go, plan 66): its field, the
+	// focus Ctrl+F found, the events its matches were found after.
+	convFind searchState
+
 	spinning, clocking bool
 	framing            bool // an animMsg is pending (plan 22)
 
@@ -648,6 +652,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.drawSlide(msg)...)
 	case tea.MouseMsg:
 		cmds = append(cmds, m.mouse(msg)...)
+		m.searchAfterMouse(msg) // a click elsewhere closes the search bar (plan 66, design D9)
 	case copiedMsg:
 		cmds = append(cmds, m.toast(msg.toast)...)
 		if msg.seq != "" {
@@ -735,6 +740,10 @@ func (m *Model) syncUI() {
 	}
 	m.ui.Draft = m.edit.Text()
 	m.ui.Editor = m.editorView()
+	if m.ui.Search.Open && m.convFind.applied != m.s.Applied {
+		m.searchAgain(false) // events applied: their matches found, the current one kept (plan 66, design D6)
+	}
+	m.syncSearch()
 	m.syncCommit()   // the commit controls (plan 45)
 	m.syncBranches() // the branches popup's git (plan 59)
 	m.ui.Path = m.path.Text()
@@ -1167,6 +1176,8 @@ func (m *Model) paste(text string) {
 		m.branchPaste(text) // the search (plan 59, design D10)
 	case top == render.LayerScope:
 		m.scopePaste(text) // the scope popup's search (plan 62, design D3)
+	case top == render.LayerSearch:
+		m.searchPaste(text) // the conversation's search, never the draft (plan 66, design D2)
 	case m.s.Screen == state.ScreenDashboard && m.msgFocused():
 		m.msg.Paste(text) // the commit message (plan 45, design D2): never commits
 	case m.s.Screen == state.ScreenDashboard && m.draftBeside():

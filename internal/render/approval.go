@@ -67,7 +67,7 @@ func answeredRows(s *state.State, m *Memo, i int, e state.Entry, ap *state.Appro
 	case ap.Status == state.Expired:
 		sym, outcome, st = deco("·", stGrey), "expired, not answered", stGrey
 	}
-	out := []line{toolLine(sym, name, nil, k.nameW, detail, path, decoLine(outcome, st), originLabel(e.Origin), w)}
+	out := []line{toolLine(sym, name, nil, k.nameW, markTarget(i, detail), path, decoLine(outcome, st), originLabel(e.Origin), w)}
 	for _, l := range more {
 		out = append(out, grounded(append(spaces(2), l...), w))
 	}
@@ -105,7 +105,7 @@ func pendingBox(s *state.State, ui UI, i int, e state.Entry, ap *state.Approval,
 	right := line{deco("  "+clock(ap.RequestedAt), stGrey), deco("  "+originLabel(e.Origin), stAttention)}
 	out := []line{edge("╭", "╮"), in(spread(head, right, inner))}
 	if target != "" {
-		out = append(out, in(append(spaces(2), fitDetail(line{deco(target, stText)}, path, inner-2)...)))
+		out = append(out, in(append(spaces(2), fitDetail(markTarget(i, line{deco(target, stText)}), path, inner-2)...)))
 	}
 	qs := QuestionsOf(ap)
 	focused := ui.Card == ap.ID

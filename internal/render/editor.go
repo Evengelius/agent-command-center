@@ -254,7 +254,9 @@ func draftRows(s *state.State, ui UI, w, minRows, maxRows int) []line {
 	}
 	text := max(w-2-1, 1) // the prefix, and room for the cursor at a row's end
 	rows, show := shownRows(v, text, minRows, maxRows)
-	focused := ui.Focus == "B" || ui.Focus == ""
+	// The search's field has the keyboard while its bar is open: the draft
+	// shows as it is, its cursor not drawn (plan 66, design D2).
+	focused := (ui.Focus == "B" || ui.Focus == "") && !ui.Search.Open
 	empty := v.Total <= 1 && (len(v.Lines) == 0 || v.Lines[0] == "")
 
 	var out []line

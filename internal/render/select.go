@@ -54,6 +54,12 @@ type ConvView struct {
 	// Files are a turn review's file rows in view, by their row from Top: a
 	// double click on one opens its diff (plan 65, design D8).
 	Files map[int]TurnFile
+	// W is the conversation's width, its rows' cells; Bottom the place of the
+	// conversation the last row shown shows up to, where a search starts,
+	// HasBottom saying a row shown shows some of it (plan 66, design D5).
+	W         int
+	Bottom    SearchPos
+	HasBottom bool
 }
 
 // Screen is a drawn frame that still knows what each cell shows, so a mouse
@@ -271,6 +277,7 @@ func Draw(s *state.State, ui UI) *Screen {
 		sc.sideTilesShown(ui)
 		sc.commitShown(ui) // the commit controls' images (plan 45, design D5)
 	}
+	lightSearch(sc, s, ui) // the search's matches, a selection lit over them (plan 66, design D7)
 	if !ui.Sel.Empty() && ui.Sel.From.Panel != 'E' {
 		for i, l := range sc.lines {
 			sc.lines[i] = highlight(l, ui.Sel)

@@ -164,6 +164,9 @@ type UI struct {
 	SideTipOff bool
 	// DraftWin is the draft in a window, Ctrl+G (amendment 13).
 	DraftWin DraftWindow
+	// Search is the conversation's search bar at the foot of zone B, Ctrl+F
+	// (plan 66, brief amendment 68).
+	Search SearchView
 
 	// Wrap keeps the conversation's line breaks between frames; nil wraps
 	// every line each frame, with the same result.

@@ -210,7 +210,8 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 			if focused {
 				row = spread(decoLine(more, stAttentionBold), decoLine(entryHint, stAttention), cw)
 			}
-			out = append(out, crow{l: row, fr: fr, cursor: focused})
+			row[0].ref = ref{panel: 'B', kind: refFold, item: i} // its folded lines, for a search (plan 66)
+			out = append(out, crow{l: row, fr: fr, cursor: focused, more: true})
 		}
 		// The images the message carried, one a row under its text (plan 31).
 		for _, img := range e.Images {
@@ -342,12 +343,18 @@ func fitDetail(d line, path bool, w int) line {
 	if d.width() <= w {
 		return d
 	}
+	var cut line
 	if path && len(d) == 1 {
 		x := d[0]
 		x.text = elidePath(x.text, w)
-		return line{x}
+		cut = line{x}
+	} else {
+		cut = d.fit(w) // its last cell an ellipsis
 	}
-	return d.fit(w) // its last cell an ellipsis
+	if len(d) > 0 && d[0].ref.kind == refTarget {
+		return retarget(d, cut) // a call's target: what the cut hides, for a search (plan 66)
+	}
+	return cut
 }
 
 // elidePath is elide cut at a path's element, so what is kept starts at a
@@ -404,7 +411,7 @@ func callRow(s *state.State, ui UI, i int, e state.Entry, w int, k look, focused
 		fail = f
 	}
 	detail, path := callDetail(ui.Memo, tc)
-	return toolLine(sym, oneRow(i, e, stToolName), fail, k.nameW, detail, path, outcome, origin, w)
+	return toolLine(sym, oneRow(i, e, stToolName), fail, k.nameW, markTarget(i, detail), path, outcome, origin, w)
 }
 
 // callDetail is a call's target in a readable muted text (plan 20, the

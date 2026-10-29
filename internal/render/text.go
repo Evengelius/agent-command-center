@@ -33,11 +33,18 @@ type ref struct {
 
 // Ref kinds. refText spans show their source bytes as they are; a refAtom
 // span is one drawn unit (a tab's spaces, a control's ^X) for n source bytes.
+// The search's own kinds (plan 66, design D7), which no selection takes nor
+// copy copies, as decoration: refTarget, a tool row's target, its bytes as
+// they are; refTargetCut, the "…" its cut puts in, for the n bytes it
+// hides; refFold, a long paste's fold row, for its folded lines.
 const (
 	refNone byte = iota
 	refDeco
 	refText
 	refAtom
+	refTarget
+	refTargetCut
+	refFold
 )
 
 // line is one screen line under construction.

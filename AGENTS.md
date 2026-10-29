@@ -24,10 +24,9 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-29, when the owner approved plan
-65, the turn-by-turn review of what the agent changed (brief amendment
-67).** Plans 1 to 65 are closed, one entry each in `plan.md`, Closed
-plans; the MVP was approved on
+**Status: plan 66 active since 2026-10-29, the conversation's search
+(brief amendment 68).** Plans 1 to 65 are closed, one entry each in
+`plan.md`, Closed plans; the MVP was approved on
 2026-10-17. `plan.md` holds the active plan's
 progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.
@@ -177,8 +176,8 @@ not in this list: it runs alone, with the exact command and conditions of
   a read-only Git diff viewer, its commit and push, and a selection's
   commit; the branches popup, its switch and fetch; the Git Graph, read
   only, with its scope selector; the turn-by-turn review of the agent's
-  changes, read only (brief, amendments 9 to 12, 34, 40, 45, 46, 51, 53,
-  61, 62, 64 and 67).
+  changes, read only; the conversation's search (brief, amendments 9 to
+  12, 34, 40, 45, 46, 51, 53, 61, 62, 64, 67 and 68).
   The ones left out are **[Nice to have]**: future improvements, never
   listed as remaining, built only if the owner asks for one in a new plan
   (`plan.md`, Nice to have).

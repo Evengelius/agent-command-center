@@ -86,9 +86,11 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 		return m.worktreesKey(k)
 	}
 	// Ctrl+W, on both screens: the Worktrees view (plan 16); not while a
-	// start is validated or a quit question waits.
+	// start is validated or a quit question waits. The search bar closes
+	// first (plan 66, design D9).
 	if k.String() == "ctrl+w" && !m.s.QuitAsked &&
 		!(m.s.Screen == state.ScreenStartup && m.s.Startup.Phase == state.Validating) {
+		m.closeSearch()
 		return m.openWorktrees()
 	}
 	if m.s.Screen == state.ScreenStartup {
@@ -204,7 +206,17 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
 	// Over the dashboard itself, the docked panel takes its own while it
 	// has the focus (plan 43, design D7; plan 44, design D5), its dropdown
 	// and its question with them, the diff its own (design D9).
+	// Ctrl+F, from any focus of the dashboard itself: the conversation's
+	// search (plan 66, design D2); a window over it keeps its own Ctrl+F,
+	// the draft window's full screen among them, and so does a full view.
+	if k.String() == "ctrl+f" && !windowed(top) && top != render.LayerKeys && top != render.LayerSearch && !render.FullView(m.s, m.ui) {
+		return m.openSearch()
+	}
 	switch {
+	case top == render.LayerSearch:
+		if cmds, done := m.searchKey(k); done {
+			return cmds
+		}
 	case top == render.LayerKeys:
 		if cmds, done := m.overlayKey(k); done {
 			return cmds

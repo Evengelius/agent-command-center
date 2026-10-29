@@ -12,6 +12,7 @@ type Layer uint8
 
 const (
 	LayerNone      Layer = iota // the dashboard itself, its zones, panels and full views
+	LayerSearch                 // the conversation's search bar (plan 66)
 	LayerCommit                 // the commit button's dropdown (plan 45)
 	LayerAsk                    // the staging question (plan 45)
 	LayerBranches               // the branches popup (plan 59)
@@ -60,6 +61,7 @@ func (k *Stack) show(l Layer) { k.shown |= 1 << l; k.Top = l }
 //     selector, the branches popup, the Git Graph's scope popup while its
 //     panel shows, the staging question, the commit dropdown, the first
 //     open of these;
+//   - the conversation's search bar, over the dashboard, under them all;
 //   - the file window, then the draft window over it.
 func Layers(s *state.State, ui UI) Stack {
 	var k Stack
@@ -93,6 +95,11 @@ func Layers(s *state.State, ui UI) Stack {
 			k.show(LayerCommit)
 		}
 		k.Card = ui.Graph.Open && ui.Graph.Card != nil && k.Top == LayerNone
+		if ui.Search.Open && k.Top == LayerNone {
+			// Over the dashboard, under any popup, window or full view, which
+			// take the keys first as before (plan 66, design D2).
+			k.show(LayerSearch)
+		}
 	}
 	if WindowOpen(ui) {
 		k.show(LayerWindow)
@@ -103,6 +110,10 @@ func Layers(s *state.State, ui UI) Stack {
 	k.Tip = ui.SideHover != 0 && !window
 	return k
 }
+
+// FullView is fullView, for the keys a full view keeps its own (plan 66,
+// design D2: Ctrl+F opens no search bar over one).
+func FullView(s *state.State, ui UI) bool { return fullView(s, ui) }
 
 // fullView says a full-screen view replaces the dashboard: an approval's or
 // an entry's, an agent's inspection, the telemetry's details.

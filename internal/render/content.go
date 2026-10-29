@@ -342,6 +342,9 @@ type crow struct {
 	// turn and file are a review's file row: a double click opens its diff
 	// (plan 65, design D8); 0 for any other row.
 	turn, file int
+	// more is a long paste's fold row, "… N more lines": it stands for the
+	// lines folded under it, which a search finds (plan 66, design D5).
+	more bool
 }
 
 // solid says the row shows something: text, a block's bar, a rule; not a

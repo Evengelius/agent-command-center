@@ -8560,3 +8560,63 @@ row and the count without a thousands separator as optional polish, and
 asked that the review keep saying which files changed during a turn,
 never who changed them. Folded into plan 65 (plan.md, Progress;
 plan65-evaluation.md, after the evaluation).
+
+## Amendment 68, 2026-10-29: the conversation's search, for plan 66
+
+After plan 65 was closed and its three commits pushed (250df5f), the
+owner wrote, word for word:
+
+````text
+You can start drafting Plan 66 for my review. No implementation until I approve the plan.
+````
+
+Plan 66 is the roadmap's next (amendment 65: "We can tackle the
+turn-by-turn review next, followed by conversation search and session
+resumption."), the search of the conversation suggested then with the
+file viewer's search reused. Proposed for the owner's review (plan.md,
+Plan 66): Ctrl+F opens a search bar at the bottom of zone B; what B holds
+as text is searched, folds included, the case ignored unless the query has
+a capital as in the file viewer; the newest match first, older ones with
+↑ or Enter; the matches lit as the file viewer lights its own, B scrolled
+to each; nothing sent to the CLI; no live run. No implementation before
+the owner approves the plan.
+
+The owner then shared, with no words of their own, another agent's review
+of plan 66, in English. It accepted the approach (plain text, the file
+viewer's case rule, the highlights and the directions, the measured scan;
+no pattern syntax, semantic search, index or new dependency) and asked
+for three points before implementation: Ctrl+F in the draft window, where
+it is that window's full screen, kept so unless the plan says why not,
+Esc giving the previous focus back, the draft and its cursor untouched;
+how a match in a tool row's target is lit and reached, with no general
+rendering or reference framework for it; and whether a long paste's
+folded lines are searched, its preference that the whole message be,
+revealed through the existing full view rather than unfolded in zone B,
+or else the limit said where the owner sees it. It also asked that a
+streaming answer never move the current match, that the query be neither
+sent to a CLI nor written, and that Windows Terminal be checked at the
+narrow size too. Told, in plan 66 (plan.md, designs D2 to D9, criteria
+66.1 to 66.11): the bar is a layer under the windows, so the draft
+window keeps its Ctrl+F, and Esc gives the focus back where Ctrl+F found
+it; a target's drawn characters carry their offsets in a kind of
+reference a copy skips, the cut's "…" standing for what it hides and the
+call's name lit when no target is drawn; a long paste is searched whole,
+a match in its folded lines shown on its "… N more lines" row, and Tab
+opens the full view at the match, lit, the full view's rows being slices
+of the message's lines; the current match kept while an answer streams;
+the matches numbered from the newest, so that the cap of 10,000 keeps the
+newest, where the search starts; the query kept in memory only. No
+implementation before the owner approves the plan.
+
+The owner then sent, as their own message, the other agent's final
+review of the revised plan: "Plan 66 is approved from an independent
+design-review perspective", its three points resolved, and, word for
+word, "You may now proceed with the implementation of Plan 66, following
+the approved design." Taken as the owner's approval of plan 66, with the
+review's refinements folded in (plan.md, Plan 66): a match wholly inside
+a cut target's "…" tested as visible; an older match kept while an
+answer streams more, tested; the cap's count telling the matches kept
+from all there are; the no-match words naming calls' inputs as well as
+their outputs; the timing test measuring the whole keystroke, a long
+paste's hidden match among it, against the 16 ms unchanged; both CLIs'
+mocks; the results and shots for the owner's review before the commit.

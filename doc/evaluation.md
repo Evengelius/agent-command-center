@@ -84,7 +84,7 @@ frame built from the one before it equals the frame drawn afresh, escape codes
 included.
 
 **The timing step, on its own.** A time is judged against its target only in
-the timing step, built with the `timing` tag. Thirteen timed tests carry the
+the timing step, built with the `timing` tag. Fourteen timed tests carry the
 tag, so `go test ./...` never runs them; plan 51's three
 (`hometiming_test.go`) are built on Windows only, for its performance
 counter. Seven more, `TestPasteToFrame`,
@@ -102,12 +102,12 @@ first commit a page at a time, none missing or twice, a turn of 1,000 files
 unfolded under the cursor. There
 `overTarget` logs their time as "not judged outside the timing step", as it
 does under `-race` (`timingBuild`, `timing_on_test.go` and
-`timing_off_test.go`; plan 21, item 2). The step runs the twenty,
+`timing_off_test.go`; plan 21, item 2). The step runs the twenty-one,
 under the owner's normal working conditions (owner, 2026-10-16), since the
 target is about real use:
 
 ```text
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame|TestOutputToFrame|TestToolsToFrame|TestBannerToFrame|TestHomeKeysToFrame|TestHomePictureTime|TestBranchesFrameCost|TestBlameFrameCost|TestGraphFrameCost|TestTurnReviewFrameCost)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame|TestOutputToFrame|TestToolsToFrame|TestBannerToFrame|TestHomeKeysToFrame|TestHomePictureTime|TestBranchesFrameCost|TestBlameFrameCost|TestGraphFrameCost|TestTurnReviewFrameCost|TestSearchToFrame)$' -count=1 -v
 ```
 
 - Allowed: the owner's usual applications open and idle (VS Code, browsers,
@@ -180,6 +180,15 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   the 120 ms wait for the size to settle counted: the worst within 260 ms
   (`pictureTarget`), the terminal's 40 ms to show it (probe P51) making
   the criterion's 300.
+- `TestSearchToFrame` (plan 66, criterion 66.9): the conversation's search
+  on the probe's two sessions at 200x60, 240 turns each of a prompt, 20
+  calls, a thinking phase and an answer of 30 lines, then of 300, and a
+  2,000-line paste: "telemetry" and "refused" typed and taken back in the
+  bar, each key timed whole from Update to its frame (the query read, the
+  matches found and placed, the rows lit, the frame drawn), then "refused",
+  found in the paste's folded lines alone; with the bar open on the first
+  session, 400 answer deltas, each finding the matches again, timed to
+  their frames: p95 within 16 ms (`keystrokeTarget`).
 - A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
   profile, the same test on the last commit) and report it as the loop above
   says.
