@@ -178,6 +178,12 @@ record; `go test ./internal/arch`, which reads AGENTS.md, ok after its
 edit. Not pushed: the owner allowed the commit only. The block above
 stays as it was reported.
 
+**Pushed (2026-10-29).** The owner wrote "you can push": commits 3757c15
+and a49606c fast-forwarded origin's main from 2af203a to a49606c, nothing
+forced, origin's main read back equal to main (`git ls-remote`). The
+commit record above, which says "Not pushed" as written, stays as it was,
+the push following it.
+
 ## Details
 
 ### What the build found and changed

@@ -923,5 +923,5 @@ Approved on 2026-10-29 through the reviews the owner shared: 7 PASS and
 2 accepted with a documented exception, 65.1 (a split index's shared
 file's time) and 65.9 (TestBannerToFrame's timing on a busy machine)
 ([`doc/plan65-evaluation.md`](doc/plan65-evaluation.md)); commit
-3757c15, then the approval commit, not pushed; its full text in git
+3757c15, then the approval commit, both pushed; its full text in git
 (`git show 3757c15:plan.md`).
