@@ -939,5 +939,5 @@ through the review the owner shared and the owner's acceptance of 66.9's
 exception: 11 PASS and 1 accepted with a documented exception, 66.9
 (TestBannerToFrame's timing on a busy machine)
 ([`doc/plan66-evaluation.md`](doc/plan66-evaluation.md)); commit
-a5116aa, then the approval commit; its full text in git (`git show
-a5116aa:plan.md`).
+a5116aa, then the approval commit, both pushed; its full text in git
+(`git show a5116aa:plan.md`).

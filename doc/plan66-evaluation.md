@@ -119,6 +119,16 @@ which reads AGENTS.md, ok after its edit. Not pushed yet: the final
 repository checks come first, then the push the owner allowed. The block
 above stays as it was reported.
 
+**Pushed (2026-10-29).** The owner allowed the push once the commits and
+the final repository checks were done ("You may push once the commits and
+final repository checks are complete."). The checks on the committed tree,
+219d71f, the working tree clean before and after: go build ok, go vet ok
+(Windows and Linux), gofmt -l . empty, go test ./... ok (16 packages). Then
+commits a5116aa and 219d71f fast-forwarded origin's main from 250df5f to
+219d71f, nothing forced, origin's main read back equal to main (`git
+ls-remote`). The commit record above, which says "Not pushed yet" as
+written, stays as it was, the push following it.
+
 ## Details
 
 ### What the build found and changed
