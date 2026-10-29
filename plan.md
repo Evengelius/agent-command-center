@@ -965,5 +965,5 @@ console path in a console of the test's own, the suite requiring the
 copy's tests to run. Approved on 2026-10-29 through the design and
 implementation reviews the owner shared: 9 PASS
 ([`doc/plan68-evaluation.md`](doc/plan68-evaluation.md)); commit 61dd8ad,
-then the approval commit; its full text in git (`git show
+then the approval commit, both pushed; its full text in git (`git show
 61dd8ad:plan.md`).

@@ -89,6 +89,16 @@ approval commit: plan.md and AGENTS.md close plan 68, and this record;
 pushed yet: the final repository checks come first, then the push the
 review allowed. The block above stays as it was reported.
 
+**Pushed (2026-10-29).** The review allowed the push once the final checks
+passed ("You may proceed with the final commits and push once those
+checks pass"). The checks on the committed tree, 3a872bc, the working tree
+clean before and after: go build ok, go vet ok (Windows and Linux), gofmt
+-l . empty, go test ./... ok (16 packages, 335 s). Then commits 61dd8ad
+and 3a872bc fast-forwarded origin's main from 0316a30 to 3a872bc, nothing
+forced, origin's main read back equal to main (`git ls-remote`). The
+commit record above, which says "Not pushed yet" as written, stays as it
+was, the push following it.
+
 ## Details
 
 ### Each version, the evidence the review asked to keep
