@@ -100,6 +100,25 @@ input's editor and the other fields drop stay apart, for the next plan
 (the owner: "Keep the pre-existing AltGr issue separate for the next
 plan.").
 
+**Approved and committed (2026-10-29).** Commit a5116aa (39 files: 21
+modified, 18 added), from the files reviewed in `git status` and `git
+diff`, each of them plan 66's. `git diff --cached --check` reported the
+three 79x24 golden frames' trailing blank rows alone ("new blank line at
+EOF"): the too-small screen drawn at the terminal's 24 rows, as every
+79x24 frame is and TestGoldenFrames requires, plan 65's four the same
+(`git diff --check 3757c15~1 3757c15`). No file holds a CR or a BOM, read
+from the bytes. A scan of the change found no leftover, private path or
+company name; two test comments that cited the scratchpad's probe file
+cite plan 66's findings instead, checked by vet, gofmt and the render
+package's search tests. The whole suite had passed after the last change
+of behaviour, and no test reads the documents edited since. The author
+is `Evengelius <molimoabel@gmail.com>`, with no attribution line, and the
+working tree was clean after it: PASS. Then the approval commit: plan.md
+and AGENTS.md close plan 66, and this record; `go test ./internal/arch`,
+which reads AGENTS.md, ok after its edit. Not pushed yet: the final
+repository checks come first, then the push the owner allowed. The block
+above stays as it was reported.
+
 ## Details
 
 ### What the build found and changed
