@@ -165,6 +165,19 @@ and 65.9 (TestBannerToFrame's timing at 11:52). The review allows the
 final commit of plan 65's files only, `found.txt` untouched, and no push
 until the owner allows one.
 
+**Approved and committed (2026-10-29).** Commit 3757c15 (56 files: 28
+modified, 28 added), from the files reviewed in `git status` and `git
+diff`: `git diff --check` found no whitespace error, no file holds a CR or
+a BOM, and a scan of the change found no leftover, private path or
+company name; the whole suite had passed after the last code edit and
+after the last edit of a document a test reads. The author is `Evengelius
+<molimoabel@gmail.com>`, with no attribution line, and after it the
+working tree held `found.txt` alone, untracked and untouched: PASS. Then
+the approval commit: plan.md and AGENTS.md close plan 65, and this
+record; `go test ./internal/arch`, which reads AGENTS.md, ok after its
+edit. Not pushed: the owner allowed the commit only. The block above
+stays as it was reported.
+
 ## Details
 
 ### What the build found and changed
