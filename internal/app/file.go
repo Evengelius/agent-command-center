@@ -306,7 +306,7 @@ func (m *Model) fieldKey(k tea.KeyPressMsg) []tea.Cmd {
 			f.Typed = f.Typed[:len(f.Typed)-n]
 		}
 	default:
-		m.typeField(k.Text)
+		m.typeField(keyText(k)) // AltGr's characters with the others, never a Ctrl or Alt chord (plan 67)
 	}
 	return nil
 }
@@ -528,8 +528,8 @@ func (m *Model) finderKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 			m.filter()
 		}
 	default:
-		if k.Text != "" {
-			v.Query += firstLine(k.Text)
+		if text := keyText(k); text != "" { // the one rule of the fields (plan 67)
+			v.Query += firstLine(text)
 			m.filter()
 		}
 	}

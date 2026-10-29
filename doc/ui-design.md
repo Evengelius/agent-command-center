@@ -3679,6 +3679,27 @@ The same file can name Codex's proxy (plan 22, amendment 19).
   file that cannot be used as a whole gives no proxy; the keys' problem
   already names it.
 
+**Typed characters** (plan 67, brief amendment 69). A field types a key's
+text when the key has no Ctrl and no Alt, or both: Windows reports AltGr
+as the left Ctrl with the right Alt, so its characters ("@" is AltGr+2 on
+a Belgian AZERTY keyboard, measured in Windows Terminal 1.23) are typed in
+the draft, the draft window, the startup screen's project field, Source
+Control's message box, the Worktrees view's new branch, the branches
+popup's search, the search bar, the file viewer's search field (its go-to
+field keeps digits alone), the quick open and the scope popup's search.
+Ctrl or Alt alone types nothing, whatever text a key carries; Ctrl with
+the left Alt comes with no text and types nothing; Ctrl+Alt with a digit
+is Windows Terminal's own, a switch to a tab. A dead key's character,
+composed on the next key, is typed as any other. The approval card
+swallows a character as it swallows a letter: none reaches the draft under
+it. Windows Terminal sends a modifier's own press before the key it comes
+with, AltGr's left Ctrl and right Alt before its character, Shift before a
+capital: the branches popup keeps it, so that the character reaches its
+search and its own chords (Ctrl+C, Alt+B) reach it; the other fields do
+nothing with a key that has no text. An AltGr key's name is its text, so
+a binding on its character takes it: `[` and `]` in zone C and the
+inspection.
+
 **Anywhere**
 
 | Key | Action | Source |
@@ -3905,7 +3926,10 @@ provider: it has no provider code and sends a string to part 5's caller
   Ctrl+V normally arrives as the terminal's bracketed paste (TI 9); if a
   terminal sends a raw Ctrl+V key, the editor reads the native clipboard and
   inserts it as a paste. Mouse: click places the cursor, drag selects,
-  double-click a word, triple-click a line.
+  double-click a word, triple-click a line. A key types its text with no
+  Ctrl and no Alt, or with both, as Windows reports AltGr: its characters
+  are typed, Ctrl or Alt alone types nothing ([Focus and
+  keys](#focus-and-keys), Typed characters; plan 67).
 - **Size**: one row when empty or on one line, under the rule, then a
   separator and the row, no empty row between them (plan 20, the owner's
   templates; plan 29, the owner's image); it grows with its content up to

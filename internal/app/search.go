@@ -121,26 +121,13 @@ func (m *Model) searchKey(k tea.KeyPressMsg) ([]tea.Cmd, bool) {
 	case "f1", "f12", "ctrl+c", "ctrl+shift+c", "ctrl+o", "shift+pgup", "shift+pgdown":
 		return nil, false
 	default:
-		if text, ok := keyText(k); ok && printable(text) {
+		if text := keyText(k); text != "" && printable(text) {
 			f.Insert(text)
 			m.searchAgain(true)
 		}
 	}
 	m.syncSearch()
 	return nil, true
-}
-
-// keyText is the text key k types, if it types any: the decoder's text with
-// no Ctrl or Alt, or with both, as Windows reports AltGr (left Ctrl and
-// right Alt): on a Belgian AZERTY keyboard AltGr+2 is "@" and AltGr+1 "|",
-// so measured in Windows Terminal 1.23 (plan 66, step 7). The decoder gives
-// every other Ctrl or Alt chord no text.
-func keyText(k tea.KeyPressMsg) (string, bool) {
-	m := k.Mod & (tea.ModCtrl | tea.ModAlt)
-	if k.Text == "" || m != 0 && m != tea.ModCtrl|tea.ModAlt {
-		return "", false
-	}
-	return k.Text, true
 }
 
 // searchPaste is a paste while the bar is on top: its first line, its

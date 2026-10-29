@@ -8620,3 +8620,58 @@ from all there are; the no-match words naming calls' inputs as well as
 their outputs; the timing test measuring the whole keystroke, a long
 paste's hidden match among it, against the 16 ms unchanged; both CLIs'
 mocks; the results and shots for the owner's review before the commit.
+
+## Amendment 69, 2026-10-29: the characters typed with AltGr, for plan 67
+
+Plan 66's checks found that the input's editor and the dashboard's other
+fields drop the characters typed with AltGr (`doc/plan66-evaluation.md`,
+Details, AltGr): on the owner's Belgian AZERTY keyboard, `@`, `#`, `\`,
+`|`, `{`, `}`, `[` and `]` can only be pasted there. Plan 66 made its own
+search bar take them and left the other fields apart. Accepting plan 66,
+the owner wrote, word for word:
+
+````text
+Keep the pre-existing AltGr issue separate for the next plan.
+````
+
+Once plan 66 was closed and its three commits pushed (3d3289b), the owner
+wrote, word for word:
+
+````text
+You can start drafting the next plan for the AltGr issue. Planning only for now; implementation will follow the review and approval.
+````
+
+Plan 67: every field of the dashboard types the characters AltGr types,
+as the search bar does since plan 66; no shortcut changes, and the dead
+keys compose as they do today. Proposed for the owner's review (plan.md,
+Plan 67). No implementation before the owner approves the plan.
+
+The owner then shared, with no words of their own, another agent's
+review of plan 67, in English: "APPROVED WITH ONE CLARIFICATION
+REQUIRED". It accepted the scope and the approach (the rule in the
+application layer, one rule for every field, the approval card kept from
+letting AltGr's characters into the draft, the shortcuts, dead keys,
+clipboard, undo and draft recovery kept, no decoder change) and asked
+whether the key event ACC receives tells physical AltGr from Ctrl with
+the left Alt; if not, that the plan's guarantee be corrected rather than
+the decoder changed, and that the tests cover the observable behaviour,
+the shortcuts and the approval card above all. Told, in plan 67 (plan.md,
+What was found, D1, D3, criteria 67.1 to 67.4): measured, the event does
+not tell the two Alts apart, its modifiers Ctrl and Alt for both, but its
+text does, the decoder giving a text to AltGr's state alone; the rule
+rests on that text, and Ctrl with the left Alt types nothing. The review
+approves plan 67 for implementation once this is incorporated.
+
+The owner then wrote, word for word:
+
+````text
+Plan 67 approved. You can proceed with implementation.
+
+Follow the revised design and acceptance criteria, keeping the implementation focused on the AltGr issue.
+
+Preserve existing keyboard shortcuts and ensure the approval card cannot leak characters into the draft.
+
+Once implementation and verification are complete, provide the evaluation results and final diff summary for review before closing the plan.
+````
+
+Taken as the owner's approval of plan 67 (plan.md, Plan 67).

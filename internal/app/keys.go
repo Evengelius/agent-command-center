@@ -471,8 +471,7 @@ func (m *Model) editKey(e *input.Editor, k tea.KeyPressMsg, oneLine bool) []tea.
 			return pasteMsg{text}
 		}}
 	default:
-		if k.Text != "" && k.Mod&(tea.ModCtrl|tea.ModAlt) == 0 {
-			text := k.Text
+		if text := keyText(k); text != "" {
 			if oneLine {
 				text = strings.NewReplacer("\r", "", "\n", "").Replace(text)
 			}
@@ -480,6 +479,37 @@ func (m *Model) editKey(e *input.Editor, k tea.KeyPressMsg, oneLine bool) []tea.
 		}
 	}
 	return nil
+}
+
+// keyText is the text key k types, "" for none (plan 67, brief amendment
+// 69): the decoder's text with no Ctrl and no Alt, or with both. The event
+// cannot say which Alt was pressed, its Mod one Ctrl bit and one Alt bit;
+// its text says whether the key was AltGr's, the decoder giving a text to
+// the AltGr state alone (left Ctrl and right Alt) among the Ctrl and Alt
+// chords. So AltGr+2, "@" on a Belgian AZERTY keyboard, types, and Ctrl
+// with the left Alt, which comes with no text, types nothing (measured in
+// Windows Terminal 1.23, plan 67, What was found).
+func keyText(k tea.KeyPressMsg) string {
+	if m := k.Mod & (tea.ModCtrl | tea.ModAlt); m != 0 && m != tea.ModCtrl|tea.ModAlt {
+		return ""
+	}
+	return k.Text
+}
+
+// modifierKey says k is a modifier key's own press: Shift, Ctrl, Alt,
+// Super, Hyper or Meta, left or right, or an ISO level shift. Windows
+// Terminal sends one before the key it comes with: AltGr's left Ctrl and
+// right Alt before its character, Shift before a capital (plan 67, design
+// D2, extended in step 3).
+func modifierKey(k tea.KeyPressMsg) bool {
+	switch k.Code {
+	case tea.KeyLeftShift, tea.KeyRightShift, tea.KeyLeftCtrl, tea.KeyRightCtrl,
+		tea.KeyLeftAlt, tea.KeyRightAlt, tea.KeyLeftSuper, tea.KeyRightSuper,
+		tea.KeyLeftHyper, tea.KeyRightHyper, tea.KeyLeftMeta, tea.KeyRightMeta,
+		tea.KeyIsoLevel3Shift, tea.KeyIsoLevel5Shift:
+		return true
+	}
+	return false
 }
 
 // step moves to the next or previous item of list, wrapping; from an
@@ -533,7 +563,9 @@ func (m *Model) cardKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	case "up", "down":
 		return m.focusCard(ap.ID, k.String() == "down"), true
 	}
-	return nil, k.Text != "" && k.Mod&(tea.ModCtrl|tea.ModAlt) == 0
+	// A character goes nowhere, AltGr's among them, never on to the draft
+	// under the card (plan 67, design D2).
+	return nil, keyText(k) != ""
 }
 
 // decision is allow once or deny (ui-design.md, Approvals), in the

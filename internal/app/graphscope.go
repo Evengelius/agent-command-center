@@ -127,8 +127,8 @@ func (m *Model) scopeKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		m.closeScope() // a key the popup does not take closes it and goes on
 		return nil, false
 	default:
-		if k.Text != "" && k.Text != " " {
-			v.Query += firstLine(k.Text)
+		if text := keyText(k); text != "" && text != " " { // the one rule of the fields (plan 67)
+			v.Query += firstLine(text)
 			m.scopeFirst()
 			return nil, true
 		}

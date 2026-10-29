@@ -787,6 +787,17 @@ as it is, with no command that could race the entries.
 | 4. Rendering | the matcher (`ConvMatches`, `ConvMatch`): the entries B draws (`searchable`), their parts in the rows' order (`entryParts`: a message's lines read in place; a tool row's name, target and error; a request's first line and target), the scan (`findIn`: the query's first byte in either case, then `strings.EqualFold`, each case's next place kept), `MaxMatches` from the newest; the targets read once while the bar is open (`SearchMemo`); the bar's row and the footer (`SearchView`, `searchBar`, `tailFit`, `searchFooter`), a layer over the dashboard and under the windows (`LayerSearch`, `FullView`), B's conversation a row shorter (`zoneB`), the input drawn without its caret; a match's place (`SearchPos`, `AtOrBefore`, `rowEnd`; B's last row shown, `ConvView.Bottom`), the folds it is behind (`MatchFolds`), its row in B (`ConvMatchRow`, over `convStarts` and `entryRows`) and in the full view (`EntryViewRow`, `viewOffset`); the lighting (`lightSearch`, before the selection's, `stMatch` and `stMatchCur`): the targets' references (`markTarget`, `retarget` through `fitDetail`; `refTarget`, `refTargetCut`), a long paste's fold row (`refFold`, `crow.more`), none a selection takes; in the full view, `lightView`; the key overlay's rows | `internal/render/search.go`, `dashboard.go`, `cards.go`, `approval.go`, `content.go`, `text.go`, `select.go`, `layers.go`, `editor.go`, `render.go`, `keys.go` |
 | The application | Ctrl+F from any focus of the dashboard, a window or full view keeping its own (`openSearch`: the popups and the diff closed, the focus in B); the field and its keys (`searchState`, `searchKey`, `keyText`: AltGr's characters typed, `searchPaste`, `syncSearch`); the matches found again after a keystroke and after applied events (`searchAgain`; `State.Applied` compared in `syncUI`), the current one kept by its place; the steps and the reveal (`stepMatch`, `revealMatch`: the folds opened, B held, from the last frame's `ConvView`); Tab's full view (`searchWhole`); Esc and what else closes it, the focus given back, B's entry cursor with it (`closeSearch`, `searchKey`'s Esc, `searchAfterMouse`, Ctrl+W in `key`) | `internal/app/search.go`, `app.go`, `keys.go` |
 
+## The characters typed with AltGr
+
+Plan 67 (brief amendment 69; ui-design.md, Focus and keys, Typed
+characters). Every field types the characters AltGr types. The
+application alone: no state, rendering or input change, nothing sent to a
+CLI, the decoder as it is.
+
+| Part | What it does | Where |
+| - | - | - |
+| The application | the one rule of the fields (`keyText`, beside `editKey`: a key's text with no Ctrl and no Alt, or with both, the decoder giving a text to AltGr's state alone among the Ctrl and Alt chords); the fields typing through it (`editKey`: the draft, the draft window, the startup screen's project field, Source Control's message box, the Worktrees view's new branch; `branchesKey`, its printable test kept; `searchKey`; `fieldKey`, the go-to field keeping digits; `finderKey`; `scopeKey`); the approval card swallowing a key's text (`cardKey`); a modifier's own press, which Windows Terminal sends before the key it comes with, kept by the branches popup (`modifierKey`) | `internal/app/keys.go`, `branches.go`, `search.go`, `file.go`, `graphscope.go` |
+
 ## Build order
 
 Input to plan 3's roadmap, from AM4's priorities (P1 to P6) and AGENTS.md

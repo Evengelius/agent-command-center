@@ -336,7 +336,8 @@ func (m *Model) toHeading(g int) {
 // to it, Ctrl+C copying its name, F5 fetching, Esc stopping a fetch, then
 // cancelling a confirmation, then clearing the search, then closing. A
 // send key acts as Enter does, so the popup never sends. Any other key
-// closes it and goes on, as plan 34's selector.
+// closes it and goes on, as plan 34's selector; a modifier's own press is
+// kept (plan 67).
 func (m *Model) branchesKey(k tea.KeyPressMsg) ([]tea.Cmd, bool) {
 	key := k.String()
 	enter := key == "enter" || m.opt.Keys.IsSend(key)
@@ -412,7 +413,11 @@ func (m *Model) branchesKey(k tea.KeyPressMsg) ([]tea.Cmd, bool) {
 		}
 	case key == "f5":
 		return m.fetchBranches(), true
-	case k.Text != "" && k.Mod&(tea.ModCtrl|tea.ModAlt) == 0 && printable(k.Text):
+	case modifierKey(k):
+		// Kept: a modifier's own press comes before its key, AltGr's left
+		// Ctrl and right Alt before its character, which reaches the search
+		// (plan 67, design D2).
+	case keyText(k) != "" && printable(k.Text): // AltGr's characters too (plan 67)
 		m.branchFind.Insert(k.Text)
 		m.setBranchQuery(m.branchFind.Text())
 	default:
