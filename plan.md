@@ -988,5 +988,5 @@ size (P69-M02). Approved on 2026-10-30 through the owner's reviews,
 acceptance run, regression run and final report, a real Claude Code
 refusal through the dashboard among its checks: 13 PASS, then 4 PASS
 ([`doc/plan69-evaluation.md`](doc/plan69-evaluation.md)); commit aba673a,
-then the approval commit; its full text in git (`git show
-aba673a:plan.md`).
+then the approval commit, both pushed, the test data removed after; its
+full text in git (`git show aba673a:plan.md`).

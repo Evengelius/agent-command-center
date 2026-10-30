@@ -340,6 +340,44 @@ AGENTS.md is read by a test, so the whole suite runs on the committed
 tree. Not pushed yet: the final repository checks come first, then the
 push. The blocks above stay as they were reported.
 
+**Pushed (2026-10-30).** The owner's final report allowed the push once
+the final review found no blocker. The checks on the committed tree,
+8007eec, the working tree clean before and after: go build ok, go vet ok
+(Windows and Linux), gofmt -l . empty, go test ./... ok (16 packages,
+1,108 tests, 5 skipped as before, 252 s), `TestAgentsMDWithinCodexLimit`
+among them; the committed code and test data hash to the tree every
+earlier check ran on (`b54e3362`). Then commits aba673a and 8007eec
+fast-forwarded origin's main from 3d395a8 to 8007eec, nothing forced,
+origin's main read back equal to main (`git ls-remote`). The commit
+record above, which says "Not pushed yet" as written, stays as it was,
+the push following it.
+
+**The test data removed (2026-10-30).** After the push, as the owner's
+report allowed, each target checked against what was inspected before:
+- `%TEMP%\acc-p69-manual` (its temporary `.git` and the two probe files),
+  `%TEMP%\acc-p69-other` (empty), and under `%TEMP%` the registry's two
+  backups and the hash file.
+- The registry's two test entries, `acc-p69-manual` and `acc-p69-other`,
+  alone: the nine others unchanged and in order, the file round-tripping
+  byte for byte through the serializer first, a copy of it kept in the
+  scratchpad.
+- Claude Code's four test sessions, each its transcript, its project
+  folder's empty `memory` and the folder, and its empty `session-env`
+  folder: the live runs' `d8a9cf59-…` and `47d88972-…`, the owner's
+  `a4ed17dd-…` and P69a's `21f3b775-…`; no other file names them, and
+  the refused IDs left none.
+
+Kept, each for a reason:
+- Codex's three test threads (P69b's `01a18936-…`, the live run's
+  `01a189d7-…`, the owner's `01a18a53-…`): Codex's shared databases (its
+  state, thread history and logs) also record them, so removing the
+  rollout files alone would leave its state pointing at missing files,
+  and removing the rest means editing those databases.
+- `~/.claude.json`, Claude Code's own configuration: not read, not changed.
+- The harness's temporary folders, `%TEMP%\p69demo` and 27
+  `%TEMP%\p40-out-p69*`: outside the cleanup the owner listed.
+- The scratchpad, which holds this file's shots and traces.
+
 ## Details
 
 ### What the checks found and changed
