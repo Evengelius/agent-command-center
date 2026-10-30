@@ -92,6 +92,11 @@ Drawn whole on entering and after a resize, once the size has stayed the
 same for 120 ms (a window dragged reports a size every few tens of
 milliseconds), then only the cells a change touches: an outline when the
 focus moves, rows when the selection moves, a star, the status (D13).
+The places of the images drawn at the size before are written over first,
+only where the screen still has them: past its right edge a write wraps,
+and on its last row scrolls the screen, which took the field's text under
+the picture after a font zoom or a smaller window (the owner's finding
+P69-M02, plan 69).
 Each image is written after the frame, in synchronized output, the
 cursor saved and restored; a second drawing 250 ms later writes the
 first's sequence again, in case the frame came out after it. Each tile
@@ -171,8 +176,11 @@ answers are validated; the session starts only if both pass (AM4 S9, S10,
 S14). A failure keeps the screen, puts the message between the field and
 START SESSION in red with ✗, wrapped whole, and moves the focus there; in
 picture mode each line beyond the first grows the panels into the banner
-(D6). Messages, from INT paths, each with the resolved path or the
-corrected example:
+(D6). The project's failure is the text's that failed: it shows while the
+field holds that text; a project chosen in the list, a folder chosen in the
+dialog or any edit takes it away, and the same text back shows it again
+until the next Start (the owner's finding P69-M01, plan 69). Messages, from
+INT paths, each with the resolved path or the corrected example:
 
 | Case | Message |
 | - | - |
@@ -230,10 +238,11 @@ path ("files in Linux, used by a Windows agent CLI: slow, and unverified").
 
 The project store, `projects.json` in the dashboard's own folder
 (`%LOCALAPPDATA%\agent-command-center\`, beside `drafts\`), keeps one entry
-per project: its validated path, when a session last started in it, and
-whether it is a favourite. It is written through a temporary file renamed
-over the old one; paths are compared without case on Windows; it holds no
-conversation data. A path is recorded once validation passes, even if the
+per project: its validated path, when a session last started in it,
+whether it is a favourite, and each agent CLI's [last session](#last-session)
+there. It is written through a temporary file renamed over the old one,
+read again before each change; paths are compared without case on
+Windows; it holds no conversation data. A path is recorded once validation passes, even if the
 agent CLI then fails to start. At most 10 recent projects are kept; a
 favourite is never dropped. A mock run passes no store: nothing is read or
 written and the screen is unchanged.
@@ -253,6 +262,46 @@ selection, a slim mark at its right showing where it is. A store that
 cannot be read shows "Recent projects unavailable:" and the reason in the
 panel, never an empty list; one that cannot be written, "Recent projects
 not saved:" and the reason.
+
+### Last session
+
+Each project's entry keeps, per agent CLI, the last session the dashboard
+ran there: the ID the CLI reported and when the owner's last turn there
+ended, written when that turn ends, completed, interrupted or failed
+(amendment 71, plan 69). With the chosen CLI's last session recorded for
+the chosen project, the project field's path resolved as Start resolves
+it, a grey note under the field offers it: "→ Claude Code's last session
+here: 3m ago · Ctrl+R continues it", its time as PROJECTS writes one.
+Ctrl+R, or a click on the note, validates the project as Start does and
+starts that CLI on that session: Claude Code with `--resume <id>`, Codex
+with `thread/resume`, the thread asked for without its turns; Start still
+starts a new session. The note follows the CLI and the project as they
+change, and is gone while a start is validated; with no session recorded
+for them there is no note, and Ctrl+R does nothing. Only the chosen CLI's
+session is offered, never the other CLI's, nor one the dashboard did not
+run; a worktree is a project of its own. The footer is as the design has
+it (D8): the note names its key. In grid mode at 80x24
+(`testdata/frames/startup-resume-80x24.txt`):
+
+```text
+ │  2.  Project directory           │
+ │ ╭──────────────────────────┬───╮ │
+ │ │ C:\work\demo-project     │ 🗀 │ │
+ │ ╰──────────────────────────┴───╯ │
+ │  → Claude Code's last session    │
+ │    here: 3m ago · Ctrl+R         │
+ │    continues it                  │
+ │                                  │
+ │         START SESSION →          │
+```
+
+A resume that fails shows zone B's card "The session could not be
+resumed" (see [Transition](#transition)); back on this screen, a red note
+under the offer says why: "✗ Not resumed: <reason>", the session still
+offered and Ctrl+R trying again; or, when the CLI no longer has the
+session, "✗ Not resumed: Claude Code no longer has its last session here",
+the session no longer offered. The note stays until the next start, or
+until another CLI or project is chosen; Ctrl+N clears it.
 
 ### The folder dialog
 
@@ -281,6 +330,7 @@ project browser, removed by amendment 53.
 | f / Del | in Projects: star or unstar / forget that project |
 | Ctrl+N | the form as the screen opened it: the default agent CLI, the starting project folder, the focus on question 1, the list's first row, no message; not while validating (D9) |
 | Ctrl+O | open the system's [folder dialog](#the-folder-dialog) |
+| Ctrl+R | resume the chosen agent CLI's [last session](#last-session) in the chosen project; nothing without one (plan 69) |
 | Ctrl+W | open the [Worktrees](#worktrees) view on the project field's repository |
 | F12 | give the mouse back to the terminal, and take it again |
 | Editing keys | as in the [Input editor](#input-editor), on one line |
@@ -294,7 +344,8 @@ The mouse (D11), as on the dashboard, F12 giving it back to the terminal
 the field, gives it the focus; on its folder button, opens the folder
 dialog; on a project's row, selects it and puts its path into the field;
 on its star, stars or unstars it, its path into the field too; on START
-SESSION, starts as Enter does. No double click or footer click. The
+SESSION, starts as Enter does; on the last session's note, resumes it as
+Ctrl+R does (plan 69). No double click or footer click. The
 wheel over the PROJECTS panel, its rows, headings or frame, moves the
 list's selection one project a notch, as ↑ and ↓ do, the list taking the
 focus (amendment 55, plan 54): one a notch, not the dashboard lists'
@@ -486,6 +537,34 @@ mismatch, process exit), the exit code and the last lines of stderr, and
 "Esc back to startup (answers kept) · Ctrl+Q quit" (events-and-state.md,
 Startup machine; architecture.md, How it starts, step 6). The draft, if
 any, is kept across the return.
+
+A start that resumes the [last session](#last-session) (plan 69) reads
+"Resuming Claude Code 2.1.303 session 21f3b775 in `C:\…`…" (Codex's a
+thread). Once the CLI names the session, zone B opens with a grey note of
+the dashboard's, as its other notes: "Resumed Claude Code session 21f3b775 ·
+Claude Code has its earlier context; its earlier messages are not shown
+here" (Codex: "thread", "turns"); a CLI that names another session gets
+"Claude Code reports session <x>, not <y>: its earlier context may not be
+there", and that session is the one recorded. A resume that fails is never
+followed by a new session: the card reads "The session could not be
+resumed", the CLI's own words under it, then what became of the record:
+
+```text
+ ✗ The session could not be resumed
+   Claude Code: No conversation found with session ID: 21f3b775-162f-47e1-bb16-aa91f8a808b9
+   Claude Code no longer has this session: it is no longer offered
+   exit code 1
+```
+
+or, for any other failure, "The session stays offered: Ctrl+R on the
+startup screen tries again". Zone A's values after a resume are the CLI's
+own, an N/A's reason reading "since the resume" (reliability.md,
+Telemetry sources); while those reasons are too long for the usage
+section's three columns, as Claude Code's are until the first new turn's
+result, the section takes its three rows at any width, every value and
+reason whole ("Context N/A no turn since the resume", "Tokens N/A no
+result since the resume", "Est. cost N/A no result since the resume"):
+the columns would push the cost out, as the live run of plan 69 found.
 
 ## Dashboard
 
@@ -958,7 +1037,9 @@ the top, inside a frame whose top edge carries no title:
   window, a lavender fill on its track), "session total" under the tokens
   and "API-equivalent" under the cost ("API-equiv." under 45 cells). Under
   41 cells, three rows: "Context 3% of 1M" and its bar, "Tokens 61.9k
-  session total", "Est. cost $0.00 API-equivalent". A value no source gave
+  session total", "Est. cost $0.00 API-equivalent"; the three rows too in
+  a session resumed from the home screen whose reasons the columns cannot
+  hold (Transition, plan 69). A value no source gave
   reads "N/A" with its reason as its support ("no result yet", "Codex
   reports none"), never 0; "†" follows an undocumented value; a derived
   value carries no mark here, "(derived)" follows it in the details view.
@@ -4428,7 +4509,8 @@ provider: it has no provider code and sends a string to part 5's caller
   Sixel, the cursor saved and restored, inside synchronized output, 50 ms
   after the frame that showed them and again 250 ms later, and again
   after any frame that changes a strip row; a place an image left is
-  written over with the frame's own cells, which erases it. A WebP, which
+  written over with the frame's own cells, which erases it, only where the
+  screen still has it (P69-M02, plan 69). A WebP, which
   nothing here decodes, gets a box of text with "WebP" in it. Without
   Sixel, the chips alone.
 - **While a turn runs**: editable, not sendable; "turn running: the draft

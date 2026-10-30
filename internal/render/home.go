@@ -139,10 +139,12 @@ type HomeKey struct{ Key, Action string }
 
 // HomeNote is text the home screen adds to the design (design D6): its
 // mark ("✗ ", "! ", "→ " or none), its text, wrapped under itself, and its
-// kind: 'f' a failure, 'g' grey, 'a' a warning.
+// kind: 'f' a failure, 'g' grey, 'a' a warning; Item what a click on it
+// does, 0 for nothing (the last session's, plan 69).
 type HomeNote struct {
 	Mark, Text string
 	Kind       byte
+	Item       int
 }
 
 // homeNotes are the notes between the project field and START SESSION
@@ -152,38 +154,50 @@ type HomeNote struct {
 func homeNotes(s *state.State, ui UI) []HomeNote {
 	var out []HomeNote
 	detecting := s.Startup.Phase == state.Detecting || s.Startup.Phase == ""
-	projectFailed := s.Startup.Field == "project" && s.Startup.Message != ""
+	// The project's failure is the text's that failed, shown while the field
+	// holds it (P69-M01, plan 69), as the last resume's failure shows while
+	// its CLI and project are the chosen ones (design D7).
+	projectFailed := s.Startup.Field == "project" && s.Startup.Message != "" && ui.Path == s.Startup.Project
 	switch {
 	case !detecting && len(s.Startup.Installed) == 0:
-		out = append(out, HomeNote{"✗ ", "No supported agent CLI found. Install Claude Code or Codex CLI, then restart.", 'f'})
+		out = append(out, HomeNote{"✗ ", "No supported agent CLI found. Install Claude Code or Codex CLI, then restart.", 'f', 0})
 	case s.Startup.Field == "provider" && s.Startup.Message != "":
-		out = append(out, HomeNote{"✗ ", s.Startup.Message, 'f'})
+		out = append(out, HomeNote{"✗ ", s.Startup.Message, 'f', 0})
 	}
 	switch {
 	case projectFailed:
-		out = append(out, HomeNote{"✗ ", hideUser(s.Startup.Message), 'f'})
+		out = append(out, HomeNote{"✗ ", hideUser(s.Startup.Message), 'f', 0})
 	case ui.PathProblem != "":
-		out = append(out, HomeNote{"✗ ", hideUser(ui.PathProblem), 'g'})
+		out = append(out, HomeNote{"✗ ", hideUser(ui.PathProblem), 'g', 0})
 	case ui.Resolved != "" && ui.Resolved != strings.TrimSpace(ui.Path):
-		out = append(out, HomeNote{"→ ", hideUser(ui.Resolved), 'g'})
+		out = append(out, HomeNote{"→ ", hideUser(ui.Resolved), 'g', 0})
+	}
+	// The chosen CLI's last session in the chosen project, a click resuming
+	// it as Ctrl+R does, gone while a start is validated; the last resume's
+	// failure under it (plan 69, designs D4 and D7).
+	if ui.LastSession != "" && s.Startup.Phase != state.Validating {
+		out = append(out, HomeNote{"→ ", ui.LastSession, 'g', HomeItemResume})
+	}
+	if ui.NotResumed != "" {
+		out = append(out, HomeNote{"✗ ", hideUser(ui.NotResumed), 'f', 0})
 	}
 	if ui.FolderProblem != "" {
-		out = append(out, HomeNote{"✗ ", hideUser(ui.FolderProblem), 'f'}) // plan 52, design D3
+		out = append(out, HomeNote{"✗ ", hideUser(ui.FolderProblem), 'f', 0}) // plan 52, design D3
 	}
 	if ui.PathProblem == "" && ui.PathWarning != "" && !projectFailed {
-		out = append(out, HomeNote{"! ", ui.PathWarning, 'a'})
+		out = append(out, HomeNote{"! ", ui.PathWarning, 'a', 0})
 	}
 	if ui.KeysProblem != "" {
-		out = append(out, HomeNote{"✗ ", hideUser(ui.KeysProblem), 'f'}) // plan 21, item 5.1: the default keys apply
+		out = append(out, HomeNote{"✗ ", hideUser(ui.KeysProblem), 'f', 0}) // plan 21, item 5.1: the default keys apply
 	}
 	if ui.CodexProxyProblem != "" {
-		out = append(out, HomeNote{"✗ ", hideUser(ui.CodexProxyProblem), 'f'}) // plan 22, amendment 19: no proxy
+		out = append(out, HomeNote{"✗ ", hideUser(ui.CodexProxyProblem), 'f', 0}) // plan 22, amendment 19: no proxy
 	}
 	if ui.NotifyProblem != "" {
-		out = append(out, HomeNote{"✗ ", hideUser(ui.NotifyProblem), 'f'}) // plan 64, design D5: no notifications
+		out = append(out, HomeNote{"✗ ", hideUser(ui.NotifyProblem), 'f', 0}) // plan 64, design D5: no notifications
 	}
 	if ui.CodexProxy != "" {
-		out = append(out, HomeNote{"", "Codex through the proxy " + ui.CodexProxy + " (config.json)", 'g'})
+		out = append(out, HomeNote{"", "Codex through the proxy " + ui.CodexProxy + " (config.json)", 'g', 0})
 	}
 	return out
 }
@@ -193,9 +207,9 @@ func homeNotes(s *state.State, ui UI) []HomeNote {
 func homeListNote(ui UI) HomeNote {
 	switch {
 	case ui.ProjectsProblem != "":
-		return HomeNote{"✗ ", hideUser(ui.ProjectsProblem), 'f'}
+		return HomeNote{"✗ ", hideUser(ui.ProjectsProblem), 'f', 0}
 	case len(ui.Projects) == 0:
-		return HomeNote{"", "No projects yet", 'g'}
+		return HomeNote{"", "No projects yet", 'g', 0}
 	}
 	return HomeNote{}
 }
@@ -243,12 +257,14 @@ const HomePanel = 'H'
 
 // The home screen's items: an option, a project's row and its star are
 // these plus their index. HomeItemList is the PROJECTS panel's other
-// cells, where the wheel moves the list's selection (plan 54, design D3).
+// cells, where the wheel moves the list's selection (plan 54, design D3);
+// HomeItemResume the last session's note (plan 69, design D4).
 const (
 	HomeItemField  = 1
 	HomeItemFolder = 2
 	HomeItemStart  = 3
 	HomeItemList   = 4
+	HomeItemResume = 5
 	HomeItemOption = 1 << 20
 	HomeItemRow    = 2 << 20
 	HomeItemStar   = 3 << 20
@@ -417,7 +433,7 @@ func homeLook(s *state.State, ui UI, g HomeGeom) HomeLook {
 		CLIs: homeCLIs(s, ui), Keys: homeKeys, Field: ui.Field, Dim: homeDim(s), Notes: homeNotes(s, ui), List: homeListNote(ui)}
 	for _, c := range l.CLIs {
 		if !c.Usable && len([]rune(c.Version)) > homeVersionChars(c.Name) {
-			l.Notes = append(l.Notes, HomeNote{"", c.Name + " " + c.Version, 'g'})
+			l.Notes = append(l.Notes, HomeNote{"", c.Name + " " + c.Version, 'g', 0})
 		}
 	}
 	l.Grow = min(float64(max(len(homeNoteLines(l.Notes))-1, 0))*noteLine, maxGrow)
@@ -487,10 +503,10 @@ type homeTarget struct {
 }
 
 // homeTargets are the cells a click acts on in picture mode (design D11):
-// each option, the field, its folder button, START SESSION, each
-// project's row and its star, and last the PROJECTS panel for the wheel
-// (plan 54, design D3); a cell is the first target's whose place holds
-// its middle.
+// each option, the field, its folder button, START SESSION, the last
+// session's note (plan 69), each project's row and its star, and last the
+// PROJECTS panel for the wheel (plan 54, design D3); a cell is the first
+// target's whose place holds its middle.
 func homeTargets(l HomeLook) []homeTarget {
 	g := l.Geom
 	var out []homeTarget
@@ -510,6 +526,17 @@ func homeTargets(l HomeLook) []homeTarget {
 	add(HomeItemField, g.X(29.5), y0, g.X(549), y1)
 	add(HomeItemFolder, g.X(549), y0, g.X(594), y1)
 	add(HomeItemStart, g.X(29.5), g.Y(644.5), g.X(594), g.Y(688.5))
+	for i, n := range homeNoteLines(l.Notes) {
+		if n.item != 0 {
+			// A note a click acts on, the last session's (plan 69, design D4):
+			// every row each of its lines touches, where newSession draws it.
+			// A line can be less than a row high (14 pixels at 120x40), so
+			// its band rounded as the other targets' can come to no row.
+			y := 634.75 - l.Grow + float64(i)*noteLine
+			top, end := math.Floor(g.Y(y-noteLine/2)/SixelCellH), math.Ceil(g.Y(y+noteLine/2)/SixelCellH)
+			add(n.item, g.X(29.5), top*SixelCellH, g.X(594.5), end*SixelCellH)
+		}
+	}
 	for _, r := range l.Rows {
 		if r.Head == 0 {
 			add(HomeItemStar+r.Index, g.X(644), g.Y(r.Y-14.5), g.X(674), g.Y(r.Y+14.5))

@@ -19,6 +19,9 @@ emit. They become test fixtures in plan 4.
   P22o and P22s, on 2026-10-21, are plan 22's two live checks, approved by
   the owner as proposed in plan.md: Opus 5.5 in place of Haiku for P22o's
   process only, and Codex with reasoning summaries asked for.
+  P69a and P69b, on 2026-10-29, are plan 69's probes, run before any of its
+  code within the quota its proposal named (four model calls at most), as
+  the owner's design review of the plan asked (plan.md, Plan 69).
 - **Where:** a throwaway folder outside the repository (the session
   scratchpad under `%TEMP%`, written `<probe-root>` in the recordings), one
   fresh subfolder per probe.
@@ -44,7 +47,11 @@ emit. They become test fixtures in plan 4.
   its own chunk, and Git Bash's `/tmp/claude/...` form of it; the recordings
   before P303a keep pieces of the probe path in such chunks (the session
   scratchpad, never the user name). Session ids, request ids and tool ids are kept: they
-  are random and show how events link up.
+  are random and show how events link up. P69a's and P69b's drivers keep the
+  account fields as filtered views, so no recorded field holds an
+  organisation: `sanitize.mjs` ran on them with an organisation prefix that
+  matches nothing, and a scan of both finds no user, host, home or domain
+  name and no e-mail address.
 
 ## Recording format
 
@@ -104,6 +111,8 @@ one event per line.
 | P38t | the same driver with its turn, about 10:06 (approved by the owner: one turn): P38x's steps, then `turn/start` as the dashboard sends it (read-only sandbox, reviewer `user`, summary `auto`) asking for a shell command that writes `probe38.txt`, a command approval answered `acceptForSession`, then `thread/read` and the rollout's `turn_context` lines, their model and effort alone | `p38t-codex-turn-settings.jsonl` (also `testdata/probes`, 73 lines) | P38x's results again; the `turn/start` brought a `thread/settings/updated` of its own (its `summary`); the command approval's `availableDecisions` accept, the execpolicy amendment and cancel, no `additionalPermissions`, and `acceptForSession`, not among them, was taken (the command ran, `probe38.txt` reads "ok"); no `currentTime/read`; two notifications no earlier probe had, `turn/moderationMetadata` (twice) and `thread/readState/changed`, both in the stable schema too; the turn completed in 5.8 s, its one `turn_context` GPT-6-Luna at "low"; exit 0 after 10 s; the configuration check PASS (one new session file) |
 | P39c | [`drivers/p39-claude-modes.mjs`](drivers/p39-claude-modes.mjs) on Claude Code 2.1.303 (2026-10-24, about 11:40 local time): the dashboard's arguments, no user message, the session's own `CLAUDE*` and `ANTHROPIC_*` variables dropped (their names recorded); `initialize`, then `set_permission_mode` with `default`, `acceptEdits`, `plan`, `auto`, an unknown mode and `default` again; recorded filtered (from the initialize response its version, `current_permission_mode` and keys) | `p39c-claude-permission-modes.jsonl` (also `testdata/probes`, 23 lines) | `current_permission_mode` "default"; each of the four answered `{"mode": ...}` within 3 ms, then a `system/status` with its `permissionMode`, none for `default` while in force; the unknown mode refused, "Cannot set permission mode: must be one of acceptEdits, auto, bypassPermissions, default, dontAsk, plan"; the initialize response has no list of modes (its `capabilities` are `ui_surface_v1` and `mcp_call_result_not_for_model_v1`); exit 0 after 9 s; the configuration check PASS |
 | P39x | [`drivers/p39-codex-modes.mjs`](drivers/p39-codex-modes.mjs) on Codex CLI 0.163.0, about 11:41: the dashboard's handshake with the experimental opt-in, no turn; `configRequirements/read`, `thread/start` as the dashboard sends it, then `thread/settings/update` with VS Code's three presets (Ask for approval as its default, Approve for me, Full access), back to the dashboard's read-only start, and that again | `p39x-codex-permission-modes.jsonl` (also `testdata/probes`, 48 lines) | `requirements: null`; the thread `readOnly`, `on-request`, `user`; each preset answered `{}` and notified with the `sandboxPolicy`, `approvalPolicy` and `approvalsReviewer` asked for (`workspaceWrite`/`on-request`/`user`; `workspaceWrite`/`on-request`/`auto_review`; `dangerFullAccess`/`never`/`user`; `readOnly`/`on-request`/`user`), `activePermissionProfile` null; the second read-only not notified; no turn ran; exit 0 after 5 s; the configuration check PASS |
+| P69a | [`drivers/p69-claude-resume.mjs`](drivers/p69-claude-resume.mjs) on Claude Code 2.1.303 (2026-10-29, 20:48 to 20:49 local time), `ANTHROPIC_MODEL=haiku`, every `CLAUDE*` and `ANTHROPIC_*` variable of the shell dropped: the dashboard's arguments and handshake (`initialize`, then `get_settings` and "/usage"); three processes in turn: a new session told the code word CINNABAR-41; `--resume <its id>`, `initialize` alone for 4 s, then the handshake and the question; `--resume <a random UUID>` | `p69a-claude-resume.jsonl` (77 lines, each naming its process; also `testdata/probes`) | the resumed process: the owner's `SessionStart` hook as `SessionStart:resume` with the same session ID before the `initialize` answer, then `system/commands_changed`, no earlier message; `system/init` with the same ID; the session's cost carried over (the "/usage" result's `total_cost_usd` 0.0048, the first process's); "CINNABAR-41" answered; exit 0. The unknown ID: no `initialize` answer; 1.1 s after the start a `result` `error_during_execution`, `is_error`, `errors` ["No conversation found with session ID: <id>"], the same words on stderr, then exit 1, no model call. Two model calls in all |
+| P69b | [`drivers/p69-codex-resume.mjs`](drivers/p69-codex-resume.mjs) on Codex CLI 0.163.0 (about 20:50), the configured model: the dashboard's handshake with the experimental opt-in, its thread and turn parameters; four app-servers in turn: `thread/start` and a turn told the code word BASALT-26; `thread/resume` as the dashboard sends it; `thread/resume` with `excludeTurns: true`, then the question; `thread/resume` on a random UUID, then on "not-a-thread-69". Before them, the installed version's schema generated (`codex app-server generate-json-schema`, stable and `--experimental`, no model call): `ThreadResumeParams` has `excludeTurns` in both, `initialTurnsPage` in the experimental one only | `p69b-codex-resume.jsonl` (100 lines, each naming its process, also `testdata/probes`; a `thread/resume` answer kept as its size and its turns' ids, statuses and item types, not its items) | the same thread each time. The dashboard's request: 3,360 bytes with the turn's `userMessage` and `agentMessage` (`itemsView` "full"), and a `deprecationNotice`: full-history hydration deprecated for paginated threads, `excludeTurns: true` with `thread/turns/list` and `thread/items/list` to use instead. With `excludeTurns`: 2,703 bytes, no turn, no notice, and "BASALT-26" answered. After each resume, at once, `thread/tokenUsage/updated` with the thread's 16,430 tokens, and `thread/goal/cleared`. The unknown thread: error -32600 "no rollout found for thread id <id>"; the malformed one: -32600 "invalid session id: …". Exit 0 each time; two model calls in all |
 
 Quota used: 7 short Claude Haiku turns and 2 subagent runs (P1 to P4, P3b; the
 results report a total of about USD 0.03 API-equivalent); 3 short Codex turns
@@ -322,6 +331,14 @@ after): 24 of the 25 files identical; `~/.claude.json` rewritten by its
 Claude Code, as always (hashed, not read). Nothing was written in the work
 folder, removed after; no process the driver started was left; the owner
 had no Claude Code or Codex terminal session open (checked before the run).
+
+P69a and P69b (2026-10-29, 20:46 to 20:52 local time, `confcheck` with
+`-cli-ran` against two snapshots taken just before, one per work folder):
+configuration PASS for both; the configuration files identical,
+`~/.claude.json` changed only in Claude Code's cache-state keys, 2 new
+session files (each resume continued its own session); nothing written in
+either work folder; no process the drivers started was left; no Claude Code
+or Codex terminal session open (checked before the run).
 
 Not checked: the files the CLIs write by design for each session (Claude
 transcripts under `~/.claude/projects`, Codex rollouts under

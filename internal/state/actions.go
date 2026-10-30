@@ -22,7 +22,13 @@ type (
 		Installed []string
 		CLIs      []CLI // what detection found, for the startup screen
 	}
-	Confirm          struct{ Provider, Project string }
+	// Confirm is START SESSION; with Resume, Ctrl+R or a click on the last
+	// session's note: that session, the last of the project at
+	// ResumeProject, resumed (plan 69, design D4).
+	Confirm struct {
+		Provider, Project     string
+		Resume, ResumeProject string
+	}
 	ResetForm        struct{} // Ctrl+N on the startup screen: the form as it opened (plan 51, design D9)
 	ValidationFailed struct{ Field, Message string }
 	ValidationOK     struct{ Provider, ProviderName, Project, Branch string } // Project as validated
@@ -120,6 +126,10 @@ func (s *State) Do(a Action) []Command {
 			return nil
 		}
 		s.Startup.Provider, s.Startup.Project = a.Provider, a.Project
+		// A start, new or resumed, takes the last resume's failure away (plan
+		// 69, design D7).
+		s.Startup.Resume, s.Startup.ResumeProject = a.Resume, a.ResumeProject
+		s.Startup.ResumeFailure, s.Startup.ResumeGone = "", false
 		if !contains(s.Startup.Installed, a.Provider) {
 			s.Startup.Field, s.Startup.Message = "provider", "not installed"
 			return nil
@@ -129,6 +139,7 @@ func (s *State) Do(a Action) []Command {
 	case ResetForm:
 		if s.Startup.Phase == Asking || s.Startup.Phase == Detecting {
 			s.Startup.Provider, s.Startup.Project, s.Startup.Field, s.Startup.Message = "", "", "", ""
+			s.Startup.ResumeFailure = "" // a message too (plan 69, design D7)
 		}
 	case ValidationFailed:
 		if s.Startup.Phase == Validating {
@@ -136,6 +147,13 @@ func (s *State) Do(a Action) []Command {
 		}
 	case ValidationOK:
 		if s.Startup.Phase != Validating {
+			return nil
+		}
+		if s.Startup.Resume != "" && !SamePath(a.Project, s.Startup.ResumeProject) {
+			// The path validated is not the last session's project (plan 69,
+			// design D3): nothing resumes there.
+			s.Startup.Phase, s.Startup.Field = Asking, "project"
+			s.Startup.Message = "Not resumed: the last session is " + s.Startup.ResumeProject + "'s, not " + a.Project + "'s"
 			return nil
 		}
 		s.Context = Context{Provider: a.Provider, ProviderName: a.ProviderName, Project: a.Project, Branch: a.Branch}
@@ -246,8 +264,9 @@ func (s *State) Do(a Action) []Command {
 
 func (s *State) start() []Command {
 	s.Startup.Phase, s.Screen = Starting, ScreenDashboard
-	s.Session = SessionState{Phase: Spawning}
-	return []Command{{Kind: CmdStartSession}}
+	// A resume from the home screen names its session (plan 69, design D4).
+	s.Session = SessionState{Phase: Spawning, Resumed: s.Startup.Resume}
+	return []Command{{Kind: CmdStartSession, ID: s.Startup.Resume, Last: s.Startup.Resume != ""}}
 }
 
 func (s *State) quit(gitRunning bool) []Command {

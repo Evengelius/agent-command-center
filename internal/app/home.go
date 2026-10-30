@@ -285,6 +285,8 @@ func (m *Model) homeMouse(msg tea.MouseMsg) []tea.Cmd {
 		return m.openFolder()
 	case render.HomeItemStart:
 		return m.confirmStart()
+	case render.HomeItemResume:
+		return m.resumeLast() // as Ctrl+R (plan 69, design D4)
 	case render.HomeItemRow, render.HomeItemStar:
 		if i >= len(m.projectList) {
 			return nil

@@ -42,6 +42,9 @@ type wireCodex struct {
 	// did, {} then thread/settings/updated, or, with refuse, as P34x's
 	// Codex without the experimental API (plan 38).
 	models, refuse bool
+	// resumeErr, when set, is the error thread/resume is answered with, as
+	// Codex refuses a thread (plan 69; P69b).
+	resumeErr string
 }
 
 // wireModels are three of P34x's models with their levels.
@@ -67,7 +70,7 @@ func (w *wireCodex) Spawn(sp proc.Spec) (proc.Process, error) {
 			l := sc.Text()
 			w.mu.Lock()
 			w.lines = append(w.lines, l)
-			thread, auto, models, refuse := w.thread, w.auto, w.models, w.refuse
+			thread, auto, models, refuse, resumeErr := w.thread, w.auto, w.models, w.refuse, w.resumeErr
 			w.mu.Unlock()
 			var m struct {
 				ID     json.RawMessage `json:"id"`
@@ -102,6 +105,8 @@ func (w *wireCodex) Spawn(sp proc.Spec) (proc.Process, error) {
 				p.emit(`{"id":` + id + `,"result":{"userAgent":"fake"}}`)
 			case m.Method == "thread/start":
 				started(thread)
+			case m.Method == "thread/resume" && resumeErr != "":
+				p.emit(`{"id":` + id + `,"error":` + resumeErr + `}`)
 			case m.Method == "thread/resume":
 				started(m.Params.ThreadID)
 			case m.Method == "account/rateLimits/read":

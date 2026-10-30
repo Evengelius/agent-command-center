@@ -309,6 +309,21 @@ reset shown N/A.
 | Errors, retries | `error`, failed `turn/completed`; `willRetry` | counters from 0 once the stream is up; retries "N/A (none reported)" (CX-10 q9) |
 | A thinking phase (zone B, plan 22) | a `reasoning` item, which starts while the model works since every `turn/start` asks for reasoning summaries (plan 22, amendment 20; P22s), and its summary when Codex sends one, at its completion; the step's `thread/tokenUsage/updated` `last.reasoningOutputTokens` after it | while the model works on a step: the card "Model working · reasoning tokens reported when the step ends", then "Thinking · …" from the reasoning item's start, its bar indeterminate, no number; no streamed summary text, the heading kept for the details; the reasoning's own duration never reported, the item's span possibly holding the summary's making: "Thought for up to …", the step's time; until the usage comes, no count; a repeated update (Codex 0.145.0 on an interrupt) gives none; a phase whose turn or session ended with no count takes none later, so a resume's replayed usage counts nothing (plan 22, correction C2); a reasoning item with no step open starts at its turn's last usage update, "up to" like a step (C5) |
 
+**After a resume from the home screen** (plan 69, design D9): each value
+as its CLI reports it, never kept in the record nor added up across
+processes. Codex replays the thread's token usage 2 ms after
+`thread/resume`'s answer, the same with or without its turns (P69b), so
+CONTEXT and TOKENS come at once; after a turn its totals hold the history
+(32,897 tokens, 16,430 before and 16,467 for the turn). Claude Code's
+values come with the first new turn's result, the history included (P69a:
+85,315 tokens, 40,396 before; 0.0063 USD after 0.0048); the handshake's
+usage read carries the restored totals in its result, which the dashboard
+keeps out of the session's figures (P24u). Until a value comes, its reason
+says so as a resumed session has it: a "yet" reads "since the resume", and
+Codex's "no model call yet" reads "no update since the resume", which is
+also what a Codex that did not replay its usage would show; a new
+session's reasons are unchanged.
+
 **Refresh policy** (TEL "Open points"): quota and context are read on
 events, plus one read at session start (Codex `account/rateLimits/read`) and
 one after each turn (Claude Code `get_context_usage`, which costs no model
@@ -420,10 +435,27 @@ Without losing the session (B3.4):
   `thread/resume` returns the turns ([T] README:321-377, not checked: the
   dashboard does not depend on it); the record is still what is shown, so
   both CLIs behave the same.
-- **Across dashboard runs**: not in the MVP. The record lives in memory
-  (ASM-11) and no history file is written; reopening an older session is
-  not built; plan 15's recent projects keep paths only (ASM-24). The CLIs'
-  own `--resume` in another terminal remains (INT 6).
+- **Across dashboard runs** (plan 69, amendment 71): each project's entry
+  in `projects.json` keeps, per agent CLI, the last session the dashboard
+  ran there, its ID and when the owner's last turn there ended (ASM-24). The
+  home screen offers the chosen CLI's for the chosen project, and Ctrl+R or
+  a click on its note starts the CLI on it: Claude Code `--resume <id>`
+  with a start's flags, Codex `thread/resume` with `excludeTurns: true`,
+  an answer of the same size whatever the thread's length (P69b); the crash
+  resume's request is unchanged. Zone B opens with a dashboard note once
+  the CLI names the session, its earlier messages not drawn (the record
+  lives in memory, ASM-11; Codex's paged history is a **[Nice to have]**);
+  another ID the CLI names is said as such and becomes the record. A
+  refused resume starts nothing, never a new session in its place. Refused
+  for good, the CLI having no such session (Claude Code's "No conversation
+  found with session ID: <id>" before the handshake's answer, then exit 1,
+  P69a; Codex's -32600 "no rollout found for thread id <id>" or "invalid
+  session id: …", P69b; the CLIs' words, undocumented, matched as recorded),
+  the record is cleared while it still names that session; any other
+  failure (the CLI not starting, no handshake, an exit or a refusal in other
+  words, an authentication or connection error) keeps it. Zone B's card and
+  then the home screen say which. A mock run records nothing; the CLIs' own
+  `--resume` in another terminal remains (INT 6).
 - **If the dashboard itself fails** (killed, crashed or panicking): the
   draft is on disk (ASM-23) and offered back on the next start in the same
   project, its images with it, pasted ones included; a kill loses at most
@@ -700,6 +732,7 @@ are the numbered questions in section 10 of
 | Memory over a long session (unbounded queue and record) | settled by test 11 (`TestLongSession`) |
 | Whether a run changed a setting inside `~/.claude.json` or `known_marketplaces.json`, when the CLI also rewrote its own state there | settled for `~/.claude.json` by the key-level diff the owner approved (plan 5, F4; see [The check](#the-check)): the runs of plans 13 and 14 changed only Claude Code's cache-state keys; `known_marketplaces.json` stays hash-only, and a change there makes a run NOT-VERIFIED, never PASS: it was identical in those runs |
 | The `plugins` field of `system/init` (JEV detection): observed in P1, its documentation not checked | settled by the recordings: every `system/init` in the nine Claude Code recordings, P1 to P14a, carries it; the adapter reads its names (`Started.Plugins`) |
+| Whether a session resumed from the home screen, after the dashboard quit and started again, has its earlier context, and what each CLI says when it has no such session (plan 69) | settled by P69a and P69b and by plan 69's live run (69.11, 2026-10-29): Claude Code 2.1.303 on Haiku and Codex 0.163.0 on its configured model each answered, after Ctrl+R on a new dashboard's home screen, the code word told in the session before the quit, the same session or thread ID recorded before and after; the refusals' words are those P69a and P69b recorded, undocumented and matched as such ([Resumption](#resumption)) |
 
 ## Test plan
 

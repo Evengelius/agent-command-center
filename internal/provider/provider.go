@@ -42,6 +42,11 @@ type SessionContext struct {
 	Mock        bool
 	StartedAt   time.Time
 	ResumeID    string // a CLI session id to resume, "" for a new session
+	// ResumeLast says ResumeID is the project's last session, resumed from
+	// the home screen in a new run (plan 69, design D5), not after a crash:
+	// Codex resumes it without its turns, and each adapter reports the CLI's
+	// refusal of it as for good (event.Problem.NoSession).
+	ResumeLast bool
 }
 
 // Message is the owner's message: the text as typed and the images attached

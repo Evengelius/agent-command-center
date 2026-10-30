@@ -41,6 +41,8 @@ type UI struct {
 	ProjectSel      int           // the selected row
 	ProjectsProblem string        // the list cannot be read or written
 	FolderProblem   string        // why the folder dialog failed (plan 52, design D3)
+	LastSession     string        // the note offering the chosen CLI's last session there, "" with none (plan 69, design D4)
+	NotResumed      string        // the last resume's failure there, "" with none (plan 69, design D7)
 	Worktrees       WorktreesView // the Worktrees view, over either screen while Open (plan 16)
 	// NerdIcons is true where the Explorer draws Cascadia Mono NF's icons,
 	// false where its own glyphs (plan 55, design D3).

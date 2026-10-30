@@ -917,8 +917,8 @@ func TestReplayNotes(t *testing.T) {
 		t.Fatal(err)
 	}
 	names = slices.DeleteFunc(names, func(n string) bool { return strings.Contains(n, "-codex-exec") })
-	if len(names) != len(appServer)+1 { // P39x has its own test
-		t.Fatalf("recordings %v, want the %d of appServer and P39x", names, len(appServer))
+	if len(names) != len(appServer)+2 { // P39x and P69b have their own tests
+		t.Fatalf("recordings %v, want the %d of appServer, P39x and P69b", names, len(appServer))
 	}
 	for _, path := range names {
 		_, per := replay(t, filepath.Base(path))

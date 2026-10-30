@@ -1,0 +1,40 @@
+ ⊞ AGENT COMMAND CENTER                                                               │  v0.1.0  │  Windows  │  ● Ready
+
+ ╭────────────────────────────────────────────────────╮ ╭─────────────────────────────────────────────────────────────╮
+ │ › NEW SESSION  ─────────────────────────────────── │ │ › PROJECTS  ─────────────────────────────────────────────── │
+ │                                                    │ │                                                             │
+ │  1.  Agent CLI                                     │ │  ◷ RECENT PROJECTS                                          │
+ │ ▏ ◉  Claude Code (2.1.300)                       ▕ │ │  ☆  agent-command-center      …gent-command-center     now  │
+ │                                                    │ │                                                             │
+ │   ○  OpenAI Codex not installed: adapter not       │ │  ☆  billing-service           …ets\billing-service  8m ago  │
+ │      built yet                                     │ │ ─────────────────────────────────────────────────────────── │
+ │                                                    │ │  ☆  demo-project              C:\work\demo-project  8m ago  │
+ │  2.  Project directory                             │ │ ─────────────────────────────────────────────────────────── │
+ │ ╭────────────────────────────────────────────┬───╮ │ │  ☆  a-project-with-a-very-l…  …long-directory-name 58m ago  │
+ │ │ C:\work\demo-project                       │ 🗀 │ │ │ ─────────────────────────────────────────────────────────── │
+ │ ╰────────────────────────────────────────────┴───╯ │ │  ☆  docs                      …avadev\projets\docs  3h ago  │
+ │                                                    │ │ ─────────────────────────────────────────────────────────── │
+ │  → Claude Code's last session here: 3m ago ·       │ │  ☆  infra                     …vadev\projets\infra  7h ago  │
+ │    Ctrl+R continues it                             │ │                                                             │
+ │                                                    │ │                                                             │
+ │                  START SESSION →                   │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ │                                                    │ │                                                             │
+ ╰────────────────────────────────────────────────────╯ ╰─────────────────────────────────────────────────────────────╯
+
+ › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit

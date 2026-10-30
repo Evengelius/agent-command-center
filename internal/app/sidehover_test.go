@@ -381,24 +381,15 @@ func TestSideDraw(t *testing.T) {
 			t.Errorf("120x41 again: %d drawings asked, %q", len(h.m.kicks)-n, trunc(raws))
 		}
 		n = len(h.m.kicks)
-		// Under 100 columns: the places written over, no tile drawn.
+		// Under 100 columns: no tile drawn, and nothing written where the
+		// tiles were: their places lie past the 99 columns, gone with them,
+		// and a write there wraps onto the next row's first cells (P69-M02,
+		// plan 69: until then this step had them written over there).
 		h.send(tea.WindowSizeMsg{Width: 99, Height: 41})
 		h.frame()
 		raws := last()
-		if len(raws) != 1 || h.m.screen.Tiles[0].Shown || h.m.screen.Tiles[1].Shown || slices.Contains(drawnItems(h.m), -6) || slices.Contains(drawnItems(h.m), -7) {
+		if len(raws) != 0 || h.m.screen.Tiles[0].Shown || h.m.screen.Tiles[1].Shown || slices.Contains(drawnItems(h.m), -6) || slices.Contains(drawnItems(h.m), -7) {
 			t.Fatalf("99 columns: %q, tiles %+v, images left %+v", trunc(raws), h.m.screen.Tiles, h.m.drawn)
-		}
-		for _, p := range [][2]int{{113, 3}, {113, 5}, {113, 7}, {113, 9}} {
-			if at := fmt.Sprintf("%c[%d;%dH%s", 0x1b, p[1]+1, p[0]+1, h.m.screen.Region(p[0], p[1], render.SideTileCells)); !strings.Contains(raws[0], at) {
-				t.Errorf("99 columns: the tile's row at %d,%d not written over", p[0], p[1])
-			}
-		}
-		for _, tl := range []int{render.SideExplorer, render.SideSource} {
-			for _, lk := range []render.SideLook{render.SideInactive, render.SideHover, render.SideSelected, render.SideSelectedHover} {
-				if strings.Contains(raws[0], render.SideSixel(render.SideTileLook{Tile: tl, Look: lk})) {
-					t.Errorf("99 columns: tile %d drawn in look %d", tl, lk)
-				}
-			}
 		}
 		// Back at 120 columns: drawn again, the hover forgotten.
 		h.send(tea.WindowSizeMsg{Width: 120, Height: 41})

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -114,6 +115,97 @@ func TestRecordProject(t *testing.T) {
 	}
 	if list = p.Forget(list, fav); count(p, list, fav) != 0 || len(list) != RecentKept {
 		t.Errorf("Forget: %d entries, %d for %s", len(list), count(p, list, fav), fav)
+	}
+}
+
+// TestProjectSessions is criterion 69.2 of plan 69 for the store: each
+// agent CLI's last session in a project, the latest replacing the one
+// before; kept by Record and by a star, gone with its project; never added
+// for a project the list no longer has; cleared only while it names the
+// refused session; written in version 1 and read back, and a file without
+// it read as before; one without an ID never offered.
+func TestProjectSessions(t *testing.T) {
+	var p Projects
+	list := p.Record(nil, `C:\work\a`, t0)
+	list = p.Record(list, `C:\work\b`, t0.Add(time.Minute))
+	given := slices.Clone(list)
+	list = p.RecordSession(list, `C:\work\a`, "claude-code", "s1", t0.Add(2*time.Minute))
+	list = p.RecordSession(list, `C:\work\a`, "codex", "th1", t0.Add(3*time.Minute))
+	list = p.RecordSession(list, `C:\work\a`, "claude-code", "s2", t0.Add(4*time.Minute))
+	for _, e := range given {
+		if e.Sessions != nil {
+			t.Errorf("RecordSession changed the list it was given: %v", given)
+		}
+	}
+	want := map[string]Session{"claude-code": {ID: "s2", Ended: t0.Add(4 * time.Minute)}, "codex": {ID: "th1", Ended: t0.Add(3 * time.Minute)}}
+	if e, s, ok := p.LastSession(list, `C:\work\a`, "claude-code"); !ok || s != want["claude-code"] || !reflect.DeepEqual(e.Sessions, want) {
+		t.Fatalf("recorded: entry %v, session %v, %t", e, s, ok)
+	}
+	if _, _, ok := p.LastSession(list, `C:\work\b`, "claude-code"); ok {
+		t.Error("a project no session was recorded in has one")
+	}
+	if got := p.RecordSession(list, `C:\work\gone`, "codex", "th9", t0); len(got) != 2 || count(p, got, `C:\work\gone`) != 0 {
+		t.Errorf("a project the list does not have was added: %v", got)
+	}
+
+	list = p.Record(list, `C:\work\a\`, t0.Add(time.Hour))
+	list = p.Star(list, `C:\work\a`, true)
+	if e, _, ok := p.LastSession(list, `C:\work\a`, "codex"); !ok || !reflect.DeepEqual(e.Sessions, want) {
+		t.Errorf("after Record and a star: %v", e)
+	}
+	if runtime.GOOS == "windows" {
+		if _, s, ok := p.LastSession(list, `c:/WORK/A`, "claude-code"); !ok || s.ID != "s2" {
+			t.Errorf("a path differing in case and separators: %v, %t", s, ok)
+		}
+	}
+
+	list = p.ForgetSession(list, `C:\work\a`, "claude-code", "s1") // an older session: the newer one stays
+	if _, s, ok := p.LastSession(list, `C:\work\a`, "claude-code"); !ok || s.ID != "s2" {
+		t.Errorf("forgetting an older session dropped the newer one: %v, %t", s, ok)
+	}
+	list = p.ForgetSession(list, `C:\work\a`, "claude-code", "s2")
+	if _, s, ok := p.LastSession(list, `C:\work\a`, "claude-code"); ok {
+		t.Errorf("forgotten, still there: %v", s)
+	}
+	if _, s, ok := p.LastSession(list, `C:\work\a`, "codex"); !ok || s.ID != "th1" {
+		t.Errorf("the other CLI's session went too: %v, %t", s, ok)
+	}
+
+	ps := Projects{Dir: t.TempDir()}
+	if err := ps.Save(list); err != nil {
+		t.Fatal(err)
+	}
+	got, err := ps.Load()
+	if err != nil || !reflect.DeepEqual(got, list) {
+		t.Fatalf("Save then Load: got %v, %v; want %v", got, err, list)
+	}
+	f, _ := ps.File()
+	if b, _ := os.ReadFile(f); !strings.Contains(string(b), `"version": 1,`) || !strings.Contains(string(b), `"sessions": {`) || !strings.Contains(string(b), `"id": "th1"`) {
+		t.Errorf("the file:\n%s", b)
+	}
+	older := `{"version":1,"projects":[{"path":"C:\\work\\a","used":"2026-10-18T12:00:00Z","favourite":true}]}`
+	if err := os.WriteFile(f, []byte(older), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := ps.Load(); err != nil || len(got) != 1 || got[0].Path != `C:\work\a` || !got[0].Favourite || got[0].Sessions != nil {
+		t.Errorf("an older build's file: %v, %v", got, err)
+	}
+	// A session without an ID, as an edited file could hold: nothing to resume.
+	blank := `{"version":1,"projects":[{"path":"C:\\work\\a","used":"2026-10-18T12:00:00Z","sessions":{"codex":{"id":"","ended":"2026-10-18T12:00:00Z"}}}]}`
+	if err := os.WriteFile(f, []byte(blank), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := ps.Load(); err != nil || len(got) != 1 {
+		t.Errorf("a session without an ID: %v, %v", got, err)
+	} else if _, s, ok := p.LastSession(got, `C:\work\a`, "codex"); ok {
+		t.Errorf("a session without an ID is offered: %+v", s)
+	}
+
+	if list = p.Forget(list, `C:\work\a`); count(p, list, `C:\work\a`) != 0 {
+		t.Fatalf("Forget: %v", list)
+	}
+	if _, _, ok := p.LastSession(list, `C:\work\a`, "codex"); ok {
+		t.Error("a forgotten project's session is still found")
 	}
 }
 

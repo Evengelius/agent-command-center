@@ -7,6 +7,7 @@ package claude
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -58,7 +59,21 @@ type Mapper struct {
 	answering   map[string]bool
 	inForce     event.Settings
 	effortVar   string
+	// resumeAsked is the session a resume from the home screen asked for,
+	// until the handshake's answer (plan 69, design D7): Claude Code refuses
+	// an ID it has no session for before it answers initialize (P69a).
+	resumeAsked string
 }
+
+// noConversation begins Claude Code's refusal of a --resume it has no
+// session for, the ID after it, in the result's errors and on stderr (P69a,
+// Claude Code 2.1.303). The words are undocumented, matched as 2.1.303
+// writes them; others are another failure (plan 69, design D7).
+const noConversation = "No conversation found with session ID: "
+
+// ResumeAsked tells the mapper the session asked for is the project's last,
+// resumed from the home screen (plan 69, design D7).
+func (m *Mapper) ResumeAsked(id string) { m.resumeAsked = id }
 
 // NewMapper returns an empty mapper.
 func NewMapper() *Mapper {
@@ -904,6 +919,12 @@ func (m *Mapper) result(raw []byte) []event.Event {
 		} `json:"modelUsage"`
 	}
 	_ = json.Unmarshal(raw, &r)
+	if id := m.resumeAsked; id != "" && r.IsError && slices.Contains(r.Errors, noConversation+id) {
+		// Claude Code has no such session: the home screen's --resume refused
+		// before the handshake's answer, and the CLI exits (P69a).
+		m.resumeAsked = ""
+		return []event.Event{m.ev(event.Error, event.Observed, "", raw, event.Problem{Message: "Claude Code: " + noConversation + id, NoSession: true})}
+	}
 	if m.usageReads > 0 {
 		// The result of the dashboard's own usage read: no turn ended, and
 		// its figures (no model call: 0 ms, 0 tokens, no cost) are not the
@@ -1038,6 +1059,7 @@ func (m *Mapper) controlResponse(l line, raw []byte) []event.Event {
 	}
 	switch what {
 	case "initialize":
+		m.resumeAsked = "" // answered: a later result is a turn's (plan 69)
 		evs := []event.Event{m.ev(event.SessionReady, event.Observed, "", raw, event.Ready{Detail: "initialize response"})}
 		if c := catalogue(resp.Response); len(c) > 0 {
 			// The session's models (plan 34): the Agent SDK's ModelInfo.

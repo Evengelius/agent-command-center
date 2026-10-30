@@ -252,6 +252,13 @@ type run struct {
 // start runs the fake in mode, replaying files, with a stdin log.
 func start(t *testing.T, mode string, p *Provider, resume string, files ...string) (*run, string) {
 	t.Helper()
+	return startCtx(t, mode, p, provider.SessionContext{ResumeID: resume}, files...)
+}
+
+// startCtx is start with a session context, its executable and project
+// filled in (plan 69: the home screen's resume).
+func startCtx(t *testing.T, mode string, p *Provider, sc provider.SessionContext, files ...string) (*run, string) {
+	t.Helper()
 	t.Setenv("ACC_FAKE", mode)
 	t.Setenv("ACC_FAKE_FILE", strings.Join(files, ";"))
 	t.Setenv("ACC_FAKE_MODELS", probe("p6-codex-model-list.json"))
@@ -268,7 +275,8 @@ func start(t *testing.T, mode string, p *Provider, resume string, files ...strin
 	st := state.New()
 	st.Context = state.Context{Provider: ProviderID, Project: dir}
 	st.Startup.Phase = state.Starting
-	sess, err := p.Start(context.Background(), provider.SessionContext{Executable: exe, ProjectPath: dir, ResumeID: resume})
+	sc.Executable, sc.ProjectPath = exe, dir
+	sess, err := p.Start(context.Background(), sc)
 	if err != nil {
 		t.Fatal(err)
 	}

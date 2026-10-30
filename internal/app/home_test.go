@@ -10,6 +10,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/Evengelius/agent-command-center/internal/input"
 	"github.com/Evengelius/agent-command-center/internal/render"
@@ -402,6 +403,47 @@ func TestHomeCtrlN(t *testing.T) {
 	})
 }
 
+// TestHomeFailureFollowsField is the owner's finding P69-M01 (plan 69): the
+// project's validation failure shows while the field holds the text that
+// failed. A project chosen in the list, or the field edited, takes it away,
+// the chosen project's last session offered as plan 69 offers it; the
+// failed text back in the field shows it again, until a start validates
+// anew.
+func TestHomeFailureFollowsField(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		dir := t.TempDir()
+		h := newHarness(t, Options{Providers: bothCLIs, Cwd: dir, Projects: withSession(t, dir, "claude-code", "s-kept", testNow)})
+		h.settle()
+		h.send(tea.WindowSizeMsg{Width: 120, Height: 40})
+		const failed, offer = "✗ Does not exist:", "Claude Code's last session here"
+		shown := func(what string, fail, last bool) {
+			t.Helper()
+			if f := h.frame(); says(f, failed) != fail || says(f, offer) != last {
+				t.Errorf("%s: field %q, failure shown %v (want %v), offer shown %v (want %v)", what, h.m.path.Text(), says(f, failed), fail, says(f, offer), last)
+			}
+		}
+		h.send(key(tea.KeyTab, 0)) // the field
+		for _, k := range typedText(`\missing`) {
+			h.send(k)
+		}
+		h.send(key(tea.KeyEnter, 0))
+		shown("START SESSION on a missing folder", true, false)
+		x, y := homeCell(t, h, render.HomeItemRow)
+		h.send(click(x, y)) // the project, from the list
+		if h.m.path.Text() != dir {
+			t.Fatalf("the list's project: field %q, want %q", h.m.path.Text(), dir)
+		}
+		shown("the list's project", false, true)
+		h.send(key(tea.KeyTab, tea.ModShift)) // the field again
+		for _, k := range typedText(`\missing`) {
+			h.send(k)
+		}
+		shown("the failed text typed back", true, false)
+		h.send(key(tea.KeyBackspace, 0))
+		shown("the field edited", false, false)
+	})
+}
+
 // TestHomeSettle is plan 51's design D13 after a resize: the picture waits
 // for the size to settle before it is drawn whole, homeQuiet after the last
 // report; the second drawing writes the first's sequence again.
@@ -564,4 +606,94 @@ func TestHomeSettle(t *testing.T) {
 			t.Error("the second drawing: not the first's sequence")
 		}
 	})
+}
+
+// TestHomeShrink is the owner's finding P69-M02 (plan 69): the picture drawn
+// at 208x59, then Windows Terminal's font zoom, which reports 188x53. The
+// cells of the images drawn at the old size are written again only where
+// the screen still has them: a write past its right edge wraps, and on its
+// last row scrolls the screen, which took the project field's text under
+// the picture. The field's text is written where the new picture leaves
+// its cells.
+func TestHomeShrink(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		if _, err := input.Glyph('H', 20, false); err != nil {
+			t.Skipf("GDI: %v", err)
+		}
+		h := projectsRig(demoProjects(5), -1)(t)
+		h.send(tea.WindowSizeMsg{Width: 208, Height: 59})
+		h.send(PrimaryDeviceAttributesEvent{61, 4, 6, 7, 14})
+		screenNow(h)
+		h.m.resized = testNow.Add(-homeQuiet)
+		h.m.drawThumbs(thumbDrawMsg{gen: h.m.thumbGen})
+		if h.m.home.pixels == nil || len(h.m.drawn) == 0 {
+			t.Fatal("208x59: the picture not drawn")
+		}
+		h.send(tea.WindowSizeMsg{Width: 188, Height: 53})
+		screenNow(h)
+		h.m.resized = testNow.Add(-homeQuiet)
+		seq := h.m.thumbSequence()
+		if h.m.home.whole == "" || !strings.Contains(seq, h.m.home.whole) {
+			t.Fatal("188x53: the picture not drawn whole")
+		}
+		for _, w := range writesOutside(seq, 188, 53) {
+			t.Error("188x53: " + w)
+		}
+		// Nor short of the screen: the old picture covered every cell but
+		// the field's text, so each of the 53 rows is written over from its
+		// first column (an image's own move is followed by its ESC P).
+		for y := 1; y <= 53; y++ {
+			at := fmt.Sprintf("\x1b[%d;1H", y)
+			if !strings.Contains(seq, at+"\x1b[") && !strings.Contains(seq, at+" ") {
+				t.Errorf("188x53: row %d of the old picture not written over from its first column", y)
+			}
+		}
+		l := h.m.screen.Home.Look
+		if row := h.m.screen.Row(l.FieldRow); !strings.Contains(row, h.m.path.Text()) {
+			t.Errorf("188x53: the field's row %d lacks the path: %q", l.FieldRow, plainText(row))
+		}
+	})
+}
+
+// writesOutside lists seq's writes that leave a screen w cells by h rows:
+// a cursor move off it, or text past its right edge. Each image lies where
+// the move before it puts it.
+func writesOutside(seq string, w, h int) []string {
+	var out []string
+	y, x, col, over := 1, 1, 0, false // the cell moved to, the cells written since, past the edge
+	for i := 0; i < len(seq); {
+		if strings.HasPrefix(seq[i:], "\x1bP") {
+			e := strings.Index(seq[i:], "\x1b\\")
+			if e < 0 {
+				return append(out, "an image with no end")
+			}
+			i += e + 2
+			continue
+		}
+		if seq[i] == 0x1b {
+			m := escapeSeq.FindString(seq[i:])
+			if m == "" {
+				return append(out, fmt.Sprintf("a sequence not understood at byte %d", i))
+			}
+			var row, c int
+			if n, err := fmt.Sscanf(m, "\x1b[%d;%dH", &row, &c); n == 2 && err == nil && strings.HasSuffix(m, "H") {
+				y, x, col, over = row, c, 0, false
+				if row > h || c > w {
+					out = append(out, fmt.Sprintf("a move to row %d, column %d", row, c))
+				}
+			}
+			i += len(m)
+			continue
+		}
+		e := strings.IndexByte(seq[i:], 0x1b)
+		if e < 0 {
+			e = len(seq) - i
+		}
+		if col += lipgloss.Width(seq[i : i+e]); x-1+col > w && !over {
+			out = append(out, fmt.Sprintf("text past column %d on row %d from column %d", w, y, x))
+			over = true // once a move
+		}
+		i += e
+	}
+	return out
 }

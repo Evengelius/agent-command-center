@@ -196,6 +196,12 @@ func (s *State) apply(ev event.Event) []Command {
 		// A refused request the session works without never ends the
 		// handshake (plan 46, design D2); any other error does.
 		if ev.Kind == event.Error && s.Session.Phase == Handshaking && !p.Optional {
+			if p.NoSession && s.Session.Resumed != "" && s.Startup.Phase == Starting {
+				// The CLI has no such session: the home screen's resume is
+				// refused for good, and no longer offered (plan 69, design D7).
+				s.Startup.ResumeGone = true
+				return append(s.crash(ev, p.Message, true), Command{Kind: CmdForgetSession, ID: s.Session.Resumed})
+			}
 			return s.crash(ev, "handshake failed: "+p.Message, true)
 		}
 		s.Errors = appendBounded(s.Errors, ErrorEntry{Seq: ev.Seq, At: ev.At, Agent: ev.Agent, Message: p.Message, Retry: ev.Kind == event.Retry}, MaxErrors)
@@ -274,6 +280,11 @@ func (s *State) ready(ev event.Event) []Command {
 }
 
 func (s *State) started(ev event.Event, p event.Started) []Command {
+	if s.Session.Resumed != "" && s.Session.ID == "" {
+		// The CLI names the session it resumed: zone B says so, or that it
+		// names another (plan 69, design D6).
+		s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "dashboard", Text: s.resumedNote(p.SessionID), At: ev.At, Stage: s.stage()})
+	}
 	s.Session.ID = p.SessionID
 	s.Session.Model, s.Session.Cwd, s.Session.PermissionMode = p.Model, p.Cwd, p.PermissionMode
 	s.Session.Version, s.Session.Plugins = p.Version, p.Plugins
@@ -296,6 +307,30 @@ func (s *State) started(ev event.Event, p event.Started) []Command {
 		return s.crash(ev, "working directory mismatch: the CLI reports "+p.Cwd+", the chosen project is "+s.Context.Project, true)
 	}
 	return nil
+}
+
+// resumedNote is zone B's note once the CLI names the session a resume from
+// the home screen asked for (plan 69, design D6): it resumed that session,
+// whose earlier messages zone B does not draw (design D1), or it names
+// another.
+func (s *State) resumedNote(id string) string {
+	name, what, earlier := s.Context.ProviderName, "session", "messages"
+	if s.CLI() == "codex" {
+		what, earlier = "thread", "turns"
+	}
+	if id != s.Session.Resumed {
+		return name + " reports " + what + " " + ShortID(id) + ", not " + ShortID(s.Session.Resumed) + ": its earlier context may not be there"
+	}
+	return "Resumed " + name + " " + what + " " + ShortID(id) + " · " + name + " has its earlier context; its earlier " + earlier + " are not shown here"
+}
+
+// ShortID is a session or thread ID as zone B names it, its first eight
+// characters.
+func ShortID(id string) string {
+	if len(id) > 8 {
+		return id[:8]
+	}
+	return id
 }
 
 // SamePath compares two Windows paths without touching the disk: cleaned,
@@ -354,6 +389,9 @@ func (s *State) crash(ev event.Event, reason string, close bool) []Command {
 	s.Errors = appendBounded(s.Errors, ErrorEntry{Seq: ev.Seq, At: ev.At, Message: reason}, MaxErrors)
 	if s.Startup.Phase == Starting {
 		s.Startup.Phase, s.Startup.Failure = StartFailed, reason
+		if s.Session.Resumed != "" {
+			s.Startup.ResumeFailure = reason // the home screen says it once back (plan 69, design D7)
+		}
 	}
 	var cmds []Command
 	if s.Turn.Phase == Submitted && s.Turn.pending() {
@@ -904,8 +942,14 @@ func (s *State) turnEnd(ev event.Event, p event.TurnEnd) []Command {
 			t.Status, t.Origin, t.EndedAt = ToolUnfinished, event.Inferred, ev.At
 		}
 	}
+	cmds := []Command{{Kind: CmdRefresh}}
+	if !s.Context.Mock && !s.Turn.ByCLI && s.Session.ID != "" {
+		// The owner's turn ended: the session is the project's last for its
+		// CLI, resumable from the home screen (plan 69, design D2).
+		cmds = append(cmds, Command{Kind: CmdRecordSession, ID: s.Session.ID, At: ev.At})
+	}
 	// The stage is still open: syncStage closes it after (plan 65, design D4).
-	return append([]Command{{Kind: CmdRefresh}}, s.reviewEnd()...)
+	return append(cmds, s.reviewEnd()...)
 }
 
 // expireFor expires the pending approvals of one agent key ("" is the

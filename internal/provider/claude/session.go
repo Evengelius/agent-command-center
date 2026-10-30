@@ -99,6 +99,9 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext, env []
 	}
 	s := &Session{m: NewMapper(), inputs: map[string]pendingReq{}}
 	s.m.SetEffortVar(envValue(env, EffortVar))
+	if sc.ResumeLast && sc.ResumeID != "" {
+		s.m.ResumeAsked(sc.ResumeID) // its refusal for want of the session is for good (plan 69, design D7)
+	}
 	s.cli = pipe.New(pipe.Config{Name: "Claude Code", Provider: ProviderID, Step: p.CloseStep, Now: p.Now, Mu: &s.mu, Line: s.line}, pr)
 	s.cli.Run(ctx, append([]string{sc.Executable}, argv...), sc.ProjectPath)
 	if err := s.control("initialize", `"hooks":null`); err != nil {

@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -18,16 +20,28 @@ import (
 const RecentKept = 10
 
 // Project is one entry of the startup screen's project list (plan 15): a
-// validated project path, when a session last started in it, and whether
-// the owner starred it.
+// validated project path, when a session last started in it, whether the
+// owner starred it, and the last session each agent CLI ran in it.
 type Project struct {
 	Path      string    `json:"path"`
 	Used      time.Time `json:"used"`
 	Favourite bool      `json:"favourite,omitempty"`
+	// Sessions are the last session the dashboard ran in the project with
+	// each agent CLI, by provider id (plan 69, design D2): an optional field,
+	// which an older build reads past (and drops when it writes the list).
+	Sessions map[string]Session `json:"sessions,omitempty"`
+}
+
+// Session is a project's last session with one agent CLI (plan 69, design
+// D2): the ID the CLI reported for it and when its last turn ended.
+type Session struct {
+	ID    string    `json:"id"`
+	Ended time.Time `json:"ended"`
 }
 
 // Projects keeps the project list in projects.json, beside the drafts
-// (plan 15). It holds paths and times only, no conversation data.
+// (plan 15). It holds paths, times and session IDs only, no conversation
+// data (ASM-24).
 type Projects struct {
 	Dir string // "" is the parent of DraftDir()
 }
@@ -134,19 +148,70 @@ func (p Projects) Update(change func([]Project) []Project) ([]Project, error) {
 }
 
 // Record puts path first with its start time, once: a path differing only
-// in case is the same project on Windows. Past RecentKept, the oldest
-// projects that are not favourites are dropped.
+// in case is the same project on Windows. Its star and its last sessions
+// stay. Past RecentKept, the oldest projects that are not favourites are
+// dropped.
 func (p Projects) Record(list []Project, path string, at time.Time) []Project {
 	path = filepath.Clean(path)
 	out := []Project{{Path: path, Used: at}}
 	for _, e := range list {
 		if p.Same(e.Path, path) {
-			out[0].Favourite = e.Favourite
+			out[0].Favourite, out[0].Sessions = e.Favourite, e.Sessions
 			continue
 		}
 		out = append(out, e)
 	}
 	return capped(out)
+}
+
+// RecordSession makes id the last session of agent CLI provider in the
+// project at path, its last turn ended at at (plan 69, design D2). A project
+// the list no longer has is not added back: it was dropped or forgotten,
+// and its sessions with it.
+func (p Projects) RecordSession(list []Project, path, provider, id string, at time.Time) []Project {
+	out := slices.Clone(list)
+	for i, e := range out {
+		if p.Same(e.Path, path) {
+			s := maps.Clone(e.Sessions)
+			if s == nil {
+				s = map[string]Session{}
+			}
+			s[provider] = Session{ID: id, Ended: at}
+			out[i].Sessions = s
+		}
+	}
+	return out
+}
+
+// ForgetSession drops provider's last session in the project at path while
+// it is still id (plan 69, design D7): the CLI has no such session. A newer
+// one another dashboard recorded stays.
+func (p Projects) ForgetSession(list []Project, path, provider, id string) []Project {
+	out := slices.Clone(list)
+	for i, e := range out {
+		if s, ok := e.Sessions[provider]; ok && s.ID == id && p.Same(e.Path, path) {
+			s := maps.Clone(e.Sessions)
+			delete(s, provider)
+			if len(s) == 0 {
+				s = nil
+			}
+			out[i].Sessions = s
+		}
+	}
+	return out
+}
+
+// LastSession is provider's last session in the project at path (plan 69,
+// design D3): the entry that is the same project as path, as Same compares
+// them, its session, and whether it has one with an ID.
+func (p Projects) LastSession(list []Project, path, provider string) (Project, Session, bool) {
+	for _, e := range list {
+		if p.Same(e.Path, path) {
+			s, ok := e.Sessions[provider]
+			return e, s, ok && s.ID != ""
+		}
+	}
+	return Project{}, Session{}, false
 }
 
 // Star stars path, or unstars it. A directory starred before any session

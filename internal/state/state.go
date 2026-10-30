@@ -141,6 +141,14 @@ type StartupState struct {
 	Field     string // the field a validation message belongs to
 	Message   string
 	Failure   string // why the start failed
+	// Resume is the session a start from the home screen resumes, and
+	// ResumeProject the path of the project it is the last of, kept through
+	// validation; "" for a new session (plan 69, design D4). ResumeFailure is
+	// why the last resume failed and ResumeGone that its CLI has no such
+	// session (design D7): the home screen says so once back.
+	Resume, ResumeProject string
+	ResumeFailure         string
+	ResumeGone            bool
 }
 
 // SessionState is the session machine with what the CLI reported.
@@ -160,6 +168,9 @@ type SessionState struct {
 	Reason         string   // why it ended or crashed
 	StderrTail     []string // the last lines of stderr
 	Notice         string   // the last refusal shown to the owner
+	// Resumed is the session a start from the home screen asked the CLI to
+	// resume (plan 69, design D6); "" otherwise, the crash resume's too.
+	Resumed string
 	// ApprovalMode is the mode in force: ModeManual, ModeAuto or the CLI's own
 	// word; "" before the CLI reports, which reads as Manual, the mode the
 	// dashboard starts with. ApprovalRequested is a change asked for and not
@@ -600,6 +611,8 @@ const (
 	CmdModels        CommandKind = "models"         // ask for the model settings of Change (plan 34)
 	CmdTurnSnapshot  CommandKind = "turn-snapshot"  // take the project's snapshot for turn Turn's start or End (plan 65)
 	CmdTurnFiles     CommandKind = "turn-files"     // read the files between the trees From and To of turn Turn (plan 65)
+	CmdRecordSession CommandKind = "record-session" // session ID, its turn ended At, the project's last for its CLI (plan 69)
+	CmdForgetSession CommandKind = "forget-session" // the project's last session, ID, no longer offered: its CLI has none (plan 69)
 )
 
 // The approval modes (plan 12, item 2; plan 39, modes.go).
@@ -623,6 +636,10 @@ type Command struct {
 	Turn     int
 	End      bool
 	From, To string
+	// Last says a CmdStartSession's ID is the project's last session,
+	// resumed from the home screen, not after a crash (plan 69, design D4).
+	Last bool
+	At   time.Time // CmdRecordSession: when the turn ended (plan 69)
 }
 
 // Mode is the approval mode in force; Manual until the CLI reports another.

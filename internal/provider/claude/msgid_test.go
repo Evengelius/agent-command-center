@@ -98,9 +98,10 @@ func TestStreamEventsTakeTheMessageStartID(t *testing.T) {
 	// stream events all take their message_start's id too; then 1,399 in 14 of 15
 	// until amendment 20 added P22o, whose 36 do too; then 1,435 in 15 of 16
 	// until plan 24 added P24u, which has no stream event, nor has plan 34's
-	// P34c, nor plan 39's P39c.
-	if total != 1435 || files != 15 || len(names) != 19 {
-		t.Errorf("%d lines in %d of %d recordings, want 1435 in 15 of 19", total, files, len(names))
+	// P34c, nor plan 39's P39c; then 1,454 in 16 of 20 since plan 69 added
+	// P69a, whose 19, in two processes, do too.
+	if total != 1454 || files != 16 || len(names) != 20 {
+		t.Errorf("%d lines in %d of %d recordings, want 1454 in 16 of 20", total, files, len(names))
 	}
 }
 

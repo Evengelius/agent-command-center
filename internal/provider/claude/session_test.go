@@ -92,6 +92,18 @@ func fake(mode string) {
 		ready()
 	case "models": // the model settings as P34c and P34c3 showed them (plan 34)
 		fakeModels(next, out)
+	case "noconversation": // a --resume it has no session for, as P69a's: refused before the handshake's answer, then exit 1 (plan 69)
+		next() // initialize, never answered
+		id := ""
+		for i, a := range os.Args {
+			if a == "--resume" && i+1 < len(os.Args) {
+				id = os.Args[i+1]
+			}
+		}
+		fmt.Fprintln(os.Stderr, "No conversation found with session ID: "+id)
+		out(`{"type":"result","subtype":"error_during_execution","duration_ms":0,"duration_api_ms":0,"is_error":true,"num_turns":0,"stop_reason":null,"session_id":` + quote(id) +
+			`,"total_cost_usd":0,"usage":{},"modelUsage":{},"permission_denials":[],"errors":[` + quote("No conversation found with session ID: "+id) + `]}`)
+		os.Exit(1)
 	case "silent": // never answers the handshake
 	case "echo": // reads one user message, answers with an assistant message holding its content (CC-10 q13)
 		ready()
@@ -307,6 +319,13 @@ type run struct {
 
 func start(t *testing.T, mode string, p *Provider) (*run, string) {
 	t.Helper()
+	return startCtx(t, mode, p, provider.SessionContext{})
+}
+
+// startCtx is start with a session context, its executable and project
+// filled in (plan 69: a resume).
+func startCtx(t *testing.T, mode string, p *Provider, sc provider.SessionContext) (*run, string) {
+	t.Helper()
 	t.Setenv("ACC_FAKE", mode)
 	dir := t.TempDir()
 	if p == nil {
@@ -319,7 +338,8 @@ func start(t *testing.T, mode string, p *Provider) (*run, string) {
 	st := state.New()
 	st.Context = state.Context{Provider: ProviderID, Project: dir}
 	st.Startup.Phase = state.Starting
-	sess, err := p.Start(context.Background(), provider.SessionContext{Executable: exe, ProjectPath: dir})
+	sc.Executable, sc.ProjectPath = exe, dir
+	sess, err := p.Start(context.Background(), sc)
 	if err != nil {
 		t.Fatal(err)
 	}

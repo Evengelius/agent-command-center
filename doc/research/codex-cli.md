@@ -357,7 +357,7 @@ All from app-server unless stated. "N/A" means no supported source.
 | Plan, credits | `planType` ("plus" here), `credits {hasCredits, unlimited, balance}`, `rateLimitReachedType`, `rateLimitResetCredits` | [P:p6b] line 7; [T] `v2/account.rs:525-534,631-636` |
 | Model | `thread/start` response `model`, `reasoningEffort`; `model/rerouted` when the backend switches | [P:p6b] line 9; [T] README:1442 |
 | Context window usage | `thread/tokenUsage/updated.tokenUsage.last.totalTokens` / `modelContextWindow` (258400 in P6b) | [P:p6b] line 41; [T] `v2/thread.rs:1459-1522`. The TUI uses `last` and subtracts a 12 000-token baseline ([T] `codex-rs/protocol/src/protocol.rs:2215-2262`; `codex-rs/tui/src/status/card.rs:326-333`). Before the first turn: N/A (or `config/read` `model_context_window` if configured; unverified). |
-| Tokens | `thread/tokenUsage/updated` `total` and `last`: `totalTokens`, `inputTokens`, `cachedInputTokens`, `cacheWriteInputTokens`, `outputTokens`, `reasoningOutputTokens`; replayed on `thread/resume` | [P:p6b] line 41; [T] README:321 |
+| Tokens | `thread/tokenUsage/updated` `total` and `last`: `totalTokens`, `inputTokens`, `cachedInputTokens`, `cacheWriteInputTokens`, `outputTokens`, `reasoningOutputTokens`; replayed on `thread/resume` | [P:p6b] line 41; [T] README:321; [P:p69b] (the replay, with or without the turns) |
 | Account token activity | `account/usage/read` → `summary`, `dailyUsageBuckets` | [T] `common.rs:1056-1060`, `v2/account.rs:392-395`; not probed |
 | API-equivalent cost | **N/A — no supported source.** Codex reports no cost field. [D:pricing] gives *credits* per 1M tokens per model, not USD, and "API key" use is billed "based on API pricing" without prices on the page. Any USD estimate would need an external price table, kept separate from subscription usage and labelled as an estimate. | — |
 | Active agent count | derived: subagent threads whose last `agentsStates` status is `pendingInit`/`running`, or loaded threads with `thread/status/changed` `active` | [T] `v2/item.rs:1172-1189`; inferred, label as such |
@@ -507,15 +507,21 @@ Settled:
    effective sandbox is the one the response reports: `workspaceWrite` when
    asked on this machine (P12x-sandbox2), shown as it is reported.
 4. **Resume across processes.** A new app-server process, `thread/resume`
-   on P6b's thread: returned `turns`. Its usage replay is not recorded:
-   the 0.145.0 README documents `thread/tokenUsage/updated` sent
-   "immediately after the response" when the stored session has persisted
-   usage (line 321), and 0.163.0's source sends it, a fork included
+   on P6b's thread: returned `turns`. Its usage replay: the 0.145.0 README
+   documents `thread/tokenUsage/updated` sent "immediately after the
+   response" when the stored session has persisted usage (line 321), and
+   0.163.0's source sends it, a fork included
    (`request_processors/token_usage_replay.rs`, called from
    `thread_processor.rs` lines 4433, 4731 and 5699; tag `rust-v0.163.0`,
-   commit 83086188ae06), but no recording has one. Plan 1 had marked it
-   not probed (`plan1-evaluation.md`, criterion 7); plan 22's investigation
-   corrected this item (`doc/plan22-investigation.md`, section 1.2).
+   commit 83086188ae06). Plan 1 had marked it not probed
+   (`plan1-evaluation.md`, criterion 7); plan 22's investigation corrected
+   this item (`doc/plan22-investigation.md`, section 1.2). P69b (Codex
+   0.163.0, 2026-10-29) records it 2 ms after the answer, the thread's
+   totals the same with its turns as with `excludeTurns: true`, which
+   0.163.0's stable schema has; the full-history request draws a
+   `deprecationNotice` pointing to `excludeTurns`, and an unknown thread is
+   refused with -32600 "no rollout found for thread id <id>"
+   (`probes/README.md`, P69b).
    Live in plan 4: L3 recalled its code word after a resume, and L4 run 3
    resumed with Ctrl+R after a `taskkill` crash and answered "LANTERN-73"
    (`TestCodexCrashAndResume` replays it).

@@ -604,12 +604,13 @@ const (
 	noteChars = 70
 )
 
-// homeNoteLine is a line of the notes as drawn: its text, its kind, and
-// whether it goes on a note under its mark.
+// homeNoteLine is a line of the notes as drawn: its text, its kind,
+// whether it goes on a note under its mark, and its note's item.
 type homeNoteLine struct {
 	text string
 	kind byte
 	more bool
+	item int
 }
 
 // homeNoteLines are the notes wrapped in noteChars, each one's lines after
@@ -619,9 +620,9 @@ func homeNoteLines(notes []HomeNote) []homeNoteLine {
 	for _, n := range notes {
 		for i, t := range wrap(n.Text, noteChars-textWidth(n.Mark)) {
 			if i == 0 {
-				out = append(out, homeNoteLine{n.Mark + t, n.Kind, false})
+				out = append(out, homeNoteLine{n.Mark + t, n.Kind, false, n.Item})
 			} else {
-				out = append(out, homeNoteLine{strings.Repeat(" ", textWidth(n.Mark)) + t, n.Kind, true})
+				out = append(out, homeNoteLine{strings.Repeat(" ", textWidth(n.Mark)) + t, n.Kind, true, n.Item})
 			}
 		}
 	}
@@ -815,9 +816,9 @@ func homeListLines(n HomeNote) []homeNoteLine {
 	var out []homeNoteLine
 	for i, t := range wrap(n.Text, 76-textWidth(n.Mark)) {
 		if i == 0 {
-			out = append(out, homeNoteLine{n.Mark + t, n.Kind, false})
+			out = append(out, homeNoteLine{n.Mark + t, n.Kind, false, 0})
 		} else {
-			out = append(out, homeNoteLine{strings.Repeat(" ", textWidth(n.Mark)) + t, n.Kind, true})
+			out = append(out, homeNoteLine{strings.Repeat(" ", textWidth(n.Mark)) + t, n.Kind, true, 0})
 		}
 	}
 	return out

@@ -120,6 +120,10 @@ func (m *Model) startupKey(k tea.KeyPressMsg) []tea.Cmd {
 		// The system's folder dialog (plan 52), not while a start is
 		// validated.
 		return m.openFolder()
+	case "ctrl+r":
+		// The chosen CLI's last session in the chosen project, resumed;
+		// nothing without one (plan 69, design D4).
+		return m.resumeLast()
 	case "tab":
 		m.nextField(1)
 	case "shift+tab":

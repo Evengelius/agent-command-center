@@ -16,11 +16,24 @@ import (
 )
 
 // Record is one line of a recording. Dir is in, out, stderr, meta or exit; a
-// one-shot recording gives out records with TMs 0.
+// one-shot recording gives out records with TMs 0. Proc names the process a
+// line is of when the driver ran several in turn (P69a, P69b), "" otherwise.
 type Record struct {
-	TMs int64           `json:"t_ms"`
-	Dir string          `json:"dir"`
-	Msg json.RawMessage `json:"msg"`
+	TMs  int64           `json:"t_ms"`
+	Dir  string          `json:"dir"`
+	Msg  json.RawMessage `json:"msg"`
+	Proc string          `json:"proc,omitempty"`
+}
+
+// Of keeps the records of one process of such a recording.
+func Of(recs []Record, proc string) []Record {
+	var out []Record
+	for _, r := range recs {
+		if r.Proc == proc {
+			out = append(out, r)
+		}
+	}
+	return out
 }
 
 // Read reads a recording. A line with t_ms and dir is a driver record; any

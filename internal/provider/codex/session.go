@@ -50,6 +50,11 @@ type threadParams struct {
 	// ApprovalsReviewer is "user" (Manual) or "auto_review" (Auto), sent with
 	// every thread/start, thread/resume and turn/start (plan 12, item 2).
 	ApprovalsReviewer string `json:"approvalsReviewer"`
+	// ExcludeTurns asks thread/resume for the thread without its turns, an
+	// answer of the same size whatever the thread's length (0.163.0's stable
+	// schema; P69b): only for the home screen's resume, the crash resume's
+	// request unchanged (plan 69, design D5).
+	ExcludeTurns bool `json:"excludeTurns,omitempty"`
 }
 
 // Session is one running `codex app-server` process.
@@ -63,6 +68,7 @@ type Session struct {
 	calls     map[string]string     // id of a request awaiting its response -> method
 	approvals map[string]pendingReq // pending approval id -> its request
 	resume    string                // the thread to resume, until thread/resume is sent
+	last      bool                  // the resume is the home screen's: the thread asked for without its turns (plan 69)
 	pin       string                // the model passed in thread/start, "" for the configured one
 	thread    string                // the main thread, "" while none is usable
 	turn      string                // the running main turn
@@ -138,7 +144,10 @@ func (p *Provider) start(ctx context.Context, sc provider.SessionContext) (*Sess
 		now = time.Now
 	}
 	s := &Session{prov: p, m: NewMapper(), calls: map[string]string{}, dir: sc.ProjectPath,
-		approvals: map[string]pendingReq{}, resume: sc.ResumeID, pin: p.fallbackModel(), instant: true, now: now}
+		approvals: map[string]pendingReq{}, resume: sc.ResumeID, last: sc.ResumeLast, pin: p.fallbackModel(), instant: true, now: now}
+	if sc.ResumeLast && sc.ResumeID != "" {
+		s.m.ResumeAsked(sc.ResumeID) // its refusal for want of the thread is for good (plan 69, design D7)
+	}
 	s.cli = pipe.New(pipe.Config{Name: "Codex", Provider: ProviderID, Step: p.CloseStep, Now: now, Mu: &s.mu, Line: s.line}, pr)
 	s.cli.Run(ctx, append([]string{sc.Executable}, argv...), sc.ProjectPath)
 	// Codex's experimental API, for thread/settings/update (plan 38, design
@@ -446,7 +455,8 @@ func approvalMethod(m string) bool {
 // names, with the fallback model once there is one.
 func (s *Session) startThread() {
 	s.mu.Lock()
-	p := threadParams{ThreadID: s.resume, Model: s.pin, Sandbox: Sandbox, ApprovalPolicy: ApprovalPolicy, ApprovalsReviewer: presetOf(s.mode).reviewer}
+	p := threadParams{ThreadID: s.resume, Model: s.pin, Sandbox: Sandbox, ApprovalPolicy: ApprovalPolicy, ApprovalsReviewer: presetOf(s.mode).reviewer,
+		ExcludeTurns: s.resume != "" && s.last}
 	s.resume = ""
 	s.mu.Unlock()
 	method := "thread/start"

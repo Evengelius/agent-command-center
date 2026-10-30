@@ -1,0 +1,24 @@
+ ⊞ AGENT COMMAND CENTER                       │  v0.1.0  │  Windows  │  ● Ready
+
+ ╭──────────────────────────────────╮ ╭───────────────────────────────────────╮
+ │ › NEW SESSION  ───────────────── │ │ › PROJECTS  ───────────────────────── │
+ │                                  │ │                                       │
+ │  1.  Agent CLI                   │ │  ◷ RECENT PROJECTS                    │
+ │ ▏ ◉  Claude Code (2.1.300)     ▕ │ │  ☆  agent-command-center         now  │
+ │                                  │ │                                       │
+ │   ○  OpenAI Codex not            │ │  ☆  billing-service           8m ago  │
+ │      installed: adapter not      │ │ ───────────────────────────────────── │
+ │      built yet                   │ │  ☆  demo-project              8m ago  │
+ │                                  │ │ ───────────────────────────────────── │
+ │  2.  Project directory           │ │  ☆  a-project-with-a-very-l… 58m ago  │
+ │ ╭──────────────────────────┬───╮ │ │ ───────────────────────────────────── │
+ │ │ C:\work\demo-project     │ 🗀 │ │ │  ☆  docs                      3h ago  │
+ │ ╰──────────────────────────┴───╯ │ │ ───────────────────────────────────── │
+ │  → Claude Code's last session    │ │  ☆  infra                     7h ago  │
+ │    here: 3m ago · Ctrl+R         │ │                                       │
+ │    continues it                  │ │                                       │
+ │                                  │ │                                       │
+ │         START SESSION →          │ │                                       │
+ ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯
+
+ › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit

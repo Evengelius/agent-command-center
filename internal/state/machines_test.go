@@ -156,6 +156,40 @@ var transitions = []machineCase{
 		b.eq("phase", b.s.Startup.Phase, Validating)
 		b.eq("commands", b.kinds(), "validate")
 	}},
+	{"Startup", "`Asking` | resume pressed", func(b *bench) {
+		b.asking()
+		b.s.Startup.ResumeFailure, b.s.Startup.ResumeGone = "no handshake within 60 s", true
+		b.do(Confirm{Provider: "codex", Project: project, Resume: "th-1", ResumeProject: project})
+		b.eq("phase", b.s.Startup.Phase, Validating)
+		b.eq("resume kept", b.s.Startup.Resume, "th-1")
+		b.eq("its project", b.s.Startup.ResumeProject, project)
+		b.eq("failure cleared", b.s.Startup.ResumeFailure, "")
+		b.eq("gone cleared", b.s.Startup.ResumeGone, false)
+		b.eq("commands", b.kinds(), "validate")
+	}},
+	{"Startup", "`Validating` | both valid, a session to resume", func(b *bench) {
+		b.asking().do(Confirm{Provider: "codex", Project: project, Resume: "th-1", ResumeProject: project})
+		b.do(ValidationOK{Provider: "codex", ProviderName: "OpenAI Codex", Project: project})
+		b.eq("phase", b.s.Startup.Phase, Starting)
+		b.eq("session", b.s.Session.Phase, Spawning)
+		b.eq("resumed", b.s.Session.Resumed, "th-1")
+		b.eq("commands", b.kinds(), "start-session")
+		b.eq("its session", b.cmds[0].ID, "th-1")
+		b.eq("the home screen's", b.cmds[0].Last, true)
+	}},
+	{"Startup", "`Validating` | both valid, the last session's project not the path validated", func(b *bench) {
+		b.asking().do(Confirm{Provider: "claude-code", Project: project, Resume: "s-1", ResumeProject: `C:\work\other`})
+		b.do(ValidationOK{Provider: "claude-code", ProviderName: "Claude Code", Project: project})
+		b.eq("phase", b.s.Startup.Phase, Asking)
+		b.eq("field", b.s.Startup.Field, "project")
+		b.eq("message", b.s.Startup.Message, `Not resumed: the last session is C:\work\other's, not C:\work\proj's`)
+		b.eq("nothing started", b.kinds(), "")
+		b.eq("screen", b.s.Screen, ScreenStartup)
+		c := newBench(b.t).asking()
+		c.do(Confirm{Provider: "claude-code", Project: project, Resume: "s-1", ResumeProject: `c:/WORK/proj/`})
+		c.do(ValidationOK{Provider: "claude-code", ProviderName: "Claude Code", Project: project})
+		c.eq("the same project written otherwise", c.s.Startup.Phase, Starting)
+	}},
 	{"Startup", "`Detecting`, `Asking` | form reset", func(b *bench) {
 		b.validating().do(ValidationFailed{Field: "project", Message: "Not found"})
 		b.do(ResetForm{})
@@ -211,6 +245,34 @@ var transitions = []machineCase{
 		d.exit(1)
 		d.eq("exit", d.s.Startup.Phase, StartFailed)
 		d.eq("exit code", d.s.Session.ExitCode, 1)
+
+		// A resume's failure, kept for the home screen, its session kept.
+		e := newBench(b.t).asking()
+		e.do(Confirm{Provider: "codex", Project: project, Resume: "th-1", ResumeProject: project})
+		e.do(ValidationOK{Provider: "codex", ProviderName: "OpenAI Codex", Project: project})
+		e.ev(event.SessionSpawned, "", event.Spawned{Dir: project})
+		e.do(HandshakeTimeout{})
+		e.eq("a resume's failure", e.s.Startup.ResumeFailure, "no handshake within 60 s")
+		e.eq("its session kept", e.s.Startup.ResumeGone, false)
+		e.eq("nothing forgotten", e.kinds(), "close")
+		d.eq("a new session's start: no resume's failure", d.s.Startup.ResumeFailure, "")
+	}},
+	{"Startup", "`Starting` | a resume the CLI refuses for want of the session", func(b *bench) {
+		b.asking().do(Confirm{Provider: "claude-code", Project: project, Resume: "s-1", ResumeProject: project})
+		b.do(ValidationOK{Provider: "claude-code", ProviderName: "Claude Code", Project: project})
+		b.ev(event.SessionSpawned, "", event.Spawned{Dir: project})
+		b.ev(event.Error, "", event.Problem{Message: "Claude Code: No conversation found with session ID: s-1", NoSession: true})
+		b.eq("phase", b.s.Startup.Phase, StartFailed)
+		b.eq("gone", b.s.Startup.ResumeGone, true)
+		b.eq("reason", b.s.Session.Reason, "Claude Code: No conversation found with session ID: s-1")
+		b.eq("failure kept", b.s.Startup.ResumeFailure, b.s.Session.Reason)
+		b.eq("commands", b.kinds(), "close,forget-session")
+		b.eq("forgotten", b.cmds[1].ID, "s-1")
+		// A start that is not the home screen's resume: a handshake's failure, as before.
+		c := newBench(b.t).handshaking()
+		c.ev(event.Error, "", event.Problem{Message: "x", NoSession: true})
+		c.eq("not a resume", c.s.Session.Reason, "handshake failed: x")
+		c.eq("not a resume's commands", c.kinds(), "close")
 	}},
 	{"Startup", "`StartFailed` | owner chooses \"back\"", func(b *bench) {
 		b.handshaking().exit(1)
@@ -228,6 +290,15 @@ var transitions = []machineCase{
 		m.eq("mock stays", m.s.Startup.Phase, StartFailed)
 		m.eq("mock screen", m.s.Screen, ScreenDashboard)
 		m.eq("mock context kept", m.s.Context.Mock, true)
+
+		r := newBench(b.t).asking()
+		r.do(Confirm{Provider: "claude-code", Project: project, Resume: "s-1", ResumeProject: project})
+		r.do(ValidationOK{Provider: "claude-code", ProviderName: "Claude Code", Project: project})
+		r.ev(event.SessionSpawned, "", event.Spawned{Dir: project})
+		r.exit(1)
+		r.do(Back{})
+		r.eq("a resume's failure kept", r.s.Startup.ResumeFailure, "the CLI exited unexpectedly")
+		r.eq("its session", r.s.Startup.Resume, "s-1")
 	}},
 	{"Startup", "`Ready` | quit", func(b *bench) {
 		b.ready().do(Quit{})
@@ -253,6 +324,34 @@ var transitions = []machineCase{
 	}},
 
 	// Session machine
+	{"Session", "`Ready` | the first `session.started` after a resume from the home screen", func(b *bench) {
+		resumed := func(id string) *bench {
+			c := newBench(b.t).asking()
+			c.do(Confirm{Provider: "claude-code", Project: project, Resume: "s-123456789", ResumeProject: project})
+			c.do(ValidationOK{Provider: "claude-code", ProviderName: "Claude Code", Project: project})
+			c.ev(event.SessionSpawned, "", event.Spawned{Dir: project})
+			c.ev(event.SessionReady, "", event.Ready{})
+			c.ev(event.SessionStarted, "", event.Started{SessionID: id, Cwd: project})
+			c.ev(event.SessionStarted, "", event.Started{SessionID: id, Cwd: project}) // the next turn's: no second note
+			return c
+		}
+		notes := func(c *bench) []string {
+			var out []string
+			for _, e := range c.s.Conversation {
+				if e.Role == "dashboard" {
+					out = append(out, e.Text)
+				}
+			}
+			return out
+		}
+		c := resumed("s-123456789")
+		c.eq("note", strings.Join(notes(c), "|"), "Resumed Claude Code session s-123456 · Claude Code has its earlier context; its earlier messages are not shown here")
+		o := resumed("s-other-id")
+		o.eq("another ID", strings.Join(notes(o), "|"), "Claude Code reports session s-other-, not s-123456: its earlier context may not be there")
+		o.eq("the session's ID", o.s.Session.ID, "s-other-id")
+		b.ready().ev(event.SessionStarted, "", event.Started{SessionID: "s-new", Cwd: project})
+		b.eq("a new session: no note", len(notes(b)), 0)
+	}},
 	{"Session", "`Spawning` | process started", func(b *bench) {
 		b.handshaking()
 		b.eq("session", b.s.Session.Phase, Handshaking)

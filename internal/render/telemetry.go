@@ -195,7 +195,17 @@ func usageRows(s *state.State, ui UI, w int, f teleForm) []line {
 		return []line{first.fit(w), second.fit(w)}
 	}
 	inner := w - len(teleIndent)
-	if w < columnsFrom {
+	// Three columns: the context's at least 10 cells, the tokens' 13, the
+	// cost's its support; the cells left widen the context's bar.
+	ws := [3]int{max(10, textWidth(cols[0].value)), max(13, textWidth(cols[1].value), textWidth(cols[1].support)),
+		max(textWidth(cols[2].label), textWidth(cols[2].value), textWidth(cols[2].support))}
+	if cols[0].na {
+		ws[0] = max(ws[0], textWidth(cols[0].support))
+	}
+	// A resumed session's reasons too long for the columns (plan 69, design
+	// D9) take the rows, the section's three rows still, every value and
+	// reason whole: the columns would push the cost out.
+	if w < columnsFrom || s.Session.Resumed != "" && ws[0]+ws[1]+ws[2]+6 > inner {
 		var out []line
 		for _, c := range cols {
 			label := c.label[:1] + strings.ToLower(c.label[1:])
@@ -209,13 +219,6 @@ func usageRows(s *state.State, ui UI, w int, f teleForm) []line {
 			out = append(out, l.fit(w))
 		}
 		return out
-	}
-	// Three columns: the context's at least 10 cells, the tokens' 13, the
-	// cost's its support; the cells left widen the context's bar.
-	ws := [3]int{max(10, textWidth(cols[0].value)), max(13, textWidth(cols[1].value), textWidth(cols[1].support)),
-		max(textWidth(cols[2].label), textWidth(cols[2].value), textWidth(cols[2].support))}
-	if cols[0].na {
-		ws[0] = max(ws[0], textWidth(cols[0].support))
 	}
 	if extra := inner - ws[0] - ws[1] - ws[2] - 6; extra > 0 {
 		ws[0] += extra
@@ -427,10 +430,28 @@ func seconds(v state.Value) string {
 	return elapsed(time.Unix(0, 0), time.Unix(0, 0).Add(time.Duration(v.V)*time.Millisecond), time.Time{})
 }
 
-// missing says why value name is N/A: the source's own reason, with the last
-// value and its age when there was one; else what has not happened yet, by
-// CLI (reliability.md, Telemetry sources: the two value tables).
+// missing says why value name is N/A, as missingYet does; in a session
+// resumed from the home screen, which had model calls and turns before, what
+// has not happened "yet" has not "since the resume", and Codex's "no model
+// call yet" reads "no update since the resume" (plan 69, design D9).
 func missing(s *state.State, ui UI, name string, v state.Value, f func(state.Value) string) string {
+	r := missingYet(s, ui, name, v, f)
+	if s.Session.Resumed == "" || v.Reason != "" {
+		return r
+	}
+	if r == "no model call yet" {
+		return "no update since the resume"
+	}
+	if t, ok := strings.CutSuffix(r, " yet"); ok {
+		return t + " since the resume"
+	}
+	return r
+}
+
+// missingYet says why value name is N/A: the source's own reason, with the
+// last value and its age when there was one; else what has not happened
+// yet, by CLI (reliability.md, Telemetry sources: the two value tables).
+func missingYet(s *state.State, ui UI, name string, v state.Value, f func(state.Value) string) string {
 	if v.Reason != "" {
 		if v.Last && f != nil {
 			return v.Reason + "; last " + f(v) + ago(v.ReceivedAt, ui.Now)

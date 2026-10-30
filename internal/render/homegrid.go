@@ -401,7 +401,11 @@ func homeNoteRows(n HomeNote, iw int) []line {
 		if i > 0 {
 			mark = strings.Repeat(" ", textWidth(mark))
 		}
-		out = append(out, line{sp("  ", pageGround.on(stNone)), sp(mark+t, pageGround.on(st))})
+		l := line{sp("  ", pageGround.on(stNone)), sp(mark+t, pageGround.on(st))}
+		if n.Item != 0 {
+			l = homeTag(l, n.Item) // a click on it acts (plan 69, design D4)
+		}
+		out = append(out, l)
 	}
 	return out
 }

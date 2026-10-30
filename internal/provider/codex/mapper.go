@@ -57,6 +57,30 @@ type Mapper struct {
 	// replies are the CLI's requests the session answers itself, other than
 	// approvals, by id: their answers map as writes (currentTime/read).
 	replies map[string]string
+	// resumeAsked is the thread a resume from the home screen asked for,
+	// until thread/resume answers (plan 69, design D7): Codex's refusal of it
+	// for want of the thread is reported as for good.
+	resumeAsked string
+}
+
+// ResumeAsked tells the mapper the thread asked for is the project's last,
+// resumed from the home screen (plan 69, design D7).
+func (m *Mapper) ResumeAsked(id string) { m.resumeAsked = id }
+
+// noThread says error is Codex's refusal of thread/resume for want of the
+// thread id (P69b, Codex 0.163.0): -32600 "no rollout found for thread id
+// <id>", or "invalid session id: …" for an id no thread can have. The words
+// are undocumented, matched as 0.163.0 writes them; others are another
+// failure (plan 69, design D7).
+func noThread(raw json.RawMessage, id string) bool {
+	var e struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	}
+	if json.Unmarshal(raw, &e) != nil || e.Code != -32600 {
+		return false
+	}
+	return e.Message == "no rollout found for thread id "+id || strings.HasPrefix(e.Message, "invalid session id: ")
 }
 
 // updateKind is what a thread/settings/update carried: a model or effort
@@ -323,6 +347,12 @@ func (m *Mapper) response(r rpc, raw []byte) []event.Event {
 		// The session works without its model list: a refused page never
 		// ends the handshake (plan 46, design D2).
 		p.Optional = method == "model/list"
+		if method == "thread/resume" && m.resumeAsked != "" {
+			// The home screen's resume refused: for good only when Codex has
+			// no such thread (plan 69, design D7).
+			p.NoSession = noThread(r.Error, m.resumeAsked)
+			m.resumeAsked = ""
+		}
 		refused := m.ev(event.Error, event.Observed, "", "", "", raw, p)
 		switch method {
 		case "account/rateLimits/read":
@@ -460,6 +490,7 @@ func (m *Mapper) threadStart(r rpc, raw []byte) []event.Event {
 		ApprovalPolicy json.RawMessage `json:"approvalPolicy"`
 		Reviewer       string          `json:"approvalsReviewer"`
 	}
+	m.resumeAsked = "" // answered: a later refusal is no longer the resume's (plan 69)
 	if err := json.Unmarshal(r.Result, &s); err != nil || s.Thread.ID == "" {
 		return []event.Event{m.ev(event.Error, event.Observed, "", "", "", raw, event.Problem{Message: "thread/start response without a thread id"})}
 	}
@@ -727,6 +758,11 @@ func (m *Mapper) notification(r rpc, raw []byte) []event.Event {
 		// First seen in P38t, in the stable schema too: the thread's first
 		// unread position, for clients that mark threads read; logged.
 		return []event.Event{m.status(agent, raw, "read state changed", "")}
+	case "thread/goal/cleared":
+		// First seen in P69b (Codex 0.163.0), in the stable schema too: sent
+		// after every thread/resume, the thread's goal cleared; logged (plan
+		// 69, design D5).
+		return []event.Event{m.status(agent, raw, "goal cleared", "")}
 	}
 	return []event.Event{m.unknown(raw, r.Method, "")}
 }

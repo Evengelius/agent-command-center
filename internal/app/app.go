@@ -755,7 +755,9 @@ func (m *Model) syncUI() {
 		// session's, kept current by the HEAD watch (plan 59, design D9).
 		m.ui.Branch = c.Branch
 	}
+	m.ui.LastSession, m.ui.NotResumed = "", ""
 	if m.s.Screen == state.ScreenStartup {
+		m.ui.LastSession, m.ui.NotResumed = m.resumeNotes(r.Path) // plan 69
 		m.ui.Projects = m.projectRows()
 		m.ui.ProjectSel = max(min(m.ui.ProjectSel, len(m.projectList)-1), 0)
 		if m.ui.Field == 3 && len(m.projectList) == 0 {
@@ -874,10 +876,16 @@ func (m *Model) command(c state.Command) tea.Cmd {
 	case state.CmdValidate:
 		return m.validate()
 	case state.CmdStartSession:
-		if c.ID == "" {
-			return tea.Batch(m.start(""), m.loadDraft(), m.openTurns())
+		if c.ID == "" || c.Last {
+			// A new session, or the project's last resumed from the home
+			// screen: a start's draft either way (plan 69, design D4).
+			return tea.Batch(m.start(c.ID, c.Last), m.loadDraft(), m.openTurns())
 		}
-		return tea.Batch(m.start(c.ID), m.openTurns())
+		return tea.Batch(m.start(c.ID, false), m.openTurns())
+	case state.CmdRecordSession:
+		return m.recordSession(c.ID, c.At)
+	case state.CmdForgetSession:
+		return m.forgetSession(c.ID)
 	case state.CmdTurnSnapshot:
 		return m.turnSnapshot(c)
 	case state.CmdTurnFiles:
@@ -1037,10 +1045,11 @@ func (m *Model) detectionDone(found []provider.Detection) []tea.Cmd {
 	return m.do(state.DetectionDone{Installed: installed, CLIs: clis})
 }
 
-// start starts the session; resume is a CLI session id to resume.
-func (m *Model) start(resume string) tea.Cmd {
+// start starts the session; resume is a CLI session id to resume, last that
+// it is the project's last, resumed from the home screen (plan 69).
+func (m *Model) start(resume string, last bool) tea.Cmd {
 	var p provider.Provider
-	sc := provider.SessionContext{StartedAt: m.opt.Now(), ResumeID: resume}
+	sc := provider.SessionContext{StartedAt: m.opt.Now(), ResumeID: resume, ResumeLast: last}
 	if m.s.Context.Mock {
 		evs, err := mock.Load(m.opt.Mock)
 		if err != nil {

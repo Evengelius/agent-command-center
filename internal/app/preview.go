@@ -413,14 +413,19 @@ func (m *Model) thumbSequence() string {
 		now = append(now, m.homeSequence(&draw)...)   // the home screen's picture (plan 51, design D13)
 	}
 	var clear strings.Builder
+	screen := image.Rect(0, 0, m.ui.Width, m.ui.Height)
 	for _, old := range m.drawn {
 		if slices.ContainsFunc(now, func(t render.Thumb) bool {
 			return t.X == old.X && t.Y == old.Y && t.W == old.W && t.H == old.H
 		}) {
 			continue // drawn over by this frame's image
 		}
-		for y := old.Y; y < old.Y+old.H; y++ {
-			fmt.Fprintf(&clear, "\x1b[%d;%dH%s", y+1, old.X+1, m.screen.Region(old.X, y, old.W))
+		// Only the cells the screen still has: after it shrank, a write past
+		// its right edge wraps, and on its last row scrolls it, the rows
+		// the frame wrote then under the picture (P69-M02, plan 69).
+		r := image.Rect(old.X, old.Y, old.X+old.W, old.Y+old.H).Intersect(screen)
+		for y := r.Min.Y; y < r.Max.Y; y++ {
+			fmt.Fprintf(&clear, "\x1b[%d;%dH%s", y+1, r.Min.X+1, m.screen.Region(r.Min.X, y, r.Dx()))
 		}
 	}
 	m.drawn = now

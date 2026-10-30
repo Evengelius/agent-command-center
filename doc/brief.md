@@ -8723,3 +8723,87 @@ Please incorporate the three acceptance details above and proceed with implement
 
 Taken as the owner's approval of plan 68 with both fixes (plan.md, Plan
 68).
+
+## Amendment 71, 2026-10-29: the session's resumption from the home screen, for plan 69
+
+The fourth of the suggestions the owner kept on the roadmap (amendment
+65): "continuing the last session from the home screen through each CLI's
+own documented resume option, after a probe of both", in the owner's
+order after the turn-by-turn review and the conversation's search, plans
+67 and 68 put before it. Once plan 68 was closed and pushed (3d395a8),
+asked whether to draft that plan, the owner wrote, word for word:
+
+````text
+Draft it
+````
+
+Plan 69: the last session of each agent CLI in a project, continued from
+the home screen through that CLI's own resume, with the probes of both
+first. Proposed for the owner's review (plan.md, Plan 69). No
+implementation before the owner approves the plan.
+
+The owner then sent the plan's independent design review, "Verdict:
+CONDITIONAL APPROVAL — 8.5/10", which asked for four revisions. First, the
+plan kept to a reliable resumption across runs for both agent CLIs, zone B
+saying that the CLI's context was resumed and that its earlier entries are
+not shown, the full history's drawing deferred to a separate plan (its
+paging, rendering cost, tool events and long sessions), Codex's schema
+discouraging full-history hydration for paginated threads. Second, a
+resumable session kept through transient failures (a timeout, an
+authentication problem, a CLI unavailable, a connection failure, a
+transient start error), only a reliably confirmed permanent invalidation
+making the record ineligible, with no silent fallback to a new session and
+the owner told whether the earlier context was restored. Third, only the
+last session the dashboard ran for the chosen project and agent CLI
+offered, no provider switched, no active resume action without a matching
+session, the crash recovery kept, the record kept across restarts, and the
+end-to-end tests on a complete restart of the application. Fourth, a
+minimal mockup of the normal, no-session and failed states, the approved
+home screen's layout and artwork kept, usable at the supported narrow
+sizes. It asked that the minimal live probes run before any
+provider-specific behaviour, within the proposed quota, in isolated
+temporary projects, with the configuration preserved, and that a
+contradiction of a central design assumption be reported before the
+implementation expands. It ended, word for word:
+
+````text
+Please revise Plan 69 around these four points and return it for final design approval. No implementation yet.
+````
+
+Taken as the owner's decision: the probes ran within the proposed quota,
+no central assumption contradicted, and plan 69 was revised around the
+four points for the owner's final design approval (plan.md, Plan 69).
+
+The owner then sent the final review of the revised plan: the four points
+addressed and the probes sufficient evidence for the resumption's design;
+the crash resume kept as it is in plan 69; one last acceptance detail,
+Codex's telemetry after `excludeTurns: true`, since a lighter resume could
+leave out the replay of the thread's token usage as well as its turns: the
+token usage and cost zone A has, once the session is resumed and after its
+first new turn, checked from P69b's recordings or a minimal probe, the
+behaviour documented, and a difference represented as it is, not assumed
+away. The home screen's resume may use `excludeTurns: true` once that is
+understood. It ended, word for word:
+
+````text
+All other Plan 69 design decisions are accepted. Please incorporate this final acceptance criterion and return the updated plan for implementation approval.
+````
+
+Taken as the owner's decision: the crash resume unchanged, `excludeTurns`
+for the home screen's resume only, its telemetry settled from the
+recordings and added as plan 69's criterion 69.7 (plan.md, Plan 69, D9).
+
+Once the plan came back with that criterion, the owner wrote, word for
+word:
+
+````text
+Plan 69 is approved for implementation, including D9 and the updated telemetry acceptance criteria.
+
+Please proceed with implementation and follow the established evaluation workflow.
+
+Keep the crash-resume path unchanged, as agreed.
+
+Once implementation and verification are complete, present the evaluation and final diff for my review before committing or pushing.
+````
+
+Taken as the owner's approval of plan 69 (plan.md, Plan 69).

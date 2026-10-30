@@ -315,13 +315,17 @@ States: `Detecting`, `Asking`, `Validating`, `Starting`, `Ready`,
 | (launch) | application start with `--mock <file>` | `Starting` with the mock provider: detection and both questions skipped; the session context names provider "Mock data" and the file as project ([reliability.md, Mock mode](reliability.md#mock-mode)) | n/a | n/a |
 | `Detecting` | both detections returned or timed out | `Asking` | dash (CC-2) | dash (CX-2) |
 | `Asking` | Confirm pressed | `Validating` | dash | dash |
+| `Asking` | resume pressed: Ctrl+R or a click on the last session's note, which only the chosen CLI's last session in the chosen project shows (plan 69, design D4) | `Validating`, the session to resume and its project kept with the answers, the last resume's failure cleared | dash | dash |
 | `Detecting`, `Asking` | form reset (Ctrl+N; plan 51, design D9) | the same, its message and answers cleared | dash | dash |
 | `Validating` | path or provider invalid | `Asking`, with the message on the field | dash (INT paths) | dash |
 | `Validating` | both valid | `Starting` (dashboard shown, session `Spawning`) | dash | dash |
+| `Validating` | both valid, a session to resume | `Starting`, session `Spawning` with the session asked for: Claude Code's `--resume <id>`, Codex's `thread/resume` without its turns (plan 69, design D5) | dash | dash |
+| `Validating` | both valid, the last session's project not the path validated | `Asking`, with the message on the field: nothing resumed (plan 69, design D3) | dash | dash |
 | `Starting` | handshake done (`session.ready`) | `Ready` | **P** P2 | **P** P6b |
 | `Starting` | quit | session `Closing`, then (exit) when the process has exited | dash | dash |
-| `Starting` | spawn error, handshake timeout, process exit | `StartFailed` | dash | dash |
-| `StartFailed` | owner chooses "back" | `Asking`, answers kept | dash | dash |
+| `Starting` | spawn error, handshake timeout, process exit | `StartFailed`; a resume's failure kept for the home screen, its last session kept (plan 69, design D7) | dash | dash |
+| `Starting` | a resume the CLI refuses for want of the session | `StartFailed`, refused for good: the last session no longer offered (`forget-session`; plan 69, design D7) | **P** P69a | **P** P69b |
+| `StartFailed` | owner chooses "back" | `Asking`, answers kept, and a resume's failure, which the home screen shows (plan 69) | dash | dash |
 | `Ready` | quit | (exit) | dash | dash |
 | `Detecting`, `Asking`, `Validating`, `StartFailed` | quit (Ctrl+Q; Esc on `Asking`) | (exit), nothing started | dash | dash |
 
@@ -343,6 +347,7 @@ States: `Spawning`, `Handshaking`, `Ready`, `Closing`, `Closed`, `Crashed`.
 | `Handshaking` | `initialize` response (Claude Code: `system/init` comes only after the first user message, P2 lines 5 and 7); `initialize`, `thread/start` responses (Codex) | `Ready` | **P** P2 | **P** P6, P6b |
 | `Handshaking` | 60 s timeout, an error response other than an optional read's, `cwd` mismatch | `Crashed` | dash (CC-4 timeout) | dash (ASM-21); a refused `config/read` or `model/list` is `Optional`: kept as an error, the handshake goes on (plan 46) |
 | `Ready` | `session.started` with a `cwd` other than the project (Claude Code reports it with the first turn) | `Crashed`, the process closed | dash | dash |
+| `Ready` | the first `session.started` after a resume from the home screen | zone B's note of the dashboard's: the session resumed, or the other ID the CLI names, which becomes the session's (plan 69, design D6) | **P** P69a (`system/init`) | **P** P69b (`thread/resume`'s answer) |
 | `Ready` | owner quits | `Closing`: pending approvals answered `cancel`, the turn interrupted, then stdin closed, in that order | dash | dash |
 | `Ready` | owner quits while a turn or an agent runs | stays `Ready`, asks to confirm (ui-design.md, Keys): a second Ctrl+Q quits, Esc stays | dash | dash |
 | `Ready`, `Crashed` | owner quits while a git operation runs | stays, asks to confirm whatever the session's phase, naming the operation (ui-design.md, Keys): a second Ctrl+Q quits, Esc stays (plan 47) | dash | dash |
@@ -395,6 +400,12 @@ an interrupt while `Idle` or `Submitted`-without-events is a no-op with a
 notice; a turn-end event while `Idle` is applied to telemetry and logged as
 "unexpected turn end". Background agents may keep running after the turn is
 `Idle` (P3, P3b): the agent machine, not the turn machine, tracks them.
+
+A turn the owner sent that ends, completed, failed or interrupted, in a
+session whose ID the CLI reported, and not in a mock run, makes that
+session the project's last for its CLI: the command `record-session` with
+the turn end's time (plan 69, design D2). A turn the CLI opened itself
+records nothing, nor does the dashboard's own usage read, which is no turn.
 
 ### Agent machine
 

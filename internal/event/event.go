@@ -332,6 +332,9 @@ type Problem struct {
 	// Fatal says the adapter recovered a panic (plan 48, design D5): the
 	// session ends, its CLI closed, the message as the reason.
 	Fatal bool `json:",omitempty"`
+	// NoSession says the CLI has no such session to resume (plan 69, design
+	// D7): the resume from the home screen is refused for good.
+	NoSession bool `json:",omitempty"`
 }
 
 // The approval modes the adapters name (plan 12, item 2; plan 39): Manual

@@ -746,15 +746,27 @@ func sessionParts(s *state.State, spin int) []sessionPart {
 	}
 	switch {
 	case s.Startup.Phase == state.StartFailed && s.Context.Mock:
-		return failureCard(s, "The mock replay could not start", "Ctrl+Q quit")
+		return failureCard(s, "The mock replay could not start", "", "Ctrl+Q quit")
+	case s.Startup.Phase == state.StartFailed && s.Session.Resumed != "":
+		// A resume from the home screen that failed, and what became of the
+		// project's last session (plan 69, design D7).
+		kept := "The session stays offered: Ctrl+R on the startup screen tries again"
+		if s.Startup.ResumeGone {
+			kept = s.Context.ProviderName + " no longer has this session: it is no longer offered"
+		}
+		return failureCard(s, "The session could not be resumed", kept, "Esc back to startup (answers kept) · Ctrl+Q quit")
 	case s.Startup.Phase == state.StartFailed:
-		return failureCard(s, "The session could not start", "Esc back to startup (answers kept) · Ctrl+Q quit")
+		return failureCard(s, "The session could not start", "", "Esc back to startup (answers kept) · Ctrl+Q quit")
 	case s.Session.Phase == state.Crashed && s.Session.ID != "" && !s.Context.Mock:
-		return failureCard(s, "The session ended unexpectedly", "Ctrl+R resume · Ctrl+Q quit")
+		return failureCard(s, "The session ended unexpectedly", "", "Ctrl+R resume · Ctrl+Q quit")
 	case s.Session.Phase == state.Crashed:
-		return failureCard(s, "The session ended unexpectedly", "Ctrl+Q quit")
+		return failureCard(s, "The session ended unexpectedly", "", "Ctrl+Q quit")
 	case s.Session.Phase == state.Spawning || s.Session.Phase == state.Handshaking:
-		return []sessionPart{{lead: "  " + spinner[spin%len(spinner)] + " ", text: "Starting " + name + " in " + hideUser(s.Context.Project) + "…", st: stProgress, wrap: true}}
+		what := "Starting " + name
+		if s.Session.Resumed != "" {
+			what = "Resuming " + name + " " + resumedWhat(s) + " " + state.ShortID(s.Session.Resumed) // plan 69, design D6
+		}
+		return []sessionPart{{lead: "  " + spinner[spin%len(spinner)] + " ", text: what + " in " + hideUser(s.Context.Project) + "…", st: stProgress, wrap: true}}
 	case s.Session.Phase == state.Closed:
 		return []sessionPart{{text: "Session closed.", st: stGrey}}
 	case s.Session.Phase == state.Ready && len(s.Conversation) == 0:
@@ -763,12 +775,17 @@ func sessionParts(s *state.State, spin int) []sessionPart {
 	return nil
 }
 
-func failureCard(s *state.State, title, keys string) []sessionPart {
+// failureCard is a failed session's card: its title, the reason, a note
+// after it ("" for none), the exit code, stderr's last lines and the keys.
+func failureCard(s *state.State, title, note, keys string) []sessionPart {
 	out := []sessionPart{{lead: "✗ ", text: title, st: stFailedBold}}
 	if s.Session.Reason != "" {
 		for _, l := range strings.Split(strings.ReplaceAll(s.Session.Reason, "\r\n", "\n"), "\n") {
 			out = append(out, sessionPart{lead: "  ", text: l, st: stFailed, wrap: true})
 		}
+	}
+	if note != "" {
+		out = append(out, sessionPart{lead: "  ", text: note, st: stText, wrap: true})
 	}
 	if s.Session.HasExitCode {
 		out = append(out, sessionPart{lead: "  ", text: fmt.Sprintf("exit code %d", s.Session.ExitCode), st: stText})
@@ -780,6 +797,15 @@ func failureCard(s *state.State, title, keys string) []sessionPart {
 		}
 	}
 	return append(out, sessionPart{text: keys, st: stGrey, hint: true})
+}
+
+// resumedWhat is what the session's CLI resumes: Codex a thread, Claude
+// Code a session (plan 69, design D6).
+func resumedWhat(s *state.State) string {
+	if s.CLI() == "codex" {
+		return "thread"
+	}
+	return "session"
 }
 
 // sessionLines are the session state's logical lines of content, item

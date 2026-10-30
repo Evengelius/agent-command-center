@@ -584,7 +584,9 @@ func TestHomePictureNotes(t *testing.T) {
 		t.Fatalf("no note: %v, grow %v", l0.Notes, l0.Grow)
 	}
 	ui.KeysProblem = `config.json: "ctrl+s" is not a send or newline key (use Enter with Ctrl, Alt or Shift, or Ctrl+J); default keys used`
-	s.Startup.Field, s.Startup.Message = "project", `Does not exist: C:\Projects\agent-command-centre`
+	// The failure of the text the field holds, as a start leaves it (P69-M01).
+	ui.Path = `C:\Projects\agent-command-centre`
+	s.Startup.Field, s.Startup.Message, s.Startup.Project = "project", "Does not exist: "+ui.Path, ui.Path
 	pic, l := pictureAt(s, ui)
 	lines := homeNoteLines(l.Notes)
 	if len(l.Notes) != 2 || len(lines) != 3 || l.Grow != 2*noteLine {
