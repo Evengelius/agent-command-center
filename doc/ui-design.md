@@ -545,7 +545,8 @@ the dashboard's, as its other notes: "Resumed Claude Code session 21f3b775 ·
 Claude Code has its earlier context; its earlier messages are not shown
 here" (Codex: "thread", "turns"); a CLI that names another session gets
 "Claude Code reports session <x>, not <y>: its earlier context may not be
-there", and that session is the one recorded. A resume that fails is never
+there", and that session is the one recorded. Under the first note, once,
+the [summary suggestion](#zone-b) (plan 70). A resume that fails is never
 followed by a new session: the card reads "The session could not be
 resumed", the CLI's own words under it, then what became of the record:
 
@@ -1282,7 +1283,8 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   run), without changing B's height; the bottom hints say the same. ↑ ↓
   move between such entries, B scrolling to keep the marked row in view; ↓
   past the newest, Esc or a typed character return to the input (the
-  character is typed there). With a draft, ↑ moves in the draft as before.
+  character is typed there), ↓ to the summary suggestion while it is shown
+  (below). With a draft, ↑ moves in the draft as before.
   The mouse (plan 42, brief amendment 43): a click anywhere on a foldable
   item's row, a run's row (plan 19) or a thinking phase's summary row,
   unfolds it, or folds it again; a double click on any row of an entry
@@ -1307,6 +1309,98 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   badge, and a selection across it copies its text, never the badge (plan 6,
   item 2); the entry cursor reveals one row less while the badge shows, so
   its marked row is never the badge's row. End resumes following.
+- **The summary suggestion** (plan 70, brief amendments 72 and 73):
+  after a resume from the home screen ([Last session](#last-session)),
+  once the CLI names the session asked for and before any message of the
+  owner's, B offers once to prepare a request for a summary of the
+  earlier work. A card follows the resumed note, which stays as it is, at
+  the conversation's end, at the left of B's inside, as the owner's
+  design draws it (brief amendment 73):
+
+  ```text
+  ╭─ SESSION RESUMED · SUGGESTION ──────────────────────╮
+  │                                                     │
+  │  Want a summary of your earlier work?               │
+  │                                                     │
+  │  [ Prepare summary ]     [ Not now ]                │
+  │                                                     │
+  │  -------------------------------------------------  │
+  │                                                     │
+  │  The request will be added to your draft.           │
+  │  Press Enter to send it.                            │
+  │                                                     │
+  ╰─────────────────────────────────────────────────────╯
+  ```
+
+  Its frame in the thinking card's violet (`#7C6BB3`; magenta on 16
+  colours): F2's pink means an approval or a question waiting for the
+  owner, which this is not. Its title in the title colour, bold; the
+  question bold in the text colour; the rule of hyphens in the frames'
+  grey, as the rule between two messages; the notes grey. No ground
+  anywhere, the inside on B's own. The buttons keep their brackets and
+  never a ground or inverse: in the title colour, bold, while the
+  suggestion does not have the focus; with it, the selected one bright
+  white and bold, its label underlined, the other subdued (`#A1A9C0`,
+  not bold), so that the focus shows by weight and underline as well as
+  colour. A blank row before the card and one after it, above the
+  input's rule, as after the last message. All of it is decoration: a
+  selection never copies it.
+  - **Its size.** 55 columns, the design's, or B's width where B is
+    narrower: the texts wrap inside its margins of two cells, the buttons
+    go one above the other under 41 columns, the title becomes SUGGESTION
+    alone under 34 and goes under 16, the rule always as wide as the
+    texts; under 7 columns there is no card. Its height is the design's,
+    12 rows, where B's rows hold it, the blank row after it and four rows
+    above it (the resumed note, two rows at the narrow widths, and a
+    blank row on each side): 17 rows, from 90x30. In fewer rows it drops
+    blank rows, never a text, an edge or the rule: first the two around
+    the rule (15), then the two inside its edges (13), then the one under
+    the question, down to 7 rows; at 80x24 (11 rows) the note and the
+    whole card show together. Under 8 rows B follows the card's end, as it
+    follows any content taller than itself, and scrolls to the rest.
+  - **When.** It shows while the session is `Ready` and no turn is under
+    way, a message being sent among them, in B; where B is not drawn (the
+    diff or a docked panel in its place, zone A's tree under 100 columns)
+    it waits, and comes back with B.
+  - **Once.** Prepare summary, Not now, or the first message of the
+    owner's that the CLI accepts withdraws it, for good in that run of the
+    dashboard; a send refused or a write that fails leaves it. Nothing is
+    stored: a new dashboard resuming the session offers it again. A new
+    session, another session named, a resume refused or failed, a crash
+    resume (Ctrl+R after a crash) and a mock run have none
+    ([events-and-state.md, Session machine](events-and-state.md#session-machine-the-cli-process)).
+  - **Keys**, only while it is shown. ↑ from the input with no text (an
+    image attached or not), no approval card focused and its buttons in
+    view gives it the focus, Prepare summary selected, B following its
+    end; the footer reads
+    "←→ select · Enter choose · ↑ entries · Esc back to the input · F1
+    keys". ← and → select a button; Enter acts on it; Esc or ↓ return to
+    the input; ↑ goes on to the newest entry's stop, as ↑ from the input
+    does without the suggestion, and with no stop the focus stays. ↓ past
+    the newest entry gives it the focus too. Any other key leaves the
+    focus and does what it does without it: a character is typed in the
+    draft, F2 goes to an approval; text a paste puts in the draft ends the
+    focus as well. Enter on the empty input, the focus elsewhere, does
+    nothing, as before.
+  - **The mouse.** A left click on a button acts, the focus not needed; a
+    click anywhere else does what it did.
+  - **Prepare summary.** With no text and no image in the draft, the
+    request is put in it, the cursor at its end, and nothing is written to
+    the CLI: Enter sends it as any message, to the session's own CLI, model
+    and effort, and Ctrl+Z takes it out. With text or an image, a draft
+    restored at the session's start among them, nothing changes but a
+    toast, "The draft is not empty: send or clear it, then Prepare
+    summary", and the suggestion stays. Once prepared, a draft cleared
+    does not bring it back.
+  - **Not now** withdraws it; the draft, its images and the session stay
+    as they are.
+  - **The request**, the owner's words: "Summarize the work we have done in this conversation so far, not the project in general: the goals, the important decisions, what was completed, what remains open, and the recommended next steps. Answer from this conversation as you have it now: do not read files, run tools or commands, or change anything. If parts of the earlier conversation are missing or only available to you as a compacted summary, say so rather than filling the gaps. Keep it concise."
+  - **Its limits.** The request asks; nothing enforces it. The CLI's own
+    permissions, sandbox and approvals decide what the turn may do, and a
+    request for approval it makes is answered as any other. The answer
+    comes from the context the CLI restored, which may be a compacted
+    summary that has lost details; the request asks the CLI to say so. The
+    dashboard reads no transcript, adds no context and changes no setting.
 - **The input** is the bottom of B, separated by a rule: the
   [Input editor](#input-editor).
 
@@ -3836,11 +3930,15 @@ the console reads plain VT input after Ctrl+Q.
 
 **The approval card**: a, s, d, c, Enter, Esc, ↑ ↓ ([Approvals](#approvals)).
 
+**The summary suggestion**, after a resume (↑ from an empty input,
+[Zone B](#zone-b)): ← → select, Enter acts, ↑ the newest entry's stop, ↓
+or Esc back to the input; a click on either button acts.
+
 **B's entries** (↑ from an empty input, [Zone B](#zone-b))
 
 | Key | Action |
 | - | - |
-| ↑ ↓ | previous / next folded message, tool, failure, or [turn review](#turn-review) row; ↓ past the last, the input |
+| ↑ ↓ | previous / next folded message, tool, failure, or [turn review](#turn-review) row; ↓ past the last, the summary suggestion while it is shown (plan 70), else the input |
 | Enter | the whole entry, full screen; Esc back to the cursor; on a run of tool events, expand it; on a turn review's summary, unfold or fold its files; on its file, the file's change of the turn |
 | → | on a run of tool events or a turn review's summary, expand it; it opens nothing |
 | ← | on a call of an expanded run, fold the run again; on a turn review's file or its unfolded summary, fold its files |

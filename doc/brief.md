@@ -8807,3 +8807,122 @@ Once implementation and verification are complete, present the evaluation and fi
 ````
 
 Taken as the owner's approval of plan 69 (plan.md, Plan 69).
+
+## Amendment 72, 2026-10-30: the one-time summary suggestion after a resume, for plan 70
+
+After plan 69's closure, the owner proposed a follow-up for discussion:
+after a resume, zone B shows none of the earlier messages, and the owner
+rarely reads them anyway, asking the model instead to summarize the work
+done so far. The proposal: once a session is resumed, offer that summary,
+never generating it unasked, the earlier history neither loaded nor drawn.
+A first review recommended a request put in the draft at any time rather
+than a question that sends on a click. The owner kept the one-time
+question, built on that review's draft protection and send path, and,
+after a second review, asked for it, word for word in its essentials:
+
+````text
+Proceed with Plan 70 based on the revised design and your latest technical review.
+The scope is now settled. Please create the formal implementation plan, implement the feature, update the relevant documentation, and execute the appropriate automated verification.
+Proceed directly without pausing for another approval checkpoint.
+````
+
+````text
+After a successful, verified home-screen resume of a Claude Code or Codex session, display a small, non-intrusive suggestion in Zone B:
+
+Want a summary of your earlier work?
+
+[ Prepare summary ]    [ Not now ]
+
+Prepare puts a request in the draft.
+Nothing is sent until you press Enter.
+````
+
+The suggestion appears once per verified resume and goes after a
+successful Prepare, after Not now, or after the owner's first accepted
+message, never to come back in that run, with no dismissal stored. Not
+for a new session, a failed or refused resume, a resume of another
+session than the one asked for, a crash resume whose conversation stays
+shown, or a mock run. Prepare only fills the editor, and only when the
+draft holds no text and no attached image (a draft restored at the
+session's start included); otherwise nothing changes and a short message
+says why. Not now sends nothing and leaves the draft as it is. The keys
+the second review proposed, only while the suggestion is shown: ↑ from an
+empty input to it, ← → between its buttons, Enter to act, Esc to leave
+it; never Enter on an empty input; the mouse on both buttons. The request,
+word for word:
+
+````text
+Summarize the work we have done in this conversation so far, not the project in general: the goals, the important decisions, what was completed, what remains open, and the recommended next steps. Answer from this conversation as you have it now: do not read files, run tools or commands, or change anything. If parts of the earlier conversation are missing or only available to you as a compacted summary, say so rather than filling the gaps. Keep it concise.
+````
+
+Sent with the session's own CLI, model and effort. The request asks for no
+tools, which is no enforcement: the CLIs' permissions and approvals decide,
+and a compacted session may have lost details. Left out, as the owner
+listed: a menu item, an Alt+S key, a permanent button, an automatic
+summary, the history's restoration, transcripts read or stored, stored
+dismissals, model or effort switching, new telemetry, compaction detection
+and any unrelated change. Its acceptance includes, besides the
+deterministic tests, runs on Claude Code and on Codex, each on its own,
+with minimal turns; no manual scenario marked PASS before it is seen.
+
+## Amendment 73, 2026-10-30: the summary suggestion's card, for plan 70
+
+The owner reviewed plan 70's report and its Windows Terminal shots: a
+provisional pass for the functional implementation, manual acceptance
+still pending, its four refinements accepted ("clearing the suggestion
+only after a message is accepted by the CLI is the correct behavior").
+One weakness: "the suggestion is visually too similar to ordinary
+conversation text. It needs a more deliberate presentation." The design,
+word for word:
+
+````text
+╭─ SESSION RESUMED · SUGGESTION ──────────────────────╮
+│                                                     │
+│  Want a summary of your earlier work?               │
+│                                                     │
+│  [ Prepare summary ]     [ Not now ]                │
+│                                                     │
+│  -------------------------------------------------  │
+│                                                     │
+│  The request will be added to your draft.           │
+│  Press Enter to send it.                            │
+│                                                     │
+╰─────────────────────────────────────────────────────╯
+````
+
+"This is the approved visual direction. Preserve its hierarchy and
+spacing, adapting dimensions safely to the actual available width." A
+thin rounded frame, its heading in the top edge and never a row inside;
+the inside on zone B's own background, no fill; a consistent margin, no
+edge collision, clipping or unintended wrapping; inline in zone B, no
+modal, popup or toolbar. The colours: the styles F2 uses found in the
+code first and reused where their meaning fits, a softer compatible
+accent if they mean an error or a destructive action, the central styles
+preferred over new colours: "a tasteful, noticeable suggestion — not an
+error or warning banner." The focused button: no light rectangle behind
+it, no reverse video, inverse or filled selection; its text brighter and
+bolder, underlined if appropriate, the other subdued, both bracketed, the
+focus never told by a subtle colour alone. Under the buttons a rule of
+hyphens in a subdued existing separator colour, as wide as the space
+allows, the notes under it with the design's spacing; no filled bar or
+heavy divider. Everything else kept: when the suggestion comes and goes,
+both buttons, the draft's protection, the request's words, no automatic
+model request, the keys and the mouse, telemetry, approvals, persistence
+and both CLIs; no "+" menu item, no global key, and zones A and C, the
+header and Source Control untouched. Checked at 80x24, 90x30, 120x40 and
+200x60 and in Windows Terminal, with physical resizing where feasible;
+the earlier evidence kept and what the change affects run again; the
+local proxy left as it is; no test data deleted; nothing committed or
+pushed; plan 70 pending manual acceptance. It ended, word for word:
+
+````text
+There is no need to pause for an additional design approval before applying the refinements specified above. Proceed with implementation and verification.
+Do not commit, push, or clean up test artifacts until manual acceptance is complete.
+````
+
+Taken as the owner's design for plan 70's suggestion (plan.md, Plan 70,
+D2): the design's two notes replace amendment 72's. The owner sent the
+review twice, the first copy interrupted: its design had no blank row
+between the buttons and the rule, and its separator section still says
+"Immediately below the two buttons"; the design sent last, with that
+blank row, is the one built.

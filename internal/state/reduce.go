@@ -111,6 +111,8 @@ func turnActivity(k event.Kind) bool {
 func (s *State) toRunning() []Command {
 	s.Turn.Phase = Running
 	s.Turn.Draft, s.Turn.DraftImages = "", nil
+	// A message the CLI accepted answers the offer too (plan 70, design D1).
+	s.Session.SummaryOffered = false
 	s.reviewNoticeDone() // the turn runs: its start's snapshot is behind it (plan 65)
 	return []Command{{Kind: CmdDraftAccepted}}
 }
@@ -284,6 +286,9 @@ func (s *State) started(ev event.Event, p event.Started) []Command {
 		// The CLI names the session it resumed: zone B says so, or that it
 		// names another (plan 69, design D6).
 		s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "dashboard", Text: s.resumedNote(p.SessionID), At: ev.At, Stage: s.stage()})
+		// The session asked for, before any message of the owner's: the
+		// one-time offer of a summary request (plan 70, design D1).
+		s.Session.SummaryOffered = p.SessionID == s.Session.Resumed && s.Turn.Count == 0
 	}
 	s.Session.ID = p.SessionID
 	s.Session.Model, s.Session.Cwd, s.Session.PermissionMode = p.Model, p.Cwd, p.PermissionMode

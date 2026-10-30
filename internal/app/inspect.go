@@ -386,7 +386,7 @@ func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		m.stepCursor(-1)
 	case "down":
 		if !m.stepCursor(1) {
-			m.ui.Entry = 0 // past the newest: the input
+			m.pastNewest()
 		}
 	case "enter":
 		if folded {
@@ -463,6 +463,15 @@ func (m *Model) stepCursor(d int) bool {
 	return false
 }
 
+// pastNewest is ↓ past zone B's newest stop: the input, or the summary
+// suggestion while it is shown (plan 70, design D3).
+func (m *Model) pastNewest() {
+	m.ui.Entry, m.ui.EntryReview = 0, 0
+	if render.SummaryShown(m.s) {
+		m.focusSummary()
+	}
+}
+
 // lastStop puts the entry cursor on zone B's newest stop: ↑ from an empty
 // input (ui-design.md, Zone B, Expanding); false for none.
 func (m *Model) lastStop() bool {
@@ -530,7 +539,7 @@ func (m *Model) reviewKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		m.stepCursor(-1)
 	case "down":
 		if !m.stepCursor(1) {
-			m.ui.Entry, m.ui.EntryReview = 0, 0 // past the newest: the input
+			m.pastNewest()
 		}
 	case "enter":
 		if m.ui.EntryReview == 1 {

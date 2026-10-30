@@ -345,6 +345,8 @@ type crow struct {
 	// more is a long paste's fold row, "… N more lines": it stands for the
 	// lines folded under it, which a search finds (plan 66, design D5).
 	more bool
+	// summary is the summary suggestion's buttons row (plan 70, design D2).
+	summary bool
 }
 
 // solid says the row shows something: text, a block's bar, a rule; not a

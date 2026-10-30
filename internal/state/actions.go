@@ -58,6 +58,11 @@ type (
 		Gone        bool
 	}
 	CancelTurn struct{ ID string } // c on an approval card: cancel it, then interrupt the turn
+	// SummaryPrepared and SummaryDismissed answer the one-time offer of a
+	// summary request: Prepare summary put the request in the draft, or Not
+	// now (plan 70, designs D5 and D6). Neither sends anything.
+	SummaryPrepared  struct{}
+	SummaryDismissed struct{}
 	// Panicked is a panic the application recovered in a write to the
 	// session (plan 48, design D5): the session ends in order, its CLI
 	// closed, the message as the reason.
@@ -90,6 +95,8 @@ func (Stay) action()             {}
 func (Resume) action()           {}
 func (Send) action()             {}
 func (WriteFailed) action()      {}
+func (SummaryPrepared) action()  {}
+func (SummaryDismissed) action() {}
 func (Interrupt) action()        {}
 func (InterruptTimeout) action() {}
 func (ForceStop) action()        {}
@@ -194,6 +201,8 @@ func (s *State) Do(a Action) []Command {
 		return []Command{{Kind: CmdStartSession, ID: id}}
 	case Send:
 		return s.send(a)
+	case SummaryPrepared, SummaryDismissed:
+		s.Session.SummaryOffered = false // once (plan 70, design D1)
 	case WriteFailed:
 		if s.Turn.Phase == Submitted {
 			s.Turn.Phase, s.Turn.Outcome, s.Turn.Notice = Idle, "failed", "the message could not be sent: "+a.Message

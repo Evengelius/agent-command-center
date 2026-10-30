@@ -374,6 +374,13 @@ var (
 		return out
 	}()
 
+	// The summary suggestion's card (plan 70, brief amendment 73): its frame
+	// in the thinking card's violet, softer than the pink of an approval,
+	// which asks for an answer; its focused button's label bright, bold and
+	// underlined, on no ground.
+	stSummaryFrame = stThinkBorder
+	stSummaryFocus = new(lipgloss.Style)
+
 	stMdHeading = stTitle
 	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
 	stMdStrong  = stBold
@@ -453,6 +460,7 @@ func paint() {
 	paintStyle(stThinkWordDim, fg(cThinkDim).Bold(true))
 	paintStyle(stThinkLit, fg(cThinkEdge).Bold(true))
 	paintStyle(stBrightBold, fg(cBright).Bold(true))
+	paintStyle(stSummaryFocus, stBrightBold.Underline(true))
 	paintStyle(stModelFrame, fg(cModelFrame))
 	paintStyle(stModelHead, fg(cModelFrame).Bold(true))
 	paintStyle(stModelAside, fg(cModelAside))

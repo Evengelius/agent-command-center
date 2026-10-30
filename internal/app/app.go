@@ -738,6 +738,11 @@ func (m *Model) syncUI() {
 	if m.ui.Focus != "A" && m.ui.Focus != "C" {
 		m.ui.Zoom = false // only a panel zooms; reaching B by F6, Tab or a click restores
 	}
+	if m.ui.Summary.On && (!render.SummaryShown(m.s) || m.ui.Focus != "B" || m.ui.Card != "" || m.ui.Entry > 0 || m.edit.Text() != "") {
+		// The suggestion gone, another focus taken, or text in the draft, a
+		// paste's that no key brought: its focus ends (plan 70, design D3).
+		m.ui.Summary = render.SummaryFocus{}
+	}
 	m.ui.Draft = m.edit.Text()
 	m.ui.Editor = m.editorView()
 	if m.ui.Search.Open && m.convFind.applied != m.s.Applied {

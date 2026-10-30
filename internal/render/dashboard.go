@@ -241,6 +241,8 @@ func footer(s *state.State, ui UI, hints string) string {
 		return searchFooter // the bar's keys, their directions spelled out (plan 66, design D1)
 	case ui.Entry > 0 && ui.Focus == "B" && ui.Card == "":
 		return entryFooter(s, ui)
+	case ui.Summary.On && ui.Focus == "B" && ui.Card == "":
+		return summaryFooter // the summary suggestion's (plan 70, design D3)
 	case ui.Focus == "C":
 		return "↑↓ select · Enter inspect · z zoom · PgUp PgDn Home End scroll · F6 zone · Esc back to the input · F1 keys"
 	case ui.Focus == "A":
@@ -523,8 +525,10 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 	var folds map[int]string
 	var entries map[int]int
 	var files map[int]TurnFile
+	summary := false
 	for j, c := range conv {
 		shown = append(shown, c.draw())
+		summary = summary || c.summary
 		if c.fold != "" {
 			if folds == nil {
 				folds = map[int]string{}
@@ -553,7 +557,7 @@ func zoneB(s *state.State, ui UI, w, h, editorRows int, sc *Screen) []line {
 		shown[room-1] = spread(trimTail(shown[room-1]), decoLine(fmt.Sprintf("↓ %d new", n), stProgress), inner)
 	}
 	if sc != nil {
-		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, W: inner, Held: ui.ConvHold, Starts: starts, Folds: folds, Entries: entries, Files: files}
+		sc.Conv = ConvView{Rows: rows, Room: room, Top: top, Y: sc.Conv.Y, W: inner, Held: ui.ConvHold, Starts: starts, Folds: folds, Entries: entries, Files: files, Summary: summary}
 		// Where a search starts: the last row shown that shows some of its
 		// entry (plan 66, design D5).
 		for j := len(conv) - 1; j >= 0 && !sc.Conv.HasBottom; j-- {
@@ -590,7 +594,8 @@ func NewShown(s *state.State, seen int) int {
 }
 
 // conversation is the orchestrator's record, then the activity line while
-// the turn works (plan 22, design 9), then the session's state: the rows in
+// the turn works (plan 22, design 9), then the session's state, then the
+// summary suggestion while it stands (plan 70, design D2): the rows in
 // view, at most room from top, and the count of all rows. It follows the end
 // unless the owner scrolled up. Only the entries in view are drawn; the
 // others are counted, from the cache once finished (test 11). A thinking
@@ -605,7 +610,8 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 		activity = activityRows(s, ui, w, lk)
 	}
 	tail := sessionState(s, ui, w)
-	rows += len(activity) + len(tail)
+	offer := summaryRows(s, ui, w, room) // the summary suggestion, while it stands (plan 70, design D2)
+	rows += len(activity) + len(tail) + len(offer)
 	top = max(rows-room, 0)
 	if ui.ConvHold {
 		top = min(max(ui.ConvTop, 0), top)
@@ -633,6 +639,12 @@ func conversation(s *state.State, ui UI, w, room int) (view []crow, rows, top in
 	for _, l := range tail {
 		if at >= top && at < end {
 			view = append(view, crow{l: l})
+		}
+		at++
+	}
+	for _, c := range offer {
+		if at >= top && at < end {
+			view = append(view, c)
 		}
 		at++
 	}

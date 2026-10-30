@@ -175,6 +175,8 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 				return m.sourceClick(item, mo.X, mo.Y, mo.Mod&tea.ModCtrl != 0) // the same for Source Control's (plan 44, design D5; plan 50, D2)
 			case render.GraphPanel:
 				return m.graphClick(item) // the Git Graph's, the Explorer's rule (plan 62, design D8)
+			case render.SummaryPanel:
+				return m.summaryClick(item) // the summary suggestion's buttons (plan 70, design D4)
 			}
 			return m.press(mo)
 		}

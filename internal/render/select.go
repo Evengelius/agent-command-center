@@ -60,6 +60,9 @@ type ConvView struct {
 	W         int
 	Bottom    SearchPos
 	HasBottom bool
+	// Summary says the summary suggestion's buttons are in view: ↑ from an
+	// empty input gives it the focus (plan 70, design D3).
+	Summary bool
 }
 
 // Screen is a drawn frame that still knows what each cell shows, so a mouse

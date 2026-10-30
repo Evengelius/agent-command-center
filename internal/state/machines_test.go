@@ -346,11 +346,31 @@ var transitions = []machineCase{
 		}
 		c := resumed("s-123456789")
 		c.eq("note", strings.Join(notes(c), "|"), "Resumed Claude Code session s-123456 · Claude Code has its earlier context; its earlier messages are not shown here")
+		c.eq("the summary offer, the next turn's started kept it", c.s.Session.SummaryOffered, true) // plan 70, design D1
 		o := resumed("s-other-id")
 		o.eq("another ID", strings.Join(notes(o), "|"), "Claude Code reports session s-other-, not s-123456: its earlier context may not be there")
 		o.eq("the session's ID", o.s.Session.ID, "s-other-id")
+		o.eq("another ID: no offer", o.s.Session.SummaryOffered, false)
 		b.ready().ev(event.SessionStarted, "", event.Started{SessionID: "s-new", Cwd: project})
 		b.eq("a new session: no note", len(notes(b)), 0)
+		b.eq("a new session: no offer", b.s.Session.SummaryOffered, false)
+	}},
+	{"Session", "`Ready` | owner prepares the summary request, or answers Not now", func(b *bench) {
+		for _, a := range []struct {
+			name string
+			a    Action
+		}{{"Prepare summary", SummaryPrepared{}}, {"Not now", SummaryDismissed{}}} {
+			c := newBench(b.t).resumedReady("claude-code", "s-1", "s-1")
+			n := len(c.s.Conversation)
+			c.do(a.a)
+			c.eq(a.name+": the offer", c.s.Session.SummaryOffered, false)
+			c.eq(a.name+": nothing written", c.kinds(), "")
+			c.eq(a.name+": session", c.s.Session.Phase, Ready)
+			c.eq(a.name+": turn", c.s.Turn.Phase, Idle)
+			c.eq(a.name+": no entry", len(c.s.Conversation), n)
+			c.ev(event.SessionStarted, "", event.Started{SessionID: "s-1", Cwd: project})
+			c.eq(a.name+": never again", c.s.Session.SummaryOffered, false)
+		}
 	}},
 	{"Session", "`Spawning` | process started", func(b *bench) {
 		b.handshaking()
@@ -573,6 +593,14 @@ var transitions = []machineCase{
 		e.eq("a result with nothing streamed before it", e.s.Turn.Phase, Idle)
 		e.eq("commands", e.kinds(), "draft-accepted,refresh")
 		e.eq("draft", e.s.Turn.Draft, "")
+
+		// The summary offer stands while the message waits, and goes once the
+		// CLI accepts it (plan 70, design D1).
+		o := newBench(b.t).resumedReady("codex", "th-1", "th-1")
+		o.do(Send{Text: "hi"})
+		o.eq("sent, not accepted yet: the offer", o.s.Session.SummaryOffered, true)
+		o.ev(event.TurnStarted, "", nil)
+		o.eq("accepted: the offer", o.s.Session.SummaryOffered, false)
 	}},
 	{"Turn", "`Submitted` | write to stdin fails", func(b *bench) {
 		b.ready().do(Send{Text: "hi"})

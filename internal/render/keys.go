@@ -92,12 +92,18 @@ func fixedKeyTable() []keyGroup {
 			{"Esc", "later: back to the input, still pending"},
 		}},
 		{"B'S ENTRIES (↑ from an empty input)", [][2]string{
-			{"↑ ↓", "previous / next folded message, tool, failure, run of tool events or turn review row; ↓ past the last, the input"},
+			{"↑ ↓", "previous / next folded message, tool, failure, run of tool events or turn review row; ↓ past the last, the summary suggestion while shown, else the input"},
 			{"Enter", "the whole entry, full screen; Esc back to the cursor; on a run of tool events, expand it (a click too); on a turn review, unfold it, or a file's diff (a double click too)"},
 			{"→", "on a run of tool events or a turn review, expand it; it opens nothing"},
 			{"←", "on a call of an expanded run, fold the run again (a click on its row too); on a turn review, fold its files"},
 			{"Esc, or typing", "back to the input"},
 			{"F3", "the file a tool entry read or changed"},
+		}},
+		{"THE SUMMARY SUGGESTION (after a resume, ↑ from an empty input)", [][2]string{
+			{"← →", "select Prepare summary or Not now; a click on either acts"},
+			{"Enter", "Prepare summary: the request in the empty draft, sent by the next Enter; Not now: no summary"},
+			{"↑", "the newest entry"},
+			{"↓, Esc, or typing", "back to the input"},
 		}},
 		{"THE SEARCH BAR (Ctrl+F)", [][2]string{
 			{"typing, Backspace", "the query as typed, case ignored without a capital; a paste too"},

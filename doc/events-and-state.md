@@ -347,7 +347,8 @@ States: `Spawning`, `Handshaking`, `Ready`, `Closing`, `Closed`, `Crashed`.
 | `Handshaking` | `initialize` response (Claude Code: `system/init` comes only after the first user message, P2 lines 5 and 7); `initialize`, `thread/start` responses (Codex) | `Ready` | **P** P2 | **P** P6, P6b |
 | `Handshaking` | 60 s timeout, an error response other than an optional read's, `cwd` mismatch | `Crashed` | dash (CC-4 timeout) | dash (ASM-21); a refused `config/read` or `model/list` is `Optional`: kept as an error, the handshake goes on (plan 46) |
 | `Ready` | `session.started` with a `cwd` other than the project (Claude Code reports it with the first turn) | `Crashed`, the process closed | dash | dash |
-| `Ready` | the first `session.started` after a resume from the home screen | zone B's note of the dashboard's: the session resumed, or the other ID the CLI names, which becomes the session's (plan 69, design D6) | **P** P69a (`system/init`) | **P** P69b (`thread/resume`'s answer) |
+| `Ready` | the first `session.started` after a resume from the home screen | zone B's note of the dashboard's: the session resumed, or the other ID the CLI names, which becomes the session's (plan 69, design D6); the session asked for, before any message of the owner's, also the one-time offer of a summary request (plan 70, design D1) | **P** P69a (`system/init`) | **P** P69b (`thread/resume`'s answer) |
+| `Ready` | owner prepares the summary request, or answers Not now | stays `Ready`, the offer gone for the session's life; nothing written to the CLI, Prepare summary only putting the request in an empty draft (plan 70, designs D5 and D6) | dash | dash |
 | `Ready` | owner quits | `Closing`: pending approvals answered `cancel`, the turn interrupted, then stdin closed, in that order | dash | dash |
 | `Ready` | owner quits while a turn or an agent runs | stays `Ready`, asks to confirm (ui-design.md, Keys): a second Ctrl+Q quits, Esc stays | dash | dash |
 | `Ready`, `Crashed` | owner quits while a git operation runs | stays, asks to confirm whatever the session's phase, naming the operation (ui-design.md, Keys): a second Ctrl+Q quits, Esc stays (plan 47) | dash | dash |
@@ -367,6 +368,19 @@ two keys, quit or resume the same CLI session (its id is known) in a new
 process, which starts a new session machine at `Spawning` (no silent restart; AGENTS.md "Keep failures visible";
 [reliability.md, Resumption](reliability.md#resumption)).
 
+The summary offer (plan 70, design D1) is the session state's alone, never
+written to `projects.json` or anywhere else. The first `session.started` of
+a resume from the home screen sets it when the CLI names the session asked
+for and the owner has sent no message yet; Prepare summary, Not now and the
+first message of the owner's that the CLI accepts (`Submitted` to
+`Running`) withdraw it, and nothing sets it again. A send refused (the
+session not `Ready`, a turn under way, a Codex slash command held back), a
+write that fails and the CLIs' own reads leave it as it is. A new session,
+another ID named, a resume refused or failed, a crash resume (a new session
+machine, no resume asked) and a mock run never have it. Zone B shows it
+while the session is `Ready` and the turn `Idle`
+([ui-design.md, Zone B](ui-design.md#zone-b)).
+
 ### Turn machine
 
 States: `Idle`, `Submitted`, `Running`, `WaitingApproval`, `Interrupting`,
@@ -375,7 +389,7 @@ then `Idle` with the last outcome `completed`, `failed` or `interrupted`.
 | From | Trigger | To | Claude Code | Codex |
 | - | - | - | - | - |
 | `Idle` | owner sends a message | `Submitted` (inferred) | dash | dash |
-| `Submitted` | first event of the turn | `Running` | **P** first `stream_event` (P1) | **P** `turn/started` (P6b) |
+| `Submitted` | first event of the turn | `Running`; the summary offer, while it stands, withdrawn: the CLI accepted the owner's message (plan 70, design D1) | **P** first `stream_event` (P1) | **P** `turn/started` (P6b) |
 | `Submitted` | write to stdin fails | `Idle`, outcome `failed`, draft restored | dash | dash |
 | `Running` | `approval.requested` for the orchestrator or any agent | `WaitingApproval` | **P** P2, P3b | **P** P6b, P7 |
 | `WaitingApproval` | every pending approval answered | `Running` | **P** P2, P3b | **P** P6b |

@@ -304,6 +304,11 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
 			return cmds
 		}
 	}
+	if m.ui.Summary.On {
+		if cmds, done := m.summaryKey(k); done {
+			return cmds
+		}
+	}
 	if m.ui.Entry > 0 {
 		if cmds, done := m.entryKey(k); done {
 			return cmds
@@ -386,8 +391,13 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
 			m.scroll(m.pageStep(k.String() == "pgdown"))
 			return nil
 		case "up":
-			// ↑ from an empty input: the cursor on the newest entry B shows
-			// in part (ui-design.md, Zone B, Expanding).
+			// ↑ from an empty input: the summary suggestion while B shows it
+			// (plan 70, design D3), else the cursor on the newest entry B
+			// shows in part (ui-design.md, Zone B, Expanding).
+			if m.ui.Card == "" && m.edit.Text() == "" && m.screen != nil && m.screen.Conv.Summary {
+				m.focusSummary()
+				return nil
+			}
 			if m.ui.Card == "" && m.edit.Text() == "" && m.lastStop() {
 				return nil
 			}

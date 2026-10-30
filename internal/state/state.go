@@ -171,6 +171,12 @@ type SessionState struct {
 	// Resumed is the session a start from the home screen asked the CLI to
 	// resume (plan 69, design D6); "" otherwise, the crash resume's too.
 	Resumed string
+	// SummaryOffered is the one-time offer to prepare a summary request:
+	// set when the CLI names the session the home screen asked for before
+	// any message of the owner's, gone with Prepare, Not now or the first
+	// message of the owner's that the CLI accepts (plan 70, design D1).
+	// Never stored.
+	SummaryOffered bool
 	// ApprovalMode is the mode in force: ModeManual, ModeAuto or the CLI's own
 	// word; "" before the CLI reports, which reads as Manual, the mode the
 	// dashboard starts with. ApprovalRequested is a change asked for and not

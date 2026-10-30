@@ -825,6 +825,21 @@ CLI's own resume; the crash resume's path is as it was.
 | 4. Rendering | the home screen's two notes, the offer a click target (`HomeNote.Item`, `HomeItemResume`; `homeTargets`, `homeNoteRows`), zone B's starting line and failure card (`sessionParts`, `failureCard`), a resumed session's N/A reasons (`missing`) | `internal/render/home.go`, `homepaint.go`, `homegrid.go`, `dashboard.go`, `telemetry.go`, `render.go` |
 | The application | Ctrl+R and the click on the home screen (`resumeLast`), the notes' text (`resumeNotes`, `lastSession`), the start's flag (`start`), the record's writes and its clearing through the store (`recordSession`, `forgetSession`) | `internal/app/lastsession.go`, `app.go`, `keys.go`, `home.go` |
 
+## The summary suggestion after a resume
+
+Plan 70 (brief amendments 72 and 73; ui-design.md, Zone B, The summary
+suggestion). Once after a resume from the home screen, zone B offers to
+put a fixed request for a summary of the earlier work in the empty draft,
+which the owner sends with Enter as any message. No adapter changes: the
+request is an ordinary message of the session's own CLI, model and
+effort; nothing is stored and no transcript is read.
+
+| Part | What it does | Where |
+| - | - | - |
+| 3. State | the offer (`SessionState.SummaryOffered`): set by `started()` for the session the home screen asked for before any message of the owner's, withdrawn by `SummaryPrepared`, `SummaryDismissed` and the CLI's acceptance of the owner's message (`toRunning`), never written to the store | `internal/state/state.go`, `actions.go`, `reduce.go` |
+| 4. Rendering | the suggestion's card after the session's parts while the session is `Ready` and the turn `Idle` (`SummaryShown`, `summaryRows`: its width from B's, its blank rows from B's rows), decoration with its buttons a panel of their own (`SummaryPanel`, `SummaryPrepare`, `SummaryNotNow`), the focused button bright, bold and underlined, on no ground (`UI.Summary`, `SummaryFocus`, `summaryButton`; `stSummaryFrame`, `stSummaryFocus`), its footer and the key overlay's group; `ConvView.Summary`, its buttons in view | `internal/render/summaryoffer.go`, `dashboard.go`, `palette.go`, `content.go`, `select.go`, `keys.go`, `render.go` |
+| The application | the focus and its keys (`focusSummary`, `summaryKey`; ↑ from the empty input, ↓ past the newest entry, `pastNewest`), the buttons' clicks (`summaryClick`), the request put in an empty draft or the toast (`prepareSummary`, `summaryRequest`), Not now (`summaryNotNow`); the focus ended in `syncUI` once the suggestion is gone, another focus taken or text in the draft | `internal/app/summaryoffer.go`, `keys.go`, `inspect.go`, `mouse.go`, `app.go` |
+
 ## Build order
 
 Input to plan 3's roadmap, from AM4's priorities (P1 to P6) and AGENTS.md
