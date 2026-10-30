@@ -348,6 +348,38 @@ session `1fba98f0-…` and Codex's thread `01a18c9d-…` (the owner's
 acceptance resumed both), the harness's temporary folders and the
 scratchpad's evidence.
 
+**The test data removed (2026-10-30).** After the push, on the owner's
+"Run recommended cleanup", each target checked first against the
+inventory, the owner's ACC quit, no ACC, Codex or test CLI running.
+Everything went to the Recycle Bin, none of it deleted for good, so each
+item can be restored until the bin is emptied (`scratchpad\plan70\cleanup`:
+the script, its results and the store's backup):
+- The harness's disposable data: `%TEMP%\p70demo`, the 14
+  `%TEMP%\p40-out-p70-*` and 15 `%TEMP%\p40-out-p70b-*` folders, five
+  rebuildable binaries in the scratchpad, the mutants' 88 source copies
+  and their overlays (their logs kept), the harness's seeds and the
+  scratch tests (`plan70\wt`, `wt-b`, `card`).
+- The registry's two test entries, `acc-p70-live-claude-123906` and
+  `acc-p70-live-codex-124102`, alone: the nine others unchanged and in
+  order, the file round-tripping byte for byte first, a copy of it kept
+  (`projects.json.before`).
+- The two test projects' folders, both empty.
+- Claude Code's test session `1fba98f0-…`: its project folder (the
+  transcript and an empty `memory`) and its empty `session-env` folder; no
+  other file named it but this work's own session transcript.
+
+Kept, each for a reason:
+- Codex's thread `01a18c9d-…`: Codex's shared databases (its logs, state
+  and thread history) record it. Its writer lock went when the owner's
+  ACC closed Codex, before the cleanup began.
+- The evidence this file names (`scratchpad\plan70\evidence`,
+  `evidence-b`, the mutants' logs and summaries, `scratchpad\term\out-p70*`)
+  and the scripts; the harness files earlier plans share (`Term.cs`,
+  `Extra.cs`, `Burst.cs`, `p69.ps1`, plan 69's stand-in).
+- The registry's five older test projects (`acc-demo`, four
+  `acc-p39-live-*`): not plan 70's.
+- Px, its configuration and its process: outside every cleanup.
+
 **Outside plan 70, for the owner to decide.** TestSynchronizedOutput
 (plan 5, unchanged since) failed in two of today's seven whole-suite runs,
 each time under the suite's own parallel packages, never alone (30 runs
