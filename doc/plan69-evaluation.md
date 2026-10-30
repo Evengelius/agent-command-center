@@ -317,6 +317,29 @@ layout is plan 51's (D13).
 | 26, 27 | a maximised window restored to 160x40: the field blank before, its path after |
 | 28, 29 | the dashboard (mock) zoomed under 100 columns: zone B's first cells overwritten before, whole after |
 
+### Approval, commit and push
+
+**Approved and committed (2026-10-30).** The owner's final report closes
+"Owner approval is granted." and allows the documents, the commit, the
+push and the test data's cleanup once the final review finds no blocker;
+it found none. Commit aba673a (60 files: 43 modified, 17 added), from the
+files reviewed in `git status` and `git diff`, each of them plan 69's;
+the owner's temporary Git repository and probe files, under `%TEMP%`, are
+not among them. `git diff --cached --check` reported only the blank line
+at the end of `testdata/frames/startup-resume-79x24.txt`: the too-small
+screen padded to 24 rows, as every 79x24 frame, which `TestGoldenFrames`
+needs whole. No file holds a CR or a BOM, read from the bytes; the only
+trailing spaces are those ui-design.md and brief.md already had; a scan
+of the change found no placeholder, leftover or private path. In that
+commit, no code file and no document a test reads changed after the last
+whole suite began (03:27:41): only plan.md and this file, which no test
+reads. The author is `Evengelius <molimoabel@gmail.com>`, with no
+attribution line, and the working tree was clean after it. Then the
+approval commit: plan.md and AGENTS.md close plan 69, and this record;
+AGENTS.md is read by a test, so the whole suite runs on the committed
+tree. Not pushed yet: the final repository checks come first, then the
+push. The blocks above stay as they were reported.
+
 ## Details
 
 ### What the checks found and changed
