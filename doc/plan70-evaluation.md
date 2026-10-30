@@ -301,6 +301,27 @@ Not closure blockers, for a later evaluation, as the owner listed them:
 | Verified by the automated tests and the Windows Terminal harness | the offer's lifecycle: none for a new session, another session named, a refused or failed resume, a crash resume or a mock run; withdrawn by the first message the CLI accepts, kept by a failed write; the keys and clicks; every width from 1 to 80 and every room from 1 to 30 rows; both palettes; the corner dragged by the harness |
 | Not manually verified | an ordinary first message sent without either button (automated only); a long, compacted session's summary; a 16-colour terminal on screen |
 
+### Approval, commit and push
+
+**Approved and committed (2026-10-30).** The owner's final report, "Final
+verdict: PASS — 10 out of 10 manual scenarios accepted.", allows the
+documents, the commits and the normal push once the final checks pass,
+and asks for a cleanup inventory before any test data is removed.
+Commit 3da7b9d (26 files: 20 modified, 6 added), from the files reviewed
+in `git status` and `git diff`, each of them plan 70's: its code and
+tests in internal/state, internal/render and internal/app, and its
+documents. `git diff --cached --check` reported nothing; no file holds a
+CR or a BOM, read from the bytes; a scan of the change found no private
+path, secret, placeholder or attribution. In that commit, no code file
+and no document a test reads changed after the last whole suite began
+(17:12:40): build, vet (Windows and Linux) and gofmt clean, 16 packages
+ok in 286 s. The author is `Evengelius <molimoabel@gmail.com>`, with no
+attribution line, and the working tree was clean after it. Then the
+approval commit: plan.md and AGENTS.md close plan 70, and this record;
+AGENTS.md is read by a test, so the whole suite runs on the committed
+tree. Not pushed yet: the final checks come first, then the push. The
+blocks above stay as they were reported.
+
 ## Details
 
 ### What the requirements asked, and where

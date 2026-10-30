@@ -54,6 +54,9 @@ Decisions of closed plans that still apply; `AGENTS.md` and
   one `git for-each-ref` every 2 s while the panel shows, told its cost
   (about 6 % of one core here); a watch of the reference files' times is
   not proposed again unless the owner asks.
+- **The summary suggestion's card stays as accepted** (plan 70, amendment
+  73, 2026-10-30): the owner's design as drawn, the blank row between its
+  buttons and its rule among it: "Do not remove or modify it."
 
 ## Recurring
 
@@ -112,257 +115,13 @@ The owner's order (amendment 65, 2026-10-28) is done: its four
 suggestions closed, plans 64 to 66 and plan 69 (the session's resumption
 from the home screen), with plans 67 and 68, which the owner put before
 the last (the characters typed with AltGr; the keyboard reader's races).
+Then plan 70, the owner's own (amendment 72), approved on 2026-10-30.
 The next plan starts when the owner asks for one, as a plan for the
-owner's review: plan 70, below, the owner's own (amendment 72).
+owner's review.
 
-## Plan 70 - The one-time summary suggestion after a resume
+## No plan active
 
-Brief amendment 72 (2026-10-30): after a resume from the home screen, zone
-B offers once to prepare a request for a summary of the earlier work.
-"Prepare summary" puts a fixed request in the empty draft, nothing sent
-until Enter; "Not now" dismisses it. The owner's design, settled over two
-reviews, the owner keeping the one-time suggestion rather than a key or a
-menu item; to be carried out without another approval checkpoint, its
-acceptance including runs on both real CLIs. Brief amendment 73 (the same
-day), after the owner's review of the report and its shots: the
-suggestion drawn as a card, the owner's design, its behaviour unchanged.
-
-### What was found (2026-10-30, on f3b69f9)
-
-- **The resumed session.** Zone B's note is added in `started()`
-  (`internal/state/reduce.go`) on the first `session.started` after a
-  resume from the home screen: "Resumed … session X · … has its earlier
-  context; its earlier messages are not shown here", or, when the CLI names
-  another session, "… reports session Y, not X: its earlier context may not
-  be there". A crash resume starts a new `SessionState` with no `Resumed`,
-  and no note.
-- **Sending.** Enter sends the editor's text through `state.Send`
-  (`internal/app/editing.go`, `internal/state/actions.go`): only while the
-  session is `Ready` and the turn `Idle`, Codex's slash commands held back;
-  the text travels as the turn's draft, which a failed write restores; the
-  editor clears once the write is accepted. Claude Code's handshake reads,
-  `/usage` among them, are written by its adapter and never pass through
-  `state.Send` (`internal/provider/claude/session.go`).
-- **Drafts.** A session's start restores a stored draft of its project into
-  the editor (plan 33, "draft restored"): a resume can open with text or
-  images in the draft.
-- **Zone B.** Its rows end with the session's parts (`sessionState`,
-  `internal/render/dashboard.go`), drawn after the entries; a click is
-  resolved by `Screen.ItemAt`, a panel byte per clickable area. The entry
-  cursor starts with ↑ from an empty input, ↓ past the newest entry returns
-  to the input, and any key it does not take leaves it and reaches the
-  input. An approval card takes keys only while it has the focus (F2 or a
-  click).
-- **Both CLIs answer from the restored context** on the first message after
-  a resume (plan 69's live runs and the owner's acceptance run): a summary
-  request is an ordinary first message.
-
-### Design
-
-- **D1 The offer.** `Session.SummaryOffered`, in memory only: set in
-  `started()` when the CLI names the session the home screen asked for and
-  the owner has sent no message yet; cleared by `SummaryPrepared`,
-  `SummaryDismissed` and the CLI's acceptance of the owner's first message
-  (`Submitted` to `Running`, `toRunning`: the owner's "first successfully
-  submitted" message). A new session, a failed or refused resume, another
-  session named, a crash resume and a mock run never set it; a refused
-  send, a write that fails and the CLIs' own reads leave it.
-- **D2 The suggestion.** Drawn in zone B after the session's parts while the
-  session is `Ready`, the turn `Idle` (a message being sent hides it) and
-  the offer stands. Since amendment 73, a card as the owner's design draws
-  it (ui-design.md, Zone B, The summary suggestion): a rounded frame 55
-  columns wide, "SESSION RESUMED · SUGGESTION" in its top edge; inside,
-  two cells from each side and a blank row at each end, "Want a summary of
-  your earlier work?", "[ Prepare summary ]     [ Not now ]", a rule of
-  hyphens and "The request will be added to your draft." over "Press
-  Enter to send it.", a blank row between the four; a blank row after the
-  card, above the input's rule, as after the last message. Its frame in
-  the thinking card's violet, F2's pink meaning an approval or a question
-  waiting; no ground anywhere; the focused button bright, bold, its label
-  underlined, the other subdued, both in the title colour without the
-  focus. Narrower where B is, its texts wrapped, the buttons one above the
-  other, the title shortened; in fewer rows than the card, the blank row
-  after it and the note's four rows above it, its blank rows dropped in a
-  fixed order, never a text, an edge or the rule. Decoration, never
-  copied. (Until amendment 73: the question, the buttons and amendment
-  72's two notes as rows of text, the focused button filled.) The
-  buttons' cells are a panel of their own, `N`, for a click. When zone B
-  is not drawn (the diff or a docked panel in its place) the suggestion is
-  not either, and the offer waits.
-- **D3 The keys.** The suggestion's focus is a UI state. ↑ from the input
-  with no text, the suggestion drawn and no card focused: the focus on it,
-  "Prepare summary" selected; ← → select; Enter acts; Esc or ↓ back to the
-  input; ↑ the newest entry's stop, as ↑ from the input gives it today,
-  the focus staying where there is none (right after a resume the note is
-  no stop). ↓ past the newest entry, while the suggestion is drawn: the
-  suggestion, not the input. Any other key leaves the focus and does what
-  it does today; so does text a paste puts in the draft, which no key
-  brings. The footer names the keys while it has the focus, and the key
-  overlay has their group. Once the suggestion is gone, the keys work as
-  before; no key acts on it while it does not have the focus.
-- **D4 The mouse.** A left click on a button acts, the focus not needed;
-  zone B's other clicks unchanged.
-- **D5 Prepare summary.** With no text and no attached image in the draft,
-  the request is put in the draft, the cursor at its end, and the state told
-  (`SummaryPrepared`); nothing is written to the CLI. Otherwise nothing
-  changes but a toast, "The draft is not empty: send or clear it, then
-  Prepare summary", the suggestion kept.
-- **D6 Not now.** `SummaryDismissed`; the draft, its images and the session
-  unchanged.
-- **D7 The request**, the owner's wording, word for word: "Summarize the work
-  we have done in this conversation so far, not the project in general: the
-  goals, the important decisions, what was completed, what remains open, and
-  the recommended next steps. Answer from this conversation as you have it
-  now: do not read files, run tools or commands, or change anything. If
-  parts of the earlier conversation are missing or only available to you as
-  a compacted summary, say so rather than filling the gaps. Keep it
-  concise." Sent by Enter through the existing path, to the session's own
-  CLI, model and effort. It asks for no tools; the CLIs' permissions and
-  approvals stay what decides; a compacted context may lack details.
-- **D8 Nothing else.** No provider adapter change, no persisted field, no
-  key outside the suggestion's focus, no menu item, no telemetry change.
-
-### Criteria
-
-- **70.1 The offer**: set after a verified home-screen resume of the session
-  asked for, before any message; never for a new session, a failed or
-  refused resume, another session named, a crash resume or a mock run;
-  cleared by Prepare, Not now and the CLI's acceptance of the first
-  message; kept by a refused send (session not `Ready`, turn running, a
-  Codex slash command held), a write that fails and the CLIs' own reads;
-  no field added to `projects.json`.
-- **70.2 The suggestion drawn**: its four texts and two buttons after the
-  resumed note, which stays as it is; never copied; every row within zone
-  B at 80x24, 120x40 and 200x60, wrapped and the buttons stacked where
-  narrower; the focused button filled; none when the session is not
-  `Ready`, a turn is under way or zone B is not drawn, the offer kept.
-  Revised by amendment 73: the owner's card cell for cell at 90x30, 120x40
-  and 200x60, whole with the note above it at 80x24, its blank rows
-  dropped in their order; whole and within B at every width and height,
-  the title in its top edge; the rule of hyphens; no ground or inverse
-  anywhere, the focused button bright, bold and underlined, the other
-  subdued, on both palettes; the rest of 70.2 as written.
-- **70.3 The keys**: D3, each key's result checked; with no suggestion, ↑ ↓
-  Enter Esc give what they give today (the existing tests unchanged).
-- **70.4 The mouse**: a click on each button acts; a click elsewhere in zone
-  B as today.
-- **70.5 Prepare summary**: the exact request in an empty draft, no write to
-  the CLI, the offer gone and not back when the draft is cleared; with text,
-  an attached image or a draft restored at the start: nothing changed, the
-  toast, the offer kept.
-- **70.6 Not now**: the offer gone, nothing written, the draft and its images
-  unchanged.
-- **70.7 Sent by Enter**: the prepared text reaches each CLI byte for byte
-  through its adapter (the fakes), with no settings command; a failed write
-  restores the draft as today.
-- **70.8 Nothing else changes**: plan 69's resume and refusal behaviour, the
-  crash resume, the golden frames, the providers.
-- **70.9 Windows Terminal**, the stand-in (no quota), maximised and at
-  120x40: the suggestion after Ctrl+R; the keys; a click on each button; a
-  restored draft protected; the window made smaller with the suggestion
-  shown.
-- **70.10 Live**, each CLI on its own, minimal turns: a short conversation
-  with a unique objective and decision; quit; resume: the suggestion; Not
-  now: nothing sent; quit; resume; Prepare: nothing sent until Enter; Enter:
-  a summary naming the objective and the decision; the session continuing
-  as usual; the configuration check before and after.
-- **70.11 The checks**: build, vet (Windows and Linux), gofmt, the whole
-  suite after the last edit, mutants through `-overlay`, `-race` on the
-  changed packages, the timing step alone.
-- **70.12 The documents**: brief amendment 72; ui-design.md (zone B's
-  suggestion, its keys and mouse, the request and its limits);
-  events-and-state.md (the rows); architecture.md; AGENTS.md's status and
-  scope; this plan; `doc/plan70-evaluation.md`. After amendment 73: the
-  amendment, and the card in ui-design.md, architecture.md, this plan and
-  the evaluation.
-- **70.13 The card in Windows Terminal** (amendment 73), the stand-in (no
-  quota): the card after Ctrl+R, maximised, at 120x40, 90x30 and 80x24;
-  the focus on each button with no ground behind it; a click on each; a
-  restored draft protected; the window made smaller (Win+Down, the font
-  zoom, its corner dragged) and back, the card whole at each size.
-
-### Steps
-
-1. This plan, amendment 72, AGENTS.md's status.
-2. The state, the drawing and the application (D1 to D6), with their tests.
-3. The documents.
-4. The checks: the suite, the mutants, `-race`, the timing step.
-5. Windows Terminal with the stand-in (70.9).
-6. The live runs (70.10).
-7. `doc/plan70-evaluation.md`; the commit after the owner's review.
-8. Amendment 73: the card, its tests and documents; what it affects run
-   again (the suite, the mutants, `-race`, the timing step, Windows
-   Terminal, 70.13); the evaluation's revision. The live runs stand: no
-   state, application or adapter code changes.
-
-### Progress
-
-- 2026-10-30: step 1: this plan, amendment 72 and AGENTS.md's status,
-  from the owner's request (amendment 72).
-- 2026-10-30: step 2: the state (`SummaryOffered`, `SummaryPrepared`,
-  `SummaryDismissed`), the drawing (`internal/render/summaryoffer.go`)
-  and the application (`internal/app/summaryoffer.go`), with their tests
-  (`internal/{state,render,app}/summaryoffer_test.go`, three machine
-  cases). Three refinements of the design, written into D1 to D3 above:
-  the offer ends when the CLI accepts the first message rather than when
-  it is sent, so a write that fails keeps it (the owner's "first
-  successfully submitted"), and the suggestion hides while a turn is
-  under way; ↑ keeps the focus when no entry stop is above (right after a
-  resume there is none); a paste's text ends the focus, which no key
-  would. The footer and the key overlay name the keys. The whole suite
-  passes.
-- 2026-10-30: step 3: ui-design.md (Zone B, The summary suggestion; the
-  Transition; Focus and keys), events-and-state.md (two Session rows, one
-  Turn row, the offer's paragraph), architecture.md (The summary
-  suggestion after a resume).
-- 2026-10-30: step 4: build, vet (Windows and Linux) and gofmt clean; the
-  first mutant run, 33 mutants: 28 caught, 5 not (A6 equivalent: the focus
-  exists only with no text, so ↓ falling through to the editor moves
-  nothing; A9, A10, A11 and R7 untested): TestSummaryOfferScrolled and
-  TestSummaryOfferFollows added. The second one showed the suggestion's
-  last note against the input's rule in a conversation taller than zone
-  B: a blank row after it, as after the last message (D2). The second
-  run, 34 mutants: 33 caught, A6 not (equivalent). `-race` on the three
-  packages: 0 race reports; the whole suite ok; the timing step alone, on
-  mains power, its 21 tests within their targets.
-- 2026-10-30: step 5: Windows Terminal with plan 69's stand-in, maximised
-  and at 120x40, 14 runs, every poll found: the suggestion after Ctrl+R,
-  its keys, a click on each button, a restored draft protected, Win+Down
-  and the font zoom with the suggestion shown (70.9).
-- 2026-10-30: step 6: the live runs, each CLI on its own, three turns
-  each, every check PASS: Claude Code 2.1.303 on Haiku 5.5 (95 s) and
-  Codex 0.163.0 on gpt-6-sol (87 s); the summaries named the objective
-  and the decision; nothing deleted (70.10).
-- 2026-10-30: step 7: `doc/plan70-evaluation.md`, 12 PASS, the
-  recommendation PENDING MANUAL ACCEPTANCE; the third mutant run on the
-  final code (one assertion added to TestSummaryOfferPrepare after the
-  second: projects.json unchanged by Prepare summary). Nothing committed:
-  the owner's manual acceptance and review first.
-- 2026-10-30: step 8: amendment 73, the card
-  (`internal/render/summaryoffer.go`, `palette.go`, one argument in
-  `dashboard.go`) and its tests (`internal/render/summaryoffer_test.go`
-  rewritten, one frame check in `internal/app/summaryoffer_test.go`). F2's
-  colour is the pink of attention, an approval or a question waiting for
-  the owner: the frame takes the thinking card's violet instead. At 80x24
-  B has 11 rows, fewer than the card's 12 and the note: the card drops its
-  blank rows there, in a fixed order. ui-design.md, architecture.md and
-  this plan updated. Run again: 54 mutants (53 caught, A6 equivalent),
-  `-race` (0 reports), the suite (a load flake of TestSynchronizedOutput
-  in its first run, then 16 packages ok), the timing step (21 PASS), 15
-  Windows Terminal runs with a corner dragged by the mouse (70.13); the
-  live runs stand (no code the CLIs see changed).
-  `doc/plan70-evaluation.md`, Revision 1: 13 PASS, PENDING MANUAL
-  ACCEPTANCE. Nothing committed.
-- 2026-10-30: the owner's manual acceptance, in Windows Terminal on both
-  CLIs: 10 scenarios of 10 PASS (M01 to M10). The card accepted as drawn,
-  the blank row between the buttons and the rule to be kept; Not now and
-  Prepare summary on both CLIs, nothing sent until Enter; text, a
-  restored draft and a 2.2 MB image alone protected; resized by hand; the
-  summaries on Claude Code (ORCHID-70, TEAL-70) and Codex (GRANITE-70,
-  AMBER-70). Not closure blockers: an ordinary first message sent by hand
-  without either button (automated only), and a long compacted session's
-  summary. Recorded in `doc/plan70-evaluation.md`; the commits, approved
-  in the same report, follow the final checks.
+Plan 70 was approved and closed on 2026-10-30 (Closed plans, below).
 
 ## Closed plans
 
@@ -1235,3 +994,18 @@ refusal through the dashboard among its checks: 13 PASS, then 4 PASS
 ([`doc/plan69-evaluation.md`](doc/plan69-evaluation.md)); commit aba673a,
 then the approval commit, both pushed, the test data removed after; its
 full text in git (`git show aba673a:plan.md`).
+
+## Plan 70 - The one-time summary suggestion after a resume
+
+Brief amendments 72 and 73: after a resume from the home screen, once
+the CLI names the session asked for and before any message of the
+owner's, zone B offers once to put a fixed request for a summary of the
+earlier work in the empty draft, nothing sent until Enter; Not now
+dismisses it; a draft holding text or an image is never changed. The
+offer is never stored. The owner's card draws it, its blank rows
+dropped where zone B is short. Approved on 2026-10-30 through the
+owner's reviews and manual acceptance on Claude Code and Codex: 12 PASS,
+then 13 PASS for the card, then 10 manual scenarios of 10 PASS
+([`doc/plan70-evaluation.md`](doc/plan70-evaluation.md)); commit
+3da7b9d, then the approval commit; its full text in git (`git show
+3da7b9d:plan.md`).
