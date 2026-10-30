@@ -1007,5 +1007,6 @@ dropped where zone B is short. Approved on 2026-10-30 through the
 owner's reviews and manual acceptance on Claude Code and Codex: 12 PASS,
 then 13 PASS for the card, then 10 manual scenarios of 10 PASS
 ([`doc/plan70-evaluation.md`](doc/plan70-evaluation.md)); commit
-3da7b9d, then the approval commit; its full text in git (`git show
+3da7b9d, then the approval commit, both pushed, the test data kept
+until the owner decides on its cleanup; its full text in git (`git show
 3da7b9d:plan.md`).

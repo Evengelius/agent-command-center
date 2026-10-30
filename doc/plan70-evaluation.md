@@ -322,6 +322,39 @@ AGENTS.md is read by a test, so the whole suite runs on the committed
 tree. Not pushed yet: the final checks come first, then the push. The
 blocks above stay as they were reported.
 
+**Pushed (2026-10-30).** The checks on the committed tree, 4364af5, the
+working tree clean before and after: go build ok, go vet ok (Windows and
+Linux), gofmt -l . empty; the committed code hashes to the tree every
+earlier check ran on (139c1bc6, the mutants' hash, recomputed from the
+commits). A binary rebuilt from the commit differs from the one the
+Windows Terminal runs used only by what Go writes into it from git (the
+commit, and no longer "modified"). The first whole suite on it (17:20,
+`-v`) failed TestSynchronizedOutput/Windows_Terminal once more, as the
+15:56 run had (Revision 1, The checks); the test passed 20 times of 20
+alone, and the whole suite run again, alone, passed: 16 packages ok in
+469 s (17:28 to 17:36). The only other go process then was the owner's
+own `go run` behind an idle dashboard, started at 17:03 by `acc.cmd`
+during the acceptance. Then commits 3da7b9d and 4364af5 fast-forwarded
+origin's main from f3b69f9 to 4364af5, nothing forced, origin's main
+read back equal to main (`git ls-remote`). The commit record above,
+which says "Not pushed yet" as written, stays as it was, the push
+following it.
+
+**No test data removed.** The owner's final report asks for an inventory
+first and a separate instruction before anything is deleted; the
+inventory went to the owner with the report. Everything stays: the live
+runs' projects and their entries in ACC's `projects.json`, Claude Code's
+session `1fba98f0-…` and Codex's thread `01a18c9d-…` (the owner's
+acceptance resumed both), the harness's temporary folders and the
+scratchpad's evidence.
+
+**Outside plan 70, for the owner to decide.** TestSynchronizedOutput
+(plan 5, unchanged since) failed in two of today's seven whole-suite runs,
+each time under the suite's own parallel packages, never alone (30 runs
+of 30): it types three keys 50 ms apart and expects a frame for each, and
+under that load two keys can share a frame. It replays a mock, where no
+summary offer is ever made. Not changed here.
+
 ## Details
 
 ### What the requirements asked, and where
