@@ -1186,15 +1186,16 @@ events (events-and-state.md, Conversation record); nothing is simulated.
     "); the tool's name in light blue (`#93C5FD`), bold; its target in a
     readable muted text (`#A1A9C0`): a path, its left end elided at one of
     its elements (`…\Local\Temp\demo\src\f00.go`, never cut inside one), a
-    command's first line, a pattern, a URL, for an agent its type in blue
-    and its description, the targets of one group in one column. At the
-    right, how it ended and when, then the origin: "allowed by you
-    01:54:35" in green only for an answered approval, "denied by you …" in
-    red, "failed 01:54:59" in red, "approved by auto-review" in green or
-    "denied by auto-review" in red when the CLI's reviewer decided (shown
-    while the call runs too), "running 4s" in amber, "waiting for you" in
-    pink, a completed call's end time in grey; then `observed` or
-    `mock`. Running a tool is never shown as the owner's approval. A
+    pattern, a URL, for an agent its type in blue and its description, the
+    targets of one group in one column; a command's call its shell's name
+    and its command (Commands, below, plan 72). At the right, how it ended
+    and when, then the origin: "failed 01:54:59" in red, "running 4s" in
+    amber, "waiting for you" in pink, a completed call's end time in grey,
+    after how it was decided when a request or a reviewer decided it,
+    "allowed by you · 01:54:35" in green, "denied by you …" in red,
+    "approved by auto-review · …" in green or "denied by auto-review …" in
+    red (Commands, below; shown while the call runs too); then `observed`
+    or `mock`. Running a tool is never shown as the owner's approval. A
     failed call names what failed, as Template 1's row does, then its
     error, its output's first non-blank line in red (plan 5, item 6):
     `✗ Read  …\src\f03.go · File does not exist.`, or `✗ Bash · exit
@@ -1206,9 +1207,11 @@ events (events-and-state.md, Conversation record); nothing is simulated.
     "denied". The name and the error are content (the target and the
     symbols are decoration): a selection copies the name and the error as
     two lines;
+    a command's error is a row of its own under its command since plan 72
+    (Commands, below);
     **a Codex command** (`commandExecution`) that exited non-zero reads
-    `✗ commandExecution · exit 2 · <last non-blank line>`, or
-    `✗ commandExecution · exit 2` when its output is blank (plan 6, item 1).
+    `exit 2 · <last non-blank line>`, or `exit 2` when its output is blank
+    (plan 6, item 1).
     Why: Codex 0.163.0 sends one output, "aggregated from stdout and
     stderr" (its generated schema, `commandExecution.aggregatedOutput`), and
     no notification of an agent's command separates the streams, so the
@@ -1228,8 +1231,11 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   - a thinking phase: its live card while it runs, then its summary row
     among the tool rows ([Thinking](#thinking), plan 22);
   - approval cards ([Approvals](#approvals)): a pending one in its pink
-    box, Template 2's; an answered one is one row among the tool rows, on
-    their ground, who asked kept, its outcome in its colour;
+    box, Template 2's, its call's row left out while it shows; an answered
+    one on its call's row when zone B draws the call (Commands, below),
+    else one row among the tool rows, on their ground, who asked kept, its
+    outcome in its colour: a subagent's request, one naming no call drawn
+    in B, a question, whose answers show under it, and an unreadable one;
   - a turn's review (plan 65): under the turn's last row, the files it
     changed in the project, the dashboard's own rows, never the CLI's
     ([Turn review](#turn-review));
@@ -1272,7 +1278,84 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   run and are never folded, so a pending approval is never hidden, and the
   order of events is kept. Only the orchestrator's calls are in B, so a
   fold never hides which agent acted. A selection copies the conversation
-  as before, the folded calls' names included.
+  as before, the folded calls' names included. A request or a review drawn
+  on its call's row still ends a run, as its own row did (plan 72).
+- **Commands** (plan 72, brief amendment 75): the calls that run a command,
+  Claude Code's `Bash` and `PowerShell` and Codex's `commandExecution`.
+  - **The shell's name** in place of the tool's: Claude Code's tool's,
+    `Bash` or `PowerShell`; Codex's invocation's executable, powershell and
+    pwsh `PowerShell`, bash, sh, zsh and cmd by their names, any other
+    `command`. Codex's other items keep their names.
+  - **Codex's command, exact or not at all.** Codex's command field is its
+    argv joined with POSIX's quoting (every recorded invocation, plan 72's
+    V1): read back word for word by POSIX's rules, with nothing left over
+    and nothing a shell would expand, its words a known launcher's,
+    PowerShell's `[exe, -flags…, -Command, script]`, `bash`, `sh` or `zsh`'s
+    `[exe, -c or -lc, script]` or cmd's `[exe, /c, script]`, the script is
+    the command shown; any other invocation is shown whole, never an
+    approximation. Claude Code's command is shown as sent. The invocation
+    stays verbatim in the full view.
+  - **On its row or under it.** A command whose text fits the room its row
+    leaves stays there, in the targets' column, the room counted from the
+    longest outcome its decision can show, so that it never moves as the
+    outcome changes or the entry cursor's hint replaces it; any other goes
+    under the row, at an unfolded thought's indent, laid out for display
+    only: one command a row, a break after each top-level `;` (and cmd's
+    `&`) and before each top-level `&&` and `||`, that row 2 cells in; a row
+    still too wide breaks before top-level `|`, as few times as needed,
+    filled from the left, 2 cells further in; a row still too wide wraps at
+    a space outside quotes, a top-level one first, 4 cells further in, else
+    at the width (top level: outside quotes, `()`, `{}` and `[]`; its own
+    line breaks kept; an indent never leaves a row under 8 cells of text).
+    Joined, the rows give the command back, the spaces at the breaks aside.
+    A command of 1 to 3 lines shows whole; from 4, folded to its first 2
+    and `… N more lines`. Under it, a row of Codex's review of the call
+    (below), then a row of a failure's error (Claude Code's first
+    non-blank output line, Codex's `exit N · <last line>`), each cut with
+    "…" while folded. `▸` before the status, in the run rows' blue, marks a
+    block with something hidden, `▾` once unfolded; unfolded, every line
+    shows, the error and the review whole. The fold lasts the session, as a
+    run's (`render.UI.Unfolded`, `render.CommandKey`).
+  - **One entry per operation.** An answered request whose call zone B
+    draws has no row of its own: its decision is on the call's row, joined
+    to the call's own outcome by ` · `: `allowed by you · 14:06:30`,
+    `allowed by you · running 4s`, `allowed by you · failed 14:06:30`,
+    `allowed for the session by you · …`; with nothing run, `denied by you
+    14:21:05` in red and `expired, not answered` in grey (the call's own
+    outcome after it only when the call ran). Claude Code's classifier
+    (`tool_result_meta.permission_decision`, undocumented): `approved by
+    auto-review · <end>`, `denied by auto-review <time>`. A denied call
+    shows ✗, no "failed", no exit code and no error, whatever the CLI
+    reports after the denial. A call's row is left out while its request's
+    card shows. Codex's auto-review naming a command's call drawn in B puts
+    its verdict on that row (`approved by auto-review · <end>`, `denied by
+    auto-review <time>`, `auto-review in progress · …`, any other status as
+    reported, in red) and `◈ risk <level>: <rationale>` under the command,
+    the authorization with the risk when it is not low (plan 41); any other
+    review keeps its `◈` entry. A request answered wins over a review.
+  - **Colours** (D8): Chroma's bash lexer for `Bash`, its PowerShell lexer
+    for PowerShell, batch for cmd, none for `command`, through the file
+    viewer's classes, no new colour; plain when the lexer fails, its tokens
+    do not rejoin into the command byte for byte, or on 16 colours. The
+    tokens are made off the frame's path, by the application in a command,
+    as each call or request comes and for any command a frame drew plain
+    (`render.CmdColors`); until they come, the command is drawn plain, in
+    the same layout.
+  - **Keys and the mouse**: on a block with something hidden or unfolded,
+    the cursor's hint reads `→ unfold · Enter full view · ↑↓ entries · Esc
+    back`, `← fold · …` unfolded, the footer's the same ending `Esc back to
+    the input · F1 keys`; → unfolds, ← folds, then the expanded run it is
+    in, else leaves the cursor. A click on a folded block's row or its
+    counter row unfolds it, on an unfolded block's row folds it, as on a
+    run's row: with the focus anywhere, no cursor, no hint; a press on a
+    command's line toggles nothing; a double click on any of its rows opens
+    the full view, the fold put back. A card has no fold row: a click
+    never folds or answers it. With F12's capture off, the keys do it all.
+  - **Search and copy**: the command is its call's target, out of the
+    launcher when shown so (a Codex launcher's path is then not found), the
+    review's part another; a match in what a folded block hides unfolds it,
+    as a click does. In B a command is never selected nor copied
+    ([Selection and copy](#selection-and-copy)).
 - **Expanding** (plan 5, item 4): B has an entry cursor. ↑ from an empty
   input puts it on the newest entry B shows in part: a folded message, a
   tool line (one row, its output not shown), a failure (one row, cut to the
@@ -1300,7 +1383,22 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   its time and line count, every line; a tool with its name, status,
   elapsed time, origin, its input (a diff coloured, a command, else the raw
   input) and its whole output, or "no output", updated live while it runs;
-  a failure with every line. It scrolls with ↑ ↓ PgUp PgDn Home End and the
+  a failure with every line. A command's full view (plan 72, D9): its
+  head, the symbol, the shell, status · elapsed, the exit code when the CLI
+  reports one, the origin; then COMMAND, laid out for reading and
+  coloured; AS SENT, verbatim, for a Codex command taken out of its
+  launcher; IN, the folder sent with it; APPROVAL when a request or a review
+  came: each request (when, who asked, its reason or description, the
+  answer and when), Codex's review with its risk, authorization and
+  rationale and the note of its unstable notification, Claude Code's
+  classifier with the note of its undocumented field, then when it ran:
+  from the owner's answer or the review's approval, if later than its
+  start (Claude Code's classifier gives its verdict with the result, after
+  the run); nothing while a request or Codex's review is pending; "not
+  run" once denied. Then OUTPUT. `y` copies the command as its CLI sent it,
+  Claude Code's command or Codex's invocation, byte for byte (Selection
+  and copy). A request's full view shows the same COMMAND and
+  AS SENT, then what its CLI sent with it. It scrolls with ↑ ↓ PgUp PgDn Home End and the
   wheel, copies with a selection, and Esc returns to B as it was, the
   cursor on the same entry.
 - **Follow mode**: new text keeps the view at the bottom; once the owner
@@ -1769,7 +1867,13 @@ messages, the RESULT box's among them; each tool row's name, its target as
 the row writes it before the cut (the user's folder hidden, `C:\Users\…\`,
 so never matched) and its error; a request's row, its target with it,
 answered or waiting; a thinking phase's summary and details; notices,
-errors and the dashboard's notes; the calls a run folds. Not searched: a
+errors and the dashboard's notes; the calls a run folds. A command's
+call's target is its command whole, out of Codex's launcher when zone B
+shows it so (the launcher's path then not matched), every line of its
+block, and Codex's review of it, its risk and rationale as drawn under it,
+another; an answered request drawn on its call's row and a review drawn
+under its call are searched there, not twice, and a call's row left out
+while its card shows is the card's (plan 72, C4). Not searched: a
 call's input and output (the full view's and the inspection's), what a
 request would write or run, the [turn review](#turn-review)'s rows, the
 labels and times, zones A and C, the draft.
@@ -1795,8 +1899,12 @@ row, a wrapped line's later rows too, and is held from then on: follow
 stops, "↓ N new" counting what comes. A match in a folded run or in a
 phase's folded details unfolds them, as a click does, and they stay so,
 the owner's to fold again; one in a long paste's folded lines is shown on
-the paste's "… N more lines" row. Typing keeps the current match while it
-still matches, else takes the newest at or above it.
+the paste's "… N more lines" row. A match in what a folded command block
+hides, its lines past its first, its review's or its error's cut part,
+unfolds the block, as a click does, and it stays so; one in a card's
+lines past its 6 is shown on the card's "… N more lines" row (plan 72).
+Typing keeps the current match while it still matches, else takes the
+newest at or above it.
 
 **While the turn goes on** (design D6). With the bar open, the matches are
 found again whenever events were applied since the last search
@@ -3519,9 +3627,37 @@ the agent that asked, and marks that agent "!" in A and a pink "●" in C.
   bold on a dark pink ground with half-block ends (in brackets on a
   16-colour terminal); once F2 gives the card the focus, its keys in its
   place.
+- **A command's card** (plan 72, D7): its heading names the command's shell
+  (Zone B, Commands); no target row and no "Command" title: the command
+  laid out as zone B lays out a block and coloured, whole up to 7 lines,
+  else its first 6 and "… N more lines", which stands for the rest for a
+  search; in its grey box from 90 cells, straight in the card below. Then
+  what its CLI sent with it, each part only when sent, under the CLI's own
+  word: Codex's `reason`, Claude Code's `description`, the folder,
+  `in …`, only when it is not the project's. The pill, F2, the keys row
+  and a, s, d, c as on any card; a click never folds or answers it. Its
+  call's row is left out while it shows.
+
+  ```text
+  ╭───────────────────────────────────────────────────────────────────╮
+  │ ! APPROVAL · orchestrator · PowerShell            14:05  observed │
+  │   $files = Get-ChildItem -Recurse -Filter *.go -File;             │
+  │   $todos = $files | Select-String -Pattern 'TODO|FIXME'           │
+  │     | Sort-Object Path, LineNumber;                               │
+  │   $todos                                                          │
+  │     | ForEach-Object                                              │
+  │         { "- $($_.Path):$($_.LineNumber) $($_.Line.Trim())" }     │
+  │   … 3 more lines                                                  │
+  │ reason  Create TODO.md from the TODO and FIXME comments of the Go │
+  │         files                                                     │
+  │ ▐ F2 to answer ▌                                                  │
+  ╰───────────────────────────────────────────────────────────────────╯
+  ```
+
 - **Format characters** (plan 48, design D6; audit finding 8): on the
   card, its answered row, a question's lines and the request's full view
-  (and a tool call's full view, which shows its input the same way), the
+  (and a tool call's full view, which shows its input the same way, and
+  zone B's commands, plan 72), the
   bidi controls (U+061C, U+200E, U+200F, U+202A to U+202E, U+2066 to
   U+2069) and the zero-width spaces (U+200B, U+2060, U+FEFF) are drawn as
   `<U+XXXX>`, so a request reads as it runs. The zero-width joiner stays,
@@ -3536,16 +3672,18 @@ the agent that asked, and marks that agent "!" in A and a pink "●" in C.
   | s | allow for the session | not offered (CC-4) | `acceptForSession` (**D**), offered unless the request's `availableDecisions` omits it; on Codex CLI 0.163.0, offered on file changes (no list), not on commands (their list omits it) (plan 5, item 8; plan 8) |
   | d | deny / decline | deny with a message (**D**) | `decline` (**D**) |
   | c | cancel the turn | deny, then interrupt | `cancel` (**D**) |
-  | Enter | the whole diff, command or question, full screen; a, s, d, c answer there, Esc back to the card | Edit, MultiEdit, Write from the request | `fileChange` from its tool call's `changes[].diff` |
+  | Enter | the whole diff, command or question, full screen; a, s, d, c answer there, y copies a command (plan 72), Esc back to the card | Edit, MultiEdit, Write from the request | `fileChange` from its tool call's `changes[].diff` |
   | Esc | later: back to the input, still pending | | |
 
 - **Manual or Auto** (plan 12, brief amendment 8): in Manual, every
   request the CLI sends is a card. In Auto, the CLI's own reviewer decides
   what it can (Claude Code's classifier, Codex's auto-review) and only what
   it escalates is a card, exactly as in Manual. A call Claude Code's
-  classifier decided reads "✓ Write  <path> · approved by auto-review" in
-  B, the verdict green, red when it denied (plan 19); a
-  Codex review is a "◈ auto-review approved · risk low: …" entry: the
+  classifier decided reads "✓ Write  <path>  approved by auto-review ·
+  <end>" in B, the verdict green, "denied by auto-review <time>" red (plan
+  19; plan 72, D5); a Codex review naming a command's call drawn in B is on
+  that call's row and under its command (plan 72, D6), any other a
+  "◈ auto-review approved · risk low: …" entry: the
   verdict, the risk, the reviewer's authorization from medium risk up
   (plan 41: at low risk Codex's reviewer answers with a bare allow, and
   Codex reports the authorization as unknown) and its rationale, its
@@ -3557,9 +3695,11 @@ the agent that asked, and marks that agent "!" in A and a pink "●" in C.
 - Options that would persist a rule in the CLI's configuration ("always
   allow", execpolicy amendments) are never offered
   ([reliability.md, Configuration untouched](reliability.md#configuration-untouched)).
-- After the answer, the card shrinks to one line: "✓ allowed by you
-  14:03:20" or "✗ denied by you", observed as sent. An approval that
-  expires (turn ended, CLI resolved it) shows "expired, not answered".
+- After the answer, the request is on its call's row when zone B draws
+  the call, "allowed by you · 14:03:20" (plan 72, D5: Zone B, Commands);
+  otherwise the card shrinks to one line: "✓ allowed by you 14:03:20" or
+  "✗ denied by you", observed as sent. An approval that expires (turn
+  ended, CLI resolved it) shows "expired, not answered".
   Since plan 19 that line is a row among B's tool rows, indented to them
   and on their ground, the outcome green, red or grey; a pending card stays
   apart from them, never on the ground and never folded, so a request
@@ -4046,8 +4186,9 @@ or Esc back to the input; a click on either button acts.
 | - | - |
 | ↑ ↓ | previous / next folded message, tool, failure, or [turn review](#turn-review) row; ↓ past the last, the summary suggestion while it is shown (plan 70), else the input |
 | Enter | the whole entry, full screen; Esc back to the cursor; on a run of tool events, expand it; on a turn review's summary, unfold or fold its files; on its file, the file's change of the turn |
-| → | on a run of tool events or a turn review's summary, expand it; it opens nothing |
-| ← | on a call of an expanded run, fold the run again; on a turn review's file or its unfolded summary, fold its files |
+| → | on a run of tool events or a turn review's summary, expand it; on a folded command, unfold it (plan 72); it opens nothing |
+| ← | on an unfolded command, fold it (plan 72); on a call of an expanded run, fold the run again; on a turn review's file or its unfolded summary, fold its files |
+| y | in a command's full view, copy the command as its CLI sent it, byte for byte (plan 72, C3) |
 | Esc, or typing | back to the input |
 | F3 | the file a tool entry read or changed, in the [file viewer](#file-viewer) |
 
@@ -4880,6 +5021,22 @@ Mouse selection in any panel, with clean text (AM3 M3; TI 6.3):
   `**Goal:**`, a word of it double-clicked the word, the whole answer its
   source. The inspection's
   Messages tab and the full views copy what their rows show, as before.
+- **Commands** (plan 72, C1 to C3). In zone B a command, on its row, in a
+  block folded or unfolded, in a card, is its call's target, as plan 66
+  made it: the search finds and lights it, no selection takes it and no
+  copy copies it; a selection across blocks and cards copies the
+  conversation as before, a call as its name (the shell's for a command)
+  and its error, never a command line. The full view is where a command is
+  copied on purpose: its COMMAND section copies the command's own text, its
+  AS SENT section the invocation, byte for byte, whatever their rows: a
+  wrap at the width puts no line break in the copy, the layout's indent no
+  space, and the command's own spaces, tabs and line breaks stay; a double
+  or triple click there takes the section's text, not a row's. Every other
+  full view's content copies as before, its rows as drawn. `y` in a
+  command's full view, a call's or a request's, copies the command as its
+  CLI sent it, Claude Code's command or Codex's invocation, through the
+  usual copy (native and OSC 52) and its toast: "copied 1 line · native",
+  or OSC 52's when the native clipboard fails.
 - **Native escape**: F12 turns mouse capture off; the hint line then says
   "mouse capture off: the terminal selects (whole screen, borders
   included) · F12 back on".

@@ -225,7 +225,7 @@ func (m *Model) revealMatch() {
 		return
 	}
 	mt := v.Matches[v.Cur]
-	for _, key := range render.MatchFolds(m.s, m.ui, mt) {
+	for _, key := range render.MatchFolds(m.s, m.ui, m.screen.Conv.W, mt) {
 		if m.ui.Unfolded == nil {
 			m.ui.Unfolded = map[string]bool{}
 		}

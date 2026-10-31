@@ -290,7 +290,7 @@ func TestConvMatchesLikeRegexp(t *testing.T) {
 	var parts []part
 	for i := range s.Conversation {
 		e := &s.Conversation[i]
-		if !searchable(UI{}, e) {
+		if !searchable(s, UI{}, e, nil) {
 			continue
 		}
 		switch e.Role {

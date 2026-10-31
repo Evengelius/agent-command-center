@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ codex-subagents.jsonl                                      Mock data 0.145.0
+ A ! Turn 2                                               (inferred)   F6: tree
+╭─ B · CONVERSATION ────────────────────────────────── ! Waiting for approval ─╮
+│ ▎ │     | Sort-Object Path, LineNumber;                                   │  │
+│ ▎ │   $todos                                                              │  │
+│ ▎ │     | ForEach-Object                                                  │  │
+│ ▎ │         { "- $($_.Path):$($_.LineNumber) $($_.Line.Trim())" }         │  │
+│ ▎ │   … 3 more lines                                                      │  │
+│ ▎ │ reason  Create TODO.md from the TODO and FIXME comments of the Go     │  │
+│ ▎ │         files                                                         │  │
+│ ▎ │ in      C:\work\acc-demo                                              │  │
+│ ▎ │ ▐ F2 to answer ▌                                                      │  │
+│ ▎ ╰───────────────────────────────────────────────────────────────────────╯  │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ >  Mock data is processing your request…                                     │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   turn running: the draft waits · Ctrl+C interrupt                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+│ no agents yet: they appear as the CLI starts them                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

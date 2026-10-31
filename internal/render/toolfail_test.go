@@ -94,8 +94,9 @@ func TestToolFailureRow(t *testing.T) {
 			}
 		}
 		// A call without output reads "failed", a denied one "denied": in
-		// the outcome column since plan 20, with their time.
-		for name, word := range map[string]string{"✗ Grep": "failed 09:30", "✗ Edit": "denied 09:30"} {
+		// the outcome column since plan 20, with their time; the denial in
+		// its request's words since plan 72 (D5), its request drawn on it.
+		for name, word := range map[string]string{"✗ Grep": "failed 09:30", "✗ Edit": "denied by you 09:30"} {
 			if l, _ := rowOf(t, sc, name); !strings.Contains(texts([]line{l}), word) {
 				t.Errorf("%v: %s row %q lacks %q", size, name, texts([]line{l}), word)
 			}

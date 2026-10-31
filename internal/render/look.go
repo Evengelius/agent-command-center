@@ -41,6 +41,7 @@ type look struct {
 	think   thinkStage // a thinking entry's stage: its live card, its exit, its summary row (plan 22)
 	size    int        // the live card's rows by zone B's room: 7, 5 or 2 (plan 22, design 2)
 	details bool       // a phase's summary row with its details open under it (plan 22, design 8)
+	cmdOpen bool       // a call's command block unfolded (plan 72, D4)
 }
 
 // The shape's bits besides its flags and its card (plan 22): a thinking
@@ -80,23 +81,40 @@ func looks(s *state.State, ui UI) []look {
 func lookAll(s *state.State, ui UI) ([]look, bool) {
 	conv := s.Conversation
 	out := make([]look, len(conv))
+	waiting := waitingCalls(s)
 	// A thinking entry is drawn by its stage (plan 22, design 1); an assistant
 	// entry with nothing but a thinking block is never drawn: plan 20's "∴
 	// thinking" gave way to the thinking entry's card (plan 22, design 1).
 	for i := range conv {
 		e := &conv[i] // by reference: an entry is big, and every frame looks at all (plan 49, design D5)
-		if e.Role != "thinking" {
-			out[i].hidden = thinkingMark(e)
-			continue
-		}
 		k := &out[i]
-		k.think = thoughtStage(ui, *e)
-		k.hidden = k.think == thinkHidden
-		k.details = k.think == thinkSummary && len(ui.Unfolded) > 0 && ui.Unfolded[ThoughtKey(*e)]
+		switch e.Role {
+		case "thinking":
+			k.think = thoughtStage(ui, *e)
+			k.hidden = k.think == thinkHidden
+			k.details = k.think == thinkSummary && len(ui.Unfolded) > 0 && ui.Unfolded[ThoughtKey(*e)]
+		case "tool", "approval", "review":
+			// A call while its request's card shows, the card the call's; an
+			// answered request, on its call's row; a review, under the call it
+			// names (plan 72, D5, D6).
+			k.hidden = elsewhere(s, e, waiting)
+		default:
+			k.hidden = thinkingMark(e)
+		}
+	}
+	// The command blocks unfolded, by their calls (plan 72, D4): a key the
+	// frame finds its call's entry for.
+	for key := range ui.Unfolded {
+		if id, ok := strings.CutPrefix(key, commandPrefix); ok {
+			if j := callEntry(s, s.Tools[id]); j >= 0 {
+				out[j].cmdOpen = true
+			}
+		}
 	}
 	// Runs of tool calls: consecutive calls, with the thinking marks and the
 	// thinking entries between two of them; those are folded with the calls
-	// (plan 22, criterion 2.12).
+	// (plan 22, criterion 2.12). A request or a review drawn on its call's
+	// row still ends a run, as its row did (plan 72, D5: runs unchanged).
 	for i := 0; i < len(conv); {
 		if conv[i].Role != "tool" {
 			i++
@@ -134,7 +152,7 @@ func lookAll(s *state.State, ui UI) ([]look, bool) {
 			from = i
 		}
 	}
-	cards(s, out)
+	cards(s, ui.Memo, out)
 	// The activity line, once its condition (ActivityOn: the turn works with no
 	// card live or in its exit) has held for 200 ms (plan 22, correction C6).
 	act := ActivityOn(s, ui) && activityDue(ui)
@@ -166,8 +184,9 @@ func exchange(s *state.State, out []look, a, b int, undone []int) {
 	for k := a; k < b; k++ {
 		e := &conv[k]
 		// A thinking entry is the CLI's part of the exchange, never its RESULT
-		// (plan 22, design 1).
-		if (e.Role == "assistant" || e.Role == "tool" || e.Role == "thinking") && head < 0 && (!out[k].hidden || out[k].fold > 0) {
+		// (plan 22, design 1); so is a request's card, its call's row left out
+		// while it shows (plan 72, D5).
+		if (e.Role == "assistant" || e.Role == "tool" || e.Role == "thinking" || e.Role == "approval") && head < 0 && (!out[k].hidden || out[k].fold > 0) {
 			head = k
 		}
 		if e.Role == "assistant" && e.Text != "" {
@@ -255,8 +274,9 @@ func agentsDone(undone []int, from, last int) bool {
 }
 
 // cards marks where a card starts, for the blank row above it, and gives
-// each group of tool rows its name column (plan 20).
-func cards(s *state.State, out []look) {
+// each group of tool rows its name column (plan 20), by the names the rows
+// show, m's (plan 72, D1).
+func cards(s *state.State, m *Memo, out []look) {
 	prev := -1 // the last entry drawn
 	group := []int{}
 	role, card := "", cardNone // the group's kind of rows, and its card
@@ -264,7 +284,7 @@ func cards(s *state.State, out []look) {
 		w := 0
 		for _, k := range group {
 			if out[k].think == thinkNone { // a phase's summary has no name column
-				w = max(w, nameWidth(s, &s.Conversation[k]))
+				w = max(w, nameWidth(s, m, &s.Conversation[k]))
 			}
 		}
 		for _, k := range group {
@@ -360,8 +380,8 @@ func asToolRow(s *state.State, e *state.Entry) bool {
 
 // nameWidth is the width of a tool row's name part: the call's name, or who
 // asked and the tool for an approval.
-func nameWidth(s *state.State, e *state.Entry) int {
-	name, _, _ := strings.Cut(e.Text, "\n")
+func nameWidth(s *state.State, m *Memo, e *state.Entry) int {
+	name := callName(s, m, e)
 	if e.Role == "approval" {
 		if ap := s.Approvals[e.MessageID]; ap != nil {
 			return textWidth(approvalWho(s, ap) + " · " + name)

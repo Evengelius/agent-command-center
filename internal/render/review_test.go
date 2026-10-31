@@ -156,7 +156,9 @@ func TestReviewRowsOwnerCase(t *testing.T) {
 
 // TestReviewRowsZoneB is criterion 41.3: P12x's two reviews, the
 // orchestrator's, read their verdict, risk and rationale with no
-// authorization, and zone B draws them so.
+// authorization, and zone B draws them so: since plan 72 (D6), on the call
+// each names, its verdict on the call's row, its risk and rationale under
+// the command.
 func TestReviewRowsZoneB(t *testing.T) {
 	s, now := replayed(codex.ProviderID, codex.NewMapper(), records(t, "p12x-codex-auto-review.jsonl"))
 	want := []string{
@@ -174,7 +176,7 @@ func TestReviewRowsZoneB(t *testing.T) {
 	}
 	for _, size := range [][2]int{{120, 40}, {200, 60}} {
 		f := texts(Draw(s, UI{Width: size[0], Height: size[1], Now: now, Focus: "B"}).lines)
-		if strings.Contains(f, "authorization") || !strings.Contains(f, "◈ auto-review approved · risk low: Creates the") {
+		if strings.Contains(f, "authorization") || !strings.Contains(f, "◈ risk low: Creates the") || !strings.Contains(f, "PowerShell") || !strings.Contains(f, "approved by auto-review · ") || strings.Contains(f, "◈ auto-review approved") {
 			t.Errorf("%dx%d: zone B\n%s", size[0], size[1], f)
 		}
 	}

@@ -61,6 +61,139 @@ var mockFiles = []struct {
 	// thread/settings/update, a Codex without the experimental API, which
 	// takes every change with the next message.
 	{"codex-models-next-turn.jsonl", "p34x-codex-model-list-settings.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexModelsNextTurn},
+	// Plan 72: the approved frames' commands for the owner's Human Evaluation,
+	// synthetic, on P12x's auto-review (Codex: a short command, its recorded
+	// one reviewed, the long one asked for and allowed, then a long one
+	// waiting for the owner) and on P2 (Claude Code: a failed go test, an
+	// update denied, its recorded Write allowed).
+	{"codex-commands.jsonl", "p12x-codex-auto-review.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexCommands},
+	{"claude-commands.jsonl", "p2-claude-conversation.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, claudeCommands},
+}
+
+// p72Launcher is the launcher Codex runs a command with, as its command
+// field writes it.
+const p72Launcher = `"C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"`
+
+// p72Invocation is script in the launcher's -Command, single-quoted,
+// POSIX's way (plan 72, V1).
+func p72Invocation(script string) string {
+	return p72Launcher + " -Command '" + strings.ReplaceAll(script, "'", `'"'"'`) + "'"
+}
+
+// The frames' long commands (plan.md, Plan 72, Reference frames).
+const (
+	p72Todo  = `$files = Get-ChildItem -Recurse -Filter *.go -File; $todos = $files | Select-String -Pattern 'TODO|FIXME' | Sort-Object Path, LineNumber; $todos | ForEach-Object { "- $($_.Path):$($_.LineNumber) $($_.Line.Trim())" } | Set-Content -LiteralPath 'TODO.md' -Encoding utf8; '{0} items in {1} files' -f $todos.Count, ($todos | Select-Object -Unique Path).Count`
+	p72Count = `$counts = Get-ChildItem -Recurse -Filter *.go -File | Select-String -Pattern 'TODO' | Group-Object Path | Sort-Object Count -Descending; $counts | ForEach-Object { '| {0} | {1} |' -f $_.Name, $_.Count } | Set-Content -LiteralPath 'TODO-COUNT.md' -Encoding utf8; Write-Output ('{0} files' -f $counts.Count)`
+)
+
+// codexCommands is P12x with plan 72's scenes, synthetic: in its first turn,
+// a short command before the recorded one, which Codex's auto-review
+// approved, and the frames' long command after it, asked for, allowed and
+// completed; then a third turn whose long command waits for the owner, the
+// session left open.
+func codexCommands(t *testing.T, recs []fixture.Record) []fixture.Record {
+	const main, turn1, turn3 = "01a14c29-ea47-7f93-892c-2b9ef96177a8", "01a14c29-eecc-7072-82fb-0315a73d6db5", "01a14c2b-0072-7072-8072-000000000072"
+	const cwd = `<HOME>\AppData\Local\Temp\acc-p12\x`
+	rec := func(ms int64, dir string, v any) fixture.Record {
+		b, err := json.Marshal(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return fixture.Record{TMs: ms, Dir: dir, Msg: b}
+	}
+	note := func(ms int64, method string, params map[string]any) fixture.Record {
+		return rec(ms, "out", map[string]any{"method": method, "params": params})
+	}
+	item := func(id, script, turn, status string, out any, exit any) map[string]any {
+		return map[string]any{"type": "commandExecution", "id": id, "command": p72Invocation(script), "cwd": cwd, "processId": nil, "source": "agent", "status": status,
+			"commandActions": []any{map[string]any{"type": "unknown", "command": script}}, "aggregatedOutput": out, "exitCode": exit, "durationMs": nil}
+	}
+	at := func(it map[string]any, turn string) map[string]any {
+		return map[string]any{"item": it, "threadId": main, "turnId": turn}
+	}
+	ask := func(ms int64, id int, itemID, script, turn, reason string) fixture.Record {
+		return rec(ms, "out", map[string]any{"method": "item/commandExecution/requestApproval", "id": id, "params": map[string]any{
+			"kind": "command", "threadId": main, "turnId": turn, "itemId": itemID, "environmentId": "local", "reason": reason,
+			"command": p72Invocation(script), "cwd": cwd, "commandActions": []any{map[string]any{"type": "unknown", "command": script}},
+			"availableDecisions": []any{"accept", "cancel"}}})
+	}
+	var out []fixture.Record
+	short, long, waiting := 0, 0, 0
+	for _, r := range recs {
+		msg := string(r.Msg)
+		switch {
+		case r.Dir == "out" && strings.Contains(msg, `"method":"item/started"`) && strings.Contains(msg, `"id":"exec-c454af45-5812-423d-a422-84061353273c"`):
+			out = append(out, note(r.TMs-400, "item/started", at(item("exec-p72-status", "git status --short", turn1, "inProgress", nil, nil), turn1)),
+				note(r.TMs-200, "item/completed", at(item("exec-p72-status", "git status --short", turn1, "completed", " M main.go\r\n", 0), turn1)))
+			short++
+		case r.Dir == "out" && strings.Contains(msg, `"method":"item/started"`) && strings.Contains(msg, `"phase":"final_answer"`) && strings.Contains(msg, `"turnId":"`+turn1+`"`):
+			out = append(out, note(r.TMs-900, "item/started", at(item("exec-p72-todo", p72Todo, turn1, "inProgress", nil, nil), turn1)),
+				ask(r.TMs-850, 9001, "exec-p72-todo", p72Todo, turn1, "Create TODO.md from the TODO and FIXME comments of the Go files"),
+				rec(r.TMs-600, "in", map[string]any{"id": 9001, "result": map[string]any{"decision": "accept"}}),
+				note(r.TMs-300, "item/completed", at(item("exec-p72-todo", p72Todo, turn1, "completed", "14 items in 9 files\r\n", 0), turn1)))
+			long++
+		case r.Dir == "exit":
+			// A third turn, its long command waiting for the owner; the session
+			// stays open, as each mock's does.
+			text := "Count the TODO comments of each Go file into TODO-COUNT.md."
+			out = append(out, rec(r.TMs-40, "in", map[string]any{"id": 9100, "method": "turn/start", "params": map[string]any{"threadId": main, "input": []any{map[string]any{"type": "text", "text": text}}}}),
+				note(r.TMs-35, "turn/started", map[string]any{"threadId": main, "turn": map[string]any{"id": turn3, "items": []any{}, "status": "inProgress", "error": nil}}),
+				note(r.TMs-30, "item/started", at(map[string]any{"type": "userMessage", "id": "user-p72-count", "content": []any{map[string]any{"type": "text", "text": text}}}, turn3)),
+				note(r.TMs-25, "item/completed", at(map[string]any{"type": "userMessage", "id": "user-p72-count", "content": []any{map[string]any{"type": "text", "text": text}}}, turn3)),
+				note(r.TMs-20, "item/started", at(item("exec-p72-count", p72Count, turn3, "inProgress", nil, nil), turn3)),
+				ask(r.TMs-15, 9002, "exec-p72-count", p72Count, turn3, "Write TODO-COUNT.md, a table of the TODO comments of each Go file"))
+			waiting++
+		}
+		out = append(out, r)
+	}
+	if short != 1 || long != 1 || waiting != 1 {
+		t.Fatalf("P12x: %d short, %d long, %d waiting commands put in; want 1 each", short, long, waiting)
+	}
+	return out
+}
+
+// claudeCommands is P2 with plan 72's Claude Code frame, synthetic: before
+// its recorded Write, a go test that fails, then an update the owner denies,
+// which Claude Code reports failed after the denial.
+func claudeCommands(t *testing.T, recs []fixture.Record) []fixture.Record {
+	const session = "00ef0150-56f0-4033-8467-bd6e93e296bb"
+	rec := func(ms int64, dir string, v any) fixture.Record {
+		b, err := json.Marshal(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return fixture.Record{TMs: ms, Dir: dir, Msg: b}
+	}
+	call := func(ms int64, id string, in map[string]string) fixture.Record {
+		return rec(ms, "out", map[string]any{"type": "assistant", "message": map[string]any{"model": "claude-haiku-5-5", "id": "msg_p72_" + id, "type": "message", "role": "assistant",
+			"content": []any{map[string]any{"type": "tool_use", "id": id, "name": "Bash", "input": in}}, "stop_reason": nil}, "parent_tool_use_id": nil, "session_id": session})
+	}
+	result := func(ms int64, id, content string) fixture.Record {
+		return rec(ms, "out", map[string]any{"type": "user", "message": map[string]any{"role": "user", "content": []any{map[string]any{"tool_use_id": id, "type": "tool_result", "content": content, "is_error": true}}},
+			"parent_tool_use_id": nil, "session_id": session})
+	}
+	test := map[string]string{"command": "go test ./...", "description": "Run the tests"}
+	update := map[string]string{"command": "git stash && git pull --rebase origin main && go test ./...", "description": "Update from origin and test again"}
+	var out []fixture.Record
+	put := 0
+	for _, r := range recs {
+		if r.Dir == "out" && strings.Contains(string(r.Msg), `"name":"Write"`) && strings.Contains(string(r.Msg), `"type":"assistant"`) {
+			out = append(out, call(r.TMs-300, "toolu_p72_test", test),
+				result(r.TMs-250, "toolu_p72_test", "--- FAIL: TestMarkdownCacheBytes (0.65s)\nFAIL\nFAIL\tgithub.com/x/render\t1.2s"),
+				call(r.TMs-200, "toolu_p72_update", update),
+				rec(r.TMs-150, "out", map[string]any{"type": "control_request", "request_id": "p72-update", "request": map[string]any{"subtype": "can_use_tool", "tool_name": "Bash", "display_name": "Bash",
+					"input": update, "description": update["description"], "tool_use_id": "toolu_p72_update"}}),
+				rec(r.TMs-100, "in", map[string]any{"type": "control_response", "response": map[string]any{"subtype": "success", "request_id": "p72-update",
+					"response": map[string]any{"behavior": "deny", "message": "The owner denied this tool use."}}}),
+				result(r.TMs-50, "toolu_p72_update", "The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). STOP what you are doing and wait for the user to tell you how to proceed."))
+			put++
+		}
+		out = append(out, r)
+	}
+	if put != 1 {
+		t.Fatalf("P2: the commands put in %d times, want once", put)
+	}
+	return out
 }
 
 // codexModelsNextTurn is P34x's first run up to the refusal of its

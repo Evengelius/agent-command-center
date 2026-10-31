@@ -9,20 +9,20 @@
 │   Use the Agent tool to launch … ││       🗎  viewer_test.go                                               D  ││  ⑂   │
 │   Agent · agent general-purpose  ││   › 🗀  tools                                                          D  ││      │
 │                                  ││     🗎  claude-api-key-context-refused.jsonl                              ││      │
-│ ✓ TURN 2                      0s ││     🗎  claude-models.jsonl                                               ││      │
-│   started by the CLI             ││     🗎  claude-quota-windows.jsonl                                        ││  ◉   │
-│ ──────────────────────────────── ││     🗎  claude-subagent-approval.jsonl                                    ││      │
-│ ✦ TELEMETRY        Enter details ││     🗎  claude-thinking-subagent.jsonl                                    ││      │
-│ ▾ SESSION USAGE                  ││     🗎  claude-thinking.jsonl                                             ││      │
-│   Context 4% of 1M ░░░░░░░░░░░░░ ││     🗎  codex-api-key.jsonl                                            U  ││      │
-│   Tokens 159.4k session total    ││     🗎  codex-models-next-turn.jsonl                                      ││      │
-│   Est. cost $0.01 API-equiv.     ││     🗎  codex-models.jsonl                                                ││      │
-│ ▾ QUOTA WINDOWS                  ││     🗎  codex-no-5h-window.jsonl                                          ││      │
-│   Session (5hr)             35%† ││     🗎  codex-plan6-limits.jsonl                                       !  ││      │
-│   ███████████░░░░░░░░░░░░░░░░░░░ ││     🗎  codex-spawn-request.jsonl                                      A  ││      │
-│   Resets in 14h 40m              ││     🗎  codex-subagents.jsonl                                             ││      │
-│   Weekly (7 day)            47%† ││                                                                          ││      │
-│   ██████████████░░░░░░░░░░░░░░░░ ││                                                                          ││      │
+│ ✓ TURN 2                      0s ││     🗎  claude-commands.jsonl                                             ││      │
+│   started by the CLI             ││     🗎  claude-models.jsonl                                               ││  ◉   │
+│ ──────────────────────────────── ││     🗎  claude-quota-windows.jsonl                                        ││      │
+│ ✦ TELEMETRY        Enter details ││     🗎  claude-subagent-approval.jsonl                                    ││      │
+│ ▾ SESSION USAGE                  ││     🗎  claude-thinking-subagent.jsonl                                    ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││     🗎  claude-thinking.jsonl                                             ││      │
+│   Tokens 159.4k session total    ││     🗎  codex-api-key.jsonl                                            U  ││      │
+│   Est. cost $0.01 API-equiv.     ││     🗎  codex-commands.jsonl                                              ││      │
+│ ▾ QUOTA WINDOWS                  ││     🗎  codex-models-next-turn.jsonl                                      ││      │
+│   Session (5hr)             35%† ││     🗎  codex-models.jsonl                                                ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││     🗎  codex-no-5h-window.jsonl                                          ││      │
+│   Resets in 14h 40m              ││     🗎  codex-plan6-limits.jsonl                                       !  ││      │
+│   Weekly (7 day)            47%† ││     🗎  codex-spawn-request.jsonl                                      A  ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││     🗎  codex-subagents.jsonl                                             ││      │
 │   Resets in 1d 20h               ││                                                                          ││      │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮

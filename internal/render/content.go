@@ -30,12 +30,16 @@ func entryLines(s *state.State, e state.Entry) []string {
 		text, _, _, _ := thoughtSummary(e.Thought)
 		return append([]string{text}, thoughtDetails(e.Thought)...)
 	case "tool":
-		name, _, _ := strings.Cut(e.Text, "\n")
-		if err := toolError(s, e); err != "" {
+		// Its name as its row shows it, a command's shell's (plan 72, D1); no
+		// error once denied (D5).
+		name := callName(s, nil, &e)
+		if err := toolError(s, e); err != "" && !deniedCall(s, e) {
 			return []string{name, err}
 		}
 		return []string{name}
-	case "approval", "error":
+	case "approval":
+		return []string{callName(s, nil, &e)}
+	case "error":
 		if i := strings.IndexByte(e.Text, '\n'); i >= 0 {
 			return []string{e.Text[:i]}
 		}
@@ -471,6 +475,7 @@ type entryCount struct {
 	w          int
 	thinking   bool
 	shape      uint16
+	blk        blockKey // a command call's block: what its rows count on besides (plan 72)
 	n          int
 }
 
@@ -478,25 +483,25 @@ type entryCount struct {
 // entries and approval cards change between frames and are always counted;
 // so are a thinking card, its exit and a phase's details open, which change
 // with the frame's time or a count come later (plan 22, design 6).
-func (c *WrapCache) counted(i int, e *state.Entry, w int, shape uint16) (int, bool) {
+func (c *WrapCache) counted(i int, e *state.Entry, w int, shape uint16, blk blockKey) (int, bool) {
 	if !c.keeps(e, shape) || i >= len(c.counts) {
 		return 0, false
 	}
-	if k := c.counts[i]; k.text == e.Text && k.role == e.Role && k.w == w && k.thinking == e.Thinking && k.shape == shape {
+	if k := c.counts[i]; k.text == e.Text && k.role == e.Role && k.w == w && k.thinking == e.Thinking && k.shape == shape && k.blk == blk {
 		return k.n, true
 	}
 	return 0, false
 }
 
 // keepCount keeps entry i's row count n, for an entry the cache keeps.
-func (c *WrapCache) keepCount(i int, e *state.Entry, w int, shape uint16, n int) {
+func (c *WrapCache) keepCount(i int, e *state.Entry, w int, shape uint16, blk blockKey, n int) {
 	if !c.keeps(e, shape) {
 		return
 	}
 	for len(c.counts) <= i {
 		c.counts = append(c.counts, entryCount{w: -1})
 	}
-	c.counts[i] = entryCount{e.Text, e.Role, w, e.Thinking, shape, n}
+	c.counts[i] = entryCount{e.Text, e.Role, w, e.Thinking, shape, blk, n}
 }
 
 // keeps says the cache keeps the entry's count: none changing between frames.
@@ -651,6 +656,9 @@ type crow struct {
 	more bool
 	// summary is the summary suggestion's buttons row (plan 70, design D2).
 	summary bool
+	// tr is the part of its entry's target a command block's row shows, for
+	// a search's match (plan 72, C4); nil for any other row.
+	tr *targetRow
 }
 
 // solid says the row shows something: text, a block's bar, a rule; not a

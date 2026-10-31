@@ -112,7 +112,8 @@ func TestApprovalViewer(t *testing.T) {
 			ap.Tool, ap.Summary, ap.Input = "Bash", "", json.RawMessage(`{"command":`+quote(strings.Join(cmd, "\n"))+`}`)
 			h.send(key(tea.KeyF2, 0))
 			h.draw(key(tea.KeyEnter, 0))
-			has := func(n int) bool { return strings.Contains(h.frame(), fmt.Sprintf("$ echo line %d ", n)) }
+			// The command's section, laid out for reading (plan 72, D9).
+			has := func(n int) bool { return strings.Contains(h.frame(), fmt.Sprintf("   echo line %d ", n)) }
 			if !has(1) || has(200) {
 				t.Fatalf("opens not at its top:\n%s", h.frame())
 			}
@@ -124,6 +125,7 @@ func TestApprovalViewer(t *testing.T) {
 			if !has(1) {
 				t.Errorf("Home:\n%s", h.frame())
 			}
+			h.draw(key(tea.KeyDown, 0)) // a row a press: the section's heading, then its first line (plan 72, D9)
 			h.draw(key(tea.KeyDown, 0))
 			if has(1) || !has(2) {
 				t.Errorf("Down:\n%s", h.frame())
@@ -419,6 +421,10 @@ func TestEntryViewer(t *testing.T) {
 			h, _ := p2Pending(t)
 			s := h.m.State()
 			tool := entryAt(s, func(e state.Entry) bool { return e.Role == "tool" && e.Text == "Write" })
+			// While its card shows, the call draws no row (plan 72, D5): it is
+			// answered first, its row back with the answer on it.
+			h.send(key(tea.KeyF2, 0))
+			h.send(typed('a'))
 			h.draw(key(tea.KeyUp, 0))
 			h.draw(key(tea.KeyEnter, 0))
 			if f := h.frame(); h.m.ui.ViewEntry != tool || tool == 0 || !strings.Contains(f, "no output") {

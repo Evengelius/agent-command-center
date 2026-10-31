@@ -46,6 +46,9 @@ func newHarness(t *testing.T, opt Options) *harness {
 	if opt.Highlight == nil {
 		opt.Highlight = outsideHighlight // main_test.go
 	}
+	if opt.Colour == nil {
+		opt.Colour = outsideColour // main_test.go
+	}
 	h := &harness{t: t, m: New(opt), msgs: make(chan tea.Msg, 4096)}
 	h.exec(h.m.Init())
 	t.Cleanup(func() {

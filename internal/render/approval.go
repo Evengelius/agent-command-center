@@ -47,7 +47,16 @@ func answeredRows(s *state.State, m *Memo, i int, e state.Entry, ap *state.Appro
 		detail = line{deco(target, stMuted)}
 	}
 	e.Text = revealed(e.Text)
-	name := append(line{deco(revealed(approvalWho(s, ap))+" · ", stMuted)}, oneRow(i, e, stToolName)...)
+	own := oneRow(i, e, stToolName)
+	if c := m.command(ap.Tool, ap.Input); c != nil {
+		// A command's shell, and the command as zone B shows it, out of
+		// Codex's launcher, when it is one plain line (plan 72, D1, D2).
+		own, detail, path = nameRow(i, c.c.shell), nil, false
+		if rowPlain(c.c.text) {
+			detail = line{deco(c.c.text, stMuted)}
+		}
+	}
+	name := append(line{deco(revealed(approvalWho(s, ap))+" · ", stMuted)}, own...)
 	at := clockSec(ap.AnsweredAt)
 	sym, outcome, st := deco("✓", stDone), "allowed by you "+at, stDone
 	var more []line
@@ -100,11 +109,16 @@ func pendingBox(s *state.State, ui UI, i int, e state.Entry, ap *state.Approval,
 	if ap.Question {
 		label = "? QUESTION"
 	}
+	cmd := ui.Memo.command(ap.Tool, ap.Input)
 	head := line{deco(label, stAttentionBold), deco(" · "+revealed(approvalWho(s, ap))+" · ", stMuted)}
-	head = append(head, oneRow(i, e, stAttentionBold)...)
+	if cmd != nil {
+		head = append(head, wrapSource(cmd.c.shell, 1<<30, 1<<30, ref{panel: 'B', item: i}, stAttentionBold)[0]...) // its shell (plan 72, D1)
+	} else {
+		head = append(head, oneRow(i, e, stAttentionBold)...)
+	}
 	right := line{deco("  "+clock(ap.RequestedAt), stGrey), deco("  "+originLabel(e.Origin), stAttention)}
 	out := []line{edge("╭", "╮"), in(spread(head, right, inner))}
-	if target != "" {
+	if target != "" && cmd == nil {
 		out = append(out, in(append(spaces(2), fitDetail(markTarget(i, line{deco(target, stText)}), path, inner-2)...)))
 	}
 	qs := QuestionsOf(ap)
@@ -117,7 +131,16 @@ func pendingBox(s *state.State, ui UI, i int, e state.Entry, ap *state.Approval,
 	if nest {
 		pw = inner - 4
 	}
-	if len(qs) > 0 {
+	if cmd != nil {
+		// A command, laid out and coloured, then the context its CLI sent
+		// with it, each only when sent (plan 72, D7).
+		for _, l := range cardCommand(ui, i, cmd, inner, nest) {
+			out = append(out, in(l))
+		}
+		for _, l := range cardContext(s, ap, cmd, inner) {
+			out = append(out, in(l))
+		}
+	} else if len(qs) > 0 {
 		// The questions are drawn whole, every option (plan 14, item 1).
 		for _, l := range questionLines(qs, pickOf(ui, ap, qs), focused, inner) {
 			out = append(out, in(l))
@@ -139,7 +162,7 @@ func pendingBox(s *state.State, ui UI, i int, e state.Entry, ap *state.Approval,
 			}
 		}
 	}
-	if d := ap.Summary; d != "" && d != raw && d != baseOf(raw) {
+	if d := ap.Summary; d != "" && d != raw && d != baseOf(raw) && cmd == nil {
 		for _, l := range wrap(revealed(d), inner) {
 			out = append(out, in(plain(l, stText)))
 		}
@@ -160,6 +183,96 @@ func pendingBox(s *state.State, ui UI, i int, e state.Entry, ap *state.Approval,
 		out = append(out, in(pill("F2 to answer")))
 	}
 	return append(out, edge("╰", "╯"))
+}
+
+// cardCommand is a request's command in its card, inner cells wide (plan
+// 72, D7): laid out (D3) and coloured (D8), whole up to cardWhole lines,
+// else its first cardLines and "… N more lines", which stands for the rest
+// for a search; from nestFrom, in a grey box of its own, as a preview's.
+// The command is the search's target, never selected nor copied (C1).
+func cardCommand(ui UI, i int, f *cmdFacts, inner int, nest bool) []line {
+	lw, ind, pw := inner-2, 2, inner
+	if nest {
+		pw = inner - 4
+		lw, ind = pw-1, 1
+	}
+	rows := f.layout(max(lw, 1))
+	shown := rows
+	if len(rows) > cardWhole {
+		shown = rows[:cardLines]
+	}
+	runs := cmdColours(ui, f, stText)
+	var ls []line
+	for _, r := range shown {
+		ls = append(ls, grounded(append(spaces(ind+r.ind), cmdSpans(f.c.text, r, ref{panel: 'B', item: i}, true, stText, runs)...), pw))
+	}
+	if len(shown) < len(rows) {
+		from := rows[len(shown)].from
+		more := deco(fmt.Sprintf("… %s more lines", grouped(len(rows)-len(shown))), stGrey)
+		more.ref = ref{panel: 'B', kind: refTargetCut, item: i, off: from, n: len(f.c.text) - from}
+		ls = append(ls, grounded(line{deco(strings.Repeat(" ", ind), stNone), more}, pw))
+	}
+	if !nest {
+		return ls
+	}
+	out := []line{decoLine("╭"+strings.Repeat("─", inner-2)+"╮", stFrame)}
+	for _, l := range ls {
+		out = append(out, append(append(line{deco("│ ", stFrame)}, l...), deco(" │", stFrame)))
+	}
+	return append(out, decoLine("╰"+strings.Repeat("─", inner-2)+"╯", stFrame))
+}
+
+// cardWhole is the most lines of a command a card shows whole; a longer
+// one shows its first cardLines (plan 72, D7).
+const cardWhole = 7
+
+// cardContext is the context a command request's CLI sent with it, each
+// part only when sent, under the CLI's own word (plan 72, D7): Codex's
+// reason, Claude's description, the working folder when it is not the
+// project's; the request's format characters drawn (plan 48, design D6).
+func cardContext(s *state.State, ap *state.Approval, f *cmdFacts, inner int) []line {
+	ps := contextParts(s, ap, f, true)
+	lw := 0
+	for _, p := range ps {
+		lw = max(lw, len(p.label))
+	}
+	lw += 2
+	var out []line
+	for _, p := range ps {
+		for j, l := range wrap(revealed(p.text), max(inner-lw, 1)) {
+			lead := strings.Repeat(" ", lw)
+			if j == 0 {
+				lead = p.label + lead[len(p.label):]
+			}
+			out = append(out, line{deco(lead, stMuted), sp(l, stText)})
+		}
+	}
+	return out
+}
+
+// contextPart is a part of a command request's context: its CLI's word for
+// it, and its text.
+type contextPart struct{ label, text string }
+
+// contextParts are a command request's context, each part only when sent:
+// Codex's reason, else Claude's description, then the working folder,
+// outside the project's only when outside.
+func contextParts(s *state.State, ap *state.Approval, f *cmdFacts, outside bool) []contextPart {
+	var ps []contextPart
+	switch d := ap.Summary; {
+	case f.c.reason != "":
+		ps = append(ps, contextPart{"reason", f.c.reason})
+	case d != "" && d != f.c.sent && d != f.c.text && ap.Tool != "commandExecution":
+		ps = append(ps, contextPart{"description", d})
+	}
+	cwd := f.c.cwd
+	if outside {
+		cwd = cwdShown(s, cwd)
+	}
+	if cwd != "" {
+		ps = append(ps, contextPart{"in", hideUser(cwd)})
+	}
+	return ps
 }
 
 // pill is a pink button's label, its ends rounded by half blocks; on a

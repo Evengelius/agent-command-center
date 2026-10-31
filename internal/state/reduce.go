@@ -543,6 +543,14 @@ func (s *State) tool(ev event.Event, p event.Tool) []Command {
 		}
 		s.Tools[id] = &ToolCall{ID: id, Agent: ev.Agent, Name: p.Name, Input: p.Input, Status: ToolStarted, Origin: ev.Origin, StartedAt: ev.At, Stage: s.stage(), Seq: ev.Seq}
 		s.ToolOrder = append(s.ToolOrder, id)
+		// A request that came before its call (plan 72, S1): the requests are
+		// in the queue in the order they came, the newest last.
+		for k := len(s.Queue) - 1; k >= 0; k-- {
+			if a := s.Approvals[s.Queue[k]]; a != nil && a.ToolID == id {
+				s.Tools[id].Approval = a.ID
+				break
+			}
+		}
 		if ev.Agent == "" {
 			s.dropStep(ev.At) // a call is a step's first output (plan 22, criterion 1.5)
 			s.Conversation = append(s.Conversation, Entry{Seq: ev.Seq, Role: "tool", MessageID: id, Text: p.Name, Origin: ev.Origin, At: ev.At})
@@ -804,6 +812,9 @@ func (s *State) requested(ev event.Event, p event.Approval) []Command {
 		Input: p.Input, Question: ev.Kind == event.Question, ForSession: p.ForSession, Problem: p.Problem, Raw: ev.Raw, Status: Pending, RequestedAt: ev.At}
 	s.Approvals[id] = a
 	s.Queue = append(s.Queue, id)
+	if t := s.Tools[p.ToolID]; t != nil && p.ToolID != "" {
+		t.Approval = id // the call it names, already known (plan 72, S1)
+	}
 	if ev.Agent == "" {
 		s.dropStep(ev.At) // a request is a step's first output (plan 22, criterion 1.5)
 	}
@@ -1120,9 +1131,9 @@ func (s *State) verdict(ev event.Event, p event.Verdict) {
 	}
 	switch p.Decision {
 	case event.Allow:
-		t.Reviewed = "approved by auto-review"
+		t.Reviewed, t.ReviewedAt = "approved by auto-review", ev.At
 	case event.Deny:
-		t.Reviewed = "denied by auto-review"
+		t.Reviewed, t.ReviewedAt = "denied by auto-review", ev.At
 	}
 }
 
@@ -1130,6 +1141,11 @@ func (s *State) verdict(ev event.Event, p event.Verdict) {
 // place from started to completed.
 func (s *State) review(ev event.Event, p event.Review) {
 	text := reviewText(p)
+	// The call it names, when the state knows it (plan 72, S2): its review,
+	// as reported, for its row; the entry stays, the record's.
+	if t := s.Tools[ev.Item]; t != nil && ev.Item != "" {
+		t.Review = &Review{ID: p.ReviewID, Status: p.Status, Risk: p.Risk, Authorization: p.Authorization, Rationale: p.Rationale, At: ev.At}
+	}
 	list := s.messages(ev.Agent)
 	for i := len(*list) - 1; i >= 0; i-- {
 		if e := &(*list)[i]; e.Role == "review" && e.MessageID == p.ReviewID {
@@ -1137,7 +1153,7 @@ func (s *State) review(ev event.Event, p event.Review) {
 			return
 		}
 	}
-	*list = append(*list, Entry{Seq: ev.Seq, Role: "review", Agent: ev.Agent, MessageID: p.ReviewID, Text: text, Status: p.Status, Origin: ev.Origin, At: ev.At})
+	*list = append(*list, Entry{Seq: ev.Seq, Role: "review", Agent: ev.Agent, MessageID: p.ReviewID, Text: text, Status: p.Status, Origin: ev.Origin, At: ev.At, Target: ev.Item})
 }
 
 func reviewText(p event.Review) string {

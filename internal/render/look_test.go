@@ -465,9 +465,10 @@ func TestConversationLook(t *testing.T) {
 			prefix, outcome string
 			st              *lipgloss.Style
 		}{
-			{"✓ Read   C:\\work\\proj\\a.txt", clockSec(b.s.Tools["t1"].EndedAt), stDone},
+			// The pending Write draws no row while its card shows (plan 72, D5):
+			// the group's names are Read's and Bash's.
+			{"✓ Read  C:\\work\\proj\\a.txt", clockSec(b.s.Tools["t1"].EndedAt), stDone},
 			{"✗ Bash", "failed " + clockSec(b.s.Tools["t2"].EndedAt), stFailed},
-			{"! Write  C:\\work\\proj\\b.txt", "waiting for you", stAttention},
 			{"◉ Glob  **/*.go", "running --", stProgress}, // waiting for an approval, the turn does not run
 		} {
 			found := false
@@ -487,6 +488,9 @@ func TestConversationLook(t *testing.T) {
 			if !found {
 				t.Errorf("no row %q in:\n%s", c.prefix, strings.Join(rowTexts(ls), "\n"))
 			}
+		}
+		if got := strings.Join(rowTexts(ls), "\n"); strings.Contains(got, "▎  ! Write") || !strings.Contains(got, "! APPROVAL · orchestrator · Write") {
+			t.Errorf("the pending Write: no card, or a row beside it (plan 72, D5):\n%s", got)
 		}
 		// While the turn runs, a running call has the spinner and its time.
 		r := newConvBench("claude-code", "claude-haiku-5-5")
@@ -536,7 +540,7 @@ func TestConversationLook(t *testing.T) {
 		for _, want := range []string{
 			"▎ ╭" + strings.Repeat("─", w-5) + "╮",
 			"▎ │ ! APPROVAL · orchestrator · Bash",
-			"▎ │   ls -0",
+			"▎ │ │  ls -0", // the command in its grey box from 90 cells (plan 72, D7)
 			"▎ │ ! APPROVAL · orchestrator · Write",
 			"▎ │   C:\\work\\proj\\found.txt",
 			"▎ │ ╭" + strings.Repeat("─", w-9) + "╮ │", // the preview in its own box, from 90 cells
@@ -570,21 +574,27 @@ func TestConversationLook(t *testing.T) {
 				}
 			}
 		}
-		// 3.7 answered: one row each, the outcome in its colour.
+		// 3.7 answered: one row each, the call's, its decision in its colour
+		// before the call's own outcome, a denial with its time and nothing of
+		// the call's (plan 72, D5); no row of the request beside it.
+		if strings.Contains(joined, "orchestrator · Bash") && !strings.Contains(joined, "! APPROVAL · orchestrator · Bash") {
+			t.Errorf("an answered request drawn beside its call:\n%s", joined)
+		}
 		for _, c := range []struct {
 			id, text string
 			st       *lipgloss.Style
 		}{{"a1", "allowed by you", stDone}, {"a2", "denied by you", stFailed}} {
-			sym := map[string]string{"allowed by you": "✓", "denied by you": "✗"}[c.text]
-			want := "▎  " + sym + " orchestrator · Bash  ls -" + c.id[1:]
+			sym := map[string]string{"allowed by you": "◉", "denied by you": "✗"}[c.text]
+			want := "▎  " + sym + " Bash  ls -" + c.id[1:]
+			tail := map[string]string{"allowed by you": "allowed by you · running --", "denied by you": "denied by you " + clockSec(b.s.Approvals[c.id].AnsweredAt)}[c.text]
 			found := false
 			for i, r := range got {
 				if !strings.HasPrefix(r, want) {
 					continue
 				}
 				found = true
-				if !strings.HasSuffix(r, c.text+" "+clockSec(b.s.Approvals[c.id].AnsweredAt)+"  observed") {
-					t.Errorf("%q: want %q and its time", r, c.text)
+				if !strings.HasSuffix(r, tail+"  observed") {
+					t.Errorf("%q: want %q", r, tail)
 				}
 				if x, _ := spanOf(ls[i], c.text); x.st != tint(c.st) {
 					t.Errorf("%q: outcome style %v, want %v", r, x.st, c.st)

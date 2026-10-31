@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ◀ back (Esc)   ✓ PowerShell  completed · 3s · exit 0                  observed
+────────────────────────────────────────────────────────────────────────────────
+ COMMAND, laid out for reading
+   $files = Get-ChildItem -Recurse -Filter *.go -File;
+   $todos = $files | Select-String -Pattern 'TODO|FIXME'
+     | Sort-Object Path, LineNumber;
+   $todos
+     | ForEach-Object { "- $($_.Path):$($_.LineNumber) $($_.Line.Trim())" }
+     | Set-Content -LiteralPath 'TODO.md' -Encoding utf8;
+   '{0} items in {1} files' -f $todos.Count,
+       ($todos | Select-Object -Unique Path).Count
+
+ AS SENT, verbatim (Codex's command field)
+   "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command
+   '$files = Get-ChildItem -Recurse -Filter *.go -File; $todos = $files |
+   Select-String -Pattern '"'"'TODO|FIXME'"'"' | Sort-Object Path, LineNumber;
+   $todos | ForEach-Object { "- $($_.Path):$($_.LineNumber) $($_.Line.Trim())"
+   } | Set-Content -LiteralPath '"'"'TODO.md'"'"' -Encoding utf8; '"'"'{0}
+   items in {1} files'"'"' -f $todos.Count, ($todos | Select-Object -Unique
+   Path).Count'
+
+ IN         C:\work\acc-demo
+ ↓ 9 more · y copy the command · ↑↓ PgUp PgDn scroll · Home top · End bottom · …

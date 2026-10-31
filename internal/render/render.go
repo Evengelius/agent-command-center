@@ -177,6 +177,9 @@ type UI struct {
 	// Memo keeps what the frames derive from the state (plan 49, designs D4
 	// and D5); nil derives it all each frame, with the same result.
 	Memo *Memo
+	// Colors keeps the commands' colours, which the application makes off the
+	// draw path (plan 72, P3); nil, or until they are made, draws them plain.
+	Colors *CmdColors
 }
 
 // Pane is a pane of zone A or C the owner scrolled (ui-design.md,

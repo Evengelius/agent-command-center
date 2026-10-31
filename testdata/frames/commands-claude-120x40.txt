@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││                                                                          ││  ≡   │
+│ ──────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│ STAGES · inferred from activity  ││                                                                          ││      │
+│ ✓ TURN 1                      0s ││ ▎ YOU  11:30                                                             ││      │
+│   Use the Agent tool to launch … ││ ▎ Run the tests, and push to origin if they pass.                        ││  ⑂   │
+│   Agent · agent general-purpose  ││                                                                          ││      │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│ ✓ TURN 2                      0s ││                                                                          ││      │
+│   started by the CLI             ││ ▎ CLAUDE  Haiku 5.5  11:30                                               ││  ◉   │
+│                                  ││ ▎  ✗ Bash  go test ./...                     failed 11:30:04  observed   ││      │
+│ ✓ TURN 3                     10s ││ ▎     --- FAIL: TestMarkdownCacheBytes (0.65s)                           ││      │
+│   Run the tests, and push to or… ││ ▎                                                                        ││      │
+│   Bash                           ││ ▎ TestMarkdownCacheBytes fails. I will update from origin and run the    ││      │
+│                                  ││ ▎ tests again.                                                           ││      │
+│                                  ││ ▎                                                                        ││      │
+│ ──────────────────────────────── ││ ▎  ✗ Bash                             denied by you 11:30:08  observed   ││      │
+│ ✦ TELEMETRY        Enter details ││ ▎     git stash                                                          ││      │
+│ ▾ SESSION USAGE                  ││ ▎       && git pull --rebase origin main                                 ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││ ▎       && go test ./...                                                 ││      │
+│   Tokens 159.4k session total    ││                                                                          ││      │
+│   Est. cost $0.01 API-equiv.     ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│                                  ││ │ RESULT  11:30                                                        │ ││      │
+│ ▾ QUOTA WINDOWS                  ││ │ The tests fail on TestMarkdownCacheBytes, and you denied the update: │ ││      │
+│   Session (5hr)             35%† ││ │ nothing was pushed.                                                  │ ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
+│   Resets in 14h 40m              ││                                                                          ││      │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)            47%† ││ >  Ask Mock data anything…                                               ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 1d 20h               ││   +     Haiku 5.5                                            ✋ Manual   ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
+│ no agents yet: they appear as the CLI starts them                                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

@@ -672,10 +672,11 @@ func convStarts(s *state.State, ui UI, w, room int, lk []look) (starts []int, ro
 	for i := range s.Conversation {
 		e := &s.Conversation[i] // by reference, and no closure an entry: every frame counts all (plan 49, design D5)
 		lk[i].size = size
-		n, ok := ui.Wrap.counted(i, e, w, lk[i].shape())
+		blk := blockKeyOf(s, e, lk[i])
+		n, ok := ui.Wrap.counted(i, e, w, lk[i].shape(), blk)
 		if !ok {
 			n = len(entryRows(s, ui, nil, i, *e, w, lk[i]))
-			ui.Wrap.keepCount(i, e, w, lk[i].shape(), n)
+			ui.Wrap.keepCount(i, e, w, lk[i].shape(), blk, n)
 		}
 		if t, ok := anchors[i]; ok {
 			n += reviewCount(s, ui, t)

@@ -116,13 +116,13 @@ suggestions closed, plans 64 to 66 and plan 69 (the session's resumption
 from the home screen), with plans 67 and 68, which the owner put before
 the last (the characters typed with AltGr; the keyboard reader's races).
 Then plan 70, the owner's own (amendment 72), approved on 2026-10-30,
-and plan 71, the owner's own (amendment 74), approved on 2026-10-31.
-The next plan starts when the owner asks for one, as a plan for the
-owner's review.
+and plans 71 and 72, the owner's own (amendments 74 and 75), approved on
+2026-10-31. The next plan starts when the owner asks for one, as a plan
+for the owner's review.
 
 ## No plan active
 
-Plan 71 was approved and closed on 2026-10-31 (Closed plans, below).
+Plan 72 was approved and closed on 2026-10-31 (Closed plans, below).
 
 ## Closed plans
 
@@ -1032,3 +1032,21 @@ it, Codex's live test not repeated after the fix
 "Plan 71: Consistent Markdown rendering and cache optimization", pushed
 after the final Git checks; its full text in that file, The plan as it
 ran.
+
+## Plan 72 - Tool commands, approval cards and the activity timeline
+
+Brief amendment 75: how zone B presents the commands Claude Code and Codex
+run. The shell's name in place of `commandExecution`; Codex's command out
+of its launcher when that is exact, else whole; long commands laid out
+under their row, folded from four lines, unfolded by → or a click; one entry
+per operation, the decision on its call's row and Codex's review under its
+command; a command's card laid out and highlighted, with only the context
+the CLI sends; a command's full view with COMMAND, AS SENT, IN and APPROVAL,
+copied byte for byte, and `y`. Approved on 2026-10-31 after the owner's
+Human Evaluation and an independent review, APPROVED WITH RESERVATIONS, no
+blocking issue: the rendering overhead (R1), a Codex review coming before
+its call (R2) and the evidence's traceability (R3), each accepted. 22 PASS,
+0 FAIL; 64 mutants, 62 detected, 30 and 31 surviving as equivalent
+([`doc/plan72-evaluation.md`](doc/plan72-evaluation.md)); one commit,
+"Plan 72: Readable tool commands and approvals in Zone B", pushed after the
+final Git checks; its full text in that file, The plan as it ran.

@@ -19,7 +19,7 @@ func TestOutputCutNote(t *testing.T) {
 	e := state.Entry{Role: "tool", MessageID: "c1", Text: "commandExecution"}
 	const note = "… 139 KB of earlier output not kept"
 	views := func() (string, string) {
-		_, body := toolView(s, UI{Now: time.Time{}}, e, span{}, 100)
+		_, body, _ := toolView(s, UI{Now: time.Time{}}, e, span{}, 100)
 		return texts(inspectTools(s, nil, a, 100, time.Time{})), texts(body)
 	}
 	in, full := views()

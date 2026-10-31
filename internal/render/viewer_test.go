@@ -314,7 +314,8 @@ func TestEntryViewerBody(t *testing.T) {
 	}
 
 	tool := view(4)
-	for _, want := range []string{"✓ Bash", "completed · 2s", "$ go test ./...", "go vet ./...", "OUTPUT", "ok  pkg/a", "ok  pkg/b"} {
+	// A command: its COMMAND section, laid out for reading (plan 72, D9).
+	for _, want := range []string{"✓ Bash", "completed · 2s", "COMMAND, laid out for reading", "   go test ./...", "   go vet ./...", "OUTPUT", "ok  pkg/a", "ok  pkg/b"} {
 		if !strings.Contains(tool, want) {
 			t.Errorf("tool view lacks %q:\n%s", want, tool)
 		}

@@ -358,7 +358,9 @@ func TestApprovalCards(t *testing.T) {
 			if ap := h.m.State().Approvals[id]; ap.Status != state.Allowed {
 				t.Errorf("approval %q after allow", ap.Status)
 			}
-			if f := frameText(h); !strings.Contains(f, "✓ orchestrator · Write") || !strings.Contains(f, "allowed by you") {
+			// The answer on the call's row, no row of the request beside it
+			// (plan 72, D5).
+			if f := frameText(h); strings.Contains(f, "orchestrator · Write") || !rowWith(f, "Write", "allowed by you · ") {
 				t.Errorf("answered card:\n%s", f)
 			}
 			if h.m.edit.Text() != "ad" {

@@ -250,6 +250,9 @@ type Entry struct {
 	// Images are the images a user entry's message carried as image input,
 	// named from the attachments when the dashboard sent them (plan 31).
 	Images []event.Image
+	// Target is a review entry's target, the item its event names (Codex's
+	// targetItemId); "" for any other entry (plan 72, S2).
+	Target string
 }
 
 // Thought is one thinking phase of the orchestrator, the entry of role
@@ -405,8 +408,25 @@ type ToolCall struct {
 
 	// Reviewed is who decided the call's permission when the CLI says an
 	// auto-review did: "approved by auto-review" or "denied by auto-review";
-	// "" otherwise (plan 12, item 2).
-	Reviewed string
+	// "" otherwise (plan 12, item 2). ReviewedAt is when that verdict came
+	// (plan 72, S3).
+	Reviewed   string
+	ReviewedAt time.Time
+
+	// Approval is the request naming the call, its ID in Approvals: the last
+	// one, matched whichever came first; "" for none (plan 72, S1).
+	Approval string
+	// Review is Codex's auto-review naming the call, as its event reports it;
+	// nil for none (plan 72, S2).
+	Review *Review
+}
+
+// Review is one auto-review of a call, Codex's item/autoApprovalReview
+// ([UNSTABLE]), its status as reported: inProgress, approved, denied,
+// timedOut, aborted (plan 72, S2). ID is its review entry's MessageID.
+type Review struct {
+	ID, Status, Risk, Authorization, Rationale string
+	At                                         time.Time
 }
 
 // Stage is one user turn as zone A shows it: an inferred stage whose

@@ -84,6 +84,7 @@ type inputFacts struct {
 	tool       string // toolTarget's
 	detail     string // toolDetail's
 	detailPath bool
+	cmd        *cmdFacts // the command it holds, its layouts kept with it; nil for none (plan 72, P2)
 }
 
 // readInput reads in as the three readers do, question saying it is a
@@ -93,7 +94,20 @@ func readInput(in json.RawMessage, question bool) inputFacts {
 	f.target, f.path, f.body = approvalDetail(&state.Approval{Input: in, Question: question})
 	f.tool = toolTarget(in)
 	f.detail, f.detailPath = toolDetail(&state.ToolCall{Input: in})
+	if c := readCmd(in); c.sent != "" {
+		f.cmd = &cmdFacts{in: c}
+	}
 	return f
+}
+
+// command is what tool name's input in shows of its command, read once with
+// the input's other facts; nil for a tool that runs none (plan 72, P2).
+func (m *Memo) command(name string, in json.RawMessage) *cmdFacts {
+	f := m.input(in, false)
+	if f.cmd == nil || !f.cmd.of(name).ok {
+		return nil
+	}
+	return f.cmd
 }
 
 // input is in's facts, read once for as long as the frames use them: what

@@ -14,7 +14,8 @@ import (
 // stopped about a second and a half after the last match; started inside a
 // bubble, that goroutine outlives the test and the bubble panics. Here every
 // colouring runs on one goroutine started before the tests, outside every
-// bubble, through channels made there too (plan 17, Highlighting).
+// bubble, through channels made there too (plan 17, Highlighting); a
+// command's colours too (plan 72, P3).
 type hlReq struct {
 	name     string
 	lines    []string
@@ -22,18 +23,33 @@ type hlReq struct {
 }
 
 var (
-	hlMu      sync.Mutex
-	hlReqs    = make(chan hlReq)
-	hlReplies = make(chan render.Highlighted)
+	hlMu          sync.Mutex
+	hlReqs        = make(chan hlReq)
+	hlReplies     = make(chan render.Highlighted)
+	colourReqs    = make(chan render.CmdWant)
+	colourReplies = make(chan render.Coloured)
 )
 
 func TestMain(m *testing.M) {
 	go func() {
-		for r := range hlReqs {
-			hlReplies <- render.Highlight(r.name, r.lines, r.from, r.to)
+		for {
+			select {
+			case r := <-hlReqs:
+				hlReplies <- render.Highlight(r.name, r.lines, r.from, r.to)
+			case w := <-colourReqs:
+				colourReplies <- render.ColourCommand(w)
+			}
 		}
 	}()
 	os.Exit(m.Run())
+}
+
+// outsideColour is render.ColourCommand run on the goroutine above.
+func outsideColour(w render.CmdWant) render.Coloured {
+	hlMu.Lock()
+	defer hlMu.Unlock()
+	colourReqs <- w
+	return <-colourReplies
 }
 
 // outsideHighlight is render.Highlight run on the goroutine above.

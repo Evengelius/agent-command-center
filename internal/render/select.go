@@ -82,6 +82,9 @@ type Screen struct {
 	// node or a telemetry heading, for a click (plan 24, design D6).
 	AY    int
 	ARows map[int]string
+	// srcs are the full view's sections that copy their source, not their
+	// rows (plan 72, C2).
+	srcs []viewSrc
 	// fileLines are the file the viewer shows, for its selection (panel F);
 	// fileMd their Markdown kinds while it previews them (plan 71).
 	fileLines []string
@@ -549,6 +552,20 @@ func (sc *Screen) Text(s *state.State, sel Selection) string {
 	}
 	var rows []string
 	for i := f.Item; i <= t.Item; i++ {
+		if v := sc.srcOf(f.Panel, i); v != nil {
+			// A section that copies its source: its bytes between the ends,
+			// whatever its rows (plan 72, C2).
+			lo, hi := 0, len(v.text)
+			if i == f.Item {
+				lo = min(f.Off, hi)
+			}
+			if t.Item == v.first {
+				hi = min(t.Off, hi)
+			}
+			rows = append(rows, v.text[lo:max(lo, hi)])
+			i = v.last
+			continue
+		}
 		r := sc.source(f.Panel, i)
 		lo, hi := 0, len(r)
 		if i == f.Item {
@@ -602,7 +619,24 @@ func (sc *Screen) LineText(s *state.State, p Pos) string {
 		}
 		return ""
 	}
+	if v := sc.srcOf(p.Panel, p.Item); v != nil {
+		return v.text // its offsets are the source's (plan 72, C2)
+	}
 	return sc.source(p.Panel, p.Item)
+}
+
+// srcOf is the full view's section that body row item of panel p is in,
+// nil for none.
+func (sc *Screen) srcOf(p byte, item int) *viewSrc {
+	if p != 'I' {
+		return nil
+	}
+	for k := range sc.srcs {
+		if v := &sc.srcs[k]; item >= v.first && item <= v.last {
+			return v
+		}
+	}
+	return nil
 }
 
 // source is the text panel p's body row item shows, built on first use.

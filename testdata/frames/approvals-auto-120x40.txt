@@ -3,7 +3,7 @@
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
 │ A · ORCHESTRATOR                 ││                                                                          ││      │
 │ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎ CLAUDE  Haiku 5.5  11:30                                               ││  ≡   │
-│ ──────────────────────────────── ││ ▎  ✓ Agent  general-purpo…  approved by auto-review 11:30:00      mock   ││      │
+│ ──────────────────────────────── ││ ▎  ✓ Agent  general-pur…  approved by auto-review · 11:30:00      mock   ││      │
 │ STAGES · inferred from activity  ││ ▎                                                                        ││      │
 │ ✓ TURN 1                      0s ││ ▎ I've launched the subagent in the background to list the directory     ││      │
 │   Use the Agent tool to launch … ││ ▎ and write found.txt. I'll report its result when it finishes.          ││  ⑂   │

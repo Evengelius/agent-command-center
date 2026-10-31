@@ -121,8 +121,12 @@ State
   Applied, FirstAt count, time         the events applied and the first one's time
   Unrecognised     count, and the last 20 lines as UnknownEntry {At, Type, Reason, Line} (plan 25)
 
-Entry        {Seq, Role: user|assistant|tool|notice|dashboard|approval, Agent, Text,
-              Origin, Streaming bool, At}
+Entry        {Seq, Role: user|assistant|tool|notice|dashboard|approval|review, Agent, Text,
+              Origin, Streaming bool, At, Target (a review's: the item it names; plan 72)}
+ToolCall     {ID, Agent, Name, Input, Status, Output, StartedAt, EndedAt,
+              ExitCode, Reviewed, ReviewedAt (the classifier's verdict and its
+              time), Approval (the last request naming it), Review (Codex's
+              auto-review naming it, as reported); plan 72}
 Agent        {Key, Parent, Label, Kind (subagent|workflow|bash|thread),
               Model (value or N/A), Status, StatusOrigin, Task, Files,
               Tools []ToolID, Messages []Entry, Tokens, StartedAt, EndedAt,
@@ -223,6 +227,30 @@ item 1).
   that began and ended in one batch of events is never animated, and when
   the activity line's condition began (`render.UI.ActivitySince`), which
   it shows 200 ms after (correction C6).
+- **A call, its requests and its reviews** (plan 72, S1 to S4). A request
+  names its call by `Approval.ToolID` (Claude Code's `tool_use_id`,
+  Codex's `itemId`); the call keeps the last request naming it,
+  `ToolCall.Approval`, matched whichever comes first: at `tool.started`
+  from the requests of the queue, the newest first, at the request from the
+  call known (both CLIs report the call first, P3b, P6b, P12x).
+  Codex's auto-review (`item/autoApprovalReview`, [UNSTABLE]) names the
+  item it reviews (`targetItemId`, the event's `Item`): its entry keeps it,
+  `Entry.Target`, and the call its review as last reported,
+  `ToolCall.Review` (its id, status, risk, authorization, rationale and
+  time); the review's entry stays, the record's. Claude Code's classifier
+  verdict keeps its time, `ToolCall.ReviewedAt`, beside `Reviewed`. Zone B
+  draws an answered request and a review on their call's row from these,
+  and a call's row not at all while its request's card shows
+  ([ui-design.md, Zone B](ui-design.md#zone-b), Commands); the states
+  above, their machines below, the events and the commands to the CLI are
+  unchanged, and a command block's fold is a choice of the interface, in
+  `render.UI.Unfolded` under `render.CommandKey`, as a run's. **A known
+  limit, accepted by the owner** (plan 72, R2): unlike a request, a review
+  is joined to its call only when its event finds the call. Every recording
+  has the call first (P12x); a review reported whole before its call would
+  leave the call without it, and zone B, its entry then naming a command
+  call drawn there, would draw no verdict
+  ([plan72-evaluation.md, R2](plan72-evaluation.md#approval-and-closure-2026-10-31)).
 - The record lives in memory for the session (ASM-11). Claude Code's
   `--resume` does not replay history (P4), so the dashboard's record is the
   only source of earlier turns in one dashboard session

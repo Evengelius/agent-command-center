@@ -9,23 +9,23 @@
 │   Create a file named hello.txt… ││ ──────────────────────────────────────────────────────────────────────── ││  ⑂   │
 │   Write                          ││                                                                          ││      │
 │                                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
-│ ✓ TURN 2                      1s ││ ▎  ✓ Write  <probe-root>\probe-work\p2\hello.txt    02:00:09  observed   ││      │
-│   Reply with the single word: a… ││ ▎  ✓ orchestrator · Write  …llo.txt  allowed by you 02:00:09  observed   ││  ◉   │
-│                                  ││                                                                          ││      │
+│ ✓ TURN 2                      1s ││ ▎  ✓ Write  …\p2\hello.txt         allowed by you · 02:00:09  observed   ││      │
+│   Reply with the single word: a… ││                                                                          ││  ◉   │
 │                                  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
 │                                  ││ │ RESULT  02:00                                                        │ ││      │
 │                                  ││ │ done                                                                 │ ││      │
 │                                  ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
 │                                  ││                                                                          ││      │
-│ ──────────────────────────────── ││ ──────────────────────────────────────────────────────────────────────── ││      │
-│ ✦ TELEMETRY        Enter details ││                                                                          ││      │
-│ ▾ SESSION USAGE                  ││ ▎ YOU  02:00                                                             ││      │
-│   Context 3% of 1M ░░░░░░░░░░░░░ ││ ▎ Reply with the single word: again                                      ││      │
-│   Tokens 91.1k session total     ││                                                                          ││      │
-│   Est. cost $0.00 API-equiv.     ││ ──────────────────────────────────────────────────────────────────────── ││      │
-│                                  ││                                                                          ││      │
-│ ▾ QUOTA WINDOWS                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
-│   Session (5hr)             25%† ││ ▎ again                                                                  ││      │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│ ──────────────────────────────── ││                                                                          ││      │
+│ ✦ TELEMETRY        Enter details ││ ▎ YOU  02:00                                                             ││      │
+│ ▾ SESSION USAGE                  ││ ▎ Reply with the single word: again                                      ││      │
+│   Context 3% of 1M ░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Tokens 91.1k session total     ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Est. cost $0.00 API-equiv.     ││                                                                          ││      │
+│                                  ││ ▎ CLAUDE  Haiku 5.5  02:00                                               ││      │
+│ ▾ QUOTA WINDOWS                  ││ ▎ again                                                                  ││      │
+│   Session (5hr)             25%† ││                                                                          ││      │
 │   ████████░░░░░░░░░░░░░░░░░░░░░░ ││                                                                          ││      │
 │   Resets in 14h 40m              ││                                                                          ││      │
 │                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │

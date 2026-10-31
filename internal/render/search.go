@@ -18,7 +18,8 @@ import (
 // D3): Item the entry, Line its line as entryLines gives them, Off and N
 // its bytes in that line. A match in a tool row's or an approval's target
 // has Target set: Off is then in the target as its row writes it, before
-// the row cuts it to its room, and Line is 0, the row's own.
+// the row cuts it to its room, and Line is 0, the row's own; Line 2 is a
+// command call's review part, under its command (plan 72, C4).
 type ConvMatch struct {
 	Item, Line, Off, N int
 	Target             bool
@@ -30,13 +31,39 @@ type ConvMatch struct {
 // session take 5 to 9 ms to read, too long for every keystroke). The
 // application makes one when the bar opens and drops it when it closes:
 // one string a call or a request.
-type SearchMemo struct{ targets, approvals map[string]string }
+type SearchMemo struct{ targets, approvals, names map[string]string }
 
-// target is tc's target as its row writes it before the cut; "" for none.
+// name is entry e's name as its row shows it, a Codex command's shell's
+// read once while the bar is open (callName).
+func (m *SearchMemo) name(s *state.State, e *state.Entry) string {
+	name, _, _ := strings.Cut(e.Text, "\n")
+	if name != "commandExecution" || m == nil {
+		return callName(s, nil, e)
+	}
+	if n, ok := m.names[e.MessageID]; ok {
+		return n
+	}
+	if m.names == nil {
+		m.names = map[string]string{}
+	}
+	n := callName(s, nil, e)
+	m.names[e.MessageID] = n
+	return n
+}
+
+// target is tc's target as its row writes it before the cut, a command's
+// whole, out of Codex's launcher when it is so shown (plan 72, C4); "" for
+// none.
 func (m *SearchMemo) target(tc *state.ToolCall) string {
-	if m == nil {
+	read := func() string {
+		if f := (*Memo)(nil).command(tc.Name, tc.Input); f != nil {
+			return f.c.text
+		}
 		d, _ := toolDetail(tc)
 		return d
+	}
+	if m == nil {
+		return read()
 	}
 	if d, ok := m.targets[tc.ID]; ok {
 		return d
@@ -44,7 +71,7 @@ func (m *SearchMemo) target(tc *state.ToolCall) string {
 	if m.targets == nil {
 		m.targets = map[string]string{}
 	}
-	d, _ := toolDetail(tc)
+	d := read()
 	m.targets[tc.ID] = d
 	return d
 }
@@ -54,6 +81,9 @@ func (m *SearchMemo) target(tc *state.ToolCall) string {
 // plan 48, design D6); "" for none.
 func (m *SearchMemo) approvalTarget(ap *state.Approval) string {
 	read := func() string {
+		if f := (*Memo)(nil).command(ap.Tool, ap.Input); f != nil {
+			return f.c.text // the command its card lays out (plan 72, C4)
+		}
 		d, _, _ := approvalDetail(ap)
 		return revealed(d)
 	}
@@ -82,9 +112,10 @@ func ConvMatches(s *state.State, ui UI, q string, m *SearchMemo) ([]ConvMatch, b
 	}
 	fold := q == strings.ToLower(q)
 	var out, buf []ConvMatch
+	waiting := waitingCalls(s)
 	for i := len(s.Conversation) - 1; i >= 0; i-- {
 		e := &s.Conversation[i] // by reference: every keystroke reads them all (plan 49, design D5)
-		if !searchable(ui, e) {
+		if !searchable(s, ui, e, waiting) {
 			continue
 		}
 		buf = buf[:0]
@@ -106,11 +137,17 @@ func ConvMatches(s *state.State, ui UI, q string, m *SearchMemo) ([]ConvMatch, b
 // searchable says whether B draws entry e, or folds it in a run, the
 // entries a search goes through (design D3): not an assistant entry holding
 // only a thinking mark, which B never draws, nor a thinking phase B shows
-// as no row or as its live card (lookAll's hidden ones and the card).
-func searchable(ui UI, e *state.Entry) bool {
-	if e.Role == "thinking" {
+// as no row or as its live card (lookAll's hidden ones and the card), nor
+// an entry B draws on another's row, a request answered or a review, which
+// the call's parts give, nor a call while its card shows, the card's
+// (plan 72, C4).
+func searchable(s *state.State, ui UI, e *state.Entry, waiting map[string]bool) bool {
+	switch e.Role {
+	case "thinking":
 		st := thoughtStage(ui, *e)
 		return st != thinkHidden && st != thinkLive
+	case "tool", "approval", "review":
+		return !elsewhere(s, e, waiting)
 	}
 	return !thinkingMark(e)
 }
@@ -122,20 +159,25 @@ func searchable(ui UI, e *state.Entry) bool {
 func entryParts(s *state.State, e *state.Entry, m *SearchMemo, f func(line int, target bool, text string)) {
 	switch e.Role {
 	case "tool":
-		name, _, _ := strings.Cut(e.Text, "\n")
-		f(0, false, name)
-		if tc := s.Tools[e.MessageID]; tc != nil {
+		// Its lines as entryLines gives them, its name as shown and its error
+		// unless denied (plan 72), each read in place.
+		f(0, false, m.name(s, e))
+		tc := s.Tools[e.MessageID]
+		if tc != nil {
 			if d := m.target(tc); d != "" {
 				f(0, true, d)
 			}
 		}
-		if err := toolError(s, *e); err != "" {
+		if err := toolError(s, *e); err != "" && !deniedCall(s, *e) {
 			f(1, false, err)
 		}
-	case "approval":
-		for j, l := range entryLines(s, *e) {
-			f(j, false, l)
+		if tc != nil && commandTool(tc.Name) && callEntry(s, tc) >= 0 {
+			if r := reviewPart(tc.Review); r != "" {
+				f(2, true, r) // its review, drawn under its command (plan 72, D6)
+			}
 		}
+	case "approval":
+		f(0, false, m.name(s, e))
 		if ap := s.Approvals[e.MessageID]; ap != nil {
 			if d := m.approvalTarget(ap); d != "" {
 				f(0, true, d)
@@ -317,20 +359,46 @@ func rowEnd(c crow, role string) (SearchPos, bool) {
 
 // MatchFolds is the folds a match is behind (plan 66, design D5): its run of
 // calls when B folds its entry away, a phase's details when the match is in
-// them; the keys of ui.Unfolded to open.
-func MatchFolds(s *state.State, ui UI, m ConvMatch) []string {
+// them, a command's block when the match is in what it folds, B w cells
+// wide (plan 72, C4); the keys of ui.Unfolded to open.
+func MatchFolds(s *state.State, ui UI, w int, m ConvMatch) []string {
 	if m.Item < 0 || m.Item >= len(s.Conversation) {
 		return nil
 	}
 	var keys []string
 	lk, _ := lookAll(s, ui)
-	if k := lk[m.Item]; k.hidden && k.run != "" && !k.open {
+	k := lk[m.Item]
+	if k.hidden && k.run != "" && !k.open {
 		keys = append(keys, k.run)
 	}
-	if e := s.Conversation[m.Item]; e.Role == "thinking" && m.Line > 0 && !ui.Unfolded[ThoughtKey(e)] {
+	e := s.Conversation[m.Item]
+	if e.Role == "thinking" && m.Line > 0 && !ui.Unfolded[ThoughtKey(e)] {
 		keys = append(keys, ThoughtKey(e))
 	}
+	if e.Role == "tool" && !k.cmdOpen {
+		if b := blockOf(s, ui, &e, cardContent(k.card, w), k); b != nil && b.hides(m) {
+			keys = append(keys, CommandKey(b.tc.ID))
+		}
+	}
 	return keys
+}
+
+// hides says the folded block hides match m, in part or whole: in its
+// command's lines past its first, in its review's part or its error past
+// the cut.
+func (b *cmdBlock) hides(m ConvMatch) bool {
+	end := m.Off + m.N
+	switch {
+	case !b.mark:
+		return false
+	case m.Target && m.Line == 0:
+		return b.under && len(b.rows) >= blockFold && end > b.rows[blockShow].from
+	case m.Target && m.Line == 2:
+		return b.review != "" && end > b.reviewRanges()[0].to
+	case m.Line == 1:
+		return b.err != "" && end > b.errRanges()[0].to
+	}
+	return false
 }
 
 // ConvMatchRow is the conversation's row match m is on, w cells wide with
@@ -351,6 +419,8 @@ func ConvMatchRow(s *state.State, ui UI, w, room int, m ConvMatch) (row, rows in
 			continue
 		}
 		switch {
+		case c.tr != nil && c.tr.line == m.Line && (m.Target || m.Line == 1) && m.Off < c.tr.to:
+			return starts[m.Item] + j, rows, true // a command block's row (plan 72, C4)
 		case c.src != "" && !m.Target && c.line == m.Line:
 			if m.Off < max(c.r.to, c.r.from+1) {
 				return starts[m.Item] + j, rows, true
@@ -549,12 +619,12 @@ func lightSearch(sc *Screen, s *state.State, ui UI) {
 					if !m.Target && m.Line == r.line && m.Off < r.off+r.n && m.Off+m.N > r.off {
 						whole = stronger(whole, style(m))
 					}
-				case refTarget:
-					if lo, hi := max(m.Off, r.off), min(m.Off+m.N, r.off+len(x.text)); m.Target && lo < hi {
+				case refTarget: // a command's review part is its line 2 (plan 72, C4)
+					if lo, hi := max(m.Off, r.off), min(m.Off+m.N, r.off+len(x.text)); m.Target && m.Line == r.line && lo < hi {
 						lit = append(lit, litRange{lo - r.off, hi - r.off, style(m)})
 					}
 				case refTargetCut:
-					if m.Target && m.Off < r.off+r.n && m.Off+m.N > r.off {
+					if m.Target && m.Line == r.line && m.Off < r.off+r.n && m.Off+m.N > r.off {
 						whole = stronger(whole, style(m))
 					}
 				case refFold:
@@ -660,6 +730,7 @@ func lightView(sc *Screen, s *state.State, ui UI, cur ConvMatch, hasCur bool) {
 			}
 		}
 	}
+	srcLit := map[int][]litRange{} // a section's matches in its source, by its first row (plan 72, C2)
 	for y, l := range sc.lines {
 		var text strings.Builder
 		item := -1
@@ -673,7 +744,17 @@ func lightView(sc *Screen, s *state.State, ui UI, cur ConvMatch, hasCur bool) {
 			continue
 		}
 		lit := rows[item]
-		if ls == nil {
+		switch v := sc.srcOf('I', item); {
+		case v != nil:
+			// Its spans' offsets are the source's: the query in the source,
+			// across the rows its layout breaks it into.
+			ms, ok := srcLit[v.first]
+			if !ok {
+				findIn(v.text, q, fold, func(off int) { ms = append(ms, litRange{off, off + len(q), stMatch}) })
+				srcLit[v.first] = ms
+			}
+			lit = ms
+		case ls == nil:
 			findIn(text.String(), q, fold, func(off int) { lit = append(lit, litRange{off, off + len(q), stMatch}) })
 		}
 		if len(lit) == 0 {

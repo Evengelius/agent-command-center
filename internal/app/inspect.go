@@ -330,6 +330,12 @@ func (m *Model) viewKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		}
 		m.closeView()
 		return m.cardKey(k)
+	case "y":
+		// A command's full view: the command as its CLI sent it, byte for
+		// byte, through the clipboard's usual copy and its toast (plan 72, C3).
+		if text, ok := render.CommandSent(m.s, m.ui); ok {
+			return m.copy(text), true
+		}
 	case "up":
 		m.inspectScroll(-1)
 	case "down":
@@ -381,6 +387,16 @@ func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	if e := m.s.Conversation[m.ui.Entry-1]; e.Role == "thinking" && render.Expandable(e) {
 		thought = render.ThoughtKey(e)
 	}
+	// A command's block with something to fold: its key in ui.Unfolded, and
+	// whether it is unfolded (plan 72, K2).
+	var block string
+	var blockOpen bool
+	if m.screen != nil {
+		var ok bool
+		if block, blockOpen, ok = render.CommandFold(m.s, m.ui, m.screen.Conv.W, m.ui.Entry); !ok {
+			block = ""
+		}
+	}
 	switch k.String() {
 	case "up":
 		m.stepCursor(-1)
@@ -403,10 +419,16 @@ func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 			m.unfold(key, true)
 		case thought != "":
 			m.unfold(thought, true)
+		case block != "":
+			m.unfold(block, true)
 		}
 	case "left":
 		if thought != "" && m.ui.Unfolded[thought] {
 			m.unfold(thought, false) // the details fold; the cursor stays on the row
+			break
+		}
+		if block != "" && blockOpen {
+			m.unfold(block, false) // the block folds first, the cursor on its row, then its run
 			break
 		}
 		if !inRun || !open {

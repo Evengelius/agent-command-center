@@ -90,6 +90,10 @@ type Options struct {
 	// Highlight colours a file's lines for the file viewer (plan 17); nil is
 	// render.Highlight.
 	Highlight func(name string, lines []string, from, to int) render.Highlighted
+	// Colour colours a command for zone B, the cards and the full views
+	// (plan 72, D8), in a command off the event loop; nil is
+	// render.ColourCommand.
+	Colour func(render.CmdWant) render.Coloured
 	// Git runs the Worktrees view's git (plan 16); nil is the git on the PATH.
 	Git input.Git
 	// Sessions records this dashboard's sessions for the Worktrees view;
@@ -348,6 +352,13 @@ type Model struct {
 	// clickFold is what the last click on a fold row of zone B changed, so a
 	// double click there undoes it before opening the entry (plan 42).
 	clickFold clickFold
+	// colours is how far the commands' colours were asked for: the calls of
+	// s.ToolOrder and the requests of s.Queue before tools and asks, in
+	// state s (plan 72, P3).
+	colours struct {
+		s           *state.State
+		tools, asks int
+	}
 }
 
 // Messages.
@@ -402,10 +413,13 @@ func New(opt Options) *Model {
 	if opt.Highlight == nil {
 		opt.Highlight = render.Highlight
 	}
+	if opt.Colour == nil {
+		opt.Colour = render.ColourCommand
+	}
 	opt.Keys = opt.Keys.WithDefaults()
 	m := &Model{opt: opt, s: state.New(), detected: map[string]provider.Detection{}}
 	m.env = input.PathEnv{Windows: filepath.Separator == '\\', Home: opt.Home, Cwd: opt.Cwd}
-	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache(), Memo: render.NewMemo(),
+	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache(), Memo: render.NewMemo(), Colors: render.NewCmdColors(),
 		KeysProblem: opt.KeysProblem, CodexProxy: opt.CodexProxy, CodexProxyProblem: opt.CodexProxyProblem, NerdIcons: opt.NerdIcons}
 	m.ui.SendKeys, m.ui.NewlineKeys = opt.Keys.Display()
 	m.ui.Version, m.ui.System = Version, systemName(runtime.GOOS) // the home screen's header (plan 51, design D5)
@@ -660,6 +674,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case toastMsg:
 		cmds = append(cmds, m.toast(msg.text)...)
+	case colouredMsg:
+		for _, c := range msg.cs {
+			m.ui.Colors.Put(c)
+		}
 	case toastDoneMsg:
 		if msg.gen == m.toastGen {
 			m.ui.Toast = ""
@@ -701,7 +719,37 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds = append(cmds, m.pings()...)
 	cmds = append(cmds, m.timers()...)
 	cmds = append(cmds, m.draftChanged()...)
+	cmds = append(cmds, m.colourCommands()...)
 	return m, tea.Batch(cmds...)
+}
+
+// colouredMsg is commands' colours, made off the event loop.
+type colouredMsg struct{ cs []render.Coloured }
+
+// colourCommands asks for the colours of the commands come since the last
+// Update, the calls' and the requests', and of those a frame drew plain:
+// one command for them all, Chroma's work off the event loop and off the
+// draw path (plan 72, P3). Until their colours come, they are drawn plain,
+// in the same layout.
+func (m *Model) colourCommands() []tea.Cmd {
+	c := &m.colours
+	if c.s != m.s {
+		c.s, c.tools, c.asks = m.s, 0, 0 // another state: its commands from the first
+	}
+	ws := m.ui.Colors.Ask(render.CommandWants(m.s, c.tools, c.asks))
+	c.tools, c.asks = len(m.s.ToolOrder), len(m.s.Queue)
+	ws = append(ws, m.ui.Colors.Wants()...)
+	if len(ws) == 0 {
+		return nil
+	}
+	colour := m.opt.Colour
+	return []tea.Cmd{func() tea.Msg {
+		out := make([]render.Coloured, len(ws))
+		for i, w := range ws {
+			out[i] = colour(w)
+		}
+		return colouredMsg{out}
+	}}
 }
 
 // syncUI copies what the renderer needs from the editors.

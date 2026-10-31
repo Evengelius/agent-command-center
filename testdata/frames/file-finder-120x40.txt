@@ -2,7 +2,7 @@
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
 ╭──────────────────────────────────╮╭──────────────────────────────────────────────────────────────────────────╮╭──────╮
 │ A · ORCHESTRATOR                 ││ EXPLORER                                                               ⌄ ││▎     │
-│ ✿ Claude H╭─ Quick open ────────────────────────────────────────────────────────────────────── 14 files ─╮── ││▎ ≡   │
+│ ✿ Claude H╭─ Quick open ────────────────────────────────────────────────────────────────────── 16 files ─╮── ││▎ ≡   │
 │ ──────────│ › vi▌                                                                                        │   ││▎     │
 │ STAGES · i│ ▸ sample/viewer.go                                                                           │●  ││      │
 │ ✓ TURN 1  │                                                                                              │D  ││      │
@@ -12,14 +12,14 @@
 │ ✓ TURN 2  │                                                                                              │   ││      │
 │   started │                                                                                              │   ││  ◉   │
 │ ──────────│                                                                                              │   ││      │
-│ ✦ TELEMETR│                                                                                              │U  ││      │
-│ ▾ SESSION │                                                                                              │   ││      │
+│ ✦ TELEMETR│                                                                                              │   ││      │
+│ ▾ SESSION │                                                                                              │U  ││      │
 │   Context │                                                                                              │   ││      │
 │   Tokens 1│                                                                                              │   ││      │
-│   Est. cos│                                                                                              │!  ││      │
-│ ▾ QUOTA WI│                                                                                              │A  ││      │
-│   Session │                                                                                              │   ││      │
-│   ████████│                                                                                              │   ││      │
+│   Est. cos│                                                                                              │   ││      │
+│ ▾ QUOTA WI│                                                                                              │   ││      │
+│   Session │                                                                                              │!  ││      │
+│   ████████│                                                                                              │A  ││      │
 │   Resets i│                                                                                              │   ││      │
 │   Weekly (│                                                                                              │   ││      │
 │   ████████│                                                                                              │   ││      │

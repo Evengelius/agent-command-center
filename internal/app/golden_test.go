@@ -208,6 +208,43 @@ func TestGoldenFrames(t *testing.T) {
 		}
 		return h
 	}
+	// Plan 72: the approved frames' commands, from synthetic events labelled
+	// so (command_test.go): zone B's blocks folded and unfolded, the card,
+	// the long command's full view; Claude's failure and denial.
+	commands := func(allow, open bool, keys ...tea.KeyPressMsg) func(*testing.T) *harness {
+		return func(t *testing.T) *harness {
+			h := codexDash(t)
+			pushEvents(h, "codex", commandEvents(t)...)
+			if allow {
+				pushEvents(h, "codex", evOf(event.ApprovalResolved, event.Approval{ID: "r3", Decision: event.Allow}),
+					evOf(event.ToolCompleted, event.Tool{ToolID: "c3", Name: "commandExecution", Output: "14 items in 9 files", ExitCode: 0, HasExitCode: true}))
+			}
+			if open {
+				h.m.ui.Unfolded = map[string]bool{render.CommandKey("c2"): true, render.CommandKey("c3"): true}
+			}
+			for _, k := range keys {
+				h.send(k)
+			}
+			return h
+		}
+	}
+	claudeCommands := func(t *testing.T) *harness {
+		h := dash(t)
+		test, _ := json.Marshal(map[string]string{"command": "go test ./...", "description": "Run the tests"})
+		update, _ := json.Marshal(map[string]string{"command": "git stash && git pull --rebase origin main && go test ./...", "description": "Update from origin and test again"})
+		pushEvents(h, "claude-code",
+			evOf(event.UserMessage, event.User{Text: "Run the tests, and push to origin if they pass."}), evOf(event.TurnStarted, nil),
+			evOf(event.ToolStarted, event.Tool{ToolID: "g1", Name: "Bash", Input: test}),
+			evOf(event.ToolCompleted, event.Tool{ToolID: "g1", Name: "Bash", IsError: true, Output: "--- FAIL: TestMarkdownCacheBytes (0.65s)\nFAIL"}),
+			evOf(event.MessageCompleted, event.Completed{MessageID: "g-m1", Text: "TestMarkdownCacheBytes fails. I will update from origin and run the tests again."}),
+			evOf(event.ToolStarted, event.Tool{ToolID: "g2", Name: "Bash", Input: update}),
+			evOf(event.ApprovalRequest, event.Approval{ID: "g-a2", Tool: "Bash", ToolID: "g2", Input: update, Summary: "Update from origin and test again"}),
+			evOf(event.ApprovalResolved, event.Approval{ID: "g-a2", Decision: event.Deny}),
+			evOf(event.ToolCompleted, event.Tool{ToolID: "g2", Name: "Bash", IsError: true, Output: "The user doesn't want to proceed with this tool use."}),
+			evOf(event.MessageCompleted, event.Completed{MessageID: "g-m2", Text: "The tests fail on TestMarkdownCacheBytes, and you denied the update: nothing was pushed."}),
+			evOf(event.TurnCompleted, event.TurnEnd{Outcome: "completed", Subtype: "success"}))
+		return h
+	}
 	codexReview := func(t *testing.T) *harness {
 		h := codexDash(t)
 		pushEvents(h, "codex",
@@ -553,11 +590,13 @@ func TestGoldenFrames(t *testing.T) {
 		{"review", reviewed()}, {"review-open", reviewed(key(tea.KeyUp, 0), key(tea.KeyEnter, 0))},
 		{"review-diff", reviewed(key(tea.KeyUp, 0), key(tea.KeyEnter, 0), key(tea.KeyDown, 0), key(tea.KeyEnter, 0))},
 		{"review-diff-wide", reviewed(key(tea.KeyUp, 0), key(tea.KeyEnter, 0), key(tea.KeyDown, 0), key(tea.KeyEnter, 0), typed('f'))},
-		{"search", searched(dash, "found")}, {"search-none", searched(dash, "zzqx")}, {"search-codex", searched(codexDash, "reasoning")}} {
+		{"search", searched(dash, "found")}, {"search-none", searched(dash, "zzqx")}, {"search-codex", searched(codexDash, "reasoning")},
+		{"commands", commands(true, false)}, {"commands-open", commands(true, true)}, {"commands-card", commands(false, false)},
+		{"commands-view", commands(true, false, key(tea.KeyUp, 0), key(tea.KeyEnter, 0))}, {"commands-claude", claudeCommands}} {
 		szs := sizes
-		if sc.name == "source-selection" || strings.HasPrefix(sc.name, "graph") {
+		if sc.name == "source-selection" || strings.HasPrefix(sc.name, "graph") || strings.HasPrefix(sc.name, "commands") {
 			// The acc tab maximised (plan 50, criterion 50.10; plan 62, criterion
-			// 62.7).
+			// 62.7; plan 72, criterion 72.16).
 			szs = append(slices.Clone(sizes), [2]int{208, 59})
 		}
 		for _, size := range szs {

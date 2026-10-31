@@ -34,7 +34,7 @@ func TestApprovalRevealsFormat(t *testing.T) {
 				var out []string
 				for _, c := range rows[i:] {
 					out = append(out, c)
-					if strings.Contains(c, "╰") {
+					if strings.Contains(c, "╰") && !strings.Contains(c, "│ ╰") { // the card's edge, not its command's box (plan 72, D7)
 						break
 					}
 				}
@@ -50,6 +50,8 @@ func TestApprovalRevealsFormat(t *testing.T) {
 		}
 	}
 	full := texts(viewerBodyFor(b.s, UI{}, b.s.Approvals["a1"], 100))
+	// A command's full view, its sections and its context (plan 72, D9).
+	full += "\n" + texts(Draw(b.s, UI{Width: 120, Height: 40, View: "a1"}).lines)
 	for _, c := range []struct {
 		name, text string
 		want       []string

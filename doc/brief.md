@@ -9008,3 +9008,363 @@ implementation approval checkpoint (plan.md, Plan 71). It reverses the
 renderer's rule of plan 4, step 8 (ui-design.md, Markdown: every
 character drawn, markers included), which made the defect: markers are
 now hidden where Markdown is rendered.
+
+## Amendment 75, 2026-10-31: tool commands, approval cards and the activity timeline, for plan 72
+
+After plan 71's closure the owner asked for plan 72 in three messages on
+2026-10-31: a design proposal first, then a review of it, then its
+approval with this plan. The first, word for word in its essentials:
+
+````text
+Plan 72 — Tool Command Rendering, Approval Cards and Activity Timeline
+Phase 1 — Design Proposal Only
+Plan 71 is closed, committed and pushed.
+I want to begin Plan 72, focused on improving how ACC presents tool commands, approval requests and execution activity in Zone B (Conversation).
+This request is exclusively for design exploration and a proposed implementation plan.
+Do not implement anything yet.
+I will personally evaluate the proposed design through Human Evaluation before authorizing implementation.
+1. Scope
+Plan 72 covers three closely related improvements:
+A. Tool command rendering
+Improve how commands executed by Claude Code and OpenAI Codex are displayed in the conversation.
+The current presentation can be difficult to read, especially when commands are long or contain several operations.
+I want a clearer, more structured presentation without losing the technical information needed to supervise agent execution.
+B. Syntax highlighting inside approval cards
+Improve the readability of commands displayed in approval requests.
+Consider syntax highlighting appropriate to the command's actual language or execution environment.
+The presentation should help me understand exactly what the agent is asking permission to execute.
+C. Activity lines and RESULT cards
+Improve the visual relationship between tool activity events and their corresponding RESULT cards.
+Execution activity should remain easy to follow, including approval requests, authorization decisions, execution status and completion.
+Avoid unnecessary duplication between activity lines, approval cards and results.
+````
+
+Its design principles and its scope, word for word:
+
+````text
+* ACC is a terminal-based, keyboard-first development environment.
+* Preserve the existing visual identity: dark background, restrained colors, thin borders and compact information density.
+* Preserve existing keyboard interactions, including F2 for approvals.
+* Do not introduce mouse-only interactions.
+* Keep the design consistent with the application's existing UI conventions.
+* Avoid repeating information already visible elsewhere, such as the selected model and reasoning effort.
+* Display actual tool commands, events and results. Do not invent metadata or assume that every operation produces the same information.
+* Approval cards must appear only when an actual approval is required.
+* Do not modify commands, execution semantics or provider protocols.
+* Preserve the original command text for inspection and copying, even if its visual presentation changes.
+* Keep Claude Code and Codex equally supported.
+* Consider long commands, wrapping, terminal resizing and narrow layouts.
+* Preserve the rendering correctness and performance improvements introduced by Plan 71.
+
+Scope isolation: Focus on the relevant presentation elements in Zone B. Do not redesign Zone A, Zone C, telemetry, the application header, sidebar or footer.
+````
+
+It asked for the current implementation examined first, without
+subagents, tests, builds or benchmarks; two design alternatives where
+useful, with their trade-offs and a recommendation; mock-ups of four
+scenarios (an approval required; approved and executed, with its RESULT
+card; an execution without approval; a failure or a rejected approval),
+wide and narrow, illustrative content told apart from actual output; each
+decision explained; a preliminary implementation plan with acceptance
+criteria; then a stop:
+
+````text
+7. Mandatory Human Evaluation Gate
+STOP after presenting the design alternatives, your recommendation and the preliminary implementation plan.
+Do not:
+
+* Modify application code.
+* Modify tests or golden frames.
+* Start implementation.
+* Commit or push anything.
+* Mark the design as approved.
+* Update `plan.md` to activate Plan 72.
+
+I will review the mockups and provide feedback.
+We may iterate on the design several times.
+Only my explicit approval of the final design will authorize the next phase of Plan 72.
+````
+
+The proposal's alternatives were A, one row per operation, and B, adaptive
+command blocks, recommended. The owner's review, word for word in its
+essentials:
+
+````text
+I approve Alternative B as the preferred design direction, with the refinements below.
+I also agree with the remaining recommendations and scope boundaries discussed in your proposal.
+This is still a design phase. Do not start implementation yet.
+1. Adopt Alternative B with a more compact default
+I want to preserve the adaptive command-block approach, but adjust its default presentation.
+The agreed behavior is:
+
+* Short command: display on one line when it fits.
+* Long command: display up to two lines by default, followed by a clear indicator when more content is available.
+* Expanded command: allow the user to reveal the remaining content.
+* Approval card: retain the more generous presentation, with up to seven command lines as proposed.
+
+The distinction is intentional.
+When I am reviewing an operation that has already executed, I want a compact overview.
+When an operation requires my authorization, I need enough information to make an informed decision.
+Do not apply the same density constraints to both situations.
+````
+
+````text
+2. Support mouse clicks as well as keyboard navigation
+This is an important additional requirement.
+I want to be able to expand or collapse a command directly with a mouse click, if the existing ACC input architecture supports it safely.
+My reasoning is simple:
+ACC has multiple zones. Requiring me to navigate into Zone B just to expand a command introduces unnecessary friction.
+With the mouse, I should ideally be able to click the relevant command or expansion indicator directly.
+Please inspect the existing mouse-handling behavior, including the interaction with F12 mouse capture, before deciding how this should work.
+Requirements:
+
+* Preserve keyboard-based expansion and collapse.
+* Support direct mouse interaction where technically feasible.
+* Avoid requiring preliminary keyboard navigation into Zone B for a mouse click.
+* Make expandable commands visually identifiable without adding excessive decoration.
+* Avoid conflicts with existing click, selection, focus and full-view behaviors.
+* Do not introduce accidental approval or tool execution through expansion clicks.
+
+If direct mouse expansion is not reliably feasible within the current architecture, explain the exact limitation and propose the least disruptive alternative.
+Do not implement new mouse infrastructure merely to satisfy this design proposal without my approval.
+````
+
+Its confirmed decisions and scope boundaries, word for word:
+
+````text
+3. Confirmed design decisions
+The following points are approved in principle:
+Command presentation
+
+* Display meaningful shell names instead of generic identifiers such as `commandExecution` when the shell can be identified reliably.
+* Improve command readability through adaptive wrapping.
+* Preserve the exact original command for inspection and copying.
+* Never reconstruct a command approximately when safe extraction is uncertain.
+* Fall back to the original invocation when exact extraction cannot be guaranteed.
+
+Syntax highlighting
+
+* Reuse ACC's existing syntax-highlighting infrastructure.
+* Support the applicable shell languages.
+* Preserve readable plain-text fallbacks.
+* Do not change execution semantics.
+
+Activity and approval events
+
+* Prefer one compact activity entry per operation.
+* Associate approval decisions with the relevant tool operation.
+* Avoid duplicate activity rows where the information can be presented together.
+* Preserve complete approval history in the detailed view, including request time, decision time, decision source and actual execution outcome.
+* Keep existing F2 approval behavior.
+* Preserve appropriate handling for subagent requests and unmatched events.
+
+Codex auto-review
+Keep the review rationale accessible beneath the relevant operation, with an appropriate collapse mechanism.
+Preserve the existing fallback when the review cannot be associated reliably with a visible tool call.
+RESULT card
+The existing `RESULT` card represents the agent's final response.
+Keep this behavior unchanged.
+Do not introduce a separate RESULT card for every command.
+Tool activity belongs above the final RESULT card, while detailed tool output remains available through the appropriate inspection interface.
+Scope boundaries
+
+* Do not extend adaptive command blocks to file paths as part of Plan 72.
+* Do not duplicate the selected model or reasoning effort already displayed elsewhere.
+* Do not modify Zone A, Zone C, telemetry, the header, sidebar or footer.
+* Do not change provider protocols or command execution.
+* Preserve Plan 71's rendering correctness and performance characteristics.
+````
+
+It asked for revised mock-ups of six scenarios at 120x40 and 200x60, the
+findings on the mouse, the interaction rules, the refined plan and
+criteria and the decisions left, then a stop. The third message, word for
+word in its essentials:
+
+````text
+I APPROVE Alternative B with the compact default and direct mouse expansion.
+The design phase is complete. There is no need to generate further alternatives or mockups.
+I now authorize you to formalize Plan 72 in the repository, following the project's existing planning conventions.
+This authorization covers planning and documentation only. Implementation is not authorized yet.
+````
+
+````text
+2. Final design decisions
+I approve the six decisions from your latest proposal:
+
+1. The overflow counter occupies its own row.
+2. Three-line commands are displayed completely.
+3. Contextual footer hints may show `→ unfold` and `← fold`, without redesigning the footer.
+4. Codex auto-review rationale is initially limited to one line and can be expanded.
+5. Fold state persists during the session.
+6. Claude classifier decision timestamps are preserved for the detailed approval history.
+````
+
+````text
+3. One remaining detail: copying folded commands
+Before finalizing the specification, explicitly define the selection and copying behavior.
+I want to avoid a situation where an ordinary text selection unexpectedly copies hidden command lines without making that behavior clear.
+Requirements:
+
+* Preserve ACC's established selection semantics wherever possible.
+* Keep ordinary text selection predictable.
+* Ensure the complete original command can always be copied intentionally.
+* Preserve byte-for-byte copying of the original invocation through the detailed view.
+* Do not silently introduce a new copying behavior that conflicts with existing ACC conventions.
+
+Inspect the current selection behavior and document the safest consistent rule.
+If this requires a meaningful change to an established interaction contract, flag that decision for my approval rather than assuming permission.
+````
+
+````text
+5. Implementation constraints
+The future implementation must:
+
+* Support Claude Code and OpenAI Codex.
+* Preserve provider protocols and execution semantics.
+* Avoid unnecessary dependencies and abstractions.
+* Reuse existing ACC infrastructure wherever practical.
+* Preserve Plan 71's Markdown rendering and cache improvements.
+* Maintain performance on long conversations and commands.
+* Preserve keyboard-first operation.
+* Avoid changes outside the approved Zone B scope, except narrowly required state handling and contextual keyboard hints.
+
+Do not expand the scope to file-path rendering or unrelated interface improvements.
+````
+
+It asked for the plan in the repository with its contents (objectives and
+scope, the approved behaviour, the steps, the state's associations, the
+keys and the mouse, the commands' extraction, layout and highlighting,
+the copy and the search, performance and caches, the tests, the criteria,
+the owner's Human Evaluation, the risks and fallbacks), the approved
+decisions kept apart from what is still to verify, criteria over the
+owner's list, the repository's own evaluation conventions and no new
+testing framework, unrelated work protected, and ended, word for word:
+
+````text
+8. Mandatory stopping point
+DO NOT IMPLEMENT PLAN 72 YET.
+Do not:
+
+* Modify application code.
+* Modify tests or golden frames.
+* Run builds, tests or benchmarks.
+* Launch subagents.
+* Commit or push changes.
+* Start unrelated work.
+
+After formalizing the plan, provide:
+
+1. A concise summary of Plan 72.
+2. The list of updated documents.
+3. The implementation phases.
+4. The final acceptance criteria.
+5. The proposed copying behavior and any remaining concern.
+6. The relevant documentation diff summary.
+7. Any issue requiring my decision.
+
+Then STOP and wait for my explicit authorization to implement Plan 72.
+The design is approved. The next gate is my review of the formal implementation plan.
+````
+
+Taken as the owner's request for plan 72 (plan.md, Plan 72): the plan and
+its documents now; the implementation on the owner's explicit
+authorization; then the owner's Human Evaluation, nothing committed before
+the owner's approval. The approved design is the plan's D1 to D10 and its
+keys and mouse, K1 to M6; the copy keeps zone B's selection as it is
+(C1), and its two open points, C2 and C3, wait for the owner.
+
+The owner then authorized the implementation on 2026-10-31, word for word
+in its essentials:
+
+````text
+Plan 72 — Implementation Authorized
+I have completed my Human Evaluation and approved the final Plan 72 design.
+I explicitly authorize you to implement Plan 72.
+The approved design is Alternative B with compact command rendering, expandable command blocks, direct mouse interaction, improved approval cards, syntax highlighting and consolidated tool activity.
+The formal specification in `plan.md` is the implementation baseline.
+Follow the approved plan and its acceptance criteria. Do not reopen the design phase.
+````
+
+````text
+1. Final decisions — C1, C2 and C3
+Before implementation, record these three approved decisions in the Plan 72 specification.
+C1 — Preserve existing selection behavior
+Keep ACC's current selection contract in Zone B.
+
+* Tool commands remain searchable.
+* Ordinary Zone B selection must not unexpectedly copy hidden command content.
+* Do not introduce partial command selection in Zone B.
+* The detailed tool view remains the intentional entry point for copying commands.
+* Preserve existing behavior for ordinary messages and other selectable content.
+
+C2 — Exact command copying
+Approved and required.
+The detailed tool view must support exact copying from its `COMMAND` and `AS SENT` sections.
+Visual formatting must never corrupt copied commands.
+Specifically:
+
+* Terminal-width wrapping must not introduce newlines into the copied source.
+* Display indentation must not introduce additional spaces.
+* Existing spaces and tabs must be preserved.
+* The `AS SENT` section must copy the original invocation byte for byte.
+* The `COMMAND` section must copy its underlying command text exactly, including the original separators and whitespace.
+* The displayed layout and the clipboard representation must remain separate.
+
+Apply this behavior specifically to command copying. Do not inadvertently change the copying semantics of unrelated full-view content.
+C3 — Keyboard shortcut for copying commands
+Approved and required.
+Add a keyboard shortcut to copy a command from its detailed tool view.
+
+* First inspect existing key bindings.
+* Choose a shortcut consistent with ACC's conventions.
+* Avoid conflicts with existing actions.
+* Clearly expose the shortcut in the appropriate contextual hint.
+* Provide feedback when copying succeeds or fails.
+* Keep the copied text identical to the source defined by C2.
+* Do not require mouse interaction.
+
+The exact shortcut does not have to be `y` if another available key fits ACC better.
+If the existing input architecture prevents a safe implementation, explain the blocker rather than introducing a conflicting shortcut.
+````
+
+````text
+4. Command and event integrity
+These are non-negotiable requirements.
+
+* Do not modify commands sent to providers.
+* Do not change tool execution semantics.
+* Do not modify Claude Code or Codex protocols.
+* Do not infer execution outcomes unsupported by actual events.
+* Do not present denied or expired requests as successful executions.
+* Preserve the distinction between approval decisions and execution results.
+* Preserve request and decision timestamps where available.
+* Preserve the exact original invocation for inspection and copying.
+
+When an event cannot be reliably associated with a tool call, preserve the existing fallback presentation.
+Do not silently discard information for the sake of visual simplification.
+````
+
+It ended, word for word:
+
+````text
+You are NOT authorized to commit or push.
+Once implementation and verification are complete, provide:
+
+1. The implementation summary.
+2. The status of every Plan 72 acceptance criterion.
+3. Test results and performance evidence.
+4. Any deviations or unresolved issues.
+5. The list of changed and newly added files.
+6. The output of `git diff --check`.
+7. The Git status.
+8. The manual Human Evaluation steps.
+
+Then STOP and wait for my review.
+Do not close Plan 72 before I have accepted the implementation and its manual verification.
+Do not begin another plan.
+Implement the approved Plan 72 and nothing outside its scope.
+````
+
+Taken as the authorization of plan 72's steps 2 to 9, C1 kept, C2 and C3
+built (plan.md, Plan 72, Copy and search), nothing committed or pushed
+before the owner's review.

@@ -48,6 +48,9 @@ func TestApprovalLineKeepsOutcome(t *testing.T) {
 			target := l
 			if tt.status == state.Pending { // the heading, then the target on its own row (section 5.2)
 				l, target = ls[1], ls[2]
+				if tt.tool == "Bash" && strings.Contains(texts([]line{target}), "╭") {
+					target = ls[3] // a command's first row, in its grey box from 90 cells (plan 72, D7)
+				}
 			}
 			got := ""
 			for _, sp := range l {

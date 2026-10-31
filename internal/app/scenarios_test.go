@@ -34,13 +34,13 @@ func TestSyntheticScenarios(t *testing.T) {
 		// exit code (item 1); the requested model, and N/A without one (item
 		// 4), marked "*" with its footnote (item 5), with its effort (item 6).
 		{"codex-plan6-limits.jsonl",
-			// The failed command's row: its command, cut, then its error (the
-			// owner's live review: a failed row names what failed).
-			// The error keeps half the row (plan 5, item 6): at 200 columns B's
-			// row holds "fatal: No configured push desti…" since plan 24.
+			// The failed command's row: its shell and its command, out of
+			// Codex's launcher, then its error under it, whole on its row (plan
+			// 72, D1, D2, D4; the owner's live review: a failed row names what
+			// failed).
 			// The cards: the label column 18 cells, the bar, the model with a
 			// requested model's "*" (plan 27, design D8).
-			[]string{"✗ commandExecution  \"C:", "… · exit 1 · fatal: No configured push", "/root/list_files     │  gpt-6-mini*", "/root/create_found   │  model N/A", "* requested model · 0 ACTIVE · 2 DONE"},
+			[]string{"✗ PowerShell ", " git status; git push ", "     exit 1 · fatal: No configured push destination.", "/root/list_files     │  gpt-6-mini*", "/root/create_found   │  model N/A", "* requested model · 0 ACTIVE · 2 DONE"},
 			[]string{"commandExecution · On branch main", "commandExecution · exit 1 · On branch", "model N/A*", "errors "}},
 	} {
 		t.Run(c.file, func(t *testing.T) {

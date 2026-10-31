@@ -258,8 +258,18 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 	case "thinking":
 		out = thoughtRows(s, ui, out, i, e, w, k, fr, focused)
 	case "tool":
-		// Drawn only when shown: a long session has thousands (test 11).
-		out = append(out, crow{fn: func() line { return callRow(s, ui, i, e, cw, k, focused) }, fr: fr, cursor: focused})
+		// Drawn only when shown: a long session has thousands (test 11). A
+		// command's block under the row, and the row a click folds it by while
+		// something of it is hidden or unfolded (plan 72, D4, M1).
+		b := blockOf(s, ui, &e, cw, k)
+		row := crow{fn: func() line { return callRow(s, ui, i, e, cw, k, focused, b) }, fr: fr, cursor: focused}
+		if b != nil && b.mark {
+			row.fold = CommandKey(b.tc.ID)
+		}
+		out = append(out, row)
+		if b != nil {
+			out = b.blockRows(out, ui, i, fr)
+		}
 	case "approval":
 		for _, l := range approvalCard(s, ui, i, e, cw, k) {
 			out = append(out, crow{l: l, fr: fr})
@@ -403,14 +413,24 @@ func elidePath(p string, w int) string {
 
 // callRow is a call's row in zone B (plan 20): its status, its name (the
 // entry's content) in light blue, its target in a readable muted text or
-// its error in red, and at the right how it ended, with its time, and its
-// origin; the entry cursor's hint replaces them on its row, with ← when
-// the call is in an expanded run.
-func callRow(s *state.State, ui UI, i int, e state.Entry, w int, k look, focused bool) line {
+// its error in red, and at the right how it ended, with its time, how it
+// was decided (plan 72, D5), and its origin; the entry cursor's hint
+// replaces them on its row, with ← when the call is in an expanded run. A
+// command's call, b, shows its shell's name, its command on the row when
+// it fits, else under it, its error under it, and ▸ or ▾ before its status
+// while its block folds (plan 72, D1, D4).
+func callRow(s *state.State, ui UI, i int, e state.Entry, w int, k look, focused bool, b *cmdBlock) line {
 	tc := s.Tools[e.MessageID]
 	sym := deco("▸", stGrey) // no call recorded under it
+	var d decision
 	if tc != nil {
-		sym = toolSymbol(s, tc, running(s, ui))
+		sym, d = toolSymbol(s, tc, running(s, ui)), decisionOf(s, tc)
+		switch {
+		case d.kind == decidedDenied:
+			sym = deco("✗", stFailed) // nothing ran, whatever the CLI reports after (D5)
+		case d.kind == decidedExpired && !goesOn(tc):
+			sym = deco("·", stGrey)
+		}
 	}
 	outcome, origin := callOutcome(s, ui, tc), originLabel(e.Origin)
 	if focused { // the hint in place of the outcome and the origin
@@ -418,21 +438,54 @@ func callRow(s *state.State, ui UI, i int, e state.Entry, w int, k look, focused
 		if _, ok := EntryFile(s, e); ok {
 			hint = entryFileHint
 		}
-		if k.open {
-			hint = strings.Replace(hint, "↑↓ entries", "← fold · ↑↓ entries", 1)
+		switch {
+		case b != nil && b.mark && b.open:
+			hint = " ← fold ·" + entryHint // the block folds first, then its run (K2)
+		case b != nil && b.mark:
+			hint = " → unfold ·" + entryHint
+			fallthrough
+		default:
+			if k.open {
+				hint = strings.Replace(hint, "↑↓ entries", "← fold · ↑↓ entries", 1)
+			}
 		}
 		outcome, origin = decoLine(hint, stAttention), ""
 	}
 	// Every call shows its target; a failed one then its error, "✗ Read
 	// …\src\f03.go · File does not exist.", or "✗ Bash · exit status 1: FAIL
-	// pkg/a" without a target (plan 5, item 6; plan 6, item 1).
+	// pkg/a" without a target (plan 5, item 6; plan 6, item 1); a denied one
+	// none (plan 72, D5).
 	var fail line
-	if f := toolFailure(s, i, e); tc != nil && tc.Status == state.ToolFailed && len(f) > 1 {
+	if f := toolFailure(s, i, e); tc != nil && tc.Status == state.ToolFailed && len(f) > 1 && d.kind != decidedDenied {
 		fail = f
 	}
+	name := oneRow(i, e, stToolName)
 	detail, path := callDetail(ui.Memo, tc)
-	return toolLine(sym, oneRow(i, e, stToolName), fail, k.nameW, markTarget(i, detail), path, outcome, origin, w)
+	detail = markTarget(i, detail)
+	if b != nil {
+		name, fail, detail, path = nameRow(i, b.name), nil, nil, false
+		if !b.under {
+			detail = cmdSpans(b.f.c.text, cmdRow{0, len(b.f.c.text), 0}, ref{panel: 'B', item: i}, true, stMuted, cmdColours(ui, b.f, stMuted))
+		}
+		if b.mark {
+			mark := "▸"
+			if b.open {
+				mark = "▾"
+			}
+			name = append(line{sym, deco(" ", stNone)}, name...)
+			sym = deco(mark, stFoldMark)
+		}
+	}
+	return toolLine(sym, name, fail, k.nameW, detail, path, outcome, origin, w)
 }
+
+// nameRow is a row's name, the entry's line 0, as content.
+func nameRow(i int, name string) line {
+	return wrapSource(name, 1<<30, 1<<30, ref{panel: 'B', item: i}, stToolName)[0]
+}
+
+// goesOn says the call ran or runs: progress or a result came.
+func goesOn(tc *state.ToolCall) bool { return tc.Status == state.ToolRunning || ran(tc) }
 
 // callDetail is a call's target in a readable muted text (plan 20, the
 // owner's section 7.2), path saying it is a file path; for an agent, its
@@ -457,37 +510,30 @@ func agentLaunch(tc *state.ToolCall) bool {
 	return tc != nil && strings.Contains(string(tc.Input), `"subagent_type"`)
 }
 
-// callOutcome is how a call ended, with its time, in that outcome's colour
-// (plan 20): waiting for the owner, running and for how long, the
-// auto-review's verdict, failed, denied, unfinished, or its end time.
+// callOutcome is how a call went, with its time, in that outcome's colour
+// (plan 20): waiting for the owner, running and for how long, failed,
+// denied, unfinished, or its end time; after the words of how it was
+// decided (plan 72, D5): "allowed by you · 14:06:30", "approved by
+// auto-review · running 4s"; a denial with its own time and nothing of the
+// call's, "denied by you 14:21:05"; "expired, not answered", the call's
+// own outcome after it only when it ran.
 func callOutcome(s *state.State, ui UI, tc *state.ToolCall) line {
 	switch {
 	case tc == nil:
 		return nil
 	case pending(s, tc.ID):
 		return decoLine("waiting for you", stAttention)
-	case tc.Reviewed != "" && (tc.Status == state.ToolDenied || strings.HasPrefix(tc.Reviewed, "denied")):
-		return decoLine(tc.Reviewed+endTime(tc), stFailed)
-	case tc.Reviewed != "": // decided before it ran: shown while it runs too (plan 12)
-		return decoLine(tc.Reviewed+endTime(tc), stDone)
-	case !tc.Status.Final():
-		return decoLine("running "+elapsed(tc.StartedAt, tc.EndedAt, ui.Now), stProgress)
-	case tc.Status == state.ToolFailed:
-		return decoLine("failed "+clockSec(tc.EndedAt), stFailed)
-	case tc.Status == state.ToolDenied:
-		return decoLine("denied "+clockSec(tc.EndedAt), stFailed)
-	case tc.Status == state.ToolUnfinished:
-		return decoLine("unfinished", stGrey)
 	}
-	return decoLine(clockSec(tc.EndedAt), stGrey)
-}
-
-// endTime is " 01:54:35", a call's end, or "" while it runs.
-func endTime(tc *state.ToolCall) string {
-	if tc.EndedAt.IsZero() {
-		return ""
+	d := decisionOf(s, tc)
+	switch {
+	case d.kind == decidedNone:
+		return ownOutcome(ui, tc)
+	case d.kind == decidedDenied:
+		return decoLine(d.words+" "+clockSec(d.at), d.st)
+	case d.kind == decidedExpired && !goesOn(tc):
+		return decoLine(d.words, d.st)
 	}
-	return " " + clockSec(tc.EndedAt)
+	return append(line{deco(d.words, d.st), deco(" · ", stGrey)}, ownOutcome(ui, tc)...)
 }
 
 // foldRow is the row of a run of calls that folds (plan 19), w cells wide on

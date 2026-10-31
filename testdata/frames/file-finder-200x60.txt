@@ -4,23 +4,23 @@
 │ A · ORCHESTRATOR                                     ││                                                                                                        ││ EXPLORER                 ⌄ ││▎     │
 │ ✿ Claude Haiku 5.5                       ✓ COMPLETED ││ ▎ YOU  11:30                                                                                           ││ ────────────────────────── ││▎ ≡   │
 │ ──────────────────────────────────────────────────── ││ ▎ Use the Agent tool to launch one general-purpose subagent with this task: list the files in the      ││ ⌄ 🗀  mock                  ││▎     │
-│ STAGES · inferred ╭─ Quick open ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 14 files ─╮        ●  ││      │
+│ STAGES · inferred ╭─ Quick open ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── 16 files ─╮        ●  ││      │
 │ ✓ TURN 1          │ › vi▌                                                                                                                                                        │        D  ││      │
 │   Use the Agent to│ ▸ sample/viewer.go                                                                                                                                           │sed.jsonl  ││  ⑂   │
-│   Agent · agent ge│                                                                                                                                                              │els.jsonl  ││      │
-│                   │                                                                                                                                                              │ows.jsonl  ││      │
-│ ✓ TURN 2          │                                                                                                                                                              │val.jsonl  ││      │
-│   started by the C│                                                                                                                                                              │ent.jsonl  ││  ◉   │
+│   Agent · agent ge│                                                                                                                                                              │nds.jsonl  ││      │
+│                   │                                                                                                                                                              │els.jsonl  ││      │
+│ ✓ TURN 2          │                                                                                                                                                              │ows.jsonl  ││      │
+│   started by the C│                                                                                                                                                              │val.jsonl  ││  ◉   │
+│                   │                                                                                                                                                              │ent.jsonl  ││      │
 │                   │                                                                                                                                                              │ing.jsonl  ││      │
 │                   │                                                                                                                                                              │y.jsonl U  ││      │
+│                   │                                                                                                                                                              │nds.jsonl  ││      │
 │                   │                                                                                                                                                              │urn.jsonl  ││      │
 │                   │                                                                                                                                                              │els.jsonl  ││      │
 │                   │                                                                                                                                                              │dow.jsonl  ││      │
 │                   │                                                                                                                                                              │s.jsonl !  ││      │
 │                   │                                                                                                                                                              │t.jsonl A  ││      │
 │                   │                                                                                                                                                              │nts.jsonl  ││      │
-│                   │                                                                                                                                                              │           ││      │
-│                   │                                                                                                                                                              │           ││      │
 │                   │                                                                                                                                                              │           ││      │
 │                   │                                                                                                                                                              │           ││      │
 │                   │                                                                                                                                                              │           ││      │

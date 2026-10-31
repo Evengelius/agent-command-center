@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ codex-subagents.jsonl   ..\..\testdata\mock\codex-subagents.jsonl                                  Mock data 0.145.0
+╭──────────────────────────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────── ⠋ Running ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ ▎  ✓ collabAgent:wait                               11:30:00      mock   ││      │
+│ ◆ GPT-5.6-sol          ⠋ RUNNING ││ ▎  ✓ /root/create_found · fileChange  allowed by you 11:30:00      moc…  ││  ≡   │
+│ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for up to 0.0s · 7 reasoning tokens  11:30:00      mock   ││      │
+│ STAGES · inferred from activity  ││ ▎  ✓ collabAgent:wait                               11:30:00      mock   ││      │
+│ ✓ TURN 1                      0s ││                                                                          ││      │
+│   Spawn two subagents in parall… ││ ╭──────────────────────────────────────────────────────────────────────╮ ││  ⑂   │
+│   child /root/list_files · chil… ││ │ RESULT  11:30                                                        │ ││      │
+│                                  ││ │ done                                                                 │ ││      │
+│ ◉ TURN 2 · running            -- ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
+│   Collect the TODO and FIXME co… ││                                                                          ││  ◉   │
+│   •─ ✓ commandExecutio… observed ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   ├─ ✓ commandExecutio… observed ││                                                                          ││      │
+│   ├─ ✓ commandExecutio… observed ││ ▎ YOU  11:30                                                             ││      │
+│   └─ ○ (more as events arrive)   ││ ▎ Collect the TODO and FIXME comments of the Go sources into TODO.md.    ││      │
+│                                  ││                                                                          ││      │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│ ──────────────────────────────── ││                                                                          ││      │
+│ ✦ TELEMETRY        Enter details ││ ▎ CODEX  gpt-5.6-sol  11:30                                              ││      │
+│ ▾ SESSION USAGE                  ││ ▎  ✓ PowerShell  git status --short                 11:30:04  observed   ││      │
+│   Context 6% of 258.4k █░░░░░░░░ ││ ▎  ▸ ✓ PowerShell         approved by auto-review · 11:30:07  observed   ││      │
+│   Tokens 184.3k session total    ││ ▎     Get-ChildItem -Recurse -Filter *.go -File | Measure-Object         ││      │
+│   Est. cost N/A Codex reports n… ││ ▎     ◈ risk low: Counts the Go files of the project and reads nothing…  ││      │
+│                                  ││ ▎  ▸ ✓ PowerShell                  allowed by you · 11:30:11  observed   ││      │
+│ ▾ QUOTA WINDOWS                  ││ ▎     $files = Get-ChildItem -Recurse -Filter *.go -File;                ││      │
+│   Session (5hr)               1% ││ ▎     $todos = $files | Select-String -Pattern 'TODO|FIXME'              ││      │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ▎     … 7 more lines                                                     ││      │
+│   Resets in 15h 13m              ││                                                                          ││      │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)              1% ││ >  Mock data is processing your request…                                 ││      │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 6d 23h               ││   turn running: the draft waits · Ctrl+C interrupt                       ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
+│ no agents yet: they appear as the CLI starts them                                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit
