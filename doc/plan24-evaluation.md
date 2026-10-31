@@ -172,7 +172,7 @@ below.
   applies to the values shown.
 
 **Evidence outside the repository**, in the session's scratchpad
-(`C:\Users\amolimom\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\`):
+(`C:\Users\<user>\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\`):
 `term\out-p24\claude-max\` and `claude-120x40\` (the screenshots, their UI
 Automation rows and `log.txt`), `term\p24demo.ps1`, `plan24\p24-live.jsonl`
 (the mock with live reset times), `plan24\timing.log` and `timing2.log` (the
@@ -259,7 +259,7 @@ session was ready, opened the details view from A, then pressed Ctrl+Q.
 No terminal-hosted Claude Code or Codex session was open; none was closed.
 
 ```text
-p24live claude-code  2026-10-22T13:51:38  project C:\Users\amolimom\AppData\Local\Temp\acc-p24-claude-135136
+p24live claude-code  2026-10-22T13:51:38  project C:\Users\<user>\AppData\Local\Temp\acc-p24-claude-135136
 13:51:38.055 [L24.1 before] PASS  terminal CLI sessions: none; Px listening: True; claude 2.1.303 (Claude Code); snapshot exit 0
 13:51:45.124 [L24.2 Ready on Claude Code, maximised, through the wrapper] PASS  ready True in 1632 ms; 59 rows x 208 columns; argv {"argv":["<HOME>\\.local\\bin\\claude.exe","-p","--input-format","stream-json","--output-format","stream-json","--verbose","--include-partial-messages","--forward-subagent-text","--permission-prompt-tool","stdio","--permission-mode","default"],"cli_pid":19484,"start_ms":1792669903365,"wrapper_pid":14456}
 13:51:52.114 [L24.3 the three windows with percentages, reset times and no dagger, before any prompt] PASS  windows after Ready in 762 ms: Session (5hr) 13% '', Weekly (7 day) 25% '', 'Fable limit' 15% ''; 'Resets in' x3; note 'quota updated 5s ago'
@@ -275,7 +275,7 @@ What the wrapper logged (ms after the CLI's start; the usage page's text
 is not reproduced):
 
 ```text
-argv: ["C:\\Users\\amolimom\\.local\\bin\\claude.exe","-p","--input-format","stream-json","--output-format","stream-json","--verbose","--include-partial-messages","--forward-subagent-text","--permission-prompt-tool","stdio","--permission-mode","default"] start 1792669903365
+argv: ["C:\\Users\\<user>\\.local\\bin\\claude.exe","-p","--input-format","stream-json","--output-format","stream-json","--verbose","--include-partial-messages","--forward-subagent-text","--permission-prompt-tool","stdio","--permission-mode","default"] start 1792669903365
 end: {"end_ms":1792669916294,"exit":0}
 
 == the dashboard wrote (ms after start) ==
@@ -339,7 +339,7 @@ Evidence: `scratchpad\term\out-p24-live\` (`results.txt`, the screenshots
 wrapper's source) and `claudebin\` (its executable and `wrap.json`).
 
 **Evidence outside the repository**, in the session's scratchpad
-(`C:\Users\amolimom\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\plan24\`):
+(`C:\Users\<user>\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\plan24\`):
 `race3.log` (the timing step's third run), `race5.log` (the race run), the
 patch files `usage-*.patch` and `doc-*.patch` (what was changed, block by
 block).

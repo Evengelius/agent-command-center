@@ -95,7 +95,7 @@ message and no process was left.
 
 ```text
 p19mock claude max  2026-10-20T01:10:39
-[setup] PASS  claude-subagent-approval.jsonl in C:\Users\amolimom\AppData\Local\Temp\p19-claude-max\demo
+[setup] PASS  claude-subagent-approval.jsonl in C:\Users\<user>\AppData\Local\Temp\p19-claude-max\demo
 [size] PASS  maximised True, 44 rows, 156 columns
 [replay ended] PASS  'Found 2 files' on screen
 [the tail: RESULT over the answer] PASS  ▎✓ RESULT | The subagent found two files | Found 2 files: alpha.txt and beta.md.

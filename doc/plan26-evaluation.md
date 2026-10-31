@@ -40,7 +40,7 @@ details view, where the TELEMETRY heading now reads "value · source ·
 received · † undocumented field".
 
 **Evidence outside the repository**, in the session's scratchpad
-(`C:\Users\amolimom\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\plan24\`):
+(`C:\Users\<user>\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\plan24\`):
 `p26-checks.log` (the suite, the race run, the timing step),
 `framecheck.cjs` (the frames' review), `docframes2.cjs` (the design
 document's frames redrawn), the patch files `p26-*.patch`.

@@ -151,7 +151,7 @@ terminal-hosted CLI sessions before a test; that dashboard can resume it
 with Ctrl+R. No other was open.
 
 Evidence outside the repository, in the session's scratchpad
-(`C:\Users\amolimom\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\`):
+(`C:\Users\<user>\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\`):
 `plan39\` (the references, the measures, the probes' configuration
 snapshots and hashes, `mut39.mjs` and its results `mut39-run1.txt`,
 `mut39.txt` and `mut39-final.txt`, the colour scripts and

@@ -120,7 +120,7 @@ screen:
 - no session file left.
 
 The first run at 80x24 failed one check, "A Enter start here". The screen
-was right: the field showed `…s\amolimom\AppData\Local\Temp\p16-small\demo.worktrees\clash`,
+was right: the field showed `…s\<user>\AppData\Local\Temp\p16-small\demo.worktrees\clash`,
 cut on the left to fit the field, and the validation message was there. The
 script looked for the whole path, or the path with the user folder shortened
 to `C:\Users\…`. The check was changed to look for the end of the path

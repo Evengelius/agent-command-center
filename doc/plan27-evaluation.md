@@ -103,7 +103,7 @@ read zone A at 160x60 or 208x59 now, and those that assumed a 70-cell list
 (the label column, the retries row, the spawn label) read the list's width.
 
 **Evidence outside the repository**, in the session's scratchpad
-(`C:\Users\amolimom\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\`):
+(`C:\Users\<user>\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\`):
 `term\out-p27\` (the screenshots, their UI Automation rows and `log.txt`),
 `term\p27demo.ps1`, `term\acc-p27.exe`, `plan24\p27-checks.log` (vet, the
 suite, the race run, the timing step), `plan24\framecheck27.cjs`,

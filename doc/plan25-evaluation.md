@@ -45,7 +45,7 @@ PASS 25.7 ui-design.md (the telemetry table's errors row, the details view, the 
 400 characters here keep their meaning; the files hold them whole):
 
 ```text
-p25live claude-code  2026-10-22T15:51:32  project C:\Users\amolimom\AppData\Local\Temp\acc-p25-claude-155131  prompt 'Reply with the word ok.'
+p25live claude-code  2026-10-22T15:51:32  project C:\Users\<user>\AppData\Local\Temp\acc-p25-claude-155131  prompt 'Reply with the word ok.'
 15:51:32.249 [L25.1 before] PASS  terminal CLI sessions: none; Px listening: True; claude 2.1.303 (Claude Code); snapshot exit 0
 15:51:40.744 [L25.2 Ready on Claude Code through the wrapper, the quota windows before any prompt] PASS  ready True; windows True; argv {"argv":["<HOME>\\.local\\bin\\claude.exe","-p","--input-format","stream-json","--output-format","stream-json","--verbose","--include-partial-messages","--forward-subagent-text","--permission-prompt-tool","stdio","--permission-mode","default"],"cli_pid":34652,"sta…
 15:51:59.028 [L25.3 the turn completed with an answer] FAIL  10 s; model row '│ ✿ Claude Fable 5.1                         ✓ COMPLETED ││ ▎ YOU  15:51                                                                                                                                       │'; RESULT on screen False
@@ -58,7 +58,7 @@ p25live claude-code  2026-10-22T15:51:32  project C:\Users\amolimom\AppData\Loca
 ```
 
 ```text
-p25scen1 claude-code  2026-10-22T16:05:18  project C:\Users\amolimom\AppData\Local\Temp\acc-p25-scen1-160516
+p25scen1 claude-code  2026-10-22T16:05:18  project C:\Users\<user>\AppData\Local\Temp\acc-p25-scen1-160516
 16:05:18.454 [S1.1 before] PASS  terminal CLI sessions: none; Px listening: True; claude 2.1.303 (Claude Code); snapshot exit 0; 14 files in the project
 16:05:27.441 [S1.2 Ready on Claude Code through the wrapper] PASS  ready True; windows True; argv {"argv":["<HOME>\\.local\\bin\\claude.exe","-p","--input-format","stream-json","--output-format","stream-json","--verbose","--include-partial-messages","--forward-subagent-text","--permission-prompt-tool","stdio","--permission-mode","default"],"cli_pid":31396,"start_ms":1792677923455,"wrapper_pid":117…
 16:07:13.097 [S1.3 the turn completed, the approval allowed] PASS  89 s; model row '│ ✿ Claude Fable 5.1                         ✓ COMPLETED ││ ▎ YOU  16:05                                                                                                                                       │'; 1 card(s) allowed; 'DONE' row: True
@@ -90,7 +90,7 @@ itself, so the next one is read there. For this day's lines the note no
 longer appears.
 
 **Evidence outside the repository**, in the session's scratchpad
-(`C:\Users\amolimom\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\`):
+(`C:\Users\<user>\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\`):
 `term\out-p25-live\` and `term\out-p25-scen1\` (`results.txt`, the
 screenshots with their UI Automation rows, `confcheck.txt`, `before.json`),
 `live\log-p25\` and `live\log-p25s1\` (the wrapper logs: `in.jsonl`,

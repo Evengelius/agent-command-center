@@ -85,7 +85,7 @@ the live run, GPT-6-Sol at "high", 16,334 tokens, of which 12,544 cached
 input.
 
 Evidence outside the repository, in the session's scratchpad
-(`C:\Users\amolimom\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\`):
+(`C:\Users\<user>\AppData\Local\Temp\claude\C--javadev-projets-agent-command-center\dcc3e64d-0d35-4470-ab9a-d258f8675bae\scratchpad\`):
 `plan38\` (the schemas with and without `--experimental` and
 `schemadiff.mjs`, the probes' configuration snapshots and hashes,
 `mut38.mjs` and its results `mut38.txt`, the doc scripts),

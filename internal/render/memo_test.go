@@ -107,10 +107,10 @@ func TestMemoChangesNoFrame(t *testing.T) {
 			var per [][]event.Event
 			if strings.Contains(filepath.Base(f), "codex") {
 				per = fixture.Replay(codex.ProviderID, recs, codex.NewMapper())
-				s.Context = state.Context{Provider: codex.ProviderID, ProviderName: "OpenAI Codex", Project: `C:\Users\amolimom\probe`}
+				s.Context = state.Context{Provider: codex.ProviderID, ProviderName: "OpenAI Codex", Project: `C:\Users\owner\probe`}
 			} else {
 				per = fixture.Replay(claude.ProviderID, recs, claude.NewMapper())
-				s.Context = state.Context{Provider: claude.ProviderID, ProviderName: "Claude Code", Project: `C:\Users\amolimom\probe`}
+				s.Context = state.Context{Provider: claude.ProviderID, ProviderName: "Claude Code", Project: `C:\Users\owner\probe`}
 			}
 			replay(t, filepath.Base(f), s, fixture.Flatten(per))
 		})
@@ -121,7 +121,7 @@ func TestMemoChangesNoFrame(t *testing.T) {
 // three agents with calls of their own, as TestLongSession builds one.
 func longState(n int) *state.State {
 	s := state.New()
-	s.Context = state.Context{Provider: claude.ProviderID, ProviderName: "Claude Code", Project: `C:\Users\amolimom\proj`}
+	s.Context = state.Context{Provider: claude.ProviderID, ProviderName: "Claude Code", Project: `C:\Users\owner\proj`}
 	s.Screen = state.ScreenDashboard
 	at := time.Date(2026, 10, 25, 9, 0, 0, 0, time.UTC)
 	seq := uint64(0)
