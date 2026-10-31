@@ -8926,3 +8926,85 @@ review twice, the first copy interrupted: its design had no blank row
 between the buttons and the rule, and its separator section still says
 "Immediately below the two buttons"; the design sent last, with that
 blank row, is the one built.
+
+## Amendment 74, 2026-10-30: consistent Markdown rendering across ACC, for plan 71
+
+After plan 70's closure the owner reported a rendering defect: a Claude
+Code answer in zone B showed `**Goal:**`, `**Decisions:**`,
+`**Completed:**`, `**Open:**` and `**Recommended next step:**` as
+written, and Markdown files viewed in ACC the same. Word for word in its
+essentials:
+
+````text
+Important clarification: This issue is not limited to Zone B conversations. It also affects `.md` files and potentially other Markdown display surfaces throughout ACC.
+
+The objective is to ensure consistent Markdown rendering across the application wherever Markdown is intended to be presented as formatted content.
+````
+
+````text
+Raw Markdown markers should not remain visible when they represent formatting instructions.
+````
+
+````text
+Do not fix only the specific screenshot or the specific labels shown above. Address the underlying rendering problem consistently.
+````
+
+The scope: zone B's answers of both CLIs, streaming, completed and
+resumed; Markdown files opened through ACC's file exploration and
+viewing; any other surface that shows Markdown as formatted content. The
+constructs: bold, italic, inline code, headings, bulleted and numbered
+lists, quotes, fenced code blocks, links, strikethrough, horizontal
+rules and tables "readable" in a terminal, nested structures and
+whitespace handled, in the existing theme's colours, no arbitrary new
+colour. Rendered and raw contexts kept apart:
+
+````text
+Rendered Markdown contexts:
+- Display the formatted result.
+
+Raw source contexts:
+- Preserve the original text exactly.
+````
+
+The raw ones named: Git diffs and Source Control, source-code editors,
+explicit raw-file views, code blocks, user input and draft composition.
+"Markdown rendering must never alter underlying file contents, Git
+changes, or submitted messages", and a Markdown file's source stays
+reachable where the workflow needs it. The technical requirements: the
+root cause found in the rendering architecture, the surfaces listed
+before the correction, an existing parser or renderer preferred, no
+Markdown parsing duplicated, a reusable mechanism, streaming stable,
+wrapping, scrolling, selection and responsiveness kept at every width,
+malformed or incomplete Markdown and escaped characters handled, no
+unsafe escape sequence reaching the terminal, code blocks literal, no
+unnecessary dependency or unrelated architectural change. Regression
+protection: zone A, zone C, zone B's layout, plan 70's card, Source
+Control with its multi-selection, the diffs, the keys and the mouse, and
+both CLIs' integrations; the local proxy untouched. Tests for the syntax,
+the integration of each surface and the terminal at normal and narrow
+widths, long lines, scrolling and streaming; no concurrent Go builds or
+test suites. The acceptance criteria, word for word:
+
+````text
+1. `**Goal:**` displays as **Goal:** in rendered conversations.
+2. Equivalent Markdown is correctly formatted in `.md` file previews.
+3. Both Claude Code and Codex produce consistent results.
+4. Common Markdown features render appropriately throughout ACC.
+5. Git diffs and raw source views preserve literal Markdown syntax.
+6. No regressions are introduced in layout, streaming, keyboard navigation, or Source Control.
+7. Automated tests pass and the verification evidence is documented.
+````
+
+It ended, word for word:
+
+````text
+Do not commit or push yet. The implementation and evidence will undergo an independent review before final delivery.
+
+Treat this as **Plan 71 — Consistent Markdown Rendering Across ACC**, separate from the already closed Plan 70.
+````
+
+Taken as the owner's request for plan 71, to be carried out without an
+implementation approval checkpoint (plan.md, Plan 71). It reverses the
+renderer's rule of plan 4, step 8 (ui-design.md, Markdown: every
+character drawn, markers included), which made the defect: markers are
+now hidden where Markdown is rendered.

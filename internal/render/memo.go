@@ -21,6 +21,45 @@ type Memo struct {
 	misses   int // the inputs read, for the tests (criterion 49.4)
 	items    itemIndex
 	thinking thinkIndex
+	file     fileMemo
+}
+
+// fileMemo is the Markdown kinds of the file the viewer previews, by its
+// lines' identity: their first element's address and their number, a file
+// read again being new lines (plan 71, design D5); idle is how many frames
+// ended since one used them, which are dropped at the second, the viewer
+// closed or on another file (plan 71, the cache).
+type fileMemo struct {
+	first *string
+	n     int
+	md    []mdLine
+	idle  int
+}
+
+// fileMd is lines' Markdown kinds, classified once for as long as the
+// viewer shows the same file.
+func (m *Memo) fileMd(lines []string) []mdLine {
+	if m == nil || len(lines) == 0 {
+		return mdLines(lines)
+	}
+	if !m.holdsFile(lines) {
+		m.file = fileMemo{first: &lines[0], n: len(lines), md: mdLines(lines)}
+	}
+	m.file.idle = 0
+	return m.file.md
+}
+
+// keepFile keeps the kinds of lines, the file the viewer shows as its
+// source, for its preview again.
+func (m *Memo) keepFile(lines []string) {
+	if m != nil && m.holdsFile(lines) {
+		m.file.idle = 0
+	}
+}
+
+// holdsFile reports the memo holding the kinds of lines.
+func (m *Memo) holdsFile(lines []string) bool {
+	return len(lines) > 0 && m.file.first == &lines[0] && m.file.n == len(lines)
 }
 
 // NewMemo is an empty memo.
@@ -77,10 +116,16 @@ func (m *Memo) input(in json.RawMessage, question bool) inputFacts {
 	return f
 }
 
-// sweep ends a frame: the inputs it did not use are dropped at the next one.
+// sweep ends a frame: the inputs it did not use are dropped at the next one,
+// and so are the file's kinds.
 func (m *Memo) sweep() {
 	if m != nil {
 		m.old, m.cur = m.cur, make(map[inputKey]inputFacts, len(m.cur))
+		if m.file.md != nil {
+			if m.file.idle++; m.file.idle >= 2 {
+				m.file = fileMemo{}
+			}
+		}
 	}
 }
 

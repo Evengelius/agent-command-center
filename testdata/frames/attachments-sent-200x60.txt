@@ -11,17 +11,15 @@
 │                                                      ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                                                           ││      │
 │ ✓ TURN 2                                          0s ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                                                11:30:00      mock   ││      │
 │   started by the CLI                                 ││ ▎                                                                                                                                    ││  ◉   │
-│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it           ││      │
-│ ✓ TURN 3                                          0s ││ ▎ finishes.                                                                                                                          ││      │
-│   What colours and what text are in these images?    ││ ▎                                                                                                                                    ││      │
-│                                                      ││ ▎  ✓ general-purpose · Bash   ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'                 allowed by you 11:30:00      mock   ││      │
+│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write found.txt. I'll report its result when it finishes.   ││      │
+│ ✓ TURN 3                                          0s ││ ▎                                                                                                                                    ││      │
+│   What colours and what text are in these images?    ││ ▎  ✓ general-purpose · Bash   ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'                 allowed by you 11:30:00      mock   ││      │
 │                                                      ││ ▎  ✓ general-purpose · Write  <probe-root>\probe-work\p3b\found.txt                              allowed by you 11:30:00      mock   ││      │
 │                                                      ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens                                                                   11:30:00      mock   ││      │
 │                                                      ││                                                                                                                                      ││      │
 │                                                      ││ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ ││      │
 │                                                      ││ │ RESULT  11:30                                                                                                                    │ ││      │
-│                                                      ││ │ The subagent found two files in the directory, `alpha.txt` and `beta.md`, and wrote them into                                    │ ││      │
-│                                                      ││ │ `<probe-root>\probe-work\p3b\found.txt`.                                                                                         │ ││      │
+│                                                      ││ │ The subagent found two files in the directory, alpha.txt and beta.md, and wrote them into <probe-root>\probe-work\p3b\found.txt. │ ││      │
 │                                                      ││ │                                                                                                                                  │ ││      │
 │                                                      ││ │ Found 2 files: alpha.txt and beta.md.                                                                                            │ ││      │
 │                                                      ││ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ ││      │
@@ -34,6 +32,8 @@
 │                                                      ││ ▎ 🗀  acc-image-upload-test.jpg · 6 KB                                                                                                ││      │
 │                                                      ││                                                                                                                                      ││      │
 │                                                      ││   · mock session: the message was not sent to any CLI                                                                                ││      │
+│                                                      ││                                                                                                                                      ││      │
+│                                                      ││                                                                                                                                      ││      │
 │                                                      ││                                                                                                                                      ││      │
 │                                                      ││                                                                                                                                      ││      │
 │                                                      ││                                                                                                                                      ││      │

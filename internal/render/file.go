@@ -41,7 +41,27 @@ type FileView struct {
 	Match      int         // the current match; -1 none
 	Searching  bool
 	Capped     bool // the search stopped at MaxMatches
+	Source     bool // a Markdown file shown as its source, not its preview (plan 71, design D5)
 }
+
+// MarkdownFile reports a Markdown file, by its name's extension (plan 71,
+// design D5).
+func MarkdownFile(path string) bool {
+	name := baseName(path)
+	i := strings.LastIndexByte(name, '.')
+	if i < 0 {
+		return false
+	}
+	switch strings.ToLower(name[i+1:]) {
+	case "md", "markdown", "mdown", "mkd", "mkdn":
+		return true
+	}
+	return false
+}
+
+// previewing reports the viewer showing a Markdown file as Markdown shows
+// it, its preview: the file's start, until m shows its source.
+func previewing(f FileView) bool { return markdownOn && !f.Source && MarkdownFile(f.Path) }
 
 // FileMatch is a search match: a line, 0-based, and a byte range in it.
 type FileMatch struct{ Line, Off, N int }
@@ -115,6 +135,11 @@ func floatWindow(s *state.State, ui UI, sc *Screen) {
 	} else {
 		win, first, n = fileWindow(s, ui, ww, hh)
 		sc.fileLines = ui.File.Lines
+		if previewing(ui.File) {
+			sc.fileMd = ui.Memo.fileMd(ui.File.Lines) // a copy keeps the markers around it (plan 71, design D3)
+		} else {
+			ui.Memo.keepFile(ui.File.Lines) // its source shown: its preview's kinds kept for m (plan 71, the cache)
+		}
 	}
 	// The list's rows start under the top edge and the path or field row
 	// (plan 61, design D5).
@@ -243,6 +268,13 @@ func fileWindow(s *state.State, ui UI, ww, hh int) (win []line, first, n int) {
 		if f.Hl.Lang != "" {
 			r = f.Hl.Lang + " · " + r
 		}
+		if MarkdownFile(f.Path) {
+			mode := "source · "
+			if previewing(f) {
+				mode = "preview · "
+			}
+			r = mode + r
+		}
 		right = decoLine(r, stGrey)
 	}
 	status := ""
@@ -277,8 +309,12 @@ func fileWindow(s *state.State, ui UI, ww, hh int) (win []line, first, n int) {
 		top := FileTop(f, rows)
 		nw := len(strconv.Itoa(len(f.Lines)))
 		bw := blameCols(f, inner, nw)
+		var pv *filePreview
+		if previewing(f) {
+			pv = &filePreview{md: ui.Memo.fileMd(f.Lines), wc: ui.Wrap}
+		}
 		for i := top; i < top+rows && i < len(f.Lines); i++ {
-			body = append(body, codeRow(f, i, nw, bw, inner))
+			body = append(body, codeRow(f, i, nw, bw, inner, pv))
 		}
 		first, n = top, len(body)-1
 	}
@@ -299,8 +335,9 @@ func baseName(p string) string {
 
 // codeRow is line i of the file w cells wide: the blame's bw cells when it
 // shows (plan 60), its number right-aligned in nw cells, the edit mark,
-// then the code shifted by f.Left.
-func codeRow(f FileView, i, nw, bw, w int) line {
+// then the code shifted by f.Left; pv, what a Markdown file's preview draws
+// from, nil for its source and any other file (plan 71, design D5).
+func codeRow(f FileView, i, nw, bw, w int, pv *filePreview) line {
 	cur := i == f.Cursor
 	marked := i >= f.Mark[0] && i < f.Mark[1]
 	numSt, markSt, padSt := stGrey, stAttention, stNone
@@ -323,7 +360,12 @@ func codeRow(f FileView, i, nw, bw, w int) line {
 	}
 	l = append(l, deco(fmt.Sprintf("%*d", nw, i+1), numSt), deco(bar, markSt), deco(" ", padSt))
 	cw := max(w-bw-nw-2, 1)
-	code := codeSpans(f, i, cur, cw)
+	var code line
+	if pv != nil {
+		code = previewSpans(f, i, cur, cw, pv)
+	} else {
+		code = codeSpans(f, i, cur, cw)
+	}
 	if code.width() > cw {
 		code = code.fit(cw)
 	}
@@ -414,6 +456,80 @@ func codeSpans(f FileView, i int, cur bool, cw int) line {
 	return out
 }
 
+// filePreview is what a Markdown file's preview draws its lines from: their
+// kinds, and the lines shown, kept as zone B's are (plan 71, design D5).
+type filePreview struct {
+	md []mdLine
+	wc *WrapCache
+}
+
+// previewSpans is line i of a Markdown file as its preview shows it from
+// column f.Left, as codeSpans its source (plan 71, design D5): its cells,
+// matches on the amber, the cursor line's on its ground, a glyph, a tab or a
+// control character an atom keeping its bytes; one cell more than cw when it
+// goes on, so that fit ends it with "…".
+func previewSpans(f FileView, i int, cur bool, cw int, pv *filePreview) line {
+	text := f.Lines[i]
+	sh := pv.wc.show(text, pv.md[i], cw, stText)
+	mi := sort.Search(len(f.Matches), func(j int) bool { return f.Matches[j].Line >= i })
+	var out line
+	start, end, startSt := -1, 0, (*lipgloss.Style)(nil) // the text span being built
+	flush := func() {
+		if start >= 0 {
+			out = append(out, span{text: text[start:end], st: startSt, ref: ref{panel: 'F', kind: refText, item: i, off: start}})
+			start = -1
+		}
+	}
+	ri, col, stop := 0, 0, f.Left+cw+1
+	for _, c := range sh.cells {
+		if col >= stop {
+			break
+		}
+		for ri < len(sh.runs)-1 && sh.runs[ri].to <= c.off {
+			ri++
+		}
+		st := sh.runs[ri].st
+		if cur {
+			st = onCursorRow(st)
+		}
+		for mi < len(f.Matches) && f.Matches[mi].Line == i && c.off >= f.Matches[mi].Off+f.Matches[mi].N {
+			mi++
+		}
+		if mi < len(f.Matches) && f.Matches[mi].Line == i && c.off+c.n > f.Matches[mi].Off {
+			st = stMatch
+			if mi == f.Match {
+				st = stMatchCur
+			}
+		}
+		switch {
+		case col+c.w <= f.Left && c.w > 0:
+		case col < f.Left:
+			flush()
+			out = append(out, deco(strings.Repeat(" ", col+c.w-f.Left), st))
+		case c.ctrl || c.sub || text[c.off] == '\t':
+			flush()
+			if c.ctrl {
+				st = stControl
+			}
+			out = append(out, span{text: c.text, st: st, ref: ref{panel: 'F', kind: refAtom, item: i, off: c.off, n: c.n}})
+		default:
+			if start >= 0 && (st != startSt || c.off != end) {
+				flush()
+			}
+			if start < 0 {
+				start, startSt = c.off, st
+			}
+			end = c.off + c.n
+		}
+		col += c.w
+	}
+	flush()
+	if len(out) == 0 { // an anchor, so that a click or a drag finds the line
+		out = line{{st: stText, ref: ref{panel: 'F', kind: refText, item: i, off: len(text)}}}
+	}
+	return out
+}
+
 // fileKeys are the window's key hints, the longest first; the footer shows
 // the first that fits.
 var fileKeys = []string{
@@ -433,6 +549,17 @@ func fileFooter(s *state.State, ui UI, w int) line {
 	f := ui.File
 	var right line
 	keys := fileKeys
+	if MarkdownFile(f.Path) {
+		// A Markdown file's other view (plan 71, design D5).
+		hint := " · m source · Esc back"
+		if f.Source {
+			hint = " · m preview · Esc back"
+		}
+		keys = make([]string, len(fileKeys))
+		for j, k := range fileKeys {
+			keys[j] = strings.Replace(k, " · Esc back", hint, 1)
+		}
+	}
 	switch {
 	case f.Field == '/':
 		right = line{deco("/", stTitle), deco(f.Typed, stText), deco("▌", stText)}
@@ -762,6 +889,27 @@ func FileCodeWidth(ui UI) int {
 	_, _, ww, _ := FileRect(ui.Width, ui.Height, fileFull(ui))
 	nw := len(strconv.Itoa(len(ui.File.Lines)))
 	return max(ww-4-nw-2-blameCols(ui.File, ww-4, nw), 1)
+}
+
+// FileColumnAt is the cell column byte off of the viewer's line i starts at
+// as the window draws it: in a Markdown file's preview, the cells shown
+// before it, hidden bytes none (plan 71, design D5); otherwise FileColumn's.
+func FileColumnAt(ui UI, i, off int) int {
+	f := ui.File
+	if i < 0 || i >= len(f.Lines) {
+		return 0
+	}
+	if !previewing(f) {
+		return FileColumn(f.Lines[i], off)
+	}
+	col := 0
+	for _, c := range mdShow(f.Lines[i], ui.Memo.fileMd(f.Lines)[i], 1, stText).cells {
+		if c.off >= off {
+			break
+		}
+		col += c.w
+	}
+	return col
 }
 
 // FileColumn is the cell column byte off of text starts at, as the window

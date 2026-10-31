@@ -45,9 +45,9 @@
 │ C · LIVE AGENTS                                                                                                                                                                    0 ACTIVE · 2 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │ AGENTS                                               │ EXECUTION TIMELINE                                                                                                                ✓ COMPLETED │
-│  ✓  /root/create_found   │  model N/A                │ 11:30:00  assistant │ I’ll create `found.txt` with exactly the requested content, then verify its bytes.                                      │
+│  ✓  /root/create_found   │  model N/A                │ 11:30:00  assistant │ I’ll create found.txt with exactly the requested content, then verify its bytes.                                        │
 │     00:00   77.3k tok    │  tool: commandExecution   │ ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
-│  ✓  /root/list_files     │  model N/A                │ 11:30:00  assistant │ Created and verified `found.txt` containing `found`.                                                                    │
+│  ✓  /root/list_files     │  model N/A                │ 11:30:00  assistant │ Created and verified found.txt containing found.                                                                        │
 │     00:00   30.5k tok    │  tool: commandExecution   │                                                                                                                                               │
 │                                                      │                                                                                                                                               │
 │                                                      │                                                                                                                                               │

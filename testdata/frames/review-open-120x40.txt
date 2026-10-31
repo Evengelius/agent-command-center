@@ -1,17 +1,17 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
-│ A · ORCHESTRATOR                 ││ ▎                                                                        ││      │
-│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   ││  ≡   │
-│ ──────────────────────────────── ││ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   ││      │
-│ STAGES · inferred from activity  ││ ▎  ▸ 3 files changed in turn 1 · +12 −4 · Review                    git  ││      │
-│ ✓ TURN 1                      0s ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   ││      │
-│   Use the Agent tool to launch … ││                                                                          ││  ⑂   │
-│   Agent · agent general-purpose  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
-│                                  ││ │ RESULT  11:30                                                        │ ││      │
-│ ✓ TURN 2                      0s ││ │ The subagent found two files in the directory, `alpha.txt` and       │ ││      │
-│   started by the CLI             ││ │ `beta.md`, and wrote them into                                       │ ││  ◉   │
-│ ──────────────────────────────── ││ │ `<probe-root>\probe-work\p3b\found.txt`.                             │ ││      │
+│ A · ORCHESTRATOR                 ││ ▎ and write found.txt. I'll report its result when it finishes.          ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎                                                                        ││  ≡   │
+│ ──────────────────────────────── ││ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   ││      │
+│ STAGES · inferred from activity  ││ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   ││      │
+│ ✓ TURN 1                      0s ││ ▎  ▸ 3 files changed in turn 1 · +12 −4 · Review                    git  ││      │
+│   Use the Agent tool to launch … ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   ││  ⑂   │
+│   Agent · agent general-purpose  ││                                                                          ││      │
+│                                  ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│ ✓ TURN 2                      0s ││ │ RESULT  11:30                                                        │ ││      │
+│   started by the CLI             ││ │ The subagent found two files in the directory, alpha.txt and         │ ││  ◉   │
+│ ──────────────────────────────── ││ │ beta.md, and wrote them into <probe-root>\probe-work\p3b\found.txt.  │ ││      │
 │ ✦ TELEMETRY        Enter details ││ │                                                                      │ ││      │
 │ ▾ SESSION USAGE                  ││ │ Found 2 files: alpha.txt and beta.md.                                │ ││      │
 │   Context 4% of 1M ░░░░░░░░░░░░░ ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
@@ -29,7 +29,7 @@
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │ AGENTS                                   │ EXECUTION TIMELINE                                            ✓ COMPLETED │
-│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md   │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: • alpha.txt • beta.md   │
 │     00:00   21.5k tok   │  tool: Write   │                     │ found.txt path:…                                    │
 │                                          │                                                                           │
 │                                          │                                                                           │

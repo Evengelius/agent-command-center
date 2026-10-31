@@ -29,11 +29,11 @@
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 2 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │ AGENTS                                        │ EXECUTION TIMELINE                                       ✓ COMPLETED │
-│  ✓  /root/create_fou…   │  model N/A          │ 11:30:00  assistant │ I’ll create `found.txt` with exactly the       │
+│  ✓  /root/create_fou…   │  model N/A          │ 11:30:00  assistant │ I’ll create found.txt with exactly the         │
 │     00:00   77.3k tok   │  tool: commandEx…   │                     │ requested content, then verify its bytes.      │
 │  ✓  /root/list_files    │  model N/A          │ ──────────────────────────────────────────────────────────────────── │
-│     00:00   30.5k tok   │  tool: commandEx…   │ 11:30:00  assistant │ Created and verified `found.txt` containing    │
-│                                               │                     │ `found`.                                       │
+│     00:00   30.5k tok   │  tool: commandEx…   │ 11:30:00  assistant │ Created and verified found.txt containing      │
+│                                               │                     │ found.                                         │
 │                                               │                                                                      │
 │                                               │                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯

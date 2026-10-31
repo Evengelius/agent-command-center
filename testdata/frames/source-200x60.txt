@@ -12,8 +12,8 @@
 │ ✓ TURN 2                                          0s ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                             ││ ╰────────────────────────╯ ││      │
 │   started by the CLI                                 ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                  11:30:00      mock   ││                            ││  ◉   │
 │                                                      ││ ▎                                                                                                      ││ ▾ MERGE CHANGES          1 ││      │
-│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll       ││                            ││      │
-│                                                      ││ ▎ report its result when it finishes.                                                                  ││    !  sample/merge.go      ││      │
+│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write found.txt. I'll report  ││                            ││      │
+│                                                      ││ ▎ its result when it finishes.                                                                         ││    !  sample/merge.go      ││      │
 │                                                      ││ ▎                                                                                                      ││                            ││      │
 │                                                      ││ ▎  ✓ general-purpose · Bash   ls -p "<probe-root>/probe-work/p3b…  allowed by you 11:30:00      mock   ││ ▾ CHANGES                5 ││      │
 │                                                      ││ ▎  ✓ general-purpose · Write  …\probe-work\p3b\found.txt           allowed by you 11:30:00      mock   ││                            ││      │
@@ -21,8 +21,8 @@
 │                                                      ││                                                                                                        ││    M  README.md            ││      │
 │                                                      ││ ╭────────────────────────────────────────────────────────────────────────────────────────────────────╮ ││    D  …/viewer_test.go     ││      │
 │                                                      ││ │ RESULT  11:30                                                                                      │ ││    U  codex-api-key.jsonl  ││      │
-│                                                      ││ │ The subagent found two files in the directory, `alpha.txt` and `beta.md`, and wrote them into      │ ││    U  › notes/             ││      │
-│                                                      ││ │ `<probe-root>\probe-work\p3b\found.txt`.                                                           │ ││                            ││      │
+│                                                      ││ │ The subagent found two files in the directory, alpha.txt and beta.md, and wrote them into          │ ││    U  › notes/             ││      │
+│                                                      ││ │ <probe-root>\probe-work\p3b\found.txt.                                                             │ ││                            ││      │
 │                                                      ││ │                                                                                                    │ ││ ▾ STAGED CHANGES         3 ││      │
 │                                                      ││ │ Found 2 files: alpha.txt and beta.md.                                                              │ ││                            ││      │
 │ ──────────────────────────────────────────────────── ││ ╰────────────────────────────────────────────────────────────────────────────────────────────────────╯ ││    M  README.md            ││      │
@@ -45,7 +45,7 @@
 │ C · LIVE AGENTS                                                                                                                                                                    0 ACTIVE · 1 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │ AGENTS                                   │ EXECUTION TIMELINE                                                                                                                            ✓ COMPLETED │
-│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md found.txt path: <probe-root>\probe-work\p3b\found.txt                             │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: • alpha.txt • beta.md found.txt path: <probe-root>\probe-work\p3b\found.txt                             │
 │     00:00   21.5k tok   │  tool: Write   │                                                                                                                                                           │
 │                                          │                                                                                                                                                           │
 │                                          │                                                                                                                                                           │

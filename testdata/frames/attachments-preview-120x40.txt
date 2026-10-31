@@ -1,15 +1,15 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
-│ A · ORCHESTRATOR                 ││ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   ││      │
-│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   ││      │
-│ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   ││      │
-│ STAGES · inferred from activity  ││                                                                          ││      │
-│ ✓ TURN 1                      0s ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
-│   Use the Agent tool to launch … ││ │ RESULT  11:30                                                        │ ││      │
-│   Agent · agent general-purpose  ││ │ The subagent found two files in the directory, `alpha.txt` and       │ ││      │
-│                                  ││ │ `beta.md`, and wrote them into                                       │ ││      │
-│ ✓ TURN 2                      0s ││ │ `<probe-root>\probe-work\p3b\found.txt`.                             │ ││      │
+│ A · ORCHESTRATOR                 ││ ▎                                                                        ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   ││      │
+│ ──────────────────────────────── ││ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   ││      │
+│ STAGES · inferred from activity  ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   ││      │
+│ ✓ TURN 1                      0s ││                                                                          ││      │
+│   Use the Agent tool to launch … ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│   Agent · agent general-purpose  ││ │ RESULT  11:30                                                        │ ││      │
+│                                  ││ │ The subagent found two files in the directory, alpha.txt and         │ ││      │
+│ ✓ TURN 2                      0s ││ │ beta.md, and wrote them into <probe-root>\probe-work\p3b\found.txt.  │ ││      │
 │   started by the CLI             ││ │                                                                      │ ││      │
 │ ──────────────────────────────── ││ │ Found 2 files: alpha.txt and beta.md.                                │ ││      │
 │ ✦ TELEMETRY        Enter details ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
@@ -29,7 +29,7 @@
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │ AGENTS                                   │ EXECUTION TIMELINE                                            ✓ COMPLETED │
-│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md   │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: • alpha.txt • beta.md   │
 │     00:00   21.5k tok   │  tool: Write   │                     │ found.txt path:…                                    │
 │                                          │                                                                           │
 │                                          │                                                                           │

@@ -11,22 +11,22 @@
 │                   │ 17  var palette = []Colour{                                                                                                                                  │           ││      │
 │ ✓ TURN 2          │ 18      {"title", 0x7aa2f7},                                                                                                                                 │    mock   ││      │
 │   started by the C│ 19      {"text", 0xc0caf5},                                                                                                                                  │           ││  ◉   │
-│   Edit            │ 20      {"grey", 0x565f89},                                                                                                                                  │           ││      │
+│   Edit            │ 20      {"grey", 0x565f89},                                                                                                                                  │inishes.   ││      │
 │                   │ 21      {"attention", 0xe0af68},                                                                                                                             │           ││      │
-│                   │ 22  }                                                                                                                                                        │           ││      │
+│                   │ 22  }                                                                                                                                                        │    mock   ││      │
 │                   │ 23                                                                                                                                                           │    mock   ││      │
 │                   │ 24  // Find returns the colour called name, and whether there is one.                                                                                        │    mock   ││      │
-│                   │ 25  func Find(name string) (Colour, bool) {                                                                                                                  │    mock   ││      │
-│                   │ 26      for _, c := range palette {                                                                                                                          │           ││      │
-│                   │ 27          if strings.EqualFold(c.Name, name) {                                                                                                             │─────────╮ ││      │
-│                   │ 28              return c, true                                                                                                                               │         │ ││      │
+│                   │ 25  func Find(name string) (Colour, bool) {                                                                                                                  │           ││      │
+│                   │ 26      for _, c := range palette {                                                                                                                          │─────────╮ ││      │
+│                   │ 27          if strings.EqualFold(c.Name, name) {                                                                                                             │         │ ││      │
+│                   │ 28              return c, true                                                                                                                               │und.txt. │ ││      │
 │                   │ 29          }                                                                                                                                                │         │ ││      │
 │                   │ 30      }                                                                                                                                                    │         │ ││      │
-│                   │ 31      return Colour{}, false                                                                                                                               │         │ ││      │
-│                   │ 32  }                                                                                                                                                        │         │ ││      │
-│                   │ 33                                                                                                                                                           │─────────╯ ││      │
+│                   │ 31      return Colour{}, false                                                                                                                               │─────────╯ ││      │
+│                   │ 32  }                                                                                                                                                        │           ││      │
+│                   │ 33                                                                                                                                                           │ Esc back  ││      │
 │ ──────────────────│ 34  // Hex is the colour as "#rrggbb".                                                                                                                       │           ││      │
-│ ✦ TELEMETRY       │ 35▌ func (c Colour) Hex() string {                                                                                                                           │ Esc back  ││      │
+│ ✦ TELEMETRY       │ 35▌ func (c Colour) Hex() string {                                                                                                                           │           ││      │
 │ ▾ SESSION USAGE   │ 36▌     return fmt.Sprintf("#%06x", c.RGB)                                                                                                                   │           ││      │
 │   CONTEXT         │ 37▌ }                                                                                                                                                        │           ││      │
 │   4% of 1M        │ 38                                                                                                                                                           │           ││      │

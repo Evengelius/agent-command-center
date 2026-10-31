@@ -82,8 +82,8 @@ func TestCodexCardReadsThinkingFromTheItemsStart(t *testing.T) {
 
 // The details of P22s's phases in the application: opened under their rows they
 // give the reasoning item's own span, the live-estimate line, and the summary
-// Codex sent for the second item, "**Computing f(10)**", as its own text; the
-// first says Codex sent none. Zone D counts nothing unrecognised (it counted 1).
+// Codex sent for the second item, "**Computing f(10)**", as its own text shown
+// as Markdown (plan 71); the first says Codex sent none. Zone D counts nothing unrecognised (it counted 1).
 func TestCodexSummaryInTheApplication(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		r := thinkStart(t, p22sProbe, codex.ProviderID)
@@ -104,7 +104,7 @@ func TestCodexSummaryInTheApplication(t *testing.T) {
 			"no reasoning summary: Codex sent none",
 			"▾ ✓ Thought for up to 5.0s · 36 reasoning tokens",
 			"the reasoning item from " + clock(11397) + " to " + clock(14833) + " · observed",
-			"Codex's summary, its own text: **Computing f(10)**",
+			"Codex's summary, its own text: Computing f(10)",
 		} {
 			if !strings.Contains(text, want) {
 				t.Errorf("no %q in\n%s", want, text)
@@ -149,7 +149,7 @@ func TestClaudeHookLinesAreNotUnrecognised(t *testing.T) {
 		if strings.Join(roles, " ") != "user thinking assistant" {
 			t.Errorf("conversation %v", roles)
 		}
-		if !strings.Contains(text, "Thought for 8.0s · 928 thinking tokens") || !strings.Contains(text, "**59**") {
+		if !strings.Contains(text, "Thought for 8.0s · 928 thinking tokens") || !strings.Contains(text, "59: each remainder") || strings.Contains(text, "**59**") {
 			t.Errorf("the thinking row or the answer is missing:\n%s", text)
 		}
 	})

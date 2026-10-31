@@ -29,7 +29,7 @@
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │ AGENTS                                   │ EXECUTION TIMELINE                                            ✓ COMPLETED │
-│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md   │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: • alpha.txt • beta.md   │
 │     00:00   21.5k tok   │  tool: Write   │                     │ found.txt path:…                                    │
 │                                          │                                                                           │
 │                                          │                                                                           │

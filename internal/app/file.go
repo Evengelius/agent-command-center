@@ -236,6 +236,11 @@ func (m *Model) fileKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		f.Full = !f.Full
 	case "b":
 		return m.toggleBlame(), true // git blame (plan 60, design D1)
+	case "m":
+		// A Markdown file's source, or its preview again (plan 71, design D5).
+		if render.MarkdownFile(f.Path) {
+			f.Source, f.Left = !f.Source, 0
+		}
 	case "/":
 		f.Field, f.Typed = '/', f.Query
 	case "g":
@@ -385,8 +390,8 @@ func (m *Model) showMatch(i int) {
 	mt := f.Matches[i]
 	m.moveCursor(mt.Line-f.Cursor, 0)
 	cw := render.FileCodeWidth(m.ui)
-	c0 := render.FileColumn(f.Lines[mt.Line], mt.Off)
-	c1 := render.FileColumn(f.Lines[mt.Line], mt.Off+mt.N)
+	c0 := render.FileColumnAt(m.ui, mt.Line, mt.Off)
+	c1 := render.FileColumnAt(m.ui, mt.Line, mt.Off+mt.N)
 	if c0 < f.Left || c1 > f.Left+cw {
 		f.Left = max(c0-cw/3, 0)
 	}

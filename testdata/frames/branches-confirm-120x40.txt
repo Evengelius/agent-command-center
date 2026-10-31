@@ -2,20 +2,20 @@
  ▣ claude-subagent-approval.jsonl   branch main   …\..\testdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300
 ╭──────────────────────────────────╭─ Branches ───────────────────────────────────────────────────╮───── Idle ─╮╭──────╮
 │ A · ORCHESTRATOR                 │ › ▌Search branches and tags                         F5 fetch │            ││      │
-│ ✿ Claude Haiku 5.5   ✓ COMPLETED │ main → origin/main ↑2 ↓1                                     │     mock   ││  ≡   │
-│ ──────────────────────────────── │ ⌄ Recent                                                     │            ││      │
-│ STAGES · inferred from activity  │     feat                                         origin/feat │rectory     ││      │
-│ ✓ TURN 1                      0s │     fix/login                                                │hes.        ││      │
-│   Use the Agent tool to launch … │ ⌄ Local                                                      │            ││  ⑂   │
-│   Agent · agent general-purpose  │     feat                                         origin/feat │     mock   ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED │ main → origin/main ↑2 ↓1                                     │            ││  ≡   │
+│ ──────────────────────────────── │ ⌄ Recent                                                     │     mock   ││      │
+│ STAGES · inferred from activity  │     feat                                         origin/feat │            ││      │
+│ ✓ TURN 1                      0s │     fix/login                                                │rectory     ││      │
+│   Use the Agent tool to launch … │ ⌄ Local                                                      │s.          ││  ⑂   │
+│   Agent · agent general-purpose  │     feat                                         origin/feat │            ││      │
 │                                  │     fix/login                                                │     mock   ││      │
 │ ✓ TURN 2                      0s │   ✓ main                                   origin/main ↑2 ↓1 │     mock   ││      │
-│   started by the CLI             │     wtb                                  in another worktree │            ││  ◉   │
-│ ──────────────────────────────── │ › Remote                                                     │──────────╮ ││      │
-│ ✦ TELEMETRY        Enter details │ › Tags                                                       │          │ ││      │
-│ ▾ SESSION USAGE                  │ 3 uncommitted changes. Git keeps them on fix/login unless    │and       │ ││      │
-│   Context 4% of 1M ░░░░░░░░░░░░░ │ they touch files that differ there; then it refuses and      │          │ ││      │
-│   Tokens 159.4k session total    │ nothing changes.                                             │          │ ││      │
+│   started by the CLI             │     wtb                                  in another worktree │     mock   ││  ◉   │
+│ ──────────────────────────────── │ › Remote                                                     │            ││      │
+│ ✦ TELEMETRY        Enter details │ › Tags                                                       │──────────╮ ││      │
+│ ▾ SESSION USAGE                  │ 3 uncommitted changes. Git keeps them on fix/login unless    │          │ ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ │ they touch files that differ there; then it refuses and      │d         │ ││      │
+│   Tokens 159.4k session total    │ nothing changes.                                             │und.txt.  │ ││      │
 │   Est. cost $0.01 API-equiv.     │ Enter switch · Esc cancel                                    │          │ ││      │
 │ ▾ QUOTA WINDOWS                  ╰──────────────────────────────────────────────────────────────╯          │ ││      │
 │   Session (5hr)             35%† ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
@@ -29,7 +29,7 @@
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │ AGENTS                                   │ EXECUTION TIMELINE                                            ✓ COMPLETED │
-│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md   │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: • alpha.txt • beta.md   │
 │     00:00   21.5k tok   │  tool: Write   │                     │ found.txt path:…                                    │
 │                                          │                                                                           │
 │                                          │                                                                           │

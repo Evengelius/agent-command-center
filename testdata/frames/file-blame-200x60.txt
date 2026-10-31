@@ -11,22 +11,22 @@
 │                   │ 15/11/2022 Ana Hubaut    17  var palette = []Colour{                                                                                                         │           ││      │
 │ ✓ TURN 2          │ 15/11/2022 Ana Hubaut    18      {"title", 0x7aa2f7},                                                                                                        │    mock   ││      │
 │   started by the C│ 15/11/2022 Ana Hubaut    19      {"text", 0xc0caf5},                                                                                                         │           ││  ◉   │
-│   Edit            │ 15/11/2022 Ana Hubaut    20      {"grey", 0x565f89},                                                                                                         │           ││      │
+│   Edit            │ 15/11/2022 Ana Hubaut    20      {"grey", 0x565f89},                                                                                                         │inishes.   ││      │
 │                   │ 02/03/2023 Bo Li         21      {"attention", 0xe0af68},                                                                                                    │           ││      │
-│                   │ 02/03/2023 Bo Li         22  }                                                                                                                               │           ││      │
+│                   │ 02/03/2023 Bo Li         22  }                                                                                                                               │    mock   ││      │
 │                   │ 02/03/2023 Bo Li         23                                                                                                                                  │    mock   ││      │
 │                   │ 02/03/2023 Bo Li         24  // Find returns the colour called name, and whether there is one.                                                               │    mock   ││      │
-│                   │ 02/03/2023 Bo Li         25  func Find(name string) (Colour, bool) {                                                                                         │    mock   ││      │
-│                   │ 02/03/2023 Bo Li         26      for _, c := range palette {                                                                                                 │           ││      │
-│                   │ 02/03/2023 Bo Li         27          if strings.EqualFold(c.Name, name) {                                                                                    │─────────╮ ││      │
-│                   │ 02/03/2023 Bo Li         28              return c, true                                                                                                      │         │ ││      │
+│                   │ 02/03/2023 Bo Li         25  func Find(name string) (Colour, bool) {                                                                                         │           ││      │
+│                   │ 02/03/2023 Bo Li         26      for _, c := range palette {                                                                                                 │─────────╮ ││      │
+│                   │ 02/03/2023 Bo Li         27          if strings.EqualFold(c.Name, name) {                                                                                    │         │ ││      │
+│                   │ 02/03/2023 Bo Li         28              return c, true                                                                                                      │und.txt. │ ││      │
 │                   │ 02/03/2023 Bo Li         29          }                                                                                                                       │         │ ││      │
 │                   │ 02/03/2023 Bo Li         30      }                                                                                                                           │         │ ││      │
-│                   │ 02/03/2023 Bo Li         31      return Colour{}, false                                                                                                      │         │ ││      │
-│                   │ 02/03/2023 Bo Li         32  }                                                                                                                               │         │ ││      │
-│                   │ 02/03/2023 Bo Li         33                                                                                                                                  │─────────╯ ││      │
+│                   │ 02/03/2023 Bo Li         31      return Colour{}, false                                                                                                      │─────────╯ ││      │
+│                   │ 02/03/2023 Bo Li         32  }                                                                                                                               │           ││      │
+│                   │ 02/03/2023 Bo Li         33                                                                                                                                  │ Esc back  ││      │
 │ ──────────────────│ 02/03/2023 Bo Li         34  // Hex is the colour as "#rrggbb".                                                                                              │           ││      │
-│ ✦ TELEMETRY       │ Not committed            35▌ func (c Colour) Hex() string {                                                                                                  │ Esc back  ││      │
+│ ✦ TELEMETRY       │ Not committed            35▌ func (c Colour) Hex() string {                                                                                                  │           ││      │
 │ ▾ SESSION USAGE   │ Not committed            36▌     return fmt.Sprintf("#%06x", c.RGB)                                                                                          │           ││      │
 │   CONTEXT         │ Not committed            37▌ }                                                                                                                               │           ││      │
 │   4% of 1M        │ 15/11/2022 Ana Hubaut    38                                                                                                                                  │           ││      │

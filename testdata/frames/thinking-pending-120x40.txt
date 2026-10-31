@@ -1,11 +1,11 @@
  >_ AGENT COMMAND CENTER                                                                                         ● LIVE
  (project bar: the test's temporary directory)
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ────────────────────────────────────────── ⠋ Thinking ─╮╭──────╮
-│ A · ORCHESTRATOR                 ││ ▎ I'll check the names of any output a command might produce before      ││      │
-│ ✿ Claude Haiku 5.5    ⠋ THINKING ││ ▎ running it.                                                            ││  ≡   │
+│ A · ORCHESTRATOR                 ││ ▎ Scratch files will get names that don't start with b, and I'll check   ││      │
+│ ✿ Claude Haiku 5.5    ⠋ THINKING ││ ▎ the names of any output a command might produce before running it.     ││  ≡   │
 │ ──────────────────────────────── ││ ▎                                                                        ││      │
-│ STAGES · inferred from activity  ││ ▎ If a task would need a `b`-prefixed file, I'll stop and tell you       ││      │
-│ ✓ TURN 1                      6s ││ ▎ before going ahead. What would you like to work on?                    ││      │
+│ STAGES · inferred from activity  ││ ▎ If a task would need a b-prefixed file, I'll stop and tell you before  ││      │
+│ ✓ TURN 1                      6s ││ ▎ going ahead. What would you like to work on?                           ││      │
 │   A firm boundary for this whol… ││                                                                          ││  ⑂   │
 │                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
 │ ◉ TURN 2 · running            1s ││                                                                          ││      │

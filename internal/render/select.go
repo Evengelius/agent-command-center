@@ -82,8 +82,10 @@ type Screen struct {
 	// node or a telemetry heading, for a click (plan 24, design D6).
 	AY    int
 	ARows map[int]string
-	// fileLines are the file the viewer shows, for its selection (panel F).
+	// fileLines are the file the viewer shows, for its selection (panel F);
+	// fileMd their Markdown kinds while it previews them (plan 71).
 	fileLines []string
+	fileMd    []mdLine
 	// Selector is what the frame showed of the model selector's list (plan
 	// 34), zero when it is closed.
 	Selector SelectorShown
@@ -531,6 +533,9 @@ func (sc *Screen) Text(s *state.State, sel Selection) string {
 			if i == t.Item {
 				l1, o1 = t.Line, t.Off
 			}
+			if i < len(s.Conversation) {
+				o0, o1 = mdWiden(ls, entryMd(s.Conversation[i], ls), l0, o0, l1, o1)
+			}
 			parts = append(parts, between(ls, l0, o0, l1, o1))
 		}
 		return strings.Join(parts, "\n\n")
@@ -539,7 +544,8 @@ func (sc *Screen) Text(s *state.State, sel Selection) string {
 		if len(sc.fileLines) == 0 {
 			return ""
 		}
-		return between(sc.fileLines, f.Item, f.Off, t.Item, t.Off)
+		o0, o1 := mdWiden(sc.fileLines, sc.fileMd, f.Item, f.Off, t.Item, t.Off)
+		return between(sc.fileLines, f.Item, o0, t.Item, o1)
 	}
 	var rows []string
 	for i := f.Item; i <= t.Item; i++ {

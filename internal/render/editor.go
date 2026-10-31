@@ -42,13 +42,15 @@ const TabWidth = 4
 
 // cell is one drawn unit of a logical line: a grapheme cluster, a tab's
 // spaces, or a control character's ^X, with the byte offset it comes from
-// (plan 49, design D11).
+// (plan 49, design D11); or a glyph Markdown draws in place of its bytes,
+// sub (plan 71, design D2).
 type cell struct {
 	text string
 	w    int
 	off  int
 	n    int // the source bytes it shows
 	ctrl bool
+	sub  bool
 }
 
 // cells splits a logical line into drawn units. Control characters are drawn
@@ -68,18 +70,18 @@ func cellAt(s string, i int) cell {
 	r, n := utf8.DecodeRuneInString(s[i:])
 	switch {
 	case r == '\t':
-		return cell{"    ", TabWidth, i, 1, false}
+		return cell{"    ", TabWidth, i, 1, false, false}
 	case r < 0x20:
-		return cell{"^" + string(rune(r+'@')), 2, i, 1, true}
+		return cell{"^" + string(rune(r+'@')), 2, i, 1, true, false}
 	case r == 0x7f:
-		return cell{"^?", 2, i, 1, true}
+		return cell{"^?", 2, i, 1, true, false}
 	case r >= 0x80 && r < 0xa0: // C1 controls
-		return cell{fmt.Sprintf("<%02X>", r), 4, i, n, true}
+		return cell{fmt.Sprintf("<%02X>", r), 4, i, n, true, false}
 	case r == utf8.RuneError && n == 1:
-		return cell{fmt.Sprintf("<%02X>", s[i]), 4, i, 1, true}
+		return cell{fmt.Sprintf("<%02X>", s[i]), 4, i, 1, true, false}
 	}
 	j, w := next(s, i)
-	return cell{s[i:j], w, i, j - i, false} // its bytes: no allocation
+	return cell{s[i:j], w, i, j - i, false, false} // its bytes: no allocation
 }
 
 // cellSpan is the bytes and the width of cellAt(s, i), without building its

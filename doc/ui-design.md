@@ -1529,8 +1529,10 @@ reports decides what is shown (claude-code.md and codex-cli.md, section
   interrupted message", beside its last live estimate (C1). A Codex phase's
   details also give its reasoning item's start and end, observed, and
   Codex's summary in its own words when it sends one ("Codex's summary, its
-  own text: **Computing f(10)**"), else "no reasoning summary: Codex sent
-  none" (plan 22, amendment 20). The entry cursor stops on a
+  own text: " then its text as [Markdown](#markdown) renders it, its
+  `**Computing f(10)**` bold without its markers, plan 71), else "no
+  reasoning summary: Codex sent none" (plan 22, amendment 20); copied, the
+  text as Codex sent it. The entry cursor stops on a
   summary row, never on a live card. A summary row between tool calls folds
   with their run; a run's fold row still counts calls only.
 - **The activity line**, while the turn works and nothing else is live
@@ -1552,25 +1554,52 @@ reports decides what is shown (claude-code.md and codex-cli.md, section
 
 ### Markdown
 
-AI text is Markdown (AM2 B4): headings, emphasis, lists, quotes, links
-shown as text with their URL, tables, and fenced code blocks with a language
-label and syntax highlighting.
+AI text is Markdown (AM2 B4), drawn as Markdown renders it, its markers
+hidden (plan 71, brief amendment 74, which replaced plan 4, step 8's rule of
+drawing every character as received, markers included): headings, strong,
+emphasis, both, strikethrough, inline code, bulleted and numbered lists at
+any depth, quotes, links and images, rules, tables, and fenced code blocks
+with a language label and syntax highlighting.
 
+- **Where.** Rendered: zone B's answers of both CLIs, streaming and
+  finished, in the RESULT box too; Codex's reasoning summary in a phase's
+  details and its full view, the dashboard's own lines there as they are
+  ([Thinking](#thinking)); the inspection's Messages tab; an agent's summary
+  on its zone C row and in the inspection's end line, its description in
+  the start line, their first lines; zone C's timeline line of an AI
+  message; a Markdown file's preview in the [file viewer](#file-viewer).
+  Raw, as written: the owner's messages, the draft and the editor; the
+  dashboard's notes, notices and errors; tool rows and their outputs;
+  approval cards and their previews, and Codex's auto-review rows; Source
+  Control, every diff (Source Control's, the turn review's, a Git Graph
+  commit's) and blame; a Markdown file's source view; a code block's
+  content.
 - **Renderer**: our own, with no new dependency (ASM-17; the owner's
   decision of 2026-10-16). Plan 4 step 3 measured Glamour v2 re-rendering a
   streamed 2,000-line message at p95 590 ms per frame, and 3.5 ms with a
-  per-block cache. Ours (`markdown.go`, plan 4, step 8) styles and never
-  rewrites: every character is drawn as received, markers included (`#`,
-  `**`, backticks, `|`, fences, a link's URL), so a row's text, its wrap and
-  what a selection copies are those of the plain text
-  (`TestMarkdownSameText` compares the two frames at three widths). A
-  line's block kind comes from its own text and the fences above it; its
-  inline styles are computed only for the rows a frame shows, over the whole
-  source line, so a code span that wraps keeps its style on the next row.
-- **Styles**: markers grey; headings pale violet bold; list bullets pale
-  violet; strong bold; emphasis and quotes italic; inline code and code
-  blocks blue; links blue underlined, their URL grey italic; a fence's
-  language amber. In code: keywords violet bold, strings green, numbers
+  per-block cache. Ours (`markdown.go`) classifies each source line's block
+  (its fences, a table's rows, a code block's strings and comments, the
+  spans over its paragraph's lines) and says how each of its bytes is
+  shown: as it is, in a style; hidden (a
+  marker, an escape's backslash); or replaced by a glyph (a bullet, a
+  quote's bar, a table's borders and padding, a rule). Every cell shown
+  keeps the source bytes it stands for, a glyph as an atom does, as a tab:
+  the wrap counts the cells shown, and the entry cursor, the search and the
+  selection work on the source (plan 71, designs D1 and D2). Every surface
+  draws through it; none parses Markdown on its own.
+- **Styles**, from the palette, no colour added: headings pale violet bold,
+  their `#`s hidden; strong bold, emphasis italic, both bold italic,
+  strikethrough struck, each on its block's colour; inline code and code
+  blocks blue; a bullet `•` (`◦` nested, `▪` deeper) and a number in the
+  bullets' pale violet, a list item's later rows under its text; a quote's
+  bar `│` grey before italic text, its later rows behind the bar; a link's
+  label blue underlined, then its URL in brackets grey italic, `label
+  (url)`, a destination's angle brackets hidden (Codex links the files it
+  writes so); an image's alt text as a link's label; a rule `─` across the
+  row, grey; a table's cells padded to their column, its borders `│` and
+  its header's rule `├─┼─┤` grey, its header bold; a fence's markers
+  hidden, its language amber on its opening row, the rest of its info grey.
+  In code: keywords violet bold, strings green, numbers
   orange, comments grey italic. Comments start with `#` in shell, Python,
   YAML, TOML, Ruby, PowerShell and the like, `--` in SQL, Lua and Haskell,
   `//` otherwise. Outside the `#` languages a `/*` comment runs on to its
@@ -1584,21 +1613,75 @@ label and syntax highlighting.
   string `/*` is string, inside a block comment a backtick is comment. One keyword set
   serves every language, since a word wrongly coloured costs only a colour.
   Colours in [Colours and symbols](#colours-and-symbols).
-- **Streaming**: each source line's wrap is cached by text and widths
-  (`WrapCache`, kept for one frame after its last use), and rows are drawn
-  only when shown, so a frame costs the visible rows plus one cached lookup
-  per line. Measured by `TestStreamToFrame`, a 2,000-line answer at one line
-  per delta: p95 4.4 to 5.5 ms over three runs drawn plain, 2.1 to 5.7 ms
-  styled (step 8). An unclosed code fence renders as code up to the
-  cursor `▌`, so text does not jump between "plain" and "code" as the fence
-  closes.
-- **The inspection's Messages tab** styles an agent's AI messages the same
-  way (plan 5, item 11); its notices, start, end, error and history lines
-  stay as they were. The tab's wrap is unchanged (tabs as four spaces,
-  control characters dropped), so its rows, hits and copies are those of
-  the plain text (`TestInspectMarkdown`, at three sizes, scrolled top to
-  bottom). An AI message's later rows are drawn in text colour, as in
-  zone B, where they were grey.
+- **Over a paragraph's lines** (plan 71, after the owner's acceptance run,
+  where `**` on one line and its closing `**` on the next were shown as
+  written): strong, emphasis, both, strikethrough and a code span may open
+  on one line of a paragraph and close on a later one, as CommonMark reads
+  a paragraph's text whole. A paragraph runs from the line that begins it
+  to the one before a line that ends it or begins another: a blank line, a
+  heading, a table, a rule, a fence or code ends one; text goes on it, as
+  a list item's or a quote's later lines do; a list item begins one, and a
+  quote's text goes on a quote's paragraph as deep. A run that may close
+  closes the nearest opener of its marker and length on an earlier line,
+  before it may open one (`CLI**, the only **two**`), the openers between
+  dropped; a run of backticks with one as long on a later line opens a code
+  span to the first of them, whatever that line makes of it, the text
+  between literal. Each line is still drawn from its own source, from
+  inside what the lines above it opened.
+- **Malformed and escaped.** A marker with no closer in its paragraph is
+  shown as received (`**unclosed`); a `\` before ASCII punctuation is hidden and
+  the character shown (`\*` is `*`); `_` inside a word is a character
+  (`snake_case_name`); a run of `*` or `_` opens before a non-space and
+  closes after one, so `2 * 3` stays; a code span's and a code block's
+  content is literal. A table needs its header's rule (`|---|`) under its
+  first row and a `|` starting each row; without, its rows are text. A
+  byte order mark starting the first line (UTF-8's, which Windows' tools
+  write at a file's start) is not text: hidden, the line read after it.
+- **Not rendered**, shown as written: a link or an image over two lines (a
+  line's links are its own), a closer of another length than its opener
+  (`**a` closed by `b*`; CommonMark splits such runs), a setext heading's
+  underline (`===`; `---` is a
+  rule), an indented code block (four spaces in: text), HTML, reference
+  links, autolinks, a link's title (in its brackets), a task list's box
+  (`[ ]`), a table's column alignment (its cells start on the left). A
+  table wider than its rows wraps them.
+- **Safety** (plan 71, design D7): what is shown goes through the cells as
+  any text, a control character or an escape sequence drawn as its mark
+  (`^[`, `<9B>`), never sent; glyphs are fixed strings; nothing reaches the
+  terminal from the text but its characters.
+- **Streaming** (design D6): a line renders as it arrives; a marker shows
+  as received until its closer comes, on its line or a later one of its
+  paragraph, then hides; an unclosed code fence
+  renders as code up to the cursor `▌`, so text does not jump between
+  "plain" and "code" as the fence closes. Each Markdown text a frame draws,
+  an answer in zone B or a message in the inspection, is kept by its place
+  with its lines, their kinds and their wraps at one width
+  (`WrapCache.markdown`, plan 71's cache): drawn again unchanged, its text
+  compared, they are taken as they are; grown, its lines but the last the
+  same, as a streamed answer's are, it is read again only from the
+  paragraph or the table its last complete line is in, or from its last
+  line, a fence's state kept there, the wraps of the lines before kept;
+  changed otherwise, it is read whole. A line's wrap is found from its
+  cells alone, built in a buffer the cache reuses; each line a frame draws
+  is kept as Markdown shows it, by its text, kind, width and colour; a
+  Markdown file's kinds while the viewer shows the file. All of it is
+  dropped two frames after its last use. Rows are drawn only when shown,
+  from their line's cells found by offset. Measured a frame at a time
+  (`go test ./internal/render -run '^$' -bench Markdown -benchmem`;
+  [`doc/plan71-evaluation.md`](plan71-evaluation.md), The Markdown cache): a
+  2,000-line answer unchanged 0.6 ms and 0.8 MB a frame, streamed at its
+  end 2.4 ms and 1.9 MB, resized 17 ms and 2.3 MB (before the cache 2.5,
+  9.2 and 53 ms, 3.5, 6.2 and 44 MB).
+- **Copy** is the source: [Selection and copy](#selection-and-copy).
+  **Search** finds the source and lights what of a match is shown
+  ([Search](#search)).
+- **The inspection's Messages tab** draws an agent's AI messages the same
+  way (plan 5, item 11; plan 71), from its paragraphs as before (tabs as
+  four spaces, C0 control characters dropped); its notices, start, end,
+  error and history lines stay as they were, the start's description and
+  the end's summary without their markers. The tab copies what its rows
+  show, as for its other rows (`TestInspectMarkdown`, at three sizes,
+  scrolled top to bottom).
 - **Code blocks** keep every character, including tabs (shown at 4
   columns) and trailing spaces; copying one copies its exact text (see
   [Selection and copy](#selection-and-copy)).
@@ -1727,7 +1810,9 @@ current.
 **Lit** (design D7). Every match in view on the file viewer's amber, the
 current one in its current-match style, restyled over B's rows from their
 sources as the selection is, and before it, so that a selection shows over
-a match; across Markdown markup, the characters drawn. A target, a tool
+a match; in Markdown, the characters drawn, a match's hidden markers not,
+and a match wholly in hidden markers is counted but lights nothing (plan
+71). A target, a tool
 row's or a request's, carries its offsets in the target, of a kind no
 selection takes and no copy copies: a match in its visible part lights its
 characters, one wholly in what the cut hides lights the "…", and a target
@@ -2037,6 +2122,22 @@ The footer: the keys on the left, "line <cursor>/<N>" on the right, or
 "match <i> of <n>" after a search, or the field being typed; with an
 approval pending, "◆ approval waiting · Esc, then F2" in amber.
 
+**A Markdown file's preview** (plan 71, brief amendment 74, design D5). A
+file named `.md`, `.markdown`, `.mdown`, `.mkd` or `.mkdn` opens as its
+preview: each source line one row as before, numbered as before, drawn as
+[Markdown](#markdown) renders it, its markers hidden, in Markdown's styles
+rather than Chroma's; "preview · " leads the title's right end, and the
+footer's keys say "m source" before "Esc back". `m` shows its source,
+coloured as any file, "source · " in the title and "m preview" in the
+footer, and back, the shift back to the lines' start each time; the file,
+its cursor and the search stay. In the preview the cursor, go to line, the
+edit marks, blame, the selection and the search work as in the source: a
+match is found in the source, lit where the preview draws it, and n and N
+bring it into view by the cells shown before it; ←→ shift by the cells
+shown; a long line is cut with "…"; a copy is the source, as in zone B
+([Selection and copy](#selection-and-copy)). Any other file is drawn as
+before, with no `m`.
+
 **Colours.** Chroma's token types, coloured from the palette (not a Chroma
 theme): keywords violet and bold, strings green, numbers orange, comments
 grey and italic, functions and classes light blue, built-ins and types
@@ -2096,6 +2197,7 @@ the quick open and shows or hides the panel (plan 43, design D5).
 | g | type a line number; Enter goes there |
 | f | full screen or the window |
 | b | git blame: each line's commit date and author left of its number, the cursor line's commit in the footer, for the rest of the session; `b` again hides it (plan 60, [Git blame](#git-blame)) |
+| m | a Markdown file, shown as its preview: its source; `m` again its preview, the shift back to the lines' start (plan 71); in any other file nothing |
 | F2 | close the window and go to the oldest pending approval; the Explorer's panel stays (plan 43) |
 | Esc | cancel the field, else clear the selection, else back to the Explorer's panel with the focus, its cursor on the file and the folders above it open, a file opened from an entry too |
 | F3 | close the viewer and show or hide the Explorer's panel: hidden when the viewer was opened from it, shown otherwise (plan 43, design D5) |
@@ -3650,7 +3752,7 @@ file holds the send and newline keys only (ASM-7; plan 21, item 5.1).
 | Code keywords | `#A78BFA`, bold | 141 | 5 magenta |
 | Code strings | `#86EFAC` | 121 | 2 green |
 | Code numbers | `#FB923C` | 209 | 3 yellow |
-| Code comments, Markdown markers | `#6B7280` (comments italic) | 60 | 8 bright black |
+| Code comments; Markdown's quote bars, table borders, rules and link URLs (plan 71) | `#6B7280` (comments and URLs italic) | 60 | 8 bright black |
 | Links | `#60A5FA`, underlined | 75 | 12 bright blue |
 | Text on a title-coloured button or cursor | `#111827` | 234 | 0 black |
 | Editor selection, background | `#4C4F6B` | 240 | 4 blue |
@@ -3790,11 +3892,15 @@ connectors").
   entry's row count, by the entry, the width and its shape (`rowCount`); a
   streaming entry, an approval, and a thinking phase while live or in its
   exit are counted afresh (plan 22). Markdown is
-  classified again for each entry drawn and styled for each row drawn
-  (`mdLines`, `internal/render/cards.go`), with no cache; only the rows in
-  view are built, and the stream's frame time is within its target without
-  one (`TestStreamToFrame`; plan 21, item 5.6d). The file viewer's
-  colouring runs in a command, never while drawing (File viewer).
+  classified again for each entry drawn (`mdLines`,
+  `internal/render/cards.go`); each line a frame draws is kept as Markdown
+  shows it, by its text, kind, width and colour (`WrapCache.show`, plan
+  71), so that a long line's rows are drawn from one, the line found again
+  by the next frame; only the rows in view are built (`TestStreamToFrame`;
+  plan 21, item 5.6d). A Markdown file's preview keeps its lines' kinds by
+  the file's lines (`Memo.fileMd`) and its lines shown in the same
+  `WrapCache`. The file viewer's colouring runs in a command, never while
+  drawing (File viewer).
 - What the tool history costs is bounded (plan 49, designs D4 and D5;
   audit finding 7): `render.Memo` (`memo.go`) reads each tool call's input
   once, by the input's identity, for the tree's rows, zone B's call rows,
@@ -3970,6 +4076,7 @@ is the bar's, none reaching the draft
 | g | go to a line number |
 | f | full screen or the window |
 | b | git blame: each line's commit date and author beside it, the cursor line's commit in the footer; `b` again hides it |
+| m | a Markdown file, shown as its preview: its source; `m` again its preview |
 | Esc | clear the selection, else back to the Explorer's panel, on the file |
 | F3 | close it, and show or hide the Explorer's panel |
 
@@ -4762,6 +4869,17 @@ Mouse selection in any panel, with clean text (AM3 M3; TI 6.3):
 - What is copied is the content, not the drawing: a code block copies its
   exact text; a wrapped line copies as one line; origin labels and
   symbols are not copied.
+- **Markdown** (plan 71, design D3): in zone B and a Markdown file's
+  preview, a selection copies the source of what it covers, the markers
+  between its ends included; at each end, the hidden markers of a
+  construct whose content it takes in whole come with it: an emphasis's
+  runs, a code span's backticks, an escape's backslash, a link's bracket,
+  and a heading's `#`s or a fence's marker when it takes in all their line
+  shows; a span over a paragraph's lines when it takes in its text from
+  its first line to its last. The shown **Goal:** selected copies
+  `**Goal:**`, a word of it double-clicked the word, the whole answer its
+  source. The inspection's
+  Messages tab and the full views copy what their rows show, as before.
 - **Native escape**: F12 turns mouse capture off; the hint line then says
   "mouse capture off: the terminal selects (whole screen, borders
   included) · F12 back on".

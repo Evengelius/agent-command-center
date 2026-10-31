@@ -11,8 +11,7 @@
 │                   │   2. check each one against the dark background;                                                                                                             │           ││      │
 │ ✓ TURN 2          │   3. report any pair under 4.5:1, with its hex values.                                                                                                       │    mock   ││      │
 │   started by the C│                                                                                                                                                              │           ││  ◉   │
-│                   │   Do not change the file yet.                                                                                                                                │           ││      │
-│                   │                                                                                                                                                              │           ││      │
+│                   │   Do not change the file yet.                                                                                                                                │inishes.   ││      │
 │                   │                                                                                                                                                              │           ││      │
 │                   │                                                                                                                                                              │    mock   ││      │
 │                   │                                                                                                                                                              │    mock   ││      │
@@ -20,11 +19,12 @@
 │                   │                                                                                                                                                              │           ││      │
 │                   │                                                                                                                                                              │─────────╮ ││      │
 │                   │                                                                                                                                                              │         │ ││      │
-│                   │                                                                                                                                                              │         │ ││      │
-│                   │                                                                                                                                                              │         │ ││      │
+│                   │                                                                                                                                                              │und.txt. │ ││      │
 │                   │                                                                                                                                                              │         │ ││      │
 │                   │                                                                                                                                                              │         │ ││      │
 │                   │                                                                                                                                                              │─────────╯ ││      │
+│                   │                                                                                                                                                              │           ││      │
+│                   │                                                                                                                                                              │           ││      │
 │ ──────────────────│                                                                                                                                                              │           ││      │
 │ ✦ TELEMETRY       │                                                                                                                                                              │           ││      │
 │ ▾ SESSION USAGE   │                                                                                                                                                              │           ││      │

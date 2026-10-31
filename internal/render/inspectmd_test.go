@@ -83,37 +83,54 @@ func TestWrapUnchanged(t *testing.T) {
 	}
 }
 
-// TestStyledRow: a row takes each run's style over the bytes it shares with
-// it, and the base style past the last run.
-func TestStyledRow(t *testing.T) {
-	runs := []styleRun{{to: 3, st: stMdMark}, {to: 6, st: stMdCode}}
-	got := fmt.Sprint(spansOf(styledRow("ab cdefgh", rowRange{1, 8}, runs, stText)))
-	want := fmt.Sprint(spansOf(line{sp("b ", stMdMark), sp("cde", stMdCode), sp("fg", stText)}))
-	if got != want {
-		t.Errorf("styledRow = %s, want %s", got, want)
-	}
-}
+// inspectAnswers are an agent's two AI messages: every construct of
+// ui-design.md's Markdown section, then a message ending inside an unclosed
+// fence.
+var inspectAnswers = []string{strings.Join([]string{
+	"# Plan for the fix",
+	"Some **bold** words, *emphasis*, `inline code` and a [link](https://example.com).",
+	"> a quoted line",
+	"- first item",
+	"2. second item",
+	"| Name | Value |",
+	"|------|-------|",
+	"| alpha | 42 |",
+	"---",
+	"```go",
+	"func main() {",
+	"\t// a comment here",
+	"\ts := \"a string\"",
+	"\tn := 1234",
+	"\t/* a block comment",
+	"\t   over lines */ m := 7",
+	"}",
+	"```",
+	"A long line with `a long inline code span that is going to be wrapped across rows at narrow widths for sure` end.",
+}, "\n"), "```python\ndef f(x):\n    return x  # note"}
 
-// inspectMDState is an inspected agent with the Markdown fixture's two AI
-// messages around a long notice, an end, an error and a history line.
+// inspectMDState is an inspected agent with the two AI messages around a
+// long notice, an end, an error and a history line.
 func inspectMDState() *state.State {
 	at := time.Date(2026, 10, 17, 9, 30, 5, 0, time.Local)
 	s := state.New()
 	s.Screen = state.ScreenDashboard
 	s.Session.Phase = state.Ready
-	s.Agents["a1"] = &state.Agent{Key: "a1", Label: "general-purpose", Description: "fix the plan", Status: state.AgentCompleted,
-		StartedAt: at, EndedAt: at.Add(time.Minute), Summary: "done", Error: "a late error", History: []string{"a history line"},
+	s.Agents["a1"] = &state.Agent{Key: "a1", Label: "general-purpose", Description: "fix the **plan**", Status: state.AgentCompleted,
+		StartedAt: at, EndedAt: at.Add(time.Minute), Summary: "**done**: all `green`", Error: "a late error", History: []string{"a history line"},
 		Messages: []state.Entry{
-			{Role: "assistant", Text: mdFixture[1].Text, At: at},
+			{Role: "assistant", Text: inspectAnswers[0], At: at},
 			{Role: "notice", Text: "a notice with **stars** and `ticks` that is long enough to wrap onto a second row at eighty columns", At: at},
-			{Role: "assistant", Text: mdFixture[3].Text, At: at},
+			{Role: "assistant", Text: inspectAnswers[1], At: at},
 		}}
 	return s
 }
 
-// TestInspectMarkdown is plan 5, item 11, criteria 1 to 3: the Messages
-// tab styles an agent's AI messages as zone B does, draws and copies the
-// same text as unstyled, and leaves the rest as it was.
+// TestInspectMarkdown is plan 5, item 11, as plan 71 has it (design D5,
+// criterion 71.3): the Messages tab draws an agent's AI messages as zone B
+// does, markers hidden, in zone B's styles; the start and end lines show the
+// description's and the summary's text; a notice and every other row are
+// drawn as before; scrolled from top to bottom the rows follow each other,
+// and a selection copies what they show.
 func TestInspectMarkdown(t *testing.T) {
 	defer func() { markdownOn = true }()
 	s := inspectMDState()
@@ -122,60 +139,24 @@ func TestInspectMarkdown(t *testing.T) {
 		defer func() { markdownOn = true }()
 		return Draw(s, ui)
 	}
-	// Criterion 2: the same characters at the same places, scrolled from
-	// top to bottom; a selection over the shown rows copies the same text.
-	for _, size := range [][2]int{{80, 24}, {120, 40}, {200, 60}} {
-		ui := UI{Width: size[0], Height: size[1], Inspect: "a1", InspectHold: true}
-		sc := draw(ui, true)
-		for top := 0; ; top++ {
-			ui.InspectTop = top
-			md, plain := draw(ui, true), draw(ui, false)
-			if a, b := texts(md.lines), texts(plain.lines); a != b {
-				t.Fatalf("%v top %d: styled text differs from plain:\n%s\n--- plain ---\n%s", size, top, a, b)
-			}
-			// A cell hits from its row's units; every row's are compared, and
-			// HitIn itself on every fifth column.
-			for y := range size[1] {
-				if a, b := md.units('I', y), plain.units('I', y); !slices.Equal(a, b) {
-					t.Fatalf("%v top %d: row %d units %v, plain %v", size, top, y, a, b)
-				}
-				for x := 0; x < size[0]; x += 5 {
-					p1, q1, ok1 := md.HitIn('I', x, y, false)
-					p2, q2, ok2 := plain.HitIn('I', x, y, false)
-					if p1 != p2 || q1 != q2 || ok1 != ok2 {
-						t.Fatalf("%v top %d: cell %d,%d hits %v %v, plain %v %v", size, top, x, y, p1, q1, p2, q2)
-					}
-				}
-			}
-			v := md.Inspect
-			sel := Selection{Pos{'I', v.Top, 0, 0}, Pos{'I', v.Top + v.Room - 1, 0, 1 << 20}}
-			if a, b := md.Text(s, sel), plain.Text(s, sel); a != b || a == "" {
-				t.Fatalf("%v top %d: copied %q, plain %q", size, top, a, b)
-			}
-			if top >= sc.Inspect.Rows-sc.Inspect.Room {
-				break
-			}
-		}
-	}
-	// Criterion 1: each construct takes zone B's style. 80 columns wrap the
-	// long code span; 200 rows show the whole tab.
+	// Each construct in zone B's style; 80 columns wrap the long code span;
+	// 200 rows show the whole tab.
 	ui := UI{Width: 80, Height: 200, Inspect: "a1"}
 	md, plain := draw(ui, true), draw(ui, false)
 	for _, c := range []struct {
 		text string
 		st   *lipgloss.Style
 	}{
-		{"#", stMdMark},
 		{"Plan for the fix", stMdHeading},
-		{"bold", stMdStrong},
-		{"emphasis", stMdEm},
+		{"bold", mdStyle(stText, true, false, false)},
+		{"emphasis", mdStyle(stText, false, true, false)},
 		{"inline code", stMdCode},
 		{"link", stMdLink},
 		{"a quoted line", stMdEm},
-		{"- ", stMdBullet},
-		{"2. ", stMdBullet},
-		{"|", stMdMark},
-		{"|------|-------|", stMdMark},
+		{"•", stMdBullet},
+		{"2.", stMdBullet},
+		{"│ ", stMdMark}, // a table's border
+		{"├───────┼───────┤", stMdMark},
 		{"go", stMdLang},
 		{"func", stMdKeyword},
 		{"// a comment here", stMdComment},
@@ -190,45 +171,63 @@ func TestInspectMarkdown(t *testing.T) {
 		if got := panelStyle(md, 'I', c.text); got != c.st {
 			t.Errorf("%q styled %v, want %v", c.text, got, c.st)
 		}
-		if got := panelStyle(plain, 'I', c.text); got != stText && got != stGrey {
-			t.Errorf("plain %q styled %v", c.text, got)
+	}
+	text := texts(md.lines)
+	for _, gone := range []string{"# Plan", "**bold**", "*emphasis*", "`inline code`", "[link]", "> a quoted", "- first item", "|------|", "```", "**plan**", "**done**", "`green`"} {
+		if strings.Contains(text, gone) {
+			t.Errorf("%q drawn as written:\n%s", gone, text)
 		}
 	}
-	// Criterion 3: every row that is not an AI message's is drawn as before.
-	// An AI message's rows are its wrapped rows, the first after the time,
-	// the others after ten spaces, as the tab lays them out.
-	ai, firsts := map[string]bool{}, []string{}
-	for _, e := range s.Agents["a1"].Messages {
-		if e.Role == "assistant" {
-			rs := wrap(e.Text, 80-2-10)
-			firsts = append(firsts, clockSec(e.At)+"  "+rs[0])
-			for _, r := range rs[1:] {
-				ai[strings.TrimRight("          "+r, " ")] = true
-			}
+	for _, want := range []string{"started by orchestrator · fix the plan", "• first item", "│ Name  │ Value │", "│ alpha │ 42    │", "(https://example.com).",
+		"a notice with **stars** and `ticks`", "second row at eighty columns", "completed · done: all green", "a late error", "a history line"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("no %q:\n%s", want, text)
 		}
 	}
-	isAI := func(row string) bool {
-		body := strings.TrimRight(row[1:], " \n")
-		return ai[body] || slices.ContainsFunc(firsts, func(f string) bool { return strings.HasPrefix(body, f) })
-	}
-	others := 0
-	for y, l := range md.lines {
-		row := texts([]line{l})
-		if isAI(row) {
+	// The rows that are not an AI message's are drawn as with Markdown off,
+	// the notice's among them.
+	same := 0
+	for _, want := range []string{"a notice with **stars**", "second row at eighty columns", "a late error", "a history line", "Messages"} {
+		y, z := rowWith(strings.Split(text, "\n"), want), rowWith(strings.Split(texts(plain.lines), "\n"), want)
+		if y < 0 || z < 0 {
+			t.Errorf("no row %q", want)
 			continue
 		}
-		if a, b := fmt.Sprint(spansOf(l)), fmt.Sprint(spansOf(plain.lines[y])); a != b {
-			t.Errorf("row %d %q differs:\n%s\nplain\n%s", y, row, a, b)
+		if a, b := fmt.Sprint(spansOf(md.lines[y])), fmt.Sprint(spansOf(plain.lines[z])); a != b {
+			t.Errorf("row %q differs:\n%s\nplain\n%s", want, a, b)
 		}
-		others++
+		same++
 	}
-	for _, want := range []string{"started by orchestrator", "a notice with **stars**", "second row at eighty columns", "completed", "a late error", "a history line"} {
-		if !strings.Contains(texts(md.lines), want) {
-			t.Errorf("no %q", want)
+	if same < 5 {
+		t.Errorf("only %d rows compared", same)
+	}
+
+	// Scrolled from top to bottom at three sizes: each top's rows are the
+	// last top's moved by one, and a selection over them copies what they
+	// show.
+	for _, size := range [][2]int{{80, 24}, {120, 40}, {200, 60}} {
+		ui := UI{Width: size[0], Height: size[1], Inspect: "a1", InspectHold: true}
+		var last []string
+		for top := 0; ; top++ {
+			ui.InspectTop = top
+			sc := draw(ui, true)
+			v := sc.Inspect
+			var rows []string
+			for i := v.Top; i < v.Top+v.Room; i++ {
+				rows = append(rows, sc.source('I', i))
+			}
+			if last != nil && !slices.Equal(rows[:len(rows)-1], last[1:]) {
+				t.Fatalf("%v top %d: rows\n%s\nafter\n%s", size, top, strings.Join(rows, "\n"), strings.Join(last, "\n"))
+			}
+			sel := Selection{Pos{'I', v.Top, 0, 0}, Pos{'I', v.Top + v.Room - 1, 0, 1 << 20}}
+			if got := sc.Text(s, sel); got != strings.Join(rows, "\n") || strings.Contains(got, "**bold**") {
+				t.Fatalf("%v top %d: copied\n%q\nwant\n%q", size, top, got, strings.Join(rows, "\n"))
+			}
+			last = rows
+			if top >= v.Rows-v.Room {
+				break
+			}
 		}
-	}
-	if others < 8 {
-		t.Errorf("only %d rows compared", others)
 	}
 }
 

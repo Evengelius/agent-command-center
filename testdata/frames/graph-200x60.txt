@@ -12,8 +12,8 @@
 │ ✓ TURN 2                                          0s ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                             ││ │     A  logo.png   binary ││▎     │
 │   started by the CLI                                 ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                  11:30:00      mock   ││ ●   Fold the rows on ←     ││▎ ◉   │
 │                                                      ││ ▎                                                                                                      ││ ◉─╮ Merge branch 'rows'    ││▎     │
-│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll       ││ ● │ Rework the rows: no C… ││      │
-│                                                      ││ ▎ report its result when it finishes.                                                                  ││ ● │ Read the history in p… ││      │
+│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write found.txt. I'll report  ││ ● │ Rework the rows: no C… ││      │
+│                                                      ││ ▎ its result when it finishes.                                                                         ││ ● │ Read the history in p… ││      │
 │                                                      ││ ▎                                                                                                      ││ ● │ Keep the cursor on it… ││      │
 │                                                      ││ ▎  ✓ general-purpose · Bash   ls -p "<probe-root>/probe-work/p3b…  allowed by you 11:30:00      mock   ││ ● │ Watch the followed re… ││      │
 │                                                      ││ ▎  ✓ general-purpose · Write  …\probe-work\p3b\found.txt           allowed by you 11:30:00      mock   ││ ●─╯ Add the scope popup    ││      │
@@ -21,8 +21,8 @@
 │                                                      ││                                                                                                        ││ ●   Show a rename's source ││      │
 │                                                      ││ ╭────────────────────────────────────────────────────────────────────────────────────────────────────╮ ││ ●   v1 Add the panel       ││      │
 │                                                      ││ │ RESULT  11:30                                                                                      │ ││ ●   Initial commit         ││      │
-│                                                      ││ │ The subagent found two files in the directory, `alpha.txt` and `beta.md`, and wrote them into      │ ││                            ││      │
-│                                                      ││ │ `<probe-root>\probe-work\p3b\found.txt`.                                                           │ ││                            ││      │
+│                                                      ││ │ The subagent found two files in the directory, alpha.txt and beta.md, and wrote them into          │ ││                            ││      │
+│                                                      ││ │ <probe-root>\probe-work\p3b\found.txt.                                                             │ ││                            ││      │
 │                                                      ││ │                                                                                                    │ ││                            ││      │
 │                                                      ││ │ Found 2 files: alpha.txt and beta.md.                                                              │ ││                            ││      │
 │ ──────────────────────────────────────────────────── ││ ╰────────────────────────────────────────────────────────────────────────────────────────────────────╯ ││                            ││      │
@@ -45,7 +45,7 @@
 │ C · LIVE AGENTS                                                                                                                                                                    0 ACTIVE · 1 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │ AGENTS                                   │ EXECUTION TIMELINE                                                                                                                            ✓ COMPLETED │
-│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md found.txt path: <probe-root>\probe-work\p3b\found.txt                             │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: • alpha.txt • beta.md found.txt path: <probe-root>\probe-work\p3b\found.txt                             │
 │     00:00   21.5k tok   │  tool: Write   │                                                                                                                                                           │
 │                                          │                                                                                                                                                           │
 │                                          │                                                                                                                                                           │

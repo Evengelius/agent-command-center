@@ -150,10 +150,14 @@ func TestFailingHookTurnRuns(t *testing.T) {
 		if strings.Join(roles, " ") != "notice user thinking assistant" {
 			t.Errorf("conversation %v", roles)
 		}
-		for _, want := range []string{failedHook, "Thought for 8.0s · 928 thinking tokens", "**59**"} {
+		// The answer's "**59**" as Markdown shows it (plan 71).
+		for _, want := range []string{failedHook, "Thought for 8.0s · 928 thinking tokens", "59: each remainder"} {
 			if !strings.Contains(text, want) {
 				t.Errorf("no %q in\n%s", want, text)
 			}
+		}
+		if strings.Contains(text, "**59**") {
+			t.Errorf("the answer's markers drawn:\n%s", text)
 		}
 		if strings.Contains(text, "errors ") || strings.Contains(text, "unrecognised ") || len(s.Errors) != 0 || s.Unrecognised != 0 {
 			t.Errorf("errors %d, unrecognised %d, or a note of them (none is drawn at 0):\n%s", len(s.Errors), s.Unrecognised, text)

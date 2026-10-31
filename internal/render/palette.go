@@ -382,8 +382,7 @@ var (
 	stSummaryFocus = new(lipgloss.Style)
 
 	stMdHeading = stTitle
-	stMdMark    = stGrey // #, >, list bullets' neighbours, |, fences, ** and `
-	stMdStrong  = stBold
+	stMdMark    = stGrey // a quote's bars, a table's borders, a rule (plan 71)
 
 	modelStyles = func() (out []*lipgloss.Style) {
 		for range modelColours {
@@ -538,6 +537,12 @@ func paint() {
 	for k, st := range homeStyles {
 		paintStyle(st, homeStyleOf(k))
 	}
+	for k, st := range mdStyles { // after their bases (plan 71)
+		paintStyle(st, mdStyleOf(k))
+	}
+	for base, st := range cursorStyles { // after theirs, Markdown's among them
+		paintStyle(st, base.Background(cTreeRow.get()))
+	}
 	for _, g := range grounds {
 		for base, t := range g.tints {
 			if !sixteen { // unused there: on gives the base style
@@ -632,6 +637,22 @@ func homeStyleOf(k homeKey) lipgloss.Style { return fg(k.c).Bold(k.bold) }
 
 // active is st on the active ground (plan 30).
 func active(st *lipgloss.Style) *lipgloss.Style { return activeGround.on(st) }
+
+// cursorStyles are styles on the file viewer's cursor line, its background
+// zone A's cursor row's on every palette, as synRow's are (plan 71, design
+// D5: a Markdown file's preview).
+var cursorStyles = map[*lipgloss.Style]*lipgloss.Style{}
+
+// onCursorRow is st on the viewer's cursor line, made on first use.
+func onCursorRow(st *lipgloss.Style) *lipgloss.Style {
+	if t := cursorStyles[st]; t != nil {
+		return t
+	}
+	t := new(lipgloss.Style)
+	paintStyle(t, st.Background(cTreeRow.get()))
+	cursorStyles[st] = t
+	return t
+}
 
 // on is st on the ground, made on first use; st itself on a 16-colour
 // terminal, which has no ground to spare.

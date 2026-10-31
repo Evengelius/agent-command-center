@@ -8,7 +8,7 @@
 │ ╭─────────────│ ⌄ Local                                                      │
 │ │ RESULT  11:3│     feat                                         origin/feat │
 │ │ The subagent│ ⌄ Remote                                                     │
-│ │ `beta.md`, a│     origin/feat                                              │
+│ │ and wrote th│     origin/feat                                              │
 │ │             │ ↑↓ move · Enter switch · Ctrl+C copy · F5 fetch · Esc close  │
 │ │ Found 2 file╰──────────────────────────────────────────────────────────────╯
 │ ╰──────────────────────────────────────────────────────────────────────────╯ │

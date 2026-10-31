@@ -45,7 +45,7 @@ func inspect(s *state.State, ui UI, a *state.Agent, sc *Screen) []line {
 	case 3:
 		body = inspectRaw(s, a, w-2)
 	default:
-		body = inspectMessages(s, a, w-2)
+		body = inspectMessages(s, ui.Wrap, a, w-2)
 	}
 	room := max(h-len(ls)-1, 1)
 	bottom := max(len(body)-room, 0)
@@ -133,53 +133,69 @@ func detail(text string, w int) line {
 func cutNote(n int64) string { return "… " + byteSize(n) + " of earlier output not kept" }
 
 // inspectMessages is the agent's start, its messages as the CLI delivered
-// them, and its end.
-func inspectMessages(s *state.State, a *state.Agent, w int) []line {
+// them, and its end; wc keeps their Markdown lines as shown and wrapped.
+func inspectMessages(s *state.State, wc *WrapCache, a *state.Agent, w int) []line {
 	by := "orchestrator"
 	if p := s.Agents[a.Parent]; p != nil {
 		by = p.Label
 	}
 	start := "started by " + by
 	if a.Description != "" {
-		start += " · " + firstLine(a.Description)
+		start += " · " + mdText(firstLine(a.Description), 0) // its Markdown's markers hidden (plan 71, design D5)
 	}
 	out := []line{timed(clockSec(a.StartedAt), plain(start, stText), "observed", w)}
 	drawn := 0
-	for _, e := range a.Messages {
+	tw := max(w-10, 1)
+	for mi, e := range a.Messages {
 		if noText(e) {
 			continue // no row with no text (plan 40, design D1)
 		}
 		drawn++
-		// AI text takes zone B's Markdown styles, on the rows wrap draws
-		// (ui-design.md, Markdown; plan 5, item 11); a notice stays plain.
-		ps := paragraphs(e.Text)
+		// AI text as zone B's Markdown shows it, on the rows its wrap draws
+		// (ui-design.md, Markdown; plan 5, item 11; plan 71, design D5),
+		// its lines, kinds and wraps kept from frame to frame
+		// (WrapCache.markdown); a notice stays plain.
+		var ps []string
 		var md []mdLine
+		var rows [][]rowRange
 		if e.Role == "assistant" && markdownOn {
-			md = mdLines(ps)
+			d := wc.markdown(mdKey{panel: 'I', agent: a.Key, i: mi}, e.Text, paragraphs)
+			ps, md, rows = d.lines, d.md, wc.wraps(d, tw, stText)
+		} else {
+			ps = paragraphs(e.Text)
 		}
 		first := true
 		for j, para := range ps {
-			var rs []styleRun
-			if md != nil {
-				rs = mdRuns(para, md[j])
-			}
-			for _, r := range wrapPara(para, max(w-10, 1)) {
-				switch {
-				case first:
-					out = append(out, timed(clockSec(e.At), styledRow(para, r, rs, stText), originLabel(e.Origin), w))
-					first = false
-				case rs != nil:
-					out = append(out, append(line{deco("          ", stNone)}, styledRow(para, r, rs, stText)...).fit(w))
-				default:
+			if md == nil {
+				for _, r := range wrapPara(para, tw) {
+					if first {
+						out = append(out, timed(clockSec(e.At), plain(para[r.from:r.to], stText), originLabel(e.Origin), w))
+						first = false
+						continue
+					}
 					out = append(out, detail(para[r.from:r.to], w))
 				}
+				continue
+			}
+			sh := wc.show(para, md[j], tw, stText)
+			for n, r := range rows[j] {
+				row := shownPlain(para, r, sh)
+				if n > 0 {
+					row = append(append(line{}, sh.hang...), row...)
+				}
+				if first {
+					out = append(out, timed(clockSec(e.At), row, originLabel(e.Origin), w))
+					first = false
+					continue
+				}
+				out = append(out, append(line{deco("          ", stNone)}, row...).fit(w))
 			}
 		}
 	}
 	if a.Status.Final() {
 		end := line{agentSymbol(a.Status), sp(" "+statusWord(a.Status), stText)}
 		if a.Summary != "" {
-			end = append(end, sp(" · "+firstLine(a.Summary), stText))
+			end = append(end, sp(" · "+mdText(firstLine(a.Summary), 0), stText))
 		}
 		out = append(out, timed(clockSec(a.EndedAt), end, originLabel(a.StatusOrigin), w))
 	}

@@ -115,13 +115,14 @@ The owner's order (amendment 65, 2026-10-28) is done: its four
 suggestions closed, plans 64 to 66 and plan 69 (the session's resumption
 from the home screen), with plans 67 and 68, which the owner put before
 the last (the characters typed with AltGr; the keyboard reader's races).
-Then plan 70, the owner's own (amendment 72), approved on 2026-10-30.
+Then plan 70, the owner's own (amendment 72), approved on 2026-10-30,
+and plan 71, the owner's own (amendment 74), approved on 2026-10-31.
 The next plan starts when the owner asks for one, as a plan for the
 owner's review.
 
 ## No plan active
 
-Plan 70 was approved and closed on 2026-10-30 (Closed plans, below).
+Plan 71 was approved and closed on 2026-10-31 (Closed plans, below).
 
 ## Closed plans
 
@@ -1010,3 +1011,24 @@ then 13 PASS for the card, then 10 manual scenarios of 10 PASS
 3da7b9d, then the approval commit, both pushed, the test data moved to
 the Recycle Bin after, Codex's thread kept; its full text in git (`git
 show 3da7b9d:plan.md`).
+
+## Plan 71 - Consistent Markdown rendering across ACC
+
+Brief amendment 74: Markdown shown as formatted content wherever ACC
+presents it as such, its markers hidden: zone B's answers of both CLIs,
+Codex's reasoning summary, the inspection's messages, zone C's excerpts
+and a Markdown file's preview (`m` for its source); the copy, the search
+and the cursor working on its source; the owner's messages, the editor,
+the diffs, the tools' output and the source view kept as written. Then,
+from the owner's manual acceptance, spans over a paragraph's lines (the
+multiline defect), and the Markdown cache: each text drawn kept from
+frame to frame, a streamed answer read again from its last paragraph.
+Approved on 2026-10-31 after the owner's independent review ("I APPROVE
+the implementation. No blocking issues were identified."): 10 PASS and
+71.10 an ACCEPTED EXCEPTION; the multiline fix 9 PASS and F9 an ACCEPTED
+EXCEPTION; the cache 8 PASS; the manual acceptance as the owner recorded
+it, Codex's live test not repeated after the fix
+([`doc/plan71-evaluation.md`](doc/plan71-evaluation.md)); one commit,
+"Plan 71: Consistent Markdown rendering and cache optimization", pushed
+after the final Git checks; its full text in that file, The plan as it
+ran.

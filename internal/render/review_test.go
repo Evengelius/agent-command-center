@@ -147,7 +147,7 @@ func TestReviewRowsOwnerCase(t *testing.T) {
 				t.Errorf("%s at %dx%d: zone C\n%s", a.Label, size[0], size[1], strings.Join(inner, "\n"))
 			}
 		}
-		ins := texts(inspectMessages(s, a, 200))
+		ins := texts(inspectMessages(s, nil, a, 200))
 		if got := strings.Count(ins, want); got != c.reviews || strings.Contains(ins, "authorization") {
 			t.Errorf("%s: the inspection has %d rows reading %q, want %d, and no authorization:\n%s", a.Label, got, want, c.reviews, ins)
 		}

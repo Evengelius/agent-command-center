@@ -1,21 +1,21 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
-│ A · ORCHESTRATOR                 ││ ▎ CLAUDE  Haiku 5.5  11:30                                               ││      │
-│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎  ✓ Agent  general-purpose · List directory and …  11:30:00      mock   ││  ≡   │
-│ ──────────────────────────────── ││ ▎                                                                        ││      │
-│ STAGES · inferred from activity  ││ ▎ I've launched the subagent in the background to list the directory     ││      │
-│ ✓ TURN 1                      0s ││ ▎ and write `found.txt`. I'll report its result when it finishes.        ││      │
-│   Use the Agent tool to launch … ││ ▎                                                                        ││  ⑂   │
-│   Agent · agent general-purpose  ││ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   ││      │
-│                                  ││ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   ││      │
-│ ✓ TURN 2                      0s ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   ││      │
-│   started by the CLI             ││                                                                          ││  ◉   │
-│ ──────────────────────────────── ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
-│ ✦ TELEMETRY        Enter details ││ │ RESULT  11:30                                                        │ ││      │
-│ ▾ SESSION USAGE                  ││ │ The subagent found two files in the directory, `alpha.txt` and       │ ││      │
-│   Context 4% of 1M ░░░░░░░░░░░░░ ││ │ `beta.md`, and wrote them into                                       │ ││      │
-│   Tokens 159.4k session total    ││ │ `<probe-root>\probe-work\p3b\found.txt`.                             │ ││      │
+│ A · ORCHESTRATOR                 ││                                                                          ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎ CLAUDE  Haiku 5.5  11:30                                               ││  ≡   │
+│ ──────────────────────────────── ││ ▎  ✓ Agent  general-purpose · List directory and …  11:30:00      mock   ││      │
+│ STAGES · inferred from activity  ││ ▎                                                                        ││      │
+│ ✓ TURN 1                      0s ││ ▎ I've launched the subagent in the background to list the directory     ││      │
+│   Use the Agent tool to launch … ││ ▎ and write found.txt. I'll report its result when it finishes.          ││  ⑂   │
+│   Agent · agent general-purpose  ││ ▎                                                                        ││      │
+│                                  ││ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   ││      │
+│ ✓ TURN 2                      0s ││ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   ││      │
+│   started by the CLI             ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   ││  ◉   │
+│ ──────────────────────────────── ││                                                                          ││      │
+│ ✦ TELEMETRY        Enter details ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│ ▾ SESSION USAGE                  ││ │ RESULT  11:30                                                        │ ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││ │ The subagent found two files in the directory, alpha.txt and         │ ││      │
+│   Tokens 159.4k session total    ││ │ beta.md, and wrote them into <probe-root>\probe-work\p3b\found.txt.  │ ││      │
 │   Est. cost $0.01 API-equiv.     ││ │                                                                      │ ││      │
 │ ▾ QUOTA WINDOWS                  ││ │ Found 2 files: alpha.txt and beta.md.                                │ ││      │
 │   Session (5hr)             35%† ││ ╰╭──────────────────────────╮──────────────────────────────────────────╯ ││      │
@@ -29,7 +29,7 @@
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │ AGENTS                                   │ EXECUTION TIMELINE                                            ✓ COMPLETED │
-│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md   │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: • alpha.txt • beta.md   │
 │     00:00   21.5k tok   │  tool: Write   │                     │ found.txt path:…                                    │
 │                                          │                                                                           │
 │                                          │                                                                           │

@@ -11,8 +11,7 @@
 │                                  │     origin/feat                                              │                                                                                            ││      │
 │ ✓ TURN 2                         │ ↑↓ move · Enter switch · Ctrl+C copy · F5 fetch · Esc close  │ory and write found.txt                                                11:30:00      mock   ││      │
 │   started by the CLI             ╰──────────────────────────────────────────────────────────────╯                                                                                            ││  ◉   │
-│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it           ││      │
-│                                                      ││ ▎ finishes.                                                                                                                          ││      │
+│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write found.txt. I'll report its result when it finishes.   ││      │
 │                                                      ││ ▎                                                                                                                                    ││      │
 │                                                      ││ ▎  ✓ general-purpose · Bash   ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'                 allowed by you 11:30:00      mock   ││      │
 │                                                      ││ ▎  ✓ general-purpose · Write  <probe-root>\probe-work\p3b\found.txt                              allowed by you 11:30:00      mock   ││      │
@@ -20,11 +19,12 @@
 │                                                      ││                                                                                                                                      ││      │
 │                                                      ││ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ ││      │
 │                                                      ││ │ RESULT  11:30                                                                                                                    │ ││      │
-│                                                      ││ │ The subagent found two files in the directory, `alpha.txt` and `beta.md`, and wrote them into                                    │ ││      │
-│                                                      ││ │ `<probe-root>\probe-work\p3b\found.txt`.                                                                                         │ ││      │
+│                                                      ││ │ The subagent found two files in the directory, alpha.txt and beta.md, and wrote them into <probe-root>\probe-work\p3b\found.txt. │ ││      │
 │                                                      ││ │                                                                                                                                  │ ││      │
 │                                                      ││ │ Found 2 files: alpha.txt and beta.md.                                                                                            │ ││      │
 │                                                      ││ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ ││      │
+│                                                      ││                                                                                                                                      ││      │
+│                                                      ││                                                                                                                                      ││      │
 │ ──────────────────────────────────────────────────── ││                                                                                                                                      ││      │
 │ ✦ TELEMETRY                            Enter details ││                                                                                                                                      ││      │
 │ ▾ SESSION USAGE                                      ││                                                                                                                                      ││      │
@@ -45,7 +45,7 @@
 │ C · LIVE AGENTS                                                                                                                                                                    0 ACTIVE · 1 DONE │
 │ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
 │ AGENTS                                   │ EXECUTION TIMELINE                                                                                                                            ✓ COMPLETED │
-│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: - alpha.txt - beta.md found.txt path: <probe-root>\probe-work\p3b\found.txt                             │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: • alpha.txt • beta.md found.txt path: <probe-root>\probe-work\p3b\found.txt                             │
 │     00:00   21.5k tok   │  tool: Write   │                                                                                                                                                           │
 │                                          │                                                                                                                                                           │
 │                                          │                                                                                                                                                           │

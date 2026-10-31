@@ -60,7 +60,8 @@ func TestCodexSummaryDetails(t *testing.T) {
 		}
 	}
 
-	// Open under the rows, in zone B at 200 columns: each detail a row.
+	// Open under the rows, in zone B at 200 columns: each detail a row, Codex's
+	// summary as Markdown shows it (plan 71, design D5).
 	open := map[string]bool{}
 	for _, i := range idx {
 		open[ThoughtKey(s.Conversation[i])] = true
@@ -79,6 +80,9 @@ func TestCodexSummaryDetails(t *testing.T) {
 			found = true
 			want := thoughtDetails(s.Conversation[idx[n]].Thought)
 			for j, w := range want {
+				if strings.HasPrefix(w, codexSummaryLead) {
+					w = codexSummaryLead + "Computing f(10)" // its ** hidden
+				}
 				if i+1+j >= len(rows) || rows[i+1+j] != "▎     "+w {
 					t.Errorf("phase %d: detail %d %q, want %q", n+1, j, rows[min(i+1+j, len(rows)-1)], "▎     "+w)
 				}
@@ -172,15 +176,16 @@ func TestCodexSummaryLines(t *testing.T) {
 			t.Errorf("%q beside a summary", l)
 		}
 	}
-	// Drawn open: the label's row, a blank detail row, then the next part.
+	// Drawn open: the label's row, a blank detail row, then the next part, as
+	// Markdown shows Codex's text (plan 71, design D5).
 	s := thinkBench(th)
 	e := s.Conversation[1]
 	rows := rowTexts(bRows(s, UI{Unfolded: map[string]bool{ThoughtKey(e): true}}, 200))
 	for i, r := range rows {
-		if r != "▎     Codex's summary, its own text: **Planning the change**" {
+		if r != "▎     Codex's summary, its own text: Planning the change" {
 			continue
 		}
-		if i+5 >= len(rows) || strings.TrimRight(rows[i+1], " ▎") != "" || rows[i+2] != "▎     I will read the file first," || rows[i+3] != "▎     then edit it." || strings.TrimRight(rows[i+4], " ▎") != "" || rows[i+5] != "▎     **Checking**" {
+		if i+5 >= len(rows) || strings.TrimRight(rows[i+1], " ▎") != "" || rows[i+2] != "▎     I will read the file first," || rows[i+3] != "▎     then edit it." || strings.TrimRight(rows[i+4], " ▎") != "" || rows[i+5] != "▎     Checking" {
 			t.Errorf("rows from the label:\n%s", strings.Join(rows[i:min(i+6, len(rows))], "\n"))
 		}
 		return

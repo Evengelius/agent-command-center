@@ -24,11 +24,10 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-10-30, when the owner approved plan
-70, the one-time summary suggestion after a resume (brief amendments 72
-and 73).** Plans 1 to 70 are closed, one entry each in `plan.md`, Closed
-plans; the MVP was approved on
-2026-10-17. `plan.md` holds the active plan's
+**Status: no plan active since 2026-10-31, when the owner approved plan
+71, consistent Markdown rendering across ACC (brief amendment 74).** Plans
+1 to 71 are closed, one entry each in `plan.md`, Closed plans; the MVP was
+approved on 2026-10-17. `plan.md` holds the active plan's
 progress and test evidence; each closed plan's results are in its
 evaluation file, and its full record in git.
 
@@ -172,15 +171,16 @@ not in this list: it runs alone, with the exact command and conditions of
   owner has asked for since: recent projects and favourites, the system's
   folder dialog for the project; git worktree management; a file viewer in
   the terminal with an Explorer of the project, in place of the editor
-  integration, and its git blame; the session's model, effort and
-  Ultracode selection; the permission modes selector; Source Control with
+  integration, its git blame and its Markdown preview; the session's
+  model, effort and Ultracode selection; the permission modes selector;
+  Source Control with
   a read-only Git diff viewer, its commit and push, and a selection's
   commit; the branches popup, its switch and fetch; the Git Graph, read
   only, with its scope selector; the turn-by-turn review of the agent's
   changes, read only; the conversation's search; the last session's
   resumption from the home screen and the one-time offer to prepare a
   summary request after it (brief, amendments 9 to 12, 34, 40, 45, 46, 51,
-  53, 61, 62, 64, 67, 68, 71 and 72).
+  53, 61, 62, 64, 67, 68, 71, 72 and 74).
   The ones left out are **[Nice to have]**: future improvements, never
   listed as remaining, built only if the owner asks for one in a new plan
   (`plan.md`, Nice to have).

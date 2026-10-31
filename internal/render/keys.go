@@ -123,6 +123,7 @@ func fixedKeyTable() []keyGroup {
 			{"g", "go to a line number"},
 			{"f", "full screen or the window"},
 			{"b", "git blame: each line's commit date and author beside it, the cursor's commit in the footer; b again hides it"},
+			{"m", "a Markdown file, shown as its preview: its source; m again its preview"},
 			{"Esc", "clear the selection, else back to the Explorer, on the file"},
 			{"F3", "close it, and show or hide the Explorer"},
 		}},

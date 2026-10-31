@@ -98,7 +98,7 @@ func TestInspectP7(t *testing.T) {
 		if r := texts(raw); !strings.Contains(r, a.Key) || strings.Contains(r, other.Key) {
 			t.Errorf("%s: raw rows name %s or miss %s", a.Label, other.Key, a.Key)
 		}
-		m := texts(inspectMessages(s, a, wide))
+		m := texts(inspectMessages(s, nil, a, wide))
 		if !strings.Contains(m, "started by orchestrator") || !strings.Contains(m, "completed") {
 			t.Errorf("%s Messages:\n%s", a.Label, m)
 		}

@@ -108,7 +108,7 @@ func checkTimeline(t *testing.T, name string, rows []string, want []state.Entry)
 // end of an agent that ended.
 func checkInspection(t *testing.T, name string, s *state.State, a *state.Agent, want int) {
 	t.Helper()
-	ls := inspectMessages(s, a, 120)
+	ls := inspectMessages(s, nil, a, 120)
 	timedRows := 0
 	for _, l := range ls {
 		r := strings.TrimRight(texts([]line{l}), " \n")
@@ -186,7 +186,7 @@ func TestTimelineNoEmptyRows(t *testing.T) {
 	if _, rows := timeline(s, UI{Selected: p40Child}, 60, 10, &Screen{}); strings.TrimSpace(texts(rows)) != "no activity yet" {
 		t.Errorf("only thinking: the timeline\n%s", texts(rows))
 	}
-	if got := texts(inspectMessages(s, &thinking, 120)); !strings.Contains(got, "no message from this agent yet") {
+	if got := texts(inspectMessages(s, nil, &thinking, 120)); !strings.Contains(got, "no message from this agent yet") {
 		t.Errorf("only thinking: the inspection\n%s", got)
 	}
 }

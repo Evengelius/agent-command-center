@@ -8,7 +8,7 @@
 │ ╭─────────────│     fix/login                                                │
 │ │ RESULT  11:3│ ⌄ Local                                                      │
 │ │ The subagent│     feat                                         origin/feat │
-│ │ `beta.md`, a│     fix/login                                                │
+│ │ and wrote th│     fix/login                                                │
 │ │             │   ✓ main                                   origin/main ↑2 ↓1 │
 │ │ Found 2 file│     wtb                                  in another worktree │
 │ ╰─────────────│ › Remote                                                     │

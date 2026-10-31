@@ -3,6 +3,7 @@ package render
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -129,14 +130,29 @@ func resultEdge(w int, top bool) line {
 // cardText adds entry i's lines as rows of a card's content width wide:
 // the first behind lead0 (a label, or the text's column), the others behind
 // lead, of the same width.
-func cardText(out []crow, wc *WrapCache, fr *frame, i int, lines []string, width int, lead0, lead line, st *lipgloss.Style, markdown bool) []crow {
-	p := &rowStyle{lead0: lead0, lead: lead, at: ref{panel: 'B', item: i}, st: st}
-	if markdown && markdownOn {
-		p.md = mdLines(lines)
-	}
+func cardText(out []crow, wc *WrapCache, fr *frame, i int, lines []string, width int, lead0, lead line, st *lipgloss.Style) []crow {
 	tw := max(width-lead.width(), 1)
+	p := &rowStyle{lead0: lead0, lead: lead, at: ref{panel: 'B', item: i}, st: st, w: tw, wc: wc}
 	for j, l := range lines {
 		for k, r := range wc.ranges(l, tw, tw) {
+			out = append(out, crow{src: l, r: r, line: j, first: k == 0, p: p, fr: fr})
+		}
+	}
+	return out
+}
+
+// mdCardText adds entry i's text, an answer, as rows width cells wide, as
+// Markdown shows it (plan 71, design D2): its lines, their kinds and wraps
+// kept by wc from frame to frame (WrapCache.markdown), its rows added at
+// once, as many as their wraps.
+func mdCardText(out []crow, wc *WrapCache, fr *frame, i int, text string, width int, st *lipgloss.Style) []crow {
+	tw := max(width, 1)
+	d := wc.markdown(mdKey{panel: 'B', i: i}, text, splitLines)
+	rows := wc.wraps(d, tw, st)
+	p := &rowStyle{at: ref{panel: 'B', item: i}, st: st, md: d.md, w: tw, wc: wc}
+	out = slices.Grow(out, d.total)
+	for j, l := range d.lines {
+		for k, r := range rows[j] {
 			out = append(out, crow{src: l, r: r, line: j, first: k == 0, p: p, fr: fr})
 		}
 	}
@@ -203,7 +219,7 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 		if len(ls) > foldOver {
 			shown = ls[:foldShow]
 		}
-		out = cardText(out, wc, fr, i, shown, cw, nil, nil, stBright, false)
+		out = cardText(out, wc, fr, i, shown, cw, nil, nil, stBright)
 		if len(ls) > foldOver {
 			more := fmt.Sprintf("… %s more lines", grouped(len(ls)-foldShow))
 			row := decoLine(more, stGrey)
@@ -224,7 +240,11 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 		}
 		// The answer, Markdown styled; a thinking block it had is the thinking
 		// entry's (plan 22): a message with nothing else is not drawn (looks).
-		out = cardText(out, wc, fr, i, entryLines(s, e), cw, nil, nil, stText, true)
+		if markdownOn {
+			out = mdCardText(out, wc, fr, i, e.Text, cw, stText)
+		} else {
+			out = cardText(out, wc, fr, i, entryLines(s, e), cw, nil, nil, stText)
+		}
 		if e.Streaming {
 			if last := out[len(out)-1].content(); last.width() < cw {
 				out[len(out)-1] = crow{l: append(last, deco("▌", stText)), fr: fr}
@@ -254,7 +274,7 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 			st = stFailed
 		}
 		start := len(out)
-		out = cardText(out, wc, fr, i, entryLines(s, e), cw, line{deco("◈ ", st)}, line{deco("  ", st)}, st, false)
+		out = cardText(out, wc, fr, i, entryLines(s, e), cw, line{deco("◈ ", st)}, line{deco("  ", st)}, st)
 		out[start].cursor = focused
 	case "error":
 		// The error's first line, as received; Enter on D shows it
@@ -269,9 +289,9 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 	case "dashboard":
 		// The dashboard's own note, grey, never the CLI's (AGENTS.md: shown
 		// distinctly); every row under the first's text.
-		out = cardText(out, wc, fr, i, entryLines(s, e), cw, line{deco("· ", stGrey)}, line{deco("  ", stGrey)}, stGrey, false)
+		out = cardText(out, wc, fr, i, entryLines(s, e), cw, line{deco("· ", stGrey)}, line{deco("  ", stGrey)}, stGrey)
 	default:
-		out = cardText(out, wc, fr, i, entryLines(s, e), cw, line{deco("· ", stProgress)}, line{deco("  ", stProgress)}, stProgress, false)
+		out = cardText(out, wc, fr, i, entryLines(s, e), cw, line{deco("· ", stProgress)}, line{deco("  ", stProgress)}, stProgress)
 	}
 	// Its own rows say whose they are: a double click on one opens the entry
 	// as Enter does (plan 42, design D4).

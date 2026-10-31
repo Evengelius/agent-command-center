@@ -287,7 +287,7 @@ func thoughtDetails(t *state.Thought) []string {
 		// Codex's own lines: a summary of several parts has a blank line between
 		// them, and a line of an entry holds no line break.
 		lines := strings.Split(t.Summary, "\n")
-		out = append(out, "Codex's summary, its own text: "+lines[0])
+		out = append(out, codexSummaryLead+lines[0])
 		return append(out, lines[1:]...)
 	}
 	switch {
@@ -838,16 +838,59 @@ func thoughtRows(s *state.State, ui UI, out []crow, i int, e state.Entry, w int,
 	return out
 }
 
+// codexSummaryLead leads a Codex phase's details' first line of Codex's own
+// summary, the dashboard's words before Codex's.
+const codexSummaryLead = "Codex's summary, its own text: "
+
+// detailsMd is the Markdown kinds of a phase's details: Codex's summary as
+// Markdown, from its lead's line on; the dashboard's own lines as they are
+// (plan 71, design D5). nil without Markdown.
+func detailsMd(ls []string) []mdLine {
+	if !markdownOn {
+		return nil
+	}
+	from := len(ls)
+	for j, l := range ls {
+		if strings.HasPrefix(l, codexSummaryLead) {
+			from = j
+			break
+		}
+	}
+	out := make([]mdLine, len(ls))
+	for j := range from {
+		out[j] = mdLine{kind: mdNone}
+	}
+	copy(out[from:], mdLines(ls[from:]))
+	return out
+}
+
 // detailRows adds a phase's details under its summary row (plan 22, design
 // 8): lines 1… of its entry, wrapped four cells in, muted, on the tool rows'
-// ground, each drawn only when shown.
+// ground, each drawn only when shown; Codex's summary as Markdown shows it
+// (plan 71, design D5).
 func detailRows(out []crow, wc *WrapCache, i int, e state.Entry, w int, fr *frame) []crow {
 	tw := max(w-4, 1)
-	for j, src := range thoughtDetails(e.Thought) {
+	ls := thoughtDetails(e.Thought)
+	md := detailsMd(ls)
+	for j, src := range ls {
 		at := ref{panel: 'B', item: i, line: j + 1}
-		for _, r := range wc.ranges(src, tw, tw) {
+		if md == nil || md[j].kind == mdNone {
+			for _, r := range wc.ranges(src, tw, tw) {
+				out = append(out, crow{fn: func() line {
+					return grounded(append(line{deco("    ", stNone)}, rowLine(src, r, at, stMuted, nil)...), w)
+				}, fr: fr})
+			}
+			continue
+		}
+		k := md[j]
+		for n, r := range wc.mdRanges(src, k, tw, stMuted) {
 			out = append(out, crow{fn: func() line {
-				return grounded(append(line{deco("    ", stNone)}, rowLine(src, r, at, stMuted, nil)...), w)
+				sh := wc.show(src, k, tw, stMuted)
+				row := line{deco("    ", stNone)}
+				if n > 0 {
+					row = append(row, sh.hang...)
+				}
+				return grounded(append(row, shownRow(src, r, at, stMuted, sh)...), w)
 			}, fr: fr})
 		}
 	}
@@ -923,7 +966,12 @@ func thoughtView(e state.Entry, back span, w int) (line, []line) {
 	t := e.Thought
 	head := spread(line{back, thoughtMark(t), deco(" THINKING", stBold), deco("  "+clockSec(t.End), stGrey)}, decoLine(originLabel(e.Origin)+" ", stGrey), w)
 	body := append(wrapped(ls[0], w-2, stText, ""), line{})
-	for _, l := range ls[1:] {
+	md := detailsMd(ls[1:])
+	for j, l := range ls[1:] {
+		if md != nil && md[j].kind != mdNone {
+			body = append(body, mdWrapped(l, md[j], w-2, stMuted, "  ")...) // Codex's summary (plan 71, design D5)
+			continue
+		}
 		body = append(body, wrapped(l, w-2, stMuted, "  ")...)
 	}
 	return head, body

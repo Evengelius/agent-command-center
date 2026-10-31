@@ -1103,7 +1103,7 @@ func agentRow(a *state.Agent, ui UI, w int, cols agentCols) line {
 	case !a.Status.Final() && a.LastTool != "":
 		activity = a.LastTool
 	case a.Status.Final() && a.Summary != "":
-		activity += " · " + firstLine(a.Summary)
+		activity += " · " + mdText(firstLine(a.Summary), 0) // its Markdown's markers hidden (plan 71, design D5)
 	}
 	tok := "tok N/A"
 	if a.Tokens.Present {

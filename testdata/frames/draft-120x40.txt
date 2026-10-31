@@ -1,12 +1,12 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
-│ A · ORCHESTRATOR                 ││ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   ││      │
+│ A · ORCHESTRATOR                 ││ ▎                                                                        ││      │
 │ ✿ Claude H╭─ Draft ──────────────────────────────────────────────────────────────────────────── 7 lines ─╮   ││  ≡   │
 │ ──────────│ > Review the colour palette in sample/viewer.go:                                             │   ││      │
 │ STAGES · i│                                                                                              │   ││      │
-│ ✓ TURN 1  │   1. keep the five accents of the reference screen;                                          │─╮ ││      │
-│   Use the │   2. check each one against the dark background;                                             │ │ ││  ⑂   │
+│ ✓ TURN 1  │   1. keep the five accents of the reference screen;                                          │   ││      │
+│   Use the │   2. check each one against the dark background;                                             │─╮ ││  ⑂   │
 │   Agent · │   3. report any pair under 4.5:1, with its hex values.                                       │ │ ││      │
 │           │                                                                                              │ │ ││      │
 │ ✓ TURN 2  │   Do not change the file yet.                                                                │ │ ││      │

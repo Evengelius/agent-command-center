@@ -421,7 +421,11 @@ func timelineEntry(e state.Entry, w int) []line {
 	role := e.Role + strings.Repeat(" ", max(roleWidth-textWidth(e.Role), 0)+1)
 	lead := line{sp(clockSec(e.At)+"  ", stGrey), sp(role, st), deco("│ ", stGrey)}
 	indent := lead.width()
-	ls := wrapTwo(strings.Join(strings.Fields(e.Text), " "), max(w-indent, 8))
+	text := e.Text
+	if e.Role == "assistant" && markdownOn {
+		text = mdText(text, 4*w) // AI text's Markdown markers hidden, its lines read as far as two rows need (plan 71, design D5)
+	}
+	ls := wrapTwo(strings.Join(strings.Fields(text), " "), max(w-indent, 8))
 	out := []line{append(lead, sp(ls[0], stText))}
 	if len(ls) > 1 {
 		out = append(out, line{deco(strings.Repeat(" ", indent-2), stNone), deco("│ ", stGrey), sp(ls[1], stText)})

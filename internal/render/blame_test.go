@@ -168,7 +168,7 @@ func TestBlameWidth(t *testing.T) {
 	f = blameSample()
 	f.Lines[0] = strings.Repeat("x", 300)
 	for _, bw := range []int{blameFull, blameCompact} {
-		if got := codeRow(f, 0, 1, bw, 94).width(); got != 94 {
+		if got := codeRow(f, 0, 1, bw, 94, nil).width(); got != 94 {
 			t.Errorf("a long line beside a %d-cell column: %d cells, want 94", bw, got)
 		}
 	}
