@@ -18,6 +18,7 @@ point at it. Two references, with different roles:
 | `14-source-control.png` (218x160), from amendment 45 | **Source Control**: VS Code's panel header "Source Control" with its "···", a "Changes" section, a commit message box and a Commit button, the organisation to follow, not its theme | [Source Control](#source-control) |
 | `15-commit-push.png` (604x508), from amendment 46 | **Commit and push**: the dashboard's Source Control panel with a "Message" field, a purple "✓ Commit" button with its separator and chevron, and its open dropdown, "Commit & Push" on a rounded band; the authoritative design | [Commit and push](#commit-and-push) |
 | `16-home-screen.webp` (1347x757), from amendment 52 | **The home screen**: a header with the version, the system and the status, a pixel-art Space Invaders banner, the NEW SESSION and PROJECTS panels, a footer of shortcuts; the single source of truth for its look | [The home screen](#the-home-screen) |
+| `17-modes-claude-code.webp`, `18-modes-codex.webp` (1254x1254), `19-mode-pill.png` (258x92), from amendment 40 | **The modes selector**: Claude Code's and Codex's popups, each option with its icon and description, and the composer's mode pill | [The modes selector](#the-modes-selector) |
 
 **It is a visual reference, not a product.** The reference looks like a
 promotional mock-up ("CLAUDE CODE ULTRACODE TIP"). Its model names, flags
@@ -511,7 +512,8 @@ two half circles as tall as the pill.
 Brief amendment 40 (plan 39): three images, "authoritative visual design
 references", the popups lossy WebP of 1254x1254 pixels, the pill 258x92:
 
-- `35.webp`, Claude Code's popup: a charcoal ground `#111518`, a thin
+- `17-modes-claude-code.webp` (the owner's `35.webp`), Claude Code's popup:
+  a charcoal ground `#111518`, a thin
   border near `#B064F4` with rounded corners and a "V" let into the bottom
   edge near its right end; "MODES" in `#B86AF6`, bold, and "Current
   session" in `#A0AECC` on the first row; four options, each an outline
@@ -523,12 +525,14 @@ references", the popups lossy WebP of 1254x1254 pixels, the pill 258x92:
   line, nearly the box's width, its title `#F2EFF6`, its description
   `#B09FD5`, its lightning `#E874F2`, a white check (`#F6F2F8`) at the
   right.
-- `36.webp`, Codex's popup: the same box with three options, a hand, a
+- `18-modes-codex.webp` (the owner's `36.webp`), Codex's popup: the same box
+  with three options, a hand, a
   shield with a prompt, a hexagon with "!"; Approve for me selected, its
   shield `#EEE0FA`; Full access's hexagon `#F4C46E` and title `#F5C673`,
   its description muted; the descriptions broken after "files",
   "detected" and "internet" (35 characters at most).
-- `37.png`, the composer's pill: a fill of `#21223A`, a thin `#7E4AE1`
+- `19-mode-pill.png` (the owner's `37.png`), the composer's pill: a fill of
+  `#21223A`, a thin `#7E4AE1`
   outline with rounded corners (their radius 0.36 of its height), the
   lightning `#E982F6` at the left, "Auto" in `#DBD9E6`, no chevron.
 
@@ -560,7 +564,7 @@ confirmation's heading and Turn on Full access in amber).
 Brief amendment 44 (plan 43): two images, "the authoritative design
 references", `12-sidebar-collapsed.png` (955x332) and
 `13-sidebar-explorer.webp` (1393x479, lossy), the same screen with the
-Explorer's panel shown. Measured with `scratchpad/plan43/fg.ps1` (the
+Explorer's panel shown. Measured with `scripts/harness/glyph-colour.ps1` (the
 brightest tenth of each element's pixels):
 
 - **The sidebar**, a box of its own right of zone B (and of the Explorer
@@ -657,7 +661,7 @@ separator and a chevron, and under it an open dropdown with one item,
 "Commit & Push", on a rounded band. The amendment calls it the authoritative
 visual specification.
 
-Its colours, read from the pixels (`scratchpad\plan45\imgpx.ps1`: each
+Its colours, read from the pixels (`scripts/harness/image-colours.ps1`: each
 region's most frequent colour, and the brightest tenth of its pixels that
 stand out):
 

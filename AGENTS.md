@@ -77,6 +77,7 @@ doc\research\                  plan 1's findings, one file per reference
 doc\architecture.md ...        the design, kept current; doc\planN-evaluation.md, each plan's results
 cmd\                           the application and the confcheck tool
 acc.cmd, scripts\acc.ps1       the launcher: .\acc starts the dashboard (plan 23)
+scripts\harness\               the Windows Terminal check, its tests, colour tools (evaluation.md)
 internal\                      the packages (doc\architecture.md, The five parts)
 testdata\                      probe recordings, mock files, golden frames
 THIRD_PARTY.md                 every module in the graph, its version and licence
@@ -331,6 +332,11 @@ reliable, understandable, fast and focused on agentic development.
   before resuming; never redo finished work. Prefer a focused lookup (headings,
   a search) to rereading whole documents. Documents hold the latest state;
   git holds the history.
+- **Temporary files are not records.** A plan keeps its essential
+  implementation and evaluation evidence in durable project records before
+  it closes; its temporary files may then be removed, and no document or
+  workflow depends on them ([evaluation guide](doc/evaluation.md), Evidence
+  and temporary files).
 - **[Recurring] Check the CLI versions at session start.** Compare
   `claude --version` and `codex --version` with the last probed versions
   (`doc\research\probes\README.md`); if one is newer, tell the owner and

@@ -15,10 +15,37 @@ work is done only when every criterion passes. What only the owner can judge
    `doc/brief.md` and `AGENTS.md`. Put the criteria of a plan in `plan.md`.
 2. **Work.**
 3. **Check** every criterion and keep its evidence: a link with a commit, a
-   file and line, a command output, an exit code, a diff.
+   file and line, a command output, an exit code, a diff. What must last goes
+   in the plan's evaluation file (Evidence and temporary files, below).
 4. **Summarise** in the format below.
 5. **If something failed**, give the likely cause and a proposed next step. Do
    not apply it without the owner's approval.
+
+## Evidence and temporary files
+
+A completed plan never depends on temporary files for its documentation, its
+evaluation history, its reproducibility or its maintenance (the owner,
+2026-11-01). The committed code, the plan history and the evaluation files
+are the project's durable record.
+
+- **Before a plan closes**, its evaluation file holds what matters: the
+  criteria and their outcomes, the measurements and benchmark results relied
+  on, failed checks and accepted exceptions, independent reviews' decisions,
+  the owner's approvals, known limitations and reservations. A result found
+  only in a log or a screenshot is written there first, in words or numbers.
+- **What is needed later goes in the repository**, or stays only with the
+  owner's decision: a tool kept for reuse, a design reference, a probe's
+  recording (sanitized, as the probes README says). A scratch folder or
+  `%TEMP%` is not storage: Windows' scheduled cleanup can remove files there
+  without asking, as it did on this machine on 2026-11-01.
+- **After closure** the plan's working files (builds, tree copies, fixtures,
+  mutants, logs, screenshots, review packages) may be removed. An agent moves
+  them to the Recycle Bin, never deletes them for good, and leaves alone
+  anything unique it cannot place: the owner decides. What is in the bin can
+  be recovered only until the bin is emptied.
+- **No document or workflow relies on them.** A scratch or `%TEMP%` path in an
+  earlier document says where a check or a measurement was made; the file may
+  be gone, and the result stands as reported, never rewritten.
 
 ## Kinds of exact checks
 
@@ -249,6 +276,97 @@ digest; the zip is not signed.
   `third_party/ultraviolet`, whose console test checks the Windows reader's
   two goroutines (plan 68).
 
+## Windows Terminal checks
+
+What the terminal draws is also checked in a real Windows Terminal through
+`scripts/harness/wt-check.ps1`: on a recording (`-mock`), on the home screen
+(`-homeScreen`), or on a disposable repository (`-mock` with `-fixture` and
+`-git`). Its head lists its parameters and steps, and what it does and does not
+enforce. From the repository root, in PowerShell:
+
+```text
+New-Item -ItemType Directory -Force "$env:TEMP\acc-check" | Out-Null
+go build -o "$env:TEMP\acc-check\acc.exe" ./cmd/agent-command-center
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\harness\wt-check.ps1 -exe "$env:TEMP\acc-check\acc.exe" -mock testdata\mock\codex-commands.jsonl -wtProfile 'Agent Command Center' -mode max -outName check1 -plan 'expect:end:0:to answer;press:up:3000:26'
+```
+
+- Maximised first, then at 120x40 (`-mode 90x30` in ACC's 9 pt profile).
+- **It checks first.** A wrong parameter or step stops it before it writes
+  anything. Names are letters, digits, `_` and `-`.
+- **Its exit code speaks for its assertions.** Only `expect` and `expectfield`
+  assert: a failed one keeps its screen and `log.txt`, logs `ASSERTION FAILED`,
+  stops the plan and exits 1, and the log's last line counts them. Every other
+  step observes: a run of observations exits 0 whatever the screen shows, so
+  what it shows is read from its results. `poll` and `fieldcheck`, which logged
+  a miss and exited 0, are gone under those names, and a plan naming them is
+  refused.
+- **It deletes nothing.** Each run makes a new folder,
+  `%TEMP%\acc-wt\<outName>-<tag>-<mode>`, and refuses one that exists, or a
+  link on the way to it, so each run needs a new `-outName`. No step writes or
+  removes a file a plan chooses. What matters of a run goes in the plan's
+  evaluation file (Evidence and temporary files, above); the folder stays until
+  it goes with the plan's temporary files.
+- **No CLI and no quota, by its launch, not by a sandbox.** The launch is fixed: a
+  generated `launch.cmd`, holding only checked paths and run by `cmd.exe /c`,
+  starts a build that holds the dashboard's main package, with `--mock` or with
+  no argument, under a temporary home and app data, a PATH of System32 and every
+  inherited `GIT_` setting cleared. No parameter adds an argument or a command.
+  The old `cmd /c rmdir` is gone. The build still runs with the owner's rights,
+  so a changed build can do anything.
+- **A run on a repository** needs a fixture, a folder you made as
+  `%TEMP%\acc-wt-fixtures\<name>` and can lose, with no link inside it and no
+  `mock.jsonl`. With `-git`, a plan's keys and clicks drive the dashboard's real
+  git there, contained so that it touches only the fixtures; the harness's head
+  has the rules. Before the launch it refuses a `.git` file or another
+  repository inside, a config key off its allow-list, an active hook, alternates,
+  and a remote that is not a plain local path to a bare repository among the
+  fixtures. In the launch it forces an empty hooks folder and allows only the
+  file transport, so a push reaches a local remote and never a network one. The
+  checks run once: another process changing a fixture during a run is not seen.
+- Its keys and clicks are real. `Term.cs` checks before each batch that its
+  window has the focus and stops otherwise, but it cannot see a focus change
+  inside a batch: nothing else uses the machine during a run, and the owner is
+  told first.
+- It holds no clipboard code, and none is to be added: the antivirus
+  quarantined a harness that saved and restored the clipboard beside its keys
+  (plan 51). A double click and `y` make the dashboard write the owner's
+  clipboard, so those steps are the owner's: a rule, which the code does not
+  enforce.
+- After a change to it, `powershell -NoProfile -ExecutionPolicy Bypass -File
+  scripts\harness\wt-check-tests.ps1` runs its tests with no terminal and no key
+  sent: refused parameters and steps, and git's containment on disposable
+  repositories under a hostile environment. `wt-check-window-tests.ps1`, with
+  `-exe` and the same build, runs those that need a screen, on a recording:
+  assertions that pass and that fail, a commit and a push on a fixture. It opens
+  terminals, so the owner is told first.
+- `scripts/harness/screen-colours.ps1` reads colours back from a shot;
+  `image-colours.ps1` and `glyph-colour.ps1` read them from a design image.
+
+### The migration's approval
+
+These tools reached the repository through a maintenance migration after plan
+72, which this record closes; plan 72's results are unchanged. An independent
+reviewer inspected the code, tests, documentation and supplied evidence of the
+archive `acc-migration-review-3.zip` (SHA-256
+`770CE36A90C386334503B06C3DB286CA5E18E6265E87BB33D28F7BA0B5F21C10`, baseline
+`890536844bffd65bf61639804c47382733b4b091`). The reviewer did not run the Windows
+tests: they ran on the owner's machine, and their results were part of that
+evidence. The verdict, word for word:
+
+> APPROVED WITH RESERVATIONS — no blocking findings.
+
+The owner approved the commit on 2026-11-01 and accepted these four reservations.
+They are limitations that stand, not findings that were resolved:
+
+- **R1, no sandbox:** the executable and Git retain the Windows user's
+  permissions.
+- **R2, symbolic links:** junctions were tested, but symbolic links could not be
+  exercised on the available Windows account.
+- **R3, Git compatibility:** the relevant protections were verified with Git 2.56,
+  not every supported version.
+- **R4, real input events:** keyboard and mouse automation can affect the active
+  window or clipboard under the documented circumstances.
+
 ## After a CLI update
 
 **[Recurring]**: on every Claude Code or Codex CLI update, never closed
@@ -285,14 +403,20 @@ before and after:
    `TestedVersion` updated together (`TestTestedVersion` compares them), and
    the result reported in the summary format.
 
-A live run of the dashboard through the test-only logging wrapper (plan 20's
-`codex.exe`, plan 24's `claude.exe`: the real CLI first on the window's
-PATH, stdin and stdout copied with each line's time) can be replayed through
-the Claude Code mapper afterwards: `go test ./internal/provider/claude -run
+A live run of the dashboard through the test-only logging wrapper
+(`doc/research/probes/drivers/wirelog`, built as `codex.exe` or `claude.exe`
+and put first on the window's PATH, a `wrap.json` beside it naming the real
+CLI and the log folder: stdin and stdout copied with each line's time) can be
+replayed through the Claude Code mapper afterwards: `go test ./internal/provider/claude -run
 TestWireReplay -count=1 -v` with `ACC_WIRE_LOG` set to the log folder prints
 every event kind and names each line the mapper could not map, with the
 mapper's type and reason and the line itself (plan 25). The dashboard shows
 the same lines live in its details view.
+
+**The wrapper's logs are raw.** They hold everything the session sent and
+received: prompts, answers, file contents, paths, whatever a tool printed. They
+may hold sensitive information: inspect and sanitize them, as the probes README
+says, before they are shared or committed.
 
 ## Summary format
 
