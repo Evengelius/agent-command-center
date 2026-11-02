@@ -319,7 +319,7 @@ func tailFit(l line, w int) line {
 type SearchPos struct{ Item, Line, Off int }
 
 // AllLines is a SearchPos's Line for a row that shows its whole entry: a
-// tool row, an approval's or an error's, a long paste's fold row.
+// tool row, an approval's or an error's, a long message's chip row.
 const AllLines = 1 << 30
 
 // AtOrBefore says match m is at or before place p, in the conversation's
@@ -348,7 +348,7 @@ func rowEnd(c crow, role string) (SearchPos, bool) {
 	case c.src != "":
 		return SearchPos{i, c.line, c.r.to - 1}, true // a match from c.r.to on starts on the next row
 	case c.more:
-		return SearchPos{i, AllLines, 0}, true // a long paste's fold row: its folded lines
+		return SearchPos{i, AllLines, 0}, true // a long message's chip row: its lines
 	}
 	switch role {
 	case "user", "assistant", "notice", "dashboard", "review":
@@ -404,7 +404,7 @@ func (b *cmdBlock) hides(m ConvMatch) bool {
 // ConvMatchRow is the conversation's row match m is on, w cells wide with
 // room rows to show them, and the conversation's rows, for ui as it is (its
 // folds open): the row of its line holding its offset; a tool row, an
-// approval's or an error's own row; a long paste's fold row for its folded
+// approval's or an error's own row; a long message's chip row for its
 // lines (plan 66, design D5). ok is false when B draws none of its entry.
 func ConvMatchRow(s *state.State, ui UI, w, room int, m ConvMatch) (row, rows int, ok bool) {
 	if m.Item < 0 || m.Item >= len(s.Conversation) {
@@ -426,7 +426,7 @@ func ConvMatchRow(s *state.State, ui UI, w, room int, m ConvMatch) (row, rows in
 				return starts[m.Item] + j, rows, true
 			}
 			last = j // should the offset pass the line's last row
-		case c.more && !m.Target && m.Line >= foldShow:
+		case c.more && !m.Target:
 			return starts[m.Item] + j, rows, true
 		case whole < 0:
 			if p, ok := rowEnd(c, e.Role); ok && p.Line == AllLines {
@@ -551,8 +551,8 @@ func retarget(d, cut line) line {
 // its current-match style (stMatchCur), before a selection is lit over
 // them: zone B's rows from their sources, as the selection is lit; a tool
 // row's target where the row draws it, the "…" of its cut for what it
-// hides, its name for a target it has no room for; a long paste's fold row
-// for its folded lines. Over an entry's full view, its rows (lightView).
+// hides, its name for a target it has no room for; a long message's chip row
+// for its lines. Over an entry's full view, its rows (lightView).
 func lightSearch(sc *Screen, s *state.State, ui UI) {
 	v := ui.Search
 	if !v.Open || len(v.Matches) == 0 {
@@ -628,7 +628,7 @@ func lightSearch(sc *Screen, s *state.State, ui UI) {
 						whole = stronger(whole, style(m))
 					}
 				case refFold:
-					if !m.Target && m.Line >= foldShow {
+					if !m.Target {
 						whole = stronger(whole, style(m))
 					}
 				}

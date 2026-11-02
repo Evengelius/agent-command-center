@@ -2,6 +2,7 @@ package render
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -23,6 +24,17 @@ type EditorView struct {
 	// Attach are the images attached to the draft, as their chips show
 	// them (plan 31).
 	Attach []Attachment
+	// Chips are the pasted blocks the composer draws as one cell each, in the
+	// lines above, its compact form (plan 73, design D11), and Hidden the logical
+	// lines they hide, for the message's count.
+	Chips  []EditorChip
+	Hidden int
+}
+
+// EditorChip is a pasted block in the composer: the placeholder byte's line and
+// offset in EditorView.Lines, and the lines and bytes it stands for.
+type EditorChip struct {
+	Line, Off, Lines, Bytes int
 }
 
 // Attachment is an image attached to the draft as its chip shows it: the
@@ -111,8 +123,37 @@ type editorRow struct {
 }
 
 // rowsOf wraps one logical line into rows of at most w cells.
-func rowsOf(n int, text string, w int) []editorRow {
+func rowsOf(n int, text string, w int) []editorRow { return rowsOfCells(n, text, cells(text), w) }
+
+// rows is rowsOf, with line n's chips drawn in their placeholders' places: each one
+// cell of its words, for its one byte of the compact form (plan 73, design D11).
+func (v EditorView) rows(n int, text string, w int) []editorRow {
 	cs := cells(text)
+	for _, c := range v.Chips {
+		if c.Line != n {
+			continue
+		}
+		i := sort.Search(len(cs), func(k int) bool { return cs[k].off >= c.Off })
+		if i < len(cs) && cs[i].off == c.Off {
+			words := chipWords(c.Lines, c.Bytes)
+			cs[i] = cell{text: words, w: textWidth(words), off: c.Off, n: 1, sub: true}
+		}
+	}
+	return rowsOfCells(n, text, cs, w)
+}
+
+// count is line n's rows at w cells: without building them, unless it holds a chip.
+func (v EditorView) count(n int, text string, w int) int {
+	for _, c := range v.Chips {
+		if c.Line == n {
+			return len(v.rows(n, text, w))
+		}
+	}
+	return rowCount(text, w)
+}
+
+// rowsOfCells wraps a logical line's cells into rows of at most w cells.
+func rowsOfCells(n int, text string, cs []cell, w int) []editorRow {
 	var out []editorRow
 	from, cw := 0, 0
 	for i, c := range cs {
@@ -239,10 +280,11 @@ func inputRow(s *state.State, middle string, w int, open, sixel bool) line {
 	return spread(left, right, w)
 }
 
-// lineCount is the draft's logical lines, "1 line" or "n lines".
+// lineCount is the draft's logical lines, "1 line" or "n lines", those chips hide
+// among them.
 func lineCount(v EditorView) string {
-	if v.Total > 1 {
-		return fmt.Sprintf("%d lines", v.Total)
+	if n := v.Total + v.Hidden; n > 1 {
+		return fmt.Sprintf("%d lines", n)
 	}
 	return "1 line"
 }
@@ -338,7 +380,7 @@ func shownRows(v EditorView, text, minRows, maxRows int) (rows []editorRow, show
 		n := v.First + i
 		if n == v.Line {
 			// The cursor's row: the last one starting at or before it.
-			wrapped := rowsOf(n, l, text)
+			wrapped := v.rows(n, l, text)
 			cursor = total
 			for k, r := range wrapped {
 				if k > 0 && r.cells[0].off <= v.Col {
@@ -347,7 +389,7 @@ func shownRows(v EditorView, text, minRows, maxRows int) (rows []editorRow, show
 			}
 			counts[i] = len(wrapped)
 		} else {
-			counts[i] = rowCount(l, text)
+			counts[i] = v.count(n, l, text)
 		}
 		total += counts[i]
 	}
@@ -360,7 +402,7 @@ func shownRows(v EditorView, text, minRows, maxRows int) (rows []editorRow, show
 	start := min(max(total-show, 0), cursor)
 	for i, at := 0, 0; i < len(v.Lines) && at < start+show; i++ {
 		if at+counts[i] > start {
-			wrapped := rowsOf(v.First+i, v.Lines[i], text)
+			wrapped := v.rows(v.First+i, v.Lines[i], text)
 			rows = append(rows, wrapped[max(start-at, 0):]...)
 		}
 		at += counts[i]
@@ -396,9 +438,11 @@ func drawRow(v EditorView, r editorRow, focused bool) line {
 			st, kind = stSelected, selected
 		case c.ctrl:
 			st, kind = stControl, control
+		case c.sub:
+			st, kind = stMuted, control // a chip, in the colour of zone B's (plan 73, design D3)
 		}
 		at := ref{panel: 'E', kind: refText, line: r.line, off: c.off}
-		if c.ctrl || c.text == "    " && c.n == 1 {
+		if c.ctrl || c.sub || c.text == "    " && c.n == 1 {
 			at.kind, at.n = refAtom, c.n
 			l = append(l, span{text: c.text, st: st, ref: at})
 			run = -1

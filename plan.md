@@ -117,12 +117,13 @@ from the home screen), with plans 67 and 68, which the owner put before
 the last (the characters typed with AltGr; the keyboard reader's races).
 Then plan 70, the owner's own (amendment 72), approved on 2026-10-30,
 and plans 71 and 72, the owner's own (amendments 74 and 75), approved on
-2026-10-31. The next plan starts when the owner asks for one, as a plan
-for the owner's review.
+2026-10-31, and plan 73, the owner's own (amendments 76 and 77), approved on
+2026-11-02. The next plan starts when the owner asks for one, as a plan for
+the owner's review.
 
 ## No plan active
 
-Plan 72 was approved and closed on 2026-10-31 (Closed plans, below).
+Plan 73 was approved and closed on 2026-11-02 (Closed plans, below).
 
 ## Closed plans
 
@@ -1050,3 +1051,22 @@ its call (R2) and the evidence's traceability (R3), each accepted. 22 PASS,
 ([`doc/plan72-evaluation.md`](doc/plan72-evaluation.md)); one commit,
 "Plan 72: Readable tool commands and approvals in Zone B", pushed after the
 final Git checks; its full text in that file, The plan as it ran.
+
+## Plan 73 - Virtual attachments for long user messages
+
+Brief amendments 76 and 77: a user message that draws more than 3 rows is one
+row in zone B, `▣ Long message · 404 lines · 18 KB`; a paste whose own content
+draws more than 3 rows is such a row at once in the composer, its bytes kept in
+the one text; typing, growth, scrolling and Draft as they were; the existing
+full view reads the message and `y` copies it. The final verification ran the
+whole path through a real paste, copy, mouse and one real turn of each CLI, the
+60-line message byte-identical on each; the reviews brought R-H's correction, a
+false chip, and F1's, a false "nothing to paste" behind Windows Terminal's
+warning, from plan 32, with zone B's selection lighting a chip. Approved on
+2026-11-02: the independent review APPROVED, and the owner approved the Human
+Evaluation on the evidence, with no manual session, 73.30 `PASS — Owner
+approved`. 30 criteria and the final review's 14, 44 PASS, 0 FAIL; 75 and 23
+mutants, the 7 fuzz targets, `-race`, the timing step alone
+([`doc/plan73-evaluation.md`](doc/plan73-evaluation.md)); one commit, "Plan 73:
+Virtual attachments for long user messages"; its full text in that file, The
+plan as it ran.

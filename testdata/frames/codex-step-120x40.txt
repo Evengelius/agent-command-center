@@ -3,22 +3,22 @@
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────── ⠋ Running ─╮╭──────╮
 │ A · ORCHESTRATOR                 ││                                                                          ││      │
 │ ◆ GPT-5.6-sol          ⠋ RUNNING ││ ▎ YOU  02:00                                                             ││  ≡   │
-│ ──────────────────────────────── ││ ▎ Spawn two subagents in parallel. The first lists the files in the      ││      │
-│ STAGES · inferred from activity  ││ ▎ current directory. The second creates a file named found.txt in the    ││      │
-│ ◉ TURN 1 · running            3s ││ ▎ current directory containing the single word found. Wait for both,     ││      │
-│   Spawn two subagents in parall… ││ ▎ then reply with the single word done.                                  ││  ⑂   │
-│   •─ ○ (more as events arrive)   ││                                                                          ││      │
-│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
-│                                  ││                                                                          ││      │
-│                                  ││ ▎ CODEX  gpt-5.6-sol  02:00                                              ││  ◉   │
+│ ──────────────────────────────── ││ ▎ ▣ Long message · 1 line · 238 B                                        ││      │
+│ STAGES · inferred from activity  ││                                                                          ││      │
+│ ◉ TURN 1 · running            3s ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Spawn two subagents in parall… ││                                                                          ││  ⑂   │
+│   •─ ○ (more as events arrive)   ││ ▎ CODEX  gpt-5.6-sol  02:00                                              ││      │
 │                                  ││ ▎                                                                        ││      │
 │                                  ││ ▎ ╭───────────────────────────────────────────────────────────────────╮  ││      │
-│                                  ││ ▎ │ ◡ Pondering...                                              00:01 │  ││      │
+│                                  ││ ▎ │ ◡ Pondering...                                              00:01 │  ││  ◉   │
 │                                  ││ ▎ │                                                                   │  ││      │
 │                                  ││ ▎ │ Model working · reasoning tokens reported when the step ends      │  ││      │
 │                                  ││ ▎ │                                                                   │  ││      │
-│ ──────────────────────────────── ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  ││      │
-│ ✦ TELEMETRY        Enter details ││ ▎ ╰───────────────────────────────────────────────────────────────────╯  ││      │
+│                                  ││ ▎ │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  ││      │
+│                                  ││ ▎ ╰───────────────────────────────────────────────────────────────────╯  ││      │
+│                                  ││                                                                          ││      │
+│ ──────────────────────────────── ││                                                                          ││      │
+│ ✦ TELEMETRY        Enter details ││                                                                          ││      │
 │ ▾ SESSION USAGE                  ││                                                                          ││      │
 │   Context N/A no model call yet  ││                                                                          ││      │
 │   Tokens N/A no update yet       ││                                                                          ││      │

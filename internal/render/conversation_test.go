@@ -30,7 +30,7 @@ func TestConversationWindow(t *testing.T) {
 		if i%9 == 0 {
 			add("error", fmt.Sprintf("turn failed: error %d\ndetails", i), false)
 			add("notice", strings.Repeat("a progress note ", 1+i%6), false)
-			add("user", strings.Repeat("pasted line\n", foldOver+3), false)
+			add("user", strings.Repeat("pasted line\n", 23), false)
 		}
 	}
 	wc := NewWrapCache()

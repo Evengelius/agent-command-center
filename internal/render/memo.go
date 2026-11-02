@@ -22,6 +22,43 @@ type Memo struct {
 	items    itemIndex
 	thinking thinkIndex
 	file     fileMemo
+	view     viewMemo
+}
+
+// viewMemo is a message's rows in its full view, by its text, which a message
+// never changes, and their width; idle as fileMemo's (plan 73, P4: wrapping 50,000
+// lines each frame took some 40 ms).
+type viewMemo struct {
+	text  string
+	w     int
+	rows  []line
+	lines int
+	idle  int
+}
+
+// messageView is message e's rows in its full view, w cells wide, and its logical
+// lines, wrapped once for as long as the view shows them at that width. Comparing
+// the text costs nothing while it is the same string, as it is from frame to frame.
+func (m *Memo) messageView(s *state.State, e state.Entry, w int) ([]line, int) {
+	if m == nil {
+		return wrapMessage(s, e, w)
+	}
+	if v := &m.view; v.rows == nil || v.w != w || v.text != e.Text {
+		rows, lines := wrapMessage(s, e, w)
+		*v = viewMemo{text: e.Text, w: w, rows: rows, lines: lines}
+	}
+	m.view.idle = 0
+	return m.view.rows, m.view.lines
+}
+
+// wrapMessage is message e's rows w cells wide, and its logical lines.
+func wrapMessage(s *state.State, e state.Entry, w int) ([]line, int) {
+	ls := entryLines(s, e)
+	rows := make([]line, 0, len(ls))
+	for _, l := range ls {
+		rows = append(rows, wrapped(l, w, stText, "")...)
+	}
+	return rows, len(ls)
 }
 
 // fileMemo is the Markdown kinds of the file the viewer previews, by its
@@ -131,13 +168,18 @@ func (m *Memo) input(in json.RawMessage, question bool) inputFacts {
 }
 
 // sweep ends a frame: the inputs it did not use are dropped at the next one,
-// and so are the file's kinds.
+// and so are the file's kinds and a message's rows.
 func (m *Memo) sweep() {
 	if m != nil {
 		m.old, m.cur = m.cur, make(map[inputKey]inputFacts, len(m.cur))
 		if m.file.md != nil {
 			if m.file.idle++; m.file.idle >= 2 {
 				m.file = fileMemo{}
+			}
+		}
+		if m.view.rows != nil {
+			if m.view.idle++; m.view.idle >= 2 {
+				m.view = viewMemo{}
 			}
 		}
 	}

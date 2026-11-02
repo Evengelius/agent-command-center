@@ -2,7 +2,7 @@
  (project bar: the test's temporary directory)
  A ◉ Turn 1 › ◉ general-purpose                           (inferred)   F6: tree
 ╭─ B · CONVERSATION ─────────────────────────────────────────────── ⠋ Running ─╮
-│ ▎ me in one line what it found.                                              │
+│ ▎ ▣ Long message · 1 line · 247 B                                            │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │                                                                              │

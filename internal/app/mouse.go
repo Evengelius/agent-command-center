@@ -528,7 +528,9 @@ func (m *Model) setSelection(from, to render.Pos, forward bool) {
 		return
 	}
 	m.ui.Sel = render.Selection{}
-	a, b := m.edit.Offset(from.Line, from.Off), m.edit.Offset(to.Line, to.Off)
+	// The frame's places, of the compact form while ranges bind (plan 73, design D11).
+	c := m.edit.Compact()
+	a, b := m.edit.FromCompact(c.Offset(from.Line, from.Off)), m.edit.FromCompact(c.Offset(to.Line, to.Off))
 	if forward {
 		m.edit.Select(a, b)
 	} else {
@@ -539,7 +541,7 @@ func (m *Model) setSelection(from, to render.Pos, forward bool) {
 // lineText is the logical line p is on.
 func (m *Model) lineText(p render.Pos) string {
 	if p.Panel == 'E' {
-		if ls := m.edit.LineRange(p.Line, 1); len(ls) == 1 {
+		if ls := m.edit.Compact().LineRange(p.Line, 1); len(ls) == 1 {
 			return ls[0]
 		}
 		return ""

@@ -456,6 +456,32 @@ func TestGoldenFrames(t *testing.T) {
 			return h
 		}
 	}
+	// Plan 73: a long message as one row, in synthetic text: sent, under the entry
+	// cursor; in the composer with typed text on either side and a line below.
+	chipSent := func(keys ...tea.KeyPressMsg) func(*testing.T) *harness {
+		return func(t *testing.T) *harness {
+			h := dash(t)
+			h.send(tea.PasteMsg{Content: longLines(404, "a pasted line of text")})
+			if len(h.m.edit.Ranges()) != 1 {
+				t.Fatalf("no chip: %+v", h.m.edit.Ranges())
+			}
+			h.send(key(tea.KeyEnter, 0))
+			for _, k := range keys {
+				h.send(k)
+			}
+			return h
+		}
+	}
+	chipComposer := func(t *testing.T) *harness {
+		h := dash(t)
+		typeText(h, "Check this log: ")
+		h.send(tea.PasteMsg{Content: longLines(200, "a pasted line of text")})
+		typeText(h, " and report.\nThen stop.")
+		if len(h.m.edit.Ranges()) != 1 {
+			t.Fatalf("no chip: %+v", h.m.edit.Ranges())
+		}
+		return h
+	}
 	// attached is the dashboard with two of the generated test images
 	// attached to a draft through the "+" menu and a fake Open dialog (plan
 	// 31); sent is the same message sent, the mock session recording it.
@@ -592,12 +618,17 @@ func TestGoldenFrames(t *testing.T) {
 		{"review-diff-wide", reviewed(key(tea.KeyUp, 0), key(tea.KeyEnter, 0), key(tea.KeyDown, 0), key(tea.KeyEnter, 0), typed('f'))},
 		{"search", searched(dash, "found")}, {"search-none", searched(dash, "zzqx")}, {"search-codex", searched(codexDash, "reasoning")},
 		{"commands", commands(true, false)}, {"commands-open", commands(true, true)}, {"commands-card", commands(false, false)},
-		{"commands-view", commands(true, false, key(tea.KeyUp, 0), key(tea.KeyEnter, 0))}, {"commands-claude", claudeCommands}} {
+		{"commands-view", commands(true, false, key(tea.KeyUp, 0), key(tea.KeyEnter, 0))}, {"commands-claude", claudeCommands},
+		{"chip", chipSent()}, {"chip-cursor", chipSent(key(tea.KeyUp, 0))}, {"chip-composer", chipComposer}} {
 		szs := sizes
 		if sc.name == "source-selection" || strings.HasPrefix(sc.name, "graph") || strings.HasPrefix(sc.name, "commands") {
 			// The acc tab maximised (plan 50, criterion 50.10; plan 62, criterion
 			// 62.7; plan 72, criterion 72.16).
 			szs = append(slices.Clone(sizes), [2]int{208, 59})
+		}
+		if strings.HasPrefix(sc.name, "chip") {
+			// The acc tab maximised, and zone B's narrowest form (plan 73, criterion 73.21).
+			szs = append(slices.Clone(sizes), [2]int{208, 59}, [2]int{100, 30})
 		}
 		for _, size := range szs {
 			w, hgt := size[0], size[1]

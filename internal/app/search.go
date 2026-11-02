@@ -269,7 +269,7 @@ func (m *Model) searchWhole() {
 		return
 	}
 	mt := v.Matches[v.Cur]
-	if mt.Item >= len(m.s.Conversation) || !render.Expandable(m.s.Conversation[mt.Item]) {
+	if mt.Item >= len(m.s.Conversation) || !render.Expandable(m.s.Conversation[mt.Item], render.MessageWidth(m.s, m.ui)) {
 		return
 	}
 	m.openView("", mt.Item+1)

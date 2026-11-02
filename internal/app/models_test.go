@@ -222,7 +222,7 @@ func TestSelectorNoRoom(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h, s := selectorRig(t)
 		h.send(tea.WindowSizeMsg{Width: 80, Height: 24})
-		h.send(tea.PasteMsg{Content: strings.Repeat("line\n", 9) + "line"}) // ten lines
+		fillOrdinary(h, strings.Repeat("line\n", 9)+"line") // ten lines drawn: a paste of them is a chip (plan 73)
 		_ = h.frame()
 		h.send(key('p', tea.ModAlt))
 		if h.m.ui.Models.Open || h.m.ui.Toast != "no room for the model selector above the editor" {

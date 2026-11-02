@@ -321,7 +321,17 @@ func highlight(l line, sel Selection) line {
 	var out line
 	for _, x := range l {
 		r := x.ref
-		if r.panel != sel.From.Panel || r.kind != refText && r.kind != refAtom {
+		if r.panel != sel.From.Panel || r.kind != refText && r.kind != refAtom && r.kind != refFold {
+			out = append(out, x)
+			continue
+		}
+		if r.kind == refFold {
+			// A long message's chip stands for all its lines, none of them on a
+			// row: lit when the selection copies any of them (ui-design.md,
+			// Selection and copy).
+			if sel.From.Item <= r.item && (Pos{r.panel, r.item, 0, 0}).Before(sel.To) {
+				x.st = stSelected
+			}
 			out = append(out, x)
 			continue
 		}

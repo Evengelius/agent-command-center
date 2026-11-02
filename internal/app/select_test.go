@@ -350,7 +350,7 @@ func TestConversationScroll(t *testing.T) {
 			t.Error("Shift+PgUp did not hold the view")
 		}
 
-		// A long message the owner sends folds to its first lines.
+		// A long message the owner sends is its chip (plan 73, design D4).
 		long := strings.TrimSuffix(strings.Repeat("pasted\n", 30), "\n")
 		h.send(tea.PasteMsg{Content: long})
 		h.send(key(tea.KeyEnter, 0))
@@ -359,8 +359,8 @@ func TestConversationScroll(t *testing.T) {
 		}
 		r.emit(event.UserMessage, event.User{Text: long}) // as the CLI echoes it
 		h.settle()
-		if f := plainText(h.m.View().Content); !strings.Contains(f, "… 25 more lines") {
-			t.Errorf("the sent message is not folded:\n%s", f)
+		if f := plainText(h.m.View().Content); !strings.Contains(f, "▣ Long message · 30 lines") {
+			t.Errorf("the sent message is not a chip:\n%s", f)
 		}
 	})
 }

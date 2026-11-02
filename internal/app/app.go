@@ -658,6 +658,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.pastedImage(msg)...)
 	case pasteWaitMsg:
 		cmds = append(cmds, m.pasteWaited(msg)...)
+	case pasteTextMsg:
+		cmds = append(cmds, m.pasteRead(msg)...)
 	case pathsMsg:
 		cmds = append(cmds, m.pastedPaths(msg)...)
 	case thumbDrawMsg:
@@ -791,7 +793,15 @@ func (m *Model) syncUI() {
 		// paste's that no key brought: its focus ends (plan 70, design D3).
 		m.ui.Summary = render.SummaryFocus{}
 	}
+	if n := m.ui.Entry; n > 0 && n <= len(m.s.Conversation) && m.ui.EntryReview == 0 {
+		// A resize, or a panel docked or hidden, left a whole message in view: no
+		// chip for the cursor to stay on (plan 73, design D6).
+		if e := &m.s.Conversation[n-1]; e.Role == "user" && !render.LongMessage(e.Text, render.MessageWidth(m.s, m.ui)) {
+			m.ui.Entry = 0
+		}
+	}
 	m.ui.Draft = m.edit.Text()
+	m.edit.Whole = m.ui.DraftWin.Open // the draft window shows the text whole (plan 73, design D10)
 	m.ui.Editor = m.editorView()
 	if m.ui.Search.Open && m.convFind.applied != m.s.Applied {
 		m.searchAgain(false) // events applied: their matches found, the current one kept (plan 66, design D6)
@@ -1243,7 +1253,24 @@ func (m *Model) paste(text string) {
 	case m.s.Screen == state.ScreenDashboard && m.msgFocused():
 		m.msg.Paste(text) // the commit message (plan 45, design D2): never commits
 	case m.s.Screen == state.ScreenDashboard && m.draftBeside():
-		m.edit.Paste(text) // line breaks as LF, nothing else changed; never submits
+		m.pasteDraft(text)
+	}
+}
+
+// pasteDraft pastes text in the draft: line breaks as LF, nothing else changed,
+// never submitting. In the composer a block drawing over three rows, judged alone,
+// becomes a chip at once, its bytes in the text as ever; the draft window converts
+// nothing (plan 73, designs D7 and D10).
+func (m *Model) pasteDraft(text string) {
+	e := &m.edit
+	e.Settle()
+	from := e.Cursor()
+	if a, _, ok := e.Selection(); ok {
+		from = a
+	}
+	e.Paste(text)
+	if block := e.Text()[from:e.Cursor()]; !m.ui.DraftWin.Open && render.LongMessage(block, render.MessageWidth(m.s, m.ui)) {
+		e.Mark(from, e.Cursor())
 	}
 }
 

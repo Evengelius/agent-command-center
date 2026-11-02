@@ -219,6 +219,10 @@ func p2Done(t *testing.T) *harness {
 	h.send(tea.PasteMsg{Content: text})
 	h.send(key(tea.KeyEnter, 0))
 	replay(t, h, w.last(), recs, at+1, len(recs))
+	// The clock past a phase's exit. A frame that happened to see the thinking phase
+	// live, as the replay's events were batched, would keep its card on a clock that
+	// stands still, and the cursor would pass over it.
+	h.m.opt.Now = func() time.Time { return testNow.Add(time.Second) }
 	return h
 }
 
@@ -254,7 +258,7 @@ func TestEntryViewer(t *testing.T) {
 			thought := entryAt(s, func(e state.Entry) bool { return e.Role == "thinking" })
 			var exp []int // P2's expandable entries: the Write, the thought, its third turn's failure, the paste
 			for i, e := range s.Conversation {
-				if render.Expandable(e) {
+				if render.Expandable(e, render.MessageWidth(s, h.m.ui)) {
 					exp = append(exp, i+1)
 				}
 			}
@@ -265,7 +269,7 @@ func TestEntryViewer(t *testing.T) {
 
 			h.draw(key(tea.KeyUp, 0))
 			f := h.frame()
-			if h.m.ui.Entry != p || !rowWith(f, "▎▸", "… 195 more lines", "Enter full view · ↑↓ entries · Esc back") { // the cursor in the card's margin (plan 20)
+			if h.m.ui.Entry != p || !rowWith(f, "▎▸", "▣ Long message · 200 lines", "Enter full view · ↑↓ entries · Esc back") { // the cursor in the card's margin (plan 20)
 				t.Fatalf("↑: entry %d, want %d:\n%s", h.m.ui.Entry, p, f)
 			}
 			if h.m.screen.Conv.Rows != rows {
@@ -379,8 +383,8 @@ func TestEntryViewer(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {
 			h := p2Done(t)
 			s := h.m.State()
-			const n = 12
-			for k := 1; k <= n; k++ { // message k folds with 16+k more lines
+			const n = 40
+			for k := 1; k <= n; k++ { // message k a chip of 21+k lines
 				s.Conversation = append(s.Conversation, state.Entry{Seq: uint64(len(s.Conversation) + 1), Role: "user", Text: strings.Repeat("line\n", 20+k) + "end", At: testNow})
 			}
 			h.draw(tea.WindowSizeMsg{Width: 160, Height: 60})
@@ -389,7 +393,7 @@ func TestEntryViewer(t *testing.T) {
 			}
 			for k := n; k >= 1; k-- {
 				h.draw(key(tea.KeyUp, 0))
-				if f := h.frame(); !rowWith(f, "▎▸", fmt.Sprintf("… %d more lines", 16+k), "Enter full view") {
+				if f := h.frame(); !rowWith(f, "▎▸", fmt.Sprintf("▣ Long message · %d lines", 21+k), "Enter full view") {
 					t.Fatalf("↑ to message %d: not in view:\n%s", k, f)
 				}
 			}
@@ -409,7 +413,7 @@ func TestEntryViewer(t *testing.T) {
 			h.draw(key(tea.KeyDown, 0))
 			for k := 1; k <= n; k++ {
 				h.draw(key(tea.KeyDown, 0))
-				if f := h.frame(); !rowWith(f, "▎▸", fmt.Sprintf("… %d more lines", 16+k), "Enter full view") {
+				if f := h.frame(); !rowWith(f, "▎▸", fmt.Sprintf("▣ Long message · %d lines", 21+k), "Enter full view") {
 					t.Fatalf("↓ to message %d: not in view:\n%s", k, f)
 				}
 			}

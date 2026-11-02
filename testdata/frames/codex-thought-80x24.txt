@@ -2,8 +2,8 @@
  (project bar: the test's temporary directory)
  A ◉ Turn 1 › ◉ /root/list_files                          (inferred)   F6: tree
 ╭─ B · CONVERSATION ─────────────────────────────────────────────── ⠋ Running ─╮
-│ ▎ directory containing the single word found. Wait for both, then reply      │
-│ ▎ with the single word done.                                                 │
+│ ▎ YOU  02:00                                                                 │
+│ ▎ ▣ Long message · 1 line · 238 B                                            │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │                                                                              │

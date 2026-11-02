@@ -32,11 +32,9 @@ const warmUp = 50
 func TestKeystrokeToFrame(t *testing.T) {
 	r, _ := copyRig(t, nil)
 	h := r.h
-	h.send(tea.PasteMsg{Content: draftLines(10_000)})
-	if n := h.m.edit.Lines(); n < 10_000 {
-		t.Fatalf("%d lines in the draft", n)
-	}
+	fillOrdinary(h, draftLines(10_000))
 	h.send(key(tea.KeyHome, tea.ModCtrl)) // the cursor at the top: the worst place to edit
+	ordinaryDraft(t, h, 10_000)
 	for i := 0; i < warmUp; i++ {
 		frameTime(h, editKeys[i%len(editKeys)])
 	}
@@ -48,6 +46,7 @@ func TestKeystrokeToFrame(t *testing.T) {
 	for i := 0; i < 400; i++ {
 		ds = append(ds, frameTime(h, editKeys[i%len(editKeys)]))
 	}
+	ordinaryDraft(t, h, 10_000)
 	p50, p95, worst := percentile(ds, 0.50), percentile(ds, 0.95), percentile(ds, 1)
 	t.Logf("keystroke-to-frame, 10,000-line draft, %d keys after %d warm-up: p50 %v, p95 %v, max %v (target p95 ≤ %v)", len(ds), warmUp, p50, p95, worst, keystrokeTarget)
 	if p95 > keystrokeTarget {
@@ -66,6 +65,7 @@ func TestKeystrokeToFrame(t *testing.T) {
 			ds = append(ds, frameTime(h, editKeys[i%len(editKeys)]))
 		}
 	}
+	ordinaryDraft(t, h, 10_000)
 	p50, p95, worst = percentile(ds, 0.50), percentile(ds, 0.95), percentile(ds, 1)
 	t.Logf("keystroke-to-frame in the draft window, 10,000-line draft, %d keys: p50 %v, p95 %v, max %v (target p95 ≤ %v)", len(ds), p50, p95, worst, keystrokeTarget)
 	if p95 > keystrokeTarget {
@@ -223,8 +223,9 @@ func TestDraftKeystrokes(t *testing.T) {
 		}
 		return func() tea.Msg { time.Sleep(dur); return msg }
 	}
-	h.send(tea.PasteMsg{Content: draftLines(50_000)})
+	fillOrdinary(h, draftLines(50_000))
 	h.send(key(tea.KeyHome, tea.ModCtrl))
+	ordinaryDraft(t, h, 50_000)
 	gen := h.m.draftGen
 	var ds []time.Duration
 	for i := 0; i < warmUp+800; i++ {
@@ -245,6 +246,7 @@ func TestDraftKeystrokes(t *testing.T) {
 		}
 		time.Sleep(3 * time.Millisecond) // a fast typist's pace, so saves run between keys
 	}
+	ordinaryDraft(t, h, 50_000)
 	for deadline := time.Now().Add(5 * time.Second); h.m.draftTimer && time.Now().Before(deadline); {
 		h.settle() // the last save is due
 	}
@@ -271,8 +273,9 @@ func TestKeystrokeCost(t *testing.T) {
 	for _, n := range []int{10_000, 50_000} {
 		r, _ := copyRig(t, nil)
 		h := r.h
-		h.send(tea.PasteMsg{Content: draftLines(n)})
+		fillOrdinary(h, draftLines(n))
 		h.send(key(tea.KeyHome, tea.ModCtrl))
+		ordinaryDraft(t, h, n)
 		i := 0
 		res := testing.Benchmark(func(b *testing.B) {
 			b.ReportAllocs()
@@ -282,6 +285,7 @@ func TestKeystrokeCost(t *testing.T) {
 				i++
 			}
 		})
+		ordinaryDraft(t, h, n)
 		t.Logf("%d-line draft: %d keys, %v per key, %d B and %d allocations per key", n, res.N, time.Duration(res.NsPerOp()), res.AllocedBytesPerOp(), res.AllocsPerOp())
 	}
 }

@@ -233,14 +233,14 @@ func entryState() *state.State {
 }
 
 // TestEntryCursor is plan 5, item 4, criterion 1: the expandable entries are
-// the folded message, the tool call and the error; the cursor marks its
+// the long message, the tool call and the error; the cursor marks its
 // entry's row in the attention colour, adds no row, and shows only while B
 // has the focus.
 func TestEntryCursor(t *testing.T) {
 	s := entryState()
 	var got []int
 	for i, e := range s.Conversation {
-		if Expandable(e) {
+		if Expandable(e, 69) {
 			got = append(got, i+1)
 		}
 	}

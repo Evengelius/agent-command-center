@@ -324,7 +324,9 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
 			return m.copy(text)
 		}
 		if m.draftBeside() && m.edit.HasSelection() {
-			return m.copy(m.edit.SelectedText())
+			text := m.edit.SelectedText()
+			m.edit.Settle() // a selection the draft window left with an end inside a chip ends here (plan 73, design D10)
+			return m.copy(text)
 		}
 		if k.String() == "ctrl+c" {
 			return m.do(state.Interrupt{})

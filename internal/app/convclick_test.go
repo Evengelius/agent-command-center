@@ -202,7 +202,7 @@ func TestEntryClicks(t *testing.T) {
 		{"the Write call", `C:\work\acc-demo\found.txt`, "tool", "w1", "Write"},
 		{"the review", "a write the owner asked for", "review", "rv1", "auto-review approved"},
 		{"the failure", "the model stopped: overloaded", "error", "", "the model stopped: overloaded"},
-		{"the long message", "line 03 of a long message", "user", "", "line 40 of a long message"},
+		{"the long message", "▣ Long message · 40 lines", "user", "", "line 40 of a long message"},
 	}
 	t.Run("a click opens nothing", func(t *testing.T) {
 		synctest.Test(t, func(t *testing.T) {

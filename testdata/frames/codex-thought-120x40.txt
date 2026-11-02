@@ -3,21 +3,21 @@
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ─────────────────────────────────────────── ⠋ Running ─╮╭──────╮
 │ A · ORCHESTRATOR                 ││                                                                          ││      │
 │ ◆ GPT-5.6-sol          ⠋ RUNNING ││ ▎ YOU  02:00                                                             ││  ≡   │
-│ ──────────────────────────────── ││ ▎ Spawn two subagents in parallel. The first lists the files in the      ││      │
-│ STAGES · inferred from activity  ││ ▎ current directory. The second creates a file named found.txt in the    ││      │
-│ ◉ TURN 1 · running            5s ││ ▎ current directory containing the single word found. Wait for both,     ││      │
-│   Spawn two subagents in parall… ││ ▎ then reply with the single word done.                                  ││  ⑂   │
-│   •─ ◉ child  /root/li… observed ││                                                                          ││      │
-│   └─ ○ (more as events arrive)   ││ ──────────────────────────────────────────────────────────────────────── ││      │
-│                                  ││                                                                          ││      │
-│                                  ││ ▎ CODEX  gpt-5.6-sol  02:00                                              ││  ◉   │
-│ ──────────────────────────────── ││ ▎  ▸ ✓ Thought for up to 3.1s · 83 reasoning tokens           02:00:06   ││      │
-│ ✦ TELEMETRY        Enter details ││ ▎                                                                        ││      │
-│ ▾ SESSION USAGE                  ││ ▎ ╭───────────────────────────────────────────────────────────────────╮  ││      │
-│   Context 6% of 258.4k █░░░░░░░░ ││ ▎ │ ◜ Untangling...                                             00:00 │  ││      │
-│   Tokens 15.1k session total     ││ ▎ │                                                                   │  ││      │
-│   Est. cost N/A Codex reports n… ││ ▎ │                                                                   │  ││      │
-│ ▾ QUOTA WINDOWS                  ││ ▎ ╰───────────────────────────────────────────────────────────────────╯  ││      │
+│ ──────────────────────────────── ││ ▎ ▣ Long message · 1 line · 238 B                                        ││      │
+│ STAGES · inferred from activity  ││                                                                          ││      │
+│ ◉ TURN 1 · running            5s ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Spawn two subagents in parall… ││                                                                          ││  ⑂   │
+│   •─ ◉ child  /root/li… observed ││ ▎ CODEX  gpt-5.6-sol  02:00                                              ││      │
+│   └─ ○ (more as events arrive)   ││ ▎  ▸ ✓ Thought for up to 3.1s · 83 reasoning tokens           02:00:06   ││      │
+│                                  ││ ▎                                                                        ││      │
+│                                  ││ ▎ ╭───────────────────────────────────────────────────────────────────╮  ││  ◉   │
+│ ──────────────────────────────── ││ ▎ │ ◜ Untangling...                                             00:00 │  ││      │
+│ ✦ TELEMETRY        Enter details ││ ▎ │                                                                   │  ││      │
+│ ▾ SESSION USAGE                  ││ ▎ │                                                                   │  ││      │
+│   Context 6% of 258.4k █░░░░░░░░ ││ ▎ ╰───────────────────────────────────────────────────────────────────╯  ││      │
+│   Tokens 15.1k session total     ││                                                                          ││      │
+│   Est. cost N/A Codex reports n… ││                                                                          ││      │
+│ ▾ QUOTA WINDOWS                  ││                                                                          ││      │
 │   Session (5hr)               0% ││                                                                          ││      │
 │   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││                                                                          ││      │
 │   Resets in 1d                   ││ ──────────────────────────────────────────────────────────────────────── ││      │

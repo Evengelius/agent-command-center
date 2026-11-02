@@ -111,10 +111,10 @@ frame built from the one before it equals the frame drawn afresh, escape codes
 included.
 
 **The timing step, on its own.** A time is judged against its target only in
-the timing step, built with the `timing` tag. Fourteen timed tests carry the
+the timing step, built with the `timing` tag. Nineteen timed tests carry the
 tag, so `go test ./...` never runs them; plan 51's three
-(`hometiming_test.go`) are built on Windows only, for its performance
-counter. Seven more, `TestPasteToFrame`,
+(`hometiming_test.go`), `TestChipScale` and `TestChipCount` are built on Windows
+only, for its performance counter. Seven more, `TestPasteToFrame`,
 `TestStreamToFrame` (`internal/app/perf_test.go`), `TestOutputToFrame`
 (`outputtiming_test.go`), `TestBranchesFrameCost` (`branches_test.go`,
 plan 59), `TestBlameFrameCost` (`blame_test.go`, plan 60),
@@ -129,12 +129,12 @@ first commit a page at a time, none missing or twice, a turn of 1,000 files
 unfolded under the cursor. There
 `overTarget` logs their time as "not judged outside the timing step", as it
 does under `-race` (`timingBuild`, `timing_on_test.go` and
-`timing_off_test.go`; plan 21, item 2). The step runs the twenty-one,
+`timing_off_test.go`; plan 21, item 2). The step runs the twenty-six,
 under the owner's normal working conditions (owner, 2026-10-16), since the
 target is about real use:
 
 ```text
-go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame|TestOutputToFrame|TestToolsToFrame|TestBannerToFrame|TestHomeKeysToFrame|TestHomePictureTime|TestBranchesFrameCost|TestBlameFrameCost|TestGraphFrameCost|TestTurnReviewFrameCost|TestSearchToFrame)$' -count=1 -v
+go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystrokes|TestKeystrokeCost|TestLongSession|TestThinkingFrame|TestPasteToFrame|TestStreamToFrame|TestSelectorToFrame|TestMotionToFrame|TestDiffToFrame|TestMessageToFrame|TestOutputToFrame|TestToolsToFrame|TestBannerToFrame|TestHomeKeysToFrame|TestHomePictureTime|TestBranchesFrameCost|TestBlameFrameCost|TestGraphFrameCost|TestTurnReviewFrameCost|TestSearchToFrame|TestLongMessageToFrame|TestLongPasteKeys|TestLongMessageView|TestChipScale|TestChipCount)$' -count=1 -v
 ```
 
 - Allowed: the owner's usual applications open and idle (VS Code, browsers,
@@ -213,9 +213,24 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   2,000-line paste: "telemetry" and "refused" typed and taken back in the
   bar, each key timed whole from Update to its frame (the query read, the
   matches found and placed, the rows lit, the frame drawn), then "refused",
-  found in the paste's folded lines alone; with the bar open on the first
+  found behind the paste's chip alone; with the bar open on the first
   session, 400 answer deltas, each finding the matches again, timed to
   their frames: p95 within 16 ms (`keystrokeTarget`).
+- `TestPasteToFrame` measures both paths since plan 73: in the composer, where a
+  50,000-line paste becomes a chip, and with the draft window open, where the whole
+  text is drawn. The tests of a large ordinary editor fill it as an ordinary draft
+  (`fillOrdinary`: pasted with the draft window open, then Esc) and show it, before and
+  after their measured keys (`ordinaryDraft`, criterion 73.23).
+- `TestLongMessageToFrame`, `TestLongPasteKeys` and `TestLongMessageView` (plan 73,
+  criterion 73.25; `longmessage_timing_test.go`): a 50,000-line chip in zone B's view
+  and 400 answer deltas; the motions, typing and a whole-block deletion and its undo
+  around one in the composer; the full view of 50,000 lines, then `y`'s key in
+  `Update`: p95 within 16 ms (`keystrokeTarget`), `y` at its worst. `TestChipScale`
+  (criterion 73.26; `chipscale_test.go`, Windows only, for its performance counter)
+  judges nothing: it records the median of 200 samples of the view and of each motion
+  around chips of 5 KB, 500 KB and 5 MB, a sample being 20 calls, for the evaluation to
+  say how the cost follows the hidden size; `TestChipCount` does the same around 1, 10
+  and 100 chips.
 - A miss is a FAIL: do not rerun until it passes. Investigate the cause (a CPU
   profile, the same test on the last commit) and report it as the loop above
   says.
@@ -231,7 +246,10 @@ with every file `imagetest` writes and the checked-in WebP) and
 `DecodeAll` reads, with as many frames) and `FuzzTextWidth`
 (`internal/render`: on text without controls, `textWidth` is
 `lipgloss.Width`, and `cut` and `tailCut` keep the most that fits without
-splitting a cluster). `go test ./...` runs their seeds as ordinary tests. A
+splitting a cluster). Plan 73 added two: `FuzzLongMessage` (`internal/render`: the
+bounded answer is the sum of a text's rows, at any width) and `FuzzEditorRanges`
+(`internal/input`: sequences of every editing operation, in both modes, against a
+plain model). `go test ./...` runs their seeds as ordinary tests. A
 plan that changes a reader, a mapper or the widths fuzzes it for a bounded
 time, each target alone:
 
@@ -241,6 +259,8 @@ go test ./internal/input -run '^$' -fuzz '^FuzzGIFFrames$' -fuzztime 60s -fuzzmi
 go test ./internal/provider/claude -run '^$' -fuzz '^FuzzMapperOut$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
 go test ./internal/provider/codex -run '^$' -fuzz '^FuzzMapperOut$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
 go test ./internal/render -run '^$' -fuzz '^FuzzTextWidth$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
+go test ./internal/render -run '^$' -fuzz '^FuzzLongMessage$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
+go test ./internal/input -run '^$' -fuzz '^FuzzEditorRanges$' -fuzztime 60s -fuzzminimizetime 2s -parallel 4
 ```
 
 - `-fuzzminimizetime 2s`: by default Go minimises each new interesting input

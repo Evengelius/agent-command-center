@@ -9368,3 +9368,1501 @@ Implement the approved Plan 72 and nothing outside its scope.
 Taken as the authorization of plan 72's steps 2 to 9, C1 kept, C2 and C3
 built (plan.md, Plan 72, Copy and search), nothing committed or pushed
 before the owner's review.
+
+## Amendment 76, 2026-11-01: virtual attachments for long user messages, for plan 73
+
+After the temporary-file migration closed, the owner asked for plan 73 in four
+messages on 2026-11-01: a first design discussion, feedback on the proposal, the
+approval of paste ranges with the independent reviewer's corrections, then the
+request for this plan. The design each round settled is in `plan.md`, Plan 73;
+these are the owner's words.
+
+The first, word for word:
+
+````text
+# ACC — Plan 73: Initial Design Discussion — Virtual Attachments for Long User Messages
+
+I would like to discuss a potential new feature for Agent Command Center (ACC).
+
+For now, **this is an exploratory design and architecture discussion, not an approved implementation plan**.
+
+I have a preferred direction, but I want your independent technical assessment before we make any final decisions.
+
+Please inspect the relevant ACC code, understand the current architecture, challenge my assumptions where justified, and suggest improvements or alternatives.
+
+Do not simply agree with the proposal.
+
+## 1. Background and motivation
+
+ACC is an agent-centric development environment.
+
+Its primary purpose is to let me direct and supervise Claude Code and Codex while observing their activities, code modifications, tool calls, and results.
+
+An important reminder of ACC's philosophy:
+
+**ACC is not intended to be a traditional IDE where the human manually writes and modifies substantial amounts of code.**
+
+The intended workflow is:
+
+1. The human provides instructions.
+2. Claude Code or Codex performs the implementation.
+3. The human supervises the agent's execution.
+4. The human inspects Git diffs and relevant results.
+5. The human approves actions and controls delivery.
+
+Manual editing is secondary and contextual.
+
+This principle should guide the feature's design. The conversation interface should prioritize agent activity and supervision, not become a sophisticated text or code editor.
+
+Currently, long user prompts create a significant visual problem.
+
+When I paste or compose a very long message:
+
+- The normal composer can become visually cumbersome.
+- The fullscreen Draft editor contains the entire message, as expected.
+- After submission, the complete user message can occupy most of Zone B.
+- This makes the conversation harder to navigate and pushes important agent activity out of view.
+
+I want to improve this experience.
+
+ChatGPT provides an interesting reference: when sufficiently long text is pasted, it can appear as a compact attachment-like element.
+
+I am considering a similar concept for ACC.
+
+However, ACC is a terminal application with its own architecture and UX constraints. The solution should be adapted accordingly.
+
+## 2. Preferred direction: Virtual attachments
+
+My initial idea is to represent long user messages as **virtual attachments**.
+
+By virtual attachment, I mean:
+
+- The full message still exists as ordinary user-message content.
+- Its representation in the interface becomes compact.
+- Claude Code or Codex still receives the complete original message.
+- The agent should not need to open an additional file to read the prompt.
+- No additional temporary file should be necessary merely to achieve this compact presentation.
+
+This is primarily a visual presentation problem.
+
+I do not currently see a reason to introduce physical `.txt` or `.md` files, a dedicated attachment-storage system, or a new context-management mechanism.
+
+Nevertheless, please verify whether this approach is genuinely compatible with ACC's existing architecture.
+
+If there is a better solution, explain it.
+
+## 3. Desired threshold: Strictly more than 3 visual lines
+
+My preferred rule is:
+
+**A message becomes a virtual attachment only if it occupies more than 3 visual lines.**
+
+Examples:
+
+| Displayed message length | Desired behaviour |
+|---|---|
+| 1 visual line | Normal message |
+| 2 visual lines | Normal message |
+| 3 visual lines | Normal message |
+| 4 visual lines | Virtual attachment |
+| 10 visual lines | Virtual attachment |
+| 404 visual lines | Virtual attachment |
+
+Important distinctions:
+
+- The threshold is strictly greater than 3 lines.
+- It is not a 3-line-or-more rule.
+- The number 404 is only an example, not a maximum or a special threshold.
+- Visual wrapping matters. A single physical line can occupy several displayed lines.
+- I do not want an arbitrary character-count threshold such as 15,000 characters.
+
+Please investigate how ACC currently determines visual line counts.
+
+One question worth examining is how the threshold should behave when the terminal is resized or when the composer and conversation viewport have different widths.
+
+I want a predictable and performant result.
+
+Treat the 3-line threshold as my current UX preference, but tell me if the implementation reveals important complications.
+
+## 4. Normal composer: Behaviour to explore
+
+Suppose I paste a prompt containing 200 lines into the normal composer.
+
+Ideally, I should not end up with an enormous text block occupying my interface.
+
+A compact attachment-like representation seems attractive.
+
+However, I have not yet decided exactly how editing should work.
+
+Please investigate and propose an appropriate interaction model for:
+
+- Pasting long content.
+- Automatically recognizing content exceeding 3 visual lines.
+- Continuing to compose or correct the prompt.
+- Cancelling the prompt.
+- Submitting it.
+- Maintaining existing keyboard shortcuts and mouse behaviour.
+
+I previously considered an action similar to ChatGPT's "Show in text field", but I am concerned that inserting the entire long message back into the normal composer would simply recreate the problem.
+
+I would prefer not to make that the default interaction.
+
+ACC already has a fullscreen Draft editor.
+
+Could we reuse Draft as the primary mechanism for composing and correcting long messages?
+
+Would that be simpler and more consistent with ACC's agent-centric philosophy?
+
+Please avoid proposing an elaborate inline editor or a new manual code-editing system unless there is a compelling technical or usability reason.
+
+**I want your recommendation before deciding.**
+
+## 5. Fullscreen Draft: Important expected behaviour
+
+ACC already has a fullscreen Draft editor.
+
+Unlike the normal composer, Draft is specifically intended to provide enough room to write and edit substantial amounts of text.
+
+I want to preserve that capability.
+
+Here is an important scenario:
+
+1. I open fullscreen Draft.
+2. I write or paste a long prompt.
+3. I edit it normally.
+4. I submit the Draft.
+5. ACC determines whether the submitted content exceeds 3 visual lines.
+6. If it does, the resulting user message appears as a virtual attachment in Zone B.
+7. Otherwise, it appears as normal text.
+
+**Long messages submitted through Draft must also become virtual attachments.**
+
+I do not want Draft submissions to bypass this feature.
+
+The virtual attachment should represent the full submitted content, regardless of whether it originated in the normal composer or fullscreen Draft.
+
+The Draft must remain fully usable while composing and editing.
+
+The conversion into a compact representation must not interfere with its existing editing functionality.
+
+Please investigate the current Draft submission pipeline.
+
+Is there a common submission path that could be reused?
+
+Could we avoid implementing two separate systems?
+
+Also consider what should happen when a Draft is cancelled or reopened.
+
+## 6. Zone B: Conversation presentation
+
+The main objective is to keep Zone B readable and focused on agent activity.
+
+Instead of displaying hundreds of lines of user text, ACC could display a compact attachment-like element.
+
+My preferred reference is ChatGPT's minimal attachment presentation.
+
+For example:
+
+```text
+┌────────────────────────────────────────────┐
+│ YOU  14:32                                 │
+│                                            │
+│ ┌────────────────────────────────────────┐ │
+│ │ ▣ Pasted text.txt                      │ │
+│ │   Document                             │ │
+│ └────────────────────────────────────────┘ │
+│                                            │
+│ CLAUDE  Opus 5.5                           │
+│ ✓ Read project files                       │
+│ ✓ Bash  git diff --stat                    │
+│ ✓ Edit  internal/app/example.go            │
+│                                            │
+│ RESULT                                     │
+│ Implementation completed...                │
+└────────────────────────────────────────────┘
+```
+
+This is only an illustration of the concept.
+
+The appearance, dimensions, colours, borders, and interactions are **not final design decisions**.
+
+I want the eventual result to match ACC's existing visual identity.
+
+### No content preview
+
+**I do not want the virtual attachment to display a preview of its content.**
+
+Specifically, I do not need:
+
+- The first lines of the submitted message.
+- A generated summary.
+- A Markdown preview.
+- A code preview.
+- An expandable block showing the original message inside Zone B.
+
+The compact element should simply indicate that a long message was submitted.
+
+A minimal document name and type are sufficient as a starting point.
+
+The displayed document name is a UI representation. It must not require an actual `.txt` file to be created.
+
+The objective is to minimize the visual footprint of user messages, leaving more space for the agent's activities.
+
+### Remaining UX questions
+
+Please investigate and recommend:
+
+- How the compact element should integrate with ACC's existing styling.
+- Whether any additional metadata is genuinely useful.
+- Whether any interaction is necessary at all.
+- How it should behave with mouse and keyboard.
+- How it should behave on small terminals, such as 80×24.
+- Whether a message should remain classified as a virtual attachment after terminal resizing.
+
+I do not want long messages to expand directly inside Zone B and obscure the agent's activities.
+
+If you believe a separate way to inspect an earlier message is important, explain why and propose a non-disruptive approach.
+
+Such a mechanism is not automatically approved and should not become a major new editing subsystem.
+
+## 7. Content fidelity
+
+My prompts can contain much more than plain text.
+
+Examples include:
+
+- Markdown.
+- Source code.
+- Fenced code blocks.
+- Tables.
+- JSON and YAML.
+- PowerShell commands.
+- Unicode.
+- Mixed text and code.
+- Indentation.
+- Empty lines.
+
+It is essential that the virtual-attachment presentation does not alter the original message.
+
+Claude Code and Codex should receive the complete content through their normal submission mechanisms.
+
+Please investigate the actual message representation and provider adapters.
+
+I want to understand whether this can be achieved as a presentation-only change or whether deeper architectural adjustments are necessary.
+
+## 8. Lifecycle, history, and session resumption
+
+We previously discussed an approach involving temporary files, but I am currently leaning away from it.
+
+The reasons are straightforward:
+
+- Temporary files introduce cleanup responsibilities.
+- Agents may need to reread content unpredictably.
+- Session resumption becomes more complicated if the only copy disappears.
+- Creating a new file merely to display a compact message seems unnecessary.
+
+My preferred approach is for the original message to remain part of ACC's existing conversation data.
+
+The virtual attachment would simply be another way to render it.
+
+Please verify:
+
+1. How user messages are stored or represented today.
+2. What ACC preserves in its conversation history.
+3. How messages are delivered to Claude Code and Codex.
+4. What happens when a session is resumed.
+5. Whether a display-only virtual attachment introduces any additional persistence requirements.
+
+Do not assume that a model will permanently remember everything it previously received.
+
+At the same time, I do not want Plan 73 to become a project for rebuilding conversation history, model memory, or automatic compaction.
+
+Those are separate concerns.
+
+If there are relevant limitations, identify them without automatically expanding the scope.
+
+## 9. Performance and architectural simplicity
+
+Performance matters greatly for ACC.
+
+Please assess whether the proposed feature could introduce:
+
+- Additional rendering overhead.
+- Expensive visual-line calculations.
+- Excessive allocations or copies.
+- Scrolling regressions.
+- Unnecessary redraws.
+- Terminal-resize instability.
+- Complexity in message storage.
+- Inconsistencies between Claude Code and Codex.
+
+I strongly prefer a small, maintainable solution built on existing infrastructure.
+
+Remember that ACC's primary purpose is agent supervision, not manual editing.
+
+The implementation should improve the visibility of agent activity without introducing unnecessary UI complexity.
+
+If the proposed approach requires a large new subsystem, I want to understand why before accepting it.
+
+## 10. What I want from your investigation
+
+Please structure your response around the following.
+
+### A. Existing architecture
+
+Inspect the code and explain how ACC currently handles:
+
+- Normal composer input.
+- Fullscreen Draft editing.
+- Draft submission.
+- Regular prompt submission.
+- Provider communication.
+- Zone B message rendering.
+- Conversation history.
+- Session resumption.
+
+Reference the relevant files, functions, and data structures.
+
+Clearly distinguish confirmed findings from assumptions.
+
+### B. Your honest assessment
+
+Is a virtual-attachment presentation a good architectural fit for ACC?
+
+What do you like about the idea?
+
+What concerns you?
+
+Would you approach this differently?
+
+If you disagree with any part of my proposal, explain why and what you recommend instead.
+
+### C. Alternative designs
+
+If multiple viable approaches exist, compare them.
+
+For each approach, discuss:
+
+- User experience.
+- Implementation complexity.
+- Performance.
+- Maintainability.
+- Reliability.
+- Compatibility with the existing architecture.
+
+Then recommend your preferred approach and explain the trade-offs.
+
+### D. Recommended user experience
+
+Describe how you would handle:
+
+1. Short messages.
+2. Long messages pasted into the normal composer.
+3. Editing long prompts before submission, preferably using existing functionality.
+4. Long messages written in fullscreen Draft.
+5. Submitting a long Draft.
+6. Displaying compact, preview-free virtual attachments in Zone B.
+7. Accessing previously submitted content, only if genuinely necessary.
+8. Terminal resizing.
+9. Session resumption.
+
+Pay special attention to the interaction between the normal composer and Draft.
+
+Keep the proposed user experience consistent with ACC's agent-centric philosophy.
+
+### E. Visual mock-ups
+
+Please provide several concise, bordered terminal mock-ups compatible with ACC's existing visual style.
+
+At minimum, illustrate:
+
+- A long message in the normal composer.
+- A long message being edited in fullscreen Draft.
+- Zone B after a long Draft is submitted.
+- Zone B displaying the compact attachment while agent activities remain visible.
+- The experience on a smaller terminal.
+
+The virtual-attachment mock-ups must not include message-content previews.
+
+These are proposals for discussion, not finalized UI specifications.
+
+### F. Potential edge cases
+
+Identify cases we may have overlooked.
+
+For example:
+
+- Exactly 3 versus 4 visual lines.
+- Long text with no newline characters.
+- Markdown tables and code blocks.
+- Empty lines and unusual whitespace.
+- Unicode and wide characters.
+- Pasting and undoing changes.
+- Cancelling Draft.
+- Reopening or resuming a session.
+- Changing terminal width.
+- Extremely large prompts.
+- Differences between providers.
+
+### G. Preliminary evaluation strategy
+
+Suggest how this feature could eventually be tested reliably.
+
+I am interested in:
+
+- Functional correctness.
+- Lossless message delivery.
+- Composer and Draft consistency.
+- Rendering correctness.
+- Regression prevention.
+- Performance measurements.
+
+You may suggest candidate acceptance criteria, but **do not treat them as a finalized Plan 73 evaluation matrix**.
+
+We will define the formal criteria only after reviewing and agreeing on the design.
+
+### H. Questions requiring my decision
+
+List the important unresolved UX and architectural questions.
+
+For each, give your recommendation.
+
+Do not silently make substantial product decisions on my behalf.
+
+## 11. Scope and working rules
+
+This is the first discussion about Plan 73.
+
+It is not authorization to start Plan 73.
+
+For this turn:
+
+- Inspect relevant files in read-only mode.
+- Do not modify any repository files.
+- Do not edit `plan.md` or `AGENTS.md`.
+- Do not start implementation.
+- Do not run expensive tests or benchmarks.
+- Do not launch subagents unless genuinely necessary.
+- Do not commit or push.
+- Do not perform temporary-file cleanup.
+- Do not start any other plan.
+
+Keep the investigation focused on the proposed feature.
+
+Do not expand it into a general file-attachment framework, a manual code-editing system, a new context-retrieval system, or an automatic conversation-compaction system.
+
+## 12. Expected outcome
+
+I expect an **independent technical and UX proposal**, not a completed implementation plan.
+
+Your job is to help me determine:
+
+1. Whether the idea is technically sound.
+2. Whether virtual attachments are the best solution.
+3. How to integrate the behaviour cleanly into ACC.
+4. What should happen in the normal composer and Draft.
+5. What the compact, preview-free interface should look like.
+6. Which decisions and trade-offs deserve further discussion.
+7. How we could eventually evaluate the result.
+
+Feel free to challenge the design and propose improvements.
+
+**Stop after presenting your findings and recommendations. We will discuss them before creating the actual Plan 73.**
+````
+
+The second, word for word:
+
+````text
+# ACC — Plan 73: Design Feedback and Final Architecture Discussion
+
+Thank you for your thorough investigation and recommendations.
+
+I have reviewed your proposal with my independent reviewer. We agree with most of your technical findings and several of your UX recommendations.
+
+However, I want to clarify some important decisions, particularly concerning the composer.
+
+**We are still discussing the design. This is not authorization to implement Plan 73.**
+
+I want your independent technical assessment of the updated requirements before we finalize the plan.
+
+## 1. Architecture: Agreement with your approach
+
+We agree that the existing message-folding infrastructure should be reused wherever practical.
+
+Your investigation suggests that ACC already has most of the necessary mechanisms:
+
+- Existing message folding.
+- A shared input buffer for the composer and Draft.
+- A common submission path.
+- Existing message inspection and navigation.
+- Existing search functionality.
+- Provider-independent user-message rendering.
+
+We prefer adapting these mechanisms over introducing an entirely new subsystem.
+
+The priorities remain:
+
+1. Simplicity.
+2. Reliability.
+3. Performance.
+4. Maintainability.
+5. Minimal regression risk.
+
+Please retain these principles in your recommendations.
+
+## 2. Virtual attachment presentation: Your proposal is approved
+
+We prefer your compact, single-row representation:
+
+```text
+▣ Long message · 404 lines · 18 KB
+```
+
+This is now our reference for Zone B.
+
+Requirements:
+
+- One row.
+- No additional bordered box.
+- No message-content preview.
+- Show that it is a long message.
+- Display the line count.
+- Display the size.
+- Preserve ACC's existing visual identity.
+
+The displayed numbers are examples, not fixed values.
+
+We agree with your objection to introducing a fictitious `.txt` filename.
+
+No physical attachment file should be created for this feature.
+
+## 3. Conversion threshold: Confirmed
+
+Our preferred threshold remains:
+
+**Strictly more than 3 visual lines.**
+
+| Visual lines | Zone B representation |
+|---|---|
+| 1 | Normal message |
+| 2 | Normal message |
+| 3 | Normal message |
+| 4 | Virtual attachment |
+| More than 4 | Virtual attachment |
+
+The 404-line example is not a limit.
+
+Visual wrapping matters, including cases where a single physical line occupies several terminal rows.
+
+We understand your warning that this threshold may affect relatively short prompts on narrow terminals.
+
+We accept that trade-off for the initial design, subject to later visual evaluation.
+
+Please retain your recommendation for bounded line-count calculations and investigate how terminal resizing should affect the representation.
+
+## 4. Important correction: Do not change normal composer editing
+
+This is the most important clarification.
+
+In your previous proposal, you recommended introducing a three-row composer window.
+
+**We do not want that change.**
+
+The existing normal composer must retain its current editing behaviour.
+
+Specifically:
+
+- Do not introduce a new three-line height limit.
+- Do not change its existing expansion or scrolling rules.
+- Do not automatically collapse manually typed text.
+- Do not change existing typing behaviour.
+- Do not change existing shortcuts or editing semantics merely to support this feature.
+
+If I manually type a message of 5, 10, or 50 lines, the composer should continue behaving as it does today.
+
+The three-line threshold does not impose a new limit on the classic editor.
+
+**Our new requirement concerns long paste operations, not progressive manual typing.**
+
+## 5. Long paste operations: Our preferred UX
+
+When I paste a large block of text into the normal composer, and the pasted content exceeds 3 visual lines, I want that pasted content to become a compact virtual attachment immediately.
+
+For example, after pasting 200 lines:
+
+```text
+╭─ B · CONVERSATION ───────────────────────────────────────╮
+│                                                        │
+│ ────────────────────────────────────────────────────── │
+│ ▣ Long message · 200 lines · 9 KB                      │
+│ ────────────────────────────────────────────────────── │
+│   +     Opus 5.5 Max                                   │
+╰────────────────────────────────────────────────────────╯
+```
+
+This is a conceptual mock-up, not a finalized layout.
+
+The original pasted text must remain fully available for submission.
+
+Nothing should be truncated, summarized, or rewritten.
+
+The virtual attachment should be a UI representation, not a physical file.
+
+### Important distinction
+
+We want to distinguish:
+
+**A. Manual typing**
+
+The existing composer works normally, regardless of how many lines the user types.
+
+**B. Pasting a long block**
+
+A paste operation containing more than 3 visual lines triggers the virtual-attachment representation in the composer.
+
+**C. Submitting a message**
+
+Regardless of how the message was composed, if the complete submitted message exceeds 3 visual lines, it appears as a virtual attachment in Zone B.
+
+This distinction is intentional.
+
+Please evaluate whether it can be implemented cleanly.
+
+Do not assume we want all editor content to collapse as soon as it exceeds 3 lines.
+
+## 6. The architectural challenge I want you to investigate
+
+Your report established that ACC currently uses a single `m.edit` buffer.
+
+That makes the long-paste requirement particularly interesting.
+
+Please investigate the following scenarios.
+
+### Scenario A — Paste, then send
+
+1. I paste 200 lines.
+2. ACC displays a virtual attachment.
+3. I submit the message.
+4. The agent receives the complete original content.
+5. Zone B displays the compact attachment.
+
+### Scenario B — Paste, then edit
+
+1. I paste 200 lines.
+2. ACC displays a virtual attachment.
+3. I decide to correct something.
+4. I open the existing fullscreen Draft editor.
+5. I edit the original content.
+6. I submit it.
+
+Can this work using the current buffer and Draft architecture?
+
+### Scenario C — Paste, then add instructions
+
+1. I paste a long block of text.
+2. It becomes a virtual attachment.
+3. I want to add an instruction, such as:
+
+   "Review this implementation and identify potential regressions."
+
+4. I submit the combined message.
+
+How should ACC handle this?
+
+Can we preserve a single original message without introducing separate buffers, content atoms, or a complex attachment system?
+
+Or would some additional structure be necessary?
+
+### Scenario D — Mixed input
+
+Consider:
+
+- Typing several lines, then pasting a long block.
+- Pasting a long block, then typing additional text.
+- Pasting several smaller blocks.
+- Undoing a paste.
+- Replacing an existing selection with pasted content.
+- Opening and closing Draft.
+- Pasting content containing trailing backslashes or special characters.
+
+Please assess how these should behave.
+
+Your previous warning about `\` followed by Enter was particularly important.
+
+We must not introduce hidden-input behaviour that could cause accidental submission, unintended newline insertion, or message corruption.
+
+### Scenario E — Threshold semantics
+
+Should the composer conversion depend on:
+
+- The visual length of the pasted block itself?
+- The total visual length of the composer after the paste?
+- Some other reliable criterion?
+
+Our intention is to trigger the compact representation for a genuinely long paste, without unexpectedly converting manually written text.
+
+Give us your recommendation.
+
+## 7. Fullscreen Draft: No editing changes
+
+We also want to clarify Draft's behaviour.
+
+**Do not modify the existing fullscreen Draft editing experience.**
+
+There should be:
+
+- No new three-line limit.
+- No automatic conversion while editing.
+- No new folding behaviour during composition.
+- No unnecessary changes to shortcuts or editing functionality.
+
+Draft must remain fully editable.
+
+### Conversion happens after submission
+
+When I submit a Draft:
+
+- If the submitted message occupies 1–3 visual lines, Zone B shows it normally.
+- If it occupies more than 3 visual lines, Zone B shows it as a virtual attachment.
+
+This is independent of how the message was initially entered.
+
+The normal composer and Draft must retain their shared submission semantics.
+
+## 8. Inspection and exact copying: We agree
+
+We support your recommendation to reuse the existing full-message viewer.
+
+We are also favorable to your suggestion of adding `y` to copy the original message content exactly.
+
+The important distinction is between:
+
+- Reading a message through the existing viewer.
+- Recovering its exact original text.
+
+Please verify that this can be achieved without changing the submitted content or introducing a substantial new subsystem.
+
+We do not want an elaborate inline editor or automatic expansion of the full content inside Zone B.
+
+## 9. Session resumption: Explicitly out of scope
+
+We agree that ACC should rely on the native session-resumption capabilities of Claude Code and Codex.
+
+We do not want to reinvent mechanisms already maintained by Anthropic and OpenAI.
+
+Therefore:
+
+- No new conversation-history persistence system.
+- No custom context reconstruction.
+- No new agent-memory mechanism.
+- No custom compaction system.
+- No new temporary attachment lifecycle.
+
+Plan 73 should simply preserve ACC's existing session behaviour.
+
+We understand that ACC currently does not reconstruct and display previous Zone B messages after resumption.
+
+We are not asking to change that.
+
+## 10. Testing: Agreement with your recommendations
+
+We agree with the direction of your proposed evaluation strategy:
+
+- Exactly 3 versus 4 visual lines.
+- Long lines and wrapping.
+- Unicode and special characters.
+- Markdown and code.
+- Composer and Draft consistency.
+- Exact message delivery to both providers.
+- Message inspection and copying.
+- Terminal resizing.
+- Golden frames.
+- Regression tests.
+- Mutation testing.
+- Performance measurements.
+- Large-message rendering.
+- Real Windows Terminal verification.
+
+However, the final acceptance criteria must be defined only after the architecture and UX are agreed upon.
+
+Do not create the formal evaluation matrix yet.
+
+## 11. What we need from you now
+
+Please focus your next response on the unresolved composer design.
+
+We want:
+
+### A. Feasibility assessment
+
+Can we support long-paste virtual attachments while leaving the existing manual composer and Draft editing behaviour unchanged?
+
+Please answer honestly.
+
+If there are architectural obstacles, explain them precisely.
+
+### B. Architecture options
+
+Compare the viable implementation strategies.
+
+For each option, explain:
+
+- Required changes.
+- Complexity.
+- Performance implications.
+- Reliability.
+- Compatibility with the existing single-buffer model.
+- Potential regressions.
+- Maintenance cost.
+
+### C. Your recommendation
+
+Recommend the simplest technically sound solution.
+
+If you still believe your original three-row composer proposal is preferable, explain why in light of our clarified requirements.
+
+Do not silently substitute it for our preferred behaviour.
+
+### D. Updated mock-ups
+
+Provide concise bordered terminal mock-ups showing:
+
+1. Manual typing in the existing composer, unchanged.
+2. Pasting a long block and seeing its virtual attachment.
+3. Editing the pasted content through Draft.
+4. Adding instructions to a long pasted block.
+5. Submitting a long Draft.
+6. The resulting compact message in Zone B.
+
+### E. Remaining decisions
+
+Identify the minimum set of unresolved decisions requiring our approval.
+
+Do not reopen matters we have already settled unless your code inspection identifies a concrete technical problem.
+
+## 12. Working boundaries
+
+This remains a design discussion.
+
+For this turn:
+
+- Read-only inspection only.
+- No implementation.
+- No repository edits.
+- No changes to `plan.md` or `AGENTS.md`.
+- No expensive tests or benchmarks.
+- No unnecessary subagents.
+- No commit or push.
+- No cleanup operations.
+- No new plan activation.
+
+**Do not build the final Plan 73 yet.**
+
+We want your independent technical response to these clarified requirements first.
+
+Once the remaining architectural questions are resolved, we will collaboratively finalize the design and then authorize the creation of Plan 73.
+
+Stop after presenting your findings, trade-offs, recommendations, and mock-ups.
+````
+
+The third, word for word:
+
+````text
+ACC — Plan 73: Paste Ranges Approved — Independent Code Review Feedback
+Thank you for the revised technical proposal.
+I have reviewed it with my independent reviewer, who also inspected the actual ACC source code at commit `1c36cebc4beb672d45f7932d7816304804aa28a0`.
+We have reached a decision on the composer architecture.
+I choose Option 3: Paste ranges.
+The UX benefits justify its moderate additional complexity, provided the implementation remains reliable, maintainable, and performant.
+We do not need another comparison with "Keys open Draft."
+However, the independent code inspection identified a few points worth incorporating before we finalize Plan 73.
+1. Confirmed architecture decision: Paste ranges
+We approve your recommended direction:
+
+* Keep `m.edit` as the single source of the message text.
+* Store only the metadata needed to identify pasted ranges for compact rendering.
+* Never replace actual message content with placeholder tokens.
+* Never create physical files for virtual attachments.
+* Preserve the current manual typing behaviour.
+* Preserve the current Draft editing behaviour.
+* Convert paste operations exceeding 3 visual lines into compact virtual attachments in the composer.
+* Display submitted user messages exceeding 3 visual lines as compact virtual attachments in Zone B.
+* Continue sending the complete original message through the existing provider submission path.
+
+The approved compact representation remains:
+
+```
+▣ Long message · 404 lines · 18 KB
+```
+
+No content preview and no additional bordered box.
+The displayed numbers are dynamic.
+2. R1 — Draft editing and paste-range metadata
+The independent reviewer verified the existing implementation.
+Relevant code:
+
+* `internal/app/editing.go`: composer and Draft share `m.edit`.
+* `internal/app/editing.go`: `Ctrl+G` opens Draft, while `Esc` can return to the composer without submitting.
+* `internal/app/app.go`: `CmdWrite` clears `m.edit` when an outgoing message is submitted.
+* `internal/app/app.go`: `CmdRestoreDraft` restores the draft if submission fails.
+* `internal/input/editor.go`: editing operations change the buffer, and undo/redo are already supported.
+
+This confirms an important distinction.
+Once a message has been submitted, its composer paste-range metadata is no longer needed.
+We are not asking to edit a previously submitted virtual attachment.
+Therefore, maintaining range metadata after submission is unnecessary.
+The only relevant edge case occurs before submission:
+
+1. The user pastes a long block.
+2. It becomes a virtual attachment in the composer.
+3. The user opens Draft.
+4. The user edits the original content.
+5. The user returns to the composer without submitting.
+
+In that situation, the original byte offsets may no longer identify the same content.
+We consider this a manageable implementation detail, not a blocking architectural concern.
+Please choose the simplest reliable rule.
+For example, if the range metadata can no longer be trusted, reverting its presentation to ordinary text is preferable to displaying an incorrect chip or modifying the content.
+Do not introduce an elaborate range-tracking subsystem solely to preserve the chip after arbitrary Draft edits unless there is a concrete reason.
+The invariant is:
+Presentation metadata must never become a source of truth for the message, and invalid metadata must never cause content loss or corruption.
+Include the relevant cases in the eventual tests.
+3. R2 — Backspace, Delete and Undo
+The independent reviewer confirmed that `internal/input/editor.go` currently implements:
+
+* Character-level Backspace/Delete.
+* Selection deletion.
+* Paste as a single undo operation.
+* Undo and redo.
+
+We accept your proposed atomic behaviour for a virtual attachment that has not yet been submitted:
+
+* The chip behaves as one selectable unit.
+* Backspace/Delete at the appropriate boundary can remove the entire pasted block.
+* Undo restores the original content.
+
+This is acceptable UX for an attachment-like element.
+It must, however, be verified with focused tests covering:
+
+* Entire-block deletion.
+* Undo and redo.
+* Selections containing a chip.
+* Text immediately before and after a chip.
+* Multiple chips.
+* Preservation of unrelated text.
+
+This is not a request for further design discussion unless you identify a concrete conflict with existing editor behaviour.
+4. R3 — Visual-line counting: Correction required
+This is the one point where the independent code inspection found a potential inconsistency in your proposal.
+You suggested ignoring leading and trailing line breaks when determining whether pasted content exceeds 3 visual lines.
+However, the existing Zone B renderer does not generally discard those lines.
+Relevant code:
+
+* `internal/render/content.go`: `entryLines()` uses `strings.Split(e.Text, "\n")`.
+* `internal/render/content.go`: `wrapRanges()` returns a row even for an empty source line.
+* `internal/render/cards.go`: `cardText()` creates rendered rows for the resulting content lines.
+
+Therefore, leading or trailing empty lines may occupy real visual rows.
+Our approved threshold is:
+Strictly more than 3 visual lines, based on the actual rendered content.
+It is not based merely on the number of non-empty lines.
+For example, text containing three visible empty rows followed by a text row should not be classified as a one-line message merely because the leading line breaks were ignored.
+Please review the counting algorithm and align it with the renderer's actual behaviour.
+If you believe certain leading or trailing rows should be excluded, explain the exact rendering rule and demonstrate why the exclusion is consistent.
+We want one clear, testable definition of visual-line counting.
+Also distinguish:
+
+* The visual-row count used to trigger conversion.
+* The line count displayed in the virtual attachment's metadata.
+
+These do not necessarily need to be identical, but their meanings must be explicit and consistent.
+5. Preserve the existing composer and Draft
+This requirement remains strict.
+Normal manual typing
+Do not introduce any new three-line limit or change existing editing, expansion, scrolling, and keyboard behaviour.
+Long paste
+A paste operation whose own content exceeds 3 visual lines becomes a virtual attachment in the composer.
+Fullscreen Draft
+Draft remains fully editable, with its current rendering and keyboard behaviour.
+No automatic conversion occurs while editing inside Draft.
+Submission
+Any submitted user message exceeding 3 visual lines appears as a virtual attachment in Zone B, regardless of its origin.
+The existing common submission path must be preserved.
+6. Performance and maintainability
+Paste ranges are approved, but that does not authorize unnecessary architectural complexity.
+Please keep the solution focused.
+In particular:
+
+* Avoid additional text buffers when the existing one suffices.
+* Avoid expensive full-buffer processing on every keystroke.
+* Keep rendering metadata separate from the message content.
+* Avoid rebuilding or copying large strings unnecessarily.
+* Preserve existing input latency and rendering budgets.
+* Reuse existing cursor, selection, wrapping, and undo mechanisms where practical.
+* Keep the change provider-independent.
+
+Any estimate of implementation size or performance remains an estimate until verified.
+7. What I want from you now
+Please incorporate this feedback into your technical recommendation.
+Specifically:
+
+1. Confirm the final Paste ranges architecture.
+2. Describe the smallest safe strategy for handling invalidated ranges after pre-submission edits in Draft.
+3. Confirm the atomic deletion and undo behaviour.
+4. Correct or justify the visual-line counting rules using the existing renderer as the source of truth.
+5. Identify any remaining genuine technical blocker.
+
+Do not reopen settled UX decisions without concrete evidence.
+If no material blocker remains, provide a concise consolidated design suitable for our final review before constructing Plan 73.
+The detailed acceptance criteria and implementation plan will be established afterwards.
+8. Working boundaries
+This is still a design review.
+
+* Read-only inspection.
+* No implementation.
+* No repository modifications.
+* No changes to `plan.md`.
+* No tests or benchmarks required for this response.
+* No unnecessary subagents.
+* No commit or push.
+* No new memory, compaction, or session-resumption system.
+
+Stop after your updated technical assessment and recommendations. Wait for my approval before creating the formal Plan 73.
+````
+
+The fourth, word for word, the button the owner chose under the question "Shall
+I create the formal Plan 73 from this design?":
+
+````text
+Create Plan 73
+````
+
+Taken as the creation of plan 73 for the owner's review, as `plan.md` says a next
+plan starts, not as the authorization to implement it: `plan.md`, Plan 73, Steps,
+keeps that gate, and nothing is committed before the owner's approval.
+
+## Amendment 77, 2026-11-01: plan 73's reviews and its authorization
+
+Between plan 73's creation and its implementation the owner sent four messages on
+2026-11-01, relaying an independent reviewer's reading of the plan: a request for the
+review, its required amendments, its targeted corrections, then the authorization. They
+changed the plan's documents only; `plan.md`, Plan 73, says where each was met.
+
+The first, word for word:
+
+````text
+Plan 73 — Independent review before implementation
+Thank you. The formal Plan 73 looks promising, and I particularly appreciate the issue you identified with the existing performance tests.
+However, creating the plan is not authorization to implement it.
+Before we approve implementation, I want an independent review of the actual plan, its 24 acceptance criteria, its 10 implementation steps, and the corresponding documentation changes.
+1. Performance-test validity — important finding
+Your discovery about `TestKeystrokeToFrame` and `TestKeystrokeAllocs` is significant.
+If these tests populate the editor using large paste operations, Plan 73 could turn that content into chips. The tests might continue passing while measuring a substantially different workload.
+I agree with addressing this in Step 2, before implementing the feature.
+Please ensure the plan explicitly requires:
+
+* Establishing a baseline on unchanged application code.
+* Preserving the existing performance thresholds.
+* Keeping coverage for genuinely large, ordinary editor content.
+* Adding separate coverage for the new paste-chip behavior.
+* Comparing equivalent workloads before and after implementation.
+* Reporting any regression rather than weakening or silently redefining the tests.
+
+The important distinction is between a passing test and a test that still measures what it was designed to measure.
+2. Confirm the approved UX throughout the plan
+The formal plan must consistently preserve these decisions:
+
+* Manual typing: the composer remains unchanged. No three-line editing limit.
+* Long paste: a single paste exceeding three visual rows immediately becomes a virtual chip.
+* Draft: its editing experience remains unchanged. No automatic conversion while typing or editing.
+* Draft submission: the resulting message follows the same Zone B display rules as any other submitted message.
+* Zone B: user messages exceeding three visual rows display as a compact, single-row chip.
+* Presentation: `▣ Long message · N lines · S`, with the actual logical line count and size. No text preview.
+* Text integrity: the provider receives the original message content, subject only to existing normalization. Chip metadata must never change the transmitted text.
+* Storage: no generated `.txt`, PDF or other physical attachment.
+* Sessions: no new ACC memory, compaction, conversation-history persistence or session-resumption system. Continue relying on Claude Code and Codex.
+
+The threshold is strictly greater than three visual rows, including visual rows arising from empty lines.
+3. Important edge cases
+Please ensure the acceptance criteria adequately cover:
+
+* Multiple pasted blocks in the same composer.
+* Text inserted before, after and between chips.
+* Atomic deletion and Undo/Redo.
+* Selections, clipboard operations and word-deletion shortcuts.
+* UTF-8, multiline content, empty lines and trailing line breaks.
+* Draft opening, editing, cancelling and submitting.
+* Failed-send restoration.
+* Resizing, wrapping and narrow terminals.
+* Exact content delivery to both providers.
+* Search, full-message inspection and exact copying.
+* Large messages and rendering performance.
+
+I am not requesting new requirements or a redesign here. I want to verify that the formal plan faithfully captures the agreed behavior and protects existing functionality.
+4. Evaluation and real-provider tests
+I support performance measurements and realistic Windows Terminal verification.
+However:
+
+* Do not launch real Claude Code or Codex turns without separate authorization of their scope and quota consumption.
+* Do not assume the proposed 50,000-line viewer optimization is necessary before measuring it.
+* Keep optional optimizations conditional on evidence.
+* Prefer reproducible automated evidence and clearly identified screenshots or recordings where appropriate.
+* Do not introduce unnecessary human-approval checkpoints into individual automated tests.
+
+We will review the plan's proposed Human Evaluation steps before implementation.
+5. Prepare an exact review ZIP
+Please prepare a review archive containing:
+
+1. The current, complete `plan.md`.
+2. The current, complete `doc/brief.md`.
+3. The current, complete `AGENTS.md`.
+4. A unified Git diff covering exactly those three files.
+5. A `MANIFEST.md` containing:
+   * The baseline commit (`1c36cebc4beb672d45f7932d7816304804aa28a0`), provided it is still the actual HEAD.
+   * The exact modified-file inventory.
+   * SHA-256 checksums of the included files.
+   * File sizes.
+   * The applicable checks already performed and their results.
+   * Any known limitations or open questions.
+6. The current `git status --short`.
+
+The archive should reproduce the three documentation changes faithfully, without unnecessary build outputs, private information or unrelated files.
+Create the review package outside the repository.
+Do not modify the plan merely to accommodate this request, unless packaging exposes an actual error. Report any such error before changing anything.
+6. Stop at the review gate
+For now:
+
+* Do not implement Plan 73.
+* Do not modify application code or tests.
+* Do not commit or push.
+* Do not perform temporary-file cleanup.
+* Do not launch real provider sessions.
+* Do not initiate Plan 74 or the subsequent optimization campaign.
+
+Once the ZIP is ready, provide its path and SHA-256, summarize its contents, and stop.
+I will submit the archive for an independent review. We will then either request precise amendments or explicitly authorize implementation.
+Current verdict: Plan 73 drafted, implementation approval pending independent review.
+````
+
+The second, word for word:
+
+````text
+Plan 73 — Independent Review: Required Amendments
+The independent review of `acc-plan73-review-1.zip` is complete.
+Verdict: CHANGES REQUIRED — documentation and acceptance criteria only.
+The architecture is approved in principle. No architectural redesign is requested, and no conflict was found that would justify reopening the owner's settled UX decisions.
+I independently verified:
+
+* The review archive and its SHA-256.
+* The included files and their checksums.
+* The patch's applicability to baseline `1c36cebc4beb672d45f7932d7816304804aa28a0`.
+* The 24 acceptance criteria and 10 implementation steps.
+* Relevant source code at that baseline, including the editor, rendering, Draft, selection and performance tests.
+
+This review does not authorize implementation.
+1. Accept amendments A1–A9
+Incorporate the nine amendments proposed in your `MANIFEST.md` into the formal Plan 73.
+Performance validity
+A1 — Baseline measurements
+Before changing the existing performance tests or implementing the feature:
+
+* Run the applicable baseline timing and allocation checks on unchanged application code.
+* Record their actual results in `doc/plan73-evaluation.md` when implementation is authorized.
+* Preserve the existing thresholds.
+
+Do not run those measurements now. This requirement belongs in the implementation plan.
+A2 — Prevent misleading performance tests
+A test intended to measure a large ordinary editor must demonstrate that it is actually measuring large, ordinarily rendered and editable content.
+Important nuance: Draft may legitimately retain paste-range metadata while displaying ordinary editable text. Therefore, do not make the mere existence of metadata an automatic failure in every mode.
+Verify the actual workload and visible behavior.
+A3 — Comparable workloads
+Explicitly define the before/after comparisons:
+
+* Original fill versus replacement fill on unchanged application code.
+* Replacement fill before versus after the feature.
+* Equivalent document size, cursor positions, operations and rendering conditions.
+* p50, p95 and allocations, as applicable.
+
+Keep separate coverage for the actual long-paste-to-chip path.
+A4 — Regression reporting
+Any missed threshold or confirmed regression must be recorded as a FAIL, with evidence and the likely cause.
+Do not weaken thresholds, redefine workloads or silently accept a regression.
+Functional coverage
+A5: Explicitly test two long pastes producing two independent chips, with ordinary text typed before, after and between them.
+A6: Verify that copying or cutting a selection containing a chip preserves the selected original bytes exactly.
+A7: Verify that displayed sizes use UTF-8 byte counts, including Unicode content. Verify byte-identical restoration after a failed send, accounting only for the application's existing paste normalization.
+A8: Add a golden frame at Zone B's narrowest relevant configuration (100 terminal columns), including a focused chip.
+A9: Identify the automated Windows Terminal scenes and their corresponding evidence explicitly. Screenshots should have sequential, descriptive names and be referenced in `doc/plan73-evaluation.md`.
+Keep automated tests separate from the owner's clipboard-dependent checks.
+2. Additional finding R1 — Hidden-text scans in the composer
+This finding comes directly from the source code.
+Currently, `internal/app/editing.go` calls methods such as:
+
+* `e.CursorLine()`
+* `e.LineRange()`
+* `e.Lines()`
+* `linePos()`
+
+In `internal/input/editor.go`, these operations inspect the original text to determine line counts and positions.
+With a 50,000-line virtual attachment, accidentally retaining these full-text operations on the normal composer rendering path could undermine the performance benefit of the compact representation.
+D11 and P2 already describe the intended solution.
+Please strengthen the plan to require that, while paste ranges are active and Draft is closed, the composer's visible-line, cursor-position and viewport calculations operate on the compact display representation without unnecessarily traversing hidden text on each key or frame.
+Add focused verification for this requirement.
+Do not introduce a second persistent message buffer or an unnecessary cache. The existing original text must remain the only source of truth.
+3. Additional finding R2 — Unambiguous performance acceptance
+Criterion 73.21 currently says that the 50,000-line full view must meet the 16 ms p95 budget, or P4.
+Clarify this.
+P4 is a conditional remediation strategy, not an alternative success condition.
+The expected sequence is:
+
+1. Measure the existing implementation.
+2. If it exceeds the budget, investigate and apply P4 if justified.
+3. Measure again.
+4. Require the final implementation to meet the stated budget.
+5. Otherwise, record a FAIL and request the owner's explicit decision.
+
+Do not report a criterion as PASS merely because a possible optimization has been identified or attempted.
+The same principle applies to other performance criteria.
+4. Preserve the approved design
+The following decisions remain final:
+
+* No limit on manually typed composer content.
+* A single paste exceeding three visual rows becomes a chip immediately.
+* Exactly three visual rows do not trigger conversion.
+* Leading and trailing empty visual rows count according to Zone B's renderer.
+* Draft editing and rendering remain unchanged.
+* Submitted Draft messages follow the same Zone B conversion rules.
+* Compact label: `▣ Long message · N lines · S`.
+* No content preview or inline expansion.
+* No physical document generated for a virtual attachment.
+* Original message content remains unchanged for Claude Code and Codex.
+* No new memory, compaction, history-persistence or session-resumption system.
+* No changes to `internal/state`, `internal/provider` or the provider send path.
+
+Do not reopen these decisions without evidence of a genuine technical incompatibility.
+5. Scope of this revision
+Please update only `plan.md`, unless you identify a concrete reason another file must change.
+Amendment 76 in `doc/brief.md` contains the owner's original decisions and should remain intact.
+`AGENTS.md` already correctly states that implementation awaits authorization.
+Keep the revised plan focused. Integrate these requirements into the relevant existing design sections, acceptance criteria and steps rather than duplicating whole sections unnecessarily.
+You may add acceptance criteria if they are genuinely necessary, but do not preserve the number 24 artificially. Quality and verifiability matter more than the count.
+Do not implement the feature or modify application code or tests.
+6. Verification and final review package
+After revising the plan:
+
+1. Verify the exact diff.
+2. Run `git diff --check`.
+3. Verify UTF-8, LF, no BOM and no unwanted attribution.
+4. Confirm no private data or secrets were introduced.
+5. Confirm that only the intended documentation changed.
+6. Verify that all A1–A9, R1 and R2 requirements are explicitly represented.
+7. Run only applicable lightweight documentation or architecture checks.
+
+Do not run the full test suite, benchmarks, race detector, mutation campaign, Windows Terminal checks or real provider sessions. No executable code has changed.
+Prepare `acc-plan73-review-2.zip`, containing:
+
+* The complete revised `plan.md`.
+* The relevant Git diff against baseline `1c36ceb`.
+* A concise manifest listing exactly where A1–A9, R1 and R2 were incorporated.
+* File sizes, SHA-256 checksums and verification results.
+* The current Git status.
+
+There is no need to duplicate the unchanged `doc/brief.md` and `AGENTS.md` in this second archive. Confirm their hashes remain identical to review archive 1.
+Create the package outside the repository.
+7. Stop at the authorization gate
+
+* No implementation.
+* No application-code or test changes.
+* No commit or push.
+* No temporary-file cleanup.
+* No real Claude Code or Codex sessions.
+* No Plan 74.
+
+Once the revised package is ready, provide its path, SHA-256 and a concise summary of the amendments.
+Then stop for independent review.
+The owner will explicitly authorize implementation only after the revised plan has been reviewed and approved.
+````
+
+The third, word for word:
+
+````text
+Plan 73 — Final Review: Targeted Corrections
+The independent review of `acc-plan73-review-2.zip` is complete.
+Verdict: APPROVED WITH RESERVATIONS.
+I independently verified the archive, its checksums, the patch against baseline `1c36ceb`, and the revised Plan 73.
+All nine amendments (A1–A9) and both findings (R1–R2) have been incorporated satisfactorily.
+The architecture, functional decisions, 30 acceptance criteria, 11 implementation steps and Windows Terminal scenarios are approved in principle.
+Only one remaining area needs clarification before implementation authorization: the interpretation of performance regressions.
+1. Remove the arbitrary 25% regression exemption
+P8 currently defines a confirmed p95 regression as an increase exceeding 25% in two alternating runs.
+This is too permissive as a universal definition.
+For example, a reproducible increase from 4 ms to 4.8 ms represents a 20% slowdown. Under the current rule, it would not qualify as a confirmed regression, despite potentially being significant.
+Please revise P8 and its dependent criteria so that:
+
+* Every performance measurement is reported, including its absolute value and relative change.
+* Repeated measurements distinguish genuine changes from normal measurement variability.
+* A reproducible degradation is not automatically dismissed because it falls below an arbitrary percentage.
+* Existing absolute performance budgets remain unchanged.
+* A missed absolute budget is always a FAIL.
+* A reproducible regression that remains within the absolute budget is explicitly evaluated and documented, rather than silently treated as insignificant.
+* Materiality and acceptance are determined from the evidence, with unresolved or significant regressions escalated to the owner.
+
+Do not introduce another arbitrary universal percentage to replace 25%.
+Preserve the controlled, alternating before/after measurement procedure.
+2. Treat the 1% allocation tolerance appropriately
+Criterion 73.24 currently requires allocation counts to differ by no more than 1% during C1.
+That figure was not derived from measured evidence.
+Please distinguish:
+
+* Functional equivalence: same text, editor state, cursor, undo behavior and actual rendering workload.
+* Performance comparison: measured allocations and latency.
+* Acceptance: existing absolute guards and evidence-backed assessment of any change.
+
+A difference slightly above 1% should not automatically invalidate a functionally equivalent replacement fill if measurement evidence does not support that threshold.
+Retain the comparison, but do not present 1% as an established project requirement.
+3. Clarify the role of the 5× scaling threshold
+`TestChipScale` currently permits a 5× latency ratio between a 5 KB and a 5 MB chip.
+This can be a useful initial diagnostic, but the ratio alone cannot prove that hidden text is never traversed.
+Please retain the stronger requirements:
+
+* Cursor and viewport calculations must operate on the compact representation.
+* Hidden bytes must not be unnecessarily traversed on the chip-rendering or cursor-motion path.
+* The specified mutants reintroducing whole-text scans must be detected.
+* Measurements must document how execution cost changes with hidden-text size.
+
+Treat the 5× figure as provisional unless baseline measurements justify it.
+Do not weaken R1 or its mutation coverage.
+4. Clarification: derived display caches are not categorically forbidden
+You mentioned that the review ruled out retaining a derived display string.
+That is not quite what we intended.
+The restriction is against introducing a second authoritative or independently mutable message buffer.
+A bounded, correctly invalidated cache of a derived representation is not inherently forbidden.
+Your current transient display-string design is acceptable. Keep it as the initial implementation strategy.
+However, do not turn the absence of a cache into an absolute architectural rule.
+If later measurements demonstrate that a derived cache is necessary and beneficial, it may be considered under the existing evidence-driven optimization policy, without changing the original text's status as the sole source of truth.
+No cache needs to be implemented now.
+5. Scope and verification
+This is a final documentation refinement, not a new design discussion.
+Please:
+
+1. Update only the relevant passages in `plan.md`, primarily P8 and criteria 73.24–73.26, plus any directly affected cross-references.
+2. Preserve all approved UX and architecture decisions.
+3. Preserve the 30 criteria and 11 steps unless a genuine consistency issue requires otherwise.
+4. Run `git diff --check` and the applicable lightweight checks.
+5. Verify that no unrelated files have changed.
+
+There is no need for a third complete review ZIP.
+Instead, provide:
+
+* The exact revised passages.
+* A small diff showing only the changes made since review archive 2.
+* A concise explanation of how the three numerical tolerances are now treated.
+* The final lightweight verification results.
+
+6. Authorization boundary
+Do not implement Plan 73 yet.
+Do not modify application code or tests, run benchmarks, launch providers, commit, push or clean up temporary files.
+Stop after the documentation correction and your report.
+If these final corrections are satisfactory, the plan can proceed to explicit implementation authorization without another full architecture review.
+````
+
+The fourth, word for word:
+
+````text
+Plan 73 — Final Correction and Implementation Authorization
+The independent review of Plan 73 is complete.
+Owner's decision: APPROVED FOR IMPLEMENTATION, subject to the final P8 wording correction below.
+The architecture, approved UX, 30 acceptance criteria, 11 implementation steps and Windows Terminal evaluation scenarios are accepted.
+No further architecture review is required.
+1. One final correction to P8
+Before beginning Step 2, correct one remaining issue in the performance-regression definition.
+The current wording classifies a change as reproducible only when every alternating pair shows the same direction and the change exceeds the observed spread. Otherwise, it classifies the result as measurement variation.
+This is too categorical.
+An inconclusive result is not proof that no regression exists.
+For example, if eight out of nine comparisons show a slowdown, one inconsistent comparison must not automatically invalidate all the other evidence.
+Replace that rule with the following principle:
+Repeated, consistent changes exceeding observed measurement variability provide evidence of a regression. Inconsistent or noisy results are classified as inconclusive, not automatically as measurement variation or absence of regression. Additional controlled measurements are performed when necessary. All results remain documented, and unresolved regressions are escalated to the owner.
+Preserve the rest of P8:
+
+* No arbitrary percentage determines whether a regression matters.
+* All absolute performance budgets remain unchanged.
+* Missing an absolute budget is always a FAIL.
+* Reproducible degradations within the budget are documented and evaluated.
+* Significant or unresolved regressions require the owner's decision.
+* Tests and thresholds must never be weakened merely to obtain a PASS.
+
+Update any directly dependent wording if necessary.
+This is a documentation correction, not a reason to reopen the design.
+2. Implementation authorization
+Once the P8 correction is applied and its consistency checked, you are authorized to implement Plan 73 according to its approved steps and criteria.
+Follow the plan's sequence.
+In particular:
+
+1. Record the performance baseline on unchanged application and test code before modifying either.
+2. Correct the existing performance-test workloads and verify their equivalence before implementing the feature.
+3. Implement the visual-row rule and Zone B representation.
+4. Implement paste ranges, their editor interactions and the compact composer representation.
+5. Preserve the existing Draft behavior and the original message content delivered to both providers.
+6. Complete the unit, model, fuzz, mutation, race, architecture and performance checks required by the plan.
+7. Execute the approved automated Windows Terminal scenarios using mock sessions only.
+8. Record the results, regressions, accepted limitations and evidence in `doc/plan73-evaluation.md`.
+
+Do not skip a failed criterion or silently accept an exception.
+If implementation reveals a genuine conflict with an approved design decision, stop and report it rather than making an unapproved compromise.
+3. Performance requirements
+The performance work is particularly important.
+Ensure that:
+
+* Existing performance tests continue measuring their intended workloads.
+* The compact representation does not cause repeated unnecessary traversal of hidden text.
+* Normal manual typing and Draft performance remain protected.
+* All new performance measurements are reported with their actual results.
+* A failed measurement receives a documented investigation.
+* Any optimization is justified by evidence.
+
+Do not introduce unnecessary complexity or additional persistent message buffers.
+A derived cache remains permissible only when measurements justify it and its invalidation is correct.
+4. Evidence for independent review
+Prepare a comprehensive review package after implementation and automated verification.
+Include:
+
+* The complete final diff and exact modified-file inventory.
+* The results of all 30 acceptance criteria.
+* Test commands, results and relevant measurements.
+* Baseline-versus-final performance comparisons.
+* Mutation and fuzzing results.
+* Any failures, regressions, limitations or reservations.
+* The Windows Terminal screenshots, sequentially numbered and descriptively named according to W01–W08.
+* A manifest mapping each screenshot and evidence file to its scenario or acceptance criterion.
+* SHA-256 checksums and the Git baseline.
+
+Keep the package reviewable without depending on temporary files that might later disappear.
+The evidence must distinguish automated tests, actual Windows Terminal observations and any steps that still require the owner's involvement.
+5. Authorization boundaries
+This authorization covers Plan 73 implementation and its approved automated verification, not unrestricted subsequent work.
+
+* No commit or push until the owner reviews the completed implementation and explicitly approves delivery.
+* No real Claude Code or Codex turns without separate authorization of their scope, models and expected quota consumption.
+* Do not perform the owner's manual Human Evaluation on their behalf or claim it passed.
+* Do not touch the user's clipboard during automated Windows Terminal tests.
+* Preserve the user's existing ACC session and unrelated work.
+* Do not start Plan 74 or the subsequent application-wide optimization campaign.
+* Do not perform the separate temporary-file cleanup.
+* Follow the repository's existing development, testing and evidence requirements.
+* Use subagents conservatively and only when they provide a clear benefit.
+
+6. Handoff
+After the implementation and authorized automated checks are complete:
+
+1. Present the results and any outstanding issues.
+2. Provide the review ZIP's path and SHA-256.
+3. Identify any remaining owner-only evaluation steps.
+4. Stop for independent review and the owner's final decision.
+
+Do not commit, push or declare Plan 73 closed.
+Final decision: Plan 73 implementation is authorized after the P8 correction. Proceed with the approved plan, preserve its scope, and return with evidence for independent review.
+````
+
+Taken as the authorization of plan 73's steps 2 to 10, after the correction it names,
+nothing committed or pushed before the owner's review, and the owner's Human Evaluation
+and any real CLI turn staying the owner's.

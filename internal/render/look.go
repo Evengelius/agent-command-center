@@ -417,8 +417,9 @@ func runKey(e state.Entry) string {
 func Targets(s *state.State, ui UI) []bool {
 	lk := looks(s, ui)
 	out := make([]bool, len(lk))
+	w := MessageWidth(s, ui)
 	for i, k := range lk {
-		out[i] = k.fold > 0 && k.hidden || !k.hidden && (k.think == thinkNone || k.think == thinkSummary) && Expandable(s.Conversation[i])
+		out[i] = k.fold > 0 && k.hidden || !k.hidden && (k.think == thinkNone || k.think == thinkSummary) && Expandable(s.Conversation[i], w)
 	}
 	return out
 }

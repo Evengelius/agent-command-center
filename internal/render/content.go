@@ -80,12 +80,99 @@ func toolError(s *state.State, e state.Entry) string {
 	return ""
 }
 
-// Long sent messages fold to their first lines (ui-design.md, Zone B, Long
-// pasted messages; ASM-22).
-const (
-	foldOver = 20
-	foldShow = 5
-)
+// A user message drawing more than messageRows rows shows as one row, its chip;
+// a pasted block over as many becomes one in the composer (plan 73, brief
+// amendment 76; ui-design.md, Zone B, Long messages).
+const messageRows = 3
+
+// MessageWidth is the cells a user message's text wraps to in zone B, the same
+// as the composer's text: zone B's inner width less a card's bar and margins
+// (design D1), from the layout, not from the last frame. Where zone B is not
+// drawn it is as narrow as a width can be.
+func MessageWidth(s *state.State, ui UI) int {
+	return max(cardContent(cardYou, layout(s, ui).bw-4), 1)
+}
+
+// LongMessage says text draws more than messageRows rows w cells wide (plan 73,
+// design D1): the rows entryLines and cardText draw, every line of
+// strings.Split(text, "\n") counted, an empty one a row. It gives the same answer
+// as that sum without reading the whole text (design D2).
+func LongMessage(text string, w int) bool {
+	long, _ := messageScan(nil, text, w)
+	return long
+}
+
+// messageScan is LongMessage, through wc when it is given, with the cells it
+// looked at: it stops at the line that passes messageRows, so at the fourth at the
+// latest, and never looks for a line's end past what its cells decide. A row holds at
+// most w cells or one cell wider than itself (wrapCells), and a wrap drops at most one
+// space at its edge; so a line over messageRows × (w + 1) cells, a cell wider than w
+// counted as w, is over the rows unwrapped, whatever its cells (design D2). A line
+// within them takes wrapRanges' rows, one when its real width fits.
+func messageScan(wc *WrapCache, text string, w int) (long bool, looked int) {
+	w = max(w, 1)
+	most := messageRows * (w + 1)
+	rows := 0
+	for at := 0; ; {
+		width, sum, i := 0, 0, at
+		for i < len(text) && text[i] != '\n' && sum <= most {
+			n, cw := cellSpan(text, i)
+			width, sum, i = width+cw, sum+min(cw, w), i+n
+		}
+		looked += sum
+		switch {
+		case sum > most:
+			return true, looked
+		case width > w:
+			rows += len(wc.ranges(text[at:i], w, w))
+		default:
+			rows++
+		}
+		if rows > messageRows {
+			return true, looked
+		}
+		if i == len(text) {
+			return false, looked
+		}
+		at = i + 1
+	}
+}
+
+// lineWords is n lines as a chip and a full view's head say them.
+func lineWords(n int) string {
+	if n == 1 {
+		return "1 line"
+	}
+	return grouped(n) + " lines"
+}
+
+// chipWords is a chip: the logical lines and the UTF-8 bytes it stands for, never
+// its rows, so its words do not change on a resize (plan 73, design D3). Zone B's
+// are the whole message's, a composer chip's the block's it hides.
+func chipWords(lines, bytes int) string {
+	return shortChip(lines) + " · " + byteSize(int64(bytes))
+}
+
+// shortChip is a chip without its size, for a row with no room for it.
+func shortChip(lines int) string { return "▣ Long message · " + lineWords(lines) }
+
+// chipRow is a long message's row in zone B: its words in the muted colour, or
+// under the entry cursor in the attention colour with its hint on the right, its
+// size dropped first when the row has no room. The search's kind of reference: it
+// stands for all the lines of the message (plan 66, design D5; plan 73, design D5).
+func chipRow(i int, text string, w int, focused bool) line {
+	lines := strings.Count(text, "\n") + 1
+	words := chipWords(lines, len(text))
+	row := decoLine(words, stMuted)
+	if focused {
+		if textWidth(words)+textWidth(entryHint) > w {
+			words = shortChip(lines)
+		}
+		row = spread(decoLine(words, stAttentionBold), decoLine(entryHint, stAttention), w)
+	}
+	row[0].ref = ref{panel: 'B', kind: refFold, item: i}
+	return row
+}
 
 // wrapSource wraps one source line into rows, the first at most first cells
 // wide and the others rest, breaking after a space where it can. Each span
@@ -651,8 +738,8 @@ type crow struct {
 	// turn and file are a review's file row: a double click opens its diff
 	// (plan 65, design D8); 0 for any other row.
 	turn, file int
-	// more is a long paste's fold row, "… N more lines": it stands for the
-	// lines folded under it, which a search finds (plan 66, design D5).
+	// more is a long message's chip row: it stands for the message's lines,
+	// which a search finds (plan 66, design D5; plan 73, design D5).
 	more bool
 	// summary is the summary suggestion's buttons row (plan 70, design D2).
 	summary bool

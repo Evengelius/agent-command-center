@@ -245,7 +245,7 @@ func TestSearchStartsInView(t *testing.T) {
 
 // TestSearchFolds is criterion 66.4's folds: a match in a run's folded call
 // unfolds the run; one in a phase's folded details unfolds them; one in a
-// long paste's folded lines shows its "… N more lines" row.
+// long message shows its chip's row.
 func TestSearchFolds(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h, _ := readyScript(t, claude.ProviderID, false, event.Started{})
@@ -270,8 +270,8 @@ func TestSearchFolds(t *testing.T) {
 		}
 		typeQuery(h, "refused")
 		m = current(t, h)
-		if m.Line != 12 || lineWith(h, "more lines") == "" {
-			t.Fatalf("a long paste's folded match %+v, its fold row not in view:\n%s", m, h.frame())
+		if m.Line != 12 || lineWith(h, "▣ Long message") == "" {
+			t.Fatalf("a long message's match %+v, its chip's row not in view:\n%s", m, h.frame())
 		}
 	})
 }
@@ -392,8 +392,8 @@ func TestSearchClosesPopups(t *testing.T) {
 	})
 }
 
-// TestSearchWhole is criterion 66.7: Tab on a match in a long paste's
-// folded lines opens the full view with the match's row in view, its own
+// TestSearchWhole is criterion 66.7: Tab on a match behind a long message's
+// chip opens the full view with the match's row in view, its own
 // keys working there, the bar kept; Esc back to zone B and the bar, the
 // current match the same; Tab on a call's target opens the call's full
 // view at its top; Tab on an answer B shows whole opens nothing.

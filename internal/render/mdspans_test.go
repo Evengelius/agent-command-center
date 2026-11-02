@@ -223,7 +223,7 @@ func TestMarkdownAcrossLinesCache(t *testing.T) {
 // the owner's message, a Markdown file's source view, a diff's lines.
 func TestMarkdownAcrossLinesRaw(t *testing.T) {
 	b := newConvBench("claude-code", "a-model")
-	b.prompt(strings.Join(agentsWhat, "\n"))
+	b.prompt(strings.Join(agentsWhat[1:3], "\n")) // a message B draws whole (plan 73, design D4)
 	frame := texts(Draw(b.s, UI{Width: 200, Height: 60, Focus: "B"}).lines)
 	f := mdViewer("AGENTS.md", true)
 	f.Lines = agentsWhat

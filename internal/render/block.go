@@ -574,6 +574,17 @@ func CommandSent(s *state.State, ui UI) (string, bool) {
 	return "", false
 }
 
+// MessageSent is the message the full view shows, byte for byte, as it was
+// written to the CLI (plan 73, design D5); ok false when the view shows none.
+func MessageSent(s *state.State, ui UI) (string, bool) {
+	if ui.ViewEntry > 0 && ui.ViewEntry <= len(s.Conversation) {
+		if e := &s.Conversation[ui.ViewEntry-1]; e.Role == "user" {
+			return e.Text, true
+		}
+	}
+	return "", false
+}
+
 // viewCommand is the command of the full view shown, a request's or a
 // call's; nil for none.
 func viewCommand(s *state.State, ui UI) *cmdFacts {
@@ -618,8 +629,12 @@ func CommandWants(s *state.State, tools, asks int) []CmdWant {
 	return out
 }
 
-// copyKey is a command's full view's key hint for C3's copy.
-const copyKey = "y copy the command · "
+// copyKey is a command's full view's key hint for C3's copy, copyMessageKey a
+// message's (plan 73, design D5).
+const (
+	copyKey        = "y copy the command · "
+	copyMessageKey = "y copy the message · "
+)
 
 // cwdShown is the working folder a request names, when it is not the
 // project's: "" for the project folder or none (plan 72, D7).

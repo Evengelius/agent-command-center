@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl                             Mock data 2.1.300
+ A ✓ Turn 3                                               (inferred)   F6: tree
+╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
+│ │                                                                          │ │
+│ │ Found 2 files: alpha.txt and beta.md.                                    │ │
+│ ╰──────────────────────────────────────────────────────────────────────────╯ │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│                                                                              │
+│ ▎ YOU  11:30                                                                 │
+│ ▎▸▣ Long message · 404 lines        Enter full view · ↑↓ entries · Esc back  │
+│                                                                              │
+│   · mock session: the message was not sent to any CLI                        │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ >  Ask Mock data anything…                                                   │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   +     Haiku 5.5                                                ✋ Manual   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 0 DONE ─╮
+│ no agents yet: they appear as the CLI starts them                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter full view · ↑↓ entries · Esc back to the input · F1 keys

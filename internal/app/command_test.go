@@ -163,20 +163,27 @@ func TestCommandCopyKey(t *testing.T) {
 		if h.m.ui.Toast != "copied · OSC 52 (terminal must allow it)" {
 			t.Errorf("the native clipboard failing: toast %q", h.m.ui.Toast)
 		}
-		// The owner's message's full view: no command, y copies nothing.
+		// The owner's message's full view: no command, y copies the message
+		// (plan 73, design D5).
 		clip.mu.Lock()
 		clip.fail, clip.writes = false, nil
 		clip.mu.Unlock()
 		h.draw(key(tea.KeyEscape, 0))
 		h.m.ui.Entry = 0
+		var message string
 		for i, e := range h.m.State().Conversation {
 			if e.Role == "user" {
 				h.m.openView("", i+1)
+				message = e.Text
 			}
 		}
+		h.draw(toastDoneMsg{h.m.toastGen}) // the last copy's toast gone: the hints again
+		if f := h.frame(); strings.Contains(f, "y copy the command") || !strings.Contains(f, "y copy the message") {
+			t.Errorf("a message's view, its hints:\n%s", f)
+		}
 		h.draw(typed('y'))
-		if clip.last() != "" || strings.Contains(h.frame(), "y copy the command") {
-			t.Errorf("y in a message's view copied %q", clip.last())
+		if clip.last() != message {
+			t.Errorf("y in a message's view copied %q, want %q", clip.last(), message)
 		}
 	})
 }

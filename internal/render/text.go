@@ -36,7 +36,8 @@ type ref struct {
 // The search's own kinds (plan 66, design D7), which no selection takes nor
 // copy copies, as decoration: refTarget, a tool row's target, its bytes as
 // they are; refTargetCut, the "…" its cut puts in, for the n bytes it
-// hides; refFold, a long paste's fold row, for its folded lines.
+// hides; refFold, a long message's chip row, for all its lines, lit by a
+// selection that copies them (highlight), no selection's end on it.
 const (
 	refNone byte = iota
 	refDeco

@@ -24,6 +24,9 @@ type (
 func (m *Model) editorKey(k tea.KeyPressMsg) []tea.Cmd {
 	e := &m.edit
 	name := k.String()
+	if name != "ctrl+g" {
+		e.Settle() // Ctrl+G opens the draft with its cursor where it was (plan 73, design D10)
+	}
 	// The send and newline keys are the configured lists (plan 21, item 5.1);
 	// a key in neither falls through to the fixed ones below.
 	switch {
@@ -33,8 +36,9 @@ func (m *Model) editorKey(k tea.KeyPressMsg) []tea.Cmd {
 			// The paste's end marker never came: no key submits
 			// (ui-design.md, Paste).
 			e.Newline()
-		case !e.HasSelection() && strings.HasSuffix(e.Text()[:e.Cursor()], `\`):
-			// `\` then a send key: a newline, as in Claude Code (ui-design.md, Keys).
+		case !e.HasSelection() && !e.AfterRange() && strings.HasSuffix(e.Text()[:e.Cursor()], `\`):
+			// `\` then a send key: a newline, as in Claude Code (ui-design.md, Keys);
+			// never a `\` hidden in a chip (plan 73, design D9).
 			e.Backspace()
 			e.Newline()
 		case strings.TrimSpace(e.Text()) != "" || len(m.attach) > 0:
@@ -154,9 +158,10 @@ func (m *Model) toast(text string) []tea.Cmd {
 
 // editorView is the part of the draft the renderer draws: the logical lines
 // around the cursor, never the whole buffer (ui-design.md, Input editor,
-// Budget).
+// Budget). While ranges bind the editor it reads the compact form, and no hidden
+// byte (plan 73, design D11).
 func (m *Model) editorView() render.EditorView {
-	e := &m.edit
+	e := m.edit.Compact()
 	cur := e.CursorLine()
 	span := max(m.ui.Height, render.MinHeight)
 	first := max(cur-span, 0)
@@ -167,11 +172,16 @@ func (m *Model) editorView() render.EditorView {
 		Line:    cur,
 		Pasting: m.pasting,
 		Attach:  m.chips(),
+		Hidden:  m.edit.HiddenLines(),
 	}
 	text := e.Text()
 	v.Col = e.Cursor() - (strings.LastIndexByte(text[:e.Cursor()], '\n') + 1)
 	if from, to, ok := e.Selection(); ok {
 		v.From, v.To = linePos(text, from), linePos(text, to)
+	}
+	for _, c := range m.edit.Chips() {
+		p := linePos(text, c.Pos)
+		v.Chips = append(v.Chips, render.EditorChip{Line: p[0], Off: p[1], Lines: c.Lines, Bytes: c.Bytes})
 	}
 	return v
 }

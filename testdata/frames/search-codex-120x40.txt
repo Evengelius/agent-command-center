@@ -1,8 +1,8 @@
  >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
  ▣ codex-subagents.jsonl   ..\..\testdata\mock\codex-subagents.jsonl                                  Mock data 0.145.0
 ╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
-│ A · ORCHESTRATOR                 ││ ▎ current directory containing the single word found. Wait for both,     ││      │
-│ ◆ GPT-5.6-sol        ✓ COMPLETED ││ ▎ then reply with the single word done.                                  ││  ≡   │
+│ A · ORCHESTRATOR                 ││ ▎ YOU  11:30                                                             ││      │
+│ ◆ GPT-5.6-sol        ✓ COMPLETED ││ ▎ ▣ Long message · 1 line · 238 B                                        ││  ≡   │
 │ ──────────────────────────────── ││                                                                          ││      │
 │ STAGES · inferred from activity  ││ ──────────────────────────────────────────────────────────────────────── ││      │
 │ ✓ TURN 1                      0s ││                                                                          ││      │

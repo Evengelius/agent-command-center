@@ -44,6 +44,12 @@ type (
 	}
 	// pasteWaitMsg ends the wait after Ctrl+V's lone release.
 	pasteWaitMsg struct{ seq int }
+	// pasteTextMsg says whether the clipboard held text the terminal pastes
+	// when that wait ended with no paste.
+	pasteTextMsg struct {
+		seq  int
+		text bool
+	}
 	// pathsMsg is a paste that looked like files' paths, with the files the
 	// clipboard holds to compare it with.
 	pathsMsg struct {
@@ -56,6 +62,12 @@ type (
 // paste before it reads the clipboard's image: the terminal's text came 3
 // ms after the release in probe P32a.
 const pasteWindow = 200 * time.Millisecond
+
+// pasteBlanks are the characters Windows Terminal drops a paste of nothing
+// else for: text of these alone pastes nothing, bracketed or not, in 1.23
+// (measured, doc/plan73-evaluation.md, The correction of F1; the set is
+// Utils::TrimPaste's, microsoft/terminal, src/types/utils.cpp).
+const pasteBlanks = "\t\n\v\f\r "
 
 // pastedPrefix marks a pasted image's key where a file has its path: no
 // file is named so.
@@ -296,8 +308,8 @@ func (m *Model) keyReleased(k tea.KeyReleaseMsg) []tea.Cmd {
 // keeps Ctrl+V's press for its own paste and forwards the release even
 // when it pastes nothing, the clipboard holding no text (probe P32a;
 // undocumented behaviour, observed only): a release without its press
-// waits for that paste, and when none comes reads the clipboard's image
-// (design D2). Alt+V works without it.
+// waits for that paste, and when none comes looks at the clipboard
+// (pasteWaited; design D2). Alt+V works without it.
 func (m *Model) ctrlVReleased() []tea.Cmd {
 	if m.ctrlVDown {
 		m.ctrlVDown = false // the press reached the dashboard: its own paste ran
@@ -311,13 +323,39 @@ func (m *Model) ctrlVReleased() []tea.Cmd {
 	return []tea.Cmd{m.opt.After(pasteWindow, pasteWaitMsg{m.pasteWait})}
 }
 
-// pasteWaited ends the wait: a paste came, the terminal had text; none
-// came, the clipboard's image is read.
+// pasteWaited ends the wait: a paste came, the terminal had text; none came,
+// the clipboard is asked for its text, in a command, the first thing an
+// empty wait needs to know.
 func (m *Model) pasteWaited(msg pasteWaitMsg) []tea.Cmd {
-	if msg.seq != m.pasteWait || m.pasteCount != m.waitPastes || !m.editorTakesPaste() {
+	if !m.pasteWaiting(msg.seq) {
+		return nil
+	}
+	cb, seq := m.opt.Clipboard, msg.seq
+	if cb == nil {
+		return m.pasteImages(true)
+	}
+	return []tea.Cmd{func() tea.Msg {
+		text, err := cb.Read()
+		return pasteTextMsg{seq: seq, text: err == nil && strings.Trim(text, pasteBlanks) != ""}
+	}}
+}
+
+// pasteRead acts on that answer. Text is the terminal's to paste, later than
+// the wait when it holds a paste over 5 KiB behind its own warning, or never if
+// the warning is refused: nothing to attach and nothing to say, an image beside
+// the text included, as when the paste comes in time (ui-design.md, Input
+// editor, Pasted images). No text, the clipboard's images are read.
+func (m *Model) pasteRead(msg pasteTextMsg) []tea.Cmd {
+	if msg.text || !m.pasteWaiting(msg.seq) {
 		return nil
 	}
 	return m.pasteImages(true)
+}
+
+// pasteWaiting says Ctrl+V's wait seq is the last one and still open: no paste
+// since it began, and the draft still takes one.
+func (m *Model) pasteWaiting(seq int) bool {
+	return seq == m.pasteWait && m.pasteCount == m.waitPastes && m.editorTakesPaste()
 }
 
 // pastedFor copies the pasted bytes the message's images name, for the

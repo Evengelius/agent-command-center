@@ -1151,7 +1151,7 @@ events (events-and-state.md, Conversation record); nothing is simulated.
 - **Entries**:
   - **YOU** with the time, violet (`#A78BFA`), on its own row; under it
     the message as sent, byte for byte, in a brighter text colour
-    (`#F9FAFB`; a long paste is shown folded, below); then one row an
+    (`#F9FAFB`; a long message is one row, below); then one row an
     image the message carried as image input (plan 31), "🗀  name · 12
     KB", muted, its file's name from the attachments, else its media type
     as the line written gives it;
@@ -1263,9 +1263,29 @@ events (events-and-state.md, Conversation record); nothing is simulated.
     stays; the same text sent again goes to the model, another text is
     checked anew. Claude Code runs its slash commands through the stream,
     so nothing is held there.
-- **Long pasted messages**: a sent message over 20 lines shows its first 5 (ASM-22)
-  and "… 9,995 more lines" (the CLIs fold large pastes the
-  same way, TI 3.4); the record keeps the full text.
+- **Long messages** (plan 73, brief amendment 76): a sent message that draws more
+  than 3 rows shows as one row under its `YOU` row, whatever its origin:
+  `▣ Long message · 404 lines · 18 KB`, one span in the muted colour; then its
+  images' rows, as for any message. No preview, no box, no expansion in place, no
+  file; the record keeps the full text and the CLI receives it unchanged. A text's
+  rows at width `w` are what its message draws: over the lines of
+  `strings.Split(text, "\n")`, the rows of `wrapRanges(line, w, w)`, an empty line
+  a row and no line left out: `a\nb\nc\n` draws 4, the last blank, and is long,
+  as is `\n\n\nabc`; `a\nb\nc` is not. `w` is a card's content width
+  (`MessageWidth`), read from the layout, not from the last frame. The answer
+  takes no reading of the whole text: it stops at the fourth line, and a line over
+  `3 × (w + 1)` cells, a cell wider than `w` counted as `w`, is over 3 rows unwrapped,
+  a row holding at most `w` cells or one cell wider than itself, and one space dropped
+  at its edge (`messageScan`). That counts cells, not bytes: what takes no cell is
+  read to the line's end. A cell wider than its row, such as characters joined by
+  U+200D, is one row, which shows `…`, as any message's does: three of them are
+  ordinary, four a chip. No line of a chip's text is split or
+  wrapped on a frame's path. Its words are logical lines, through `grouped`, "1 line"
+  for one, and the text's UTF-8 bytes (`byteSize`), so they do not change on a
+  resize. Zone B decides at the current width in every frame, docked panels included,
+  with no stored state: a message of 4 or more logical lines is a chip at every
+  width, so only one of 1 to 3 can change form, and an entry cursor on one that stops
+  being a chip leaves it.
 - **Runs of tool calls** (plan 19; the owner's section 4.6): consecutive
   calls, with the thinking marks between them, form a run. A run of 5 calls
   or more shows its last 3 and, where the others were, one row on the
@@ -1357,7 +1377,7 @@ events (events-and-state.md, Conversation record); nothing is simulated.
     as a click does. In B a command is never selected nor copied
     ([Selection and copy](#selection-and-copy)).
 - **Expanding** (plan 5, item 4): B has an entry cursor. ↑ from an empty
-  input puts it on the newest entry B shows in part: a folded message, a
+  input puts it on the newest entry B shows in part: a long message's chip, a
   tool line (one row, its output not shown), a failure (one row, cut to the
   width), a folded run's row (plan 19), never a call the run folds. Its row
   gets `▸` in the attention colour in its card's margin, right of the
@@ -1380,7 +1400,9 @@ events (events-and-state.md, Conversation record); nothing is simulated.
   there selects a word. Enter shows the entry
   whole, full screen (→ only expands a folded run, as it unfolds in zone
   A: it opens nothing; the owner's live review, 2026-10-20), as the approval's full view does: a message with
-  its time and line count, every line; a tool with its name, status,
+  its time and line count, every line from its top, "1 line" for one, and `y`
+  copying its text byte for byte (plan 73, design D5; its rows are wrapped once for a
+  message and a width, `Memo.messageView`, P4); a tool with its name, status,
   elapsed time, origin, its input (a diff coloured, a command, else the raw
   input) and its whole output, or "no output", updated live while it runs;
   a failure with every line. A command's full view (plan 72, D9): its
@@ -1862,7 +1884,7 @@ overlay, an entry's full view, the inspection and the Worktrees view do
 what they did. The draft, its cursor and its selection stay as they were.
 
 **What it searches** (design D3). What B holds as text: the owner's
-messages whole, a long paste's folded lines among them; the CLI's
+messages whole, a long message's lines behind its chip among them; the CLI's
 messages, the RESULT box's among them; each tool row's name, its target as
 the row writes it before the cut (the user's folder hidden, `C:\Users\…\`,
 so never matched) and its error; a request's row, its target with it,
@@ -1898,8 +1920,8 @@ round to the other. B scrolls the least that shows the current match's
 row, a wrapped line's later rows too, and is held from then on: follow
 stops, "↓ N new" counting what comes. A match in a folded run or in a
 phase's folded details unfolds them, as a click does, and they stay so,
-the owner's to fold again; one in a long paste's folded lines is shown on
-the paste's "… N more lines" row. A match in what a folded command block
+the owner's to fold again; one in a long message is shown on its chip's row
+(plan 73). A match in what a folded command block
 hides, its lines past its first, its review's or its error's cut part,
 unfolds the block, as a click does, and it stays so; one in a card's
 lines past its 6 is shown on the card's "… N more lines" row (plan 72).
@@ -1924,13 +1946,13 @@ and a match wholly in hidden markers is counted but lights nothing (plan
 row's or a request's, carries its offsets in the target, of a kind no
 selection takes and no copy copies: a match in its visible part lights its
 characters, one wholly in what the cut hides lights the "…", and a target
-the row has no room to draw leaves the name to light. A long paste's "… N
-more lines" row lights for a match in its folded lines. A selection copies
+the row has no room to draw leaves the name to light. A long message's chip row
+lights for a match in its lines (plan 73). A selection copies
 what it copied before the plan, a tool row's included.
 
 **The whole entry** (design D8). Tab shows the current match's entry whole
-in its full view, as Enter does from the entry cursor: an owner's message
-over 20 lines, a long paste among them, scrolled so that the match's row
+in its full view, as Enter does from the entry cursor: a long message,
+scrolled so that the match's row
 is in view, two rows from the top unless the view's end comes first; a
 failure the same; a tool call or a thinking
 phase at its top. The view's matches are lit from the same matches, a
@@ -4184,11 +4206,11 @@ or Esc back to the input; a click on either button acts.
 
 | Key | Action |
 | - | - |
-| ↑ ↓ | previous / next folded message, tool, failure, or [turn review](#turn-review) row; ↓ past the last, the summary suggestion while it is shown (plan 70), else the input |
+| ↑ ↓ | previous / next long message, tool, failure, or [turn review](#turn-review) row; ↓ past the last, the summary suggestion while it is shown (plan 70), else the input |
 | Enter | the whole entry, full screen; Esc back to the cursor; on a run of tool events, expand it; on a turn review's summary, unfold or fold its files; on its file, the file's change of the turn |
 | → | on a run of tool events or a turn review's summary, expand it; on a folded command, unfold it (plan 72); it opens nothing |
 | ← | on an unfolded command, fold it (plan 72); on a call of an expanded run, fold the run again; on a turn review's file or its unfolded summary, fold its files |
-| y | in a command's full view, copy the command as its CLI sent it, byte for byte (plan 72, C3) |
+| y | in a command's full view, copy the command as its CLI sent it, byte for byte (plan 72, C3); in a message's, its text, byte for byte (plan 73, design D5) |
 | Esc, or typing | back to the input |
 | F3 | the file a tool entry read or changed, in the [file viewer](#file-viewer) |
 
@@ -4331,8 +4353,8 @@ AM2 U4, U5, U7.
   shows the tail and keeps following it. Zoomed panes scroll the same way.
 - Collapsing: in A, with ← →, closed turns fold to their block by default
   and open ones are unfolded, and SESSION USAGE and QUOTA WINDOWS fold too;
-  in B, long pastes (first lines and "… N more lines"), tool lines and
-  failures (one row), each shown whole with Enter on B's entry cursor
+  in B, long messages (their chip's row), tool lines and failures (one row), each
+  shown whole with Enter on B's entry cursor
   ([Zone B](#zone-b), Expanding).
 - Full screen: z zooms A or C; Enter on an agent opens inspection; Enter on
   TELEMETRY or on a section of A's pane opens the details view; Enter on an
@@ -4824,8 +4846,15 @@ provider: it has no provider code and sends a string to part 5's caller
   Terminal keeps its press for its own paste, and when the clipboard holds
   no text it pastes nothing and forwards only the V key's release
   (undocumented, probe P32a): the dashboard, seeing that release with no
-  press and no paste within 200 ms, attaches the clipboard's image as
-  Alt+V does. A paste that is exactly the paths of the files the clipboard
+  press and no paste within 200 ms, asks the clipboard for its text, in a
+  command. Text is the terminal's to paste: it holds a paste over 5 KiB
+  behind its own warning, past the 200 ms, and pastes it when the warning is
+  answered, or never if it is refused; so nothing is read, attached or said,
+  an image or a file beside the text included, as when the paste comes in
+  time (plan 73, The correction of F1). Text of nothing but blanks counts as
+  none, Windows Terminal 1.23 not pasting it (measured). With no text it
+  attaches what Alt+V does, its image or copied files, else the toast
+  "nothing to paste: no text and no image on the clipboard". A paste that is exactly the paths of the files the clipboard
   holds (Windows Terminal pastes a copied file's path) attaches them when
   every one is a supported image, and goes in as text otherwise. A pasted
   image is "pasted-image-N.png" (N from 1 in a run, after the restored
@@ -4886,11 +4915,56 @@ provider: it has no provider code and sends a string to part 5's caller
   (TI 3.2 item 3).
 - WT's large-paste and multiline-paste warnings are WT dialogs; the
   application neither suppresses them nor asks the owner to (TI 3.1).
-- A paste over 20 lines stays fully in the buffer and editable; the editor
-  shows it normally (the folding is only for sent messages in B).
+- A paste whose own content draws more than 3 rows becomes a chip in the composer,
+  every byte of it in the buffer ([Long pastes](#long-pastes)); with the draft window
+  open it stays text. Typing, however long, never makes one.
 - An image is pasted by Alt+V, or by Ctrl+V when the clipboard holds no
   text; a paste of exactly the copied files' paths attaches them when they
   are all images (Input editor, Pasted images; plan 32).
+
+### Long pastes
+
+Plan 73 (brief amendment 76). A paste reaches the one `Editor.Paste`, a bracketed
+paste, a raw Ctrl+V or the paths' fallback alike. With the draft window closed, the
+block it inserted, as stored after the line-break rule, is judged alone and once, by
+zone B's rule ([Zone B](#zone-b), Long messages), never on the buffer's total. A long
+one becomes a **range** in the paste's undo step, and the composer draws it as one
+cell: `> Check this log: ▣ Long message · 200 lines · 5 KB and report.`, muted.
+
+- **The text is the only source of truth.** A range is two offsets and a line count
+  (`input.Range`); `Text()`, the send, the stored draft and the state never read it.
+  Dropping every range changes nothing sent. A list failing its check (sorted, apart,
+  in bounds, on rune boundaries) at its next use is dropped, its text then ordinary.
+- **The words** are the bytes it hides: one final line break of the block stays
+  outside as ordinary text, so that the cursor's row says where typed text goes:
+  `a\nb\nc\n` shows `3 lines · 5 B` with the cursor on the row below, then `4 lines ·
+  6 B` in zone B once sent. The row under the draft counts the message's lines, those
+  chips hide among them, when the composer draws more than one: `201 lines` with a
+  typed line, none with a chip alone.
+- **Edits.** Before a range it shifts it, after it leaves it, touching it drops it.
+  Each undo step keeps the ranges from before and after it, so undo and redo put back
+  only ranges that match their exact bytes. `SetText` and `Clear` end them all: a
+  send, a failed send's text and a stored draft come back as ordinary text.
+- **The cursor** passes a chip as one unit and never stops inside it, by any motion or
+  click. A click puts it at one of its edges, a double click selects the chip whole, a
+  triple click its line. A selection holding a chip holds it whole; delete, typing,
+  cut and copy act on all its bytes.
+- **Deleting.** Backspace or Ctrl+Backspace right after a chip, Delete or Ctrl+Delete
+  right before it, remove the whole block in one undo step; a word deletion that would
+  cross into a chip stops at its edge.
+- **Enter** right after a chip sends: the `\` newline rule applies only to a `\` the
+  owner can see. Text typed at either edge stays outside the block, with no character
+  added; typed right after a block with no final line break it stays on the chip's
+  row, as it joins that line in the bytes, and Ctrl+J starts a new line.
+- **Growth and scrolling** are today's, over the rows drawn.
+- **The compact form** (`Editor.Compact`, design D11). With a range and the draft
+  window closed, every calculation of visible lines, cursor and viewport runs on the
+  text with each range as one placeholder byte, built from the visible segments for
+  one call and dropped: the existing functions, given that string; offsets map back
+  through the ranges (`FromCompact`), never inside one, so no key or frame visits a
+  hidden byte for them. It is never edited, stored or sent. A literal NUL in the text
+  is the owner's byte: a chip's place comes from its range. What still walks the whole
+  text is its storage, as for any draft: an edit's splice, and the stored draft's save.
 
 ### Budget
 
@@ -4901,6 +4975,10 @@ provider: it has no provider code and sends a string to part 5's caller
   a 50,000-line paste inserted and drawn within 100 ms (ASM-10;
   reliability.md, Test plan). No line cap; if one is ever needed, it is
   visible.
+- With a chip (plan 73): keys around a 50,000-line one, a frame with one in zone B and
+  the full view of 50,000 lines, each within 16 ms (`TestLongPasteKeys`,
+  `TestLongMessageToFrame`, `TestLongMessageView`); no cost of the view or a motion
+  follows the chip's size (`TestChipScale`).
 
 ### Draft window
 
@@ -4962,6 +5040,16 @@ for the draft (brief amendment 13). At 80x24:
 - **The mouse**: a drag in the window selects in the draft and copies on
   release, as in the input box; the wheel moves the cursor 3 lines; a click
   outside the window does nothing while it is open.
+- **Long pastes** (plan 73, design D10): the window shows the whole text with this
+  same view, keys and cursor. Ranges neither draw nor bind the cursor there, and
+  nothing converts on a paste or typing. Any text change while it is open ends every
+  range: its edits inside one are not tracked. Esc after no change: the chips return;
+  after a change: ordinary text; undo back to the original bytes: the chips return. A
+  cursor left inside a range's bytes is drawn at the chip's end, and stays where it is
+  if Ctrl+G reopens the window; the first other composer key or paste moves it there
+  and ends a selection with an end inside a chip, no text changing. While the window
+  is open the dashboard draws as ever, the composer behind it included. The draft's
+  send is the composer's, and zone B's rule the same for what it sends.
 - **Budget**: the window draws only its rows, from the editor's view around
   the cursor, as the input box does ([Budget](#budget)); a keystroke in it
   is measured with a 10,000-line draft by the timing step, and its
@@ -5021,6 +5109,14 @@ Mouse selection in any panel, with clean text (AM3 M3; TI 6.3):
   `**Goal:**`, a word of it double-clicked the word, the whole answer its
   source. The inspection's
   Messages tab and the full views copy what their rows show, as before.
+- **Long messages** (plan 73, design D5). In zone B a selection across a chip copies
+  the whole message byte for byte, as across any entry's lines; no selection starts or
+  ends on the chip's own row, and its words are lit while the selection copies any of
+  the message, what is lit being what is copied (plan 73, The correction of F1). `y` in a message's full view copies its text exactly, tabs, trailing
+  spaces, blank lines and a wrapped line's no line break included, through the usual
+  copy and its toast, "copied 404 lines · native", the hint `y copy the message`. In
+  the composer a selection holding a chip copies and cuts the bytes it holds, whatever
+  way it was made ([Long pastes](#long-pastes)).
 - **Commands** (plan 72, C1 to C3). In zone B a command, on its row, in a
   block folded or unfolded, in a card, is its call's target, as plan 66
   made it: the search finds and lights it, no selection takes it and no

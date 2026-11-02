@@ -44,6 +44,63 @@ func draftLines(n int) string {
 	return b.String()
 }
 
+// fillOrdinary gives the editor text as an ordinary draft, drawn and edited
+// whole: pasted with the draft window open, then Esc, the same Editor.Paste, one
+// undo step and the cursor at the text's end, as a paste in the composer keeps a
+// long block as a chip (plan 73, P7). A test meant for a large ordinary editor
+// fills it this way and shows it with ordinaryDraft.
+func fillOrdinary(h *harness, text string) {
+	h.send(key('g', tea.ModCtrl))
+	h.send(tea.PasteMsg{Content: text})
+	h.send(key(tea.KeyEscape, 0))
+}
+
+// ordinaryDraft shows a test measures what it was written for (plan 73,
+// criterion 73.23): ordinaryProblem finds nothing wrong with its workload.
+func ordinaryDraft(t *testing.T, h *harness, lines int) {
+	t.Helper()
+	if why := ordinaryProblem(h, lines); why != "" {
+		t.Fatal(why)
+	}
+}
+
+// ordinaryProblem checks the view and the workload, not any metadata: the editor
+// holds lines at least, the view draws its ordinary rows, naming no chip, the row
+// under the cursor shows the text at the cursor, and a typed key changes both the
+// text and that row. It leaves the text as it found it, and says what is wrong, or
+// nothing.
+func ordinaryProblem(h *harness, lines int) string {
+	e := &h.m.edit
+	if n := e.Lines(); n < lines {
+		return fmt.Sprintf("%d lines in the draft, want %d at least", n, lines)
+	}
+	v := h.m.editorView()
+	if len(v.Chips) != 0 {
+		return fmt.Sprintf("the view names a chip: %+v", v.Chips)
+	}
+	if v.Total != e.Lines() {
+		return fmt.Sprintf("the view counts %d lines of a %d-line draft", v.Total, e.Lines())
+	}
+	f := h.frame()
+	if strings.Contains(f, "Long message") {
+		return "the draft is drawn as a chip, not as ordinary rows:\n" + f
+	}
+	if words := strings.Fields(e.LineRange(e.CursorLine(), 1)[0]); len(words) > 0 && !strings.Contains(f, words[0]) {
+		return fmt.Sprintf("the row under the cursor does not show %q:\n%s", words[0], f)
+	}
+	e.ClearSelection() // a measure's keys may leave one, which a typed key would replace
+	before := e.Text()
+	h.send(typed('§'))
+	if e.Text() == before || !strings.Contains(h.frame(), "§") {
+		return fmt.Sprintf("a typed key changed the text %v, and shows on its row %v", e.Text() != before, strings.Contains(h.frame(), "§"))
+	}
+	h.send(key(tea.KeyBackspace, 0))
+	if e.Text() != before {
+		return "Backspace did not take the typed key back"
+	}
+	return ""
+}
+
 // frameTime is the time one message takes from Update to a drawn frame.
 func frameTime(h *harness, msg tea.Msg) time.Duration {
 	start := time.Now()
@@ -59,25 +116,32 @@ func percentile(ds []time.Duration, p float64) time.Duration {
 }
 
 // TestPasteToFrame is test 6, second measure: a 50,000-line paste into an
-// empty draft, timed to its frame, ten times.
+// empty draft, timed to its frame, ten times: in the composer, the long-paste
+// path, and with the draft window open, where the whole text is drawn (plan 73,
+// P7).
 func TestPasteToFrame(t *testing.T) {
 	r, _ := copyRig(t, nil)
 	h := r.h
 	text := draftLines(50_000)
-	var ds []time.Duration
-	for i := 0; i < 10; i++ {
-		ds = append(ds, frameTime(h, tea.PasteMsg{Content: text}))
-		if h.m.edit.Text() != text {
-			t.Fatal("the paste was not kept byte for byte")
+	measure := func(where string) {
+		var ds []time.Duration
+		for i := 0; i < 10; i++ {
+			ds = append(ds, frameTime(h, tea.PasteMsg{Content: text}))
+			if h.m.edit.Text() != text {
+				t.Fatal("the paste was not kept byte for byte")
+			}
+			h.m.edit.SelectAll()
+			h.m.edit.Backspace()
 		}
-		h.m.edit.SelectAll()
-		h.m.edit.Backspace()
+		p50, worst := percentile(ds, 0.50), percentile(ds, 1)
+		t.Logf("paste-to-frame %s, 50,000 lines (%d bytes), %d runs: p50 %v, max %v (target ≤ %v)", where, len(text), len(ds), p50, worst, pasteTarget)
+		if worst > pasteTarget {
+			overTarget(t, "%s: max %v over the %v target", where, worst, pasteTarget)
+		}
 	}
-	p50, worst := percentile(ds, 0.50), percentile(ds, 1)
-	t.Logf("paste-to-frame, 50,000 lines (%d bytes), %d runs: p50 %v, max %v (target ≤ %v)", len(text), len(ds), p50, worst, pasteTarget)
-	if worst > pasteTarget {
-		overTarget(t, "max %v over the %v target", worst, pasteTarget)
-	}
+	measure("in the composer")
+	h.send(key('g', tea.ModCtrl))
+	measure("with the draft window open")
 }
 
 // streamTarget is criterion 7's target (proposal step 3; ASM-17): each delta

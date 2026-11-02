@@ -95,7 +95,7 @@ func TestSearchToFrame(t *testing.T) {
 		for i := 0; i < 400; i++ {
 			ds = append(ds, frameTime(h, keys[i%len(keys)]))
 		}
-		// The hidden match: "refused" is in the paste's folded lines alone,
+		// The hidden match: "refused" is behind the long message's chip alone,
 		// typed into the field emptied first (the rounds can end mid-query).
 		for range len([]rune(h.m.ui.Search.Query)) {
 			frameTime(h, key(tea.KeyBackspace, 0))

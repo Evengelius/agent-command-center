@@ -1,0 +1,30 @@
+ >_ AGENT COMMAND CENTER                                                ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   …stdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ ╭──────────────────────────────────────────────────╮ ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ │ RESULT  11:30                                    │ ││  ≡   │
+│ ──────────────────────────────── ││ │ The subagent found two files in the directory,   │ ││      │
+│ STAGES · inferred from activity  ││ │ alpha.txt and beta.md, and wrote them into       │ ││      │
+│ ✓ TURN 1                      0s ││ │ <probe-root>\probe-work\p3b\found.txt.           │ ││      │
+│   Use the Agent tool to launch … ││ │                                                  │ ││  ⑂   │
+│   Agent · agent general-purpose  ││ │ Found 2 files: alpha.txt and beta.md.            │ ││      │
+│                                  ││ ╰──────────────────────────────────────────────────╯ ││      │
+│ ✓ TURN 2                      0s ││                                                      ││      │
+│   started by the CLI             ││ ──────────────────────────────────────────────────── ││  ◉   │
+│                                  ││                                                      ││      │
+│ ✓ TURN 3                      0s ││ ▎ YOU  11:30                                         ││      │
+│   a pasted line of text 1 …      ││ ▎ ▣ Long message · 404 lines · 10 KB                 ││      │
+│ ──────────────────────────────── ││                                                      ││      │
+│ ✦ TELEMETRY        Enter details ││   · mock session: the message was not sent to any    ││      │
+│ ▾ SESSION USAGE                  ││     CLI                                              ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││                                                      ││      │
+│   Tokens 159.4k · Cost $0.01     ││ ──────────────────────────────────────────────────── ││      │
+│ ▾ QUOTA WINDOWS                  ││ >  Ask Mock data anything…                           ││      │
+│   Session (5hr)  35%† · 14h 40m  ││ ──────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)  47%† · 1d 20h  ││   +     Haiku 5.5                        ✋ Manual   ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                0 ACTIVE · 0 DONE │
+│ no agents yet: they appear as the CLI starts them                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ct…

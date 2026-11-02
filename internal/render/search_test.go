@@ -44,8 +44,8 @@ func (c *searchConv) found(q string) []ConvMatch {
 }
 
 // TestConvMatchesKinds is criterion 66.1: a query found in each kind of
-// entry design D3 names, with its entry, line and offset, a long paste's
-// folded line, a folded run's call, a tool row's target by a word its cut
+// entry design D3 names, with its entry, line and offset, a line of a long
+// message behind its chip, a folded run's call, a tool row's target by a word its cut
 // would hide; nothing found where D3 says no search goes.
 func TestConvMatchesKinds(t *testing.T) {
 	c := newSearchConv()
@@ -134,14 +134,14 @@ func TestConvMatchesKinds(t *testing.T) {
 
 // TestSearchPlaces is design D5's places, where a search starts and what is
 // at or above it: a row shown up to its last byte, so that a match from the
-// next byte on, on the next row, is below it; a long paste's fold row for
-// its folded lines; a call's row for its whole entry; a label for none.
+// next byte on, on the next row, is below it; a long message's chip row for
+// its lines; a call's row for its whole entry; a label for none.
 func TestSearchPlaces(t *testing.T) {
 	if p, ok := rowEnd(crow{entry: 3, src: "abcdef", line: 2, r: rowRange{0, 6}}, "assistant"); !ok || p != (SearchPos{2, 2, 5}) {
 		t.Errorf("a text row's place %+v (%v), want entry 2, line 2, its last byte 5", p, ok)
 	}
 	if p, ok := rowEnd(crow{entry: 3, more: true}, "user"); !ok || p != (SearchPos{2, AllLines, 0}) {
-		t.Errorf("a long paste's fold row's place %+v (%v), want its whole entry", p, ok)
+		t.Errorf("a long message's chip row's place %+v (%v), want its whole entry", p, ok)
 	}
 	if p, ok := rowEnd(crow{entry: 3}, "tool"); !ok || p != (SearchPos{2, AllLines, 0}) {
 		t.Errorf("a call's row's place %+v (%v), want its whole entry", p, ok)
@@ -166,7 +166,7 @@ func TestSearchPlaces(t *testing.T) {
 		}
 	}
 	if !(ConvMatch{Item: 2, Line: 40}).AtOrBefore(SearchPos{2, AllLines, 0}) {
-		t.Error("a folded line not at or before its fold row's place")
+		t.Error("a hidden line not at or before its chip row's place")
 	}
 }
 
@@ -423,7 +423,7 @@ func litSpans(sc *Screen, st *lipgloss.Style) []string {
 // current one in its style: in a message, inside bold text, code and a
 // link's text, in CJK text, in a tool row's target where it is drawn, the
 // "…" of a target's cut for a match it hides, a failure's error, a long
-// paste's fold row for its folded lines; a selection over a match; the copy
+// message's chip row for its lines; a selection over a match; the copy
 // as without the search; nothing lit once the bar is closed.
 func TestSearchLit(t *testing.T) {
 	c := newSearchConv()
@@ -450,8 +450,8 @@ func TestSearchLit(t *testing.T) {
 	if !slices.Contains(lit, "…") {
 		t.Errorf("the cut target's \"…\" not lit for the match it hides: %q", lit)
 	}
-	if len(cur) != 1 || !strings.Contains(cur[0], "more lines") {
-		t.Errorf("the current match, in the paste's folded lines, lit as %q: want its fold row", cur)
+	if len(cur) != 1 || !strings.Contains(cur[0], "▣ Long message · 30 lines") {
+		t.Errorf("the current match, in the long message, lit as %q: want its chip row", cur)
 	}
 	var cutRow string
 	for y := range sc.lines {

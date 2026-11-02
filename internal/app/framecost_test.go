@@ -32,10 +32,7 @@ const keystrokeAllocs = 1200
 func TestKeystrokeAllocs(t *testing.T) {
 	r, _ := copyRig(t, nil)
 	h := r.h
-	h.send(tea.PasteMsg{Content: draftLines(10_000)})
-	if n := h.m.edit.Lines(); n < 10_000 {
-		t.Fatalf("%d lines in the draft", n)
-	}
+	fillOrdinary(h, draftLines(10_000))
 	for i, place := range []tea.KeyPressMsg{key(tea.KeyHome, tea.ModCtrl), key(tea.KeyEnd, tea.ModCtrl), key(tea.KeyHome, tea.ModCtrl), key(tea.KeyEnd, tea.ModCtrl)} {
 		if i == 2 {
 			h.send(key('g', tea.ModCtrl))
@@ -44,6 +41,7 @@ func TestKeystrokeAllocs(t *testing.T) {
 			}
 		}
 		h.send(place)
+		ordinaryDraft(t, h, 10_000)
 		where := place.String()
 		if h.m.ui.DraftWin.Open {
 			where += " in the draft window"
@@ -64,6 +62,7 @@ func TestKeystrokeAllocs(t *testing.T) {
 		if n, most := len(h.m.editorView().Lines), 4*max(h.m.ui.Height, render.MinHeight); n > most {
 			t.Errorf("%s: the editor draws from %d lines of the draft, over %d (4 screen heights)", where, n, most)
 		}
+		ordinaryDraft(t, h, 10_000)
 	}
 }
 
@@ -75,9 +74,13 @@ func TestFrameReuse(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")}})
 		h.settle()
+		// The text pasted with the draft window open, then Esc: ordinary rows of
+		// every kind for the composer to draw, not a chip (plan 73, P7).
 		steps := []tea.Msg{
 			tea.WindowSizeMsg{Width: 120, Height: 40},
+			key('g', tea.ModCtrl),
 			tea.PasteMsg{Content: "plain line\n\tTabbed\x01ctl\x7f del \u0085 c1\n日本語 wide 👍 é\xff bad\n" + strings.Repeat("long words wrap here ", 20) + "\nlast"},
+			key(tea.KeyEscape, 0),
 		}
 		for _, k := range []tea.KeyPressMsg{
 			typed('x'), key(tea.KeyUp, 0), key(tea.KeyLeft, 0), key(tea.KeyDown, tea.ModShift), key(tea.KeyRight, tea.ModShift),

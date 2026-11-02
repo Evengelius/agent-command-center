@@ -2,9 +2,9 @@
  (project bar: the test's temporary directory)
  A ◉ Turn 2                                               (inferred)   F6: tree
 ╭─ B · CONVERSATION ────────────────────────────────────────────── ⠋ Thinking ─╮
-│ ▎ Write tool to create b.txt in the current directory containing hello. If   │
-│ ▎ the write is blocked, retry the identical Write call, up to four attempts  │
-│ ▎ in total, then stop and report what happened to each attempt.              │
+│                                                                              │
+│ ▎ YOU  02:00                                                                 │
+│ ▎ ▣ Long message · 1 line · 282 B                                            │
 │                                                                              │
 │ ──────────────────────────────────────────────────────────────────────────── │
 │                                                                              │

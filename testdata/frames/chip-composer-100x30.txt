@@ -1,0 +1,30 @@
+ >_ AGENT COMMAND CENTER                                                ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   …stdata\mock\claude-subagent-approval.jsonl   Mock data 2.1.300
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││                                                      ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ╭──────────────────────────────────────────────────╮ ││  ≡   │
+│ ──────────────────────────────── ││ │ RESULT  11:30                                    │ ││      │
+│ STAGES · inferred from activity  ││ │ The subagent found two files in the directory,   │ ││      │
+│   Agent · agent general-purpose  ││ │ alpha.txt and beta.md, and wrote them into       │ ││      │
+│                                  ││ │ <probe-root>\probe-work\p3b\found.txt.           │ ││  ⑂   │
+│ ✓ TURN 2                      0s ││ │                                                  │ ││      │
+│   started by the CLI             ││ │ Found 2 files: alpha.txt and beta.md.            │ ││      │
+│ ──────────────────────────────── ││ ╰──────────────────────────────────────────────────╯ ││      │
+│ ✦ TELEMETRY        Enter details ││                                                      ││  ◉   │
+│ ▾ SESSION USAGE                  ││ ──────────────────────────────────────────────────── ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││ > Check this log: ▣ Long message · 200 lines · 5 KB  ││      │
+│   Tokens 159.4k · Cost $0.01     ││    and report.                                       ││      │
+│ ▾ QUOTA WINDOWS                  ││   Then stop.                                         ││      │
+│   Session (5hr)  35%† · 14h 40m  ││ ──────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)  47%† · 1d 20h  ││   201 lines · turn started by the CLI                ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                0 ACTIVE · 1 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                        ✓ COMPLETED │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: •   │
+│     00:00   21.5k tok   │  tool: Write   │                     │ alpha.txt • beta.md found.txt…  │
+│                                          │                                                       │
+│                                          │                                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ct…

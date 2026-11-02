@@ -213,21 +213,13 @@ func entryBody(s *state.State, ui UI, out []crow, i int, e state.Entry, w int, k
 	body := len(out) // the entry's own rows start here, below its labels and fold row
 	switch e.Role {
 	case "user":
-		ls := entryLines(s, e)
 		out = append(out, crow{l: youLabel(e), fr: fr})
-		shown := ls
-		if len(ls) > foldOver {
-			shown = ls[:foldShow]
-		}
-		out = cardText(out, wc, fr, i, shown, cw, nil, nil, stBright)
-		if len(ls) > foldOver {
-			more := fmt.Sprintf("… %s more lines", grouped(len(ls)-foldShow))
-			row := decoLine(more, stGrey)
-			if focused {
-				row = spread(decoLine(more, stAttentionBold), decoLine(entryHint, stAttention), cw)
-			}
-			row[0].ref = ref{panel: 'B', kind: refFold, item: i} // its folded lines, for a search (plan 66)
-			out = append(out, crow{l: row, fr: fr, cursor: focused, more: true})
+		if long, _ := messageScan(wc, e.Text, cw); long {
+			// One row, none of its text split or drawn (plan 73, design D4), its words
+			// counted only when it is shown (P1).
+			out = append(out, crow{fn: func() line { return chipRow(i, e.Text, cw, focused) }, fr: fr, cursor: focused, more: true})
+		} else {
+			out = cardText(out, wc, fr, i, entryLines(s, e), cw, nil, nil, stBright)
 		}
 		// The images the message carried, one a row under its text (plan 31).
 		for _, img := range e.Images {

@@ -106,3 +106,36 @@ version it requires (this repository's `third_party/ultraviolet`):
   dashboard draws the images over them after the frame is out, again
   after any frame that changes those rows. The thumbnail's size is in
   cells: 10 columns hold 100 pixels across and 5 rows 100 down.
+
+## A paste the terminal holds: plan 73, defect F1
+
+Plan 73's final verification found Ctrl+V's wait expiring on every paste over
+5 KiB, and the reverification measured what follows, on Windows Terminal
+1.23.20211.0, in bracketed-paste and win32-input modes, default paste settings.
+
+| Clipboard | What reached the dashboard after Ctrl+V |
+| - | - |
+| text over 5 KiB | V's release at once; the bracketed paste only once the terminal's warning is answered, never if it is refused |
+| text within 5 KiB | the bracketed paste, V's release (4,799 bytes: no warning) |
+| only blanks: spaces, tabs, line breaks | V's release alone: no paste, not even an empty one |
+| an image alone | V's release alone |
+| text and an image | as for that text: the image never comes up |
+| a copied file alone | its path as a bracketed paste, V's release |
+
+The source agrees where it can be read, and differs on one point
+(microsoft/terminal, `main`, read 2026-11-01, not the 1.23 tag):
+`src/cascadia/TerminalApp/TerminalPage.cpp`, `_PasteFromClipboardHandler`, reads the
+text before any dialog, `CF_UNICODETEXT` first and `CF_HDROP` only without it, warns
+when `text.size() > 1024 * 5` and `WarnAboutLargePaste()`, whether bracketed or not,
+and drops the paste if the warning is refused. `src/types/utils.cpp`, `Utils::TrimPaste`,
+takes `\t\n\v\f\r ` for blanks. But on `main` the trimming is skipped when bracketed
+paste is on, and a comment says an empty bracketed paste is still sent, so that an
+application can tell the user pasted. 1.23 does neither, as measured above.
+
+**What follows for the dashboard.** Text other than those blanks is the terminal's to
+paste, whenever it does; only without it is the clipboard's image the dashboard's to
+read. **If a later Windows Terminal behaves as `main` reads,** a clipboard of blanks
+would paste them, harmless, and an image alone would send an empty bracketed paste,
+which the dashboard counts as the terminal's paste, so Ctrl+V would stop attaching an
+image, Alt+V still doing it. Not measured, and not changed: this is to be checked when
+Windows Terminal is updated.

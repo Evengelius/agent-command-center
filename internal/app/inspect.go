@@ -336,6 +336,11 @@ func (m *Model) viewKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 		if text, ok := render.CommandSent(m.s, m.ui); ok {
 			return m.copy(text), true
 		}
+		// A message's full view: its text as it was sent, byte for byte (plan 73,
+		// design D5).
+		if text, ok := render.MessageSent(m.s, m.ui); ok {
+			return m.copy(text), true
+		}
 	case "up":
 		m.inspectScroll(-1)
 	case "down":
@@ -384,7 +389,7 @@ func (m *Model) entryKey(k tea.KeyPressMsg) (cmds []tea.Cmd, done bool) {
 	// A thinking phase drawn as its summary row (ended and shown): the key of
 	// its details in ui.Unfolded; "" for any other entry (plan 22, design 8).
 	thought := ""
-	if e := m.s.Conversation[m.ui.Entry-1]; e.Role == "thinking" && render.Expandable(e) {
+	if e := m.s.Conversation[m.ui.Entry-1]; e.Role == "thinking" && render.Expandable(e, render.MessageWidth(m.s, m.ui)) {
 		thought = render.ThoughtKey(e)
 	}
 	// A command's block with something to fold: its key in ui.Unfolded, and

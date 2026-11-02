@@ -725,7 +725,7 @@ func TestThinkingSummary(t *testing.T) {
 		s := thinkBench(c.th)
 		s.Turn.Phase = state.Idle
 		e := s.Conversation[1]
-		if !Expandable(e) || thoughtStage(UI{}, e) != thinkSummary {
+		if !Expandable(e, 100) || thoughtStage(UI{}, e) != thinkSummary {
 			t.Errorf("%q: not a summary row", c.want)
 		}
 		text, _, _, _ := thoughtSummary(e.Thought)

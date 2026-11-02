@@ -27,19 +27,25 @@ import (
 )
 
 // clip is a fake clipboard with text, an image's PNG bytes and copied
-// files (plan 32); reads counts the text reads.
+// files (plan 32); reads counts the text reads, asks those of its images and
+// files; busy makes a text read fail, whatever it holds.
 type clip struct {
 	mu    sync.Mutex
 	text  string
 	image []byte
 	files []string
 	reads int
+	asks  int
+	busy  bool
 }
 
 func (c *clip) Read() (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.reads++
+	if c.busy {
+		return "", errors.New("clipboard held")
+	}
 	if c.text == "" {
 		return "", errors.New("clipboard: no data available for the given format")
 	}
@@ -56,12 +62,14 @@ func (c *clip) Write(t string) error {
 func (c *clip) Image() ([]byte, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.asks++
 	return c.image, nil
 }
 
 func (c *clip) Files() ([]string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.asks++
 	return c.files, nil
 }
 
@@ -75,6 +83,12 @@ func (c *clip) readCount() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.reads
+}
+
+func (c *clip) askCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.asks
 }
 
 // PrimaryDeviceAttributesEvent stands for ultraviolet's event of that name
@@ -571,5 +585,349 @@ func TestWin32PasteRelease(t *testing.T) {
 	// 43).
 	if items := drawnItems(m); len(m.drawn) != 5 || m.drawn[0].W != 10 || m.drawn[0].H != 5 || !slices.Equal(items[1:], fixedItems) {
 		t.Errorf("drawn %+v, want one thumbnail of 10x5 cells, the mode pill and the sidebar's tiles", m.drawn)
+	}
+}
+
+// nothingToPaste is the toast of a Ctrl+V with nothing for the terminal or the
+// dashboard to paste.
+const nothingToPaste = "nothing to paste: no text and no image on the clipboard"
+
+// heldRig is a session and a fake clipboard; release is Ctrl+V's lone release
+// as Windows Terminal forwards it, giving the message that ends its wait.
+func heldRig(t *testing.T) (inputRig, *clip, func() tea.Msg) {
+	t.Helper()
+	r := scriptRig(t, "claude-code")
+	r.h.send(tea.WindowSizeMsg{Width: 120, Height: 40})
+	c := &clip{}
+	r.h.m.opt.Clipboard = c
+	var waits []tea.Msg
+	r.h.m.opt.After = func(_ time.Duration, msg tea.Msg) tea.Cmd {
+		if _, ok := msg.(pasteWaitMsg); ok {
+			waits = append(waits, msg)
+		}
+		return nil
+	}
+	return r, c, func() tea.Msg {
+		t.Helper()
+		n := len(waits)
+		r.h.send(ctrlVRelease())
+		if len(waits) != n+1 {
+			t.Fatalf("the release asked for %d waits", len(waits)-n)
+		}
+		return waits[n]
+	}
+}
+
+// TestPasteWaitEnds is defect F1's correction (doc/plan73-evaluation.md, The
+// correction of F1): when Ctrl+V's wait ends with no paste, text on the clipboard
+// is the terminal's to paste, so nothing is said, read or attached; without text
+// the wait ends as plan 32's did. One text read, and the images asked for only
+// when there is no text.
+func TestPasteWaitEnds(t *testing.T) {
+	long := longLines(900, "held")
+	if len(long) <= 5*1024 {
+		t.Fatalf("%d bytes are within the terminal's warning", len(long))
+	}
+	blanks := " \t\r\n\v\f "
+	for _, tc := range []struct {
+		name     string
+		text     string
+		image    bool
+		file     bool
+		toast    string
+		attached []string
+		asked    bool
+	}{
+		{name: "text over the terminal's limit", text: long},
+		{name: "text within it, its paste late", text: "short"},
+		{name: "text and an image", text: long, image: true},
+		{name: "text and a copied file", text: long, file: true},
+		{name: "no-break spaces, which the terminal pastes", text: string(rune(0xA0))},
+		{name: "an image alone", image: true, attached: []string{"pasted-image-1.png"}, asked: true},
+		{name: "a copied image alone", file: true, attached: []string{"acc-image-upload-test.png"}, asked: true},
+		{name: "blanks alone, which the terminal does not paste", text: blanks, toast: nothingToPaste, asked: true},
+		{name: "blanks and an image", text: blanks, image: true, attached: []string{"pasted-image-1.png"}, asked: true},
+		{name: "nothing", toast: nothingToPaste, asked: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				files, err := imagetest.WriteAll(t.TempDir())
+				if err != nil {
+					t.Fatal(err)
+				}
+				r, c, release := heldRig(t)
+				h := r.h
+				var image []byte
+				if tc.image {
+					image = drawnPNG(t, png.DefaultCompression)
+				}
+				var copied []string
+				if tc.file {
+					copied = []string{files["png"]}
+				}
+				c.set(tc.text, image, copied...)
+				h.send(release())
+				var got []string
+				for _, a := range h.m.attach {
+					got = append(got, a.Name)
+				}
+				if h.m.ui.Toast != tc.toast || !slices.Equal(got, tc.attached) {
+					t.Errorf("toast %q, attached %q; want %q, %q", h.m.ui.Toast, got, tc.toast, tc.attached)
+				}
+				if c.readCount() != 1 || (c.askCount() > 0) != tc.asked {
+					t.Errorf("%d text reads, %d asks for images and files; want 1, asked %v", c.readCount(), c.askCount(), tc.asked)
+				}
+				if h.m.edit.Text() != "" || len(r.sent()) != 0 {
+					t.Errorf("draft %q, %d sent", h.m.edit.Text(), len(r.sent()))
+				}
+			})
+		})
+	}
+}
+
+// TestPasteHeldBehindWarning is F1's own path, the terminal's paste long after
+// the wait: the same bytes come whatever the wait did, a chip for them, no toast;
+// with an image on the clipboard too, it is not attached (no accidental attachment,
+// no second operation). Refused, the warning leaves nothing changed.
+func TestPasteHeldBehindWarning(t *testing.T) {
+	long := longLines(900, "held")
+	for _, tc := range []struct {
+		name  string
+		image bool
+	}{{"text alone", false}, {"text and an image", true}} {
+		t.Run(tc.name+", the warning answered", func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				r, c, release := heldRig(t)
+				h := r.h
+				var image []byte
+				if tc.image {
+					image = drawnPNG(t, png.DefaultCompression)
+				}
+				c.set(long, image)
+				h.send(release())
+				f := h.frame()
+				if h.m.ui.Toast != "" || len(h.m.attach) != 0 || strings.Contains(f, nothingToPaste) || strings.Contains(f, "Long message") {
+					t.Errorf("the warning up: toast %q, %d attached:\n%s", h.m.ui.Toast, len(h.m.attach), f)
+				}
+				h.send(tea.PasteMsg{Content: long})
+				if f = h.frame(); h.m.edit.Text() != long || len(h.m.edit.Ranges()) != 1 || !strings.Contains(f, "▣ Long message · 900 lines") {
+					t.Errorf("the paste: %d bytes of %d, %+v:\n%s", len(h.m.edit.Text()), len(long), h.m.edit.Ranges(), f)
+				}
+				if h.m.ui.Toast != "" || len(h.m.attach) != 0 || c.askCount() != 0 || len(r.sent()) != 0 {
+					t.Errorf("after the paste: toast %q, %d attached, %d asks, %d sent", h.m.ui.Toast, len(h.m.attach), c.askCount(), len(r.sent()))
+				}
+			})
+		})
+		t.Run(tc.name+", the warning refused", func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				r, c, release := heldRig(t)
+				h := r.h
+				typeText(h, "typed")
+				var image []byte
+				if tc.image {
+					image = drawnPNG(t, png.DefaultCompression)
+				}
+				c.set(long, image)
+				before := h.frame()
+				h.send(release())
+				if f := h.frame(); f != before || h.m.ui.Toast != "" || len(h.m.attach) != 0 || h.m.edit.Text() != "typed" {
+					t.Errorf("refused: toast %q, %d attached, draft %q:\n%s", h.m.ui.Toast, len(h.m.attach), h.m.edit.Text(), f)
+				}
+			})
+		})
+	}
+}
+
+// TestPasteWaitRaces is the wait's ends in the other orders: a paste within the
+// wait reads no clipboard at all; a paste, or a newer release, between the wait's
+// end and the clipboard's answer leaves that answer without effect.
+func TestPasteWaitRaces(t *testing.T) {
+	t.Run("a paste within the wait", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			r, c, release := heldRig(t)
+			h := r.h
+			c.set("pasted text", drawnPNG(t, png.DefaultCompression))
+			wait := release()
+			h.send(tea.PasteMsg{Content: "pasted text"})
+			h.send(wait)
+			if c.readCount() != 0 || c.askCount() != 0 || len(h.m.attach) != 0 || h.m.edit.Text() != "pasted text" || h.m.ui.Toast != "" {
+				t.Errorf("%d reads, %d asks, %d attached, draft %q, toast %q", c.readCount(), c.askCount(), len(h.m.attach), h.m.edit.Text(), h.m.ui.Toast)
+			}
+		})
+	})
+	t.Run("a paste before the clipboard's answer", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			r, c, release := heldRig(t)
+			h := r.h
+			c.set("", drawnPNG(t, png.DefaultCompression))
+			release()
+			seq := h.m.pasteWait
+			h.send(tea.PasteMsg{Content: "late"})
+			h.send(pasteTextMsg{seq: seq})
+			if c.askCount() != 0 || len(h.m.attach) != 0 || h.m.edit.Text() != "late" || h.m.ui.Toast != "" {
+				t.Errorf("%d asks, %d attached, draft %q, toast %q", c.askCount(), len(h.m.attach), h.m.edit.Text(), h.m.ui.Toast)
+			}
+		})
+	})
+	t.Run("an older wait's answer", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			r, c, release := heldRig(t)
+			h := r.h
+			c.set("", drawnPNG(t, png.DefaultCompression))
+			release()
+			first := h.m.pasteWait
+			release()
+			h.send(pasteTextMsg{seq: first})
+			if c.askCount() != 0 || len(h.m.attach) != 0 {
+				t.Errorf("the older answer: %d asks, %d attached", c.askCount(), len(h.m.attach))
+			}
+			h.send(pasteTextMsg{seq: h.m.pasteWait})
+			if len(h.m.attach) != 1 {
+				t.Errorf("the newer answer: %d attached", len(h.m.attach))
+			}
+		})
+	})
+}
+
+// TestPasteWaitOtherClipboards is F1 where images cannot go: text held behind the
+// warning draws no toast about images either; with no text the messages stay. A
+// text read that fails says nothing of the text, so the images are still asked for.
+func TestPasteWaitOtherClipboards(t *testing.T) {
+	long := longLines(900, "held")
+	type onlyText struct{ input.Clipboard }
+	for _, tc := range []struct {
+		name  string
+		setup func(*harness, *clip)
+		text  string
+		toast string
+	}{
+		{name: "no session yet, text", setup: func(h *harness, _ *clip) { h.m.sess = nil }, text: long},
+		{name: "no session yet, no text", setup: func(h *harness, _ *clip) { h.m.sess = nil }, toast: "no session to attach images to yet"},
+		{name: "a clipboard of text alone, text", setup: func(h *harness, c *clip) { h.m.opt.Clipboard = onlyText{c} }, text: long},
+		{name: "a clipboard of text alone, no text", setup: func(h *harness, c *clip) { h.m.opt.Clipboard = onlyText{c} }, toast: "no clipboard in this run"},
+		{name: "no clipboard", setup: func(h *harness, _ *clip) { h.m.opt.Clipboard = nil }, toast: "no clipboard in this run"},
+		{name: "a failed text read", setup: func(_ *harness, c *clip) { c.busy = true }, text: long, toast: nothingToPaste},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				r, c, release := heldRig(t)
+				h := r.h
+				sess := h.m.sess // the rig's own end stops it
+				c.set(tc.text, nil)
+				tc.setup(h, c)
+				h.send(release())
+				if h.m.ui.Toast != tc.toast || len(h.m.attach) != 0 {
+					t.Errorf("toast %q, %d attached; want %q", h.m.ui.Toast, len(h.m.attach), tc.toast)
+				}
+				h.m.sess = sess
+			})
+		})
+	}
+	t.Run("a failed text read, an image", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			r, c, release := heldRig(t)
+			h := r.h
+			c.set("", drawnPNG(t, png.DefaultCompression))
+			c.busy = true
+			h.send(release())
+			if h.m.ui.Toast != "" || len(h.m.attach) != 1 {
+				t.Errorf("toast %q, %d attached", h.m.ui.Toast, len(h.m.attach))
+			}
+		})
+	})
+}
+
+// TestAltVReadsNoText is F1's boundary: Alt+V is the explicit way to the images,
+// the clipboard's text neither read nor pasted, on a clipboard holding both too.
+func TestAltVReadsNoText(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		files, err := imagetest.WriteAll(t.TempDir())
+		if err != nil {
+			t.Fatal(err)
+		}
+		r, c, _ := heldRig(t)
+		h := r.h
+		c.set("text beside the image", drawnPNG(t, png.DefaultCompression))
+		h.send(altV())
+		if len(h.m.attach) != 1 || h.m.attach[0].Name != "pasted-image-1.png" || h.m.edit.Text() != "" || h.m.ui.Toast != "" {
+			t.Errorf("text and an image: %+v, draft %q, toast %q", h.m.attach, h.m.edit.Text(), h.m.ui.Toast)
+		}
+		c.set("text beside the file", nil, files["jpg"])
+		h.send(altV())
+		if len(h.m.attach) != 2 || h.m.attach[1].Name != "acc-image-upload-test.jpg" || h.m.edit.Text() != "" {
+			t.Errorf("text and a file: %+v, draft %q", h.m.attach, h.m.edit.Text())
+		}
+		c.set("text alone", nil)
+		h.send(altV())
+		if len(h.m.attach) != 2 || h.m.edit.Text() != "" || h.m.ui.Toast != "no image on the clipboard" {
+			t.Errorf("text alone: %+v, draft %q, toast %q", h.m.attach, h.m.edit.Text(), h.m.ui.Toast)
+		}
+		if c.readCount() != 0 {
+			t.Errorf("%d text reads", c.readCount())
+		}
+	})
+}
+
+// TestWin32HeldPaste drives the real program with what Windows Terminal 1.23 sends
+// for a paste it holds behind its warning (doc/plan73-evaluation.md, The final
+// end-to-end verification): Ctrl's press and release around V's release, the real
+// wait running out, the bracketed paste long after. No false toast at any message,
+// the bytes in the draft, the image beside the text not attached.
+func TestWin32HeldPaste(t *testing.T) {
+	const ctrlVOff = "\x1b[17;29;0;1;40;1_\x1b[86;47;22;0;40;1_\x1b[17;29;0;0;32;1_"
+	long := longLines(900, "held")
+	in, keys := io.Pipe()
+	typed := false
+	var toasts []string
+	updateHook = func(m *Model, _ tea.Msg) []tea.Cmd {
+		if m.ui.Toast != "" && !slices.Contains(toasts, m.ui.Toast) {
+			toasts = append(toasts, m.ui.Toast)
+		}
+		if !typed && m.s.Screen == state.ScreenDashboard && m.s.Session.Phase == state.Ready {
+			typed = true
+			go func() {
+				_, _ = io.WriteString(keys, ctrlVOff)
+				time.Sleep(800 * time.Millisecond) // the wait and the read over, the warning up
+				_, _ = io.WriteString(keys, "\x1b[200~"+long+"\x1b[201~")
+				time.Sleep(300 * time.Millisecond)
+				_, _ = io.WriteString(keys, wtCtrlQ)
+				time.Sleep(300 * time.Millisecond)
+				_, _ = io.WriteString(keys, wtCtrlQ)
+			}()
+		}
+		return nil
+	}
+	resetTerminal = func(string) {}
+	t.Cleanup(func() { resetTerminal, updateHook = consoleReset, nil; _ = in.Close() })
+
+	c := &clip{text: long, image: drawnPNG(t, png.DefaultCompression)}
+	m := New(Options{
+		Config:    Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-subagent-approval.jsonl")},
+		Cwd:       t.TempDir(),
+		Now:       time.Now,
+		MockSpeed: 0,
+		Clipboard: c,
+	})
+	done := make(chan int, 1)
+	go func() {
+		code, _ := Run(m, tea.WithInput(in), tea.WithOutput(io.Discard), tea.WithWindowSize(120, 40), tea.WithoutSignals())
+		done <- code
+	}()
+	select {
+	case code := <-done:
+		if code != ExitOK {
+			t.Fatalf("exit code %d", code)
+		}
+	case <-time.After(20 * time.Second):
+		t.Fatal("the program did not end on Ctrl+Q")
+	}
+	if slices.Contains(toasts, nothingToPaste) {
+		t.Errorf("the false toast, among %q", toasts)
+	}
+	if m.edit.Text() != long || len(m.edit.Ranges()) != 1 || len(m.attach) != 0 {
+		t.Errorf("the draft: %d bytes of %d, %+v, %d attached", len(m.edit.Text()), len(long), m.edit.Ranges(), len(m.attach))
+	}
+	if c.readCount() != 1 || c.askCount() != 0 {
+		t.Errorf("%d text reads, %d asks for images and files", c.readCount(), c.askCount())
 	}
 }

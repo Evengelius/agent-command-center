@@ -39,6 +39,9 @@ type edit struct {
 	anchorB  int // selection anchor before
 	after    int // cursor after
 	typed    bool
+	// The ranges around the edit (plan 73, design D8): undo and redo put back
+	// only ranges that match their exact bytes.
+	rangesBefore, rangesAfter []Range
 }
 
 // Editor is a multiline text buffer with a cursor and an optional selection.
@@ -55,6 +58,12 @@ type Editor struct {
 	undo  []edit
 	redo  []edit
 	merge bool // the last undo entry may take the next typed rune
+
+	ranges []Range // the pasted blocks the composer draws as chips (ranges.go)
+	// Whole says the whole text is on screen, in the draft window: ranges then
+	// neither draw nor bind the cursor, and a text change ends them (plan 73,
+	// design D10). The application sets it.
+	Whole bool
 }
 
 // Text is the whole text.
@@ -67,7 +76,7 @@ func (e *Editor) Cursor() int { return e.cursor }
 // history and the selection.
 func (e *Editor) SetText(s string) {
 	e.text, e.cursor, e.anchor, e.goalOK = s, len(s), len(s), false
-	e.undo, e.redo, e.merge = nil, nil, false
+	e.undo, e.redo, e.merge, e.ranges = nil, nil, false, nil
 }
 
 // Clear empties the editor and its history.
@@ -79,22 +88,25 @@ func breaksStep(s string) bool { return s == " " || s == "\n" || s == "\t" }
 // cursor after the insertion.
 func (e *Editor) apply(start, end int, ins string, typed bool) {
 	op := edit{pos: start, removed: e.text[start:end], inserted: ins,
-		before: e.cursor, anchorB: e.anchor, typed: typed}
+		before: e.cursor, anchorB: e.anchor, typed: typed, rangesBefore: e.ranges}
 	canMerge := false
 	if typed && e.merge && len(e.undo) > 0 {
 		last := &e.undo[len(e.undo)-1]
 		canMerge = last.typed && start == end && start == last.pos+len(last.inserted)
 	}
 	e.text = e.text[:start] + ins + e.text[end:]
+	e.ranges = e.edited(start, end, len(ins))
 	e.cursor = start + len(ins)
 	e.anchor = e.cursor
 	e.goalOK = false
 	e.redo = nil
 	op.after = e.cursor
+	op.rangesAfter = e.ranges
 	if canMerge {
 		last := &e.undo[len(e.undo)-1]
 		last.inserted += ins
 		last.after = e.cursor
+		last.rangesAfter = e.ranges
 	} else {
 		e.undo = append(e.undo, op)
 	}
@@ -145,7 +157,8 @@ func (e *Editor) Paste(s string) {
 // Newline inserts a line break.
 func (e *Editor) Newline() { e.Insert("\n") }
 
-// Backspace deletes the selection, or the rune before the cursor.
+// Backspace deletes the selection, or the rune before the cursor; right after a
+// chip, its whole block (plan 73, design D9).
 func (e *Editor) Backspace() {
 	if e.hasSel() {
 		e.apply(e.selRangeArgs())
@@ -154,17 +167,26 @@ func (e *Editor) Backspace() {
 	if e.cursor == 0 {
 		return
 	}
+	if r, ok := e.endingAt(e.cursor); ok {
+		e.apply(r.From, r.To, "", false)
+		return
+	}
 	_, n := utf8.DecodeLastRuneInString(e.text[:e.cursor])
 	e.apply(e.cursor-n, e.cursor, "", false)
 }
 
-// Delete deletes the selection, or the rune after the cursor.
+// Delete deletes the selection, or the rune after the cursor; right before a
+// chip, its whole block (plan 73, design D9).
 func (e *Editor) Delete() {
 	if e.hasSel() {
 		e.apply(e.selRangeArgs())
 		return
 	}
 	if e.cursor == len(e.text) {
+		return
+	}
+	if r, ok := e.startingAt(e.cursor); ok {
+		e.apply(r.From, r.To, "", false)
 		return
 	}
 	_, n := utf8.DecodeRuneInString(e.text[e.cursor:])
@@ -176,24 +198,35 @@ func (e *Editor) selRangeArgs() (int, int, string, bool) {
 	return a, b, "", false
 }
 
-// DeleteWordLeft deletes the selection, or back to the previous word start.
+// DeleteWordLeft deletes the selection, or back to the previous word start,
+// stopping at a chip's edge; right after a chip, its whole block (plan 73, design
+// D9).
 func (e *Editor) DeleteWordLeft() {
 	if e.hasSel() {
 		e.apply(e.selRangeArgs())
 		return
 	}
-	if t := e.wordLeft(e.cursor); t < e.cursor {
+	if r, ok := e.endingAt(e.cursor); ok {
+		e.apply(r.From, r.To, "", false)
+		return
+	}
+	if t := e.wordLeftEdge(); t < e.cursor {
 		e.apply(t, e.cursor, "", false)
 	}
 }
 
-// DeleteWordRight deletes the selection, or up to the next word end.
+// DeleteWordRight deletes the selection, or up to the next word end, stopping at a
+// chip's edge; right before a chip, its whole block (plan 73, design D9).
 func (e *Editor) DeleteWordRight() {
 	if e.hasSel() {
 		e.apply(e.selRangeArgs())
 		return
 	}
-	if t := e.wordRight(e.cursor); t > e.cursor {
+	if r, ok := e.startingAt(e.cursor); ok {
+		e.apply(r.From, r.To, "", false)
+		return
+	}
+	if t := e.wordRightEdge(); t > e.cursor {
 		e.apply(e.cursor, t, "", false)
 	}
 }
@@ -278,8 +311,17 @@ func (e *Editor) lineEnd(p int) int {
 // Move moves the cursor. With extend the selection grows from its anchor;
 // without, it is cleared (Left and Right collapse to the selection's edge).
 // Up and Down move by logical lines and keep a goal column counted in runes.
+// While ranges bind it moves on the compact form, where a chip is one byte, so
+// that it never stops inside one nor visits a hidden byte (plan 73, design D11).
 func (e *Editor) Move(m Motion, extend bool) {
 	e.merge = false
+	if e.bound() {
+		c := e.Compact()
+		c.Move(m, extend)
+		e.cursor, e.anchor = e.FromCompact(c.cursor), e.FromCompact(c.anchor)
+		e.goal, e.goalOK = c.goal, c.goalOK
+		return
+	}
 	a, b := e.selRange()
 	sel := e.hasSel()
 	p := e.cursor
@@ -370,6 +412,8 @@ func (e *Editor) Undo() bool {
 	e.undo = e.undo[:len(e.undo)-1]
 	e.text = e.text[:op.pos] + op.removed + e.text[op.pos+len(op.inserted):]
 	e.cursor, e.anchor, e.goalOK, e.merge = op.before, op.anchorB, false, false
+	e.ranges = op.rangesBefore
+	e.Settle() // the step may have been the draft window's, its cursor inside a block
 	e.redo = append(e.redo, op)
 	return true
 }
@@ -383,6 +427,7 @@ func (e *Editor) Redo() bool {
 	e.redo = e.redo[:len(e.redo)-1]
 	e.text = e.text[:op.pos] + op.inserted + e.text[op.pos+len(op.removed):]
 	e.cursor, e.anchor, e.goalOK, e.merge = op.after, op.after, false, false
+	e.ranges = op.rangesAfter
 	e.undo = append(e.undo, op)
 	return true
 }

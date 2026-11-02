@@ -194,14 +194,15 @@ const (
 	entryFileKeys = "Enter full view · ↑↓ entries · Esc back to the input · F3 file · F1 keys"
 )
 
-// Expandable reports whether conversation entry e has more than B shows: a
-// sent message folded to its first lines, a tool call (B shows its name), an
-// error (B shows its first line, cut to the width), a phase of thinking that
-// ended (B shows its summary; plan 22, design 8).
-func Expandable(e state.Entry) bool {
+// Expandable reports whether conversation entry e has more than B shows, its
+// messages w cells wide (MessageWidth): a sent message shown as its chip (plan
+// 73, design D4), a tool call (B shows its name), an error (B shows its first
+// line, cut to the width), a phase of thinking that ended (B shows its summary;
+// plan 22, design 8).
+func Expandable(e state.Entry, w int) bool {
 	switch e.Role {
 	case "user":
-		return len(entryLines(nil, e)) > foldOver
+		return LongMessage(e.Text, w)
 	case "tool", "error", "review":
 		return true
 	case "thinking":
@@ -220,11 +221,9 @@ func entryViewer(s *state.State, ui UI, i int, sc *Screen) []line {
 	var body []line
 	switch e.Role {
 	case "user":
-		ls := entryLines(s, e)
-		head = spread(line{back, deco("YOU", stAttentionBold), deco("  "+clock(e.At), stGrey)}, decoLine(grouped(len(ls))+" lines ", stGrey), w)
-		for _, l := range ls {
-			body = append(body, wrapped(l, w-2, stText, "")...)
-		}
+		rows, lines := ui.Memo.messageView(s, e, w-2)
+		head = spread(line{back, deco("YOU", stAttentionBold), deco("  "+clock(e.At), stGrey)}, decoLine(lineWords(lines)+" ", stGrey), w)
+		body = rows
 	case "tool":
 		head, body, sc.srcs = toolView(s, ui, e, back, w)
 	case "thinking":
@@ -248,8 +247,11 @@ func entryViewer(s *state.State, ui UI, i int, sc *Screen) []line {
 	if _, ok := EntryFile(s, e); ok {
 		keys = "F3 file · " + scrollKeys // plan 17, Opening
 	}
-	if e.Role == "tool" && viewCommand(s, ui) != nil {
+	switch {
+	case e.Role == "tool" && viewCommand(s, ui) != nil:
 		keys = copyKey + keys // plan 72, C3
+	case e.Role == "user":
+		keys = copyMessageKey + keys // plan 73, design D5
 	}
 	return fullScreen(s, ui, sc, head.fit(w), body, keys)
 }

@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-subagent-approval.jsonl   ..\..\testdata\mock\claude-subagent-approval.jsonl                Mock data 2.1.300
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││                                                                          ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││                                                                          ││  ≡   │
+│ ──────────────────────────────── ││ ▎ CLAUDE  Haiku 5.5  11:30                                               ││      │
+│ STAGES · inferred from activity  ││ ▎  ✓ Agent  general-purpose · List directory and …  11:30:00      mock   ││      │
+│ ✓ TURN 1                      0s ││ ▎                                                                        ││      │
+│   Use the Agent tool to launch … ││ ▎ I've launched the subagent in the background to list the directory     ││  ⑂   │
+│   Agent · agent general-purpose  ││ ▎ and write found.txt. I'll report its result when it finishes.          ││      │
+│                                  ││ ▎                                                                        ││      │
+│ ✓ TURN 2                      0s ││ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   ││      │
+│   started by the CLI             ││ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   ││  ◉   │
+│                                  ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   ││      │
+│ ✓ TURN 3                      0s ││                                                                          ││      │
+│   a pasted line of text 1 …      ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│                                  ││ │ RESULT  11:30                                                        │ ││      │
+│                                  ││ │ The subagent found two files in the directory, alpha.txt and         │ ││      │
+│                                  ││ │ beta.md, and wrote them into <probe-root>\probe-work\p3b\found.txt.  │ ││      │
+│ ──────────────────────────────── ││ │                                                                      │ ││      │
+│ ✦ TELEMETRY        Enter details ││ │ Found 2 files: alpha.txt and beta.md.                                │ ││      │
+│ ▾ SESSION USAGE                  ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││                                                                          ││      │
+│   Tokens 159.4k session total    ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Est. cost $0.01 API-equiv.     ││                                                                          ││      │
+│                                  ││ ▎ YOU  11:30                                                             ││      │
+│ ▾ QUOTA WINDOWS                  ││ ▎ ▣ Long message · 404 lines · 10 KB                                     ││      │
+│   Session (5hr)             35%† ││                                                                          ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││   · mock session: the message was not sent to any CLI                    ││      │
+│   Resets in 14h 40m              ││                                                                          ││      │
+│                                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Weekly (7 day)            47%† ││ >  Ask Mock data anything…                                               ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 1d 20h               ││   +     Haiku 5.5                                            ✋ Manual   ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 0 DONE │
+│ no agents yet: they appear as the CLI starts them                                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit
