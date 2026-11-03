@@ -24,12 +24,12 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-11-02, when the owner approved plan
-73, virtual attachments for long user messages (brief amendments 76 and
-77).** Plans 1 to 73 are closed, one entry each in `plan.md`,
-Closed plans; the MVP was approved on 2026-10-17. `plan.md` holds the
-active plan's progress and test evidence; each closed plan's results are
-in its evaluation file, and its full record in git.
+**Status: no plan active since 2026-11-03, when the owner approved plan
+74, a read-only native Reviewer in the team developing ACC (brief
+amendments 82 to 88).** Plans 1 to 74 are closed, one entry each in
+`plan.md`, Closed plans; the MVP was approved on 2026-10-17. `plan.md` holds
+the active plan's progress; each closed plan's results are in its
+evaluation file, and its full record in git.
 
 ## Delegation: highest priority
 
@@ -57,11 +57,72 @@ none.
 - **Short briefs and reports.** A brief gives the task, the files and the
   criteria; a report gives findings with file and line and test evidence, never
   a transcript.
-- **Verification stays mandatory** (doc\evaluation.md); a separate verifier
-  agent does not, when deterministic checks settle the criteria. Never weaken a
+- **Verification stays mandatory** (doc\evaluation.md), and every
+  implementation step of an approved plan goes through the Reviewer (Review
+  cycle, below), whatever the rules above say about delegating. Never weaken a
   criterion to save usage.
 - Success is correct, verified work and the resources it took, not the number
   of agents.
+
+## Review cycle
+
+Every implementation step of an approved plan goes through the Reviewer,
+whoever made it, and then the whole plan does; a one-off fix the owner asks
+for directly does not. The Reviewer, `.claude\agents\reviewer.md`, is a native
+Claude Code subagent of the team developing ACC, not part of ACC: it reads and
+reasons, with no shell and no edit tool. `doc\evaluation.md`, The Reviewer,
+holds the inputs, the commands and how a tier is chosen.
+
+1. **Plan.** On approval the plan goes in `plan.md`: its steps, its criteria
+   word for word, the files it may change, its baseline commit by hash, and
+   each step's review tier.
+2. **Implement.** The Implementer changes the code and runs the step's
+   evidence command last: the fingerprint, then the builds and tests, straight
+   to a file.
+3. **Review.** With no agent working, the orchestrator checks that `git status`
+   lists only the plan's files and that its fingerprint is the evidence file's;
+   otherwise nothing is reviewed. It starts a **new** Reviewer at the tier's
+   effort with the criteria, the diff, the new files and the evidence file:
+   never a fork, `SendMessage`, an earlier verdict on this plan's work, the
+   Implementer's report or the tier's reason. A fingerprint changed by the end
+   voids the review.
+4. **PASS** on every criterion: the next step starts without asking.
+5. **FAIL or NOT VERIFIED:** the findings go to the Implementer unchanged, a
+   requested test as a test to add or run, a testable finding with a
+   regression test; evidence only the orchestrator holds (transcripts,
+   settings, the index) comes from it, as raw output. A finding in
+   `.claude/**`, which the Implementer may not edit, the orchestrator corrects,
+   within the files the plan names; the Implementer then runs the evidence
+   command again. Then a new Reviewer, told nothing of them. At most three
+   corrections per step. The same finding twice, a fix that would change a
+   criterion, the scope or the architecture, or a question only the owner can
+   settle stops the plan at once.
+6. **Final review:** after one full test run by the orchestrator, a new
+   Reviewer judges the complete plan on the diff from the baseline; a FAIL or
+   NOT VERIFIED takes the same path, and the full test run is repeated after
+   the last correction. A plan of one step has one review, its final review.
+7. **Report, then stop.** Staging, commit and push happen only on the owner's
+   authorization, and only for the plan's files, by name.
+
+**Verdicts stay out of the tree.** Until the last Reviewer has finished, no
+verdict, finding or history of the plan's reviews goes in the working tree:
+`plan.md` says only which steps are done, written before a step's evidence
+command or after its review, never between, and the orchestrator keeps the
+count of corrections in its memory notes. Each report stays in its Reviewer's
+transcript, outside the repository, until the evaluation file gets them at the
+end. A review that saw an earlier verdict on this plan's work, was offered a
+tool beyond its definition's and the CLI's own report and `advisor` tools, or
+ended with no report counts for nothing: it runs once more, fresh, and a
+second one goes to the owner. Reviews that a criterion is about, given as that
+criterion's evidence, are not such a verdict.
+
+**When Codex leads** there is no Reviewer: a Codex subagent reads files only
+through its shell, and an agent definition cannot take the shell away
+(OpenAI's Subagents page, read 2026-11-02; plan 74). A Codex-led session
+reports each step as NOT REVIEWED, never PASS; a
+Claude Code session can review its changes later. If the owner runs Codex's
+own `/review`, its findings are reported as findings, and its "patch is
+correct" never counts as a PASS.
 
 ## Layout
 
@@ -109,9 +170,10 @@ go run ./cmd/agent-command-center [--provider claude-code|codex] [--project <dir
 ```
 
 Tests never start an agent CLI; live runs (L1 to L4) follow `doc\evaluation.md`
-and need the owner's approval where it says so. The keystroke timing step is
-not in this list: it runs alone, with the exact command and conditions of
-`doc\evaluation.md`, Keystroke timing. tmux is not used.
+and need the owner's approval where it says so, which an approved plan gives
+for those it names. The keystroke timing step is not in this list: it runs
+alone, with the exact command and conditions of `doc\evaluation.md`,
+Keystroke timing. tmux is not used.
 
 ## Hard constraints
 
@@ -191,7 +253,8 @@ not in this list: it runs alone, with the exact command and conditions of
   direct dependency needs a technical justification and the owner's approval.
 - **Live runs use the owner's quota**: each one (L1 to L4) runs only within its
   approved scope, in a temporary project outside the repository, with the
-  configuration check before and after.
+  configuration check before and after; an approved plan's approval covers
+  those it names.
 - **The project is proprietary (all rights reserved, see `LICENSE`).** Copy
   third-party code only under a permissive license (MIT, BSD, Apache-2.0),
   keeping its notice, and record the source, commit and license next to what

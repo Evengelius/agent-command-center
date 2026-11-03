@@ -19,7 +19,8 @@ work is done only when every criterion passes. What only the owner can judge
    in the plan's evaluation file (Evidence and temporary files, below).
 4. **Summarise** in the format below.
 5. **If something failed**, give the likely cause and a proposed next step. Do
-   not apply it without the owner's approval.
+   not apply it without the owner's approval; a plan's Review cycle
+   (`AGENTS.md`) applies its corrections itself, within its limits.
 
 ## Evidence and temporary files
 
@@ -437,6 +438,105 @@ the same lines live in its details view.
 received: prompts, answers, file contents, paths, whatever a tool printed. They
 may hold sensitive information: inspect and sanitize them, as the probes README
 says, before they are shared or committed.
+
+## The Reviewer
+
+How a plan's steps are reviewed (`AGENTS.md`, Review cycle). The CLI offers
+the Reviewer `Read`, `Grep` and `Glob`, its own report tool, and `advisor`, a
+model it may consult, which touches nothing on the machine. Its definition,
+`.claude/agents/reviewer.md`, has exactly these fields, which `internal/arch`
+guards: name `reviewer`, description, model `claude-opus-5-5`, effort `high`,
+tools `Read, Grep, Glob`, omitClaudeMd `true`, maxTurns `100`, and color. A
+`go test -overlay` mutant repoints the guard's path constant at a changed copy,
+to show that the guard fails.
+
+**Inputs**, in `%TEMP%\acc-review-inputs\`, rewritten for each review so that
+nothing of an earlier one stays there:
+
+- `plan-files.txt`: each file of the plan that exists, one path per line from
+  the repository root, records included (`plan.md`, `doc/brief.md`, and the
+  plan's evaluation file once it exists);
+- `changes.diff`: `git --no-optional-locks diff <baseline> -- <the plan's
+  tracked files>`;
+- `new-files.txt`: the plan's untracked files, which the Reviewer reads whole in
+  the repository. No other untracked file is read or hashed, and nothing goes
+  in the index, `git add -N` included;
+- `evidence.txt`: the Implementer's evidence file;
+- `criteria.txt` and `baseline.txt`: the approved criteria, word for word, and
+  the baseline's hash;
+- the orchestrator's own evidence, where a criterion needs what only it holds
+  (the full test run, transcripts, settings, the index): each command printed
+  before its raw output, and nothing that argues for a verdict. A reading of a
+  criterion goes in the report to the owner, never to the Reviewer.
+
+**The fingerprint** ties the evidence to the code: every byte of each file in
+`plan-files.txt`, with `git status`, which names any other change. In Git Bash,
+from the repository root:
+
+```text
+F="$TEMP/acc-review-inputs"; { git --no-optional-locks status --porcelain --untracked-files=all; while IFS= read -r f || [ -n "$f" ]; do sha256sum -b -- "$f"; done < "$F/plan-files.txt"; } | sha256sum
+```
+
+**The evidence command** is the Implementer's last, from the same place; a
+step's own checks go before the redirection, each printing its command and
+inputs before its output:
+
+```text
+F="$TEMP/acc-review-inputs"; { { git --no-optional-locks status --porcelain --untracked-files=all; while IFS= read -r f || [ -n "$f" ]; do sha256sum -b -- "$f"; done < "$F/plan-files.txt"; } | sha256sum; go build ./...; echo "build exit $?"; go vet ./...; echo "vet exit $?"; gofmt -l .; echo "gofmt done"; go test ./...; echo "test exit $?"; } > "$F/evidence.txt" 2>&1
+```
+
+**Around each review.** Before it: `git status` against the plan's files, the
+fingerprint against the evidence file's first line, the inputs rewritten; the
+orchestrator's full test run starts with the fingerprint too. After it: the
+fingerprint again; in the transcript (`agent-*.jsonl`, `agent-*.meta.json`),
+the tools offered, the model and the effort, and every path its `Read`, `Grep`
+and `Glob` reached. A tool beyond the definition's and the CLI's two, a path
+outside the repository other than the inputs, or an earlier verdict on this
+plan's work makes the review count for nothing. A search of the repository can
+meet earlier plans' evaluation files, which judge other work.
+
+**Tiers** (`CLAUDE.md` gives their efforts), set in the plan before any code;
+size never decides, and when two tiers apply, the higher one does:
+
+1. Can runtime behaviour change? If not, Light is possible.
+2. Does it touch event order, concurrency, approvals, process lifetime, Git,
+   credentials, security, saved drafts or the agent rules (`.claude/**`,
+   `AGENTS.md`, `CLAUDE.md`)? Deep.
+3. If it were wrong, would it fail silently or lose data? Deep.
+4. Could no deterministic test catch it being wrong? One tier up: reading is
+   then the only check.
+5. Did it need the Opus Implementer? At least Standard.
+
+**The record.** Each Agent call's description names the tier and its reason.
+At the plan's close, its evaluation file gets the reports and one line per
+review: the Reviewer's agent ID, model, effort, tier, reason, minutes and
+verdict, each checked against the transcript's metadata.
+
+**Known limits.**
+
+- The tool list is the CLI's lock: no shell, edit, test, clipboard or desktop.
+  What `Read`, `Grep` and `Glob` open is a rule: they can reach any path, and
+  only the definition keeps them to the repository and the inputs; the
+  transcript shows afterwards what they opened.
+- A read-only Reviewer judges, it does not verify by running: a `reported`
+  criterion rests on evidence. The orchestrator's full run repeats the build,
+  vet, gofmt and tests once per plan; a step's own checks, a mutant's for one,
+  rest on the Implementer's evidence alone.
+- A changed definition can reach new Reviewers late, for a reason not known:
+  in plan 74, two Reviewers started two and four minutes after a rewrite still
+  got the old one, body and tools, and one started nine minutes after an edit
+  got the new body with no message from the owner in between. The guard test
+  checks the file; the transcript shows what each Reviewer got.
+- The fingerprint covers the plan's files and `git status`, not ignored files
+  (`.claude/settings.local.json`) or the Go environment (`GOFLAGS`, `GOWORK`).
+- The CLI also gives a Reviewer the session's git status, the user's email and
+  the instructions of connected servers, which no marker check covers.
+- Nothing mechanical detects a criterion edited during a plan: the report's
+  criteria are compared with those the owner approved.
+- The cycle is the orchestrator following these rules, not a lock. Each
+  Reviewer's own report stays in its transcript, where a claimed verdict can be
+  checked.
+- Codex has no Reviewer (`AGENTS.md`, Review cycle).
 
 ## Summary format
 

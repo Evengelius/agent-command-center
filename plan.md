@@ -117,13 +117,14 @@ from the home screen), with plans 67 and 68, which the owner put before
 the last (the characters typed with AltGr; the keyboard reader's races).
 Then plan 70, the owner's own (amendment 72), approved on 2026-10-30,
 and plans 71 and 72, the owner's own (amendments 74 and 75), approved on
-2026-10-31, and plan 73, the owner's own (amendments 76 and 77), approved on
-2026-11-02. The next plan starts when the owner asks for one, as a plan for
+2026-10-31, plan 73, the owner's own (amendments 76 and 77), approved on
+2026-11-02, and plan 74, the owner's own (amendments 82 to 88), approved on
+2026-11-03. The next plan starts when the owner asks for one, as a plan for
 the owner's review.
 
 ## No plan active
 
-Plan 73 was approved and closed on 2026-11-02 (Closed plans, below).
+Plan 74 was approved and closed on 2026-11-03 (Closed plans, below).
 
 ## Closed plans
 
@@ -1070,3 +1071,18 @@ mutants, the 7 fuzz targets, `-race`, the timing step alone
 ([`doc/plan73-evaluation.md`](doc/plan73-evaluation.md)); one commit, "Plan 73:
 Virtual attachments for long user messages"; its full text in that file, The
 plan as it ran.
+
+## Plan 74 - A read-only native Reviewer
+
+Brief amendments 82 to 88, after a first design (amendments 78 to 81) was
+withdrawn and archived outside the repository: the Implementer writes the code
+and runs the builds and tests, a new Reviewer on Opus 5.5, offered only
+`Read`, `Grep` and `Glob`, judges each step against its criteria, the
+orchestrator coordinates, and the owner decides delivery. The Review cycle in
+`AGENTS.md`, the effort tiers in `CLAUDE.md`, The Reviewer in
+`doc/evaluation.md`, a guard test of the definition's fields; Codex review
+deferred, a Codex-led step reported NOT REVIEWED. Approved on 2026-11-03: the
+final review PASS on all 11 criteria after the plan's one correction, then
+seven text corrections the owner asked for, checked without a further review
+([`doc/plan74-evaluation.md`](doc/plan74-evaluation.md)); one commit, on the
+owner's word; its full text in that file, The plan as it ran.

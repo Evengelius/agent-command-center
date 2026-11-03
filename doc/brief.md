@@ -10866,3 +10866,245 @@ Final decision: Plan 73 implementation is authorized after the P8 correction. Pr
 Taken as the authorization of plan 73's steps 2 to 10, after the correction it names,
 nothing committed or pushed before the owner's review, and the owner's Human Evaluation
 and any real CLI turn staying the owner's.
+
+## Amendments 78 to 81, withdrawn
+
+Amendments 78 to 81 (2026-11-02 and 2026-11-03) carried a first design of plan 74: a
+Reviewer with a shell, tree snapshots, contamination recovery, a clipboard helper and a
+preflight. The owner reset the plan on 2026-11-03 (amendment 82) and had that design
+archived outside the repository, these four amendments with it, word for word
+(`doc/plan74-evaluation.md`, The first design).
+
+## Amendment 82, 2026-11-03: plan 74, reset to the original roles
+
+The owner's message, word for word:
+
+````text
+I want to reconsider Plan 74 fundamentally.
+The current implementation has become far too complex. We have spent an entire day on reviews, native tests, clipboard incidents, recovery mechanisms, and repeated review failures. This is not what I originally wanted.
+Let's return to the original division of responsibilities.
+We already had an Implementer and a Verifier with distinct responsibilities. I want to build on that existing architecture, not reinvent it.
+My intended workflow is:
+
+1. Implementer: writes and modifies code, runs tests and builds, fixes defects, and provides evidence.
+2. Reviewer: independently examines the source code, Git diffs, approved acceptance criteria, and test evidence. It critically challenges the implementation and issues PASS, FAIL, or NOT VERIFIED.
+3. Orchestrator: coordinates the workflow, sends findings back to the Implementer, launches a fresh Reviewer after corrections, and automatically advances after a valid PASS.
+4. Owner: receives the consolidated report and retains final authority over delivery, commits, and pushes.
+
+The Reviewer must be strictly read-only and analytical.
+
+* No Bash, PowerShell, or executable commands.
+* No running tests, builds, applications, or processes.
+* No native desktop checks, clipboard access, or Windows interaction.
+* No editing files or correcting implementation defects.
+* It may request additional tests, but the Implementer must execute them.
+* It must distinguish evidence reviewed from results independently verified.
+* It must receive fresh context, without previous review verdicts influencing its judgment.
+
+I still want a highly capable, genuinely independent Reviewer—Opus 5.5 for Claude—able to disagree with the Implementer, identify architectural weaknesses, and reject inadequate solutions. It must not become a second Implementer.
+Keep the workflow automatic and bounded, support both Claude Code and Codex through their native capabilities, and preserve the existing ACC application review/F2 functionality.
+I am willing to discard and rebuild all Plan 74-specific work if that is the cleanest solution. Preserve Plan 73 and unrelated work. Do not start Plan 74.5.
+Before changing anything, please:
+
+1. Inspect the actual current files and the pre-Plan-74 Implementer/Verifier architecture.
+2. Tell me honestly whether returning to that architecture is the right decision. Challenge my proposal if you see a concrete technical problem.
+3. Identify which current Plan 74 components are genuinely necessary and which should be removed.
+4. Propose the simplest technically sound architecture, with the exact files affected.
+5. Explain any limitations of native Claude Code and Codex review isolation.
+6. Give a realistic implementation and verification estimate.
+
+Do not implement, delete, run tests, launch Reviewers, or modify the repository yet. I want your technical assessment and recommendation first.
+I do not want another elaborate framework or another day-long validation cycle. The objective is a simple, maintainable, independent code-review workflow built on responsibilities we already established.
+````
+
+Taken as the reset of plan 74 to the roles already established: the Implementer writes the code and runs the builds and tests, a read-only Reviewer on Opus 5.5 judges, the orchestrator coordinates, the owner decides delivery. The first design, amendments 78 to 81, is withdrawn.
+
+## Amendment 83, 2026-11-03: plan 74, the owner's three adjustments
+
+The owner's message, word for word:
+
+````text
+I agree with your overall recommendation. This is much closer to my original objective.
+However, I want three adjustments before approving implementation:
+
+1. Reviewer isolation: no shell, execution, tests, clipboard, or desktop interaction. For Codex, do not present a behavioral instruction as an enforceable restriction. If strict isolation is unavailable, defer automated Codex reviewing for now, while preserving Codex implementation support.
+2. Keep testing with the Implementer: the Implementer runs builds and tests and provides raw evidence. The Orchestrator may perform targeted independent checks when justified, but should not automatically duplicate the entire test suite after every step. The Reviewer only evaluates code, diffs, criteria, and evidence.
+3. Simplify safely: include untracked new files in review inputs, preserve the approved baseline and historical failure records, and archive Plan 74-specific work before removing it. Do not touch Plan 73 or ACC runtime functionality.
+
+I accept removing the clipboard helper, preflight mechanism, snapshots, recovery machinery, and other unnecessary Plan 74 complexity, subject to an exact verified file inventory.
+I also want a strict time budget for the rebuild. If an unexpected issue appears, stop and report it instead of starting another lengthy review cycle.
+Please confirm these adjustments and provide your final concise implementation proposal. Do not start implementation until I approve it.
+````
+
+And below it, typed:
+
+````text
+What do you think of these adjustments? Do you see any technical risks or a better approach? Please be candid and challenge my assumptions where necessary.
+````
+
+Taken as: automated Codex review deferred, a Codex subagent being unable to be strictly read-only; testing with the Implementer, with one independent full run per plan; new untracked files in the review's inputs, the baseline named by its commit, the first design archived before anything was removed. The time budget was lifted by amendment 87.
+
+## Amendment 84, 2026-11-03: plan 74, implementation roles, the old records, the evidence
+
+The owner's message, word for word:
+
+````text
+Your proposal is much closer to what I originally wanted. Before approving it, I'd like your candid opinion on three points.
+
+**1. Implementation responsibilities**
+
+You wrote that you would make the edits yourself because they are already worked out.
+
+Wouldn't it be more consistent with our architecture to delegate those changes to the existing Implementer, while you remain the Orchestrator and a fresh Reviewer evaluates the result?
+
+**2. Old Plan 74 evaluation and contamination**
+
+Why preserve all 642 lines of the previous evaluation in the active repository if we are abandoning that design?
+
+Those records contain previous Reviewer verdicts, which already caused contamination.
+
+Wouldn't it be cleaner to remove the obsolete evaluation from the active workflow, optionally preserving a brief historical incident report and an external backup?
+
+I want the new Reviewer to evaluate the new implementation independently, without exposure to the abandoned design's conclusions.
+
+**3. Diff integrity**
+
+You proposed hashing the diff and including untracked files.
+
+Does the hash also cover the complete contents of those new, untracked files? How will you ensure that the reviewed code and test evidence correspond to the same version?
+
+**What do you think?**
+
+Please challenge these suggestions if you disagree. I want the simplest reliable solution, not additional mechanisms or complexity.
+
+This is still a discussion. Do not implement or delete anything until I explicitly approve the final approach.
+````
+
+Taken as: the Implementer writes code and tests, the orchestrator the rules; the old evaluation, the old plan section and amendments 78 to 81 moved out of the tree to the archive; the fingerprint hashing the files and `git status`, not a diff; no verdict in the tree until the last Reviewer has finished.
+
+## Amendment 85, 2026-11-03: plan 74, how the workflow runs
+
+The owner's message, word for word:
+
+````text
+Before I click "Approve all", I want to understand the complete workflow that will exist after Plan 74 is implemented.
+Please walk me through a realistic development plan with several implementation steps.
+My expected workflow is:
+
+1. The Orchestrator delegates an implementation step to the Implementer.
+2. The Implementer writes the code, runs the necessary tests, and provides evidence.
+3. The Orchestrator automatically launches a fresh, independent Reviewer, without requiring my intervention.
+4. The Reviewer analyzes the code, diff, acceptance criteria, and evidence, then returns PASS, FAIL, or NOT VERIFIED.
+5. If FAIL: the Orchestrator automatically forwards the findings to the Implementer.
+6. The Implementer corrects the defects, reruns the relevant tests, and returns the updated work.
+7. A new, fresh Reviewer is automatically launched to evaluate the corrected implementation.
+8. This loop continues until the acceptance criteria receive PASS, subject to the approved correction limits.
+9. If the limits are reached or a required criterion remains unresolved, the workflow stops and escalates to me. It must never manufacture a PASS or silently weaken the criteria.
+10. Once a step passes, the Orchestrator automatically advances to the next implementation step.
+11. After all steps pass, a fresh Reviewer performs the complete final review.
+12. I receive the consolidated report. Staging, committing, and pushing still require my explicit authorization.
+
+Please clarify:
+
+* Is this entire feedback loop genuinely automatic, or does it require me to send prompts between reviews?
+* What specifically triggers the first Reviewer after an Implementer finishes?
+* Who interprets the verdict and decides whether to retry, advance, or stop?
+* Is this behavior guaranteed by the available CLI mechanisms, or does it depend on the Orchestrator following written instructions?
+* Does the Reviewer remain strictly analytical, with no commands, tests, or desktop interaction?
+* What happens when a review is contaminated, inconclusive, or reaches the correction limit?
+* Does the 90-minute limit apply only to rebuilding Plan 74, or also to future development workflows?
+* What exactly am I authorizing by clicking "Approve all"? Does it authorize any staging, commit, or push?
+
+Please distinguish what the architecture actually enforces from what the agents are merely instructed to do.
+I want your honest technical assessment before approving anything. Do not start implementation yet.
+````
+
+Taken as the description of the cycle and of what the CLI enforces against what the orchestrator is instructed to do (`doc/evaluation.md`, The Reviewer, Known limits).
+
+## Amendment 86, 2026-11-03: plan 74, the Reviewer's model and effort
+
+The owner's message, word for word:
+
+````text
+Before approving the Plan 74 rebuild, I'd like your technical opinion on one final improvement: **dynamic Reviewer model and reasoning-effort selection**.
+
+Our previous reviews were extremely time-consuming. I don't think every review needs Opus 5.5 at Extra High effort.
+
+I'm considering allowing the Orchestrator to select both the **Reviewer model and its reasoning effort automatically**, based on the complexity, risk, and nature of the implementation.
+
+### My proposed routing
+
+| Review complexity | Model | Effort |
+|---|---|---|
+| Small, localized, low-risk changes | Sonnet 5.5 | High |
+| Standard or moderately complex changes | Opus 5.5 | High |
+| Architecture, concurrency, Git safety, security, critical changes | Opus 5.5 | Extra High |
+| Exceptionally difficult or high-stakes reviews | Opus 5.5 | Max, if supported |
+| Final review | Opus 5.5 | High or Extra High, depending on risk |
+
+These are suggestions, not fixed requirements.
+
+### What I want from you
+
+1. **Do you agree with this model-routing strategy?** Would you choose different models, effort levels, or thresholds? Please propose a better combination if you have one.
+2. Is Sonnet 5.5 sufficiently reliable as an independent Reviewer for simple changes, particularly when the Implementer also uses Sonnet?
+3. What criteria should the Orchestrator use to assess complexity and risk before launching a Reviewer? File count alone shouldn't determine difficulty.
+4. Should the Reviewer be allowed to recommend a stronger model or effort for the next review when it encounters uncertainty?
+5. How would you prevent unnecessary escalation to expensive reasoning levels or repeated reviews?
+6. Can model and effort selection be performed using Claude Code's existing native capabilities, without additional scripts, agents, services, or complex mechanisms?
+7. Could this be integrated into the simplified Plan 74 without compromising its 90-minute rebuild budget, or would you recommend postponing it?
+
+### Non-negotiable requirements
+
+- The Reviewer remains strictly analytical and read-only.
+- Independence and critical judgment take priority over speed.
+- No mandatory Sonnet-then-Opus double review for every step.
+- No additional review loops solely to optimize model selection.
+- The chosen model, effort, and rationale must be visible in the review record.
+- The existing automatic Implementer–Reviewer correction loop must remain unchanged.
+
+**I want an intelligent Reviewer, not necessarily the most expensive Reviewer for every task.**
+
+Please give me your honest recommendation, including any alternative model-selection strategy you believe would deliver a better balance between review quality, independence, reliability, and execution time.
+
+Do not modify the plan or implement anything yet. I want your opinion first.
+````
+
+Taken as one model, Opus 5.5, at three effort levels by tier, set in the plan before any code and never lowered, raised once on a second FAIL or an open reasoning question (`CLAUDE.md`).
+
+## Amendment 87, 2026-11-03: plan 74, the approval
+
+The owner's message, word for word:
+
+````text
+Approve all, including the proposed Opus effort routing and moving amendments 78–81.
+
+One exception: remove the 90-minute time limit. My PC will remain on overnight, so take the time needed.
+
+Keep all other agreed limits and safeguards unchanged. No staging, commit, or push without my authorization.
+````
+
+Taken as the approval of the rebuild with the Opus effort routing and amendments 78 to 81 moved to the archive, the 90-minute limit lifted, every other limit kept. The owner sent it twice, the second time after an interruption, with the same text.
+
+## Amendment 88, 2026-11-03: plan 74, Codex's own review
+
+The owner's message, word for word:
+
+````text
+Before resuming Plan 74, please investigate one possibility: Codex's native `/review` and `codex review` capabilities.
+I want to know whether OpenAI already provides a clean, native solution for our Reviewer workflow.
+Please verify:
+
+1. Can the native Codex Reviewer analyze code independently, without modifying files, running tests, or interacting with Windows?
+2. Can the Codex Orchestrator trigger it automatically after the Implementer finishes?
+3. Can its findings drive the automatic Implementer → Reviewer → Implementer correction loop?
+4. Does it support fresh context, approved acceptance criteria, and PASS/FAIL/NOT VERIFIED judgments?
+5. Can this work with my existing ChatGPT Plus subscription?
+
+Absolutely no return to the abandoned Plan 74 architecture: no custom orchestration scripts, external services, clipboard helpers, or desktop automation.
+Distinguish technical guarantees from instructions and unverified assumptions.
+Give me your honest recommendation: can we support Codex natively, or should we defer it?
+Read-only assessment only. Do not launch providers or tests, modify or delete files, or resume the paused Plan 74 rebuild. Wait for my decision.
+````
+
+Taken as: automated Codex review stays deferred, and Codex's own `/review`, when the owner runs it, gives findings, never a PASS (`AGENTS.md`, Review cycle). The owner then answered "Resume rebuild", and "Continue" at the one stop that loaded the new definitions.

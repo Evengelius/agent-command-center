@@ -14,8 +14,8 @@ develop, not about the application: nothing here goes into its provider code.
   - `Explore`: Haiku, max, read-only (Read, Grep, Glob, WebFetch, WebSearch);
     it replaces the built-in Explore, which would otherwise run on Opus.
   - `implementer`: Sonnet, high, edits and runs commands.
-  - `verifier`: Sonnet, high, no edit tools; reports in the format of
-    `doc/evaluation.md`.
+  - `reviewer`: Opus 5.5, read-only (Read, Grep, Glob): no shell, no edit tool,
+    no CLAUDE.md, no memory; reports in the shape its definition gives.
 - **Roles.** Use the fewest agents the task needs, often none. Choose the role
   by the task's actual difficulty: its reasoning complexity, ambiguity,
   technical uncertainty, dependencies and implementation risk, not how many of
@@ -34,8 +34,26 @@ develop, not about the application: nothing here goes into its provider code.
     complexity, ambiguity, technical uncertainty, intricate dependencies or a
     high implementation risk), even within a single part: the exception to
     AGENTS.md's mid-range model for implementation.
-  - Independent verification, only when an independent look adds value beyond
-    the deterministic checks: `verifier` (Sonnet 5.5, high).
+  - Review of every step of an approved plan and of the complete plan
+    (AGENTS.md, Review cycle): `reviewer` (Opus 5.5), a new Agent call each
+    time, never `SendMessage` or a fork, never a `model`. Always pass its
+    `effort`, by the step's tier:
+
+    | Tier | When | Effort |
+    |---|---|---|
+    | Light | documents, comments or tests only: no runtime behaviour can change | `medium` |
+    | Standard | ordinary runtime code; the default | `high` |
+    | Deep | any answer that gives Deep in `doc/evaluation.md`, The Reviewer, Tiers | `xhigh` |
+    | Exceptional | only when the owner or the plan asks | `max` |
+    | Final review | `xhigh` when any step was Deep, otherwise `high` | |
+
+    The plan sets each tier before any code exists, by the questions of
+    `doc/evaluation.md`, The Reviewer, Tiers; when two tiers apply, the higher
+    one does. After reading the diff the orchestrator may raise it, never lower
+    it. A second FAIL on one criterion, or a reasoning question a Reviewer could
+    not close, raises the next Reviewer one tier, once per step. The Reviewer's
+    brief never names the tier or its reason, though `plan.md`'s own text can
+    reach it through the diff.
 - Built-in subagents (`general-purpose`, `Plan`) run on the main model at the
   session's effort, Opus at Max: prefer a project agent, or pass `model` and
   `effort` from the roles when spawning one.
