@@ -99,10 +99,11 @@ func (m *Model) readCommitMessage(e render.GraphEntry) []tea.Cmd {
 	}
 	m.graph.messageAsked[e.Hash] = true
 	hash, commit, root := e.Hash, e.HashText(), m.fileRoot()
-	return []tea.Cmd{func() tea.Msg {
+	// The session's own read: dropped once it has ended (plan 75, design D9).
+	return []tea.Cmd{m.sessionCmd(func() tea.Msg {
 		msg, err := gg.CommitMessage(root, commit)
 		return graphMessageMsg{hash: hash, msg: msg, err: err}
-	}}
+	})}
 }
 
 // graphMessageRead takes a commit's message: kept for its cards, a failure
@@ -110,6 +111,9 @@ func (m *Model) readCommitMessage(e render.GraphEntry) []tea.Cmd {
 func (m *Model) graphMessageRead(msg graphMessageMsg) {
 	g := &m.graph
 	delete(g.messageAsked, msg.hash)
+	if g.messages == nil {
+		return // no history read in this session (plan 75, design D9)
+	}
 	c := m.ui.Graph.Card
 	if msg.err != nil {
 		if c != nil && c.Row < len(m.ui.Graph.Rows) && m.ui.Graph.Commits[m.ui.Graph.Rows[c.Row].Commit].Hash == msg.hash {

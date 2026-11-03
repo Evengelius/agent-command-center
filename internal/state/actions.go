@@ -79,6 +79,19 @@ type (
 	ApprovalFailed struct{ Message string } // the request for another mode could not be written
 	CloseTimeout   struct{}
 	Tick           struct{ At time.Time }
+	// AskReturn is Esc where it does nothing else on the dashboard, and
+	// ReturnHome the question's Yes (plan 75, designs D7 to D9): the session
+	// ended and the home screen shown, its answers kept. Git names the git
+	// operation running ("the commit"), "" when none runs: while it or the
+	// turn runs, nothing happens but the input row's note (design D8).
+	AskReturn  struct{ Git string }
+	ReturnHome struct{ Git string }
+	// GitIdle says no git operation runs any more: a refused return's notice
+	// that named one goes (plan 75, design D8).
+	GitIdle struct{}
+	// ReturnGrace says no session end came within the quit's kill grace
+	// after a return's forced kill: the return goes on (plan 75, design D9).
+	ReturnGrace struct{}
 )
 
 func (Launch) action()           {}
@@ -108,6 +121,10 @@ func (ChooseMode) action()       {}
 func (ApprovalFailed) action()   {}
 func (CloseTimeout) action()     {}
 func (Tick) action()             {}
+func (AskReturn) action()        {}
+func (ReturnHome) action()       {}
+func (GitIdle) action()          {}
+func (ReturnGrace) action()      {}
 
 // MockProvider is the provider id of mock mode.
 const MockProvider = "mock"
@@ -115,6 +132,7 @@ const MockProvider = "mock"
 // Do applies one action and returns the commands it calls for.
 func (s *State) Do(a Action) []Command {
 	defer s.syncStage(time.Time{}) // an action can start or end a turn
+	defer s.settleNotNow()
 	switch a := a.(type) {
 	case Launch:
 		if a.Mock == "" {
@@ -182,10 +200,27 @@ func (s *State) Do(a Action) []Command {
 			return nil
 		}
 		if s.Startup.Phase == StartFailed {
-			startup := s.Startup
-			*s = *New()
-			s.Startup = startup
-			s.Startup.Phase, s.Startup.Failure = Asking, ""
+			s.home()
+		}
+	case AskReturn:
+		if !s.CanReturn() {
+			s.returnIgnored()
+			return nil
+		}
+		s.refuseReturn(a.Git) // nothing interrupted, nothing answered (plan 75, design D8)
+	case ReturnHome:
+		return s.returnHome(a.Git)
+	case ReturnGrace:
+		if s.Returning && s.Session.Phase == Closing && s.Startup.Phase != Exited {
+			// The CLI's end was not seen after its forced kill: the session is
+			// over all the same, as the quit leaves then (plan 75, design D9).
+			// A quit asked meanwhile stays the quit.
+			s.home()
+			return []Command{{Kind: CmdHome}}
+		}
+	case GitIdle:
+		if s.Turn.NotNow != "" && s.Turn.NotNow != NotNowTurn && s.Turn.NotNow != NotNowApproval {
+			s.Turn.Notice, s.Turn.NotNow = "", ""
 		}
 	case Quit:
 		return s.quit(a.GitRunning)
@@ -197,7 +232,8 @@ func (s *State) Do(a Action) []Command {
 			return nil
 		}
 		id := s.Session.ID
-		s.Session = SessionState{Phase: Spawning, ID: id}
+		// The session goes on: its first message stays (plan 75, design D1a).
+		s.Session = SessionState{Phase: Spawning, ID: id, FirstPrompt: s.Session.FirstPrompt, FirstPromptCut: s.Session.FirstPromptCut, Prompted: s.Session.Prompted}
 		return []Command{{Kind: CmdStartSession, ID: id}}
 	case Send:
 		return s.send(a)
@@ -305,6 +341,158 @@ func (s *State) quit(gitRunning bool) []Command {
 		return []Command{{Kind: CmdKill}}
 	}
 	return []Command{{Kind: CmdExit}}
+}
+
+// home is Back's reset, and the return's (plan 75, design D9): the state
+// New gives, the startup answers kept, on the home screen's questions.
+func (s *State) home() {
+	startup := s.Startup
+	*s = *New()
+	s.Startup = startup
+	s.Startup.Phase, s.Startup.Failure = Asking, ""
+}
+
+// CanReturn says the dashboard can go back to the home screen at all (plan
+// 75, designs D7 and D9): a live run's session past its start, ready, or
+// ended by a crash or a forced stop, and not already closing. A mock run has
+// no home screen: going back would open a path to a live session
+// (reliability.md, Mock mode).
+func (s *State) CanReturn() bool {
+	if s.Context.Mock || s.Startup.Phase != StartReady {
+		return false
+	}
+	switch s.Session.Phase {
+	case Ready, Crashed, Closed:
+		return true
+	}
+	return false
+}
+
+// returnIgnored notes why a return was not offered.
+func (s *State) returnIgnored() {
+	switch {
+	case s.Context.Mock:
+		s.doNote("return ignored: a mock run ends with Ctrl+Q")
+	case s.Startup.Phase != StartReady:
+		s.doNote("return ignored while the start is " + string(s.Startup.Phase))
+	default:
+		s.doNote("return ignored while the session is " + string(s.Session.Phase))
+	}
+}
+
+// notNowTurn and notNowApproval are the refusal's words while the turn
+// runs, and while an approval waits with no turn running.
+const (
+	notNowTurn     = "Not now: the turn is still running · Ctrl+C interrupts it"
+	notNowApproval = "Not now: an approval is waiting · F2 answers it"
+)
+
+// ReturnRefusal is why the dashboard may not go back to the home screen now
+// (plan 75, design D8), the input row's words: a turn, its agents or its
+// approval waiting, an approval waiting in the queue whatever the turn's
+// phase, or the git operation git names, still running; "" when nothing
+// runs. Nothing is interrupted or answered for it.
+func (s *State) ReturnRefusal(git string) string {
+	switch {
+	case s.Running() != "":
+		return notNowTurn
+	case s.approvalWaiting():
+		return notNowApproval
+	case git != "":
+		return "Not now: " + git + " is still running"
+	}
+	return ""
+}
+
+// approvalWaiting says an approval of the queue waits for its answer.
+func (s *State) approvalWaiting() bool {
+	for _, id := range s.Queue {
+		if a := s.Approvals[id]; a != nil && a.Status == Pending {
+			return true
+		}
+	}
+	return false
+}
+
+// NotNowTurn and NotNowApproval are Turn.NotNow for a refusal while the
+// turn, its agents or its approval run, and while an approval waits.
+const (
+	NotNowTurn     = "turn"
+	NotNowApproval = "approval"
+)
+
+// refuseReturn says the return is refused now, the input row saying why
+// (plan 75, design D8): the notice names the turn, its agents or its
+// approval, or the git operation git names. While the force stop is
+// offered its notice stays, as it already says what can be done.
+func (s *State) refuseReturn(git string) bool {
+	why := s.ReturnRefusal(git)
+	if why == "" {
+		return false
+	}
+	if s.Turn.ForceStopOffered {
+		return true
+	}
+	s.Turn.Notice, s.Turn.NotNow = why, git
+	switch {
+	case s.Running() != "":
+		s.Turn.NotNow = NotNowTurn
+	case s.approvalWaiting():
+		s.Turn.NotNow = NotNowApproval
+	}
+	return true
+}
+
+// settleNotNow takes a refused return's notice away once what it names has
+// ended, the turn's; one that another notice replaced is forgotten (plan 75,
+// design D8). The git operation's end comes as GitIdle, from the
+// application.
+func (s *State) settleNotNow() {
+	t := &s.Turn
+	switch {
+	case t.NotNow == "":
+	case t.Notice != s.notNowText():
+		t.NotNow = ""
+	case t.NotNow == NotNowTurn && s.Running() == "":
+		t.Notice, t.NotNow = "", ""
+	case t.NotNow == NotNowApproval && !s.approvalWaiting():
+		t.Notice, t.NotNow = "", ""
+	}
+}
+
+// notNowText is the notice Turn.NotNow names.
+func (s *State) notNowText() string {
+	switch s.Turn.NotNow {
+	case NotNowTurn:
+		return notNowTurn
+	case NotNowApproval:
+		return notNowApproval
+	}
+	return "Not now: " + s.Turn.NotNow + " is still running"
+}
+
+// returnHome is the question's Yes (plan 75, design D9), mirroring the
+// quit: a ready session closes as at a confirmed quit, its approvals
+// cancelled and its turn interrupted first (none, since nothing runs), then
+// stdin closed, with quit's escalation; once the process has exited, ended
+// gives the home screen. A crashed or stopped session, whose process is
+// gone, goes back at once. While anything runs, nothing happens but the
+// note (design D8).
+func (s *State) returnHome(git string) []Command {
+	if !s.CanReturn() {
+		s.returnIgnored()
+		return nil
+	}
+	if s.refuseReturn(git) {
+		return nil
+	}
+	if s.Session.Phase != Ready {
+		s.home()
+		return []Command{{Kind: CmdHome}}
+	}
+	s.Returning = true
+	s.Session.Phase = Closing
+	return append(s.stopWork(), Command{Kind: CmdClose})
 }
 
 // Running says what quitting would stop: the turn and the agents still

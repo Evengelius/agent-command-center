@@ -171,6 +171,15 @@ type SessionState struct {
 	// Resumed is the session a start from the home screen asked the CLI to
 	// resume (plan 69, design D6); "" otherwise, the crash resume's too.
 	Resumed string
+	// FirstPrompt is the start of the text of the first message the owner
+	// sent in a session started new from the home screen, as the CLI accepted
+	// it: at most MaxFirstPrompt bytes, FirstPromptCut saying the message was
+	// longer; Prompted says a first message was accepted, whether or not it
+	// has a title (plan 75, design D1a). The application makes the title of
+	// it. Never stored here.
+	FirstPrompt    string
+	FirstPromptCut bool
+	Prompted       bool
 	// SummaryOffered is the one-time offer to prepare a summary request:
 	// set when the CLI names the session the home screen asked for before
 	// any message of the owner's, gone with Prepare, Not now or the first
@@ -225,6 +234,11 @@ type TurnState struct {
 	// ReviewAsked says the send asked for the start's snapshot of the stage
 	// it opens (plan 65, design D4).
 	ReviewAsked bool
+	// NotNow is what the notice of a refused return to the home screen names
+	// (plan 75, design D8): NotNowTurn, or the git operation ("the commit");
+	// "" when the notice is not one. The notice goes once that has ended, or
+	// when another notice replaces it (settleNotNow, GitIdle).
+	NotNow string
 }
 
 // Entry is one item of a conversation record.
@@ -523,6 +537,10 @@ type State struct {
 	UnrecognisedLast []UnknownEntry
 	Notes            []string // anomalies logged by the reducer (invalid transitions)
 	QuitAsked        bool     // Ctrl+Q asked to confirm; a second one quits, Esc stays
+	// Returning says the owner chose to return to the home screen: once the
+	// CLI has exited, the state is New's, the answers kept (plan 75, design
+	// D9).
+	Returning bool
 }
 
 // New returns the state before launch.
@@ -639,6 +657,7 @@ const (
 	CmdTurnFiles     CommandKind = "turn-files"     // read the files between the trees From and To of turn Turn (plan 65)
 	CmdRecordSession CommandKind = "record-session" // session ID, its turn ended At, the project's last for its CLI (plan 69)
 	CmdForgetSession CommandKind = "forget-session" // the project's last session, ID, no longer offered: its CLI has none (plan 69)
+	CmdHome          CommandKind = "home"           // the session over, back to the home screen: end the application's part of it (plan 75)
 )
 
 // The approval modes (plan 12, item 2; plan 39, modes.go).
@@ -664,8 +683,9 @@ type Command struct {
 	From, To string
 	// Last says a CmdStartSession's ID is the project's last session,
 	// resumed from the home screen, not after a crash (plan 69, design D4).
-	Last bool
-	At   time.Time // CmdRecordSession: when the turn ended (plan 69)
+	Last    bool
+	At      time.Time // CmdRecordSession: when the turn ended (plan 69); its Text is the session's FirstPrompt, Partial saying the message was longer (plan 75)
+	Partial bool
 }
 
 // Mode is the approval mode in force; Manual until the CLI reports another.

@@ -25,11 +25,11 @@ work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
 **Status: no plan active since 2026-11-03, when the owner approved plan
-74, a read-only native Reviewer in the team developing ACC (brief
-amendments 82 to 88).** Plans 1 to 74 are closed, one entry each in
-`plan.md`, Closed plans; the MVP was approved on 2026-10-17. `plan.md` holds
-the active plan's progress; each closed plan's results are in its
-evaluation file, and its full record in git.
+75, the session history on the home screen and the return to it from the
+dashboard (brief amendments 89 to 94).** Plans 1 to 75 are closed, one
+entry each in `plan.md`, Closed plans; the MVP was approved on 2026-10-17.
+`plan.md` holds the active plan's progress; each closed plan's results are
+in its evaluation file, and its full record in git.
 
 ## Delegation: highest priority
 
@@ -242,8 +242,9 @@ Keystroke timing. tmux is not used.
   only, with its scope selector; the turn-by-turn review of the agent's
   changes, read only; the conversation's search; the last session's
   resumption from the home screen and the one-time offer to prepare a
-  summary request after it (brief, amendments 9 to 12, 34, 40, 45, 46, 51,
-  53, 61, 62, 64, 67, 68, 71, 72 and 74).
+  summary request after it; the session history on the home screen and
+  the return to it from the dashboard (brief, amendments 9 to 12, 34, 40,
+  45, 46, 51, 53, 61, 62, 64, 67, 68, 71, 72, 74 and 89).
   The ones left out are **[Nice to have]**: future improvements, never
   listed as remaining, built only if the owner asks for one in a new plan
   (`plan.md`, Nice to have).

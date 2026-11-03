@@ -53,7 +53,7 @@ func TestProjectsStore(t *testing.T) {
 
 	for name, body := range map[string]string{
 		"not JSON":     "{",
-		"version":      `{"version":2,"projects":[]}`,
+		"version":      `{"version":3,"projects":[]}`,
 		"empty path":   `{"version":1,"projects":[{"path":""}]}`,
 		"wrong shape":  `{"version":1,"projects":{}}`,
 		"empty object": `{}`,
@@ -118,39 +118,45 @@ func TestRecordProject(t *testing.T) {
 	}
 }
 
-// TestProjectSessions is criterion 69.2 of plan 69 for the store: each
-// agent CLI's last session in a project, the latest replacing the one
-// before; kept by Record and by a star, gone with its project; never added
-// for a project the list no longer has; cleared only while it names the
-// refused session; written in version 1 and read back, and a file without
-// it read as before; one without an ID never offered.
+// TestProjectSessions is criterion 69.2 of plan 69 for the store, as plan 75
+// reads it (design D1): each agent CLI's sessions in a project, the latest
+// first in its history, the newest of a CLI the one offered; kept by Record
+// and by a star, gone with its project; never added for a project the list no
+// longer has; a refused session dropped alone; written in version 2 and read
+// back, and a file without it read as before; one without an ID never
+// offered. Adapted from plan 69's: the record is the history, not a map of
+// last sessions.
 func TestProjectSessions(t *testing.T) {
 	var p Projects
 	list := p.Record(nil, `C:\work\a`, t0)
 	list = p.Record(list, `C:\work\b`, t0.Add(time.Minute))
 	given := slices.Clone(list)
-	list = p.RecordSession(list, `C:\work\a`, "claude-code", "s1", t0.Add(2*time.Minute))
-	list = p.RecordSession(list, `C:\work\a`, "codex", "th1", t0.Add(3*time.Minute))
-	list = p.RecordSession(list, `C:\work\a`, "claude-code", "s2", t0.Add(4*time.Minute))
+	list = p.RecordSession(list, `C:\work\a`, Entry{CLI: "claude-code", ID: "s1", Ended: t0.Add(2 * time.Minute)})
+	list = p.RecordSession(list, `C:\work\a`, Entry{CLI: "codex", ID: "th1", Ended: t0.Add(3 * time.Minute)})
+	list = p.RecordSession(list, `C:\work\a`, Entry{CLI: "claude-code", ID: "s2", Ended: t0.Add(4 * time.Minute)})
 	for _, e := range given {
-		if e.Sessions != nil {
+		if e.History != nil {
 			t.Errorf("RecordSession changed the list it was given: %v", given)
 		}
 	}
-	want := map[string]Session{"claude-code": {ID: "s2", Ended: t0.Add(4 * time.Minute)}, "codex": {ID: "th1", Ended: t0.Add(3 * time.Minute)}}
-	if e, s, ok := p.LastSession(list, `C:\work\a`, "claude-code"); !ok || s != want["claude-code"] || !reflect.DeepEqual(e.Sessions, want) {
+	want := []Entry{
+		{CLI: "claude-code", ID: "s2", Ended: t0.Add(4 * time.Minute)},
+		{CLI: "codex", ID: "th1", Ended: t0.Add(3 * time.Minute)},
+		{CLI: "claude-code", ID: "s1", Ended: t0.Add(2 * time.Minute)},
+	}
+	if e, s, ok := p.LastSession(list, `C:\work\a`, "claude-code"); !ok || s != (Session{ID: "s2", Ended: t0.Add(4 * time.Minute)}) || !reflect.DeepEqual(e.History, want) {
 		t.Fatalf("recorded: entry %v, session %v, %t", e, s, ok)
 	}
 	if _, _, ok := p.LastSession(list, `C:\work\b`, "claude-code"); ok {
 		t.Error("a project no session was recorded in has one")
 	}
-	if got := p.RecordSession(list, `C:\work\gone`, "codex", "th9", t0); len(got) != 2 || count(p, got, `C:\work\gone`) != 0 {
+	if got := p.RecordSession(list, `C:\work\gone`, Entry{CLI: "codex", ID: "th9", Ended: t0}); len(got) != 2 || count(p, got, `C:\work\gone`) != 0 {
 		t.Errorf("a project the list does not have was added: %v", got)
 	}
 
 	list = p.Record(list, `C:\work\a\`, t0.Add(time.Hour))
 	list = p.Star(list, `C:\work\a`, true)
-	if e, _, ok := p.LastSession(list, `C:\work\a`, "codex"); !ok || !reflect.DeepEqual(e.Sessions, want) {
+	if e, _, ok := p.LastSession(list, `C:\work\a`, "codex"); !ok || !reflect.DeepEqual(e.History, want) {
 		t.Errorf("after Record and a star: %v", e)
 	}
 	if runtime.GOOS == "windows" {
@@ -180,14 +186,14 @@ func TestProjectSessions(t *testing.T) {
 		t.Fatalf("Save then Load: got %v, %v; want %v", got, err, list)
 	}
 	f, _ := ps.File()
-	if b, _ := os.ReadFile(f); !strings.Contains(string(b), `"version": 1,`) || !strings.Contains(string(b), `"sessions": {`) || !strings.Contains(string(b), `"id": "th1"`) {
+	if b, _ := os.ReadFile(f); !strings.Contains(string(b), `"version": 2,`) || !strings.Contains(string(b), `"history": [`) || !strings.Contains(string(b), `"id": "th1"`) || strings.Contains(string(b), `"sessions"`) {
 		t.Errorf("the file:\n%s", b)
 	}
 	older := `{"version":1,"projects":[{"path":"C:\\work\\a","used":"2026-10-18T12:00:00Z","favourite":true}]}`
 	if err := os.WriteFile(f, []byte(older), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := ps.Load(); err != nil || len(got) != 1 || got[0].Path != `C:\work\a` || !got[0].Favourite || got[0].Sessions != nil {
+	if got, err := ps.Load(); err != nil || len(got) != 1 || got[0].Path != `C:\work\a` || !got[0].Favourite || got[0].Sessions != nil || got[0].History != nil {
 		t.Errorf("an older build's file: %v, %v", got, err)
 	}
 	// A session without an ID, as an edited file could hold: nothing to resume.

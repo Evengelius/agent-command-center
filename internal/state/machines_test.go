@@ -2,6 +2,7 @@ package state
 
 import (
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -307,6 +308,64 @@ var transitions = []machineCase{
 		b.exit(0)
 		b.eq("commands", b.kinds(), "exit")
 	}},
+	{"Startup", "`Ready` | owner returns home, idle", func(b *bench) {
+		// Plan 75, criteria 75.13 and 75.14: the session closes as at quit,
+		// then the home screen, the state New's but for the answers.
+		b.ready().do(Send{Text: "hi"})
+		b.ev(event.UserMessage, "", event.User{Text: "hi"})
+		b.ev(event.TurnStarted, "", nil)
+		b.ev(event.AgentStarted, "", event.Agent{Key: "t1", Type: "subagent"})
+		b.ev(event.AgentCompleted, "", event.Agent{Key: "t1", Status: "completed"})
+		b.turnEnd("", "completed")
+		b.do(AskReturn{})
+		b.eq("asked: nothing", b.kinds(), "")
+		b.eq("asked: no notice", b.s.Turn.Notice, "")
+		b.do(ReturnHome{})
+		b.eq("closing", b.s.Session.Phase, Closing)
+		b.eq("returning", b.s.Returning, true)
+		b.eq("still the dashboard", b.s.Screen, ScreenDashboard)
+		b.eq("commands", b.kinds(), "close")
+		b.exit(0)
+		b.eq("home", b.kinds(), "home")
+		b.eq("phase", b.s.Startup.Phase, Asking)
+		b.eq("screen", b.s.Screen, ScreenStartup)
+		b.eq("provider kept", b.s.Startup.Provider, "claude-code")
+		b.eq("project kept", b.s.Startup.Project, project)
+		want := *New()
+		want.Startup = b.s.Startup
+		if !reflect.DeepEqual(*b.s, want) {
+			b.t.Errorf("after the return the state is not New's but for the answers:\n%+v\nwant\n%+v", *b.s, want)
+		}
+
+		// A message the CLI had not taken when it exited goes back to the
+		// editor first, as at quit, then the home screen.
+		c := newBench(b.t).ready()
+		c.s.Turn.Draft, c.s.Turn.Phase = "kept", Submitted
+		c.s.Session.Phase = Closing
+		c.s.Returning = true
+		c.exit(0)
+		c.eq("restored then home", c.kinds(), "restore-draft,home")
+		c.eq("the draft", c.cmds[0].Text, "kept")
+	}},
+	{"Startup", "`Ready`, the session `Crashed` or `Closed` | owner returns home", func(b *bench) {
+		b.ready().exit(1)
+		b.eq("crashed", b.s.Session.Phase, Crashed)
+		b.eq("can return", b.s.CanReturn(), true)
+		b.do(ReturnHome{})
+		b.eq("at once", b.kinds(), "home")
+		b.eq("phase", b.s.Startup.Phase, Asking)
+		b.eq("project kept", b.s.Startup.Project, project)
+
+		c := newBench(b.t).running()
+		c.do(Interrupt{})
+		c.do(InterruptTimeout{})
+		c.do(ForceStop{})
+		c.exit(0)
+		c.eq("stopped", c.s.Session.Phase, Closed)
+		c.do(ReturnHome{})
+		c.eq("closed: at once", c.kinds(), "home")
+		c.eq("closed: phase", c.s.Startup.Phase, Asking)
+	}},
 	{"Startup", "`Detecting`, `Asking`, `Validating`, `StartFailed` | quit", func(b *bench) {
 		setups := map[string]func(*bench){
 			"Detecting":   func(c *bench) { c.do(Launch{}) },
@@ -478,6 +537,129 @@ var transitions = []machineCase{
 		d.exit(1)
 		d.do(Quit{})
 		d.eq("nothing runs: exits at once", d.kinds(), "exit")
+	}},
+	{"Session", "`Closing` | returning home, no session end within the quit's kill grace", func(b *bench) {
+		// Plan 75, design D9: home all the same.
+		b.ready().do(ReturnHome{})
+		b.do(CloseTimeout{})
+		b.eq("the kill", b.kinds(), "kill")
+		b.do(ReturnGrace{})
+		b.eq("home", b.kinds(), "home")
+		b.eq("phase", b.s.Startup.Phase, Asking)
+		b.eq("session", b.s.Session.Phase, SessionPhase(""))
+		b.do(ReturnGrace{})
+		b.eq("late: nothing", b.kinds(), "")
+		// A quit asked meanwhile stays the quit.
+		q := newBench(b.t).ready()
+		q.do(ReturnHome{})
+		q.do(CloseTimeout{})
+		q.do(Quit{})
+		q.do(ReturnGrace{})
+		q.eq("quit: nothing", q.kinds(), "")
+		q.eq("quit: exited", q.s.Startup.Phase, Exited)
+		c := newBench(b.t).ready()
+		c.do(ReturnGrace{})
+		c.eq("not returning: nothing", c.kinds(), "")
+		c.eq("not returning: ready", c.s.Session.Phase, Ready)
+	}},
+	{"Session", "`Ready` | owner returns home", func(b *bench) {
+		// Plan 75, design D9: the close as at quit, its escalation the same,
+		// then Closed and the home screen.
+		b.ready().do(ReturnHome{})
+		b.eq("session", b.s.Session.Phase, Closing)
+		b.eq("commands", b.kinds(), "close")
+		b.eq("nothing asked", b.s.QuitAsked, false)
+		b.do(CloseTimeout{})
+		b.eq("the kill", b.kinds(), "kill")
+		b.eq("still closing", b.s.Session.Phase, Closing)
+		b.do(Quit{})
+		b.eq("a quit meanwhile: the kill", b.kinds(), "kill")
+		b.ev(event.SessionEnded, "", event.Ended{Reason: "killed"})
+		b.eq("the quit wins", b.kinds(), "exit")
+
+		c := newBench(b.t).ready()
+		c.do(ReturnHome{})
+		c.do(CloseTimeout{})
+		c.ev(event.SessionEnded, "", event.Ended{Reason: "killed"})
+		c.eq("killed: home", c.kinds(), "home")
+		c.eq("killed: session reset", c.s.Session.Phase, SessionPhase(""))
+		c.eq("killed: returning reset", c.s.Returning, false)
+	}},
+	{"Session", "`Ready`, `Crashed` | owner returns home while a turn, an agent, an approval or a git operation runs", func(b *bench) {
+		// Plan 75, design D8.
+		const turn = "Not now: the turn is still running · Ctrl+C interrupts it"
+		b.running()
+		for _, a := range []Action{AskReturn{}, ReturnHome{}} {
+			b.do(a)
+			b.eq("turn: nothing", b.kinds(), "")
+			b.eq("turn: notice", b.s.Turn.Notice, turn)
+			b.eq("turn: stays", b.s.Session.Phase, Ready)
+			b.eq("turn: runs", b.s.Turn.Phase, Running)
+		}
+		b.ask("", "a1", "")
+		b.do(ReturnHome{})
+		b.eq("approval: nothing", b.kinds(), "")
+		b.eq("approval: pending", b.s.Approvals["a1"].Status, Pending)
+		b.eq("approval: notice", b.s.Turn.Notice, turn)
+
+		c := newBench(b.t).running()
+		c.ev(event.AgentStarted, "", event.Agent{Key: "bg", Type: "subagent", Backgrounded: true})
+		c.turnEnd("", "completed")
+		c.s.Turn.Notice = ""
+		c.do(ReturnHome{})
+		c.eq("agent: nothing", c.kinds(), "")
+		c.eq("agent: notice", c.s.Turn.Notice, turn)
+		c.eq("agent: runs", c.agent("bg").Status, AgentRunning)
+
+		d := newBench(b.t).ready()
+		d.do(ReturnHome{Git: "the commit"})
+		d.eq("git: nothing", d.kinds(), "")
+		d.eq("git: notice", d.s.Turn.Notice, "Not now: the commit is still running")
+		d.eq("git: stays", d.s.Session.Phase, Ready)
+		d.exit(1)
+		d.do(ReturnHome{Git: "the fetch"})
+		d.eq("crashed, git: nothing", d.kinds(), "")
+		d.eq("crashed, git: notice", d.s.Turn.Notice, "Not now: the fetch is still running")
+		d.eq("crashed, git: stays", d.s.Session.Phase, Crashed)
+		d.eq("crashed, git: refusal", d.s.ReturnRefusal("the fetch"), "Not now: the fetch is still running")
+		d.eq("crashed: none", d.s.ReturnRefusal(""), "")
+		d.do(GitIdle{})
+		d.eq("git idle: the notice gone", d.s.Turn.Notice, "")
+
+		// The notice goes with the turn it names; another notice replaces it.
+		e := newBench(b.t).running()
+		e.do(AskReturn{})
+		e.eq("turn: noticed", e.s.Turn.NotNow, NotNowTurn)
+		e.do(GitIdle{})
+		e.eq("git idle leaves the turn's", e.s.Turn.Notice, turn)
+		e.turnEnd("", "completed")
+		e.eq("turn ended: the notice gone", e.s.Turn.Notice, "")
+		e.eq("turn ended: forgotten", e.s.Turn.NotNow, "")
+		f := newBench(b.t).running()
+		f.do(AskReturn{})
+		f.do(Send{Text: "again"})
+		f.eq("replaced", f.s.Turn.Notice, "turn running: wait, or interrupt")
+		f.eq("replaced: forgotten", f.s.Turn.NotNow, "")
+		// An approval waiting in the queue, no turn or agent running: refused,
+		// nothing answered, until it is.
+		q := newBench(b.t).ready()
+		q.s.Approvals["q1"] = &Approval{ID: "q1", Status: Pending}
+		q.s.Queue = append(q.s.Queue, "q1")
+		q.do(ReturnHome{})
+		q.eq("approval: nothing", q.kinds(), "")
+		q.eq("approval: notice", q.s.Turn.Notice, "Not now: an approval is waiting · F2 answers it")
+		q.eq("approval: pending", q.s.Approvals["q1"].Status, Pending)
+		q.resolve("q1", event.Allow)
+		q.eq("answered: the notice gone", q.s.Turn.Notice, "")
+		// While the force stop is offered, its notice stays.
+		g := newBench(b.t).running()
+		g.do(Interrupt{})
+		g.do(InterruptTimeout{})
+		offer := g.s.Turn.Notice
+		g.do(AskReturn{})
+		g.do(ReturnHome{})
+		g.eq("force stop: its notice kept", g.s.Turn.Notice, offer)
+		g.eq("force stop: nothing", g.kinds(), "")
 	}},
 	{"Session", "`Closing` | process exited", func(b *bench) {
 		b.ready().do(Quit{})
@@ -1123,10 +1305,49 @@ var invalids = []machineCase{
 		c.eq("none: phase", c.s.Startup.Phase, Asking)
 		c.eq("none: commands", c.kinds(), "")
 	}},
-	{"Startup", "No transition leads from `Ready` back to `Asking`", func(b *bench) {
+	{"Startup", "Each session is one CLI and one project, and one run of ACC can hold several sessions", func(b *bench) {
+		// Plan 75, design D11: Back never leaves a ready session; the return
+		// does, and the next session starts from the home screen.
 		b.ready().do(Back{})
 		b.eq("phase", b.s.Startup.Phase, StartReady)
 		b.eq("screen", b.s.Screen, ScreenDashboard)
+		b.do(ReturnHome{})
+		b.exit(0)
+		b.eq("home", b.s.Startup.Phase, Asking)
+		b.do(Confirm{Provider: "codex", Project: `C:\work\other`})
+		b.eq("a second session's start", b.s.Startup.Phase, Validating)
+		b.do(ValidationOK{Provider: "codex", ProviderName: "OpenAI Codex", Project: `C:\work\other`})
+		b.eq("its context", b.s.Context, Context{Provider: "codex", ProviderName: "OpenAI Codex", Project: `C:\work\other`})
+		b.eq("its session", b.s.Session.Phase, Spawning)
+	}},
+	{"Startup", "a return to the home screen is ignored in a mock run", func(b *bench) {
+		// Plan 75, designs D7 and D9: a mock run, a session starting, a
+		// session closing.
+		b.do(Launch{Mock: "demo.jsonl"})
+		b.ev(event.SessionSpawned, "", event.Spawned{Dir: "demo.jsonl"})
+		b.ev(event.SessionReady, "", event.Ready{})
+		b.eq("mock ready", b.s.Session.Phase, Ready)
+		b.eq("mock cannot return", b.s.CanReturn(), false)
+		b.do(AskReturn{})
+		b.do(ReturnHome{})
+		b.eq("mock: nothing", b.kinds(), "")
+		b.eq("mock: stays", b.s.Session.Phase, Ready)
+		b.eq("mock: noted", b.noted("a mock run ends with Ctrl+Q"), true)
+		b.eq("mock: no notice", b.s.Turn.Notice, "")
+
+		c := newBench(b.t).handshaking()
+		c.do(ReturnHome{})
+		c.eq("starting: nothing", c.kinds(), "")
+		c.eq("starting: stays", c.s.Session.Phase, Handshaking)
+		c.eq("starting: noted", c.noted("while the start is Starting"), true)
+
+		d := newBench(b.t).ready()
+		d.do(ReturnHome{})
+		d.do(ReturnHome{})
+		d.eq("closing: nothing more", d.kinds(), "")
+		d.do(AskReturn{})
+		d.eq("closing: noted", d.noted("while the session is Closing"), true)
+		d.eq("closing", d.s.Session.Phase, Closing)
 	}},
 
 	{"Session", "a user message, approval answer or interrupt while not `Ready` is refused", func(b *bench) {

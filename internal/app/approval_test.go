@@ -47,6 +47,7 @@ type wireProc struct {
 	done       chan struct{}
 	code       int
 	refuse     atomic.Bool // writes to stdin fail
+	deaf       atomic.Bool // a terminate or a kill ends nothing (plan 75)
 }
 
 func (w *wireClaude) Spawn(sp proc.Spec) (proc.Process, error) {
@@ -193,8 +194,13 @@ func (p *wireProc) Stderr() io.Reader     { return p.errR }
 func (p *wireProc) Pid() int              { return 4243 }
 func (p *wireProc) Wait() (int, error)    { <-p.done; return p.code, nil }
 func (p *wireProc) Terminate() error      { return p.Kill() }
-func (p *wireProc) Kill() error           { p.exit(1, ""); return nil }
-func (p *wireProc) Release()              {}
+func (p *wireProc) Kill() error {
+	if !p.deaf.Load() {
+		p.exit(1, "")
+	}
+	return nil
+}
+func (p *wireProc) Release() {}
 
 // wireRig opens the dashboard on the real Claude Code adapter over w.
 func wireRig(t *testing.T, w *wireClaude, opt Options) *harness {

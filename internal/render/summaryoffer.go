@@ -125,7 +125,13 @@ func summaryRows(s *state.State, ui UI, w, room int) []crow {
 // without it. No ground and no inverse: only the text changes (amendment
 // 73).
 func summaryButton(text string, item int, focus, selected bool) line {
-	r := ref{panel: SummaryPanel, kind: refDeco, item: item}
+	return cardButton(text, ref{panel: SummaryPanel, kind: refDeco, item: item}, focus, selected)
+}
+
+// cardButton is summaryButton's look for any card's button, r its click's
+// target: the question to return to the home screen's too (plan 75, design
+// D7).
+func cardButton(text string, r ref, focus, selected bool) line {
 	edge, label := stTitle, stTitle
 	switch {
 	case focus && selected:

@@ -35,6 +35,8 @@ type fakeBranches struct {
 	fetchErr  error
 	stopper   func() (bool, string)
 	head      string
+	// switchHold, when set, keeps a switch running until it closes (plan 75).
+	switchHold chan struct{}
 }
 
 func (f *fakeBranches) Branches(dir string) (input.Branches, error) {
@@ -54,6 +56,12 @@ func (f *fakeBranches) Changes(dir string) (int, error) {
 
 func (f *fakeBranches) Switch(dir, name string, remote bool) (string, error) {
 	f.record(fmt.Sprintf("switch %s %v", name, remote))
+	f.mu.Lock()
+	hold := f.switchHold
+	f.mu.Unlock()
+	if hold != nil {
+		<-hold
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.switchErr != nil {

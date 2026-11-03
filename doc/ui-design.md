@@ -83,7 +83,7 @@ Grid mode at 80x24, the list focused on its second favourite:
  │                                  │ │                                       │ 
  ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯ 
                                                                                 
- › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit 
+ ›  Ctrl+N  New │  Ctrl+O  Open │  Alt+H  History │  Ctrl+Q  Quit               
 ```
 
 ### The picture
@@ -224,7 +224,7 @@ mode at 80x24:
  │         START SESSION →          │ │                                       │ 
  ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯ 
                                                                                 
- › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit 
+ ›  Ctrl+N  New │  Ctrl+O  Open │  Alt+H  History │  Ctrl+Q  Quit               
 ```
 
 When NEW SESSION needs more rows than the screen has beside PROJECTS, it
@@ -239,10 +239,25 @@ path ("files in Linux, used by a Windows agent CLI: slow, and unverified").
 The project store, `projects.json` in the dashboard's own folder
 (`%LOCALAPPDATA%\agent-command-center\`, beside `drafts\`), keeps one entry
 per project: its validated path, when a session last started in it,
-whether it is a favourite, and each agent CLI's [last session](#last-session)
-there. It is written through a temporary file renamed over the old one,
+whether it is a favourite, and its [session history](#session-history), the
+sessions the dashboard ran there (at most 20, newest first: the agent CLI,
+the session's ID, when the owner's last turn in it ended, the model as zone A
+names it, and its title). It is version 2 of the file (plan 75, brief
+amendment 90), written through a temporary file renamed over the old one,
 read again before each change; paths are compared without case on
-Windows; it holds no conversation data. A path is recorded once validation passes, even if the
+Windows. A version 1 file, which kept each CLI's last session
+(plan 69), is read as version 2, every one of those sessions an entry with no
+model and no title, its paths, times, favourites and order unchanged, and
+written as version 2 at its next change. A file of a version above 2 is
+refused: the list is shown as unavailable and the file is never overwritten.
+An older build refuses a version 2 file in the same way (it reads version 1
+only), so going back to an older build shows the list as unavailable there and
+records nothing until the build is updated. It holds paths, times, session
+IDs, models' names and the sessions' titles, a title being the first words
+of the owner's first message in the session (see [Session
+history](#session-history)): the one conversation text the store keeps, an
+exception to "no conversation data" (ASM-24; amendment 91), accepted because a
+first prompt can hold sensitive text, kept until its entry is deleted. A path is recorded once validation passes, even if the
 agent CLI then fails to start. At most 10 recent projects are kept; a
 favourite is never dropped. A mock run passes no store: nothing is read or
 written and the screen is unchanged.
@@ -265,10 +280,12 @@ not saved:" and the reason.
 
 ### Last session
 
-Each project's entry keeps, per agent CLI, the last session the dashboard
-ran there: the ID the CLI reported and when the owner's last turn there
-ended, written when that turn ends, completed, interrupted or failed
-(amendment 71, plan 69). With the chosen CLI's last session recorded for
+Each project's entry keeps the sessions the dashboard ran there, each with
+the ID its agent CLI reported and when the owner's last turn in it ended,
+written when that turn ends, completed, interrupted or failed (amendment 71,
+plan 69; the [session history](#session-history), plan 75). The chosen CLI's
+last session in the chosen project is the newest entry of that CLI in the
+project's history. With one recorded for
 the chosen project, the project field's path resolved as Start resolves
 it, a grey note under the field offers it: "→ Claude Code's last session
 here: 3m ago · Ctrl+R continues it", its time as PROJECTS writes one.
@@ -300,8 +317,131 @@ resumed" (see [Transition](#transition)); back on this screen, a red note
 under the offer says why: "✗ Not resumed: <reason>", the session still
 offered and Ctrl+R trying again; or, when the CLI no longer has the
 session, "✗ Not resumed: Claude Code no longer has its last session here",
-the session no longer offered. The note stays until the next start, or
-until another CLI or project is chosen; Ctrl+N clears it.
+the session no longer offered, and removed from the history. The note stays
+until the next start, or until another CLI or project is chosen; Ctrl+N
+clears it. With that session gone, or deleted from the history, the note
+offers the CLI's previous entry there, if it has one, and Ctrl+R resumes that
+(plan 75).
+
+### Session history
+
+Alt+H opens the sessions the dashboard ran in the project the field names
+(brief amendment 89, plan 75): the field's path resolved as Start resolves
+it, which is also the path Ctrl+R and the last-session note use. It opens
+nothing while a start is validated, from the [Worktrees](#worktrees) view,
+while the [folder dialog](#the-folder-dialog) is open (a folder picked
+meanwhile would change the field under the view; plan 75, design D2),
+or with a path Start refuses: one whose
+resolution is refused has its note already; any other is checked on disk, in
+a command as Start's validation is, and one Start would refuse ("Does not
+exist: …", a file, an unreadable folder) shows Start's own refusal under the
+field, until the path changes. During detection it opens too, the rows not
+dimmed (which CLI is installed is not known yet), and Enter or a double click
+starts nothing and says "The agent CLIs are still being detected". Only the
+sessions the dashboard itself ran are listed, never the CLIs' own record
+(Claude Code's `cleanupPeriodDays` may have deleted an old one already, in
+which case its resume is refused, the entry goes and the one before is
+offered); a worktree is a project of its own.
+
+**What an entry holds** (`projects.json`, version 2): the agent CLI, the
+session's ID, when the owner's last turn in it ended, the model as zone A
+names it ("Claude Haiku 5.5"; "N/A" when none was recorded) and a title.
+A session is put first when the owner's turn in it ends (the same ID again
+moves first, with its new end time and model, its title kept); a 21st entry
+drops the oldest (a file read with more keeps the newest 20, and no entry
+without an ID: nothing could resume it). A mock run, a session whose CLI gave no ID and a turn the
+CLI opened record nothing. The title is the first message the owner sent in
+a session started new from the home screen, as the CLI received it, images
+not counted: its control characters and Unicode format characters (bidi
+controls, zero-width spaces) removed, so no escape sequence reaches the
+terminal, except the joiners U+200C and U+200D, which join clusters; every
+run of white space one space, its ends trimmed, at most 60 grapheme
+clusters, none cut. The session keeps only the first 8 KiB of that message
+for it, a cluster the cut may have left unfinished being left out; the Unicode
+tag characters, which make up a regional flag, stay. It is set once: a resume never changes it,
+and the entries migrated from version 1 and sessions resumed from the home
+screen without one have none.
+
+**The view** is full screen, as the Worktrees view is: the home screen's
+header, then a centred box in the home panels' style titled SESSION HISTORY,
+nothing drawn over the Sixel picture; the picture and the banner come back
+when it closes. Under the title, the project's path; then the entries, newest first,
+each one the title (bright) over a grey line, "2026-11-03 09:27 · 3m ago ·
+Claude Code · Claude Haiku 5.5 · 21f3b775": its date and time, its age as
+PROJECTS writes it, the agent CLI, the model or "N/A", the ID's first 8
+characters. An entry without a title is that grey line alone; an entry without an ID,
+which only a hand-edited file holds, is not listed. The selected
+entry is on the focus band between purple ends ▏ ▕; the list scrolls only when the
+selection would leave the rows shown, ↑ ↓ and the wheel moving it just
+enough, so that a click never moves the list under the pointer, and shows, when the entries do not all fit, the slim mark ▐ at its
+right showing where it is, as PROJECTS does. An entry whose agent CLI is not
+installed is dimmed. With no entry: "No sessions recorded for this project
+yet". The last row of the box is the keys; a note above it says why Enter
+did nothing ("✗ OpenAI Codex is not installed") or why the list cannot be
+trusted (the store's problem). At 80x24
+(`testdata/frames/history-80x24.txt`):
+
+```text
+ ⊞ AGENT COMMAND CENTER                       │  v0.1.0  │  Windows  │  ● Ready
+ ╭────────────────────────────────────────────────────────────────────────────╮
+ │ › SESSION HISTORY  ─────────────────────────────────────────────────────── │
+ │                                                                            │
+ │   Project  C:\work\demo-project                                            │
+ │                                                                            │
+ │ ▏ Title of session 0                                                      ▕│
+ │ ▏ 2026-10-15 09:27 · 3m ago · Claude Code · Claude Haiku 4.5 · 21f3b775   ▕│
+ │   2026-10-15 09:26 · 4m ago · Claude Code · Claude Haiku 4.5 · 21f3c886    │
+ │   Title of session 2                                                       │
+ │   2026-10-15 09:25 · 5m ago · OpenAI Codex · GPT-5.5 · 21f3d997            │
+ │                                   ...                                      │
+ │   ↑↓ move · Enter resume · Del delete · Shift+Del delete all · Esc close   │
+ ╰────────────────────────────────────────────────────────────────────────────╯
+```
+
+| Key | Action |
+| - | - |
+| ↑ / ↓, PgUp / PgDn, Home / End | move the selection |
+| Enter | resume the selected entry (below) |
+| Del | ask to delete the selected entry |
+| Shift+Del | ask to delete all of the project's entries |
+| Esc | close the view |
+| Ctrl+Q | quit |
+
+While the delete question is open the keys row shows the question's keys
+("←→ choose · Enter answer · Esc cancel"), and it stays until answered, whatever changes in the list. Every other key does nothing: Ctrl+N, Ctrl+O, Ctrl+R and Ctrl+W among them,
+and a paste, except F12, which gives the mouse to the terminal and takes it
+again as on the home screen (a view opened with it off has none). The mouse,
+while it is on: a
+click on an entry selects it, a double click on one resumes it (a second
+press within 400 ms on the same cell and the same entry, as zone B counts one,
+plan 42), a
+click outside the box closes the view (plan 58's rule for the file window),
+the wheel over the box moves the selection one entry a notch, as PROJECTS
+does; a right click does nothing, as everywhere here: there is no context
+menu.
+
+**Resuming** is the last session's path (plan 69) with the entry's agent CLI
+and ID, and question 1 set to that CLI: the project is validated as START
+SESSION validates it, then Claude Code is started with `--resume <id>` and
+Codex with `thread/resume`, the thread asked for without its turns. An entry
+whose CLI is not installed starts nothing: Enter says "<CLI> is not
+installed" in the box. A CLI that no longer has the session refuses as plan 69
+describes, and the entry is removed; when it was not the CLI's newest, the
+note back on the home screen says "✗ Not resumed: Claude Code no longer has
+that session".
+
+**Deleting** asks in the box, in amber: "DELETE THIS SESSION FROM THE
+HISTORY?", or "DELETE ALL 8 SESSIONS OF demo-project?", with "ACC's list
+only: Claude Code keeps its own record" under it (the CLIs concerned named),
+and the buttons Delete and Cancel, Cancel selected when the question opens;
+← selects Delete and → Cancel, as they are drawn; Enter and a click answer,
+Esc or a click elsewhere cancels. Delete removes that entry from the
+project's history, identified by its CLI and ID, or all the entries the
+question counted, each by its CLI and ID, from the file as it is then (an
+entry another dashboard added meanwhile stays, and one of the counted already
+gone is no loss); no other project, favourite or order changes in the file,
+and the CLIs' own files are never touched. Frames:
+`history-ask-*` and `history-ask-all-*`.
 
 ### The folder dialog
 
@@ -330,14 +470,21 @@ project browser, removed by amendment 53.
 | f / Del | in Projects: star or unstar / forget that project |
 | Ctrl+N | the form as the screen opened it: the default agent CLI, the starting project folder, the focus on question 1, the list's first row, no message; not while validating (D9) |
 | Ctrl+O | open the system's [folder dialog](#the-folder-dialog) |
-| Ctrl+R | resume the chosen agent CLI's [last session](#last-session) in the chosen project; nothing without one (plan 69) |
+| Ctrl+R | resume the chosen agent CLI's [last session](#last-session) in the chosen project, the newest of its entries in that project's history; nothing without one (plan 69) |
+| Alt+H | open the [session history](#session-history) of the project in the field; not while validating, nor while the folder dialog is open, nor with a path Start refuses (plan 75) |
+| Esc | nothing (plan 75, design D10): only Ctrl+Q quits, so that an Esc pressed once too often on the way back from the dashboard does not end the program; in the session history and Worktrees views, Esc closes the view |
 | Ctrl+W | open the [Worktrees](#worktrees) view on the project field's repository |
 | F12 | give the mouse back to the terminal, and take it again |
 | Editing keys | as in the [Input editor](#input-editor), on one line |
 | Ctrl+Q | quit |
 
-The footer shows Ctrl+N, Ctrl+O and Ctrl+Q, as the design (D8); the other
-keys work as above, unshown.
+The footer shows Ctrl+N, Ctrl+O, Alt+H and Ctrl+Q (design D8, plan 75
+D6); the other keys work as above, unshown. In grid mode it is the full row
+from 100 columns ("Shortcuts:" and the four shortcuts, 99 cells, so that it fits as
+every footer does, plan 16) and under 100
+the short row of 65 cells, without "Shortcuts:", the actions "New" and "Open"
+and narrower bars; in picture mode the four groups are drawn at the design's
+spacing, the fourth beyond the design's three.
 
 The mouse (D11), as on the dashboard, F12 giving it back to the terminal
 (not in Worktrees): a left click on an option chooses that agent CLI; on
@@ -345,7 +492,8 @@ the field, gives it the focus; on its folder button, opens the folder
 dialog; on a project's row, selects it and puts its path into the field;
 on its star, stars or unstars it, its path into the field too; on START
 SESSION, starts as Enter does; on the last session's note, resumes it as
-Ctrl+R does (plan 69). No double click or footer click. The
+Ctrl+R does (plan 69). No double click or footer click on the home screen
+itself (the [session history](#session-history) view takes a double click). The
 wheel over the PROJECTS panel, its rows, headings or frame, moves the
 list's selection one project a notch, as ↑ and ↓ do, the list taking the
 focus (amendment 55, plan 54): one a notch, not the dashboard lists'
@@ -366,7 +514,8 @@ Against the owner's image, `references/16-home-screen.webp` (amendment 52;
 | The field's path at the design's size | At the terminal's size: terminal text, for its selection and copy | D4, the owner's safeguard |
 | The field's box at the design's place | On the terminal row nearest it, centred on it, the path in its middle: up to half a row off, 3.6 screen pixels at 208x59 and 6.5 at 120x40 | D4; criterion 51.1, accepted by the owner as a documented exception |
 | A still banner | A moving scene, at 10 frames a second, the aliens marching by bands of rows, the sprites crisp with a two-step glow | D12; criterion 51.7 |
-| "Ctrl+P Command Palette" in the footer | Absent, Ctrl+Q's group in its place | D8: no command palette |
+| "Ctrl+P Command Palette" in the footer | Absent, Alt+H's group in its place | D8: no command palette |
+| Three footer groups | Four: Alt+H History between Ctrl+O and Ctrl+Q, Ctrl+Q's group moved one place right, at the design's spacing; in grid mode a short row under 100 columns | Plan 75, D6: the owner asked for the session history; a departure from the image |
 | "v0.1.0", "Windows", "Ready" | A version constant, the system, the startup machine's status | D5 |
 | Validation, warnings, detection | Not in the image: in NEW SESSION between the field and START SESSION; START SESSION dimmed | D6 |
 
@@ -566,6 +715,114 @@ result, the section takes its three rows at any width, every value and
 reason whole ("Context N/A no turn since the resume", "Tokens N/A no
 result since the resume", "Est. cost N/A no result since the resume"):
 the columns would push the cost out, as the live run of plan 69 found.
+
+### Return to the home screen
+
+One run of the dashboard can hold several sessions, one after another,
+each one CLI and one project (brief amendments 89 to 91, plan 75). Esc on the
+dashboard where it does nothing else, the focus already on zone B and no
+popup, card, window, view, full view, search, selection or zoom open (each
+Esc closes or leaves those first, as [Focus and keys](#focus-and-keys)
+lists), asks to return to the home screen (design D7). A popup or a
+question still open, the staging question among them, or a Git Graph card
+pinned, keeps Esc from asking, wherever the focus is. A card over the
+dashboard, centred on zone B's columns and on the screen's rows, 60 cells
+wide or narrower where the screen is, framed and buttoned as the summary
+suggestion ([Zone B](#zone-b), plan 70) is; at 80x24
+(`testdata/frames/return-80x24.txt`):
+
+```text
+╭──────────────────────────────────────────────────────────╮
+│                                                          │
+│  RETURN TO THE HOME SCREEN?                              │
+│                                                          │
+│  The session ends and Claude Code closes. Its changes    │
+│  stay in the project, and the session stays in the       │
+│  history.                                                │
+│                                                          │
+│  [ Yes ]     [ No ]                                      │
+│                                                          │
+│  ←→ select · Enter answer · Esc no                       │
+│                                                          │
+╰──────────────────────────────────────────────────────────╯
+```
+
+The title in amber (the palette's In progress, `#FBBF24`), bold, as the
+history's delete questions' are; the text in the text colour, the CLI named as
+the startup screen names it; the buttons the summary card's, the one
+selected bright and bold, its label underlined, the other subdued, No
+selected when the card opens; the keys in grey. Frames: `return-*` (No
+selected) and `return-yes-*`.
+
+| Key | Action |
+| - | - |
+| ← / → | select Yes / No |
+| Enter | answer with the button selected |
+| Esc | No |
+| Ctrl+Q | quit, as anywhere (the quit question takes the card's place while something runs) |
+
+Every other key does nothing while the card is open, and the draft under
+it takes no key and no paste. A left click on a button answers with it; a
+click outside the card is No; a click inside it on no button, the wheel
+and a right click do nothing. A terminal made too small to draw the
+dashboard closes it, as No.
+
+**Never while work runs** (design D8). While a message waits to be
+accepted, a turn runs or its approval waits, an agent runs, an approval
+waits in the queue whatever the turn's phase ("Not now: an approval is
+waiting · F2 answers it"), or Source
+Control's staging, commit or push or the branches popup's switch or fetch
+runs, Esc opens no card, writes nothing to the CLI and interrupts or
+answers nothing: the input row says "Not now: the turn is still running ·
+Ctrl+C interrupts it", or "Not now: the commit is still running" (the
+staging, the push, the switch, the fetch), naming the operation as the
+quit question does. The note goes once what it names has ended, or when
+another notice takes its place; while the force stop is offered ("no turn
+end after the interrupt: force stop closes the session"), Esc leaves that
+notice as it is, since it already says what can be done. A Yes given once
+something started meanwhile (a turn the CLI opens itself) is refused the
+same way. A mock run never asks: it
+has no home screen ([reliability.md, Mock
+mode](reliability.md#mock-mode)); nor a session still starting or already
+closing. The failed start's card keeps its own Esc, straight back.
+
+**The return** (design D9). Yes closes the CLI as a confirmed quit does:
+its stdin closed, then the process terminated after 5 s and killed after
+5 s more ([reliability.md, Interruption and
+cancellation](reliability.md#interruption-and-cancellation)); the
+dashboard stays meanwhile, the input row saying "the session is closing:
+nothing can be sent"; no git operation starts then (Source Control's
+staging, commit or push, the branches popup's switch or fetch), each
+saying "Returning to the home screen" where it would have shown its
+progress, so that none is dropped unseen. Once the process has exited, the home screen shows,
+its picture drawn whole again, its answers kept: question 1's CLI, the
+project field, the list's place. After a crash or a forced stop the
+return comes at once, a CLI still closing after the crash ended with it. Ctrl+Q during
+the close quits. A forced kill that yields no end of the CLI's process
+leads home all the same after the quit's kill grace, 5 s, the toast saying
+the CLI's end was not seen; a Ctrl+Q pressed meanwhile stays the quit.
+What the session's end waits for (the notification's
+removal, the Git Graph's git, the turn review's last snapshot and its
+store, the draft's write) runs off the event loop, so the home screen
+comes at once; until it is done, START SESSION, Ctrl+R, the session
+history's resume and the Worktrees view's Enter start nothing and say "!
+The last session is still closing" (in the history and Worktrees views, in
+their notes), so that the draft and the
+store are settled before a new session takes them. A failure of it, the
+draft's, shows in the toast.
+
+What ends with the session: its CLI process; its [turn review](#turn-review)'s
+store, removed as at quit; [the ping](#the-ping)'s notification, taken out
+of Windows' list; the Git Graph's git process; every view and popup of the
+session (the search bar, Source Control and its diff, the Git Graph, the
+branches popup, the file viewer and the quick open, the Explorer, the
+inspection, the details view, the draft window); the attachments; its
+registration in the [Worktrees](#worktrees) view's list. What stays: the
+project's changes, on disk as the CLI left them; the session in the
+project's [session history](#session-history), recorded as its turns
+ended; the draft, saved for the project's next start (plan 33), which
+shows it again. The next session, in that project or another, takes
+nothing of the last one: zones A, B and C show only its own entries.
 
 ## Dashboard
 
@@ -4165,13 +4422,13 @@ inspection.
 | Alt+G | show or hide the [Git Graph](#git-graph) with the focus, from any focus; its tile's click does the same; under 100 columns in zone B's place | plan 62; brief amendment 64 |
 | F6 / Shift+F6 | next / previous zone (B, or the diff in its place, the docked panel, the Explorer's or Source Control's, while shown, C, A) | ASM-9; plan 43; plan 44 |
 | Tab / Shift+Tab | next / previous zone, outside the editor (in the editor Tab inserts a tab) | ASM-9 |
-| Esc | close the "+" menu (plan 30), the model selector (plan 34), the modes selector (plan 39; from its Full access confirmation, back to the modes), the branches popup (plan 59; a fetch stopped, a confirmation cancelled or the search cleared first), close the overlay, leave zoom or inspection, clear the selection, back to the input | ASM-9 |
+| Esc | close the "+" menu (plan 30), the model selector (plan 34), the modes selector (plan 39; from its Full access confirmation, back to the modes), the branches popup (plan 59; a fetch stopped, a confirmation cancelled or the search cleared first), close the overlay, leave zoom or inspection, clear the selection, back to the input; at the input, nothing open or selected, ask to [return to the home screen](#return-to-the-home-screen), or say "Not now" while work runs (plan 75) | ASM-9; plan 75 |
 | Shift+PgUp / Shift+PgDn | scroll the conversation from any focus | ASM-9 |
 | F12 | toggle mouse capture (native terminal selection when off) | TI 6.3 item 6 |
 | Ctrl+W | the [Worktrees](#worktrees) view of the session's repository: list, diff, merge, remove | plan 16; brief amendment 10 |
 | F1, `?` | key overlay | ASM-9 |
 | Ctrl+R | after a crash only: resume the same CLI session in a new process ([reliability.md, Resumption](reliability.md#resumption)) | ASM-9 |
-| Ctrl+Q | quit; asks to confirm while a turn or an agent runs, or Source Control's staging, commit or push, or the branches popup's switch or fetch, whatever the session's phase, naming what runs ("quit? the commit is still running · Ctrl+Q again to quit · Esc to stay"); a second Ctrl+Q quits, git left to finish on its own | ASM-9; plan 47; plan 59 |
+| Ctrl+Q | quit; asks to confirm while a turn or an agent runs, or Source Control's staging, commit or push, or the branches popup's switch or fetch, whatever the session's phase, naming what runs ("quit? the commit is still running · Ctrl+Q again to quit · Esc to stay"); a second Ctrl+Q quits, git left to finish on its own; from the question to return to the home screen, and while that return closes the CLI, it quits too (plan 75) | ASM-9; plan 47; plan 59; plan 75 |
 
 **Shift+Enter in Windows Terminal.** In VT input mode the console reports
 Shift+Enter as a plain carriage return, the same as Enter (measured, plan 4,
@@ -4407,7 +4664,9 @@ provider: it has no provider code and sends a string to part 5's caller
   once it
   passes one line, then what the status line said when it had something
   to say (a turn running, "pasting…", a notice, the session's phase, the
-  quit question), joined by " · "; at the right end the mode pill (plan
+  quit question, a return to the home screen refused while work runs:
+  "Not now: the turn is still running · Ctrl+C interrupts it", "Not now:
+  the commit is still running"; plan 75, design D8), joined by " · "; at the right end the mode pill (plan
   39, [the modes selector](#input-editor) below) and one cell. When the
   middle does not fit beside the pills, three cells on either side (plan
   34's review: never touching the mode pill), the mode pill shows its icon

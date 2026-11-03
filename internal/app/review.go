@@ -85,6 +85,7 @@ func (g *turnGate) wait() {
 type turnStoreMsg struct {
 	store TurnStore
 	err   error
+	gen   int // the session it was made for (turnsGen; plan 75)
 }
 
 // openTurns makes the session's store in a command, once: its first call in
@@ -96,15 +97,25 @@ func (m *Model) openTurns() tea.Cmd {
 		return nil
 	}
 	m.turnsOpening = true
+	gen := m.turnsGen
 	return func() tea.Msg {
 		st, err := open(dir)
-		return turnStoreMsg{store: st, err: err}
+		return turnStoreMsg{store: st, err: err, gen: gen}
 	}
 }
 
 // turnStoreRead keeps the session's store, or tells the state why there is
 // none: nothing outside a git repository or without git (design D6).
 func (m *Model) turnStoreRead(msg turnStoreMsg) []tea.Cmd {
+	if msg.gen != m.turnsGen {
+		// Made for a session that ended meanwhile, a return to the home
+		// screen (plan 75): removed, and nothing else of the dashboard's
+		// changes.
+		if msg.store != nil {
+			_ = msg.store.Close()
+		}
+		return nil
+	}
 	m.turnsOpening = false
 	if msg.err != nil || msg.store == nil {
 		var nr input.NotRepoError

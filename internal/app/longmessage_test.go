@@ -1155,9 +1155,10 @@ func TestChipResize(t *testing.T) {
 		}
 		h.draw(tea.WindowSizeMsg{Width: 200, Height: 60})
 		if h.m.ui.Entry != 0 {
-			t.Errorf("the cursor stayed on entry %d, no chip any more", h.m.ui.Entry)
+			t.Fatalf("the cursor stayed on entry %d, no chip any more", h.m.ui.Entry)
 		}
-		h.send(key(tea.KeyEscape, 0))
+		// No Esc here: the cursor left for the input, where Esc now asks to
+		// return to the home screen (plan 75, design D7).
 
 		// The Explorer docked at 200x60: narrower, the same rule at that width.
 		h.send(tea.WindowSizeMsg{Width: 200, Height: 60})

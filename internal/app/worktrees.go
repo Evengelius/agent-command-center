@@ -324,6 +324,10 @@ func (m *Model) worktreesKey(k tea.KeyPressMsg) []tea.Cmd {
 			w.refuse("this worktree's directory is not there")
 			return nil
 		}
+		if m.stillClosing() {
+			w.refuse(stillClosingNote) // its draft and store still being settled (plan 75, design D9)
+			return nil
+		}
 		m.wt = nil
 		m.path.SetText(row.Path)
 		m.ui.Field = 1
@@ -441,6 +445,9 @@ func (m *Model) wtQuestionKey(k tea.KeyPressMsg) []tea.Cmd {
 	why := m.removeRefusal(row)
 	if op == 'm' {
 		why = m.mergeRefusal(row)
+	}
+	if m.s.Returning {
+		why = returningNote // nothing starts that the return would drop (plan 75, design D9)
 	}
 	if why != "" {
 		w.refuse(why)

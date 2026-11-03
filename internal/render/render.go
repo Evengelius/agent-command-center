@@ -43,7 +43,10 @@ type UI struct {
 	FolderProblem   string        // why the folder dialog failed (plan 52, design D3)
 	LastSession     string        // the note offering the chosen CLI's last session there, "" with none (plan 69, design D4)
 	NotResumed      string        // the last resume's failure there, "" with none (plan 69, design D7)
+	StillClosing    string        // a start refused while the last session's end runs, "" with none (plan 75)
+	OpenProblem     string        // why Start would refuse the field's path, found when Alt+H was pressed on it, "" with none (plan 75, design D2)
 	Worktrees       WorktreesView // the Worktrees view, over either screen while Open (plan 16)
+	History         HistoryView   // the session history view, over the startup screen while Open (plan 75)
 	// NerdIcons is true where the Explorer draws Cascadia Mono NF's icons,
 	// false where its own glyphs (plan 55, design D3).
 	NerdIcons bool
@@ -170,6 +173,9 @@ type UI struct {
 	// Search is the conversation's search bar at the foot of zone B, Ctrl+F
 	// (plan 66, brief amendment 68).
 	Search SearchView
+	// Return is the question to return to the home screen, Esc where it does
+	// nothing else on the dashboard (plan 75, design D7).
+	Return ReturnAsk
 
 	// Wrap keeps the conversation's line breaks between frames; nil wraps
 	// every line each frame, with the same result.

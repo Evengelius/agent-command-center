@@ -28,7 +28,7 @@ func paletteStyles() map[string]*lipgloss.Style {
 	m := map[string]*lipgloss.Style{
 		"frame": stFrame, "title": stTitle, "text": stText, "done": stDone, "progress": stProgress,
 		"attention": stAttention, "failed": stFailed, "grey": stGrey, "bold": stBold, "button": stButton,
-		"attentionBold": stAttentionBold, "failedBold": stFailedBold, "cursor": stCursor, "selected": stSelected,
+		"attentionBold": stAttentionBold, "failedBold": stFailedBold, "progressBold": stProgressBold, "cursor": stCursor, "selected": stSelected,
 		"control": stControl, "inferred": stInferred, "treeCursor": stTreeCursor, "mdBullet": stMdBullet,
 		"mdEm": stMdEm, "mdCode": stMdCode, "mdLink": stMdLink, "mdLang": stMdLang, "mdKeyword": stMdKeyword,
 		"mdString": stMdString, "mdNumber": stMdNumber, "mdComment": stMdComment, "synBuiltin": stSynBuiltin,

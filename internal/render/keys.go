@@ -66,7 +66,7 @@ func fixedKeyTable() []keyGroup {
 			{"Alt+G", "show or hide the Git Graph, with the focus (its tile's click too)"},
 			{"F6 / Shift+F6", "next / previous zone (B, the Explorer or Source Control while shown, C, A)"},
 			{"Tab / Shift+Tab", "next / previous zone, outside the editor"},
-			{"Esc", "close the overlay, leave zoom, inspection or a full view, clear the selection, back to the input"},
+			{"Esc", "close the overlay, leave zoom, inspection or a full view, clear the selection, back to the input; there, ask to return to the home screen"},
 			{"Shift+PgUp / Shift+PgDn", "scroll the conversation from any focus"},
 			{"F12", "toggle mouse capture (native terminal selection when off)"},
 			{"F1, ?", "this overlay (? outside the editor)"},

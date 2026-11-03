@@ -103,13 +103,13 @@ func (m *Model) pasteImages(ctrlV bool) []tea.Cmd {
 	case m.limits().MaxCount == 0:
 		return m.toast("this session takes no images")
 	}
-	return []tea.Cmd{func() tea.Msg {
+	return []tea.Cmd{m.sessionCmd(func() tea.Msg {
 		if files, err := ci.Files(); err == nil && len(files) > 0 {
 			return clipMsg{files: files, ctrlV: ctrlV}
 		}
 		data, err := ci.Image()
 		return clipMsg{data: data, err: err, ctrlV: ctrlV}
-	}}
+	})}
 }
 
 // clipped attaches what the clipboard held: its files through plan 31's
@@ -119,21 +119,21 @@ func (m *Model) clipped(msg clipMsg) []tea.Cmd {
 	case msg.err != nil:
 		return m.toast("clipboard: " + msg.err.Error())
 	case len(msg.files) > 0:
-		return []tea.Cmd{inspectImages(msg.files, inputLimits(m.limits()), false)}
+		return []tea.Cmd{m.sessionCmd(inspectImages(msg.files, inputLimits(m.limits()), false))}
 	case len(msg.data) == 0 && msg.ctrlV:
 		return m.toast("nothing to paste: no text and no image on the clipboard")
 	case len(msg.data) == 0:
 		return m.toast("no image on the clipboard")
 	}
 	data, lim := msg.data, inputLimits(m.limits())
-	return []tea.Cmd{func() tea.Msg {
+	return []tea.Cmd{m.sessionCmd(func() tea.Msg {
 		img, _, im, err := input.InspectData("pasted image", data, lim)
 		out := pastedMsg{img: img, data: data, sum: sha256.Sum256(data), err: err}
 		if err == nil {
 			out.thumb = thumbsOf(im)
 		}
 		return out
-	}}
+	})}
 }
 
 // pastedImage attaches a pasted image as "pasted-image-N.png", N the run's
@@ -222,13 +222,13 @@ func (m *Model) terminalPaste(text string) []tea.Cmd {
 		m.paste(text)
 		return nil
 	}
-	return []tea.Cmd{func() tea.Msg {
+	return []tea.Cmd{m.sessionCmd(func() tea.Msg {
 		files, err := ci.Files()
 		if err != nil {
 			files = nil
 		}
 		return pathsMsg{text: text, files: files}
-	}}
+	})}
 }
 
 // pastedPaths attaches the files when the paste is exactly their paths and
@@ -239,7 +239,7 @@ func (m *Model) pastedPaths(msg pathsMsg) []tea.Cmd {
 		return nil
 	}
 	text, files, lim := msg.text, msg.files, inputLimits(m.limits())
-	return []tea.Cmd{func() tea.Msg {
+	return []tea.Cmd{m.sessionCmd(func() tea.Msg {
 		out := inspectedMsg{thumbs: map[string]thumbSixel{}}
 		for _, f := range files {
 			img, im, err := input.InspectPreview(f, lim)
@@ -250,7 +250,7 @@ func (m *Model) pastedPaths(msg pathsMsg) []tea.Cmd {
 			out.thumbs[img.Path] = thumbsOf(im)
 		}
 		return out
-	}}
+	})}
 }
 
 // looksLikePaths says the paste may be copied files' paths as Windows

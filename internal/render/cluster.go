@@ -49,10 +49,27 @@ type decoded struct {
 // decoded already; after is the code point it ends before, decoded, if it
 // did decode one (not ASCII, not a byte that is not UTF-8).
 func cluster(s string, i int, r rune, n int) (end, width int, after decoded) {
-	end = i + n
+	end, after = clusterEnd(s, i, r, n)
 	f := factsOf(r)
 	if f&control != 0 || r == utf8.RuneError && n == 1 {
 		return end, f.width(), after // a byte that is not UTF-8 is one cell, as before
+	}
+	if end == i+n {
+		return end, f.width(), after
+	}
+	return end, clusterWidth(s[i:end]), after
+}
+
+// clusterEnd is cluster without the width: the end of the cluster that starts
+// at byte i of s, its first code point r being n bytes long, and the code
+// point it ends before when it decoded one. Its cost is the cluster's length,
+// where the width of a cluster of several code points is measured, and kept,
+// as a whole.
+func clusterEnd(s string, i int, r rune, n int) (end int, after decoded) {
+	end = i + n
+	f := factsOf(r)
+	if f&control != 0 || r == utf8.RuneError && n == 1 {
+		return end, after
 	}
 	// The state UAX #29 keeps: the regional indicators just before, and an
 	// Indic linker since the last letter. Where a code point is kept that
@@ -91,10 +108,7 @@ func cluster(s string, i int, r rune, n int) (end, width int, after decoded) {
 		}
 		prev, end = f2, end+n2
 	}
-	if end == i+n {
-		return end, f.width(), after
-	}
-	return end, clusterWidth(s[i:end]), after
+	return end, after
 }
 
 // joins says r, of facts f, continues the cluster whose last code point has

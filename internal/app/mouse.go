@@ -45,6 +45,9 @@ type clickFold struct {
 // (plan 51, design D11).
 func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 	if m.s.Screen == state.ScreenStartup && m.wt == nil {
+		if m.hist != nil {
+			return m.historyMouse(msg) // the session history view (plan 75, design D3)
+		}
 		return m.homeMouse(msg)
 	}
 	if m.s.Screen != state.ScreenDashboard || m.screen == nil || m.wt != nil {
@@ -55,6 +58,9 @@ func (m *Model) mouse(msg tea.MouseMsg) []tea.Cmd {
 	top := m.screen.Layers.Top
 	if top == render.LayerWindow {
 		return m.fileMouse(msg) // the window floats over the dashboard (plan 17)
+	}
+	if top == render.LayerReturn {
+		return m.returnMouse(msg) // the question to return to the home screen (plan 75, design D7)
 	}
 	mo := msg.Mouse()
 	switch msg.(type) {

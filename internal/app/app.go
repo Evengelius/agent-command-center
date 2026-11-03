@@ -189,10 +189,17 @@ type Model struct {
 	detected map[string]provider.Detection
 	sess     provider.Session
 	cancel   context.CancelFunc // ends the session's context: the forced kill
+	sessGen  int                // the session's number, for its messages (sessionMsg; plan 75)
 	once     sync.Once
 	pending  []tea.Cmd      // the launch's commands, for Init
 	writes   chan writeJob  // the session's writes, in order (writer.go)
 	notifies chan notifyJob // the notification calls, in order (notify.go, plan 64)
+
+	// ending is the last session's end, run off the event loop, until it is
+	// done, nil when none runs; closingSaid says a start was refused for it
+	// (plan 75).
+	ending      *endJob
+	closingSaid bool
 
 	// The turn review (review.go, plan 65): the session's store; its
 	// snapshots, in order, under turnsCtx; the gate the next message waits
@@ -200,6 +207,7 @@ type Model struct {
 	turns        TurnStore
 	turnsOpening bool
 	turnsClosed  bool
+	turnsGen     int // the session's store's number: a store made for an ended session is removed (plan 75)
 	turnsCtx     context.Context
 	turnsStop    context.CancelFunc
 	turnJobs     chan turnJob
@@ -227,6 +235,15 @@ type Model struct {
 	// The Worktrees view (worktrees.go): nil when closed.
 	wt    *worktrees
 	wtGen int // the last git result asked for
+	// The session history view (history.go, plan 75): nil when closed.
+	hist *history
+	// Alt+H's check of the field's path, as Start validates it (history.go): the
+	// last asked for, why Start would refuse the path and the text it was for,
+	// and the function that checks (checkProject; a test replaces it).
+	histGen                     int
+	histRefused, histRefusedFor string
+	check                       func(raw string, env input.PathEnv) (path, branch, problem string)
+	olderResume                 bool // the session resumed from the home screen was not its CLI's newest (lastsession.go)
 	// The file viewer and the quick open (file.go): the generations of the
 	// last read or colouring, search and listing asked for.
 	fileGen, searchGen, finderGen int
@@ -419,10 +436,8 @@ func New(opt Options) *Model {
 	opt.Keys = opt.Keys.WithDefaults()
 	m := &Model{opt: opt, s: state.New(), detected: map[string]provider.Detection{}}
 	m.env = input.PathEnv{Windows: filepath.Separator == '\\', Home: opt.Home, Cwd: opt.Cwd}
-	m.ui = render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache(), Memo: render.NewMemo(), Colors: render.NewCmdColors(),
-		KeysProblem: opt.KeysProblem, CodexProxy: opt.CodexProxy, CodexProxyProblem: opt.CodexProxyProblem, NerdIcons: opt.NerdIcons}
-	m.ui.SendKeys, m.ui.NewlineKeys = opt.Keys.Display()
-	m.ui.Version, m.ui.System = Version, systemName(runtime.GOOS) // the home screen's header (plan 51, design D5)
+	m.check = checkProject
+	m.ui = m.newUI()
 	m.path.SetText(m.startProject())
 	// Launch now, not in Init's command: the first frame is drawn before any
 	// message, and a mock run must show its badge from that frame on.
@@ -436,6 +451,17 @@ func New(opt Options) *Model {
 	}
 	m.syncUI()
 	return m
+}
+
+// newUI is the interface's view as the model starts with it: also a
+// session's after a return to the home screen (resetSession).
+func (m *Model) newUI() render.UI {
+	opt := m.opt
+	ui := render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache(), Memo: render.NewMemo(), Colors: render.NewCmdColors(),
+		KeysProblem: opt.KeysProblem, CodexProxy: opt.CodexProxy, CodexProxyProblem: opt.CodexProxyProblem, NerdIcons: opt.NerdIcons}
+	ui.SendKeys, ui.NewlineKeys = opt.Keys.Display()
+	ui.Version, ui.System = Version, systemName(runtime.GOOS) // the home screen's header (plan 51, design D5)
+	return ui
 }
 
 // State is the current state, for tests.
@@ -499,6 +525,14 @@ func (m *Model) View() tea.View {
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.ui.Now = m.opt.Now()
 	var cmds []tea.Cmd
+	if sm, ok := msg.(sessionMsg); ok {
+		// A message of the session now goes on as its own; one of a session
+		// that ended changes nothing (plan 75, design D9).
+		msg = sm.msg
+		if sm.gen != m.sessGen {
+			cmds, msg = m.lateMessage(sm.msg), nil
+		}
+	}
 	if updateHook != nil {
 		cmds = updateHook(m, msg)
 	}
@@ -538,7 +572,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case refusedMsg:
 		cmds = append(cmds, m.do(msg.a)...) // the draft given back, then its changed file read again
-		cmds = append(cmds, inspectImages([]string{msg.path}, inputLimits(m.limits()), false))
+		cmds = append(cmds, m.sessionCmd(inspectImages([]string{msg.path}, inputLimits(m.limits()), false)))
+	case sessionEndMsg:
+		cmds = append(cmds, m.sessionEnded(msg)...)
+	case returnGraceMsg:
+		if m.s.Returning && m.s.Session.Phase == state.Closing && m.s.Startup.Phase != state.Exited {
+			cmds = append(cmds, m.do(state.ReturnGrace{})...)
+			cmds = append(cmds, m.toast("the CLI's end was not seen after its forced kill: back to the home screen all the same")...)
+		}
 	case actionMsg:
 		validating := m.s.Startup.Phase == state.Validating
 		cmds = append(cmds, m.do(msg.a)...)
@@ -553,6 +594,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, m.projectsDone(msg)...)
 	case chosenFolderMsg:
 		m.folderPicked(msg)
+	case historyCheckedMsg:
+		m.historyChecked(msg)
 	case wtListMsg:
 		m.worktreesListed(msg)
 	case wtOpMsg:
@@ -623,9 +666,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		changed := false
 		for _, ev := range msg.evs {
+			if msg.sess != m.sess {
+				break // the session ended within the burst: a return to the home screen (plan 75)
+			}
 			cmds = append(cmds, m.run(m.s.Apply(ev))...)
 			if ev.Kind == event.SessionSpawned {
-				cmds = append(cmds, m.opt.After(HandshakeTimeout, actionMsg{state.HandshakeTimeout{}}))
+				cmds = append(cmds, m.sessionAfter(HandshakeTimeout, state.HandshakeTimeout{}))
 			}
 			// A tool call's or a turn's end may have changed the project's
 			// files: Source Control reads git's status again (plan 44, design
@@ -635,7 +681,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if changed {
 			cmds = append(cmds, m.sourceEvent()...)
 		}
-		if !msg.closed {
+		if !msg.closed && msg.sess == m.sess {
 			cmds = append(cmds, listen(m.sess))
 		}
 	case tea.PasteStartMsg:
@@ -714,6 +760,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// values as they are, each with its own age (no zero, no guess).
 	}
 	cmds = append(cmds, m.lockSync()...)
+	if n := m.s.Turn.NotNow; n != "" && n != state.NotNowTurn && n != state.NotNowApproval && m.gitRunning() == "" {
+		cmds = append(cmds, m.do(state.GitIdle{})...) // the git operation a refused return named has ended (plan 75, design D8)
+	}
 	m.pruneImages()
 	m.syncUI()
 	m.markLive()
@@ -827,7 +876,16 @@ func (m *Model) syncUI() {
 			m.ui.Field = 1
 		}
 	}
+	if m.histRefused != "" && m.histRefusedFor != m.path.Text() {
+		m.histRefused = "" // the path changed: Start's refusal of the old one is no longer the field's
+	}
+	m.ui.OpenProblem = m.histRefused
+	m.ui.StillClosing = ""
+	if m.closingSaid && m.ending != nil {
+		m.ui.StillClosing = stillClosingNote
+	}
 	m.ui.Worktrees = m.worktreesView()
+	m.ui.History = m.historyView()
 }
 
 // markLive records in ui.Live the thinking phases of the last exchange that
@@ -946,13 +1004,13 @@ func (m *Model) command(c state.Command) tea.Cmd {
 		}
 		return tea.Batch(m.start(c.ID, false), m.openTurns())
 	case state.CmdRecordSession:
-		return m.recordSession(c.ID, c.At)
+		return m.recordSession(c.ID, c.At, c.Text, c.Partial)
 	case state.CmdForgetSession:
 		return m.forgetSession(c.ID)
 	case state.CmdTurnSnapshot:
-		return m.turnSnapshot(c)
+		return m.sessionCmd(m.turnSnapshot(c))
 	case state.CmdTurnFiles:
-		return m.turnFiles(c)
+		return m.sessionCmd(m.turnFiles(c))
 	case state.CmdWrite:
 		m.edit.Clear()
 		m.attach = nil
@@ -960,7 +1018,7 @@ func (m *Model) command(c state.Command) tea.Cmd {
 		pasted := m.pastedFor(imgs)
 		gate := m.turnGate // the turn's start, taken first (plan 65, design D4)
 		m.turnGate = nil
-		return tea.Batch(m.draftWrite(), m.write(func() tea.Msg {
+		return tea.Batch(m.draftWrite(), m.sessionCmd(m.write(func() tea.Msg {
 			gate.wait()
 			if sess == nil {
 				return actionMsg{state.WriteFailed{Message: "no session"}}
@@ -979,10 +1037,10 @@ func (m *Model) command(c state.Command) tea.Cmd {
 				return actionMsg{state.WriteFailed{Message: err.Error()}}
 			}
 			return nil
-		}, actionMsg{state.WriteFailed{Message: "too many writes waiting"}}))
+		}, actionMsg{state.WriteFailed{Message: "too many writes waiting"}})))
 	case state.CmdAnswer:
 		sess, id, d, answers := m.sess, c.ID, c.Decision, c.Answers
-		return m.write(func() tea.Msg {
+		return m.sessionCmd(m.write(func() tea.Msg {
 			if sess == nil {
 				return actionMsg{state.AnswerFailed{ID: id, Message: "no session"}}
 			}
@@ -991,10 +1049,10 @@ func (m *Model) command(c state.Command) tea.Cmd {
 				return actionMsg{state.AnswerFailed{ID: id, Message: err.Error(), Gone: errors.Is(err, provider.ErrNoPending)}}
 			}
 			return nil
-		}, actionMsg{state.AnswerFailed{ID: id, Message: "too many writes waiting"}})
+		}, actionMsg{state.AnswerFailed{ID: id, Message: "too many writes waiting"}}))
 	case state.CmdSetApprovals:
 		sess, mode := m.sess, c.Mode
-		return m.write(func() tea.Msg {
+		return m.sessionCmd(m.write(func() tea.Msg {
 			if sess == nil {
 				return actionMsg{state.ApprovalFailed{Message: "no session"}}
 			}
@@ -1002,30 +1060,30 @@ func (m *Model) command(c state.Command) tea.Cmd {
 				return actionMsg{state.ApprovalFailed{Message: err.Error()}}
 			}
 			return nil
-		}, actionMsg{state.ApprovalFailed{Message: "too many writes waiting"}})
+		}, actionMsg{state.ApprovalFailed{Message: "too many writes waiting"}}))
 	case state.CmdModels:
-		return m.modelsCmd(c.Change)
+		return m.sessionCmd(m.modelsCmd(c.Change))
 	case state.CmdInterrupt:
 		sess := m.sess
-		return tea.Batch(m.write(func() tea.Msg {
+		return tea.Batch(m.sessionCmd(m.write(func() tea.Msg {
 			if sess != nil {
 				_ = sess.Interrupt() // no turn end within the timeout offers force stop
 			}
 			return nil
-		}, nil), m.opt.After(InterruptTimeout, actionMsg{state.InterruptTimeout{}}))
+		}, nil)), m.sessionAfter(InterruptTimeout, state.InterruptTimeout{}))
 	case state.CmdRefresh:
 		// Through the write queue, in order with the owner's messages: the
 		// Claude adapter's refresh writes "/usage", which must reach the CLI
 		// before any prompt sent after the turn (plan 24, amendment 23).
 		sess := m.sess
-		return m.write(func() tea.Msg {
+		return m.sessionCmd(m.write(func() tea.Msg {
 			if sess == nil {
 				return nil
 			}
 			return refreshMsg{sess.Refresh()}
-		}, nil)
+		}, nil))
 	case state.CmdClose:
-		return tea.Batch(m.close(), m.opt.After(CloseTimeout, actionMsg{state.CloseTimeout{}}))
+		return tea.Batch(m.close(), m.sessionAfter(CloseTimeout, state.CloseTimeout{}))
 	case state.CmdKill:
 		if m.cancel != nil {
 			m.cancel()
@@ -1033,11 +1091,18 @@ func (m *Model) command(c state.Command) tea.Cmd {
 		if m.s.Startup.Phase == state.Exited {
 			return m.opt.After(KillGrace, leaveMsg{})
 		}
+		if m.s.Returning {
+			// No session end within the grace: home all the same (plan 75,
+			// design D9).
+			return m.opt.After(KillGrace, sessionMsg{gen: m.sessGen, msg: returnGraceMsg{}})
+		}
 	case state.CmdDraftAccepted:
 		return m.draftAccepted()
 	case state.CmdRestoreDraft:
 		m.edit.SetText(joinDraft(c.Text, m.edit.Text())) // typed since the send: both kept
 		m.restoreImages(c.Images)                        // and its images, before any attached since (plan 31)
+	case state.CmdHome:
+		return tea.Batch(m.goHome()...) // back to the home screen (plan 75, design D9)
 	case state.CmdExit:
 		return tea.Quit
 	}
@@ -1213,6 +1278,9 @@ func (m *Model) Shutdown() {
 		m.stopNotifying() // the notification still up taken out (plan 64, design D4)
 		m.stopGraphRead() // the Git Graph's git process too (plan 62, design D4)
 		m.closeTurns()    // the turn review's store removed (plan 65, design D3)
+		if m.ending != nil {
+			_ = m.ending.run() // a session's end not yet done, its draft and store among it, run or waited for (plan 75)
+		}
 		if m.lock != nil {
 			_ = m.lock.Release() // the program ends: its registration with it
 			m.lock = nil
@@ -1235,6 +1303,8 @@ func (m *Model) paste(text string) {
 	// none.
 	top := render.Layers(m.s, m.ui).Top
 	switch {
+	case m.hist != nil:
+		// The session history view has no field (plan 75).
 	case m.wt != nil:
 		if m.wt.mode == 'n' && m.wt.busy == "" {
 			m.wt.branch.Insert(firstLine(text)) // a branch name is one line
@@ -1242,6 +1312,9 @@ func (m *Model) paste(text string) {
 	case m.s.Screen == state.ScreenStartup && m.ui.Field == 1:
 		m.path.Insert(input.CleanPath(text))
 	case top == render.LayerKeys:
+	case top == render.LayerReturn:
+		// The question to return to the home screen has no field: the draft
+		// under it takes nothing (plan 75, design D7).
 	case top == render.LayerWindow:
 		m.filePaste(text) // the window takes it, or drops it
 	case top == render.LayerBranches:

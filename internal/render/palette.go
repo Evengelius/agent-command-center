@@ -284,7 +284,7 @@ func fg(c colour) lipgloss.Style { return lipgloss.NewStyle().Foreground(c.get()
 
 var (
 	stFrame, stTitle, stText, stDone, stProgress, stAttention, stFailed, stGrey, stBold, stButton      = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
-	stAttentionBold, stFailedBold, stNone                                                              = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
+	stAttentionBold, stFailedBold, stNone, stProgressBold                                              = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 	stCursor, stSelected, stControl, stInferred, stTreeCursor                                          = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 	stMdBullet, stMdEm, stMdCode, stMdLink, stMdLang, stMdKeyword, stMdString, stMdNumber, stMdComment = new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style), new(lipgloss.Style)
 
@@ -409,6 +409,7 @@ func paint() {
 	paintStyle(stButton, fg(cInk).Background(cTitle.get()).Bold(true))
 	paintStyle(stAttentionBold, stAttention.Bold(true))
 	paintStyle(stFailedBold, stFailed.Bold(true))
+	paintStyle(stProgressBold, stProgress.Bold(true)) // the questions' titles, amber (plan 75, designs D4 and D7)
 	paintStyle(stNone, lipgloss.NewStyle())
 	paintStyle(stPanelRule, fg(cTitle))
 

@@ -90,10 +90,10 @@ func (m *Model) pickImages() []tea.Cmd {
 	}
 	m.picking = true
 	pick := m.opt.PickImages
-	return []tea.Cmd{func() tea.Msg {
+	return []tea.Cmd{m.sessionCmd(func() tea.Msg {
 		paths, err := pick()
 		return pickedMsg{paths, err}
-	}}
+	})}
 }
 
 // picked reads and checks the files chosen, in a command; a cancelled
@@ -106,7 +106,7 @@ func (m *Model) picked(msg pickedMsg) []tea.Cmd {
 	if len(msg.paths) == 0 {
 		return nil
 	}
-	return []tea.Cmd{inspectImages(msg.paths, inputLimits(m.limits()), false)}
+	return []tea.Cmd{m.sessionCmd(inspectImages(msg.paths, inputLimits(m.limits()), false))}
 }
 
 // inspectImages reads and checks each file, outside the update loop, and

@@ -225,6 +225,8 @@ start.
 | a file written while a snapshot is taken | caught before or after; the listing after the end marks the turn "still changing" |
 | a `git gc --prune=now` removing an object only the store's index named | that side shows git's error, never another content |
 | the dashboard quits | the snapshot running stopped, waited for 3 s, the store removed |
+| the owner returns to the home screen (plan 75) | as at quit, once the CLI has exited, off the event loop: the snapshot running stopped, waited for 3 s, the store removed; its answer, if it comes later, dropped; a store made for that session after it ended is removed as it comes; the next session makes its own |
+| Back after a failed start (plan 75) | the failed session's store removed the same way, so that the next start, in that project or another, makes its own |
 | the dashboard crashes or is killed | the store stays on this machine, readable by the user alone, until a dashboard starts again and removes every store no running dashboard holds |
 | a turn that takes in many files at once | git writes about 7 ms a new file here (2,000 small files 13.9 s, plan 65's store tests): past about 700 the start's 5 s pass, the message going and the turn without a review; past about 4,000 the end's 30 s; once a snapshot has taken them, the next is quick again |
 | a repository with Git LFS | the filters off, every checked-out LFS file differs from its pointer in the seeded index: the first snapshot takes each in as its bytes, 32 MiB at most each, so that with over 256 MiB of them the store is full from the first snapshot and the session has no review |
@@ -402,12 +404,50 @@ Approval machine):
 | No end 10 s after an interrupt | "the turn did not stop · F force stop (ends the session)" (ASM-16) | same | |
 | Force stop | close the session (below); the turn ends `interrupted`, open tools `Unfinished` | same | |
 | Quit (Ctrl+Q) | confirmation if a turn or an agent runs ("2 agents still running will be stopped"); then close | same | |
+| Return to the home screen (Esc, then Yes; plan 75) | refused while a turn, an agent, an approval or a git operation runs, nothing written or interrupted ("Not now: …"); idle, the close as at quit, then the home screen once the process has exited; after a crash or a forced stop, at once | same | Ctrl+Q during the close quits, the forced kill at once (the quit's own escalation); a CLI that ignores the end of its input is terminated 5 s later, as at quit (TestReturnEscalation) |
 | Close | close stdin, wait 5 s, terminate, wait 5 s, kill (INT 9: no POSIX signals on Windows) | same escalation (ASM-5) | settled: Claude Code exits 0 in 1.4 s after stdin closes (P2's code 1 followed its interrupt's error) and ends 41 ms after a job kill mid-turn (CC-10 q13); Codex killed mid-turn ends in 24 ms with every process gone (CX-10 q8) |
 
 After an interrupt the session stays `Ready` and the next message continues
 it (P2: a third turn after the interrupt). Background Claude Code agents
 outlive the turn that started them (P3, P3b) and stop when the session
 closes; stopping one agent (`stop_task`, **D**) is not in the MVP's screens.
+
+**A return to the home screen** (plan 75, design D9) ends the session as a
+quit does, and the dashboard goes on. Nothing runs when it starts: an agent
+running, background ones included, refuses it, so it stops no work of the
+owner's. What the CLI may still run on its own outside the turn (a Codex
+background terminal, which `turn/interrupt` does not stop either) ends with
+its process, as at quit (doc/plan75-evaluation.md, The plan as it ran,
+Known limits). Once the process has exited, the session's part of the
+application ends as at quit: the turn review's snapshots stopped and its
+store removed (The turn review), the ping's notification taken out, the Git
+Graph's git stopped, the write queue's worker ended, the draft written and
+let go for the project's next start (plan 33), its registration released.
+What of it waits (the notification's removal, 2 s at most; the snapshot
+worker's end, 3 s at most, and the store's removal; the Git Graph's git;
+the draft's write) runs in a command, off the event loop, and the next
+start waits for it ("The last session is still closing"), whichever starts
+it: START SESSION, Ctrl+R, the session history or the Worktrees view. The
+program's end runs it itself when its command has not started, or waits for
+it, every wait of it bounded as above. Every read still under way for the
+session (Source Control, the Explorer, the file viewer, the branches, the
+HEAD watch) is dropped when its answer comes, each one's number past the
+session's; every other message of the session carries the session's number:
+its timers (the handshake's 60 s, the interrupt's 10 s, the close's 5 s,
+the kill's grace), its writes' results and failures and a panic in one, its
+turn review's snapshots and files, the Git Graph's card reads (a commit's
+message and files), the images and clipboard text being read for its draft
+or a search. No handler of a late answer writes into a map the fresh model
+leaves empty. One of a session that ended is dropped, a failure it reports
+said in the toast, so that none reaches the next session or the state the
+return left. While the CLI closes, no git operation starts ("Returning to
+the home screen"), so that none is dropped unseen. A forced kill that
+yields no end of the process leads home all the same after the quit's kill
+grace, 5 s, the toast saying the CLI's end was not seen. An approval
+waiting in the queue refuses the return whatever the turn's phase, so that
+the return's close never answers one. The state is then `New`'s, the
+startup answers kept, and the next session starts from nothing of the last
+(events-and-state.md, Startup machine).
 
 ## Resumption
 
@@ -435,9 +475,21 @@ Without losing the session (B3.4):
   `thread/resume` returns the turns ([T] README:321-377, not checked: the
   dashboard does not depend on it); the record is still what is shown, so
   both CLIs behave the same.
-- **Across dashboard runs** (plan 69, amendment 71): each project's entry
-  in `projects.json` keeps, per agent CLI, the last session the dashboard
-  ran there, its ID and when the owner's last turn there ended (ASM-24). The
+- **Across dashboard runs** (plan 69, amendment 71; plan 75, amendments 89
+  to 91): each project's entry in `projects.json` (version 2) keeps a history
+  of the sessions the dashboard ran there, newest first, at most 20: each
+  one's agent CLI, its ID, when the owner's last turn there ended, the model
+  as zone A names it and a title, the first words of the owner's first
+  message in a session started new (control characters removed, white space
+  collapsed, 60 grapheme clusters at most): the one conversation text the
+  store keeps, an exception to ASM-24 (a first prompt can hold sensitive
+  text; it stays until its entry is deleted from the dashboard's list, the
+  CLIs' own files being untouched). A version 1 file (each CLI's last session
+  per project) is read as version 2 and written as version 2 at its next
+  change; a version above 2 is refused like a damaged file, never overwritten
+  and the list shown as unavailable, as an older build does for version 2
+  (it reads version 1 only, and never writes a list it cannot read). A
+  project dropped from the list takes its history with it. The
   home screen offers the chosen CLI's for the chosen project, and Ctrl+R or
   a click on its note starts the CLI on it: Claude Code `--resume <id>`
   with a start's flags, Codex `thread/resume` with `excludeTurns: true`,
@@ -643,7 +695,8 @@ provider):
   instead of "● LIVE"; inspection labels every value mock
   ([ui-design.md, Origins on screen](ui-design.md#origins-on-screen)).
 - **No path to a live session**: one provider per run, chosen at start
-  (AGENTS.md: no switching); the mock provider has no process, no stdin and no
+  (AGENTS.md: no switching), and no return to the home screen, which Esc
+  never offers in a mock run (plan 75, design D9); the mock provider has no process, no stdin and no
   network; its "send" and "answer" append mock notices to the record and go
   nowhere. A mock run never spawns a CLI, so a mock event cannot reach one,
   and a live run never loads a mock file. Tests check each of these (item 8

@@ -42,8 +42,9 @@ Decisions of closed plans that still apply; `AGENTS.md` and
   limit is documented and the smallest adjustment proposed; the architecture
   never changes silently (2026-10-16).
 - **Drafts and session data** survive cancellation, crashes and recovery; no
-  conversation data is stored beyond the draft, and nothing sensitive goes
-  into a log (2026-10-16).
+  conversation data is stored beyond the draft and each recorded session's
+  title, at most 60 characters of its first prompt (amendment 91, plan 75),
+  and nothing sensitive goes into a log (2026-10-16).
 - **Zone A shows values, not notes** (amendment 25, 2026-10-22, plan 26):
   its telemetry pane carries no notes row, legend or counter, now or in
   any later plan; errors, retries, unrecognised lines, freshness and the
@@ -106,8 +107,6 @@ session stays below.
   home screen, paged with `thread/turns/list` and `thread/items/list`, with
   their rendering cost, their tool events and very long sessions (plan 69,
   design D1).
-- **[Nice to have]** A list of a project's earlier sessions to resume, not
-  only each agent CLI's last one (plan 69, design D8).
 
 ## Roadmap
 
@@ -118,13 +117,9 @@ the last (the characters typed with AltGr; the keyboard reader's races).
 Then plan 70, the owner's own (amendment 72), approved on 2026-10-30,
 and plans 71 and 72, the owner's own (amendments 74 and 75), approved on
 2026-10-31, plan 73, the owner's own (amendments 76 and 77), approved on
-2026-11-02, and plan 74, the owner's own (amendments 82 to 88), approved on
-2026-11-03. The next plan starts when the owner asks for one, as a plan for
-the owner's review.
-
-## No plan active
-
-Plan 74 was approved and closed on 2026-11-03 (Closed plans, below).
+2026-11-02, plan 74, the owner's own (amendments 82 to 88), approved on
+2026-11-03, and plan 75, the owner's own (amendments 89 to 94), approved and
+closed the same day.
 
 ## Closed plans
 
@@ -1085,4 +1080,20 @@ deferred, a Codex-led step reported NOT REVIEWED. Approved on 2026-11-03: the
 final review PASS on all 11 criteria after the plan's one correction, then
 seven text corrections the owner asked for, checked without a further review
 ([`doc/plan74-evaluation.md`](doc/plan74-evaluation.md)); one commit, on the
+owner's word; its full text in that file, The plan as it ran.
+
+## Plan 75 - Session history and the return to the home screen
+
+Brief amendments 89 to 94: Alt+H on the home screen lists the sessions ACC ran
+in the chosen project, newest first, each titled from the first 60 characters
+of its first prompt, with its date, CLI, model and ID, to resume (Enter, a
+double click) or to delete (Del, Shift+Del, each confirmed, ACC's list only);
+`projects.json` is version 2, version 1 migrated on read and older builds
+refusing it. Esc on an idle dashboard asks "RETURN TO THE HOME SCREEN?", No the
+default, never while work runs; Yes ends the session as quitting does and
+leaves nothing of it behind. Approved on 2026-11-03: the final review PASS on
+the 21 criteria it judged after its one correction, 75.22 approved by the
+owner from the live run's screenshots, then the delete question's arrows fixed
+at the owner's request, checked by the whole suite without a further review
+([`doc/plan75-evaluation.md`](doc/plan75-evaluation.md)); one commit, on the
 owner's word; its full text in that file, The plan as it ran.

@@ -11108,3 +11108,136 @@ Read-only assessment only. Do not launch providers or tests, modify or delete fi
 ````
 
 Taken as: automated Codex review stays deferred, and Codex's own `/review`, when the owner runs it, gives findings, never a PASS (`AGENTS.md`, Review cycle). The owner then answered "Resume rebuild", and "Continue" at the one stop that loaded the new definitions.
+
+## Amendment 89, 2026-11-03: plan 75, the session history and the return home
+
+The owner's message, word for word:
+
+````text
+I'd like your honest assessment of ACC's next feature, now that Plan 74 is completed.
+The goal is simple: improve session navigation and history while preserving ACC's existing architecture and UI.
+1. Session History
+
+* Keep the existing `START SESSION` and `Ctrl+R` behavior unchanged.
+* Add a keyboard shortcut to the home screen footer.
+* The shortcut opens a themed, scrollable popup listing previous sessions for the selected project.
+* Show date/time, provider and model (when available).
+* Left-click selects, double left-click resumes, right-click opens a context menu with `Delete` and `Delete All`.
+* Keyboard: ↑/↓ to navigate, Enter to resume, Delete to remove an entry, Esc to close.
+* Left-click outside the popup closes it.
+* Deletion requires confirmation. `Delete All` applies only to the selected project's history, never to other projects.
+* Deletion removes ACC's history references, not the providers' native session data.
+
+2. Return to Home
+
+* From the main dashboard, pressing Esc when no other popup or selection is active should offer to return to the home screen.
+* Show a themed `Yes / No` confirmation.
+* Mouse: left-click. Keyboard: ←/→ and Enter. Esc cancels.
+* Active agent execution must be handled safely. Never silently interrupt work or discard Git changes.
+
+Constraints
+
+* Preserve zones A, B and C.
+* Reuse existing UI patterns and native provider capabilities.
+* Avoid unnecessary abstractions or new orchestration mechanisms.
+* Keep the implementation minimal.
+
+Before proposing a plan, please inspect the existing source code and tell me:
+
+1. What already exists and can be reused?
+2. Can we discover and resume older Claude Code and Codex sessions reliably?
+3. What technical difficulties or UX conflicts do you foresee, particularly when returning home during an active session?
+4. What is the simplest safe implementation?
+5. Would you change anything in my proposal?
+
+Read-only assessment only. Do not modify files, launch agents or implement anything.
+I want your candid technical opinion before deciding whether to approve a new plan. What do you think?
+````
+
+Taken as the request for plan 75's two features, the session history on the home screen and the return to it from the dashboard, assessed read only first. The owner then answered "Draft the plan" to the assessment's changes: no right-click menu, the history as a full-screen view, no return while work runs, No as the question's default, Esc no longer quitting the home screen, and two steps.
+
+## Amendment 90, 2026-11-03: plan 75, version 2 and session titles
+
+The owner's message, word for word:
+
+````text
+Two points I'd like your opinion on before approving Plan 75:
+
+1. `projects.json` v2: Introduce schema version 2 with automatic migration from v1 and protection against older ACC versions silently overwriting session history.
+2. Automatic session titles: We previously agreed to include the first 60 characters of the initial prompt as a session title, without AI generation or storing full conversations. This decision appears to be missing from your draft.
+
+Do you agree with both adjustments? Do you foresee any drawbacks or simpler alternatives?
+Please give me your honest technical assessment before changing the plan. No modifications yet.
+````
+
+Taken as two adjustments put to the assessment before the approval: `projects.json` version 2, and titles from the first prompt, which the draft had left out under the standing decision on conversation data.
+
+## Amendment 91, 2026-11-03: plan 75, the approval
+
+The owner's message, word for word:
+
+````text
+I agree with both proposals. Please update Plan 75 accordingly:
+
+1. Introduce `projects.json` version 2 with automatic migration and the existing protection against older builds.
+2. Include automatic session titles using the first 60 characters of the initial prompt, following your proposed sanitization rules. I accept the documented limitation regarding potentially sensitive text.
+
+Keep the rest of the plan unchanged.
+Plan 75 is approved. You can proceed with implementation.
+Do not commit or push without my approval.
+````
+
+Taken as the approval of plan 75 with both adjustments: `projects.json` version 2, migrated from version 1 on read, older builds protected by their own version check; titles from the first 60 characters of the first prompt, cleaned as the plan says, the one exception to the standing decision on conversation data, its limit on sensitive text accepted; the rest of the plan unchanged; implementation authorized; no commit or push without the owner.
+
+## Amendment 92, 2026-11-03: plan 75, plan 69's store test
+
+The owner's answer, word for word, the button chosen for the question "May plan 69's store test
+change to version 2's format, all its checks kept?":
+
+````text
+Yes, adapt it
+````
+
+Taken as: plan 69's store test, `TestProjectSessions`, follows version 2's format with every check
+kept, and 75.2 says so. The question came when step 1's first review found that the test could not
+pass unchanged under D1's version 2.
+
+## Amendment 93, 2026-11-03: plan 75, the live run's usage
+
+The owner's answers, word for word, each question as it was asked and the option chosen:
+
+````text
+L75's re-run used a third Haiku turn beyond its stated two. Do you approve it?
+Yes, approve it (Recommended)
+
+After the correction, should L75 run again on the corrected build?
+Yes, run it again (Recommended)
+````
+
+Taken as the approval of two things. First, L75's re-run after a fault in its driver, three Haiku
+turns where L75 states two. Second, a second L75 run on the corrected build, two Haiku turns and two
+Codex turns, as the option said. They were asked after the first final review found 75.19's usage
+over L75's stated two Haiku turns.
+
+## Amendment 94, 2026-11-03: plan 75, the owner's judgement and two observations
+
+The owner's answers, word for word, each question as it was asked and the option chosen:
+
+````text
+75.22: how do the history view, the return question and the footer look at full size?
+Approved as shown
+
+Should the delete question's arrows move the way they point (← Delete, → Cancel), like the return question's?
+Yes, fix them (Recommended)
+
+Should a cut first message keep its title's last letter when white space follows it ("hello", not "hell")?
+No, keep the rule (Recommended)
+````
+
+Taken as three decisions:
+
+- 75.22 is approved, from the final build's four screenshots.
+- The delete question's arrows go the way they point, a one-off fix after the final review. As the
+  option said, it is checked by its test and the whole suite, with no further review; a mutant was
+  run besides.
+- The title's rule is kept as it is, a documented decision (`doc/plan75-evaluation.md`).

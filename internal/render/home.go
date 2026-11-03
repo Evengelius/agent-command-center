@@ -134,8 +134,9 @@ type HomeRow struct {
 	Y               float64
 }
 
-// HomeKey is one of the footer's shortcuts (design D8).
-type HomeKey struct{ Key, Action string }
+// HomeKey is one of the footer's shortcuts (design D8): its key, its action
+// and the action the grid mode's short row writes (plan 75, design D6).
+type HomeKey struct{ Key, Action, Short string }
 
 // HomeNote is text the home screen adds to the design (design D6): its
 // mark ("✗ ", "! ", "→ " or none), its text, wrapped under itself, and its
@@ -172,6 +173,9 @@ func homeNotes(s *state.State, ui UI) []HomeNote {
 	case ui.Resolved != "" && ui.Resolved != strings.TrimSpace(ui.Path):
 		out = append(out, HomeNote{"→ ", hideUser(ui.Resolved), 'g', 0})
 	}
+	if ui.OpenProblem != "" && !projectFailed && ui.PathProblem == "" {
+		out = append(out, HomeNote{"✗ ", hideUser(ui.OpenProblem), 'f', 0}) // Alt+H on a path Start refuses (plan 75, design D2)
+	}
 	// The chosen CLI's last session in the chosen project, a click resuming
 	// it as Ctrl+R does, gone while a start is validated; the last resume's
 	// failure under it (plan 69, designs D4 and D7).
@@ -180,6 +184,9 @@ func homeNotes(s *state.State, ui UI) []HomeNote {
 	}
 	if ui.NotResumed != "" {
 		out = append(out, HomeNote{"✗ ", hideUser(ui.NotResumed), 'f', 0})
+	}
+	if ui.StillClosing != "" {
+		out = append(out, HomeNote{"! ", ui.StillClosing, 'a', 0}) // a start while the last session's end runs (plan 75)
 	}
 	if ui.FolderProblem != "" {
 		out = append(out, HomeNote{"✗ ", hideUser(ui.FolderProblem), 'f', 0}) // plan 52, design D3
@@ -279,8 +286,15 @@ func HomeItemOf(item int) (int, int) {
 	return item, 0
 }
 
-// homeKeys are the footer's shortcuts (design D8): no command palette.
-var homeKeys = []HomeKey{{"Ctrl+N", "New Session"}, {"Ctrl+O", "Open Project"}, {"Ctrl+Q", "Quit"}}
+// homeKeys are the footer's shortcuts (design D8): no command palette; the
+// session history's between Open Project and Quit (plan 75, design D6).
+var homeKeys = []HomeKey{{"Ctrl+N", "New Session", "New"}, {"Ctrl+O", "Open Project", "Open"}, {"Alt+H", "History", "History"}, {"Ctrl+Q", "Quit", "Quit"}}
+
+// homeFooterFull is the width the grid mode's full footer row takes: its
+// four shortcuts after "Shortcuts:" (99 cells), from 100 columns, as every footer
+// fits (plan 16); a narrower screen has the
+// short row (65 cells; plan 75, design D6).
+const homeFooterFull = 100
 
 // homeStatus is the header's status from the startup machine (design D5).
 func homeStatus(s *state.State) (string, byte) {

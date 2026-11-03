@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                                         ● LIVE
+ ▣ demo-project   C:\work\demo-project                                                              Claude Code 2.1.300
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││                                                                          ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││ ▎ CLAUDE  Haiku 5.5  11:30                                               ││  ≡   │
+│ ──────────────────────────────── ││ ▎  ✓ Agent  general-purpose · List directory and …  11:30:00      mock   ││      │
+│ STAGES · inferred from activity  ││ ▎                                                                        ││      │
+│ ✓ TURN 1                      0s ││ ▎ I've launched the subagent in the background to list the directory     ││      │
+│   Use the Agent tool to launch … ││ ▎ and write found.txt. I'll report its result when it finishes.          ││  ⑂   │
+│   Agent · agent general-purpose  ││ ▎                                                                        ││      │
+│                                  ││ ▎  ✓ general-purpose · Bash   ls -…  allowed by you 11:30:00      mock   ││      │
+│ ✓ TURN 2                      0s ││ ▎  ✓ general-purpose · Write  ….txt  allowed by you 11:30:00      mock   ││      │
+│   started by the CLI             ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens       11:30:00      mock   ││  ◉   │
+│ ──────────────────────────────── ││       ╭──────────────────────────────────────────────────────────╮       ││      │
+│ ✦ TELEMETRY        Enter details ││ ╭─────│                                                          │─────╮ ││      │
+│ ▾ SESSION USAGE                  ││ │ RESU│  RETURN TO THE HOME SCREEN?                              │     │ ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││ │ The │                                                          │     │ ││      │
+│   Tokens 159.4k session total    ││ │ beta│  The session ends and Claude Code closes. Its changes    │xt.  │ ││      │
+│   Est. cost $0.01 API-equiv.     ││ │     │  stay in the project, and the session stays in the       │     │ ││      │
+│ ▾ QUOTA WINDOWS                  ││ │ Foun│  history.                                                │     │ ││      │
+│   Session (5hr)             35%† ││ ╰─────│                                                          │─────╯ ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││       │  [ Yes ]     [ No ]                                      │       ││      │
+│   Resets in 14h 40m              ││ ──────│                                                          │────── ││      │
+│   Weekly (7 day)            47%† ││ >  Ask│  ←→ select · Enter answer · Esc no                       │       ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││ ──────│                                                          │────── ││      │
+│   Resets in 1d 20h               ││   +   ╰──────────────────────────────────────────────────────────╯nual   ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                   │ EXECUTION TIMELINE                                            ✓ COMPLETED │
+│  ✓  general-purpose     │  haiku-5-5     │ 11:30:00  assistant │ Files written to found.txt: • alpha.txt • beta.md   │
+│     00:00   21.5k tok   │  tool: Write   │                     │ found.txt path:…                                    │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+│                                          │                                                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+C interrupt · Ctrl+G draft · F6 zone · F2 approvals · F3 Explorer · F1 keys · Ctrl+Q quit

@@ -343,7 +343,7 @@ States: `Detecting`, `Asking`, `Validating`, `Starting`, `Ready`,
 | (launch) | application start with `--mock <file>` | `Starting` with the mock provider: detection and both questions skipped; the session context names provider "Mock data" and the file as project ([reliability.md, Mock mode](reliability.md#mock-mode)) | n/a | n/a |
 | `Detecting` | both detections returned or timed out | `Asking` | dash (CC-2) | dash (CX-2) |
 | `Asking` | Confirm pressed | `Validating` | dash | dash |
-| `Asking` | resume pressed: Ctrl+R or a click on the last session's note, which only the chosen CLI's last session in the chosen project shows (plan 69, design D4) | `Validating`, the session to resume and its project kept with the answers, the last resume's failure cleared | dash | dash |
+| `Asking` | resume pressed: Ctrl+R or a click on the last session's note, which only the chosen CLI's last session in the chosen project shows (plan 69, design D4), that being the newest of its entries in the project's history; or Enter or a double click on an entry of the session history view, which resumes that entry's CLI and session (plan 75, design D5) | `Validating`, the session to resume and its project kept with the answers, the last resume's failure cleared | dash | dash |
 | `Detecting`, `Asking` | form reset (Ctrl+N; plan 51, design D9) | the same, its message and answers cleared | dash | dash |
 | `Validating` | path or provider invalid | `Asking`, with the message on the field | dash (INT paths) | dash |
 | `Validating` | both valid | `Starting` (dashboard shown, session `Spawning`) | dash | dash |
@@ -352,17 +352,23 @@ States: `Detecting`, `Asking`, `Validating`, `Starting`, `Ready`,
 | `Starting` | handshake done (`session.ready`) | `Ready` | **P** P2 | **P** P6b |
 | `Starting` | quit | session `Closing`, then (exit) when the process has exited | dash | dash |
 | `Starting` | spawn error, handshake timeout, process exit | `StartFailed`; a resume's failure kept for the home screen, its last session kept (plan 69, design D7) | dash | dash |
-| `Starting` | a resume the CLI refuses for want of the session | `StartFailed`, refused for good: the last session no longer offered (`forget-session`; plan 69, design D7) | **P** P69a | **P** P69b |
+| `Starting` | a resume the CLI refuses for want of the session | `StartFailed`, refused for good: the session no longer offered, removed from the project's history, the CLI's previous entry offered instead if it has one (`forget-session`; plan 69, design D7; plan 75, design D1) | **P** P69a | **P** P69b |
 | `StartFailed` | owner chooses "back" | `Asking`, answers kept, and a resume's failure, which the home screen shows (plan 69) | dash | dash |
 | `Ready` | quit | (exit) | dash | dash |
-| `Detecting`, `Asking`, `Validating`, `StartFailed` | quit (Ctrl+Q; Esc on `Asking`) | (exit), nothing started | dash | dash |
+| `Ready` | owner returns home, idle: Esc where it does nothing else, then Yes (plan 75, designs D7 and D9) | session `Closing` as at quit, then `Asking` with the answers kept once the process has exited: the state otherwise as at launch, and the session's part of the application ended (its draft saved for the project's next start, its turn review's store removed, its notification taken out, its views closed) | dash | dash |
+| `Ready`, the session `Crashed` or `Closed` | owner returns home | `Asking` at once, the answers kept, as from `Ready`: the process has already ended (plan 75, design D9) | dash | dash |
+| `Detecting`, `Asking`, `Validating`, `StartFailed` | quit (Ctrl+Q; Esc on the home screen does nothing, plan 75, design D10) | (exit), nothing started | dash | dash |
 
 Invalid: Confirm while `Detecting` is ignored (the button is disabled until
 detection returns); a second Confirm while `Validating` or `Starting` is
 ignored; a form reset while `Validating` or `Starting` is ignored; choosing
-a provider shown "not installed" is impossible (not selectable). No
-transition leads from `Ready` back to `Asking`: one provider and one
-project per session (AGENTS.md; AM4 X9).
+a provider shown "not installed" is impossible (not selectable); a return to
+the home screen is ignored in a mock run, which has no home screen
+([reliability.md, Mock mode](reliability.md#mock-mode)), and while the
+session starts or closes. Each session is one CLI and one project, and one
+run of ACC can hold several sessions, one after another: `Ready` goes back
+to `Asking` only through a return to the home screen, never by `Back`
+(AGENTS.md; AM4 X9; plan 75, design D11).
 
 ### Session machine (the CLI process)
 
@@ -380,8 +386,11 @@ States: `Spawning`, `Handshaking`, `Ready`, `Closing`, `Closed`, `Crashed`.
 | `Ready` | owner quits | `Closing`: pending approvals answered `cancel`, the turn interrupted, then stdin closed, in that order | dash | dash |
 | `Ready` | owner quits while a turn or an agent runs | stays `Ready`, asks to confirm (ui-design.md, Keys): a second Ctrl+Q quits, Esc stays | dash | dash |
 | `Ready`, `Crashed` | owner quits while a git operation runs | stays, asks to confirm whatever the session's phase, naming the operation (ui-design.md, Keys): a second Ctrl+Q quits, Esc stays (plan 47) | dash | dash |
+| `Ready` | owner returns home | `Closing` as at quit: pending approvals answered `cancel` and the turn interrupted (none: nothing runs), then stdin closed, with quit's escalation; once the process has exited, `Closed`, then the startup's `Asking` (plan 75, design D9) | dash | dash |
+| `Ready`, `Crashed` | owner returns home while a turn, an agent, an approval or a git operation runs | stays: no question, nothing written to the CLI, nothing interrupted or answered; an approval waiting in the queue refuses it whatever the turn's phase; the input row says "Not now: the turn is still running · Ctrl+C interrupts it", "Not now: an approval is waiting · F2 answers it" or "Not now: the commit is still running", naming the operation as the quit question does, until that has ended (the turn, its agents and approvals; the git operation, which the application reports as `GitIdle`) or another notice replaces it; while the force stop is offered, its notice stays as it is (plan 75, design D8) | dash | dash |
 | `Closing` | process exited | `Closed` | **P** P2 (exit after stdin closed) | **D** |
 | `Closing` | process exited with a message still `Submitted` | `Closed`; the message goes back to the editor and the stored draft (ASM-23) | dash | dash |
+| `Closing` | returning home, no session end within the quit's kill grace (5 s) after the forced kill | `Closed` all the same: the startup's `Asking`, the answers kept, the toast saying the CLI's end was not seen, as the quit leaves then; a quit asked meanwhile stays the quit (plan 75, design D9) | dash | dash |
 | `Closing` | 5 s, then 5 s more, elapsed | forced kill, then `Closed` | **P** job kill mid-turn, 41 ms, resumable (plan 4, L1 (g); CC-10 q13) | **P** job kill mid-turn, 24 ms, no process left (plan 4, L3; CX-10 q8) |
 | `Ready`, `Handshaking` | process exited unexpectedly or stdout EOF | `Crashed` | dash | dash |
 | `Spawning`, `Handshaking`, `Ready` | a panic recovered: an adapter's error marked `Fatal`, or the application's in a write (`Panicked`) | `Crashed`, the message as the reason; the CLI closed (plan 48) | dash | dash |
@@ -444,10 +453,15 @@ notice; a turn-end event while `Idle` is applied to telemetry and logged as
 `Idle` (P3, P3b): the agent machine, not the turn machine, tracks them.
 
 A turn the owner sent that ends, completed, failed or interrupted, in a
-session whose ID the CLI reported, and not in a mock run, makes that
-session the project's last for its CLI: the command `record-session` with
-the turn end's time (plan 69, design D2). A turn the CLI opened itself
-records nothing, nor does the dashboard's own usage read, which is no turn.
+session whose ID the CLI reported, and not in a mock run, puts that
+session first in the project's history, so that it is the project's last for
+its CLI: the command `record-session` with the turn end's time (plan 69,
+design D2; plan 75, design D1) and the text of the session's first message,
+from which the application makes the session's title (plan 75, design D1a):
+the first message the CLI accepted in a session started new from the home
+screen (`Session.FirstPrompt`, kept through a crash resume), none in a session
+resumed from it. A turn the CLI opened itself records nothing, nor does the
+dashboard's own usage read, which is no turn.
 
 ### Agent machine
 

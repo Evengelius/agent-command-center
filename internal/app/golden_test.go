@@ -593,6 +593,53 @@ func TestGoldenFrames(t *testing.T) {
 		}
 	}
 	graph := func(keys ...tea.KeyPressMsg) func(*testing.T) *harness { return graphOf(sampleGraph, 12, keys...) }
+	// Plan 75: the session history of the golden frames' project, Alt+H, n
+	// entries (histEntries, the IDs as Claude Code writes them), the keys after.
+	historyRig := func(n int, keys ...tea.KeyPressMsg) func(*testing.T) *harness {
+		return func(t *testing.T) *harness {
+			dir := `C:\work\demo-project`
+			es := histEntries(n)
+			for i := range es {
+				es[i].ID = fmt.Sprintf("%08x-162f-47e1-bb16-aa91f8a808b9", 0x21f3b775+i*0x1111)
+			}
+			list := append(demoProjects(3), input.Project{Path: dir, Used: testNow.Add(-8 * time.Minute), History: es})
+			h := newHarness(t, Options{Providers: bothCLIs[:1], Cwd: dir, Projects: storeWith(t, list), Location: time.UTC})
+			// The project is the golden frames', a folder that is not on this disk:
+			// the check on disk is not the frame's concern (history_test.go).
+			h.m.check = func(raw string, env input.PathEnv) (string, string, string) {
+				r := input.ResolvePath(raw, env)
+				return r.Path, "", r.Problem
+			}
+			h.settle()
+			h.send(key('h', tea.ModAlt))
+			if h.m.hist == nil {
+				t.Fatalf("the view did not open:\n%s", h.frame())
+			}
+			for _, k := range keys {
+				h.send(k)
+			}
+			return h
+		}
+	}
+	// Plan 75, step 2: the question to return to the home screen, Esc on the
+	// Claude mock's dashboard at rest, named a live Claude Code session in the
+	// golden frames' project: a mock run never asks it (design D9).
+	returnRig := func(keys ...tea.KeyPressMsg) func(*testing.T) *harness {
+		return func(t *testing.T) *harness {
+			h := dash(t)
+			c := &h.m.s.Context
+			c.Mock, c.Provider, c.ProviderName, c.Project = false, "claude-code", "Claude Code", `C:\work\demo-project`
+			h.m.s.Turn.Notice = "" // the mock's last ("turn started by the CLI")
+			h.send(key(tea.KeyEscape, 0))
+			for _, k := range keys {
+				h.send(k)
+			}
+			if !h.m.ui.Return.Open {
+				t.Fatalf("Esc asked nothing:\n%s", h.frame())
+			}
+			return h
+		}
+	}
 	down := func(n int, last tea.KeyPressMsg) []tea.KeyPressMsg {
 		var ks []tea.KeyPressMsg
 		for range n {
@@ -619,7 +666,10 @@ func TestGoldenFrames(t *testing.T) {
 		{"search", searched(dash, "found")}, {"search-none", searched(dash, "zzqx")}, {"search-codex", searched(codexDash, "reasoning")},
 		{"commands", commands(true, false)}, {"commands-open", commands(true, true)}, {"commands-card", commands(false, false)},
 		{"commands-view", commands(true, false, key(tea.KeyUp, 0), key(tea.KeyEnter, 0))}, {"commands-claude", claudeCommands},
-		{"chip", chipSent()}, {"chip-cursor", chipSent(key(tea.KeyUp, 0))}, {"chip-composer", chipComposer}} {
+		{"chip", chipSent()}, {"chip-cursor", chipSent(key(tea.KeyUp, 0))}, {"chip-composer", chipComposer},
+		{"history", historyRig(8)}, {"history-none", historyRig(0)}, {"history-scroll", historyRig(20, down(12, key(tea.KeyDown, 0))...)},
+		{"history-ask", historyRig(8, key(tea.KeyDown, 0), key(tea.KeyDelete, 0))}, {"history-ask-all", historyRig(8, key(tea.KeyDelete, tea.ModShift), key(tea.KeyLeft, 0))},
+		{"return", returnRig()}, {"return-yes", returnRig(key(tea.KeyLeft, 0))}} {
 		szs := sizes
 		if sc.name == "source-selection" || strings.HasPrefix(sc.name, "graph") || strings.HasPrefix(sc.name, "commands") {
 			// The acc tab maximised (plan 50, criterion 50.10; plan 62, criterion
@@ -657,7 +707,7 @@ func TestGoldenFrames(t *testing.T) {
 						// 1.4), above the footer (plan 51, design D8).
 						tl := strings.Split(text, "\n")
 						i := slices.IndexFunc(tl, func(l string) bool { return strings.Contains(l, "START SESSION →") })
-						if i < 1 || i+1 >= len(tl) || !strings.Contains(tl[len(tl)-1], "Shortcuts:") {
+						if i < 1 || i+1 >= len(tl) || !strings.Contains(tl[len(tl)-1], "Alt+H") { // the footer's History shortcut, in its full row and in the short one (plan 75, design D6)
 							t.Errorf("START SESSION is not shown above the footer")
 						}
 					}

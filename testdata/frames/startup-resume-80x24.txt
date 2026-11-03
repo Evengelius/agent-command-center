@@ -21,4 +21,4 @@
  │         START SESSION →          │ │                                       │
  ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯
 
- › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit
+ ›  Ctrl+N  New │  Ctrl+O  Open │  Alt+H  History │  Ctrl+Q  Quit

@@ -1,0 +1,40 @@
+ ⊞ AGENT COMMAND CENTER                                                               │  v0.1.0  │  Windows  │  ● Ready
+          ╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+          │ › SESSION HISTORY  ───────────────────────────────────────────────────────────────────────────── │
+          │                                                                                                  │
+          │   Project  C:\work\demo-project                                                                  │
+          │                                                                                                  │
+          │   Title of session 2                                                                             │
+          │   2026-10-15 09:25 · 5m ago · OpenAI Codex · GPT-5.5 · 21f3d997                                  │
+          │   Title of session 3                                                                            ▐│
+          │   2026-10-15 09:24 · 6m ago · Claude Code · Claude Haiku 4.5 · 21f3eaa8                         ▐│
+          │   2026-10-15 09:23 · 7m ago · Claude Code · Claude Haiku 4.5 · 21f3fbb9                         ▐│
+          │   Title of session 5                                                                            ▐│
+          │   2026-10-15 09:22 · 8m ago · OpenAI Codex · GPT-5.5 · 21f40cca                                 ▐│
+          │   Title of session 6                                                                            ▐│
+          │   2026-10-15 09:21 · 9m ago · Claude Code · Claude Haiku 4.5 · 21f41ddb                         ▐│
+          │   2026-10-15 09:20 · 10m ago · Claude Code · Claude Haiku 4.5 · 21f42eec                        ▐│
+          │   Title of session 8                                                                            ▐│
+          │   2026-10-15 09:19 · 11m ago · OpenAI Codex · GPT-5.5 · 21f43ffd                                ▐│
+          │   Title of session 9                                                                            ▐│
+          │   2026-10-15 09:18 · 12m ago · Claude Code · Claude Haiku 4.5 · 21f4510e                        ▐│
+          │   2026-10-15 09:17 · 13m ago · Claude Code · Claude Haiku 4.5 · 21f4621f                        ▐│
+          │   Title of session 11                                                                           ▐│
+          │   2026-10-15 09:16 · 14m ago · OpenAI Codex · GPT-5.5 · 21f47330                                ▐│
+          │   Title of session 12                                                                           ▐│
+          │   2026-10-15 09:15 · 15m ago · Claude Code · Claude Haiku 4.5 · 21f48441                        ▐│
+          │ ▏ 2026-10-15 09:14 · 16m ago · Claude Code · Claude Haiku 4.5 · 21f49552                       ▕▐│
+          │   Title of session 14                                                                           ▐│
+          │   2026-10-15 09:13 · 17m ago · OpenAI Codex · GPT-5.5 · 21f4a663                                ▐│
+          │   Title of session 15                                                                           ▐│
+          │   2026-10-15 09:12 · 18m ago · Claude Code · Claude Haiku 4.5 · 21f4b774                        ▐│
+          │   2026-10-15 09:11 · 19m ago · Claude Code · Claude Haiku 4.5 · 21f4c885                        ▐│
+          │   Title of session 17                                                                           ▐│
+          │   2026-10-15 09:10 · 20m ago · OpenAI Codex · GPT-5.5 · 21f4d996                                ▐│
+          │   Title of session 18                                                                           ▐│
+          │   2026-10-15 09:09 · 21m ago · Claude Code · Claude Haiku 4.5 · 21f4eaa7                        ▐│
+          │   2026-10-15 09:08 · 22m ago · Claude Code · Claude Haiku 4.5 · 21f4fbb8                         │
+          │                                                                                                  │
+          │   ↑↓ move · Enter resume · Del delete · Shift+Del delete all · Esc close                         │
+          ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+

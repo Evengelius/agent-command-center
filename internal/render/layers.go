@@ -24,6 +24,8 @@ const (
 	LayerDraft                  // the draft window (amendment 13)
 	LayerKeys                   // the key overlay
 	LayerWorktrees              // the Worktrees view (plan 16)
+	LayerHistory                // the session history view, over the startup screen (plan 75)
+	LayerReturn                 // the question to return to the home screen, over the dashboard (plan 75)
 )
 
 // Popup says the layer is one of the popups: at most one is open, opening
@@ -55,7 +57,11 @@ func (k *Stack) show(l Layer) { k.shown |= 1 << l; k.Top = l }
 // Layers is the layers the frame shows for the state and the UI, from the
 // bottom:
 //   - the Worktrees view, on either screen, alone;
-//   - on the dashboard only, at a size it draws: the key overlay, alone;
+//   - the session history view, on the startup screen, alone;
+//   - on the dashboard only, at a size it draws: the question to return to
+//     the home screen, over the dashboard itself, alone (it opens only where
+//     nothing else is open, and takes every key and click while open);
+//   - the key overlay, alone;
 //   - else one popup at most, over the dashboard itself (no full view) and
 //     under no window: the "+" menu, the model selector, the modes
 //     selector, the branches popup, the Git Graph's scope popup while its
@@ -69,7 +75,15 @@ func Layers(s *state.State, ui UI) Stack {
 		k.show(LayerWorktrees)
 		return k
 	}
+	if ui.History.Open && s.Screen == state.ScreenStartup {
+		k.show(LayerHistory)
+		return k
+	}
 	if s.Screen != state.ScreenDashboard || ui.Width < MinWidth || ui.Height < MinHeight {
+		return k
+	}
+	if ui.Return.Open {
+		k.show(LayerReturn)
 		return k
 	}
 	if ui.Keys {

@@ -112,6 +112,14 @@ type Screen struct {
 	// quick open: a left click outside it closes it (plan 58, design D1);
 	// zero when none.
 	Window Box
+	// History is where the frame drew the session history view's box: a
+	// left click outside it closes the view (plan 75, design D3); zero when
+	// none.
+	History Box
+	// Return is where the frame drew the question to return to the home
+	// screen: a left click outside it answers No (plan 75, design D7); zero
+	// when none.
+	Return Box
 	// WindowList is what the window's rows showed of its lines or files: a
 	// click on one picks it (plan 61, design D5); zero when none.
 	WindowList ListShown
@@ -203,6 +211,8 @@ func Draw(s *state.State, ui UI) *Screen {
 		ls = tooSmall(s, ui)
 	case st.Shown(LayerWorktrees):
 		ls = worktreesScreen(s, ui)
+	case st.Shown(LayerHistory):
+		ls = historyScreen(s, ui, sc)
 	case st.Shown(LayerKeys):
 		ls = keysOverlay(s, ui, sc)
 	case s.Screen == state.ScreenDashboard && ui.View != "" && s.Approvals[ui.View] != nil:
@@ -255,6 +265,9 @@ func Draw(s *state.State, ui UI) *Screen {
 		scopePopup(sc, ui) // the Git Graph's scope popup under its scope row (plan 62)
 	case st.Card:
 		graphCard(sc, ui) // the Git Graph's card beside its row (plan 62, design D13)
+	}
+	if st.Shown(LayerReturn) {
+		returnBox(sc, s, ui) // the question over the dashboard (plan 75, design D7)
 	}
 	if st.Shown(LayerWindow) {
 		floatWindow(s, ui, sc)

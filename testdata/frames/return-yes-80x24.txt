@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                                                 ● LIVE
+ ▣ demo-project                                             Claude Code 2.1.300
+ A ✓ Turn 2                                               (inferred)   F6: tree
+╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
+│ ▎  ✓ general-purpose · Write  …ound.txt  allowed by you 11:30:00      mock   │
+│ ▎  ▸ ✓ T╭──────────────────────────────────────────────────────────╮  mock   │
+│         │                                                          │         │
+│ ╭───────│  RETURN TO THE HOME SCREEN?                              │───────╮ │
+│ │ RESULT│                                                          │       │ │
+│ │ The su│  The session ends and Claude Code closes. Its changes    │md,    │ │
+│ │ and wr│  stay in the project, and the session stays in the       │       │ │
+│ │       │  history.                                                │       │ │
+│ │ Found │                                                          │       │ │
+│ ╰───────│  [ Yes ]     [ No ]                                      │───────╯ │
+│         │                                                          │         │
+│ ────────│  ←→ select · Enter answer · Esc no                       │──────── │
+│ >  Ask C│                                                          │         │
+│ ────────╰──────────────────────────────────────────────────────────╯──────── │
+│   +     Haiku 5.5                                                ✋ Manual   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
+│  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

@@ -57,4 +57,4 @@
  │                                                                                          │ │                                                                                                       │
  ╰──────────────────────────────────────────────────────────────────────────────────────────╯ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
- › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Ctrl+Q  Quit
+ › Shortcuts:   Ctrl+N  New Session  │   Ctrl+O  Open Project  │   Alt+H  History  │   Ctrl+Q  Quit

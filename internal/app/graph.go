@@ -839,10 +839,11 @@ func (m *Model) readCommitFiles(e render.GraphEntry) []tea.Cmd {
 		return nil
 	}
 	hash, commit, parent, root := e.Hash, e.HashText(), e.ParentText(), m.fileRoot()
-	return []tea.Cmd{func() tea.Msg {
+	// The session's own read: dropped once it has ended (plan 75, design D9).
+	return []tea.Cmd{m.sessionCmd(func() tea.Msg {
 		files, err := gg.CommitFiles(root, commit, parent)
 		return graphFilesMsg{hash: hash, files: files, err: err}
-	}}
+	})}
 }
 
 // graphFilesRead takes a commit's files: kept for the session, and in its
@@ -850,6 +851,9 @@ func (m *Model) readCommitFiles(e render.GraphEntry) []tea.Cmd {
 func (m *Model) graphFilesRead(msg graphFilesMsg) {
 	g, v := &m.graph, &m.ui.Graph
 	delete(g.filesAsked, msg.hash)
+	if g.files == nil {
+		return // no history read in this session (plan 75, design D9)
+	}
 	if v.Card != nil {
 		defer m.graphCardShow() // the card's summary of them
 	}

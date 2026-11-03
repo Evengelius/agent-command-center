@@ -403,13 +403,13 @@ func (m *Model) branchesKey(k tea.KeyPressMsg) ([]tea.Cmd, bool) {
 		// A terminal that sends a raw Ctrl+V: the clipboard's text in the
 		// search, as a bracketed paste.
 		if cb := m.opt.Clipboard; cb != nil {
-			return []tea.Cmd{func() tea.Msg {
+			return []tea.Cmd{m.sessionCmd(func() tea.Msg { // the session's own (plan 75, design D9)
 				text, err := cb.Read()
 				if err != nil {
 					return toastMsg{"paste failed: " + err.Error()}
 				}
 				return pasteMsg{text}
-			}}, true
+			})}, true
 		}
 	case key == "f5":
 		return m.fetchBranches(), true
@@ -507,6 +507,8 @@ func (m *Model) branchOpRunning() bool { return m.sw != nil && m.sw.running || m
 // in the folder, or Source Control's git; "" when one may.
 func (m *Model) switchRefused() string {
 	switch {
+	case m.s.Returning:
+		return returningNote // nothing starts that the return would drop (plan 75)
 	case m.s.Running() != "":
 		return "the agent is working in this folder: switch once its turn ends"
 	case m.op != nil:
@@ -619,6 +621,10 @@ func (m *Model) branchSwitched(msg branchSwitchedMsg) []tea.Cmd {
 func (m *Model) fetchBranches() []tea.Cmd {
 	bg, ok := m.branchGit()
 	if !ok || m.sw != nil || m.fetch != nil {
+		return nil
+	}
+	if m.s.Returning {
+		m.ui.Branches.Note, m.ui.Branches.NoteBad = returningNote, true // nothing starts that the return would drop (plan 75)
 		return nil
 	}
 	stop := input.NewGitStop()

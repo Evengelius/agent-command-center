@@ -338,7 +338,10 @@ message for a Codex file that shows the update refused (plans 34 and 38;
 ## Session context
 
 Built once by the startup screen, immutable for the session, read by every
-part (AM4 "Project awareness"; AGENTS.md "One agent CLI per session").
+part (AM4 "Project awareness"; AGENTS.md "One agent CLI per session"). One
+run of the dashboard can hold several sessions, one after another: a return
+to the home screen ends the session and its context, and the next start
+builds a new one (plan 75, design D11; How it starts, step 7).
 
 | Field | Value | Used by |
 | - | - | - |
@@ -430,7 +433,18 @@ agent-command-center [--mock <file>] [--provider <id>] [--project <path>]
 6. On the handshake's success, the dashboard is ready for the first prompt;
    on failure, it shows the error and offers to return to the startup screen
    (AM4 S6 "clear error").
-7. Quit: close the session (graceful, then forced), restore the terminal.
+7. Return to the home screen (plan 75, designs D7 to D11): Esc where it
+   does nothing else on the dashboard asks, never while a turn, an agent or
+   a git operation runs. Yes closes the session as the quit does (step 8);
+   once the process has exited the reducer gives the state `New` makes,
+   the startup answers kept, and `CmdHome`, on which the application ends
+   the session's part of itself (`goHome`: the session's share of
+   `Shutdown`, `closeSession`, its views and popups, `resetSession`, every
+   field of the session given a fresh model's value), and the startup
+   screen is back at step 3 with its answers. A crashed session goes back
+   at once. Each session is one CLI and one project; a run holds several,
+   one after another, each started from nothing of the last.
+8. Quit: close the session (graceful, then forced), restore the terminal.
 
 `--mock <file>` skips detection and starts the mock provider, labelled
 ([reliability.md, Mock mode](reliability.md#mock-mode)).
@@ -819,11 +833,38 @@ CLI's own resume; the crash resume's path is as it was.
 
 | Part | What it does | Where |
 | - | - | - |
-| 1. Input | the store's field (`Project.Sessions`, `Session`: an ID and when the owner's last turn ended, per provider id, an optional field of version 1); `Record` keeping it with the star, `RecordSession`, `ForgetSession` (only while the record names the refused session), `LastSession` (the entry `Same` matches) | `internal/input/projects.go` |
+| 1. Input | the store's record, version 2 since plan 75 (the history, `Project.History` of `Entry`; `Project.Sessions`, `Session` are version 1's, folded into it by `Load` and `Save`); `Record` keeping it with the star, `RecordSession`, `ForgetSession` (that session of that CLI, wherever it stands in the history), `LastSession` (the project `Same` matches, its CLI's `Newest` entry) | `internal/input/projects.go` |
 | 2. Normalisation and adapters | Claude Code: `--resume <id>` as for the crash resume; the refusal before the handshake's answer recognised for the home screen's resume only (`Mapper.ResumeAsked`, `noConversation`, `event.Problem.NoSession`). Codex: `thread/resume` with `excludeTurns: true` for the home screen's resume only (`threadParams.ExcludeTurns`, `Session.last`); its refusal for want of the thread (`noThread`); `thread/goal/cleared` logged. The resume told apart from the crash resume by `provider.SessionContext.ResumeLast` | `internal/provider/provider.go`, `claude/mapper.go`, `claude/session.go`, `codex/mapper.go`, `codex/session.go`, `internal/event/event.go` |
-| 3. State | `Confirm`'s session to resume and its project through validation (`StartupState.Resume`, `ResumeProject`; a validated path not the record's refuses the start), the start naming it (`SessionState.Resumed`, `CmdStartSession` with `Last`), zone B's note once the CLI names the session (`resumedNote`), a refusal for good (`CmdForgetSession`, `StartupState.ResumeGone`) or any other failure (`ResumeFailure`), the record at the owner's turn end (`CmdRecordSession`) | `internal/state/actions.go`, `reduce.go`, `state.go` |
+| 3. State | `Confirm`'s session to resume and its project through validation (`StartupState.Resume`, `ResumeProject`; a validated path not the record's refuses the start), the start naming it (`SessionState.Resumed`, `CmdStartSession` with `Last`), zone B's note once the CLI names the session (`resumedNote`), a refusal for good (`CmdForgetSession`, `StartupState.ResumeGone`) or any other failure (`ResumeFailure`), the record at the owner's turn end (`CmdRecordSession`, which since plan 75 carries the start of the session's first message) | `internal/state/actions.go`, `reduce.go`, `state.go` |
 | 4. Rendering | the home screen's two notes, the offer a click target (`HomeNote.Item`, `HomeItemResume`; `homeTargets`, `homeNoteRows`), zone B's starting line and failure card (`sessionParts`, `failureCard`), a resumed session's N/A reasons (`missing`) | `internal/render/home.go`, `homepaint.go`, `homegrid.go`, `dashboard.go`, `telemetry.go`, `render.go` |
 | The application | Ctrl+R and the click on the home screen (`resumeLast`), the notes' text (`resumeNotes`, `lastSession`), the start's flag (`start`), the record's writes and its clearing through the store (`recordSession`, `forgetSession`) | `internal/app/lastsession.go`, `app.go`, `keys.go`, `home.go` |
+
+## The session history
+
+Plan 75 (brief amendments 89 to 91; ui-design.md, Startup screen, Session
+history; reliability.md, Resumption). The home screen lists the sessions the
+dashboard ran in the chosen project, from `projects.json` version 2, and
+resumes or deletes them; the record of plan 69 becomes the project's history.
+No adapter changes.
+
+| Part | What it does | Where |
+| - | - | - |
+| 1. Input | the store at version 2 (`Entry`, `Project.History`, at most `MaxHistory`; version 1 migrated on read, a version above 2 refused, `Load` keeping no entry without an ID and the newest 20), `RecordSession` (the same CLI and ID moves first, its title kept), `ForgetSessions` (exactly the entries named, by CLI and ID), `Newest`, `Find` | `internal/input/projects.go` |
+| 3. State | the first message the CLI accepted in a session started new (`SessionState.FirstPrompt`, `FirstPromptCut`, `Prompted`; `MaxFirstPrompt`, `promptStart`), carried by `CmdRecordSession` (`Text`, `Partial`) | `internal/state/state.go`, `actions.go`, `reduce.go` |
+| 4. Rendering | the view on its own layer (`LayerHistory`, `HistoryView`, `HistoryRow`, `historyScreen`, `historyGeom`, `historyTop`, `HistoryTop`: the list's place, moved only as the selection needs), the title (`SessionTitle`) and the model as zone A names it (`ModelOf`), the footer's fourth group (`homeKeys`, `homeFooterFull`, `footCaps`), `UI.OpenProblem` | `internal/render/history.go`, `layers.go`, `select.go`, `render.go`, `home.go`, `homegrid.go`, `homepaint.go` |
+| The application | Alt+H, its check of the path on disk in a command (`openHistory`, `historyChecked`, `Model.check`), the view's keys and mouse (`historyKey`, `historyMouse`), resume and delete (`historyResume`, `historyAnswer`), Ctrl+R's newest entry (`lastSession`) and the record with its model and title (`recordSession`) | `internal/app/history.go`, `lastsession.go`, `keys.go`, `mouse.go`, `app.go` |
+
+## The return to the home screen
+
+Plan 75 (brief amendments 89 to 91; ui-design.md, Transition, Return to the
+home screen; reliability.md, Interruption and cancellation). No adapter
+changes: the close is the quit's.
+
+| Part | What it does | Where |
+| - | - | - |
+| 3. State | `AskReturn` (the input row's "Not now" while work runs: `ReturnRefusal`), `ReturnHome` (the quit's close, `Returning`; a crashed or stopped session's reset at once), `CanReturn`, `home` (Back's reset, shared), `ended`'s `CmdHome` once the process has exited | `internal/state/actions.go`, `reduce.go`, `state.go` |
+| 4. Rendering | the question on its own layer (`LayerReturn`, `ReturnAsk`, `returnBox`, `ReturnText`), drawn with the summary card's frame and buttons (`cardButton`), `Screen.Return` for a click outside it | `internal/render/returnask.go`, `layers.go`, `select.go`, `render.go`, `summaryoffer.go` |
+| The application | Esc at the end of the dashboard's ladder (`askReturn`), the question's keys and mouse (`returnKey`, `returnMouse`, `answerReturn`), `CmdHome` (`goHome`, `resetSession`, `newUI`; what it waits for off the event loop: `sessionEnd`, `runEnd`, the next start held meanwhile by `stillClosing`), the session's messages numbered (`sessionMsg`, `sessionAfter`, `sessionCmd`, `sessGen`; an ended session's dropped by `lateMessage`), no git operation during the close (`returningNote`), the "Not now" notice's end (`state.GitIdle`), the turn review's store numbered by session (`turnsGen`), Esc on the home screen doing nothing (`startupKey`) | `internal/app/returnhome.go`, `keys.go`, `mouse.go`, `layers.go`, `app.go`, `review.go` |
 
 ## The summary suggestion after a resume
 

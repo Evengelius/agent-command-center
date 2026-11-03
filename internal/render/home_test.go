@@ -367,7 +367,9 @@ func TestHomeGrid(t *testing.T) {
 		{0, []string{"AGENT COMMAND CENTER", "v0.1.0", "Windows", "● Ready"}},
 		{2, []string{"╭", "╮ ╭", "╮"}},
 		{3, []string{"› NEW SESSION", "› PROJECTS"}},
-		{23, []string{"Shortcuts:", "Ctrl+N  New Session", "Ctrl+O  Open Project", "Ctrl+Q  Quit"}},
+		// 80 cells are too few for the full row: the short row (plan 75, design
+		// D6; adapted from plan 51's full row).
+		{23, []string{" ›  Ctrl+N  New │  Ctrl+O  Open │  Alt+H  History │  Ctrl+Q  Quit"}},
 	} {
 		for _, w := range c.want {
 			if !strings.Contains(text[c.row], w) {
@@ -398,6 +400,10 @@ func TestHomeGrid(t *testing.T) {
 	}
 	if !strings.HasPrefix(strings.TrimSpace(text[14]), "╭") || !strings.Contains(all, "START SESSION →") {
 		t.Errorf("the panels under the banner: %q", text[14])
+	}
+	// 100 cells hold the full row (plan 75, design D6).
+	if f := text[29]; !strings.Contains(f, "Shortcuts:") || !strings.Contains(f, "Ctrl+N  New Session  │") || !strings.Contains(f, "Ctrl+O  Open Project  │") || !strings.Contains(f, "Alt+H  History  │") || !strings.Contains(f, "Ctrl+Q  Quit") {
+		t.Errorf("the full footer at 100 columns: %q", f)
 	}
 	if r := HomeRects(HomeLook{Geom: g}); len(r) != 1 || r[0] != image.Rect(0, 2, 100, 14) {
 		t.Errorf("the banner's image: %v", r)

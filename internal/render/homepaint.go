@@ -824,14 +824,18 @@ func homeListLines(n HomeNote) []homeNoteLine {
 	return out
 }
 
-// The footer's groups at the design's first three places (design D8,
-// Ctrl+Q's in Ctrl+P's): each key cap's left edge, its key's and its
-// action's first cells; and the bars between them.
+// The footer's groups at the design's first three places (design D8, the
+// session history's in Ctrl+P's, plan 75, design D6): each key cap's left
+// edge, its key's and its action's first cells; and the bars between them.
+// The fourth group, Ctrl+Q's, is a departure from the owner's image, at the
+// design's spacing: its bar 30.4 design pixels after the third action's end
+// ("History", 7 characters of 7.78), its cap 23 after the bar, its key and
+// its action at the same distances from the cap as the third's.
 var (
-	footCaps    = [3]float64{141, 357.3, 582.5}
-	footKeys    = [3]float64{150.61, 366.75, 591.83}
-	footActions = [3]float64{219.2, 435.79, 659.36}
-	footBars    = [2]float64{334.3, 559.5}
+	footCaps    = [4]float64{141, 357.3, 582.5, 767.1}
+	footKeys    = [4]float64{150.61, 366.75, 591.83, 776.43}
+	footActions = [4]float64{219.2, 435.79, 659.36, 843.96}
+	footBars    = [3]float64{334.3, 559.5, 744.1}
 )
 
 // footer draws the footer (reference-design.md, The home screen, The

@@ -12,6 +12,7 @@ import (
 
 // Apply applies one event from the CLI and returns the commands it calls for.
 func (s *State) Apply(ev event.Event) []Command {
+	defer s.settleNotNow() // a turn's end takes a refused return's notice away (plan 75, design D8)
 	s.log(ev)
 	if s.Session.Phase == Closed {
 		s.note(ev, "event after the session closed: logged, not applied")
@@ -108,8 +109,36 @@ func turnActivity(k event.Kind) bool {
 	return false
 }
 
+// MaxFirstPrompt is how much of the first message the session keeps for its
+// title (plan 75, design D1a): the title is at most 60 grapheme clusters, so
+// the start of even a very long message is enough.
+const MaxFirstPrompt = 8 << 10
+
+// promptStart is the first MaxFirstPrompt bytes of text, cut between two
+// characters and copied, so that the rest of a long message is not held by
+// it; and whether text was longer.
+func promptStart(text string) (string, bool) {
+	if len(text) <= MaxFirstPrompt {
+		return text, false
+	}
+	n := MaxFirstPrompt
+	for n > 0 && !utf8.RuneStart(text[n]) {
+		n--
+	}
+	return strings.Clone(text[:n]), true
+}
+
 func (s *State) toRunning() []Command {
 	s.Turn.Phase = Running
+	if !s.Session.Prompted {
+		// The first message of the session: its title's text, unless the
+		// session was resumed from the home screen, which never has one (plan
+		// 75, design D1a).
+		s.Session.Prompted = true
+		if s.Startup.Resume == "" {
+			s.Session.FirstPrompt, s.Session.FirstPromptCut = promptStart(s.Turn.Draft)
+		}
+	}
 	s.Turn.Draft, s.Turn.DraftImages = "", nil
 	// A message the CLI accepted answers the offer too (plan 70, design D1).
 	s.Session.SummaryOffered = false
@@ -363,8 +392,14 @@ func (s *State) ended(ev event.Event, p event.Ended) []Command {
 		// Closed by the owner: what runs is interrupted, not failed (plan 22,
 		// criterion 1.6).
 		s.endAll(ev, "interrupted")
-		if s.Startup.Phase == Exited {
+		switch {
+		case s.Startup.Phase == Exited:
 			cmds = append(cmds, Command{Kind: CmdExit})
+		case s.Returning:
+			// The owner returned to the home screen (plan 75, design D9): the
+			// draft given back above goes with the session's end.
+			s.home()
+			cmds = append(cmds, Command{Kind: CmdHome})
 		}
 		return cmds
 	}
@@ -962,7 +997,7 @@ func (s *State) turnEnd(ev event.Event, p event.TurnEnd) []Command {
 	if !s.Context.Mock && !s.Turn.ByCLI && s.Session.ID != "" {
 		// The owner's turn ended: the session is the project's last for its
 		// CLI, resumable from the home screen (plan 69, design D2).
-		cmds = append(cmds, Command{Kind: CmdRecordSession, ID: s.Session.ID, At: ev.At})
+		cmds = append(cmds, Command{Kind: CmdRecordSession, ID: s.Session.ID, At: ev.At, Text: s.Session.FirstPrompt, Partial: s.Session.FirstPromptCut})
 	}
 	// The stage is still open: syncStage closes it after (plan 65, design D4).
 	return append(cmds, s.reviewEnd()...)

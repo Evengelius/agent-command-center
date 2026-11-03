@@ -1,0 +1,40 @@
+ ⊞ AGENT COMMAND CENTER                                                               │  v0.1.0  │  Windows  │  ● Ready
+
+
+
+
+
+
+
+          ╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+          │ › SESSION HISTORY  ───────────────────────────────────────────────────────────────────────────── │
+          │                                                                                                  │
+          │   Project  C:\work\demo-project                                                                  │
+          │                                                                                                  │
+          │   Title of session 0                                                                             │
+          │   2026-10-15 09:27 · 3m ago · Claude Code · Claude Haiku 4.5 · 21f3b775                          │
+          │ ▏ 2026-10-15 09:26 · 4m ago · Claude Code · Claude Haiku 4.5 · 21f3c886                         ▕│
+          │   Title of session 2                                                                             │
+          │   2026-10-15 09:25 · 5m ago · OpenAI Codex · GPT-5.5 · 21f3d997                                  │
+          │   Title of session 3                                                                             │
+          │   2026-10-15 09:24 · 6m ago · Claude Code · Claude Haiku 4.5 · 21f3eaa8                          │
+          │   2026-10-15 09:23 · 7m ago · Claude Code · Claude Haiku 4.5 · 21f3fbb9                          │
+          │   Title of session 5                                                                             │
+          │   2026-10-15 09:22 · 8m ago · OpenAI Codex · GPT-5.5 · 21f40cca                                  │
+          │   Title of session 6                                                                             │
+          │   2026-10-15 09:21 · 9m ago · Claude Code · Claude Haiku 4.5 · 21f41ddb                          │
+          │   2026-10-15 09:20 · 10m ago · Claude Code · Claude Haiku 4.5 · 21f42eec                         │
+          │                                                                                                  │
+          │   DELETE THIS SESSION FROM THE HISTORY?                                                          │
+          │   ACC's list only: Claude Code keeps its own record                                              │
+          │     Delete       Cancel                                                                          │
+          │   ←→ choose · Enter answer · Esc cancel                                                          │
+          ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+
+
+
+
+
+

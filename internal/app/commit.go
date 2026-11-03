@@ -410,6 +410,10 @@ func (m *Model) pushAction() []tea.Cmd {
 
 // startOp starts an operation at its first step, the note cleared.
 func (m *Model) startOp(op *gitOp) []tea.Cmd {
+	if m.s.Returning {
+		m.notice(returningNote, render.NoticeCheck) // nothing starts that the return would drop (plan 75)
+		return nil
+	}
 	if _, ok := m.sourceWrite(); !ok {
 		return nil
 	}

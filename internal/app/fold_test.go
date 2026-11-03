@@ -104,7 +104,8 @@ func TestToolFoldKeys(t *testing.T) {
 		// At 80x24 the expanded run is taller than B: B stays where it was,
 		// the run's row in view and the calls opening under it.
 		h.send(tea.WindowSizeMsg{Width: 80, Height: 24})
-		h.draw(key(tea.KeyEscape, 0))
+		// No Esc here: the cursor already left for the input, where Esc now asks
+		// to return to the home screen (plan 75, design D7).
 		for range 4 {
 			h.draw(key(tea.KeyUp, 0))
 		}

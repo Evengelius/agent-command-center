@@ -37,7 +37,9 @@ func (m *Model) zonesWith() []string {
 // essentials; step 3 adds selection, undo, the external editor and the rest.
 func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	if k.String() == "ctrl+q" {
-		m.wt = nil // a quit question shows on the screen under it
+		// A quit question shows on the screen under these, and replaces the
+		// question to return home (plan 75).
+		m.wt, m.hist, m.ui.Return = nil, nil, render.ReturnAsk{}
 		// A git operation asks to confirm too (plan 47, design D1), the
 		// branches popup's switch and fetch with them (plan 59).
 		return m.do(state.Quit{GitRunning: m.op != nil || m.branchOpRunning()})
@@ -49,6 +51,10 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	// closes on a key it does not take, which goes on to the dashboard.
 	top := render.Layers(m.s, m.ui).Top
 	switch top {
+	case render.LayerReturn:
+		// The question to return to the home screen takes every key (plan 75,
+		// design D7).
+		return m.returnKey(k)
 	case render.LayerPlus:
 		// Any key closes the "+" menu; Esc does nothing more (plan 30).
 		m.ui.Plus, m.ui.PlusHover = false, false
@@ -85,6 +91,9 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 	if m.wt != nil {
 		return m.worktreesKey(k)
 	}
+	if m.hist != nil {
+		return m.historyKey(k) // the session history view takes every key but Ctrl+Q (plan 75, design D3)
+	}
 	// Ctrl+W, on both screens: the Worktrees view (plan 16); not while a
 	// start is validated or a quit question waits. The search bar closes
 	// first (plan 66, design D9).
@@ -102,9 +111,10 @@ func (m *Model) key(k tea.KeyPressMsg) []tea.Cmd {
 func (m *Model) startupKey(k tea.KeyPressMsg) []tea.Cmd {
 	switch k.String() {
 	case "esc":
-		if m.s.Startup.Phase == state.Asking {
-			return m.do(state.Quit{})
-		}
+		// Nothing: only Ctrl+Q quits, so that Esc pressed once too often on
+		// the way back from the dashboard does not end the program (plan 75,
+		// design D10).
+		return nil
 	case "up", "down":
 		if m.ui.Field == 3 {
 			// The project list (plan 15); elsewhere ↑↓ choose the agent.
@@ -120,6 +130,9 @@ func (m *Model) startupKey(k tea.KeyPressMsg) []tea.Cmd {
 		// The system's folder dialog (plan 52), not while a start is
 		// validated.
 		return m.openFolder()
+	case "alt+h":
+		// The session history of the chosen project (plan 75, design D2).
+		return m.openHistory()
 	case "ctrl+r":
 		// The chosen CLI's last session in the chosen project, resumed;
 		// nothing without one (plan 69, design D4).
@@ -164,6 +177,9 @@ func (m *Model) startupKey(k tea.KeyPressMsg) []tea.Cmd {
 // (plan 51, design D11): with the list's focus its project, then the
 // answers validated.
 func (m *Model) confirmStart() []tea.Cmd {
+	if m.stillClosing() {
+		return nil // the last session's draft and store still being settled (plan 75)
+	}
 	if m.ui.Field == 3 {
 		m.chooseProject() // Enter on the list chooses its row (plan 53, design D2)
 	}
@@ -351,6 +367,11 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
 		if m.s.Startup.Phase == state.StartFailed {
 			cmds := m.do(state.Back{})
 			cmds = append(cmds, m.closeSession()...)
+			// The failed session's turn review store goes too, off the event
+			// loop, so that the next start makes its own (plan 75).
+			var end sessionEnd
+			m.endTurns(&end)
+			cmds = append(cmds, m.runEnd(end))
 			m.focusMessage()
 			return cmds
 		}
@@ -366,8 +387,13 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
 			m.ui.Zoom = false // back to the exact dashboard, the focus kept
 			return nil
 		}
-		m.ui.Focus = "B"
-		return nil
+		if m.ui.Focus != "B" {
+			m.ui.Focus = "B"
+			return nil
+		}
+		// The focus already on zone B, nothing open or selected: the Esc that
+		// did nothing asks to return to the home screen (plan 75, design D7).
+		return m.askReturn()
 	case "f6", "shift+f6":
 		m.ui.Focus = step(m.zonesWith(), m.ui.Focus, k.String() == "f6")
 		return nil
@@ -422,8 +448,9 @@ func (m *Model) dashboardKey(k tea.KeyPressMsg, top render.Layer) []tea.Cmd {
 	return nil
 }
 
-// closeSession forgets a failed session after Back; its process was already
-// closed by the crash. Its draft is written and let go, for that project's
+// closeSession forgets a failed session after Back, and an ended one after a
+// return to the home screen (goHome); its process was already closed by the
+// crash, or has exited. Its draft is written and let go, for that project's
 // next start; the editor forgets it, text and images, for the next
 // session may be in another project (plan 33, design D2).
 func (m *Model) closeSession() []tea.Cmd {
@@ -431,6 +458,7 @@ func (m *Model) closeSession() []tea.Cmd {
 		m.cancel()
 	}
 	m.sess, m.cancel = nil, nil
+	m.sessGen++ // its timers go with it (sessionMsg; plan 75)
 	m.closeWindows()
 	m.ui.DraftWin = render.DraftWindow{}
 	m.ui.Explorer = render.ExplorerView{}
@@ -471,7 +499,7 @@ func (m *Model) editKey(e *input.Editor, k tea.KeyPressMsg, oneLine bool) []tea.
 		}
 		cb, ci := m.opt.Clipboard, m.clipImages()
 		images := ci != nil && m.sess != nil && m.limits().MaxCount > 0
-		return []tea.Cmd{func() tea.Msg {
+		read := func() tea.Msg {
 			text, err := cb.Read()
 			if images && (err != nil || text == "") {
 				if files, ferr := ci.Files(); ferr == nil && len(files) > 0 {
@@ -485,7 +513,8 @@ func (m *Model) editKey(e *input.Editor, k tea.KeyPressMsg, oneLine bool) []tea.
 				return toastMsg{"paste failed: " + err.Error()}
 			}
 			return pasteMsg{text}
-		}}
+		}
+		return []tea.Cmd{m.sessionCmd(read)} // the session's own: dropped once it has ended (plan 75, design D9)
 	default:
 		if text := keyText(k); text != "" {
 			if oneLine {

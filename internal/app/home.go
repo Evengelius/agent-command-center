@@ -338,6 +338,7 @@ func (m *Model) resetForm() []tea.Cmd {
 	}
 	m.path.SetText(m.startProject())
 	m.ui.Field, m.ui.ProjectSel = 0, 0
+	m.histRefused = ""
 	m.ui.FolderProblem = "" // the folder dialog's failure too (plan 52, design D3)
 	return m.do(state.ResetForm{})
 }

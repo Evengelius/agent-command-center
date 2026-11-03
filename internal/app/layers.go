@@ -40,6 +40,9 @@ func (m *Model) closeUnshown(sc *render.Screen) {
 	if m.ui.Source.Menu && !sc.Dropdown || m.ui.Source.Ask > 0 && !sc.Layers.Shown(render.LayerAsk) {
 		m.dropSourcePopups()
 	}
+	if m.ui.Return.Open && (!sc.Layers.Shown(render.LayerReturn) || sc.Return.W == 0) {
+		m.ui.Return = render.ReturnAsk{} // the question with no room: No, as Esc (plan 75, design D7)
+	}
 }
 
 // windowed says the layer on top is a window, whose keys and clicks are

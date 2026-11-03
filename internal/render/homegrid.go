@@ -189,14 +189,26 @@ func homeGridHeader(s *state.State, ui UI, w int) line {
 }
 
 // homeGridFooter is the footer's row (design D8): "Shortcuts:", then each
-// shortcut's key on its cap and its action, bars between them.
+// shortcut's key on its cap and its action, bars between them; where that
+// does not fit (under 100 columns), the short row (plan 75, design D6): no
+// "Shortcuts:", the actions "New" and "Open" and the bars narrower, 65 cells.
 func homeGridFooter(ui UI, w int) line {
-	l := line{homeOn(" › ", cHomeFootChevron, false, pageGround), homeOn("Shortcuts:", cHomeShortcuts, true, pageGround), homeOn("  ", cHomePage, false, pageGround)}
+	l := line{homeOn(" › ", cHomeFootChevron, false, pageGround)}
+	bar, short := "  │  ", w < homeFooterFull
+	if short {
+		bar = " │ "
+	} else {
+		l = append(l, homeOn("Shortcuts:", cHomeShortcuts, true, pageGround), homeOn("  ", cHomePage, false, pageGround))
+	}
 	for i, k := range homeKeys {
-		if i > 0 {
-			l = append(l, homeOn("  │  ", cHomeFootBar, false, pageGround))
+		action := k.Action
+		if short {
+			action = k.Short
 		}
-		l = append(l, homeOn(" "+k.Key+" ", cHomeCapText, false, capGround), homeOn(" "+k.Action, cHomeAction, false, pageGround))
+		if i > 0 {
+			l = append(l, homeOn(bar, cHomeFootBar, false, pageGround))
+		}
+		l = append(l, homeOn(" "+k.Key+" ", cHomeCapText, false, capGround), homeOn(" "+action, cHomeAction, false, pageGround))
 	}
 	return homeRow(l, w)
 }

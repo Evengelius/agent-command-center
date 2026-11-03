@@ -6,6 +6,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/Evengelius/agent-command-center/internal/input"
+	"github.com/Evengelius/agent-command-center/internal/render"
 	"github.com/Evengelius/agent-command-center/internal/state"
 )
 
@@ -14,18 +15,27 @@ import (
 // record's writes.
 
 // lastSession is the chosen agent CLI's last session in the project at path,
-// the field's resolved (plan 69, design D3): none without a store, or once
-// its CLI refused it for good and its record is being cleared, or could not
-// be (design D7). A mock run never shows the home screen.
+// the field's resolved (plan 69, design D3): the newest of its entries in the
+// project's history (plan 75, design D1); none without a store or a session,
+// and not the one its CLI refused for good while its record is being cleared,
+// or could not be (design D7). A mock run never shows the home screen.
 func (m *Model) lastSession(path string) (input.Project, input.Session, bool) {
 	if m.projects == nil || path == "" {
 		return input.Project{}, input.Session{}, false
 	}
-	e, s, ok := m.projects.p.LastSession(m.projectList, path, m.ui.Choice)
-	if ok && m.s.Startup.ResumeGone && s.ID == m.s.Startup.Resume {
+	e, found := m.projects.p.Find(m.projectList, path)
+	if !found {
 		return input.Project{}, input.Session{}, false
 	}
-	return e, s, ok
+	// The CLI's newest session in the project's history, but for the one its
+	// CLI has just refused for good, whose record is being cleared or could not
+	// be: the one before it is offered then (plan 75, design D1).
+	skip := ""
+	if m.s.Startup.ResumeGone {
+		skip = m.s.Startup.Resume
+	}
+	x, ok := e.Newest(m.ui.Choice, skip)
+	return e, input.Session{ID: x.ID, Ended: x.Ended}, ok
 }
 
 // resumeLast is Ctrl+R on the home screen and a click on the last session's
@@ -33,6 +43,9 @@ func (m *Model) lastSession(path string) (input.Project, input.Session, bool) {
 // project validated as START SESSION validates it, the state refusing it
 // outside Asking as it refuses START SESSION; nothing without one.
 func (m *Model) resumeLast() []tea.Cmd {
+	if m.stillClosing() {
+		return nil // the last session's draft and store still being settled (plan 75)
+	}
 	r := input.ResolvePath(m.path.Text(), m.env)
 	if r.Problem != "" {
 		return nil
@@ -41,6 +54,7 @@ func (m *Model) resumeLast() []tea.Cmd {
 	if !ok {
 		return nil
 	}
+	m.olderResume = false
 	cmds := m.do(state.Confirm{Provider: m.ui.Choice, Project: m.path.Text(), Resume: sess.ID, ResumeProject: e.Path})
 	m.focusMessage()
 	return cmds
@@ -59,6 +73,9 @@ func (m *Model) resumeNotes(path string) (offer, failure string) {
 		failure = "Not resumed: " + st.ResumeFailure
 		if st.ResumeGone {
 			failure = "Not resumed: " + cliName(st.Provider) + " no longer has its last session here"
+			if m.olderResume {
+				failure = "Not resumed: " + cliName(st.Provider) + " no longer has that session" // plan 75: not the CLI's last
+			}
 		}
 	}
 	return offer, failure
@@ -74,12 +91,16 @@ func cliName(id string) string {
 	return id
 }
 
-// recordSession makes id the last session of the session's CLI in its
-// project, its turn ended at at (plan 69, design D2).
-func (m *Model) recordSession(id string, at time.Time) tea.Cmd {
-	path, cli := m.s.Context.Project, m.s.Context.Provider
+// recordSession puts the session id of the session's CLI first in its
+// project's history, its turn ended at at, with the model zone A names and the
+// title of the session's first message prompt (plan 69, design D2; plan 75,
+// designs D1 and D1a). The title is made here, with render's grapheme
+// functions, for the store keeps it only the first time it records the ID.
+func (m *Model) recordSession(id string, at time.Time, prompt string, partial bool) tea.Cmd {
+	path := m.s.Context.Project
+	e := input.Entry{CLI: m.s.Context.Provider, ID: id, Ended: at, Model: render.ModelOf(m.s), Title: render.SessionTitle(prompt, partial)}
 	return m.projectsCmd(func(p input.Projects, l []input.Project) []input.Project {
-		return p.RecordSession(l, path, cli, id, at)
+		return p.RecordSession(l, path, e)
 	})
 }
 
