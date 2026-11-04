@@ -52,9 +52,12 @@ develop, not about the application: nothing here goes into its provider code.
     one does. After reading the diff the orchestrator may raise it, never lower
     it. A second FAIL on one criterion, a defect a correction reintroduced or
     introduced, or a reasoning question a Reviewer could not close, raises the
-    next Reviewer one tier, once per step. The Reviewer's brief never names the
-    tier or its reason, though `plan.md`'s own text can reach it through the
-    diff.
+    next Reviewer one tier, once per step. A raise that would reach `max` needs
+    the owner's approval, unless the owner or the plan has already asked for
+    `max` for that step or the final review. The orchestrator asks and starts
+    no Reviewer before the answer; if the owner declines, the next Reviewer
+    runs at `xhigh`. The Reviewer's brief never names the tier or its reason,
+    though `plan.md`'s own text can reach it through the diff.
 - **Long jobs and agents.** The orchestrator sets one observation deadline
   per long job and per agent it starts, at its recorded duration, with the
   Monitor tool or one background timer, and looks once when it passes; after
