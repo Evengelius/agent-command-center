@@ -16,6 +16,18 @@ develop, not about the application: nothing here goes into its provider code.
   - `implementer`: Sonnet, high, edits and runs commands.
   - `reviewer`: Opus 5.5, read-only (Read, Grep, Glob): no shell, no edit tool,
     no CLAUDE.md, no memory; reports in the shape its definition gives.
+- **Whose model and effort** (Claude Code's subagents page, read 2026-11-04).
+  The session's model and effort are the orchestrator's: it works on them
+  before, between and after its agents. An agent's model is the Agent call's
+  `model`, else its frontmatter's, else the session's. Its effort is the
+  call's `effort`, else its frontmatter's; with neither, do not rely on an
+  implicit effort default: the page applies the session's only on the
+  session's model, yet under 2.1.309 a built-in agent given `model: "sonnet"`
+  ran at the session's `max` (2026-11-04, the one case tested). Hence every
+  agent here gets an effort from its definition or its call; the transcripts
+  show what ran (below). A fork always follows the session. The roles below
+  assume no `CLAUDE_CODE_EFFORT_LEVEL`, `CLAUDE_CODE_SUBAGENT_MODEL` or
+  `CLAUDE_CODE_SUBAGENT_MODEL_FORCE`: each changes this order.
 - **Roles.** Use the fewest agents the task needs, often none. Choose the role
   by the task's actual difficulty: its reasoning complexity, ambiguity,
   technical uncertainty, dependencies and implementation risk, not how many of
