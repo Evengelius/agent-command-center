@@ -60,30 +60,30 @@ a header, the banner, two panels, NEW SESSION and PROJECTS, and a footer.
 Grid mode at 80x24, the list focused on its second favourite:
 
 ```text
- ⊞ AGENT COMMAND CENTER                       │  v0.1.0  │  Windows  │  ● Ready 
-                                                                                
- ╭──────────────────────────────────╮ ╭───────────────────────────────────────╮ 
- │ › NEW SESSION  ───────────────── │ │ › PROJECTS  ───────────────────────── │ 
- │                                  │ │                                       │ 
- │  1.  Agent CLI                   │ │  ☆ FAVORITES                          │ 
- │   ◉  Claude Code (2.1.300)       │ │  ★  docs                      3h ago  │ 
- │                                  │ │                                       │ 
- │   ○  OpenAI Codex (0.163.0)      │ │ ▏★  scratch                   1d ago▕ │ 
- │                                  │ │                                       │ 
- │  2.  Project directory           │ │  ★  acme-portal                never  │ 
- │ ╭──────────────────────────┬───╮ │ │                                       │ 
- │ │ …ts\agent-command-center │ 🗀 │ │ │  ◷ RECENT PROJECTS                    │ 
- │ ╰──────────────────────────┴───╯ │ │  ☆  agent-command-center         now  │ 
- │                                  │ │ ───────────────────────────────────── │ 
- │                                  │ │  ☆  billing-service           8m ago  │ 
- │         START SESSION →          │ │ ───────────────────────────────────── │ 
- │                                  │ │  ☆  infra                     7h ago  │ 
- │                                  │ │ ───────────────────────────────────── │ 
- │                                  │ │  ☆  web                       1d ago  │ 
- │                                  │ │                                       │ 
- ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯ 
-                                                                                
- ›  Ctrl+N  New │  Ctrl+O  Open │  Alt+H  History │  Ctrl+Q  Quit               
+ ⊞ AGENT COMMAND CENTER                       │  v0.1.0  │  Windows  │  ● Ready
+
+ ╭──────────────────────────────────╮ ╭───────────────────────────────────────╮
+ │ › NEW SESSION  ───────────────── │ │ › PROJECTS  ───────────────────────── │
+ │                                  │ │                                       │
+ │  1.  Agent CLI                   │ │  ☆ FAVORITES                          │
+ │   ◉  Claude Code (2.1.300)       │ │  ★  docs                      3h ago  │
+ │                                  │ │ ▏★  scratch                   1d ago▕ │
+ │   ○  OpenAI Codex paused         │ │  ★  acme-portal                never  │
+ │                                  │ │                                       │
+ │  2.  Project directory           │ │  ◷ RECENT PROJECTS                    │
+ │ ╭──────────────────────────┬───╮ │ │  ☆  agent-command-center         now  │
+ │ │ …javadev\projets\scratch │ 🗀 │ │ │  ☆  billing-service           8m ago  │
+ │ ╰──────────────────────────┴───╯ │ │  ☆  a-project-with-a-very-l… 58m ago  │
+ │                                  │ │  ☆  infra                     7h ago  │
+ │                                  │ │  ☆  mobile-app               14h ago  │
+ │         START SESSION →          │ │  ☆  web                       1d ago  │
+ │                                  │ │  ☆  tools                     2d ago  │
+ │                                  │ │  ☆  payments                  3d ago  │
+ │                                  │ │                                       │
+ │                                  │ │                                       │
+ ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯
+
+ ›  Ctrl+N  New │  Ctrl+O  Open │  Alt+H  History │  Ctrl+Q  Quit
 ```
 
 ### The picture
@@ -211,30 +211,30 @@ The screen with two failures, Codex missing and a mistyped path, in grid
 mode at 80x24:
 
 ```text
- ⊞ AGENT COMMAND CENTER                       │  v0.1.0  │  Windows  │  ● Ready 
-                                                                                
- ╭──────────────────────────────────╮ ╭───────────────────────────────────────╮ 
- │ › NEW SESSION  ───────────────── │ │ › PROJECTS  ───────────────────────── │ 
- │                                  │ │                                       │ 
- │  1.  Agent CLI                   │ │  No projects yet                      │ 
- │   ◉  Claude Code (2.1.300)       │ │                                       │ 
- │                                  │ │                                       │ 
- │   ○  OpenAI Codex not            │ │                                       │ 
- │      installed: codex not        │ │                                       │ 
- │      found on PATH               │ │                                       │ 
- │                                  │ │                                       │ 
- │  2.  Project directory           │ │                                       │ 
- │ ╭──────────────────────────┬───╮ │ │                                       │ 
- │ │ …ts/agent-comand-center█ │ 🗀 │ │ │                                       │ 
- │ ╰──────────────────────────┴───╯ │ │                                       │ 
- │  ✗ Does not exist:               │ │                                       │ 
- │    C:\Users\…\projets\agent-com  │ │                                       │ 
- │    and-center                    │ │                                       │ 
- │                                  │ │                                       │ 
- │         START SESSION →          │ │                                       │ 
- ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯ 
-                                                                                
- ›  Ctrl+N  New │  Ctrl+O  Open │  Alt+H  History │  Ctrl+Q  Quit               
+ ⊞ AGENT COMMAND CENTER                       │  v0.1.0  │  Windows  │  ● Ready
+
+ ╭──────────────────────────────────╮ ╭───────────────────────────────────────╮
+ │ › NEW SESSION  ───────────────── │ │ › PROJECTS  ───────────────────────── │
+ │                                  │ │                                       │
+ │  1.  Agent CLI                   │ │  No projects yet                      │
+ │   ◉  Claude Code (2.1.300)       │ │                                       │
+ │                                  │ │                                       │
+ │   ○  OpenAI Codex not            │ │                                       │
+ │      installed: codex not        │ │                                       │
+ │      found on PATH               │ │                                       │
+ │                                  │ │                                       │
+ │  2.  Project directory           │ │                                       │
+ │ ╭──────────────────────────┬───╮ │ │                                       │
+ │ │ …ts\agent-comand-center█ │ 🗀 │ │ │                                       │
+ │ ╰──────────────────────────┴───╯ │ │                                       │
+ │  ✗ Does not exist:               │ │                                       │
+ │    C:\Users\…\projets\agent-com  │ │                                       │
+ │    and-center                    │ │                                       │
+ │                                  │ │                                       │
+ │         START SESSION →          │ │                                       │
+ ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯
+
+ ›  Ctrl+N  New │  Ctrl+O  Open │  Alt+H  History │  Ctrl+Q  Quit
 ```
 
 When NEW SESSION needs more rows than the screen has beside PROJECTS, it
@@ -1009,12 +1009,12 @@ sidebar's tiles show in their text form here, as in every golden frame
 │ ✿ Haiku 5.5      ! AGENT WAITING ││ ▎  ✓ Agent  general-purpose · List directory and …  11:30:06      mock   ││  ≡   │
 │ ──────────────────────────────── ││ ▎                                                                        ││      │
 │ STAGES · inferred from activity  ││ ▎ I've launched the subagent in the background to list the directory     ││      │
-│ ✓ TURN 1                      4s ││ ▎ and write `found.txt`. I'll report its result when it finishes.        ││      │
+│ ✓ TURN 1                      4s ││ ▎ and write found.txt. I'll report its result when it finishes.          ││      │
 │   Use the Agent tool to launch … ││ ▎                                                                        ││  ⑂   │
 │   Agent · agent general-purpose  ││ ▎  ✓ general-purpose · Bash  ls -p…  allowed by you 11:30:08      mock   ││      │
 │                                  ││ ▎                                                                        ││      │
 │                                  ││ ▎ ╭───────────────────────────────────────────────────────────────────╮  ││      │
-│                                  ││ ▎ │ ! APPROVAL · general-purpose · Write                  11:30  mock │  ││      │
+│                                  ││ ▎ │ ! APPROVAL · general-purpose · Write                  11:30  mock │  ││  ◉   │
 │ ──────────────────────────────── ││ ▎ │   <probe-root>\probe-work\p3b\found.txt                           │  ││      │
 │ ✦ TELEMETRY        Enter details ││ ▎ │ ▸ Preview of found.txt (2 lines)                                  │  ││      │
 │ ▾ SESSION USAGE                  ││ ▎ │  1 │ alpha.txt                                                    │  ││      │
@@ -1101,9 +1101,8 @@ sidebar's tiles show in their text form here, as in every golden frame
 │   Agent · agent general-purpose                      ││                                                                                                                                      ││      │
 │                                                      ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                                                           ││      │
 │                                                      ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                                                11:30:06      mock   ││      │
-│                                                      ││ ▎                                                                                                                                    ││      │
-│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write `found.txt`. I'll report its result when it           ││      │
-│                                                      ││ ▎ finishes.                                                                                                                          ││      │
+│                                                      ││ ▎                                                                                                                                    ││  ◉   │
+│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write found.txt. I'll report its result when it finishes.   ││      │
 │                                                      ││ ▎                                                                                                                                    ││      │
 │                                                      ││ ▎  ✓ general-purpose · Bash  ls -p "<probe-root>/probe-work/p3b" | grep -v '/$'                  allowed by you 11:30:08      mock   ││      │
 │                                                      ││ ▎                                                                                                                                    ││      │
@@ -1116,8 +1115,9 @@ sidebar's tiles show in their text form here, as in every golden frame
 │                                                      ││ ▎ │ │  2 │ beta.md                                                                                                              │ │  ││      │
 │                                                      ││ ▎ │ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ │  ││      │
 │                                                      ││ ▎ │ This will create or overwrite the file at `<probe-root>\probe-work\p3b\found.txt` with the above content.                     │  ││      │
-│ ──────────────────────────────────────────────────── ││ ▎ │ ▐ F2 to answer ▌                                                                                                              │  ││      │
-│ ✦ TELEMETRY                            Enter details ││ ▎ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  ││      │
+│                                                      ││ ▎ │ ▐ F2 to answer ▌                                                                                                              │  ││      │
+│ ──────────────────────────────────────────────────── ││ ▎ ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  ││      │
+│ ✦ TELEMETRY                            Enter details ││                                                                                                                                      ││      │
 │ ▾ SESSION USAGE                                      ││                                                                                                                                      ││      │
 │   CONTEXT           │ TOKENS        │ EST. COST      ││                                                                                                                                      ││      │
 │   3% of 1M          │ 61.9k         │ $0.00          ││                                                                                                                                      ││      │

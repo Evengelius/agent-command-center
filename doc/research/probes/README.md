@@ -21,10 +21,12 @@ emit. They become test fixtures in plan 4.
   process only, and Codex with reasoning summaries asked for.
   P69a and P69b, on 2026-10-29, are plan 69's probes, run before any of its
   code within the quota its proposal named (four model calls at most), as
-  the owner's design review of the plan asked (plan.md, Plan 69).
-  P76a, on 2026-11-04, is plan 76's probe, approved with the plan (plan.md,
-  Plan 76): one turn in which the orchestrator runs this repository's own
-  Implementer and Reviewer definitions as no-tool canaries.
+  the owner's design review of the plan asked ([brief](../../brief.md),
+  amendment 71; [plan69-evaluation.md](../../plan69-evaluation.md), 69.1).
+  P76a, on 2026-11-04, is plan 76's probe, approved with the plan
+  ([plan76-evaluation.md](../../plan76-evaluation.md), The plan as it ran):
+  one turn in which the orchestrator runs this repository's own Implementer
+  and Reviewer definitions as no-tool canaries.
 - **Where:** a throwaway folder outside the repository (the session
   scratchpad under `%TEMP%`, written `<probe-root>` in the recordings), one
   fresh subfolder per probe.

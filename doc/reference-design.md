@@ -843,9 +843,11 @@ times (`render/bannerart.go`):
   round it, in a purple haze (`#300642` to `#3B094E` within about 10
   pixels of its middle).
 
-What plan 51 takes: everything above. In picture mode (plan.md, Plan 51,
-D1) the image's measures are drawn as Sixel images at a scale k, its text
-by GDI ([ui-design.md, Startup screen](ui-design.md#startup-screen)).
+What plan 51 takes: everything above. Plan 51's design decisions, cited
+here by number, are in `plan.md` as of commit `7e60f73`, and its results in
+[plan51-evaluation.md](plan51-evaluation.md). In picture mode (D1) the
+image's measures are drawn as Sixel images at a scale k, its text by GDI
+([ui-design.md, Startup screen](ui-design.md#startup-screen)).
 
 What differs, approved by the owner (amendment 52):
 - The face: Cascadia Mono, the terminal's own, at each text kind's size,
@@ -869,7 +871,7 @@ What differs, approved by the owner (amendment 52):
 - The controls the image shows that do not exist: Ctrl+P is left out (no
   command palette); "v0.1.0" comes from a version constant, "Windows" from
   the system, the status from the startup machine, Ctrl+N resets the form
-  (plan.md, Plan 51, D5, D8, D9).
+  (plan 51, D5, D8, D9).
 - The banner moves (D12), drawn so that the terminal stays within 8% of a
   core (criterion 51.7; plan 51, step 5): 10 frames a second; the aliens
   march as the classic game's, those of a band of rows stepping together

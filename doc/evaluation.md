@@ -160,8 +160,8 @@ go test -tags timing ./internal/app -run '^(TestKeystrokeToFrame|TestDraftKeystr
   (50,000 lines, saved while typing) each send 50 untimed warm-up keys, then
   time every key to its frame on the wall clock, the garbage collector on.
 - The target is p95 ≤ 16 ms (`keystrokeTarget`); it never changes to make a
-  run pass. p50, p95 and the maximum are recorded in `plan.md` with the
-  conditions.
+  run pass. p50, p95 and the maximum are recorded in the plan's evaluation
+  file, with the conditions.
 - `TestKeystrokeCost` judges nothing: it reports a key's mean time, bytes and
   allocations, the before and after of a change to the drawing.
 - `TestLongSession` is test 11 (reliability.md, Test plan): two hours of

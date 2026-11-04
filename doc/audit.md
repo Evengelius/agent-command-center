@@ -8,6 +8,14 @@ reproductions and measurements and supersedes Part 1 wherever the two
 differ (severities, recommendations, roadmap). Plan 46 implements the first
 three fixes of Part 2's roadmap (brief amendment 47).
 
+**Status, 2026-11-04: Part 2's roadmap has been carried out.** Plan 46 made
+its first three fixes ([plan46-evaluation.md](plan46-evaluation.md)), plan 47
+its phase 1 ([plan47-evaluation.md](plan47-evaluation.md)), plan 48 its phase
+2 ([plan48-evaluation.md](plan48-evaluation.md)), and plan 49 the rest of
+phase 0 and phases 3 and 4 ([plan49-evaluation.md](plan49-evaluation.md)),
+where the owner accepted five results as documented exceptions. This audit
+is kept as it was delivered; its findings are not open items.
+
 # Part 1: the audit
 
 Date: 2026-10-25. Subject: commit `75c133d` on `main`, working tree clean. Scope: the whole active codebase, 43,500 source lines in 19 packages and 57,300 test lines. The patched copy of `charmbracelet/ultraviolet` was reviewed at its patch points only.

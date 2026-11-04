@@ -148,6 +148,7 @@ scripts\harness\               the Windows Terminal check, its tests, colour too
 internal\                      the packages (doc\architecture.md, The five parts)
 testdata\                      probe recordings, mock files, golden frames
 THIRD_PARTY.md                 every module in the graph, its version and licence
+third_party\                   the patched ultraviolet and the bundled font (THIRD_PARTY.md)
 references\                    the reference screenshot, video and layout mock-up; never edit
 ```
 
