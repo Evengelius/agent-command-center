@@ -491,12 +491,13 @@ F="$TEMP/acc-review-inputs"; { git --no-optional-locks status --porcelain --untr
 
 **The evidence command** is the Implementer's last, from the same place. A
 step's own checks go before the redirection, each printing its command and
-inputs before its output. Each phase prints its start and its end with the time
-(Execution supervision). The exit status is saved before the line that prints
-it, since the time's command substitution would reset `$?`:
+inputs before its output. After the fingerprint, which stays the first line,
+each phase prints its start and its end with the time (Execution
+supervision). The exit status is saved before the line that prints it, since
+the time's command substitution would reset `$?`:
 
 ```text
-F="$TEMP/acc-review-inputs"; t() { date '+%H:%M:%S'; }; { { git --no-optional-locks status --porcelain --untracked-files=all; while IFS= read -r f || [ -n "$f" ]; do sha256sum -b -- "$f"; done < "$F/plan-files.txt"; } | sha256sum; echo "$(t) build"; go build ./...; rc=$?; echo "$(t) build exit $rc"; echo "$(t) vet"; go vet ./...; rc=$?; echo "$(t) vet exit $rc"; gofmt -l .; echo "$(t) gofmt done"; echo "$(t) test"; go test ./...; rc=$?; echo "$(t) test exit $rc"; } > "$F/evidence.txt" 2>&1
+F="$TEMP/acc-review-inputs"; t() { date '+%H:%M:%S'; }; { { git --no-optional-locks status --porcelain --untracked-files=all; while IFS= read -r f || [ -n "$f" ]; do sha256sum -b -- "$f"; done < "$F/plan-files.txt"; } | sha256sum; echo "$(t) build"; go build ./...; rc=$?; echo "$(t) build exit $rc"; echo "$(t) vet"; go vet ./...; rc=$?; echo "$(t) vet exit $rc"; echo "$(t) gofmt"; gofmt -l .; echo "$(t) gofmt done"; echo "$(t) test"; go test ./...; rc=$?; echo "$(t) test exit $rc"; } > "$F/evidence.txt" 2>&1
 ```
 
 **Around each review.** Before it: `git status` against the plan's files, the
@@ -589,8 +590,9 @@ verdict, each checked against the transcript's metadata.
   transcript shows afterwards what they opened.
 - A read-only Reviewer judges, it does not verify by running: a `reported`
   criterion rests on evidence. The orchestrator's full run repeats the build,
-  vet, gofmt and tests once per plan; a step's own checks, a mutant's for one,
-  rest on the Implementer's evidence alone.
+  vet, gofmt and tests before the final review, and again after its last
+  correction (`AGENTS.md`, Review cycle 6); a step's own checks, a mutant's
+  for one, rest on the Implementer's evidence alone.
 - A changed definition can reach new Reviewers late, for a reason not known:
   in plan 74, two Reviewers started two and four minutes after a rewrite still
   got the old one, body and tools, and one started nine minutes after an edit

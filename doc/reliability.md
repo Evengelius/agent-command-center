@@ -140,7 +140,7 @@ fails](#when-a-whole-integration-fails)).
 | 7. Concurrent output | route by `agent_id`, `task_id`, `parent_tool_use_id`; fallback "unattributed" on the orchestrator | route by `threadId`; fallback `optOutNotificationMethods`, per-thread `thread/read` |
 | 8. Quota | the `/usage` report after the handshake and after each turn (plan 24, amendment 23), `rate_limit_event` between; fallback last value with its age, "N/A" before the first | `account/rateLimits/read` and pushes; fallback "N/A" with the reason, last pushed value with its age |
 | 9. Platform limits | Windows native, Git Bash for the Bash tool; fallback its PowerShell tool, the reported shell shown | Windows native; the effective sandbox from `thread/start` shown, so a downgrade is visible |
-| Network path | the proxy from Claude Code's own settings, never set by the dashboard | the dashboard's environment. The proxy comes from `config.json`'s `codex.proxy` when set (plan 22, amendment 19), shown on the startup screen. If it does not answer, Codex's own errors and retries appear in zone B as received: nothing is hidden, and nothing switches proxy |
+| Network path | the proxy from Claude Code's own settings, never set by the dashboard | the dashboard's environment. The proxy comes from `config.json`'s `codex.proxy` when set (plan 22, amendment 19), shown on the startup screen while the build offers Codex, not while it is paused (amendment 96). If it does not answer, Codex's own errors and retries appear in zone B as received: nothing is hidden, and nothing switches proxy |
 | Path forms (INT paths) | the validation steps and messages of [ui-design.md, Validation and messages](ui-design.md#validation-and-messages); a failed `Stat` after a WSL translation names the mount root as the likely cause | same |
 
 ### Concurrent output
@@ -349,8 +349,10 @@ adapter, labelled on screen.
 | Codex | `codex exec --json` + `codex exec resume` (CX-4.2; P5, P5b) | the final messages, items, per-turn usage, errors | deltas, approvals (policy `never`, so writes are refused under `read-only`), quota, context, interrupt |
 
 Either CLI may be missing entirely: the startup screen shows it "not
-installed" and it cannot be chosen; with neither, Start is disabled
-([ui-design.md, Startup screen](ui-design.md#startup-screen); B3.3).
+installed", or "paused" when the build leaves its adapter out (Codex, while
+it is paused: amendment 96), and it cannot be chosen; with no usable CLI,
+Start is disabled ([ui-design.md, Startup screen](ui-design.md#startup-screen);
+B3.3).
 
 ## Approvals
 
