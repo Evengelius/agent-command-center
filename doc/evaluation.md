@@ -8,6 +8,15 @@ exit code, a source. There is no score: a criterion passes or fails, and the
 work is done only when every criterion passes. What only the owner can judge
 (how the screen looks and feels) is listed as not verified, never assumed.
 
+A PASS means that the criteria were satisfied on the evidence available, not
+that no defect remains: testing shows the presence of defects, not their
+absence. A change's reliability rests on five things (amendment 97):
+- sufficient evidence for its criteria;
+- no unresolved known blocking defect;
+- regressions detected and handled;
+- justified convergence decisions (The Reviewer, Convergence);
+- residual risks written down.
+
 ## The loop
 
 1. **Before working**, write down how the result will be checked: one line per
@@ -20,7 +29,8 @@ work is done only when every criterion passes. What only the owner can judge
 4. **Summarise** in the format below.
 5. **If something failed**, give the likely cause and a proposed next step. Do
    not apply it without the owner's approval; a plan's Review cycle
-   (`AGENTS.md`) applies its corrections itself, within its limits.
+   (`AGENTS.md`) applies its corrections itself, within its convergence rules
+   (The Reviewer, Convergence).
 
 ## Evidence and temporary files
 
@@ -272,7 +282,8 @@ go test ./internal/input -run '^$' -fuzz '^FuzzEditorRanges$' -fuzztime 60s -fuz
 
 ## The race detector
 
-`go test -race ./... -count=1` needs cgo, so a C compiler; the owner approved
+`go test -race -count=1 -timeout=20m ./...` (its limit: Execution supervision)
+needs cgo, so a C compiler; the owner approved
 a portable one under the user profile (plan 4, the fixes before L2 and
 step 5, 2026-10-16): WinLibs GCC 16.2.0
 with MinGW-w64 14.0.0 UCRT r2, the GitHub release
@@ -401,7 +412,8 @@ change either without notice, so an update is never silent.
 `codex --version` with the last probed versions, the "Last probed" line of
 [the probes README](research/probes/README.md). If one is newer, it tells the
 owner and proposes the re-check below; nothing runs before the owner
-approves. The dashboard says the same: its project bar adds "newer than
+approves. While Codex is paused, its version is reported and no re-check
+proposed (amendment 96). The dashboard says the same: its project bar adds "newer than
 tested" when the session's CLI is newer than the version its adapter names
 (`TestedVersion` in `internal/provider/claude` and `internal/provider/codex`).
 
@@ -477,12 +489,14 @@ from the repository root:
 F="$TEMP/acc-review-inputs"; { git --no-optional-locks status --porcelain --untracked-files=all; while IFS= read -r f || [ -n "$f" ]; do sha256sum -b -- "$f"; done < "$F/plan-files.txt"; } | sha256sum
 ```
 
-**The evidence command** is the Implementer's last, from the same place; a
+**The evidence command** is the Implementer's last, from the same place. A
 step's own checks go before the redirection, each printing its command and
-inputs before its output:
+inputs before its output. Each phase prints its start and its end with the time
+(Execution supervision). The exit status is saved before the line that prints
+it, since the time's command substitution would reset `$?`:
 
 ```text
-F="$TEMP/acc-review-inputs"; { { git --no-optional-locks status --porcelain --untracked-files=all; while IFS= read -r f || [ -n "$f" ]; do sha256sum -b -- "$f"; done < "$F/plan-files.txt"; } | sha256sum; go build ./...; echo "build exit $?"; go vet ./...; echo "vet exit $?"; gofmt -l .; echo "gofmt done"; go test ./...; echo "test exit $?"; } > "$F/evidence.txt" 2>&1
+F="$TEMP/acc-review-inputs"; t() { date '+%H:%M:%S'; }; { { git --no-optional-locks status --porcelain --untracked-files=all; while IFS= read -r f || [ -n "$f" ]; do sha256sum -b -- "$f"; done < "$F/plan-files.txt"; } | sha256sum; echo "$(t) build"; go build ./...; rc=$?; echo "$(t) build exit $rc"; echo "$(t) vet"; go vet ./...; rc=$?; echo "$(t) vet exit $rc"; gofmt -l .; echo "$(t) gofmt done"; echo "$(t) test"; go test ./...; rc=$?; echo "$(t) test exit $rc"; } > "$F/evidence.txt" 2>&1
 ```
 
 **Around each review.** Before it: `git status` against the plan's files, the
@@ -494,6 +508,61 @@ and `Glob` reached. A tool beyond the definition's and the CLI's two, a path
 outside the repository other than the inputs, or an earlier verdict on this
 plan's work makes the review count for nothing. A search of the repository can
 meet earlier plans' evaluation files, which judge other work.
+
+**Convergence**, after a FAIL or NOT VERIFIED (`AGENTS.md`, Review cycle, step
+5; amendments 97 and 98). The corrections have no fixed limit: each one must
+earn the next review with evidence.
+
+- **A finding is known by its cause.** The cause is the code path, or the
+  interaction of components, that produces the failure. It is found by
+  code-path analysis, by reproducing the failure and by discriminating
+  evidence. A test's status alone never decides it:
+  - a passing test proves only its own scenario;
+  - an earlier regression test that fails again proves that its scenario
+    broke again.
+
+  A different defect with the same symptom is a new finding; the same cause in
+  another scenario is the same finding.
+- **Evidence for each correction.** Each finding gets discriminating evidence,
+  meaning evidence that could have failed:
+  - where the project's tools can reproduce the failure (golden frames, the
+    Windows Terminal harness, synctest and fakes, the tests that read
+    documents): a regression test that reproduces the Reviewer's stated
+    failure. It is written before the fix, shown failing on the unfixed code,
+    then passing;
+  - where they cannot: other verifiable evidence, with one line saying why.
+    That is a before-and-after pair at real size, a live run's output or a
+    trace; for prose, the Reviewer's reading.
+
+  The evidence of every earlier finding still holds.
+- **A falsifiable explanation.** A correction goes ahead on an explanation that
+  names the mechanism (the code paths and how they interact). It also predicts
+  what the correction will make pass, the earlier findings' evidence included.
+- **The same cause in a new scenario.** The next correction acts on the cause,
+  not on the scenario. Its evidence covers the cause's representative cases,
+  chosen by risk:
+  - representative scenarios;
+  - boundaries;
+  - the known defects' regressions;
+  - a property or fuzz test where its value justifies its cost.
+
+  Whatever stays uncovered is written down as a residual risk.
+- **A defect a correction reintroduced or introduced** is investigated: what
+  the earlier evidence missed, and how the correction broke it. It raises the
+  next Reviewer one tier (`CLAUDE.md`). One such defect, or a short run of
+  them, is a risk signal, not a stop.
+- **The stops for the owner:**
+  - a correction's prediction is refuted and nothing new explains why.
+    Oscillation, incompatible fixes and an unresolved cause all come to this;
+  - no falsifiable explanation can be written;
+  - two reviews give different verdicts on one criterion for code and
+    evidence unchanged between them: the criterion can be read two ways;
+  - a fix that would change a criterion, the scope or the architecture, or a
+    question only the owner can settle: these stop the plan at once.
+- **The decisions' record.** Each decision to continue or stop is kept with its
+  evidence: the finding, its cause, the evidence, the prediction and what came
+  of it. It stays in the orchestrator's notes during the plan and goes into
+  the plan's evaluation file at its close.
 
 **Tiers** (`CLAUDE.md` gives their efforts), set in the plan before any code;
 size never decides, and when two tiers apply, the higher one does:
@@ -536,7 +605,100 @@ verdict, each checked against the transcript's metadata.
 - The cycle is the orchestrator following these rules, not a lock. Each
   Reviewer's own report stays in its transcript, where a claimed verdict can be
   checked.
+- Convergence decisions rest on judgments: whether two findings share a cause,
+  and whether evidence discriminates. Recorded with their evidence, they are
+  checkable, not infallible.
 - Codex has no Reviewer (`AGENTS.md`, Review cycle).
+
+## Execution supervision
+
+How long runs are bounded, watched and recovered (plan 76; amendments 97 and
+100). The aim is bounded execution, evidence-based detection and autonomous
+recovery, with minimal overhead. These safeguards make a stall like plan 75's
+far less likely and show it sooner; they cannot make one impossible.
+
+**A limit on every long command, before it starts**, its first run included.
+Where none exists, the orchestrator sets one before launching it. The
+observation deadlines below are only supplementary safeguards, never the only
+protection against a blocked run.
+
+- **The limit ends the whole process tree.** On Windows, stopping a parent
+  leaves its children running. So the limit is preferably one the process
+  enforces itself, Go's `-timeout` or a driver's own cap. Otherwise a wrapper
+  stops the whole tree (`taskkill /T /F`), never one that ends only the top
+  process.
+- **The limits,** each from a duration measured in plan 75. Test times come
+  from `doc/plan75-evaluation.md`; times with a build, and the timing step's
+  total and the live run's, come from the same runs' logs:
+
+  | Run | Limit | Its longest measured run |
+  |---|---|---|
+  | a mutant's | `-timeout=120s` | all of plan 75's 51 within it |
+  | the whole suite | Go's default, 10 minutes per package | internal/app, 346 s |
+  | `-race` | `-timeout=20m` per package | internal/app, 549 s of test, 572 s with its build |
+  | the timing step | Go's default | 114 s |
+  | a live run | its driver's own cap (L75's: 6 minutes per CLI) | L75: 61 s for one CLI |
+  | a new kind of job | from comparable evidence or its known parts, written with its reason, then refined from its measured durations | none yet |
+
+  A hang becomes a failure, with Go's dump of every goroutine where Go
+  enforces the limit.
+- **Tests that fail fast.** A test holding fakes releases them in `t.Cleanup`
+  and stops with `t.Fatalf`, so a broken mutant fails in seconds instead of
+  holding its binary to the limit. A mutant whose run panics or times out
+  counts as caught.
+- **One heavy job at a time:** a full suite, `-race`, the timing step, a
+  mutant set or a live run. An Implementer's evidence command counts as one,
+  and the orchestrator starts none while an agent's runs.
+- **Mutants after a correction:** only those whose code or tests it touched
+  run again; all of them run in the last evidence before the final review.
+  Each run prints a timestamped line per phase and per mutant.
+
+**Observation deadlines**, supplementary. The orchestrator sets one for each
+long job it starts and for each agent it starts; a long job that an agent runs
+comes under that agent's deadline. Each is set at the longest recorded
+comparable duration, with Claude Code's
+Monitor tool or one background timer. There is no polling and no watchdog
+process.
+
+| Job | Deadline | Recorded |
+|---|---|---|
+| the whole suite | 6.5 minutes | plan 75: 4:58 to 6:25 |
+| `-race` on the changed packages | 19.5 minutes | plan 75: 18:34 and 19:19 |
+| the timing step | 3 minutes | plan 75: 2:38 the longest |
+| a review at `xhigh` | 21 minutes | plan 75: 13.3 to 20.6 minutes |
+| an Implementer's first implementation of a step | 70 minutes | plan 75's agent transcripts: 46.7 and 70.2 minutes |
+| an Implementer's correction | 32 minutes | plan 75's agent transcripts: 15.6 to 31.5 minutes; its one stalled correction, 77.5 minutes, is left out as the incident it was |
+| an agent with no comparable record (an `Explore`, a Reviewer at another effort) | the closest comparable agent's, written with its reason | |
+| a job made of measured parts | the sum of their durations | |
+| a new kind of job | none on its first run, which its limit bounds; then its first measured duration | |
+
+**When a deadline passes, the orchestrator looks once:**
+
+- **for a job:** its process tree, each process's age and CPU time read twice
+  a few seconds apart, and its output's last line with when it was written;
+- **for an agent:** also its progress, meaning its last commands and their
+  results. A small script reads them from its transcript; the transcript is
+  never read whole.
+
+What the look decides:
+
+- **CPU time growing, new lines, or varied work:** a legitimate run. A job is
+  left to its limit; for an agent, the next observation is armed for the same
+  interval.
+- **A job with no CPU time and no new line:** a probable stall, recorded.
+  Nothing is stopped before its limit. The limit ends the job with its
+  diagnostics, and that end wakes the orchestrator. With Go's dump in hand,
+  the cause is fixed; where a wrapper ended the job, the stalled test is first
+  run again alone with a short `-timeout` to get the dump.
+- **An agent repeating failures with no new evidence:** it is stopped and
+  resumed with what the look found. A loop the orchestrator cannot explain goes
+  to the owner (The Reviewer, Convergence: no falsifiable explanation).
+
+**What it cannot guarantee.** An agent is looked at no later than one interval
+after a loop starts. The loop is identified there if the evidence the look
+reads shows the lack of progress. A loop whose repetitions don't show in recent
+commands and results can pass as productive work, so detection cannot be
+guaranteed in every case.
 
 ## Summary format
 

@@ -6,7 +6,7 @@
  │  1.  Agent CLI                                                                           │ │  ◷ RECENT PROJECTS                                                                                    │
  │ ▏ ◉  Claude Code (2.1.300)                                                             ▕ │ │  ☆  agent-command-center      C:\javadev\projets\agent-command-center                            now  │
  │                                                                                          │ │                                                                                                       │
- │   ○  OpenAI Codex not installed: adapter not built yet                                   │ │  ☆  billing-service           C:\javadev\projets\billing-service                              8m ago  │
+ │   ○  OpenAI Codex paused                                                                 │ │  ☆  billing-service           C:\javadev\projets\billing-service                              8m ago  │
  │                                                                                          │ │ ───────────────────────────────────────────────────────────────────────────────────────────────────── │
  │  2.  Project directory                                                                   │ │  ☆  demo-project              C:\work\demo-project                                            8m ago  │
  │ ╭──────────────────────────────────────────────────────────────────────────────────┬───╮ │ │ ───────────────────────────────────────────────────────────────────────────────────────────────────── │

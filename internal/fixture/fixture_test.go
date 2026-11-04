@@ -48,6 +48,7 @@ func TestFixturesMatchRecordings(t *testing.T) {
 		"p39x-codex-permission-modes.jsonl":             48,  // plan 39: Codex's three presets through thread/settings/update, no turn
 		"p69a-claude-resume.jsonl":                      77,  // plan 69: Claude Code resumed in a new process, and an unknown session
 		"p69b-codex-resume.jsonl":                       100, // plan 69: Codex resumed in a new app-server, with and without its turns
+		"p76a-claude-native-agents.jsonl":               135, // plan 76: the native Implementer and Reviewer as canaries (process p76a; the driver's lines under proc driver)
 	}
 	copies, _ := filepath.Glob("../../testdata/probes/*.jsonl")
 	if len(copies) != len(want) {

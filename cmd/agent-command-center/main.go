@@ -11,7 +11,6 @@ import (
 	"github.com/Evengelius/agent-command-center/internal/input"
 	"github.com/Evengelius/agent-command-center/internal/provider"
 	"github.com/Evengelius/agent-command-center/internal/provider/claude"
-	"github.com/Evengelius/agent-command-center/internal/provider/codex"
 )
 
 func main() {
@@ -20,8 +19,8 @@ func main() {
 		fmt.Fprintln(os.Stderr, "agent-command-center:", err)
 		os.Exit(app.ExitError)
 	}
-	// Both adapters, Claude Code's and Codex's, detect their CLI and start its
-	// sessions, reading the real environment through host.
+	// The adapters detect their CLI and start its sessions, reading the real
+	// environment through host.
 	host := provider.SystemHost()
 	// The application's own configuration file: the editor's send and newline
 	// keys, read once, here (plan 21, item 5.1). A problem is shown on the
@@ -37,6 +36,15 @@ func main() {
 		keys, problem = input.LoadKeys(path)
 		proxy, proxyProblem = input.LoadCodexProxy(path)
 	}
+	// Codex is paused (brief, amendment 96; plan 76): its adapter stays,
+	// built and tested, but the build does not offer it, and the home
+	// screen shows its row as "paused". To reactivate it, put the line
+	//
+	//	Providers: []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host, Proxy: proxy}},
+	//
+	// in place of the Providers line below and import
+	// "github.com/Evengelius/agent-command-center/internal/provider/codex"
+	// again (doc/provider-parity.md, Codex: paused).
 	m := app.New(app.Options{
 		Keys:              keys,
 		KeysProblem:       problem,
@@ -45,7 +53,7 @@ func main() {
 		NotifySetUp:       input.Notifications, // Windows' notifications for the ping (plan 64, design D5)
 		TurnStore:         openTurnStore,       // the turn review's store (plan 65, design D2)
 		Config:            cfg,
-		Providers:         []provider.Provider{&claude.Provider{Host: host}, &codex.Provider{Host: host, Proxy: proxy}},
+		Providers:         []provider.Provider{&claude.Provider{Host: host}},
 		Now:               time.Now,
 		Clipboard:         input.System{},
 		MockSpeed:         1,

@@ -58,6 +58,11 @@ Decisions of closed plans that still apply; `AGENTS.md` and
 - **The summary suggestion's card stays as accepted** (plan 70, amendment
   73, 2026-10-30): the owner's design as drawn, the blank row between its
   buttons and its rule among it: "Do not remove or modify it."
+- **Claude Code first, Codex paused** (amendment 96, plan 76): new
+  capabilities are designed, built and validated for Claude Code; Codex's
+  adapter stays, built and tested, and the dashboard does not offer it; each
+  meaningful functional difference goes in `doc/provider-parity.md`, which
+  holds the reactivation checklist.
 
 ## Recurring
 
@@ -74,7 +79,8 @@ summary format (the owner, 2026-10-18).
   2026-10-19, approved, every check PASS (P303a to P303d in
   `doc/research/probes/README.md`); it found that plan 14's shape check
   counted an interrupted tool use as unrecognised, fixed the same day at the
-  owner's request (P303e).
+  owner's request (P303e). While Codex is paused, its version is reported
+  and no re-check proposed (amendment 96).
 
 ## Nice to have
 
@@ -103,10 +109,9 @@ session stays below.
   .exe>`, so that it always opens in Windows Terminal (the only supported
   terminal, amendments 6 and 7) with the project field at that folder; the
   `.exe` is rebuilt after each code change.
-- **[Nice to have]** Codex's earlier turns drawn after a resume from the
-  home screen, paged with `thread/turns/list` and `thread/items/list`, with
-  their rendering cost, their tool events and very long sessions (plan 69,
-  design D1).
+
+Codex's earlier turns drawn after a resume, a [Nice to have] of plan 69, is a
+row of `doc/provider-parity.md` since plan 76.
 
 ## Roadmap
 
@@ -118,8 +123,9 @@ Then plan 70, the owner's own (amendment 72), approved on 2026-10-30,
 and plans 71 and 72, the owner's own (amendments 74 and 75), approved on
 2026-10-31, plan 73, the owner's own (amendments 76 and 77), approved on
 2026-11-02, plan 74, the owner's own (amendments 82 to 88), approved on
-2026-11-03, and plan 75, the owner's own (amendments 89 to 94), approved and
-closed the same day.
+2026-11-03, plan 75, the owner's own (amendments 89 to 94), approved and
+closed the same day, and plan 76, the owner's own (amendments 95 to 104),
+approved and closed on 2026-11-04.
 
 ## Closed plans
 
@@ -1096,4 +1102,21 @@ the 21 criteria it judged after its one correction, 75.22 approved by the
 owner from the live run's screenshots, then the delete question's arrows fixed
 at the owner's request, checked by the whole suite without a further review
 ([`doc/plan75-evaluation.md`](doc/plan75-evaluation.md)); one commit, on the
+owner's word; its full text in that file, The plan as it ran.
+
+## Plan 76 - Claude first: convergence, supervision, Codex paused
+
+Brief amendments 95 to 104: a step's corrections have no fixed limit and stop
+for the owner on evidence (`doc/evaluation.md`, The Reviewer, Convergence);
+every long run has its limit before it starts, and one observation deadline
+watches each long job the orchestrator starts and each agent (Execution
+supervision). Codex is paused: its adapter stays, built and tested, the home
+screen shows its row "paused" and its history entries start nothing, and
+`doc/provider-parity.md` keeps the differences between the CLIs and the
+reactivation checklist. The probe P76a recorded Claude Code's native
+Implementer and Reviewer, shown in zones A and C. Approved on 2026-11-04: the
+fifth final review PASS on the 22 criteria it judged, after three
+corrections and one review with no report, and 76.23 approved by the owner
+from the live run's screenshots
+([`doc/plan76-evaluation.md`](doc/plan76-evaluation.md)); one commit, on the
 owner's word; its full text in that file, The plan as it ran.

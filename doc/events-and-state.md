@@ -341,7 +341,7 @@ States: `Detecting`, `Asking`, `Validating`, `Starting`, `Ready`,
 | - | - | - | - | - |
 | (launch) | application start | `Detecting` | dash | dash |
 | (launch) | application start with `--mock <file>` | `Starting` with the mock provider: detection and both questions skipped; the session context names provider "Mock data" and the file as project ([reliability.md, Mock mode](reliability.md#mock-mode)) | n/a | n/a |
-| `Detecting` | both detections returned or timed out | `Asking` | dash (CC-2) | dash (CX-2) |
+| `Detecting` | every detection returned or timed out: one per adapter the build holds, Codex's being left out while Codex is paused (amendment 96) | `Asking` | dash (CC-2) | dash (CX-2) |
 | `Asking` | Confirm pressed | `Validating` | dash | dash |
 | `Asking` | resume pressed: Ctrl+R or a click on the last session's note, which only the chosen CLI's last session in the chosen project shows (plan 69, design D4), that being the newest of its entries in the project's history; or Enter or a double click on an entry of the session history view, which resumes that entry's CLI and session (plan 75, design D5) | `Validating`, the session to resume and its project kept with the answers, the last resume's failure cleared | dash | dash |
 | `Detecting`, `Asking` | form reset (Ctrl+N; plan 51, design D9) | the same, its message and answers cleared | dash | dash |
@@ -359,10 +359,16 @@ States: `Detecting`, `Asking`, `Validating`, `Starting`, `Ready`,
 | `Ready`, the session `Crashed` or `Closed` | owner returns home | `Asking` at once, the answers kept, as from `Ready`: the process has already ended (plan 75, design D9) | dash | dash |
 | `Detecting`, `Asking`, `Validating`, `StartFailed` | quit (Ctrl+Q; Esc on the home screen does nothing, plan 75, design D10) | (exit), nothing started | dash | dash |
 
+With `--provider` naming a CLI whose adapter the build leaves out, detection
+returns with question 1's message "<CLI> is paused" (field `provider`) and
+the first installed CLI chosen, never the paused one.
+
 Invalid: Confirm while `Detecting` is ignored (the button is disabled until
 detection returns); a second Confirm while `Validating` or `Starting` is
-ignored; a form reset while `Validating` or `Starting` is ignored; choosing
-a provider shown "not installed" is impossible (not selectable); a return to
+ignored; a form reset while `Validating` or `Starting` is ignored;
+choosing a provider shown "not installed", or "paused" (a supported CLI
+whose adapter the build leaves out: amendment 96), is impossible (not
+selectable); a return to
 the home screen is ignored in a mock run, which has no home screen
 ([reliability.md, Mock mode](reliability.md#mock-mode)), and while the
 session starts or closes. Each session is one CLI and one project, and one

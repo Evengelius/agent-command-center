@@ -154,8 +154,16 @@ NEW SESSION holds them (D6):
    CLI not found is greyed, "not installed: <reason>" in its version's
    place (`codex not found on PATH`, "version unreadable: exit 1"), and is
    **not choosable** (AM4 S2, S3; events-and-state.md, Startup machine).
+   A supported CLI whose adapter the build leaves out (Codex, while it is
+   paused: amendment 96, plan 76) keeps its row, in both modes and in its
+   place, greyed and not choosable, with "paused" where its version
+   stands and no "not installed:" before it.
    The choice defaults to `--provider` if given and installed, else the
-   first installed CLI (ASM-8).
+   first installed CLI (ASM-8). `--provider` naming a paused CLI chooses
+   the first installed one, and the message of question 1 says "OpenAI
+   Codex is paused" (a failure line, as every message of the question); a
+   saved choice of a paused CLI gives the first CLI offered, the paused
+   row in view.
 2. **Project directory**: the field, prefilled with the current directory
    or `--project` (AM4 S7, S12; ASM-8), its folder button opening the
    system's [folder dialog](#the-folder-dialog). The path the agent will
@@ -185,6 +193,8 @@ INT paths, each with the resolved path or the corrected example:
 | Case | Message |
 | - | - |
 | No CLI installed | ✗ No supported agent CLI found. Install Claude Code or Codex CLI, then restart. (START SESSION stays dimmed) |
+| No CLI usable, one paused (Codex while it is paused, amendment 96) | ✗ No usable agent CLI: OpenAI Codex is paused. Install Claude Code, then restart. Built from the CLIs list: the paused names ("X is paused", "X and Y are paused"), then the CLIs that are not paused joined with " or "; with `--provider codex` this line shows alone, as it already says Codex is paused (START SESSION stays dimmed) |
+| `--provider` names a paused CLI, another CLI installed | ✗ OpenAI Codex is paused (the first installed CLI is chosen) |
 | Selected CLI fails its version check | ✗ Claude Code: `claude --version` failed (exit 1): `<first stderr line>` |
 | Path does not exist | ✗ Does not exist: `C:\Users\…\projets\agent-comand-center` |
 | Path is a file | ✗ Is a file, not a directory: `<resolved path>` |
@@ -375,9 +385,10 @@ entry is on the focus band between purple ends ▏ ▕; the list scrolls only wh
 selection would leave the rows shown, ↑ ↓ and the wheel moving it just
 enough, so that a click never moves the list under the pointer, and shows, when the entries do not all fit, the slim mark ▐ at its
 right showing where it is, as PROJECTS does. An entry whose agent CLI is not
-installed is dimmed. With no entry: "No sessions recorded for this project
+installed, or paused, is dimmed. With no entry: "No sessions recorded for this project
 yet". The last row of the box is the keys; a note above it says why Enter
-did nothing ("✗ OpenAI Codex is not installed") or why the list cannot be
+did nothing ("✗ OpenAI Codex is not installed", or "✗ OpenAI Codex is
+paused" while Codex is paused) or why the list cannot be
 trusted (the store's problem). At 80x24
 (`testdata/frames/history-80x24.txt`):
 
@@ -425,7 +436,9 @@ and ID, and question 1 set to that CLI: the project is validated as START
 SESSION validates it, then Claude Code is started with `--resume <id>` and
 Codex with `thread/resume`, the thread asked for without its turns. An entry
 whose CLI is not installed starts nothing: Enter says "<CLI> is not
-installed" in the box. A CLI that no longer has the session refuses as plan 69
+installed" in the box; one whose CLI is paused starts nothing either, and
+Enter and a double click say "<CLI> is paused" there. Both entries stay
+listed, and Delete and Delete All work on them as on any. A CLI that no longer has the session refuses as plan 69
 describes, and the entry is removed; when it was not the CLI's newest, the
 note back on the home screen says "✗ Not resumed: Claude Code no longer has
 that session".
@@ -4101,6 +4114,7 @@ How each state looks, wherever it occurs (B3.3; AM2 D9):
 | Error | ✗ in red with the first line of the error; the full error in inspection or in the details view's error list |
 | Session crashed | B shows the exit code and stderr tail; send is disabled; "Ctrl+R resume · Ctrl+Q quit" (resume only once the session had reached Ready; earlier, the StartFailed card); the draft is kept; nothing restarts without the key ([reliability.md, Resumption](reliability.md#resumption)) |
 | CLI not installed | on the startup screen only, "not installed" with the reason; not selectable |
+| CLI paused | on the startup screen only, its row greyed and not selectable, "paused" where its version stands, with no "not installed:" (a supported CLI whose adapter the build leaves out: Codex while it is paused, amendment 96); its history entries stay listed, greyed, and start nothing: "<CLI> is paused" |
 | Unrecognised events | counted in the details view, which lists the last 20 with their time, type, reason and line (plan 25; zone A's note "unrecognised N" went in plan 26); listed in Raw events; never dropped |
 | Mock mode | "◆ MOCK — not a live session" in the title bar of every screen |
 
@@ -4365,7 +4379,10 @@ The same file can name Codex's proxy (plan 22, amendment 19).
   - Claude Code takes its proxy from its own settings, so the setting
     leaves it alone.
 - **Startup screen.** It shows the address in force on a grey line,
-  "Codex through the proxy http://127.0.0.1:3128 (config.json)".
+  "Codex through the proxy http://127.0.0.1:3128 (config.json)". Neither
+  this line nor the problem line below shows while Codex is paused (the
+  build does not hold its adapter, amendment 96), from the first frame,
+  detection included; `main.go` still reads the file.
 - **Refused values.** The address must be `http://` or `https://` with a
   host, no user name or password, no query or fragment, and no path beyond
   a trailing slash. A user name or password is never repeated in a message. The startup screen names

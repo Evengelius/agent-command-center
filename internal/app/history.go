@@ -194,7 +194,7 @@ func (m *Model) historyAnswer(yes bool) []tea.Cmd {
 // historyResume is Enter on an entry and a double click on it (design D5):
 // the project validated as START SESSION validates it, the entry's CLI
 // chosen in question 1 and started on that session; an entry whose CLI is not
-// installed says so and starts nothing.
+// installed, or paused (amendment 96), says so and starts nothing.
 func (m *Model) historyResume() []tea.Cmd {
 	h := m.hist
 	es := m.historyEntries()
@@ -208,6 +208,10 @@ func (m *Model) historyResume() []tea.Cmd {
 	}
 	if m.detecting() {
 		h.note = "The agent CLIs are still being detected"
+		return nil
+	}
+	if m.paused(e.CLI) {
+		h.note = pausedNote(e.CLI)
 		return nil
 	}
 	if !contains(m.s.Startup.Installed, e.CLI) {

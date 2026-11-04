@@ -1,0 +1,60 @@
+ >_ AGENT COMMAND CENTER     ■ claude-haiku-5-5                                                                                                                             ◆ MOCK — not a live session
+ ▣ claude-native-agents.jsonl   ..\..\testdata\mock\claude-native-agents.jsonl                                                                                                        Mock data 2.1.303
+╭──────────────────────────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────────────────────────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                                     ││ ▎   100% of your usage came from subagent-heavy sessions                                                                             ││      │
+│ ✿ Claude Haiku 5.5                       ✓ COMPLETED ││ ▎   97% of your usage came from sessions active for 8+ hours                                                                         ││  ≡   │
+│ ──────────────────────────────────────────────────── ││ ▎   95% of your usage was at >150k context                                                                                           ││      │
+│ STAGES · inferred from activity                      ││ ▎   85% of your usage was at max effort                                                                                              ││      │
+│ ✓ TURN 1                                          0s ││ ▎   12% of your usage went to always-on context over 40k tokens                                                                      ││      │
+│   /usage                                             ││ ▎   Top subagents: implementer 8%, reviewer 8%                                                                                       ││  ⑂   │
+│                                                      ││ ▎   Top MCP servers: ccd_turn 9%                                                                                                     ││      │
+│ ✓ TURN 2                                          0s ││                                                                                                                                      ││      │
+│   Use the Agent tool to run the implementer agent, … ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ││      │
+│   ├─ ✓ Agent  Implementer READY check           mock ││                                                                                                                                      ││  ◉   │
+│   ├─ ✓ agent  implementer                       mock ││ ▎ YOU  11:30                                                                                                                         ││      │
+│   ├─ ✓ Agent  Reviewer READY check              mock ││ ▎ Use the Agent tool to run the implementer agent, then the reviewer agent, each with this prompt: Use no tool. Reply READY. If you  ││      │
+│   └─ ✓ agent  reviewer                          mock ││ ▎ have a SendMessage tool, then send the implementer agent: Reply READY again. Finally reply DONE.                                   ││      │
+│                                                      ││                                                                                                                                      ││      │
+│                                                      ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ││      │
+│                                                      ││                                                                                                                                      ││      │
+│                                                      ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                                                           ││      │
+│                                                      ││ ▎  ▸ ✓ Thought for 0.0s · 213 thinking tokens                                                                   11:30:00      mock   ││      │
+│                                                      ││ ▎  ✓ Agent  implementer · Implementer READY check                                                               11:30:00      mock   ││      │
+│                                                      ││ ▎  ▸ ✓ Thought for 0.0s · 79 thinking tokens                                                                    11:30:00      mock   ││      │
+│                                                      ││ ▎  ✓ Agent  reviewer · Reviewer READY check                                                                     11:30:00      mock   ││      │
+│ ──────────────────────────────────────────────────── ││                                                                                                                                      ││      │
+│ ✦ TELEMETRY                            Enter details ││ ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮ ││      │
+│ ▾ SESSION USAGE                                      ││ │ RESULT  11:30                                                                                                                    │ ││      │
+│   CONTEXT           │ TOKENS        │ EST. COST      ││ │ Both agents ran in order and each replied READY, then DONE.                                                                      │ ││      │
+│   4% of 1M          │ 125.5k        │ $0.06          ││ │                                                                                                                                  │ ││      │
+│   █░░░░░░░░░░░░░░░░ │ session total │ API-equivalent ││ │ • implementer: replied READY and DONE. It had no SendMessage tool, so it did not send the second READY to the implementer.       │ ││      │
+│                                                      ││ │ • reviewer: replied READY and DONE. It also had no SendMessage tool, so it did not message the implementer.                      │ ││      │
+│ ▾ QUOTA WINDOWS                                      ││ │                                                                                                                                  │ ││      │
+│   Session (5hr)                                  N/A ││ │ Neither agent used any tool. Nothing in the working directory was changed.                                                       │ ││      │
+│   no report yet                                      ││ │                                                                                                                                  │ ││      │
+│                                                      ││ │ Reminder for this session: the local Px proxy (127.0.0.1:3128) handles corporate proxy sign-in. If a tool shows "Connection      │ ││      │
+│   Weekly (7 day)                                10%† ││ │ refused", run pxw in any terminal.                                                                                               │ ││      │
+│   █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯ ││      │
+│   Resets in 25d 23h                                  ││                                                                                                                                      ││      │
+│                                                      ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ││      │
+│   Fable limit                                     0% ││ > Ask Mock data anything…                                                                                                            ││      │
+│   ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ ││ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── ││      │
+│   Resets in 25d 23h                                  ││   +     Haiku 5.5 Medium                                                                                                 ✋ Manual   ││      │
+╰──────────────────────────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                                                                                                    0 ACTIVE · 2 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                      │ EXECUTION TIMELINE                                                                                                                         ✓ COMPLETED │
+│  ✓  reviewer            │  opus-5-5         │ 11:30:00  notice    │ Use no tool. Reply READY. If you have a SendMessage tool, then send the implementer agent: Reply READY again. Finally reply      │
+│     00:00   5k tok      │  tool: none yet   │                     │ DONE.                                                                                                                            │
+│  ✓  implementer         │  sonnet-5-5       │ ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│     00:00   9.3k tok    │  tool: none yet   │ 11:30:00  assistant │ READY I have no SendMessage tool, so I sent nothing to the implementer agent. DONE                                               │
+│                                             │                                                                                                                                                        │
+│                                             │                                                                                                                                                        │
+│                                             │                                                                                                                                                        │
+│                                             │                                                                                                                                                        │
+│                                             │                                                                                                                                                        │
+│                                             │                                                                                                                                                        │
+│                                             │                                                                                                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ↑↓ move · ←→ fold · Enter inspect or details · z zoom · PgUp PgDn Home End scroll · F6 zone · Esc back to the input · F1 keys

@@ -47,7 +47,8 @@ func settingsFrom(t *testing.T, content string) Options {
 func startupAt(t *testing.T, opt Options, w, h int) (raw, text string) {
 	t.Helper()
 	cli := &scriptCLI{id: "claude-code", sess: newScriptSession()}
-	opt.Providers, opt.Cwd = []provider.Provider{cli}, t.TempDir()
+	// Codex's adapter is in the build: its proxy line shows only then (amendment 96).
+	opt.Providers, opt.Cwd = []provider.Provider{cli, bothCLIs[1]}, t.TempDir()
 	hn := newHarness(t, opt)
 	hn.send(tea.WindowSizeMsg{Width: w, Height: h})
 	raw = hn.m.View().Content
@@ -265,7 +266,8 @@ func TestCodexProxyProblemKeepsTheKeys(t *testing.T) {
 			t.Fatalf("keys problem %q, codex problem %q, proxy %q", opt.KeysProblem, opt.CodexProxyProblem, opt.CodexProxy)
 		}
 		cli := &scriptCLI{id: "claude-code", sess: newScriptSession()}
-		opt.Providers, opt.Cwd = []provider.Provider{cli}, t.TempDir()
+		// Codex's adapter is in the build: its proxy line shows only then (amendment 96).
+		opt.Providers, opt.Cwd = []provider.Provider{cli, bothCLIs[1]}, t.TempDir()
 		h := newHarness(t, opt)
 		h.send(tea.WindowSizeMsg{Width: 120, Height: 40})
 		if k := h.m.opt.Keys; !k.IsSend("ctrl+enter") || !k.IsNewline("enter") || k.IsSend("enter") {

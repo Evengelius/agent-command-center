@@ -6,16 +6,16 @@
  │  1.  Agent CLI                                     │ │  ◷ RECENT PROJECTS                                          │
  │ ▏ ◉  Claude Code (2.1.300)                       ▕ │ │  ☆  agent-command-center      …gent-command-center     now  │
  │                                                    │ │                                                             │
- │   ○  OpenAI Codex not installed: adapter not       │ │  ☆  billing-service           …ets\billing-service  8m ago  │
- │      built yet                                     │ │ ─────────────────────────────────────────────────────────── │
- │                                                    │ │  ☆  a-project-with-a-very-l…  …long-directory-name 58m ago  │
- │  2.  Project directory                             │ │ ─────────────────────────────────────────────────────────── │
- │ ╭────────────────────────────────────────────┬───╮ │ │  ☆  docs                      …avadev\projets\docs  3h ago  │
- │ │ C:\work\demo-project                       │ 🗀 │ │ │ ─────────────────────────────────────────────────────────── │
- │ ╰────────────────────────────────────────────┴───╯ │ │  ☆  infra                     …vadev\projets\infra  7h ago  │
+ │   ○  OpenAI Codex paused                           │ │  ☆  billing-service           …ets\billing-service  8m ago  │
  │                                                    │ │ ─────────────────────────────────────────────────────────── │
- │                                                    │ │  ☆  mobile-app                …\projets\mobile-app 14h ago  │
- │                  START SESSION →                   │ │ ─────────────────────────────────────────────────────────── │
+ │  2.  Project directory                             │ │  ☆  a-project-with-a-very-l…  …long-directory-name 58m ago  │
+ │ ╭────────────────────────────────────────────┬───╮ │ │ ─────────────────────────────────────────────────────────── │
+ │ │ C:\work\demo-project                       │ 🗀 │ │ │  ☆  docs                      …avadev\projets\docs  3h ago  │
+ │ ╰────────────────────────────────────────────┴───╯ │ │ ─────────────────────────────────────────────────────────── │
+ │                                                    │ │  ☆  infra                     …vadev\projets\infra  7h ago  │
+ │                                                    │ │ ─────────────────────────────────────────────────────────── │
+ │                  START SESSION →                   │ │  ☆  mobile-app                …\projets\mobile-app 14h ago  │
+ │                                                    │ │ ─────────────────────────────────────────────────────────── │
  │                                                    │ │  ☆  web                       …javadev\projets\web  1d ago  │
  │                                                    │ │ ─────────────────────────────────────────────────────────── │
  │                                                    │ │  ☆  scratch                   …dev\projets\scratch  1d ago  │

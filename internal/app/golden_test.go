@@ -148,6 +148,46 @@ func TestGoldenFrames(t *testing.T) {
 		return h
 	}
 
+	// Plan 76, criterion 76.16: Claude Code's native agents, P76a: an
+	// implementer and a reviewer run in turn by the orchestrator, each with
+	// its own model and no effort. The dashboard shows both cards in zone C;
+	// the same with zone A focused and its last turn unfolded shows its tree
+	// with both agents (at 80 columns the tree takes the place of B and C).
+	nativeAgents := func(t *testing.T) *harness {
+		h := newHarness(t, Options{Config: Config{Mock: filepath.Join("..", "..", "testdata", "mock", "claude-native-agents.jsonl")}})
+		h.settle()
+		s := h.m.State()
+		if s.Screen != state.ScreenDashboard || len(s.Agents) != 2 {
+			t.Fatalf("native agents: screen %q, %d agents", s.Screen, len(s.Agents))
+		}
+		types := map[string]string{}
+		for _, a := range s.Agents {
+			types[a.Label] = a.Model.Text
+			if a.Effort.Present {
+				t.Fatalf("agent %s has an effort %+v", a.Label, a.Effort)
+			}
+		}
+		if types["implementer"] != "claude-sonnet-5-5" || types["reviewer"] != "claude-opus-5-5" {
+			t.Fatalf("agents and models %v", types)
+		}
+		return h
+	}
+	nativeAgentsTree := func(t *testing.T) *harness {
+		h := nativeAgents(t)
+		for _, k := range []tea.KeyPressMsg{key(tea.KeyF6, 0), key(tea.KeyF6, 0), key(tea.KeyRight, 0)} {
+			h.send(k)
+		}
+		var path []string
+		for i := 0; i < 12 && !strings.HasPrefix(h.m.ui.ACursor, "a:"); i++ {
+			path = append(path, h.m.ui.ACursor)
+			h.send(key(tea.KeyDown, 0))
+		}
+		if h.m.ui.Focus != "A" || !strings.HasPrefix(h.m.ui.ACursor, "a:") {
+			t.Fatalf("focus %q cursor %q after %q", h.m.ui.Focus, h.m.ui.ACursor, path)
+		}
+		return h
+	}
+
 	// The telemetry details, from zone A since plan 24, with errors of the
 	// session, of an agent and a retry, one long and on two lines (plan 4,
 	// step 7).
@@ -653,7 +693,7 @@ func TestGoldenFrames(t *testing.T) {
 	}{{"models-claude", selector("claude-models.jsonl")}, {"models-claude-more", selector("claude-models.jsonl", down(3, key(tea.KeyEnter, 0))...)},
 		{"models-claude-effort", selector("claude-models.jsonl", down(4, key(tea.KeyLeft, 0))...)}, {"models-codex", selector("codex-models.jsonl")},
 		{"models-codex-more", selector("codex-models.jsonl", down(3, key(tea.KeyEnter, 0))...)},
-		{"startup", startup}, {"dashboard", dash}, {"plus-menu", plusMenu}, {"attachments", attached}, {"attachments-sent", sent}, {"attachments-preview", preview}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"startup-resume", projectsRig(resumeProjects(), -1)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"explorer-nerd", explorerRig(true)}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))},
+		{"startup", startup}, {"dashboard", dash}, {"plus-menu", plusMenu}, {"attachments", attached}, {"attachments-sent", sent}, {"attachments-preview", preview}, {"dashboard-codex", codexDash}, {"inspect", inspected}, {"tree", tree}, {"native-agents", nativeAgents}, {"native-agents-tree", nativeAgentsTree}, {"details", details}, {"quota", quota}, {"approvals-auto", claudeAuto}, {"approvals-requested", codexRequested}, {"approvals-review", codexReview}, {"startup-projects", projectsRig(demoProjects(10), -1)}, {"startup-projects-focused", projectsRig(demoProjects(10), 6)}, {"startup-favourites", projectsRig(favouriteProjects(), 1)}, {"startup-resume", projectsRig(resumeProjects(), -1)}, {"worktrees", worktreesRig(true)}, {"worktrees-new", worktreesRig(true, append([]tea.KeyPressMsg{typed('n')}, typedText("release-2.1")...)...)}, {"worktrees-session", worktreesRig(false, key(tea.KeyDown, 0))}, {"worktrees-diff", worktreesRig(false, key(tea.KeyDown, 0), typed('d'))}, {"worktrees-confirm", worktreesRig(false, key(tea.KeyDown, 0), typed('m'))}, {"file", file()}, {"file-full", file(typed('f'))}, {"file-search", file(append([]tea.KeyPressMsg{typed('/')}, append(typedText("colour"), key(tea.KeyEnter, 0))...)...)}, {"file-finder", finder}, {"explorer", explorer}, {"explorer-nerd", explorerRig(true)}, {"draft", draft()}, {"draft-full", draft(key('f', tea.ModCtrl))},
 		{"source", source()}, {"source-none", sourceNone}, {"source-diff", source(key(tea.KeyEnter, 0))}, {"source-diff-wide", source(key(tea.KeyEnter, 0), typed('f'))},
 		{"commit-menu", commitMenu}, {"commit-sixel", commitSixel}, {"commit-push", commitPush}, {"source-selection", sourceSelection},
 		{"branches", branches()}, {"branches-search", branches(typedText("fe")...)}, {"branches-confirm", branches(key(tea.KeyUp, 0), key(tea.KeyEnter, 0))},

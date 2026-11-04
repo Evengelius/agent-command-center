@@ -50,10 +50,17 @@ develop, not about the application: nothing here goes into its provider code.
     The plan sets each tier before any code exists, by the questions of
     `doc/evaluation.md`, The Reviewer, Tiers; when two tiers apply, the higher
     one does. After reading the diff the orchestrator may raise it, never lower
-    it. A second FAIL on one criterion, or a reasoning question a Reviewer could
-    not close, raises the next Reviewer one tier, once per step. The Reviewer's
-    brief never names the tier or its reason, though `plan.md`'s own text can
-    reach it through the diff.
+    it. A second FAIL on one criterion, a defect a correction reintroduced or
+    introduced, or a reasoning question a Reviewer could not close, raises the
+    next Reviewer one tier, once per step. The Reviewer's brief never names the
+    tier or its reason, though `plan.md`'s own text can reach it through the
+    diff.
+- **Long jobs and agents.** The orchestrator sets one observation deadline
+  per long job and per agent it starts, at its recorded duration, with the
+  Monitor tool or one background timer, and looks once when it passes; after
+  a productive look at an agent, it arms the next one. Every long command has
+  its own limit before it starts (`doc/evaluation.md`, Execution
+  supervision).
 - Built-in subagents (`general-purpose`, `Plan`) run on the main model at the
   session's effort, Opus at Max: prefer a project agent, or pass `model` and
   `effort` from the roles when spawning one.

@@ -21,6 +21,9 @@ type (
 	DetectionDone struct {
 		Installed []string
 		CLIs      []CLI // what detection found, for the startup screen
+		// Note is the message of question 1 that detection calls for, "" for
+		// none: a CLI asked for with --provider that is paused (amendment 96).
+		Note string
 	}
 	// Confirm is START SESSION; with Resume, Ctrl+R or a click on the last
 	// session's note: that session, the last of the project at
@@ -144,6 +147,9 @@ func (s *State) Do(a Action) []Command {
 	case DetectionDone:
 		if s.Startup.Phase == Detecting {
 			s.Startup.Phase, s.Startup.Installed, s.Startup.CLIs = Asking, a.Installed, a.CLIs
+			if a.Note != "" {
+				s.Startup.Field, s.Startup.Message = "provider", a.Note
+			}
 		}
 	case Confirm:
 		if s.Startup.Phase != Asking {

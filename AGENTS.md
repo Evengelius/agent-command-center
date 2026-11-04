@@ -5,8 +5,10 @@
 A personal, interactive terminal workspace, a "mission control", for
 multi-agent coding with agent CLIs: **Claude Code first, then OpenAI Codex
 CLI**, the only two supported (amendment 5; the provider interface stays open
-to others later). In one persistent screen of three zones (layout in the
-reference design): **A** the orchestrator and its workflow tree, also
+to others later). Codex is paused since plan 76 (amendment 96): its adapter
+stays, built and tested, but the dashboard does not offer it
+(`doc\provider-parity.md`). In one persistent screen of three zones (layout
+in the reference design): **A** the orchestrator and its workflow tree, also
 holding the real quota, tokens, context and costs in its telemetry pane
 (zone D's until plan 23); **B** a real, streaming conversation with the
 orchestrator, with approvals and follow-ups; **C** the live subagents, each
@@ -24,9 +26,9 @@ its terminal protocol, and is not an orchestration framework: the CLI does the
 work, the application converses with it, shows it, and relays approvals. The
 goal is a beautiful, continuously updating mission control, not a log viewer.
 
-**Status: no plan active since 2026-11-03, when the owner approved plan
-75, the session history on the home screen and the return to it from the
-dashboard (brief amendments 89 to 94).** Plans 1 to 75 are closed, one
+**Status: no plan active since 2026-11-04, when the owner approved plan 76,
+Claude Code first, the review cycle's convergence, execution supervision and
+Codex paused (brief amendments 95 to 104).** Plans 1 to 76 are closed, one
 entry each in `plan.md`, Closed plans; the MVP was approved on 2026-10-17.
 `plan.md` holds the active plan's progress; each closed plan's results are
 in its evaluation file, and its full record in git.
@@ -88,15 +90,18 @@ holds the inputs, the commands and how a tier is chosen.
    voids the review.
 4. **PASS** on every criterion: the next step starts without asking.
 5. **FAIL or NOT VERIFIED:** the findings go to the Implementer unchanged, a
-   requested test as a test to add or run, a testable finding with a
-   regression test; evidence only the orchestrator holds (transcripts,
-   settings, the index) comes from it, as raw output. A finding in
-   `.claude/**`, which the Implementer may not edit, the orchestrator corrects,
-   within the files the plan names; the Implementer then runs the evidence
-   command again. Then a new Reviewer, told nothing of them. At most three
-   corrections per step. The same finding twice, a fix that would change a
-   criterion, the scope or the architecture, or a question only the owner can
-   settle stops the plan at once.
+   requested test as a test to add or run, each finding with discriminating
+   evidence, a regression test where one applies; evidence only the
+   orchestrator holds (transcripts, settings, the index) comes from it, as raw
+   output. A finding in `.claude/**`, which the Implementer may not edit, the
+   orchestrator corrects, within the files the plan names; the Implementer
+   then runs the evidence command again. Then a new Reviewer, told nothing of
+   them. The corrections have no fixed limit: each rests on that evidence and
+   on a falsifiable explanation of the finding's cause, and the cycle stops
+   for the owner on demonstrated non-convergence (`doc\evaluation.md`, The
+   Reviewer, Convergence). A fix that would change a criterion, the scope or
+   the architecture, or a question only the owner can settle, stops the plan
+   at once.
 6. **Final review:** after one full test run by the orchestrator, a new
    Reviewer judges the complete plan on the diff from the baseline; a FAIL or
    NOT VERIFIED takes the same path, and the full test run is repeated after
@@ -107,14 +112,15 @@ holds the inputs, the commands and how a tier is chosen.
 **Verdicts stay out of the tree.** Until the last Reviewer has finished, no
 verdict, finding or history of the plan's reviews goes in the working tree:
 `plan.md` says only which steps are done, written before a step's evidence
-command or after its review, never between, and the orchestrator keeps the
-count of corrections in its memory notes. Each report stays in its Reviewer's
-transcript, outside the repository, until the evaluation file gets them at the
-end. A review that saw an earlier verdict on this plan's work, was offered a
-tool beyond its definition's and the CLI's own report and `advisor` tools, or
-ended with no report counts for nothing: it runs once more, fresh, and a
-second one goes to the owner. Reviews that a criterion is about, given as that
-criterion's evidence, are not such a verdict.
+command or after its review, never between, and the orchestrator keeps its
+convergence decisions, with their evidence, in its memory notes. Each report
+stays in its Reviewer's transcript, outside the repository, until the
+evaluation file gets them at the end. A review that saw an earlier verdict on
+this plan's work, was offered a tool beyond its definition's and the CLI's own
+report and `advisor` tools, or ended with no report counts for nothing: it
+runs once more, fresh, and a second one goes to the owner. Reviews that a
+criterion is about, given as that criterion's evidence, are not such a
+verdict.
 
 **When Codex leads** there is no Reviewer: a Codex subagent reads files only
 through its shell, and an agent definition cannot take the shell away
@@ -177,11 +183,11 @@ Keystroke timing. tmux is not used.
 
 ## Hard constraints
 
-- **Every agent CLI is optional.** The dashboard works with either Claude Code
-  or Codex CLI, shows the other as not installed, and depends on neither; JEV
-  is optional too. Gemini CLI and Google Antigravity are out of scope
-  (amendment 5): no adapter, option or test for them; Antigravity is
-  **[Nice to have]** (`plan.md`, Nice to have).
+- **Every agent CLI is optional.** The dashboard depends on neither CLI and
+  shows one it cannot use as not installed, or as paused: Codex, while it is
+  paused (amendment 96). JEV is optional too. Gemini CLI and Google
+  Antigravity are out of scope (amendment 5): no adapter, option or test for
+  them; Antigravity is **[Nice to have]** (`plan.md`, Nice to have).
 - **Never change an agent CLI's configuration** (`~/.claude`, `~/.codex`,
   `~/.gemini`, and any project `.claude\`, `.codex\` or `.gemini\` folder)
   unless the owner asks: read only. An integration that needs a hook, a status
@@ -405,7 +411,8 @@ reliable, understandable, fast and focused on agentic development.
   `claude --version` and `codex --version` with the last probed versions
   (`doc\research\probes\README.md`); if one is newer, tell the owner and
   propose the re-check of `doc\evaluation.md`, After a CLI update, which runs
-  only once the owner approves it. A **[Recurring]** task repeats on an
+  only once the owner approves it; while Codex is paused, its version is
+  reported and no re-check proposed. A **[Recurring]** task repeats on an
   outside event: it is never closed and never listed as remaining
   (`plan.md`, Recurring).
 - **Evaluate.** Before starting, state how the result will be checked: yes/no
@@ -414,7 +421,10 @@ reliable, understandable, fast and focused on agentic development.
   verified.
 - **First make it work. Then make it beautiful. Then expand its
   capabilities.** Never trade a function for a visual detail; build one agent
-  CLI end to end before the others.
+  CLI end to end before the others. Claude Code first (amendment 96): a new
+  capability is designed, built and validated for it, and a meaningful
+  functional difference it makes between the CLIs goes in
+  `doc\provider-parity.md`.
 - **Cheapest check first.** Before proposing a redesign, run the probe that
   could settle the question. Give one recommendation rather than a survey.
 - **Change what fails, not what works.** Do not rework working code

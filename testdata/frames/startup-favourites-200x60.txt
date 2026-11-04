@@ -6,7 +6,7 @@
  │  1.  Agent CLI                                                                           │ │  ☆ FAVORITES                                                                                          │
  │   ◉  Claude Code (2.1.300)                                                               │ │  ★  docs                      C:\javadev\projets\docs                                         3h ago  │
  │                                                                                          │ │                                                                                                       │
- │   ○  OpenAI Codex not installed: adapter not built yet                                   │ │ ▏★  scratch                   C:\javadev\projets\scratch                                      1d ago▕ │
+ │   ○  OpenAI Codex paused                                                                 │ │ ▏★  scratch                   C:\javadev\projets\scratch                                      1d ago▕ │
  │                                                                                          │ │                                                                                                       │
  │  2.  Project directory                                                                   │ │  ★  acme-portal               D:\clients\acme-portal                                           never  │
  │ ╭──────────────────────────────────────────────────────────────────────────────────┬───╮ │ │                                                                                                       │

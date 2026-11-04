@@ -11,19 +11,19 @@
 │                                                      ││                                                                                                        ││       …ext-refused.jsonl  ││      │
 │ ✓ TURN 2                                          0s ││ ▎ CLAUDE  Haiku 5.5  11:30                                                                             ││       …de-commands.jsonl  ││      │
 │   started by the CLI                                 ││ ▎  ✓ Agent  general-purpose · List directory and write found.txt                  11:30:00      mock   ││       …aude-models.jsonl  ││  ◉   │
-│                                                      ││ ▎                                                                                                      ││       …ota-windows.jsonl  ││      │
-│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write found.txt. I'll report  ││       …nt-approval.jsonl  ││      │
-│                                                      ││ ▎ its result when it finishes.                                                                         ││       …ng-subagent.jsonl  ││      │
-│                                                      ││ ▎                                                                                                      ││       …de-thinking.jsonl  ││      │
-│                                                      ││ ▎  ✓ general-purpose · Bash   ls -p "<probe-root>/probe-work/p3b…  allowed by you 11:30:00      mock   ││       …x-api-key.jsonl U  ││      │
-│                                                      ││ ▎  ✓ general-purpose · Write  …\probe-work\p3b\found.txt           allowed by you 11:30:00      mock   ││       …ex-commands.jsonl  ││      │
-│                                                      ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens                                     11:30:00      mock   ││       …s-next-turn.jsonl  ││      │
-│                                                      ││                                                                                                        ││       codex-models.jsonl  ││      │
-│                                                      ││ ╭────────────────────────────────────────────────────────────────────────────────────────────────────╮ ││       …o-5h-window.jsonl  ││      │
-│                                                      ││ │ RESULT  11:30                                                                                      │ ││       …n6-limits.jsonl !  ││      │
-│                                                      ││ │ The subagent found two files in the directory, alpha.txt and beta.md, and wrote them into          │ ││       …n-request.jsonl A  ││      │
-│                                                      ││ │ <probe-root>\probe-work\p3b\found.txt.                                                             │ ││       …x-subagents.jsonl  ││      │
-│                                                      ││ │                                                                                                    │ ││                            ││      │
+│                                                      ││ ▎                                                                                                      ││       …tive-agents.jsonl  ││      │
+│                                                      ││ ▎ I've launched the subagent in the background to list the directory and write found.txt. I'll report  ││       …ota-windows.jsonl  ││      │
+│                                                      ││ ▎ its result when it finishes.                                                                         ││       …nt-approval.jsonl  ││      │
+│                                                      ││ ▎                                                                                                      ││       …ng-subagent.jsonl  ││      │
+│                                                      ││ ▎  ✓ general-purpose · Bash   ls -p "<probe-root>/probe-work/p3b…  allowed by you 11:30:00      mock   ││       …de-thinking.jsonl  ││      │
+│                                                      ││ ▎  ✓ general-purpose · Write  …\probe-work\p3b\found.txt           allowed by you 11:30:00      mock   ││       …x-api-key.jsonl U  ││      │
+│                                                      ││ ▎  ▸ ✓ Thought for 0.0s · 235 thinking tokens                                     11:30:00      mock   ││       …ex-commands.jsonl  ││      │
+│                                                      ││                                                                                                        ││       …s-next-turn.jsonl  ││      │
+│                                                      ││ ╭────────────────────────────────────────────────────────────────────────────────────────────────────╮ ││       codex-models.jsonl  ││      │
+│                                                      ││ │ RESULT  11:30                                                                                      │ ││       …o-5h-window.jsonl  ││      │
+│                                                      ││ │ The subagent found two files in the directory, alpha.txt and beta.md, and wrote them into          │ ││       …n6-limits.jsonl !  ││      │
+│                                                      ││ │ <probe-root>\probe-work\p3b\found.txt.                                                             │ ││       …n-request.jsonl A  ││      │
+│                                                      ││ │                                                                                                    │ ││       …x-subagents.jsonl  ││      │
 │                                                      ││ │ Found 2 files: alpha.txt and beta.md.                                                              │ ││                            ││      │
 │ ──────────────────────────────────────────────────── ││ ╰────────────────────────────────────────────────────────────────────────────────────────────────────╯ ││                            ││      │
 │ ✦ TELEMETRY                            Enter details ││                                                                                                        ││                            ││      │

@@ -1,0 +1,24 @@
+ >_ AGENT COMMAND CENTER                            ◆ MOCK — not a live session
+ ▣ claude-native-agents.jsonl                                 Mock data 2.1.303
+ A ✓ Turn 2 › ✓ implementer › ✓ reviewer                  (inferred)   F6: tree
+╭─ B · CONVERSATION ──────────────────────────────────────────────────── Idle ─╮
+│ │   it did not message the implementer.                                    │ │
+│ │                                                                          │ │
+│ │ Neither agent used any tool. Nothing in the working directory was        │ │
+│ │ changed.                                                                 │ │
+│ │                                                                          │ │
+│ │ Reminder for this session: the local Px proxy (127.0.0.1:3128) handles   │ │
+│ │ corporate proxy sign-in. If a tool shows "Connection refused", run pxw   │ │
+│ │ in any terminal.                                                         │ │
+│ ╰──────────────────────────────────────────────────────────────────────────╯ │
+│                                                                              │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│ >  Ask Mock data anything…                                                   │
+│ ──────────────────────────────────────────────────────────────────────────── │
+│   +     Haiku 5.5 Medium                                         ✋ Manual   │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 2 DONE ─╮
+│  ✓ reviewer      opus-5-5    completed · READY …              0s      5k tok │
+│  ✓ implementer   sonnet-5-5  completed · Reminder: you…       0s    9.3k tok │
+╰──────────────────────────────────────────────────────────────────────────────╯
+ Enter send · Ctrl+J newline · F6 zone · F2 approve · F3 Explorer · F1 keys

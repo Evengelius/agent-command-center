@@ -68,6 +68,10 @@ var mockFiles = []struct {
 	// update denied, its recorded Write allowed).
 	{"codex-commands.jsonl", "p12x-codex-auto-review.jsonl", "codex", func() fixture.Mapper { return codex.NewMapper() }, codexCommands},
 	{"claude-commands.jsonl", "p2-claude-conversation.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, claudeCommands},
+	// Plan 76, criterion 76.16: P76a, Claude Code's native agents, an
+	// implementer and a reviewer run in turn by the orchestrator; the process
+	// "p76a" alone, the driver's own lines left out.
+	{"claude-native-agents.jsonl", "p76a-claude-native-agents.jsonl", "claude-code", func() fixture.Mapper { return claude.NewMapper() }, func(_ *testing.T, recs []fixture.Record) []fixture.Record { return fixture.Of(recs, "p76a") }},
 }
 
 // p72Launcher is the launcher Codex runs a command with, as its command

@@ -453,12 +453,27 @@ func New(opt Options) *Model {
 	return m
 }
 
+// holds says the build holds the adapter of the agent CLI id.
+func (o Options) holds(id string) bool {
+	for _, p := range o.Providers {
+		if p.ID() == id {
+			return true
+		}
+	}
+	return false
+}
+
 // newUI is the interface's view as the model starts with it: also a
 // session's after a return to the home screen (resetSession).
 func (m *Model) newUI() render.UI {
 	opt := m.opt
 	ui := render.UI{Width: render.MinWidth, Height: render.MinHeight, Now: opt.Now(), Focus: "B", Choice: opt.Provider, Wrap: render.NewWrapCache(), Memo: render.NewMemo(), Colors: render.NewCmdColors(),
-		KeysProblem: opt.KeysProblem, CodexProxy: opt.CodexProxy, CodexProxyProblem: opt.CodexProxyProblem, NerdIcons: opt.NerdIcons}
+		KeysProblem: opt.KeysProblem, NerdIcons: opt.NerdIcons}
+	if opt.holds("codex") {
+		// Codex's proxy line and its section's problem show only while the
+		// build can start Codex, not while it is paused (amendment 96).
+		ui.CodexProxy, ui.CodexProxyProblem = opt.CodexProxy, opt.CodexProxyProblem
+	}
 	ui.SendKeys, ui.NewlineKeys = opt.Keys.Display()
 	ui.Version, ui.System = Version, systemName(runtime.GOOS) // the home screen's header (plan 51, design D5)
 	return ui
@@ -1152,10 +1167,16 @@ func (m *Model) detectionDone(found []provider.Detection) []tea.Cmd {
 	}
 	var clis []state.CLI
 	var installed []string
+	note := "" // question 1's message, if detection calls for one
 	for _, c := range supported {
 		d, ok := byID[c.id]
 		if !ok {
-			clis = append(clis, state.CLI{ID: c.id, Name: c.name, Problem: "adapter not built yet"})
+			// The build leaves this CLI's adapter out (main.go; amendment 96):
+			// paused, not missing.
+			clis = append(clis, state.CLI{ID: c.id, Name: c.name, Paused: true})
+			if c.id == m.opt.Provider {
+				note = pausedNote(c.id) // asked for with --provider: not followed silently (AGENTS.md, Keep failures visible)
+			}
 			continue
 		}
 		m.detected[c.id] = d
@@ -1170,8 +1191,22 @@ func (m *Model) detectionDone(found []provider.Detection) []tea.Cmd {
 			m.ui.Choice = installed[0]
 		}
 	}
-	return m.do(state.DetectionDone{Installed: installed, CLIs: clis})
+	return m.do(state.DetectionDone{Installed: installed, CLIs: clis, Note: note})
 }
+
+// paused says id is a supported CLI whose adapter the build leaves out, as
+// detection found it (brief, amendment 96).
+func (m *Model) paused(id string) bool {
+	for _, c := range m.s.Startup.CLIs {
+		if c.ID == id && c.Paused {
+			return true
+		}
+	}
+	return false
+}
+
+// pausedNote is what the dashboard says of a paused CLI that was asked for.
+func pausedNote(id string) string { return cliName(id) + " is paused" }
 
 // start starts the session; resume is a CLI session id to resume, last that
 // it is the project's last, resumed from the home screen (plan 69).

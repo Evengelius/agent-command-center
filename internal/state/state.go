@@ -129,6 +129,9 @@ type CLI struct {
 	Tested                  string // the last version probed, "" when unknown
 	Installed               bool
 	Problem                 string // why it is not installed or not usable
+	// Paused says the build leaves this supported CLI's adapter out: it is
+	// listed, not choosable, and not "not installed" (brief, amendment 96).
+	Paused bool
 }
 
 // StartupState is the startup machine with its answers.

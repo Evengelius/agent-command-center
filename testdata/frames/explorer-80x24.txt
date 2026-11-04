@@ -12,11 +12,11 @@
 │     🗎  claude-api-key-context-refused.jsonl                                  │
 │     🗎  claude-commands.jsonl                                                 │
 │     🗎  claude-models.jsonl                                                   │
+│     🗎  claude-native-agents.jsonl                                            │
 │     🗎  claude-quota-windows.jsonl                                            │
 │     🗎  claude-subagent-approval.jsonl                                        │
 │     🗎  claude-thinking-subagent.jsonl                                        │
 │     🗎  claude-thinking.jsonl                                                 │
-│     🗎  codex-api-key.jsonl                                                U  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ C · AGENTS ───────────────────────────────────────────── 0 ACTIVE · 1 DONE ─╮
 │  ✓ general-purpose haiku-5-5   completed · Files writt…       0s   21.5k tok │

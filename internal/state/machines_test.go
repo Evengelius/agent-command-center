@@ -147,7 +147,7 @@ var transitions = []machineCase{
 		b.eq("screen", b.s.Screen, ScreenDashboard)
 		b.eq("commands", b.kinds(), "start-session")
 	}},
-	{"Startup", "`Detecting` | both detections returned or timed out", func(b *bench) {
+	{"Startup", "`Detecting` | every detection returned or timed out", func(b *bench) {
 		b.asking()
 		b.eq("phase", b.s.Startup.Phase, Asking)
 		b.eq("installed", strings.Join(b.s.Startup.Installed, ","), "claude-code,codex")
@@ -1290,13 +1290,22 @@ var invalids = []machineCase{
 		c.eq("starting", c.s.Startup.Phase, Starting)
 		c.eq("answer kept", c.s.Startup.Project, project)
 	}},
-	{"Startup", "choosing a provider shown \"not installed\" is impossible", func(b *bench) {
+	{"Startup", "choosing a provider shown \"not installed\", or \"paused\"", func(b *bench) {
 		b.do(Launch{})
 		b.do(DetectionDone{Installed: []string{"claude-code"}})
 		b.do(Confirm{Provider: "codex", Project: project})
 		b.eq("phase", b.s.Startup.Phase, Asking)
 		b.eq("field", b.s.Startup.Field, "provider")
 		b.eq("commands", b.kinds(), "")
+		// A paused CLI (its adapter left out of the build, amendment 96) is
+		// not installed as far as a start goes.
+		p := newBench(b.t)
+		p.do(Launch{})
+		p.do(DetectionDone{Installed: []string{"claude-code"}, CLIs: []CLI{{ID: "claude-code", Installed: true}, {ID: "codex", Paused: true}}})
+		p.do(Confirm{Provider: "codex", Project: project})
+		p.eq("paused: phase", p.s.Startup.Phase, Asking)
+		p.eq("paused: field", p.s.Startup.Field, "provider")
+		p.eq("paused: commands", p.kinds(), "")
 		// With neither installed, Start is disabled: nothing can be chosen.
 		c := newBench(b.t)
 		c.do(Launch{})

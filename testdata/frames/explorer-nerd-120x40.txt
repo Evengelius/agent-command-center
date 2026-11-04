@@ -11,19 +11,19 @@
 │                                  ││       claude-api-key-context-refused.jsonl                              ││      │
 │ ✓ TURN 2                      0s ││       claude-commands.jsonl                                             ││      │
 │   started by the CLI             ││       claude-models.jsonl                                               ││  ◉   │
-│ ──────────────────────────────── ││       claude-quota-windows.jsonl                                        ││      │
-│ ✦ TELEMETRY        Enter details ││       claude-subagent-approval.jsonl                                    ││      │
-│ ▾ SESSION USAGE                  ││       claude-thinking-subagent.jsonl                                    ││      │
-│   Context 4% of 1M ░░░░░░░░░░░░░ ││       claude-thinking.jsonl                                             ││      │
-│   Tokens 159.4k session total    ││       codex-api-key.jsonl                                            U  ││      │
-│   Est. cost $0.01 API-equiv.     ││       codex-commands.jsonl                                              ││      │
-│ ▾ QUOTA WINDOWS                  ││       codex-models-next-turn.jsonl                                      ││      │
-│   Session (5hr)             35%† ││       codex-models.jsonl                                                ││      │
-│   ███████████░░░░░░░░░░░░░░░░░░░ ││       codex-no-5h-window.jsonl                                          ││      │
-│   Resets in 14h 40m              ││       codex-plan6-limits.jsonl                                       !  ││      │
-│   Weekly (7 day)            47%† ││       codex-spawn-request.jsonl                                      A  ││      │
-│   ██████████████░░░░░░░░░░░░░░░░ ││       codex-subagents.jsonl                                             ││      │
-│   Resets in 1d 20h               ││                                                                          ││      │
+│ ──────────────────────────────── ││       claude-native-agents.jsonl                                        ││      │
+│ ✦ TELEMETRY        Enter details ││       claude-quota-windows.jsonl                                        ││      │
+│ ▾ SESSION USAGE                  ││       claude-subagent-approval.jsonl                                    ││      │
+│   Context 4% of 1M ░░░░░░░░░░░░░ ││       claude-thinking-subagent.jsonl                                    ││      │
+│   Tokens 159.4k session total    ││       claude-thinking.jsonl                                             ││      │
+│   Est. cost $0.01 API-equiv.     ││       codex-api-key.jsonl                                            U  ││      │
+│ ▾ QUOTA WINDOWS                  ││       codex-commands.jsonl                                              ││      │
+│   Session (5hr)             35%† ││       codex-models-next-turn.jsonl                                      ││      │
+│   ███████████░░░░░░░░░░░░░░░░░░░ ││       codex-models.jsonl                                                ││      │
+│   Resets in 14h 40m              ││       codex-no-5h-window.jsonl                                          ││      │
+│   Weekly (7 day)            47%† ││       codex-plan6-limits.jsonl                                       !  ││      │
+│   ██████████████░░░░░░░░░░░░░░░░ ││       codex-spawn-request.jsonl                                      A  ││      │
+│   Resets in 1d 20h               ││       codex-subagents.jsonl                                             ││      │
 ╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ C · LIVE AGENTS                                                                                    0 ACTIVE · 1 DONE │

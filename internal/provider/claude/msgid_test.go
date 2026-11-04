@@ -99,9 +99,10 @@ func TestStreamEventsTakeTheMessageStartID(t *testing.T) {
 	// until amendment 20 added P22o, whose 36 do too; then 1,435 in 15 of 16
 	// until plan 24 added P24u, which has no stream event, nor has plan 34's
 	// P34c, nor plan 39's P39c; then 1,454 in 16 of 20 since plan 69 added
-	// P69a, whose 19, in two processes, do too.
-	if total != 1454 || files != 16 || len(names) != 20 {
-		t.Errorf("%d lines in %d of %d recordings, want 1454 in 16 of 20", total, files, len(names))
+	// P69a, whose 19, in two processes, do too; then 1,540 in 17 of 21 since
+	// plan 76 added P76a, whose 86 do too.
+	if total != 1540 || files != 17 || len(names) != 21 {
+		t.Errorf("%d lines in %d of %d recordings, want 1540 in 17 of 21", total, files, len(names))
 	}
 }
 

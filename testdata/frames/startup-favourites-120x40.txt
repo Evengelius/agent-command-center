@@ -6,16 +6,16 @@
  │  1.  Agent CLI                                     │ │  ☆ FAVORITES                                                │
  │   ◉  Claude Code (2.1.300)                         │ │  ★  docs                      …avadev\projets\docs  3h ago  │
  │                                                    │ │                                                             │
- │   ○  OpenAI Codex not installed: adapter not       │ │ ▏★  scratch                   …dev\projets\scratch  1d ago▕ │
- │      built yet                                     │ │                                                             │
- │                                                    │ │  ★  acme-portal               …clients\acme-portal   never  │
- │  2.  Project directory                             │ │                                                             │
- │ ╭────────────────────────────────────────────┬───╮ │ │  ◷ RECENT PROJECTS                                          │
- │ │ C:\javadev\projets\scratch                 │ 🗀 │ │ │  ☆  agent-command-center      …gent-command-center     now  │
- │ ╰────────────────────────────────────────────┴───╯ │ │ ─────────────────────────────────────────────────────────── │
- │                                                    │ │  ☆  billing-service           …ets\billing-service  8m ago  │
+ │   ○  OpenAI Codex paused                           │ │ ▏★  scratch                   …dev\projets\scratch  1d ago▕ │
+ │                                                    │ │                                                             │
+ │  2.  Project directory                             │ │  ★  acme-portal               …clients\acme-portal   never  │
+ │ ╭────────────────────────────────────────────┬───╮ │ │                                                             │
+ │ │ C:\javadev\projets\scratch                 │ 🗀 │ │ │  ◷ RECENT PROJECTS                                          │
+ │ ╰────────────────────────────────────────────┴───╯ │ │  ☆  agent-command-center      …gent-command-center     now  │
  │                                                    │ │ ─────────────────────────────────────────────────────────── │
- │                  START SESSION →                   │ │  ☆  a-project-with-a-very-l…  …long-directory-name 58m ago  │
+ │                                                    │ │  ☆  billing-service           …ets\billing-service  8m ago  │
+ │                  START SESSION →                   │ │ ─────────────────────────────────────────────────────────── │
+ │                                                    │ │  ☆  a-project-with-a-very-l…  …long-directory-name 58m ago  │
  │                                                    │ │ ─────────────────────────────────────────────────────────── │
  │                                                    │ │  ☆  infra                     …vadev\projets\infra  7h ago  │
  │                                                    │ │ ─────────────────────────────────────────────────────────── │

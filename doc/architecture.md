@@ -416,12 +416,16 @@ agent-command-center [--mock <file>] [--provider <id>] [--project <path>]
    - A file that cannot be used is named on the first screen with its
      problem; the default keys apply, and Codex gets no proxy.
    - A problem in the `codex` setting alone is named on its own line, and
-     sets no proxy.
+     sets no proxy. While Codex is paused, the home screen shows neither
+     that line nor Codex's proxy (amendment 96; `ui-design.md`).
    - The file is only read, and it is never a CLI's configuration.
-2. Run `Detect` for Claude Code and Codex in parallel, each with a 10 s timeout (ASM-21)
-   (AM4 S2).
+2. Run `Detect` for each adapter in parallel, each with a 10 s timeout (ASM-21)
+   (AM4 S2). Codex's adapter is left out of `main.go`'s provider list while
+   Codex is paused (amendment 96): it stays, built and tested, but the
+   dashboard does not offer it.
 3. Show the startup screen: the agent CLI question (detected ones selectable,
-   the other shown as not installed) and the project directory, prefilled
+   the other shown as not installed, or as paused when its adapter is left
+   out) and the project directory, prefilled
    with the current directory (AM4 S12). `--provider` and `--project` only
    prefill the answers; validation still runs and the owner still confirms
    (AM4 S14; ASM-8).

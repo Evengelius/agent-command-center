@@ -1,0 +1,40 @@
+ >_ AGENT COMMAND CENTER                                                                    ◆ MOCK — not a live session
+ ▣ claude-native-agents.jsonl   ..\..\testdata\mock\claude-native-agents.jsonl                        Mock data 2.1.303
+╭──────────────────────────────────╮╭─ B · CONVERSATION ──────────────────────────────────────────────── Idle ─╮╭──────╮
+│ A · ORCHESTRATOR                 ││ ▎  ✓ Agent  reviewer · Reviewer READY check         11:30:00      mock   ││      │
+│ ✿ Claude Haiku 5.5   ✓ COMPLETED ││                                                                          ││  ≡   │
+│ ──────────────────────────────── ││ ╭──────────────────────────────────────────────────────────────────────╮ ││      │
+│ STAGES · inferred from activity  ││ │ RESULT  11:30                                                        │ ││      │
+│ ✓ TURN 1                      0s ││ │ Both agents ran in order and each replied READY, then DONE.          │ ││      │
+│   /usage                         ││ │                                                                      │ ││  ⑂   │
+│                                  ││ │ • implementer: replied READY and DONE. It had no SendMessage tool,   │ ││      │
+│ ✓ TURN 2                      0s ││ │   so it did not send the second READY to the implementer.            │ ││      │
+│   Use the Agent tool to run the… ││ │ • reviewer: replied READY and DONE. It also had no SendMessage tool, │ ││      │
+│   ├─ ✓ Agent  Implementer … mock ││ │   so it did not message the implementer.                             │ ││  ◉   │
+│   ├─ ✓ agent  implementer   mock ││ │                                                                      │ ││      │
+│   ├─ ✓ Agent  Reviewer REA… mock ││ │ Neither agent used any tool. Nothing in the working directory was    │ ││      │
+│   └─ ✓ agent  reviewer      mock ││ │ changed.                                                             │ ││      │
+│                                  ││ │                                                                      │ ││      │
+│ ──────────────────────────────── ││ │ Reminder for this session: the local Px proxy (127.0.0.1:3128)       │ ││      │
+│ ✦ TELEMETRY        Enter details ││ │ handles corporate proxy sign-in. If a tool shows "Connection         │ ││      │
+│ ▾ SESSION USAGE                  ││ │ refused", run pxw in any terminal.                                   │ ││      │
+│   Context 4% of 1M █░░░░░░░░░░░░ ││ ╰──────────────────────────────────────────────────────────────────────╯ ││      │
+│   Tokens 125.5k · Cost $0.06     ││                                                                          ││      │
+│ ▾ QUOTA WINDOWS                  ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Session (5hr)  N/A · no repor… ││ > Ask Mock data anything…                                                ││      │
+│   Weekly (7 day)  10%† · 25d 23h ││ ──────────────────────────────────────────────────────────────────────── ││      │
+│   Fable limit  0% · 25d 23h      ││   +     Haiku 5.5 Medium                                     ✋ Manual   ││      │
+╰──────────────────────────────────╯╰──────────────────────────────────────────────────────────────────────────╯╰──────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ C · LIVE AGENTS                                                                                    0 ACTIVE · 2 DONE │
+│ ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────── │
+│ AGENTS                                      │ EXECUTION TIMELINE                                         ✓ COMPLETED │
+│  ✓  reviewer            │  opus-5-5         │ 11:30:00  notice    │ Use no tool. Reply READY. If you have a          │
+│     00:00   5k tok      │  tool: none yet   │                     │ SendMessage tool, then send the implementer…     │
+│  ✓  implementer         │  sonnet-5-5       │ ────────────────────────────────────────────────────────────────────── │
+│     00:00   9.3k tok    │  tool: none yet   │ 11:30:00  assistant │ READY I have no SendMessage tool, so I sent      │
+│                                             │                     │ nothing to the implementer agent. DONE           │
+│                                             │                                                                        │
+│                                             │                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ↑↓ move · ←→ fold · Enter inspect or details · z zoom · PgUp PgDn Home End scroll · F6 zone · Esc back to the input · …

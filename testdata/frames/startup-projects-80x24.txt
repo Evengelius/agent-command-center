@@ -6,17 +6,17 @@
  │  1.  Agent CLI                   │ │  ◷ RECENT PROJECTS                    │
  │ ▏ ◉  Claude Code (2.1.300)     ▕ │ │  ☆  agent-command-center         now  │
  │                                  │ │  ☆  billing-service           8m ago  │
- │   ○  OpenAI Codex not            │ │  ☆  a-project-with-a-very-l… 58m ago  │
- │      installed: adapter not      │ │  ☆  docs                      3h ago  │
- │      built yet                   │ │  ☆  infra                     7h ago  │
- │                                  │ │  ☆  mobile-app               14h ago  │
- │  2.  Project directory           │ │  ☆  web                       1d ago  │
- │ ╭──────────────────────────┬───╮ │ │  ☆  scratch                   1d ago  │
- │ │ C:\work\demo-project     │ 🗀 │ │ │  ☆  tools                     2d ago  │
- │ ╰──────────────────────────┴───╯ │ │  ☆  payments                  3d ago  │
- │                                  │ │                                       │
- │                                  │ │                                       │
+ │   ○  OpenAI Codex paused         │ │  ☆  a-project-with-a-very-l… 58m ago  │
+ │                                  │ │  ☆  docs                      3h ago  │
+ │  2.  Project directory           │ │  ☆  infra                     7h ago  │
+ │ ╭──────────────────────────┬───╮ │ │  ☆  mobile-app               14h ago  │
+ │ │ C:\work\demo-project     │ 🗀 │ │ │  ☆  web                       1d ago  │
+ │ ╰──────────────────────────┴───╯ │ │  ☆  scratch                   1d ago  │
+ │                                  │ │  ☆  tools                     2d ago  │
+ │                                  │ │  ☆  payments                  3d ago  │
  │         START SESSION →          │ │                                       │
+ │                                  │ │                                       │
+ │                                  │ │                                       │
  │                                  │ │                                       │
  │                                  │ │                                       │
  ╰──────────────────────────────────╯ ╰───────────────────────────────────────╯

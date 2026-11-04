@@ -116,6 +116,10 @@ var (
 	tkAction    = textKind{7.78, 9.5, false}   // its action
 )
 
+// PausedText stands where a version stands on the row of a supported CLI whose
+// adapter the build leaves out (brief, amendment 96; plan 76, design D5).
+const PausedText = "paused"
+
 // HomeCLI is an agent CLI's option box (design D6).
 type HomeCLI struct {
 	Name, Version string // the version as shown, "(2.1.303)", or why it cannot be chosen
@@ -161,7 +165,7 @@ func homeNotes(s *state.State, ui UI) []HomeNote {
 	projectFailed := s.Startup.Field == "project" && s.Startup.Message != "" && ui.Path == s.Startup.Project
 	switch {
 	case !detecting && len(s.Startup.Installed) == 0:
-		out = append(out, HomeNote{"✗ ", "No supported agent CLI found. Install Claude Code or Codex CLI, then restart.", 'f', 0})
+		out = append(out, HomeNote{"✗ ", noCLIText(s.Startup.CLIs), 'f', 0})
 	case s.Startup.Field == "provider" && s.Startup.Message != "":
 		out = append(out, HomeNote{"✗ ", s.Startup.Message, 'f', 0})
 	}
@@ -207,6 +211,33 @@ func homeNotes(s *state.State, ui UI) []HomeNote {
 		out = append(out, HomeNote{"", "Codex through the proxy " + ui.CodexProxy + " (config.json)", 'g', 0})
 	}
 	return out
+}
+
+// noCLIText is the note when no agent CLI can be used. With a CLI paused
+// (brief, amendment 96) it names the paused ones and asks for the others
+// only: "No usable agent CLI: OpenAI Codex is paused. Install Claude Code,
+// then restart."; with none paused it is the text it always was.
+func noCLIText(clis []state.CLI) string {
+	var paused, others []string
+	for _, c := range clis {
+		if c.Paused {
+			paused = append(paused, c.Name)
+		} else {
+			others = append(others, c.Name)
+		}
+	}
+	if len(paused) == 0 {
+		return "No supported agent CLI found. Install Claude Code or Codex CLI, then restart."
+	}
+	verb := " is paused"
+	if len(paused) > 1 {
+		verb = " are paused"
+	}
+	text := "No usable agent CLI: " + strings.Join(paused, " and ") + verb + "."
+	if len(others) > 0 {
+		text += " Install " + strings.Join(others, " or ") + ", then restart."
+	}
+	return text
 }
 
 // homeListNote is PROJECTS' note above its rows: the store's problem, or
@@ -325,6 +356,8 @@ func homeCLIs(s *state.State, ui UI) []HomeCLI {
 					continue
 				}
 				switch {
+				case f.Paused:
+					o.Version = PausedText
 				case f.Installed:
 					o.Version, o.Usable = "("+f.Version+")", true
 				case f.Problem != "":

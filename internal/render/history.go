@@ -54,14 +54,14 @@ type HistoryView struct {
 	AskSel   int
 	AskCount int
 	AskCLIs  []string
-	// Note is why Enter did nothing ("<CLI> is not installed") or why the
-	// list is not trusted, "" for none.
+	// Note is why Enter did nothing ("<CLI> is not installed", "<CLI> is
+	// paused") or why the list is not trusted, "" for none.
 	Note string
 }
 
 // HistoryRow is one entry of the history: its title ("" for none), the grey
 // line under it (its date and time, age, CLI, model and ID), its CLI's name
-// and whether that CLI is not installed, which dims it.
+// and whether that CLI is not installed or paused, which dims it.
 type HistoryRow struct {
 	Title, Meta, CLI string
 	Dim              bool

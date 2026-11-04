@@ -20,8 +20,25 @@ You implement one change for this repository, as briefed.
   configuration (`~/.claude`, `~/.codex`, `~/.gemini`, any `.claude`, `.codex`
   or `.gemini` folder); never open a credential file.
 - Run the checks the brief lists (build, tests, vet, format) and fix ordinary
-  failures; after three attempts without progress on the same failure, stop and
-  report it.
+  failures; stop and report when an attempt leaves the failure as it was and
+  brings no new evidence about its cause.
+- **Corrections.** Each finding gets discriminating evidence: where the
+  project's tools can reproduce the failure, a regression test reproducing the
+  stated failure, written first and shown failing on the unfixed code, then
+  passing; where they cannot, other verifiable evidence, with one line saying
+  why (`doc/evaluation.md`, The Reviewer, Convergence). A finding's cause is
+  found by its code path, its reproduction and that evidence, never by a
+  test's status alone.
+- **Bounded runs.** Every long command you start has its limit before it
+  starts (`doc/evaluation.md`, Execution supervision), and one heavy job runs
+  at a time. The evidence and mutant runs print a timestamped line per phase
+  and per mutant. After a correction, run again only the mutants whose code
+  or tests it touched; all of them run in the last evidence before the final
+  review.
+- **No history of the reviews in the tree** until the final review is
+  complete: no comment, document or test name records the plan's reviews,
+  findings, corrections or verdicts. Afterwards that history belongs in the
+  plan's evaluation file.
 - **Evidence.** When the brief gives an evidence command, run it last, exactly
   as given, after your final edit: its output goes straight to its file,
   starting with the fingerprint (`doc/evaluation.md`, The Reviewer). Never
