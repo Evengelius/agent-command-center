@@ -56,7 +56,7 @@ develop, not about the application: nothing here goes into its provider code.
     | Light | documents, comments or tests only: no runtime behaviour can change | `medium` |
     | Standard | ordinary runtime code; the default | `high` |
     | Deep | any answer that gives Deep in `doc/evaluation.md`, The Reviewer, Tiers | `xhigh` |
-    | Exceptional | only when the owner or the plan asks | `max` |
+    | Exceptional | when the owner or the plan asks, or by the raise below | `max` |
     | Final review | `xhigh` when any step was Deep, otherwise `high` | |
 
     The plan sets each tier before any code exists, by the questions of
@@ -64,12 +64,11 @@ develop, not about the application: nothing here goes into its provider code.
     one does. After reading the diff the orchestrator may raise it, never lower
     it. A second FAIL on one criterion, a defect a correction reintroduced or
     introduced, or a reasoning question a Reviewer could not close, raises the
-    next Reviewer one tier, once per step. A raise that would reach `max` needs
-    the owner's approval, unless the owner or the plan has already asked for
-    `max` for that step or the final review. The orchestrator asks and starts
-    no Reviewer before the answer; if the owner declines, the next Reviewer
-    runs at `xhigh`. The Reviewer's brief never names the tier or its reason,
-    though `plan.md`'s own text can reach it through the diff.
+    next Reviewer one tier, once per step, the final review counting as one;
+    from `xhigh`, that raise reaches `max` without asking the owner. Any other
+    `max` needs the owner's or the plan's request: the orchestrator's own
+    raise stops at `xhigh`. The Reviewer's brief never names the tier or its
+    reason, though `plan.md`'s own text can reach it through the diff.
 - **Long jobs and agents.** The orchestrator sets one observation deadline
   per long job and per agent it starts, at its recorded duration, with the
   Monitor tool or one background timer, and looks once when it passes; after

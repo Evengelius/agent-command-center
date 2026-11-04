@@ -502,13 +502,17 @@ F="$TEMP/acc-review-inputs"; t() { date '+%H:%M:%S'; }; { { git --no-optional-lo
 
 **Around each review.** Before it: `git status` against the plan's files, the
 fingerprint against the evidence file's first line, the inputs rewritten; the
-orchestrator's full test run starts with the fingerprint too. After it: the
-fingerprint again; in the transcript (`agent-*.jsonl`, `agent-*.meta.json`),
-the tools offered, the model and the effort, and every path its `Read`, `Grep`
-and `Glob` reached. A tool beyond the definition's and the CLI's two, a path
-outside the repository other than the inputs, or an earlier verdict on this
-plan's work makes the review count for nothing. A search of the repository can
-meet earlier plans' evaluation files, which judge other work.
+orchestrator's full test run starts with the fingerprint too. Every Reviewer
+brief must remind the agent of its 100-turn limit. The Reviewer should batch
+independent reads where practical and prioritize delivering its final report
+before exhausting that limit. Any criterion it cannot complete must be
+reported as NOT VERIFIED. After it: the fingerprint again; in the transcript
+(`agent-*.jsonl`, `agent-*.meta.json`), the tools offered, the model and the
+effort, and every path its `Read`, `Grep` and `Glob` reached. A tool beyond
+the definition's and the CLI's two, a path outside the repository other than
+the inputs, or an earlier verdict on this plan's work makes the review count
+for nothing. A search of the repository can meet earlier plans' evaluation
+files, which judge other work.
 
 **Convergence**, after a FAIL or NOT VERIFIED (`AGENTS.md`, Review cycle, step
 5; amendments 97 and 98). The corrections have no fixed limit: each one must
